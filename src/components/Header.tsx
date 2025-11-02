@@ -18,7 +18,7 @@ const Header = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/30 overflow-hidden">
+    <header className="sticky top-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/30 relative overflow-hidden">
       {/* Animated decorative line */}
       <div className="absolute top-0 left-0 w-full h-px overflow-hidden">
         <div className="h-full w-full bg-gradient-to-r from-transparent via-ring to-transparent animate-shimmer" 
