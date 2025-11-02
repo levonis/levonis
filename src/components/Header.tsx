@@ -18,9 +18,24 @@ const Header = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 glass-effect border-b border-border/50 relative overflow-hidden">
-      {/* Decorative top line */}
-      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-ring/30 to-transparent" />
+    <header className="sticky top-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/30 relative overflow-hidden">
+      {/* Animated decorative line */}
+      <div className="absolute top-0 left-0 w-full h-px overflow-hidden">
+        <div className="h-full w-full bg-gradient-to-r from-transparent via-ring to-transparent animate-shimmer" 
+             style={{ 
+               backgroundSize: '200% 100%',
+               animation: 'shimmer 3s linear infinite'
+             }} 
+        />
+      </div>
+      
+      {/* Floating ornamental dots */}
+      <div className="absolute inset-0 pointer-events-none opacity-20">
+        <div className="absolute top-1/2 left-10 w-1 h-1 rounded-full bg-ring animate-float" />
+        <div className="absolute top-1/2 left-32 w-1 h-1 rounded-full bg-primary animate-float" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 right-32 w-1 h-1 rounded-full bg-accent animate-float" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-1/2 right-10 w-1 h-1 rounded-full bg-ring animate-float" style={{ animationDelay: '3s' }} />
+      </div>
       
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
@@ -78,15 +93,20 @@ const Header = () => {
                     <User className="h-5 w-5" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuContent align="end" className="w-56 bg-background/95 backdrop-blur-xl border-border/50">
                   <DropdownMenuLabel>حسابي</DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="ml-2 h-4 w-4" />
+                    <span>الملف الشخصي</span>
+                  </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
                       <Settings className="ml-2 h-4 w-4" />
                       <span>لوحة التحكم</span>
                     </DropdownMenuItem>
                   )}
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut} className="text-destructive">
                     <LogOut className="ml-2 h-4 w-4" />
                     <span>تسجيل الخروج</span>
