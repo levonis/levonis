@@ -1,7 +1,8 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +14,7 @@ import {
 
 const Header = () => {
   const { user, isAdmin, signOut } = useAuth();
+  const { itemCount } = useCart();
   const navigate = useNavigate();
 
   return (
@@ -50,6 +52,21 @@ const Header = () => {
           </nav>
 
           <div className="flex items-center gap-3">
+            {/* Cart Button */}
+            <Button 
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/cart')}
+              className="relative rounded-full border-primary/30 hover:border-primary"
+            >
+              <ShoppingCart className="h-5 w-5" />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                  {itemCount > 9 ? '9+' : itemCount}
+                </span>
+              )}
+            </Button>
+
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { ShoppingCart } from 'lucide-react';
+import { useCart } from '@/hooks/useCart';
 
 interface ProductCardProps {
   id: string;
@@ -28,6 +29,7 @@ const ProductCard = ({
 }: ProductCardProps) => {
   const hasSale = originalPrice && originalPrice > price;
   const savings = hasSale ? originalPrice - price : 0;
+  const { addToCart } = useCart();
 
   return (
     <Link 
@@ -90,7 +92,7 @@ const ProductCard = ({
           className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
           onClick={(e) => {
             e.preventDefault();
-            // Add to cart functionality
+            addToCart(id);
           }}
         >
           <ShoppingCart className="h-4 w-4" />
