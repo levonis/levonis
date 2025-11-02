@@ -16,7 +16,10 @@ const Header = () => {
   const navigate = useNavigate();
 
   return (
-    <header className="sticky top-0 z-50 glass-effect border-b border-border/50">
+    <header className="sticky top-0 z-50 glass-effect border-b border-border/50 relative overflow-hidden">
+      {/* Decorative top line */}
+      <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-ring/30 to-transparent" />
+      
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">

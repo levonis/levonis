@@ -31,7 +31,15 @@ const Products = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="fixed top-0 left-1/3 w-64 h-64 pointer-events-none opacity-10 animate-float">
+        <svg viewBox="0 0 200 200" className="w-full h-full">
+          <circle cx="100" cy="100" r="80" stroke="hsl(var(--primary) / 0.3)" strokeWidth="0.5" fill="none" />
+          <circle cx="100" cy="100" r="60" stroke="hsl(var(--ring) / 0.2)" strokeWidth="0.5" fill="none" />
+        </svg>
+      </div>
+      
       <Header />
       
       <main className="container mx-auto px-4 py-8">

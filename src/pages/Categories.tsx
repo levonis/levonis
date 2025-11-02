@@ -19,7 +19,12 @@ const Categories = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
+      {/* Decorative corner pattern */}
+      <div className="fixed bottom-10 right-10 w-48 h-48 pointer-events-none opacity-15 animate-float" style={{ animationDelay: '1.5s' }}>
+        <div className="w-full h-full border border-ring/30 rotate-45 rounded-xl" />
+      </div>
+      
       <Header />
       
       <main className="container mx-auto px-4 py-8">

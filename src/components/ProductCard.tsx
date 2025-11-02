@@ -32,8 +32,14 @@ const ProductCard = ({
   return (
     <Link 
       to={`/product/${slug}`}
-      className="group block bg-gradient-to-b from-card to-card/80 rounded-2xl p-4 border border-border/40 card-premium hover:border-primary/50 transition-all hover:-translate-y-1"
+      className="group block bg-gradient-to-b from-card to-card/80 rounded-2xl p-4 border border-border/40 card-premium hover:border-primary/50 transition-all hover:-translate-y-1 relative overflow-hidden"
     >
+      {/* Decorative corner accent */}
+      <div className="absolute top-0 right-0 w-16 h-16 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        <svg viewBox="0 0 50 50" className="w-full h-full">
+          <path d="M0,0 L50,0 L50,20 Q40,20 40,10 Z" fill="hsl(var(--ring) / 0.1)" />
+        </svg>
+      </div>
       {imageUrl && (
         <div className="relative overflow-hidden rounded-xl mb-3 aspect-square">
           <img 

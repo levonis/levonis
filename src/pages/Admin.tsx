@@ -169,7 +169,16 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
+      {/* Admin decorative accent */}
+      <div className="fixed top-20 left-20 w-32 h-32 pointer-events-none opacity-8 animate-float">
+        <div className="w-full h-full" style={{ 
+          background: 'var(--gradient-radial-gold)',
+          clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+          filter: 'blur(20px)'
+        }} />
+      </div>
+      
       <Header />
       
       <main className="container mx-auto px-4 py-8">
