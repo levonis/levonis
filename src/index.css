@@ -1,96 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900;1000&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
+/* LEVONIS Design System - Premium Electronics Store */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* Base colors - Dark green & Gold theme */
+    --background: 160 46% 15%;        /* #103d33 Dark green */
+    --background-2: 160 59% 11%;      /* #0b3028 Deeper green */
+    --foreground: 44 44% 89%;         /* #efe6c9 Gold cream text */
+    
+    /* Card & surfaces */
+    --card: 160 52% 16%;              /* #123f35 Card background */
+    --card-foreground: 44 44% 89%;
+    
+    /* Primary gold colors */
+    --primary: 44 39% 60%;            /* #c7b46c Gold */
+    --primary-foreground: 40 67% 15%; /* #2b2711 Dark text on gold */
+    --primary-glow: 44 51% 64%;       /* #d8c887 Lighter gold */
+    
+    /* Secondary muted colors */
+    --secondary: 44 26% 64%;          /* #b8b08f Muted gold */
+    --secondary-foreground: 44 44% 89%;
+    
+    /* Muted variants */
+    --muted: 44 26% 64%;
+    --muted-foreground: 44 26% 64%;
+    
+    /* Accent - Copper gold */
+    --accent: 36 42% 40%;             /* #8e6c3d Copper */
+    --accent-foreground: 44 44% 89%;
+    
+    /* Ring/Focus */
+    --ring: 44 51% 64%;               /* #d8c887 */
+    
+    /* Status colors */
+    --destructive: 0 68% 52%;
+    --destructive-foreground: 44 44% 89%;
+    
+    /* WhatsApp green for chat button */
+    --whatsapp: 142 77% 49%;          /* #25D366 */
+    
+    /* Borders & inputs */
+    --border: 44 51% 64% / 0.2;
+    --input: 44 51% 64% / 0.25;
+    
+    --radius: 0.875rem;
+    
+    /* Gradients */
+    --gradient-gold: linear-gradient(180deg, hsl(var(--primary-glow)), hsl(var(--accent)));
+    --gradient-card: linear-gradient(180deg, hsl(var(--card)), hsl(160 60% 14%));
+    --gradient-radial-gold: radial-gradient(circle at 30% 30%, hsl(var(--ring)), hsl(var(--accent)) 45%, hsl(36 42% 25%) 85%);
+    
+    /* Shadows */
+    --shadow-gold: 0 8px 24px hsl(var(--ring) / 0.3);
+    --shadow-deep: 0 12px 30px rgba(0, 0, 0, 0.25);
+    --shadow-hover: 0 16px 36px rgba(0, 0, 0, 0.35);
+    
+    /* Transitions */
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
+  
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    direction: rtl;
+  }
+  
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 900;
+    letter-spacing: 0.5px;
+  }
+}
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+@layer utilities {
+  /* Animations */
+  @keyframes floatY {
+    0% { transform: translateY(0px); }
+    100% { transform: translateY(-15px); }
+  }
+  
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+  
+  .animate-float {
+    animation: floatY 6s ease-in-out infinite alternate;
+  }
+  
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+    background: linear-gradient(90deg, transparent, hsl(var(--ring) / 0.2), transparent);
+    background-size: 1000px 100%;
+  }
+  
+  /* Gradient text */
+  .text-gradient-gold {
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  
+  /* Glass morphism effects */
+  .glass-effect {
+    background: rgba(10, 31, 27, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsl(var(--border));
+  }
+  
+  /* Premium card shadow */
+  .card-premium {
+    box-shadow: var(--shadow-deep);
+  }
+  
+  .card-premium:hover {
+    box-shadow: var(--shadow-hover);
   }
 }
 
