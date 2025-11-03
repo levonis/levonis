@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import InstagramButton from "@/components/InstagramButton";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -41,8 +42,9 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             
-            {/* WhatsApp Button - Fixed on all pages */}
+            {/* Social Media Buttons - Fixed on all pages */}
             <WhatsAppButton />
+            <InstagramButton />
           </CartProvider>
         </AuthProvider>
       </BrowserRouter>
