@@ -20,29 +20,32 @@ const CategoryCard = ({
   return (
     <Link 
       to={`/category/${slug}`}
-      className="group block bg-gradient-to-b from-card to-card/80 rounded-2xl p-4 border border-border/40 card-premium hover:border-primary/50 transition-all hover:-translate-y-1 relative overflow-hidden"
+      className="group block bg-card/40 backdrop-blur-sm rounded-2xl p-5 border border-border/30 hover:border-primary/40 transition-all hover:scale-[1.02] relative overflow-hidden"
     >
-      {/* Subtle geometric decoration */}
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      <div 
-        className="w-12 h-12 rounded-xl mb-3 flex items-center justify-center text-primary-foreground font-black text-sm"
-        style={{ 
-          background: 'var(--gradient-radial-gold)',
-          border: '1px solid hsl(var(--ring))'
-        }}
-      >
-        {icon}
+      {/* Hover glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+      
+      <div className="relative">
+        <div 
+          className="w-14 h-14 rounded-xl mb-4 flex items-center justify-center text-primary-foreground font-black text-base mx-auto"
+          style={{ 
+            background: 'linear-gradient(135deg, hsl(44, 51%, 64%), hsl(36, 42%, 40%))',
+            boxShadow: '0 4px 12px hsl(var(--ring) / 0.3)'
+          }}
+        >
+          {icon}
+        </div>
+        
+        <h3 className="font-black text-lg mb-1 text-foreground group-hover:text-primary transition-colors text-center">
+          {nameAr}
+        </h3>
+        
+        {descriptionAr && (
+          <p className="text-xs text-muted-foreground/80 text-center leading-relaxed">
+            {descriptionAr}
+          </p>
+        )}
       </div>
-      
-      <h3 className="font-bold text-lg mb-1 text-foreground group-hover:text-primary transition-colors">
-        {nameAr}
-      </h3>
-      
-      {descriptionAr && (
-        <p className="text-sm text-muted-foreground">
-          {descriptionAr}
-        </p>
-      )}
     </Link>
   );
 };

@@ -98,10 +98,10 @@ const Home = () => {
         </section>
 
         {/* Categories Section */}
-        <section id="categories" className="container mx-auto px-4 py-12">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-black text-primary">الأقسام</h2>
-            <span className="text-sm text-muted-foreground">اختر القسم للانتقال</span>
+        <section id="categories" className="container mx-auto px-4 py-16">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl md:text-5xl font-black text-primary mb-3">الأقسام</h2>
+            <p className="text-muted-foreground text-sm">اختر القسم الفرعي للانتقال</p>
           </div>
           
           {categoriesLoading ? (
@@ -109,18 +109,64 @@ const Home = () => {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {categories?.map((category) => (
-                <CategoryCard
-                  key={category.id}
-                  name={category.name}
-                  nameAr={category.name_ar}
-                  slug={category.slug}
-                  icon={category.icon}
-                  description={category.description}
-                  descriptionAr={category.description_ar}
-                />
-              ))}
+            <div className="space-y-16">
+              {/* First Row - Hardware Categories */}
+              <div>
+                <h3 className="text-2xl font-black text-primary mb-6 text-right">قطع الكمبيوتر</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {categories?.slice(0, 6).map((category) => (
+                    <CategoryCard
+                      key={category.id}
+                      name={category.name}
+                      nameAr={category.name_ar}
+                      slug={category.slug}
+                      icon={category.icon}
+                      description={category.description}
+                      descriptionAr={category.description_ar}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Second Row - 3D Printing Materials */}
+              {categories && categories.length > 6 && (
+                <div>
+                  <h3 className="text-2xl font-black text-primary mb-6 text-right">المواد</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {categories.slice(6, 12).map((category) => (
+                      <CategoryCard
+                        key={category.id}
+                        name={category.name}
+                        nameAr={category.name_ar}
+                        slug={category.slug}
+                        icon={category.icon}
+                        description={category.description}
+                        descriptionAr={category.description_ar}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Third Row - Additional Categories */}
+              {categories && categories.length > 12 && (
+                <div>
+                  <h3 className="text-2xl font-black text-primary mb-6 text-right">أقسام أخرى</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {categories.slice(12).map((category) => (
+                      <CategoryCard
+                        key={category.id}
+                        name={category.name}
+                        nameAr={category.name_ar}
+                        slug={category.slug}
+                        icon={category.icon}
+                        description={category.description}
+                        descriptionAr={category.description_ar}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </section>
