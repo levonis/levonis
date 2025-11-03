@@ -8,6 +8,7 @@ import { CartProvider } from "@/hooks/useCart";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
+import ProductDetail from "./pages/ProductDetail";
 import Categories from "./pages/Categories";
 import CategoryDetail from "./pages/CategoryDetail";
 import Cart from "./pages/Cart";
@@ -29,6 +30,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/products" element={<Products />} />
+              <Route path="/product/:slug" element={<ProductDetail />} />
               <Route path="/categories" element={<Categories />} />
               <Route path="/category/:slug" element={<CategoryDetail />} />
               <Route path="/cart" element={<Cart />} />
