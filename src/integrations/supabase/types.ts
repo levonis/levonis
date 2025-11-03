@@ -86,11 +86,13 @@ export type Database = {
         Row: {
           category_id: string | null
           created_at: string | null
+          currency: string | null
           description: string | null
           description_ar: string | null
           featured: boolean | null
           id: string
           image_url: string | null
+          images: string[] | null
           in_stock: boolean | null
           name: string
           name_ar: string
@@ -102,11 +104,13 @@ export type Database = {
         Insert: {
           category_id?: string | null
           created_at?: string | null
+          currency?: string | null
           description?: string | null
           description_ar?: string | null
           featured?: boolean | null
           id?: string
           image_url?: string | null
+          images?: string[] | null
           in_stock?: boolean | null
           name: string
           name_ar: string
@@ -118,11 +122,13 @@ export type Database = {
         Update: {
           category_id?: string | null
           created_at?: string | null
+          currency?: string | null
           description?: string | null
           description_ar?: string | null
           featured?: boolean | null
           id?: string
           image_url?: string | null
+          images?: string[] | null
           in_stock?: boolean | null
           name?: string
           name_ar?: string

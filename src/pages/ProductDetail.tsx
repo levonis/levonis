@@ -4,14 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useCart } from '@/hooks/useCart';
 import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck } from 'lucide-react';
 import { toast } from 'sonner';
+import { useState } from 'react';
 
 const ProductDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const [selectedImage, setSelectedImage] = useState(0);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
@@ -49,6 +52,14 @@ const ProductDetail = () => {
 
   const hasSale = product.original_price && Number(product.original_price) > Number(product.price);
   const savings = hasSale ? Number(product.original_price) - Number(product.price) : 0;
+  
+  const productImages = product.images && product.images.length > 0 
+    ? product.images 
+    : product.image_url 
+      ? [product.image_url] 
+      : [];
+  
+  const currency = product.currency || 'ريال';
 
   const handleAddToCart = () => {
     addToCart(product.id);
@@ -93,33 +104,61 @@ const ProductDetail = () => {
           {/* Image Section */}
           <div className="relative">
             <div className="glass-effect rounded-2xl p-6 border border-border/50 card-premium">
-              <div className="relative aspect-square rounded-xl overflow-hidden bg-card/50">
-                {product.image_url ? (
-                  <img 
-                    src={product.image_url} 
-                    alt={product.name_ar}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
+              {productImages.length > 0 ? (
+                <div className="space-y-4">
+                  {/* Main Image */}
+                  <div className="relative aspect-square rounded-xl overflow-hidden bg-card/50">
+                    <img 
+                      src={productImages[selectedImage]} 
+                      alt={`${product.name_ar} - صورة ${selectedImage + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    {hasSale && (
+                      <Badge 
+                        className="absolute top-4 left-4 bg-primary text-primary-foreground text-lg px-4 py-2"
+                      >
+                        خصم {Math.round((savings / Number(product.original_price!)) * 100)}%
+                      </Badge>
+                    )}
+                    {!product.in_stock && (
+                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                        <Badge variant="destructive" className="text-lg px-6 py-2">
+                          غير متوفر
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Thumbnails */}
+                  {productImages.length > 1 && (
+                    <div className="grid grid-cols-4 gap-2">
+                      {productImages.map((img, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setSelectedImage(idx)}
+                          className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                            selectedImage === idx 
+                              ? 'border-primary ring-2 ring-primary/20' 
+                              : 'border-border/30 hover:border-primary/50'
+                          }`}
+                        >
+                          <img 
+                            src={img} 
+                            alt={`${product.name_ar} - صورة مصغرة ${idx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="relative aspect-square rounded-xl overflow-hidden bg-card/50">
                   <div className="w-full h-full flex items-center justify-center">
                     <Package className="w-24 h-24 text-muted-foreground/30" />
                   </div>
-                )}
-                {hasSale && (
-                  <Badge 
-                    className="absolute top-4 left-4 bg-primary text-primary-foreground text-lg px-4 py-2"
-                  >
-                    خصم {Math.round((savings / Number(product.original_price!)) * 100)}%
-                  </Badge>
-                )}
-                {!product.in_stock && (
-                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                    <Badge variant="destructive" className="text-lg px-6 py-2">
-                      غير متوفر
-                    </Badge>
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -147,16 +186,16 @@ const ProductDetail = () => {
                   <span className="text-5xl font-black text-primary">
                     {Number(product.price).toFixed(2)}
                   </span>
-                  <span className="text-2xl text-muted-foreground">ريال</span>
+                  <span className="text-2xl text-muted-foreground">{currency}</span>
                 </div>
                 
                 {hasSale && (
                   <div className="flex items-center gap-3">
                     <span className="text-2xl line-through text-muted-foreground/60">
-                      {Number(product.original_price).toFixed(2)} ريال
+                      {Number(product.original_price).toFixed(2)} {currency}
                     </span>
                     <Badge variant="secondary" className="bg-primary/10 text-primary">
-                      وفر {savings.toFixed(2)} ريال
+                      وفر {savings.toFixed(2)} {currency}
                     </Badge>
                   </div>
                 )}

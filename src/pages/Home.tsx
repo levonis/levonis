@@ -211,6 +211,8 @@ const Home = () => {
                   price={Number(product.price)}
                   originalPrice={product.original_price ? Number(product.original_price) : undefined}
                   imageUrl={product.image_url || undefined}
+                  images={product.images || undefined}
+                  currency={product.currency || undefined}
                   slug={product.slug}
                 />
               ))}

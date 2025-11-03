@@ -23,6 +23,8 @@ const productSchema = z.object({
   description: z.string().optional(),
   price: z.number().positive('السعر يجب أن يكون أكبر من صفر'),
   original_price: z.number().positive().optional(),
+  currency: z.string().optional(),
+  images: z.array(z.string().url()).optional(),
   image_url: z.string().url('رابط الصورة غير صحيح').optional(),
   category_id: z.string().uuid('القسم غير صحيح'),
 });
@@ -207,6 +209,11 @@ const Admin = () => {
     const formData = new FormData(e.currentTarget);
     
     try {
+      const imagesText = formData.get('images') as string;
+      const imagesArray = imagesText 
+        ? imagesText.split('\n').map(url => url.trim()).filter(url => url)
+        : [];
+
       const values = productSchema.parse({
         name_ar: formData.get('name_ar') as string,
         name: formData.get('name') as string,
@@ -215,7 +222,9 @@ const Admin = () => {
         description: formData.get('description') as string || undefined,
         price: Number(formData.get('price')),
         original_price: formData.get('original_price') ? Number(formData.get('original_price')) : undefined,
-        image_url: formData.get('image_url') as string || undefined,
+        currency: formData.get('currency') as string || 'ريال',
+        images: imagesArray.length > 0 ? imagesArray : undefined,
+        image_url: imagesArray[0] || (formData.get('image_url') as string) || undefined,
         category_id: formData.get('category_id') as string,
       });
 
@@ -371,7 +380,7 @@ const Admin = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="price">السعر *</Label>
                         <Input 
@@ -392,6 +401,16 @@ const Admin = () => {
                           type="number"
                           step="0.01"
                           defaultValue={editingProduct?.original_price}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="currency">العملة</Label>
+                        <Input 
+                          id="currency" 
+                          name="currency"
+                          defaultValue={editingProduct?.currency || 'ريال'}
+                          placeholder="ريال"
                         />
                       </div>
                     </div>
@@ -415,14 +434,15 @@ const Admin = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="image_url">رابط الصورة</Label>
-                      <Input 
-                        id="image_url" 
-                        name="image_url"
-                        type="url"
-                        defaultValue={editingProduct?.image_url}
-                        placeholder="https://..."
+                      <Label htmlFor="images">روابط الصور (صورة واحدة في كل سطر)</Label>
+                      <Textarea 
+                        id="images" 
+                        name="images"
+                        defaultValue={editingProduct?.images?.join('\n') || ''}
+                        placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
+                        rows={4}
                       />
+                      <p className="text-xs text-muted-foreground">أضف رابط URL لكل صورة في سطر منفصل</p>
                     </div>
 
                     <Button 
