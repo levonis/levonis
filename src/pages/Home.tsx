@@ -4,6 +4,7 @@ import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import CategoryCard from '@/components/CategoryCard';
+import Footer from '@/components/Footer';
 import { Loader2 } from 'lucide-react';
 
 const Home = () => {
@@ -220,28 +221,7 @@ const Home = () => {
           )}
         </section>
 
-        {/* Footer */}
-        <footer className="border-t border-border/40 py-8 mt-16 relative">
-          {/* Decorative divider */}
-          <div className="absolute top-0 left-0 right-0 h-px">
-            <div className="h-full bg-gradient-to-r from-transparent via-ring/40 to-transparent" />
-          </div>
-          
-          <div className="container mx-auto px-4 text-center relative">
-            {/* Ornamental icon */}
-            <div className="w-12 h-12 mx-auto mb-4 opacity-30">
-              <svg viewBox="0 0 50 50" className="w-full h-full">
-                <circle cx="25" cy="25" r="20" stroke="hsl(var(--ring))" strokeWidth="0.5" fill="none" />
-                <circle cx="25" cy="25" r="15" stroke="hsl(var(--primary))" strokeWidth="0.5" fill="none" />
-                <circle cx="25" cy="25" r="10" stroke="hsl(var(--accent))" strokeWidth="0.5" fill="none" />
-              </svg>
-            </div>
-            
-            <p className="text-muted-foreground">
-              © {new Date().getFullYear()} LEVONIS IQ — كل الحقوق محفوظة
-            </p>
-          </div>
-        </footer>
+        <Footer />
       </main>
     </div>
   );
