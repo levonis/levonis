@@ -98,9 +98,13 @@ const Home = () => {
         </section>
 
         {/* Categories Section */}
-        <section id="categories" className="container mx-auto px-4 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-4xl md:text-5xl font-black text-primary mb-3">الأقسام</h2>
+        <section id="categories" className="container mx-auto px-4 py-16 relative">
+          {/* Decorative glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse-glow pointer-events-none" />
+          
+          <div className="text-center mb-12 animate-scale-in relative z-10">
+            <h2 className="text-4xl md:text-5xl font-black text-gradient-gold mb-3 animate-glow">الأقسام</h2>
+            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto mb-3 animate-shimmer" />
             <p className="text-muted-foreground text-sm">اختر القسم الفرعي للانتقال</p>
           </div>
           
@@ -111,31 +115,15 @@ const Home = () => {
           ) : (
             <div className="space-y-16">
               {/* First Row - Hardware Categories */}
-              <div>
-                <h3 className="text-2xl font-black text-primary mb-6 text-right">قطع الكمبيوتر</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {categories?.slice(0, 6).map((category) => (
-                    <CategoryCard
-                      key={category.id}
-                      name={category.name}
-                      nameAr={category.name_ar}
-                      slug={category.slug}
-                      icon={category.icon}
-                      description={category.description}
-                      descriptionAr={category.description_ar}
-                    />
-                  ))}
+              <div className="animate-slide-in-up">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-1 h-8 bg-gradient-to-b from-primary to-accent rounded-full" />
+                  <h3 className="text-2xl font-black text-primary">قطع الكمبيوتر</h3>
                 </div>
-              </div>
-
-              {/* Second Row - 3D Printing Materials */}
-              {categories && categories.length > 6 && (
-                <div>
-                  <h3 className="text-2xl font-black text-primary mb-6 text-right">المواد</h3>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {categories.slice(6, 12).map((category) => (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {categories?.slice(0, 6).map((category, index) => (
+                    <div key={category.id} className={`stagger-${(index % 6) + 1}`}>
                       <CategoryCard
-                        key={category.id}
                         name={category.name}
                         nameAr={category.name_ar}
                         slug={category.slug}
@@ -143,6 +131,30 @@ const Home = () => {
                         description={category.description}
                         descriptionAr={category.description_ar}
                       />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Second Row - 3D Printing Materials */}
+              {categories && categories.length > 6 && (
+                <div className="animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-1 h-8 bg-gradient-to-b from-primary to-accent rounded-full" />
+                    <h3 className="text-2xl font-black text-primary">المواد</h3>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    {categories.slice(6, 12).map((category, index) => (
+                      <div key={category.id} className={`stagger-${(index % 6) + 1}`}>
+                        <CategoryCard
+                          name={category.name}
+                          nameAr={category.name_ar}
+                          slug={category.slug}
+                          icon={category.icon}
+                          description={category.description}
+                          descriptionAr={category.description_ar}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -150,19 +162,23 @@ const Home = () => {
 
               {/* Third Row - Additional Categories */}
               {categories && categories.length > 12 && (
-                <div>
-                  <h3 className="text-2xl font-black text-primary mb-6 text-right">أقسام أخرى</h3>
+                <div className="animate-slide-in-up" style={{ animationDelay: '0.4s' }}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-1 h-8 bg-gradient-to-b from-primary to-accent rounded-full" />
+                    <h3 className="text-2xl font-black text-primary">أقسام أخرى</h3>
+                  </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {categories.slice(12).map((category) => (
-                      <CategoryCard
-                        key={category.id}
-                        name={category.name}
-                        nameAr={category.name_ar}
-                        slug={category.slug}
-                        icon={category.icon}
-                        description={category.description}
-                        descriptionAr={category.description_ar}
-                      />
+                    {categories.slice(12).map((category, index) => (
+                      <div key={category.id} className={`stagger-${(index % 6) + 1}`}>
+                        <CategoryCard
+                          name={category.name}
+                          nameAr={category.name_ar}
+                          slug={category.slug}
+                          icon={category.icon}
+                          description={category.description}
+                          descriptionAr={category.description_ar}
+                        />
+                      </div>
                     ))}
                   </div>
                 </div>
