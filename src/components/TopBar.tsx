@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
@@ -127,9 +127,13 @@ const TopBar = () => {
                 <DropdownMenuContent align="end" className="w-56 bg-background backdrop-blur-sm border-border z-50">
                   <DropdownMenuLabel>حسابي</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                  <DropdownMenuItem onClick={() => navigate('/user-info')}>
                     <User className="ml-2 h-4 w-4" />
-                    <span>الملف الشخصي</span>
+                    <span>معلومات الحساب</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/my-requests')}>
+                    <FileText className="ml-2 h-4 w-4" />
+                    <span>طلباتي المخصصة</span>
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>

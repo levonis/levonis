@@ -15,6 +15,8 @@ import Categories from "./pages/Categories";
 import CategoryDetail from "./pages/CategoryDetail";
 import Cart from "./pages/Cart";
 import Profile from "./pages/Profile";
+import UserInfo from "./pages/UserInfo";
+import MyCustomRequests from "./pages/MyCustomRequests";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
@@ -38,6 +40,8 @@ const App = () => (
               <Route path="/category/:slug" element={<CategoryDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/user-info" element={<UserInfo />} />
+              <Route path="/my-requests" element={<MyCustomRequests />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<Admin />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
