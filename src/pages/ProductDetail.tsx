@@ -193,7 +193,7 @@ const ProductDetail = () => {
     }
 
     for (let i = 0; i < quantity; i++) {
-      addToCart(product.id, selectedOption || undefined);
+      addToCart(product.id, selectedOption || undefined, selectedColor || undefined);
     }
     toast.success(`تم إضافة ${quantity} من المنتج إلى السلة`);
     setQuantity(1);

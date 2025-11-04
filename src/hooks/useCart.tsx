@@ -16,6 +16,7 @@ interface CartItem {
     original_price: number | null;
     image_url: string | null;
     slug: string;
+    colors?: any[];
   };
   custom_product_requests?: {
     id: string;
@@ -31,7 +32,7 @@ interface CartContextType {
   loading: boolean;
   itemCount: number;
   total: number;
-  addToCart: (productId: string, optionId?: string) => Promise<void>;
+  addToCart: (productId: string, optionId?: string, color?: string) => Promise<void>;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
@@ -61,6 +62,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           product_id,
           custom_request_id,
           quantity,
+          product_option_id,
+          selected_color,
           products (
             id,
             name,
@@ -68,7 +71,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             price,
             original_price,
             image_url,
-            slug
+            slug,
+            colors
           ),
           custom_product_requests (
             id,
@@ -95,17 +99,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     fetchCart();
   }, [user]);
 
-  const addToCart = async (productId: string, optionId?: string) => {
+  const addToCart = async (productId: string, optionId?: string, color?: string) => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
 
     try {
-      // Check if item with same product and option already exists
+      // Check if item with same product, option, and color already exists
       const existingItem = items.find(item => 
         item.product_id === productId && 
-        (item as any).product_option_id === (optionId || null)
+        (item as any).product_option_id === (optionId || null) &&
+        (item as any).selected_color === (color || null)
       );
       
       if (existingItem) {
@@ -121,6 +126,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       if (optionId) {
         insertData.product_option_id = optionId;
+      }
+      
+      if (color) {
+        insertData.selected_color = color;
       }
 
       const { error } = await supabase

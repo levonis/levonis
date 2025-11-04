@@ -22,6 +22,7 @@ export type Database = {
           product_id: string | null
           product_option_id: string | null
           quantity: number
+          selected_color: string | null
           updated_at: string | null
           user_id: string
         }
@@ -32,6 +33,7 @@ export type Database = {
           product_id?: string | null
           product_option_id?: string | null
           quantity?: number
+          selected_color?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -42,6 +44,7 @@ export type Database = {
           product_id?: string | null
           product_option_id?: string | null
           quantity?: number
+          selected_color?: string | null
           updated_at?: string | null
           user_id?: string
         }

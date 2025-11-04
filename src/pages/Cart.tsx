@@ -27,6 +27,25 @@ const Cart = () => {
     enabled: !!user?.id
   });
 
+  const { data: productOptions } = useQuery({
+    queryKey: ['cart-product-options'],
+    queryFn: async () => {
+      const optionIds = items
+        .map((item: any) => item.product_option_id)
+        .filter((id: string | null) => id !== null);
+      
+      if (optionIds.length === 0) return [];
+      
+      const { data } = await supabase
+        .from('product_options')
+        .select('*')
+        .in('id', optionIds);
+      
+      return data || [];
+    },
+    enabled: items.length > 0
+  });
+
   const getDeliveryFee = (governorate: string | null) => {
     if (!governorate) return 6000;
     if (governorate.toLowerCase().includes('بغداد') || governorate.toLowerCase().includes('baghdad')) {
@@ -80,7 +99,24 @@ const Cart = () => {
           ? Number(item.custom_product_requests?.suggested_price || 0)
           : Number(item.products?.price || 0);
         
+        // Get option name if exists
+        const itemOption = (item as any).product_option_id 
+          ? productOptions?.find((opt: any) => opt.id === (item as any).product_option_id)
+          : null;
+        
+        // Get color name if exists
+        const itemColor = (item as any).selected_color;
+        const colorData = itemColor && item.products?.colors
+          ? (item.products.colors as any[]).find((c: any) => c.name === itemColor)
+          : null;
+        
         message += `${index + 1}. ${itemName}${isCustomRequest ? ' ⭐ (طلب خاص)' : ''}\n`;
+        if (itemOption) {
+          message += `   الخيار: ${itemOption.name_ar}\n`;
+        }
+        if (colorData) {
+          message += `   اللون: ${colorData.name_ar}\n`;
+        }
         message += `   الكمية: ${item.quantity}\n`;
         message += `   السعر: ${formatPrice(itemPrice)} دينار عراقي\n`;
         message += `   المجموع: ${formatPrice(itemPrice * item.quantity)} دينار عراقي\n\n`;
@@ -161,100 +197,135 @@ const Cart = () => {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {items.map((item) => (
-                <div 
-                  key={item.id}
-                  className="glass-effect rounded-2xl p-4 border border-border/50 group hover:border-primary/30 transition-all"
-                >
-                  <div className="flex gap-4">
-                    {/* Product Image */}
-                    {((item.products?.image_url) || (item.custom_product_requests?.image_url)) && (
-                      <div className="flex-shrink-0">
-                        <img 
-                          src={item.products?.image_url || item.custom_product_requests?.image_url || ''}
-                          alt={item.products?.name_ar || item.custom_product_requests?.product_name || ''}
-                          className="w-24 h-24 object-cover rounded-xl border border-border/40"
-                        />
-                      </div>
-                    )}
-                    
-                    {/* Product Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="font-bold text-lg text-foreground mb-1 flex items-center gap-2">
-                        {item.products?.name_ar || item.custom_product_requests?.product_name}
-                        {item.custom_request_id && (
-                          <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                            طلب خاص ⭐
-                          </span>
-                        )}
-                      </div>
+              {items.map((item) => {
+                const itemOption = (item as any).product_option_id 
+                  ? productOptions?.find((opt: any) => opt.id === (item as any).product_option_id)
+                  : null;
+                
+                const itemColor = (item as any).selected_color;
+                const colorData = itemColor && item.products?.colors
+                  ? (item.products.colors as any[]).find((c: any) => c.name === itemColor)
+                  : null;
+                
+                return (
+                  <div 
+                    key={item.id}
+                    className="glass-effect rounded-2xl p-4 border border-border/50 group hover:border-primary/30 transition-all"
+                  >
+                    <div className="flex gap-4">
+                      {/* Product Image */}
+                      {((item.products?.image_url) || (item.custom_product_requests?.image_url)) && (
+                        <div className="flex-shrink-0">
+                          <img 
+                            src={item.products?.image_url || item.custom_product_requests?.image_url || ''}
+                            alt={item.products?.name_ar || item.custom_product_requests?.product_name || ''}
+                            className="w-24 h-24 object-cover rounded-xl border border-border/40"
+                          />
+                        </div>
+                      )}
                       
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xl font-black text-primary">
-                          {item.products 
-                            ? formatPrice(Number(item.products.price))
-                            : formatPrice(Number(item.custom_product_requests?.suggested_price || 0))
-                          } دينار عراقي
-                        </span>
-                        {item.products?.original_price && item.products.original_price > item.products.price && (
-                          <span className="text-sm line-through text-muted-foreground/60">
-                            {formatPrice(Number(item.products.original_price))} دينار عراقي
-                          </span>
+                      {/* Product Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-lg text-foreground mb-1 flex items-center gap-2">
+                          {item.products?.name_ar || item.custom_product_requests?.product_name}
+                          {item.custom_request_id && (
+                            <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                              طلب خاص ⭐
+                            </span>
+                          )}
+                        </div>
+                        
+                        {/* Display option and color info */}
+                        {(itemOption || colorData) && (
+                          <div className="text-sm text-muted-foreground mb-2 space-y-1">
+                            {itemOption && (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">الخيار:</span>
+                                <span>{itemOption.name_ar}</span>
+                              </div>
+                            )}
+                            {colorData && (
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">اللون:</span>
+                                <div className="flex items-center gap-1.5">
+                                  <div 
+                                    className="w-4 h-4 rounded-full border border-border"
+                                    style={{ backgroundColor: colorData.hex_code }}
+                                  />
+                                  <span>{colorData.name_ar}</span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
-                      </div>
-
-                      {/* Quantity Controls */}
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 border border-border/40">
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            disabled={item.quantity <= 1}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          
-                          <span className="w-8 text-center font-bold">
-                            {item.quantity}
+                        
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-xl font-black text-primary">
+                            {item.products 
+                              ? formatPrice(Number(item.products.price))
+                              : formatPrice(Number(item.custom_product_requests?.suggested_price || 0))
+                            } دينار عراقي
                           </span>
-                          
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
+                          {item.products?.original_price && item.products.original_price > item.products.price && (
+                            <span className="text-sm line-through text-muted-foreground/60">
+                              {formatPrice(Number(item.products.original_price))} دينار عراقي
+                            </span>
+                          )}
                         </div>
 
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => removeFromCart(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4 ml-2" />
-                          حذف
-                        </Button>
-                      </div>
-                    </div>
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 border border-border/40">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              disabled={item.quantity <= 1}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            
+                            <span className="w-8 text-center font-bold">
+                              {item.quantity}
+                            </span>
+                            
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
 
-                    {/* Item Total */}
-                    <div className="text-left">
-                      <div className="text-sm text-muted-foreground mb-1">المجموع</div>
-                      <div className="text-xl font-black text-primary">
-                        {item.products 
-                          ? formatPrice(Number(item.products.price) * item.quantity)
-                          : formatPrice(Number(item.custom_product_requests?.suggested_price || 0) * item.quantity)
-                        } دينار عراقي
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => removeFromCart(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4 ml-2" />
+                            حذف
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Item Total */}
+                      <div className="text-left">
+                        <div className="text-sm text-muted-foreground mb-1">المجموع</div>
+                        <div className="text-xl font-black text-primary">
+                          {item.products 
+                            ? formatPrice(Number(item.products.price) * item.quantity)
+                            : formatPrice(Number(item.custom_product_requests?.suggested_price || 0) * item.quantity)
+                          } دينار عراقي
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               {/* Clear Cart Button */}
               <Button
