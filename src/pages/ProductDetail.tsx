@@ -153,9 +153,6 @@ const ProductDetail = () => {
     );
   }
 
-  const hasSale = product.original_price && Number(product.original_price) > Number(product.price);
-  const savings = hasSale ? Number(product.original_price) - Number(product.price) : 0;
-  
   const productImages = product.images && product.images.length > 0 
     ? product.images 
     : product.image_url 
@@ -164,15 +161,29 @@ const ProductDetail = () => {
   
   const currency = product.currency || 'دينار عراقي';
 
-  // Calculate final price based on selected option
+  // السعر النهائي بحسب اللون والخيار
   const selectedOptionData = productOptions?.find((opt: any) => opt.id === selectedOption);
-  const finalPrice = selectedOptionData 
-    ? Number(product.price) + Number(selectedOptionData.price_adjustment)
+  const selectedColorData = Array.isArray(product.colors)
+    ? (product.colors as any[]).find((c: any) => c.name === selectedColor)
+    : null;
+
+  const basePrice = selectedColorData?.price != null
+    ? Number(selectedColorData.price)
     : Number(product.price);
 
-  const finalOriginalPrice = selectedOptionData && product.original_price
-    ? Number(product.original_price) + Number(selectedOptionData.price_adjustment)
-    : product.original_price ? Number(product.original_price) : null;
+  const optionAdjustment = selectedOptionData ? Number(selectedOptionData.price_adjustment) : 0;
+  const finalPrice = basePrice + optionAdjustment;
+
+  // اضبط السعر الأصلي ليتماشى مع فرق سعر اللون إن وُجد، ثم أضف فرق الخيار
+  let finalOriginalPrice: number | null = null;
+  if (product.original_price != null) {
+    const productOriginal = Number(product.original_price);
+    const colorDelta = selectedColorData?.price != null ? (Number(selectedColorData.price) - Number(product.price)) : 0;
+    finalOriginalPrice = productOriginal + colorDelta + optionAdjustment;
+  }
+
+  const hasSale = finalOriginalPrice != null && finalOriginalPrice > finalPrice;
+  const savings = hasSale && finalOriginalPrice != null ? (finalOriginalPrice - finalPrice) : 0;
 
   const handleAddToCart = () => {
     // Check if product has options and none selected
@@ -251,7 +262,7 @@ const ProductDetail = () => {
                       <Badge 
                         className="absolute top-4 left-4 bg-primary text-primary-foreground text-lg px-4 py-2"
                       >
-                        خصم {Math.round((savings / Number(product.original_price!)) * 100)}%
+                        خصم {finalOriginalPrice ? Math.round((savings / Number(finalOriginalPrice)) * 100) : Math.round((savings / Number(product.original_price!)) * 100)}%
                       </Badge>
                     )}
                     {!product.in_stock && (
