@@ -40,8 +40,8 @@ const Home = () => {
     <div className="min-h-screen relative overflow-hidden bg-background"
          style={{
            backgroundImage: 'url(/images/ornamental-frame.png)',
-           backgroundSize: 'contain',
-           backgroundPosition: 'center',
+           backgroundSize: '100% 100%',
+           backgroundPosition: 'top center',
            backgroundRepeat: 'no-repeat'
          }}>
       
