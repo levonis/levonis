@@ -5,7 +5,7 @@ const Header = () => {
   return (
     <>
       <TopBar />
-      <nav className="bg-background/50 backdrop-blur-sm border-b border-border/30 sticky top-[73px] z-40">
+      <nav className="bg-background/50 backdrop-blur-sm border-b border-border/30 sticky top-0 z-40 mt-20">
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-center gap-8">
             <Link 

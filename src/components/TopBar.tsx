@@ -29,10 +29,10 @@ const TopBar = () => {
   }, []);
 
   return (
-    <div className={`sticky top-0 z-50 border-b relative overflow-hidden transition-all duration-500 ${
+    <div className={`z-50 border-b relative overflow-hidden transition-all duration-500 ${
       isScrolled 
-        ? 'bg-background/10 backdrop-blur-3xl border-border/40 shadow-2xl' 
-        : 'bg-background/70 backdrop-blur-md border-border/30'
+        ? 'fixed top-0 left-0 right-0 bg-background/95 backdrop-blur-3xl border-border/40 shadow-2xl' 
+        : 'absolute top-4 left-4 right-4 bg-background/70 backdrop-blur-md border-border/30 rounded-2xl'
     }`}>
       {/* Animated decorative line */}
       <div className="absolute top-0 left-0 w-full h-px overflow-hidden">
