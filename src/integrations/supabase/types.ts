@@ -56,6 +56,7 @@ export type Database = {
           description_ar: string | null
           icon: string
           id: string
+          main_section_id: string | null
           name: string
           name_ar: string
           slug: string
@@ -66,6 +67,7 @@ export type Database = {
           description_ar?: string | null
           icon: string
           id?: string
+          main_section_id?: string | null
           name: string
           name_ar: string
           slug: string
@@ -76,11 +78,20 @@ export type Database = {
           description_ar?: string | null
           icon?: string
           id?: string
+          main_section_id?: string | null
           name?: string
           name_ar?: string
           slug?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "categories_main_section_id_fkey"
+            columns: ["main_section_id"]
+            isOneToOne: false
+            referencedRelation: "main_sections"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       custom_product_requests: {
         Row: {
@@ -118,6 +129,33 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      main_sections: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          name: string
+          name_ar: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name: string
+          name_ar: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          name?: string
+          name_ar?: string
+          updated_at?: string
         }
         Relationships: []
       }

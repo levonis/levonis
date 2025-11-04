@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Plus, Pencil, Trash2, FolderOpen } from 'lucide-react';
 import { z } from 'zod';
+import AdminMainSections from './AdminMainSections';
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -35,6 +36,13 @@ const categorySchema = z.object({
   icon: z.string().min(1, 'الأيقونة مطلوبة'),
   description_ar: z.string().optional(),
   description: z.string().optional(),
+  main_section_id: z.string().uuid().optional(),
+});
+
+const mainSectionSchema = z.object({
+  name_ar: z.string().min(1, 'الاسم بالعربي مطلوب'),
+  name: z.string().min(1, 'الاسم بالإنجليزي مطلوب'),
+  display_order: z.number().min(0, 'ترتيب العرض يجب أن يكون صفر أو أكبر'),
 });
 
 const Admin = () => {
@@ -43,8 +51,10 @@ const Admin = () => {
   const queryClient = useQueryClient();
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [mainSectionDialogOpen, setMainSectionDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [editingMainSection, setEditingMainSection] = useState<any>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -72,7 +82,20 @@ const Admin = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('categories')
-        .select('*');
+        .select('*, main_sections(name_ar)');
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: mainSections } = useQuery({
+    queryKey: ['main-sections'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('main_sections')
+        .select('*')
+        .order('display_order', { ascending: true });
       
       if (error) throw error;
       return data;
@@ -203,6 +226,65 @@ const Admin = () => {
     }
   });
 
+  const createMainSection = useMutation({
+    mutationFn: async (values: any) => {
+      const { error } = await supabase
+        .from('main_sections')
+        .insert([values]);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['main-sections'] });
+      toast.success('تم إضافة القسم الرئيسي بنجاح');
+      setMainSectionDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ أثناء إضافة القسم الرئيسي');
+      console.error(error);
+    }
+  });
+
+  const updateMainSection = useMutation({
+    mutationFn: async ({ id, values }: { id: string, values: any }) => {
+      const { error } = await supabase
+        .from('main_sections')
+        .update(values)
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['main-sections'] });
+      toast.success('تم تحديث القسم الرئيسي بنجاح');
+      setMainSectionDialogOpen(false);
+      setEditingMainSection(null);
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ أثناء تحديث القسم الرئيسي');
+      console.error(error);
+    }
+  });
+
+  const deleteMainSection = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('main_sections')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['main-sections'] });
+      toast.success('تم حذف القسم الرئيسي بنجاح');
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ أثناء حذف القسم الرئيسي');
+      console.error(error);
+    }
+  });
+
   const handleProductSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -251,12 +333,36 @@ const Admin = () => {
         icon: formData.get('icon') as string,
         description_ar: formData.get('description_ar') as string || undefined,
         description: formData.get('description') as string || undefined,
+        main_section_id: formData.get('main_section_id') as string || undefined,
       });
 
       if (editingCategory) {
         updateCategory.mutate({ id: editingCategory.id, values });
       } else {
         createCategory.mutate(values);
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      }
+    }
+  };
+
+  const handleMainSectionSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    
+    try {
+      const values = mainSectionSchema.parse({
+        name_ar: formData.get('name_ar') as string,
+        name: formData.get('name') as string,
+        display_order: Number(formData.get('display_order')),
+      });
+
+      if (editingMainSection) {
+        updateMainSection.mutate({ id: editingMainSection.id, values });
+      } else {
+        createMainSection.mutate(values);
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -299,6 +405,10 @@ const Admin = () => {
             <TabsTrigger value="categories" className="gap-2">
               <FolderOpen className="h-4 w-4" />
               الأقسام
+            </TabsTrigger>
+            <TabsTrigger value="main-sections" className="gap-2">
+              <FolderOpen className="h-4 w-4" />
+              الأقسام الرئيسية
             </TabsTrigger>
           </TabsList>
 
@@ -615,7 +725,24 @@ const Admin = () => {
                       </div>
                     </div>
 
-                    <Button 
+                    <div className="space-y-2">
+                      <Label htmlFor="main_section_id">القسم الرئيسي</Label>
+                      <select
+                        id="main_section_id"
+                        name="main_section_id"
+                        defaultValue={editingCategory?.main_section_id || ''}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        <option value="">بدون قسم رئيسي</option>
+                        {mainSections?.map((section) => (
+                          <option key={section.id} value={section.id}>
+                            {section.name_ar}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <Button
                       type="submit" 
                       className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
                       disabled={createCategory.isPending || updateCategory.isPending}
@@ -638,6 +765,7 @@ const Admin = () => {
                     <TableHead>الاسم بالعربي</TableHead>
                     <TableHead>الاسم بالإنجليزي</TableHead>
                     <TableHead>الرابط</TableHead>
+                    <TableHead>القسم الرئيسي</TableHead>
                     <TableHead className="text-left">الإجراءات</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -648,6 +776,7 @@ const Admin = () => {
                       <TableCell className="font-medium">{category.name_ar}</TableCell>
                       <TableCell>{category.name}</TableCell>
                       <TableCell className="text-muted-foreground">{category.slug}</TableCell>
+                      <TableCell>{(category as any).main_sections?.name_ar || '-'}</TableCell>
                       <TableCell className="text-left">
                         <div className="flex gap-2 justify-end">
                           <Button
@@ -678,6 +807,20 @@ const Admin = () => {
                 </TableBody>
               </Table>
             </div>
+          </TabsContent>
+
+          <TabsContent value="main-sections">
+            <AdminMainSections
+              mainSections={mainSections}
+              mainSectionDialogOpen={mainSectionDialogOpen}
+              setMainSectionDialogOpen={setMainSectionDialogOpen}
+              editingMainSection={editingMainSection}
+              setEditingMainSection={setEditingMainSection}
+              handleMainSectionSubmit={handleMainSectionSubmit}
+              createMainSection={createMainSection}
+              updateMainSection={updateMainSection}
+              deleteMainSection={deleteMainSection}
+            />
           </TabsContent>
         </Tabs>
       </main>
