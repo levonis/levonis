@@ -163,9 +163,18 @@ const Admin = () => {
       if (error) throw error;
     },
     onSuccess: () => {
+      // Invalidate all product-related queries across the app
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey as unknown[];
+          return Array.isArray(k) && (
+            k[0] === 'products' ||
+            k[0] === 'featured-products' ||
+            k[0] === 'category-products'
+          );
+        },
+      });
       toast.success('تم إضافة المنتج بنجاح');
       setProductDialogOpen(false);
     },
@@ -186,8 +195,16 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey as unknown[];
+          return Array.isArray(k) && (
+            k[0] === 'products' ||
+            k[0] === 'featured-products' ||
+            k[0] === 'category-products'
+          );
+        },
+      });
       toast.success('تم تحديث المنتج بنجاح');
       setProductDialogOpen(false);
       setEditingProduct(null);
@@ -209,8 +226,16 @@ const Admin = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-      queryClient.invalidateQueries({ queryKey: ['featured-products'] });
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey as unknown[];
+          return Array.isArray(k) && (
+            k[0] === 'products' ||
+            k[0] === 'featured-products' ||
+            k[0] === 'category-products'
+          );
+        },
+      });
       toast.success('تم حذف المنتج بنجاح');
     },
     onError: (error) => {
@@ -228,7 +253,16 @@ const Admin = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey as unknown[];
+          return Array.isArray(k) && (
+            k[0] === 'categories' ||
+            k[0] === 'category' ||
+            k[0] === 'category-products'
+          );
+        },
+      });
       toast.success('تم إضافة القسم بنجاح');
       setCategoryDialogOpen(false);
     },
@@ -248,7 +282,16 @@ const Admin = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey as unknown[];
+          return Array.isArray(k) && (
+            k[0] === 'categories' ||
+            k[0] === 'category' ||
+            k[0] === 'category-products'
+          );
+        },
+      });
       toast.success('تم تحديث القسم بنجاح');
       setCategoryDialogOpen(false);
       setEditingCategory(null);
@@ -269,7 +312,16 @@ const Admin = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey as unknown[];
+          return Array.isArray(k) && (
+            k[0] === 'categories' ||
+            k[0] === 'category' ||
+            k[0] === 'category-products'
+          );
+        },
+      });
       toast.success('تم حذف القسم بنجاح');
     },
     onError: (error) => {
