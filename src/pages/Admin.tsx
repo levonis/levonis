@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Loader2, Plus, Pencil, Trash2, FolderOpen } from 'lucide-react';
 import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
+import AdminCustomRequests from './AdminCustomRequests';
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -100,6 +101,20 @@ const Admin = () => {
       if (error) throw error;
       return data;
     }
+  });
+
+  const { data: customRequests, isLoading: requestsLoading, refetch: refetchRequests } = useQuery({
+    queryKey: ['custom-requests'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('custom_product_requests')
+        .select('*, profiles(email)')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin
   });
 
   const createProduct = useMutation({
@@ -409,6 +424,10 @@ const Admin = () => {
             <TabsTrigger value="main-sections" className="gap-2">
               <FolderOpen className="h-4 w-4" />
               الأقسام الرئيسية
+            </TabsTrigger>
+            <TabsTrigger value="custom-requests" className="gap-2">
+              <FolderOpen className="h-4 w-4" />
+              الطلبات المخصصة
             </TabsTrigger>
           </TabsList>
 
@@ -820,6 +839,14 @@ const Admin = () => {
               createMainSection={createMainSection}
               updateMainSection={updateMainSection}
               deleteMainSection={deleteMainSection}
+            />
+          </TabsContent>
+
+          <TabsContent value="custom-requests">
+            <AdminCustomRequests
+              requests={customRequests}
+              isLoading={requestsLoading}
+              refetch={refetchRequests}
             />
           </TabsContent>
         </Tabs>

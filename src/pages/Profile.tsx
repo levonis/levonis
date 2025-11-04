@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, User, Mail, Calendar, Shield } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, User, Mail, Calendar, Shield, Package } from 'lucide-react';
 import { toast } from 'sonner';
 
 const Profile = () => {
@@ -52,6 +55,23 @@ const Profile = () => {
     }
   };
 
+  const { data: customRequests, isLoading: requestsLoading } = useQuery({
+    queryKey: ['my-custom-requests', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      
+      const { data, error } = await supabase
+        .from('custom_product_requests')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -95,13 +115,19 @@ const Profile = () => {
         </svg>
       </div>
 
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-2xl">
+      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
         <div className="mb-8">
           <h1 className="text-4xl font-black text-primary mb-2">الملف الشخصي</h1>
-          <p className="text-muted-foreground">إدارة معلومات حسابك</p>
+          <p className="text-muted-foreground">إدارة معلومات حسابك وطلباتك</p>
         </div>
 
-        <div className="space-y-6">
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="profile">معلومات الحساب</TabsTrigger>
+            <TabsTrigger value="requests">طلباتي المخصصة</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="profile" className="space-y-6">
           {/* User Info Card */}
           <Card className="glass-effect border-border/50">
             <CardHeader>
@@ -206,8 +232,111 @@ const Profile = () => {
                 تغيير كلمة المرور
               </Button>
             </CardContent>
-          </Card>
-        </div>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="requests">
+            <Card className="glass-effect border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  طلباتي المخصصة
+                </CardTitle>
+                <CardDescription>
+                  جميع طلبات المنتجات المخصصة التي قمت بها
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {requestsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : customRequests && customRequests.length > 0 ? (
+                  <div className="space-y-4">
+                    {customRequests.map((request) => (
+                      <div 
+                        key={request.id}
+                        className="p-4 rounded-lg border border-border/50 bg-card/50 space-y-3"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h3 className="font-bold text-foreground mb-1">
+                              {request.product_name}
+                            </h3>
+                            <p className="text-sm text-muted-foreground mb-2">
+                              الكمية: {request.quantity}
+                            </p>
+                            <a 
+                              href={request.product_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary hover:underline block truncate"
+                            >
+                              رابط المنتج
+                            </a>
+                          </div>
+                          <Badge 
+                            variant={
+                              request.status === 'approved' ? 'default' :
+                              request.status === 'rejected' ? 'destructive' :
+                              'secondary'
+                            }
+                          >
+                            {request.status === 'pending' && 'قيد الانتظار'}
+                            {request.status === 'reviewed' && 'تمت المراجعة'}
+                            {request.status === 'approved' && 'موافق عليه'}
+                            {request.status === 'rejected' && 'مرفوض'}
+                          </Badge>
+                        </div>
+
+                        {request.image_url && (
+                          <img 
+                            src={request.image_url}
+                            alt={request.product_name}
+                            className="w-full h-40 object-cover rounded-lg"
+                          />
+                        )}
+
+                        {request.description && (
+                          <p className="text-sm text-muted-foreground">
+                            {request.description}
+                          </p>
+                        )}
+
+                        {request.suggested_price && (
+                          <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
+                            <span className="text-sm font-medium">السعر المقترح:</span>
+                            <span className="text-lg font-black text-primary">
+                              {Number(request.suggested_price).toFixed(2)} ریال
+                            </span>
+                          </div>
+                        )}
+
+                        {request.admin_notes && (
+                          <div className="p-3 rounded-lg bg-muted/50 border border-border/30">
+                            <p className="text-sm font-medium mb-1">ملاحظات الإدارة:</p>
+                            <p className="text-sm text-muted-foreground">
+                              {request.admin_notes}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="text-xs text-muted-foreground pt-2 border-t border-border/30">
+                          تاريخ الطلب: {new Date(request.created_at).toLocaleDateString('ar-SA')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Package className="h-16 w-16 text-muted-foreground/30 mx-auto mb-4" />
+                    <p className="text-muted-foreground">لم تقم بأي طلبات مخصصة بعد</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

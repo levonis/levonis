@@ -95,6 +95,7 @@ export type Database = {
       }
       custom_product_requests: {
         Row: {
+          admin_notes: string | null
           created_at: string
           description: string | null
           id: string
@@ -103,10 +104,12 @@ export type Database = {
           product_name: string
           quantity: number
           status: string
+          suggested_price: number | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          admin_notes?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -115,10 +118,12 @@ export type Database = {
           product_name: string
           quantity?: number
           status?: string
+          suggested_price?: number | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          admin_notes?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -127,6 +132,7 @@ export type Database = {
           product_name?: string
           quantity?: number
           status?: string
+          suggested_price?: number | null
           updated_at?: string
           user_id?: string
         }
