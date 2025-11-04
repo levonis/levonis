@@ -1,34 +1,82 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
 import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import { Loader2 } from 'lucide-react';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination';
 
 const Products = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 24;
 
-  const { data: products, isLoading } = useQuery({
-    queryKey: ['products', searchQuery],
+  const { data: productsData, isLoading } = useQuery({
+    queryKey: ['products', searchQuery, currentPage],
     queryFn: async () => {
+      const from = (currentPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+
       let query = supabase
         .from('products')
-        .select('*')
+        .select('*', { count: 'exact' })
         .eq('in_stock', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
       if (searchQuery) {
         query = query.or(`name_ar.ilike.%${searchQuery}%,description_ar.ilike.%${searchQuery}%`);
       }
       
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       
       if (error) throw error;
-      return data;
+      return { products: data, totalCount: count || 0 };
     }
   });
+
+  const products = productsData?.products || [];
+  const totalPages = Math.ceil((productsData?.totalCount || 0) / ITEMS_PER_PAGE);
+
+  const renderPageNumbers = () => {
+    const pages = [];
+    const showEllipsisStart = currentPage > 3;
+    const showEllipsisEnd = currentPage < totalPages - 2;
+
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 5; i++) pages.push(i);
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('ellipsis');
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('ellipsis');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push('ellipsis');
+        pages.push(totalPages);
+      }
+    }
+    return pages;
+  };
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
@@ -53,7 +101,7 @@ const Products = () => {
               نتائج البحث عن: <span className="text-foreground">{searchQuery}</span>
             </h2>
             <p className="text-muted-foreground mt-1">
-              {products?.length || 0} منتج
+              {productsData?.totalCount || 0} منتج
             </p>
           </div>
         )}
@@ -84,6 +132,45 @@ const Products = () => {
         ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">لم يتم العثور على منتجات</p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="mt-12 mb-8">
+            <Pagination dir="ltr">
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-primary/10'}
+                  />
+                </PaginationItem>
+
+                {renderPageNumbers().map((page, index) => (
+                  <PaginationItem key={index}>
+                    {page === 'ellipsis' ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page as number)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                ))}
+
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                    className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer hover:bg-primary/10'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
           </div>
         )}
       </main>
