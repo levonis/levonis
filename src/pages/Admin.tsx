@@ -495,7 +495,7 @@ const Admin = () => {
                     <DialogTitle>{editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}</DialogTitle>
                   </DialogHeader>
                   
-                  <form onSubmit={handleProductSubmit} className="space-y-4">
+                  <form key={editingProduct?.id || 'new'} onSubmit={handleProductSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name_ar">الاسم بالعربي *</Label>
@@ -720,7 +720,7 @@ const Admin = () => {
                     <DialogTitle>{editingCategory ? 'تعديل القسم' : 'إضافة قسم جديد'}</DialogTitle>
                   </DialogHeader>
                   
-                  <form onSubmit={handleCategorySubmit} className="space-y-4">
+                  <form key={editingCategory?.id || 'new'} onSubmit={handleCategorySubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="cat_name_ar">الاسم بالعربي *</Label>

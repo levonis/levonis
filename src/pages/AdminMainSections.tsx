@@ -48,7 +48,7 @@ const AdminMainSections = ({
               <DialogTitle>{editingMainSection ? 'تعديل القسم الرئيسي' : 'إضافة قسم رئيسي جديد'}</DialogTitle>
             </DialogHeader>
             
-            <form onSubmit={handleMainSectionSubmit} className="space-y-4">
+            <form key={editingMainSection?.id || 'new'} onSubmit={handleMainSectionSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name_ar">الاسم بالعربي *</Label>
                 <Input 
