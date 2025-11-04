@@ -165,10 +165,10 @@ const CategoryDetail = () => {
                 <p className="text-muted-foreground text-lg mb-6">
                   لا توجد منتجات متاحة في هذا القسم حالياً
                 </p>
-                <Link to="/categories">
+                <Link to="/">
                   <Button variant="outline" className="gap-2">
                     <ArrowRight className="h-4 w-4" />
-                    تصفح الأقسام الأخرى
+                    تصفح المنتجات
                   </Button>
                 </Link>
               </div>
