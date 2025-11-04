@@ -2,10 +2,80 @@ import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/hooks/useCart';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const handleCheckout = async () => {
+    if (!user) {
+      toast({
+        title: "يجب تسجيل الدخول",
+        description: "الرجاء تسجيل الدخول أولاً لإتمام الطلب",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Get user profile information
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('full_name, phone_number, governorate')
+        .eq('id', user.id)
+        .single();
+
+      if (error || !profile) {
+        toast({
+          title: "خطأ",
+          description: "لم نتمكن من الحصول على معلومات الملف الشخصي",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Build WhatsApp message
+      let message = `مرحباً، أريد إتمام طلب:\n\n`;
+      message += `📦 *المنتجات:*\n`;
+      
+      items.forEach((item, index) => {
+        message += `${index + 1}. ${item.products.name_ar}\n`;
+        message += `   الكمية: ${item.quantity}\n`;
+        message += `   السعر: ${Number(item.products.price).toFixed(2)} ريال\n`;
+        message += `   المجموع: ${(Number(item.products.price) * item.quantity).toFixed(2)} ريال\n\n`;
+      });
+
+      message += `\n👤 *معلومات المشتري:*\n`;
+      message += `الاسم: ${profile.full_name || 'غير محدد'}\n`;
+      message += `رقم الهاتف: ${profile.phone_number || 'غير محدد'}\n`;
+      message += `المحافظة: ${profile.governorate || 'غير محددة'}\n\n`;
+      
+      message += `💰 *ملخص الطلب:*\n`;
+      message += `المجموع الفرعي: ${total.toFixed(2)} ريال\n`;
+      message += `التوصيل: مجاني\n`;
+      message += `الإجمالي: ${total.toFixed(2)} ريال`;
+
+      // Encode the message for URL
+      const encodedMessage = encodeURIComponent(message);
+      const whatsappURL = `https://wa.me/9647838455220?text=${encodedMessage}`;
+      
+      // Open WhatsApp in new window
+      window.open(whatsappURL, '_blank');
+      
+    } catch (error) {
+      console.error('Error during checkout:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إتمام الطلب",
+        variant: "destructive",
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -183,6 +253,7 @@ const Cart = () => {
                 <Button 
                   className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 mb-3"
                   size="lg"
+                  onClick={handleCheckout}
                 >
                   إتمام الطلب
                 </Button>
