@@ -129,7 +129,7 @@ const Favorites = () => {
               <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
               <h3 className="text-xl font-bold text-foreground mb-2">لا توجد منتجات مفضلة</h3>
               <p className="text-muted-foreground mb-6">ابدأ بإضافة منتجات لمفضلتك</p>
-              <Button onClick={() => navigate('/products')}>
+              <Button onClick={() => navigate('/')}>
                 تصفح المنتجات
               </Button>
             </CardContent>
