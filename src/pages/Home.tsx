@@ -37,13 +37,24 @@ const Home = () => {
   });
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-background"
-         style={{
-           backgroundImage: 'url(/images/ornamental-frame.png)',
-           backgroundSize: '100% 100%',
-           backgroundPosition: 'top center',
-           backgroundRepeat: 'no-repeat'
-         }}>
+    <div className="min-h-screen relative overflow-hidden bg-background">
+      {/* Fixed decorative frame with floating effects */}
+      <div 
+        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 animate-float opacity-90"
+        style={{
+          backgroundImage: 'url(/images/ornamental-frame.png)',
+          backgroundSize: '100% auto',
+          backgroundPosition: 'top center',
+          backgroundRepeat: 'repeat-y',
+          filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
+        }}
+      />
+      
+      {/* Glow effect overlay */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-ring/10 rounded-full blur-3xl animate-pulse-glow" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
+      </div>
       
       <main className="relative z-10">
         {/* Hero Section */}
