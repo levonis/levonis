@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import CategoryCard from '@/components/CategoryCard';
@@ -71,8 +70,6 @@ const Home = () => {
       <div className="fixed top-2/3 right-1/3 w-24 h-24 pointer-events-none opacity-10 animate-float" style={{ animationDelay: '3s' }}>
         <div className="w-full h-full border border-ring/30 rotate-12" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
       </div>
-      
-      <Header />
       
       <main className="relative">
         {/* Hero Section */}

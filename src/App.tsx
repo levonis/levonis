@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
+import Header from "@/components/Header";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
@@ -28,6 +29,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <CartProvider>
+            <Header />
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/products" element={<Products />} />
