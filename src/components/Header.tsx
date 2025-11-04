@@ -31,8 +31,8 @@ const Header = () => {
   return (
     <header className={`sticky top-0 z-50 border-b relative overflow-hidden transition-all duration-300 ${
       isScrolled 
-        ? 'bg-background/30 backdrop-blur-md border-border/20' 
-        : 'bg-background/60 backdrop-blur-xl border-border/30'
+        ? 'bg-background/20 backdrop-blur-2xl border-border/30 shadow-lg' 
+        : 'bg-background/40 backdrop-blur-lg border-border/20'
     }`}>
       {/* Animated decorative line */}
       <div className="absolute top-0 left-0 w-full h-px overflow-hidden">
