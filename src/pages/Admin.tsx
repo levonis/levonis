@@ -68,6 +68,11 @@ const Admin = () => {
     price_adjustment: number;
     in_stock: boolean;
   }>>([]);
+  const [productColors, setProductColors] = useState<Array<{
+    name: string;
+    name_ar: string;
+    hex_code: string;
+  }>>([]);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -458,6 +463,24 @@ const Admin = () => {
     setProductOptions(updated);
   };
 
+  const addProductColor = () => {
+    setProductColors([...productColors, {
+      name: '',
+      name_ar: '',
+      hex_code: '#000000'
+    }]);
+  };
+
+  const removeProductColor = (index: number) => {
+    setProductColors(productColors.filter((_, i) => i !== index));
+  };
+
+  const updateProductColor = (index: number, field: string, value: any) => {
+    const updated = [...productColors];
+    updated[index] = { ...updated[index], [field]: value };
+    setProductColors(updated);
+  };
+
   const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -480,6 +503,9 @@ const Admin = () => {
         category_id: formData.get('category_id') as string,
         featured: (formData.get('featured') as string) === 'on',
         in_stock: (formData.get('in_stock') as string) === 'on',
+        colors: productColors.length > 0 
+          ? productColors.filter(c => c.name_ar.trim() && c.name.trim())
+          : undefined,
       };
 
       // Validate with zod
@@ -548,6 +574,7 @@ const Admin = () => {
       setEditingProduct(null);
       setUploadedImages([]);
       setProductOptions([]);
+      setProductColors([]);
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -671,6 +698,7 @@ const Admin = () => {
                   setEditingProduct(null);
                   setUploadedImages([]);
                   setProductOptions([]);
+                  setProductColors([]);
                 } else if (editingProduct) {
                   // Load existing options when editing
                   const { data } = await supabase
@@ -685,6 +713,11 @@ const Admin = () => {
                       price_adjustment: Number(opt.price_adjustment),
                       in_stock: opt.in_stock
                     })));
+                  }
+
+                  // Load existing colors
+                  if (editingProduct.colors && Array.isArray(editingProduct.colors)) {
+                    setProductColors(editingProduct.colors);
                   }
                 }
               }}>
@@ -966,6 +999,86 @@ const Admin = () => {
                                       className="rounded"
                                     />
                                     <span className="text-sm">متاح</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Colors Section */}
+                    <div className="space-y-2 border-t pt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>الألوان (اختياري)</Label>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={addProductColor}
+                        >
+                          <Plus className="ml-1 h-3 w-3" />
+                          إضافة لون
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        أضف الألوان المتاحة للمنتج
+                      </p>
+
+                      {productColors.length > 0 && (
+                        <div className="space-y-3">
+                          {productColors.map((color, index) => (
+                            <div key={index} className="p-3 border border-border rounded-lg bg-card/50 space-y-3">
+                              <div className="flex justify-between items-start">
+                                <span className="text-sm font-medium">لون {index + 1}</span>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => removeProductColor(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              
+                              <div className="grid grid-cols-3 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">الاسم بالعربي</Label>
+                                  <Input
+                                    type="text"
+                                    value={color.name_ar}
+                                    onChange={(e) => updateProductColor(index, 'name_ar', e.target.value)}
+                                    placeholder="أحمر"
+                                    className="h-9"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">الاسم بالإنجليزي</Label>
+                                  <Input
+                                    type="text"
+                                    value={color.name}
+                                    onChange={(e) => updateProductColor(index, 'name', e.target.value)}
+                                    placeholder="Red"
+                                    className="h-9"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">الكود اللوني</Label>
+                                  <div className="flex gap-2">
+                                    <Input
+                                      type="color"
+                                      value={color.hex_code}
+                                      onChange={(e) => updateProductColor(index, 'hex_code', e.target.value)}
+                                      className="h-9 w-16 p-1"
+                                    />
+                                    <Input
+                                      type="text"
+                                      value={color.hex_code}
+                                      onChange={(e) => updateProductColor(index, 'hex_code', e.target.value)}
+                                      placeholder="#000000"
+                                      className="h-9 flex-1"
+                                    />
                                   </div>
                                 </div>
                               </div>
