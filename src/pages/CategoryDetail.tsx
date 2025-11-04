@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link } from 'react-router-dom';
-import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
 import { Loader2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -56,9 +55,7 @@ const CategoryDetail = () => {
         <div className="w-full h-full border border-primary/30 rotate-45 rounded-2xl" />
       </div>
       
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pt-24">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
           <Link to="/" className="hover:text-primary transition-colors">

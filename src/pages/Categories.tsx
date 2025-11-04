@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import Header from '@/components/Header';
 import CategoryCard from '@/components/CategoryCard';
 import { Loader2 } from 'lucide-react';
 
@@ -25,9 +24,7 @@ const Categories = () => {
         <div className="w-full h-full border border-ring/30 rotate-45 rounded-xl" />
       </div>
       
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-8">
           <h1 className="text-4xl font-black text-primary mb-2">جميع الأقسام</h1>
           <p className="text-muted-foreground">تصفح الأقسام المختلفة للمنتجات</p>

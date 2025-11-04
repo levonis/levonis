@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
-import Header from '@/components/Header';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import { Loader2 } from 'lucide-react';
@@ -88,9 +87,7 @@ const Products = () => {
         </svg>
       </div>
       
-      <Header />
-      
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-8">
           <SearchBar />
         </div>
