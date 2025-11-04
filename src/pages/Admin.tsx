@@ -110,7 +110,7 @@ const Admin = () => {
       console.log('Fetching custom requests, isAdmin:', isAdmin);
       const { data, error } = await supabase
         .from('custom_product_requests')
-        .select('*, profiles(email)')
+        .select('*')
         .order('created_at', { ascending: false });
       
       if (error) {

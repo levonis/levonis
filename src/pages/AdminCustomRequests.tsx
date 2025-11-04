@@ -115,7 +115,7 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
           <TableBody>
             {requests?.map((request) => (
               <TableRow key={request.id}>
-                <TableCell>{(request as any).profiles?.email || 'غير متوفر'}</TableCell>
+                <TableCell>{(request as any).profiles?.email || (request.user_id ? `${request.user_id.slice(0,8)}...` : 'غير متوفر')}</TableCell>
                 <TableCell className="font-medium max-w-[200px] truncate">
                   {request.product_name}
                 </TableCell>
