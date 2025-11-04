@@ -38,15 +38,38 @@ const Home = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-background">
-      {/* Fixed decorative frame with floating effects */}
+      {/* Top decorative corners - fixed */}
       <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 animate-float opacity-90"
+        className="fixed top-0 left-0 right-0 h-64 pointer-events-none z-0 opacity-90"
         style={{
           backgroundImage: 'url(/images/ornamental-frame.png)',
-          backgroundSize: '100% auto',
+          backgroundSize: 'contain',
           backgroundPosition: 'top center',
-          backgroundRepeat: 'repeat-y',
+          backgroundRepeat: 'no-repeat',
           filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
+        }}
+      />
+      
+      {/* Side columns - extended */}
+      <div 
+        className="fixed top-64 left-0 bottom-0 w-32 pointer-events-none z-0 opacity-90"
+        style={{
+          backgroundImage: 'url(/images/ornamental-frame.png)',
+          backgroundSize: '200% auto',
+          backgroundPosition: 'left center',
+          backgroundRepeat: 'repeat-y',
+          filter: 'drop-shadow(0 0 15px rgba(212, 175, 55, 0.2))',
+        }}
+      />
+      
+      <div 
+        className="fixed top-64 right-0 bottom-0 w-32 pointer-events-none z-0 opacity-90"
+        style={{
+          backgroundImage: 'url(/images/ornamental-frame.png)',
+          backgroundSize: '200% auto',
+          backgroundPosition: 'right center',
+          backgroundRepeat: 'repeat-y',
+          filter: 'drop-shadow(0 0 15px rgba(212, 175, 55, 0.2))',
         }}
       />
       
