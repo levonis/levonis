@@ -26,7 +26,7 @@ const Products = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<'default' | 'price' | 'name'>('default');
+  const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc'>('default');
   const ITEMS_PER_PAGE = 24;
 
   const { data: productsData, isLoading } = useQuery({
@@ -41,10 +41,14 @@ const Products = () => {
         .eq('in_stock', true);
 
       // Apply sorting
-      if (sortBy === 'price') {
+      if (sortBy === 'price-asc') {
         query = query.order('price', { ascending: true });
-      } else if (sortBy === 'name') {
+      } else if (sortBy === 'price-desc') {
+        query = query.order('price', { ascending: false });
+      } else if (sortBy === 'name-asc') {
         query = query.order('name_ar', { ascending: true });
+      } else if (sortBy === 'name-desc') {
+        query = query.order('name_ar', { ascending: false });
       } else {
         query = query.order('created_at', { ascending: false });
       }
@@ -125,17 +129,19 @@ const Products = () => {
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <label className="text-sm text-muted-foreground whitespace-nowrap">ترتيب حسب:</label>
-            <Select value={sortBy} onValueChange={(value: 'default' | 'price' | 'name') => {
+            <Select value={sortBy} onValueChange={(value: 'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc') => {
               setSortBy(value);
               setCurrentPage(1);
             }}>
-              <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectTrigger className="w-full sm:w-[220px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="default">افتراضي</SelectItem>
-                <SelectItem value="price">السعر</SelectItem>
-                <SelectItem value="name">الاسم</SelectItem>
+                <SelectItem value="price-asc">السعر: من الأدنى للأعلى</SelectItem>
+                <SelectItem value="price-desc">السعر: من الأعلى للأدنى</SelectItem>
+                <SelectItem value="name-asc">الاسم: من A إلى Z</SelectItem>
+                <SelectItem value="name-desc">الاسم: من Z إلى A</SelectItem>
               </SelectContent>
             </Select>
           </div>
