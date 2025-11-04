@@ -6,14 +6,38 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
+
+const IRAQI_GOVERNORATES = [
+  'بغداد',
+  'البصرة',
+  'نينوى',
+  'أربيل',
+  'النجف',
+  'كربلاء',
+  'بابل',
+  'الأنبار',
+  'ديالى',
+  'ذي قار',
+  'المثنى',
+  'القادسية',
+  'ميسان',
+  'واسط',
+  'صلاح الدين',
+  'كركوك',
+  'السليمانية',
+  'دهوك',
+];
 
 const authSchema = z.object({
   email: z.string().email({ message: 'بريد إلكتروني غير صحيح' }),
   password: z.string().min(6, { message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }),
   fullName: z.string().optional(),
+  phoneNumber: z.string().regex(/^07[3-9]\d{8}$/, { message: 'رقم الهاتف يجب أن يبدأ بـ 07 ويتكون من 11 رقماً' }).optional(),
+  governorate: z.string().optional(),
 });
 
 const Auth = () => {
@@ -21,6 +45,8 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [governorate, setGovernorate] = useState('');
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -69,7 +95,13 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const validatedData = authSchema.parse({ email, password, fullName });
+      const validatedData = authSchema.parse({ 
+        email, 
+        password, 
+        fullName, 
+        phoneNumber: phoneNumber || undefined,
+        governorate: governorate || undefined
+      });
       
       const redirectUrl = `${window.location.origin}/`;
       
@@ -80,6 +112,8 @@ const Auth = () => {
           emailRedirectTo: redirectUrl,
           data: {
             full_name: validatedData.fullName || '',
+            phone_number: validatedData.phoneNumber || '',
+            governorate: validatedData.governorate || '',
           }
         }
       });
@@ -183,6 +217,39 @@ const Auth = () => {
                     onChange={(e) => setFullName(e.target.value)}
                     disabled={loading}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-phone">رقم الهاتف</Label>
+                  <Input
+                    id="signup-phone"
+                    type="tel"
+                    placeholder="07XXXXXXXXX"
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    disabled={loading}
+                    maxLength={11}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-governorate">المحافظة</Label>
+                  <Select 
+                    value={governorate} 
+                    onValueChange={setGovernorate}
+                    disabled={loading}
+                  >
+                    <SelectTrigger id="signup-governorate">
+                      <SelectValue placeholder="اختر المحافظة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {IRAQI_GOVERNORATES.map((gov) => (
+                        <SelectItem key={gov} value={gov}>
+                          {gov}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
