@@ -62,6 +62,12 @@ const Admin = () => {
   const [editingMainSection, setEditingMainSection] = useState<any>(null);
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [productOptions, setProductOptions] = useState<Array<{
+    name: string;
+    name_ar: string;
+    price_adjustment: number;
+    in_stock: boolean;
+  }>>([]);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -433,7 +439,26 @@ const Admin = () => {
     setUploadedImages(uploadedImages.filter((_, i) => i !== index));
   };
 
-  const handleProductSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const addProductOption = () => {
+    setProductOptions([...productOptions, {
+      name: '',
+      name_ar: '',
+      price_adjustment: 0,
+      in_stock: true
+    }]);
+  };
+
+  const removeProductOption = (index: number) => {
+    setProductOptions(productOptions.filter((_, i) => i !== index));
+  };
+
+  const updateProductOption = (index: number, field: string, value: any) => {
+    const updated = [...productOptions];
+    updated[index] = { ...updated[index], [field]: value };
+    setProductOptions(updated);
+  };
+
+  const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
@@ -441,32 +466,94 @@ const Admin = () => {
       const allImages = editingProduct?.images || [];
       const finalImages = [...allImages, ...uploadedImages];
 
-      const values = productSchema.parse({
+      const values = {
         name_ar: formData.get('name_ar') as string,
         name: formData.get('name') as string,
         slug: formData.get('slug') as string,
-        description_ar: formData.get('description_ar') as string || undefined,
-        description: formData.get('description') as string || undefined,
+        description_ar: (formData.get('description_ar') as string) || undefined,
+        description: (formData.get('description') as string) || undefined,
         price: Number(formData.get('price')),
         original_price: formData.get('original_price') ? Number(formData.get('original_price')) : undefined,
-        currency: formData.get('currency') as string || 'دينار عراقي',
+        currency: (formData.get('currency') as string) || 'دينار عراقي',
         images: finalImages.length > 0 ? finalImages : undefined,
         image_url: finalImages[0] || undefined,
         category_id: formData.get('category_id') as string,
         featured: (formData.get('featured') as string) === 'on',
         in_stock: (formData.get('in_stock') as string) === 'on',
-      });
+      };
+
+      // Validate with zod
+      productSchema.parse(values);
+
+      let productId = editingProduct?.id;
 
       if (editingProduct) {
-        updateProduct.mutate({ id: editingProduct.id, values });
+        await updateProduct.mutateAsync({ id: editingProduct.id, values });
       } else {
-        createProduct.mutate(values);
+        const { data, error } = await supabase
+          .from('products')
+          .insert([values as any])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        productId = data.id;
       }
+
+      // Save product options
+      if (productOptions.length > 0 && productId) {
+        // Delete existing options if editing
+        if (editingProduct) {
+          await supabase
+            .from('product_options')
+            .delete()
+            .eq('product_id', productId);
+        }
+
+        // Insert new options
+        const optionsToInsert = productOptions
+          .filter(opt => opt.name_ar.trim() && opt.name.trim())
+          .map(opt => ({
+            product_id: productId,
+            name: opt.name,
+            name_ar: opt.name_ar,
+            price_adjustment: opt.price_adjustment,
+            in_stock: opt.in_stock
+          }));
+
+        if (optionsToInsert.length > 0) {
+          const { error: optionsError } = await supabase
+            .from('product_options')
+            .insert(optionsToInsert);
+          
+          if (optionsError) throw optionsError;
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey as unknown[];
+          return Array.isArray(k) && (
+            k[0] === 'products' ||
+            k[0] === 'featured-products' ||
+            k[0] === 'category-products' ||
+            k[0] === 'product'
+          );
+        },
+      });
       
+      toast.success(editingProduct ? 'تم تحديث المنتج بنجاح' : 'تم إضافة المنتج بنجاح');
+      setProductDialogOpen(false);
+      setEditingProduct(null);
       setUploadedImages([]);
+      setProductOptions([]);
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
+      } else {
+        toast.error('حدث خطأ أثناء حفظ المنتج');
+        console.error(error);
       }
     }
   };
@@ -578,11 +665,27 @@ const Admin = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-foreground">إدارة المنتجات</h2>
               
-              <Dialog open={productDialogOpen} onOpenChange={(open) => {
+              <Dialog open={productDialogOpen} onOpenChange={async (open) => {
                 setProductDialogOpen(open);
                 if (!open) {
                   setEditingProduct(null);
                   setUploadedImages([]);
+                  setProductOptions([]);
+                } else if (editingProduct) {
+                  // Load existing options when editing
+                  const { data } = await supabase
+                    .from('product_options')
+                    .select('*')
+                    .eq('product_id', editingProduct.id);
+                  
+                  if (data) {
+                    setProductOptions(data.map(opt => ({
+                      name: opt.name,
+                      name_ar: opt.name_ar,
+                      price_adjustment: Number(opt.price_adjustment),
+                      in_stock: opt.in_stock
+                    })));
+                  }
                 }
               }}>
                 <DialogTrigger asChild>
@@ -783,7 +886,96 @@ const Admin = () => {
                       )}
                     </div>
 
-                    <Button 
+                    {/* Product Options Section */}
+                    <div className="space-y-2 border-t pt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>الخيارات (اختياري)</Label>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={addProductOption}
+                        >
+                          <Plus className="ml-1 h-3 w-3" />
+                          إضافة خيار
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        أضف خيارات للمنتج مثل السعات المختلفة (2TB، 1TB) أو الألوان
+                      </p>
+
+                      {productOptions.length > 0 && (
+                        <div className="space-y-3">
+                          {productOptions.map((option, index) => (
+                            <div key={index} className="p-3 border border-border rounded-lg bg-card/50 space-y-3">
+                              <div className="flex justify-between items-start">
+                                <span className="text-sm font-medium">خيار {index + 1}</span>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => removeProductOption(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">الاسم بالعربي</Label>
+                                  <Input
+                                    value={option.name_ar}
+                                    onChange={(e) => updateProductOption(index, 'name_ar', e.target.value)}
+                                    placeholder="2 تيرابايت"
+                                    className="h-9"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">الاسم بالإنجليزي</Label>
+                                  <Input
+                                    value={option.name}
+                                    onChange={(e) => updateProductOption(index, 'name', e.target.value)}
+                                    placeholder="2TB"
+                                    className="h-9"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">فرق السعر (+ أو -)</Label>
+                                  <Input
+                                    type="number"
+                                    step="0.01"
+                                    value={option.price_adjustment}
+                                    onChange={(e) => updateProductOption(index, 'price_adjustment', Number(e.target.value))}
+                                    placeholder="0"
+                                    className="h-9"
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    أدخل رقم موجب للإضافة أو سالب للخصم
+                                  </p>
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">الحالة</Label>
+                                  <div className="flex items-center gap-2 h-9">
+                                    <input
+                                      type="checkbox"
+                                      checked={option.in_stock}
+                                      onChange={(e) => updateProductOption(index, 'in_stock', e.target.checked)}
+                                      className="rounded"
+                                    />
+                                    <span className="text-sm">متاح</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <Button
                       type="submit" 
                       className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
                       disabled={createProduct.isPending || updateProduct.isPending}

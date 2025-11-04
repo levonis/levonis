@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +22,7 @@ const ProductDetail = () => {
   const queryClient = useQueryClient();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
@@ -34,6 +37,23 @@ const ProductDetail = () => {
       if (!data) throw new Error('Product not found');
       return data;
     }
+  });
+
+  const { data: productOptions } = useQuery({
+    queryKey: ['product-options', product?.id],
+    queryFn: async () => {
+      if (!product) return [];
+      
+      const { data, error } = await supabase
+        .from('product_options')
+        .select('*')
+        .eq('product_id', product.id)
+        .order('name_ar');
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!product
   });
 
   const { data: isFavorite, isLoading: favoriteLoading } = useQuery({
@@ -122,6 +142,16 @@ const ProductDetail = () => {
       : [];
   
   const currency = product.currency || 'دينار عراقي';
+
+  // Calculate final price based on selected option
+  const selectedOptionData = productOptions?.find((opt: any) => opt.id === selectedOption);
+  const finalPrice = selectedOptionData 
+    ? Number(product.price) + Number(selectedOptionData.price_adjustment)
+    : Number(product.price);
+
+  const finalOriginalPrice = selectedOptionData && product.original_price
+    ? Number(product.original_price) + Number(selectedOptionData.price_adjustment)
+    : product.original_price ? Number(product.original_price) : null;
 
   const handleAddToCart = () => {
     for (let i = 0; i < quantity; i++) {
@@ -257,22 +287,65 @@ const ProductDetail = () => {
                 {product.description_ar || 'لا يوجد وصف متوفر'}
               </p>
 
+              {/* Product Options */}
+              {productOptions && productOptions.length > 0 && (
+                <div className="border-t border-border/30 pt-6 mb-6">
+                  <Label className="text-lg font-bold text-foreground mb-4 block">الخيارات المتاحة</Label>
+                  <RadioGroup value={selectedOption || ''} onValueChange={setSelectedOption}>
+                    <div className="space-y-3">
+                      {productOptions.map((option: any) => (
+                        <div
+                          key={option.id}
+                          className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                            selectedOption === option.id
+                              ? 'border-primary bg-primary/5'
+                              : 'border-border hover:border-primary/50'
+                          } ${!option.in_stock ? 'opacity-50' : ''}`}
+                        >
+                          <div className="flex items-center gap-3 flex-1">
+                            <RadioGroupItem value={option.id} disabled={!option.in_stock} />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-foreground">{option.name_ar}</span>
+                                {!option.in_stock && (
+                                  <Badge variant="destructive" className="text-xs">غير متوفر</Badge>
+                                )}
+                              </div>
+                              {option.name !== option.name_ar && (
+                                <span className="text-sm text-muted-foreground">{option.name}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-left">
+                            {option.price_adjustment !== 0 && (
+                              <span className={`font-bold ${option.price_adjustment > 0 ? 'text-primary' : 'text-green-600'}`}>
+                                {option.price_adjustment > 0 ? '+' : ''}{formatPrice(Number(option.price_adjustment))} {currency}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </RadioGroup>
+                </div>
+              )}
+
               {/* Price Section */}
               <div className="border-t border-border/30 pt-6 mb-6">
                 <div className="flex items-baseline gap-3 mb-2">
                   <span className="text-5xl font-black text-primary">
-                    {formatPrice(Number(product.price))}
+                    {formatPrice(finalPrice)}
                   </span>
                   <span className="text-2xl text-muted-foreground">{currency}</span>
                 </div>
                 
-                {hasSale && (
+                {hasSale && finalOriginalPrice && (
                   <div className="flex items-center gap-3">
                     <span className="text-2xl line-through text-muted-foreground/60">
-                      {formatPrice(Number(product.original_price))} {currency}
+                      {formatPrice(finalOriginalPrice)} {currency}
                     </span>
                     <Badge variant="secondary" className="bg-primary/10 text-primary">
-                      وفر {formatPrice(savings)} {currency}
+                      وفر {formatPrice(finalOriginalPrice - finalPrice)} {currency}
                     </Badge>
                   </div>
                 )}
