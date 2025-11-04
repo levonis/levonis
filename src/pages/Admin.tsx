@@ -433,6 +433,14 @@ const Admin = () => {
               <FolderOpen className="h-4 w-4" />
               المنتجات
             </TabsTrigger>
+            <TabsTrigger value="categories" className="gap-2">
+              <FolderOpen className="h-4 w-4" />
+              الأقسام
+            </TabsTrigger>
+            <TabsTrigger value="main-sections" className="gap-2">
+              <FolderOpen className="h-4 w-4" />
+              الأقسام الرئيسية
+            </TabsTrigger>
             <TabsTrigger value="custom-requests" className="gap-2 relative">
               <FolderOpen className="h-4 w-4" />
               الطلبات المخصصة
@@ -444,14 +452,6 @@ const Admin = () => {
                   {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
                 </Badge>
               )}
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="gap-2">
-              <FolderOpen className="h-4 w-4" />
-              الأقسام
-            </TabsTrigger>
-            <TabsTrigger value="main-sections" className="gap-2">
-              <FolderOpen className="h-4 w-4" />
-              الأقسام الرئيسية
             </TabsTrigger>
           </TabsList>
 
