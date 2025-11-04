@@ -74,6 +74,10 @@ const Admin = () => {
     hex_code: string;
     price?: number;
   }>>([]);
+  const [productFeatures, setProductFeatures] = useState<Array<{
+    text_ar: string;
+    text: string;
+  }>>([]);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -483,6 +487,23 @@ const Admin = () => {
     setProductColors(updated);
   };
 
+  const addProductFeature = () => {
+    setProductFeatures([...productFeatures, {
+      text_ar: '',
+      text: ''
+    }]);
+  };
+
+  const removeProductFeature = (index: number) => {
+    setProductFeatures(productFeatures.filter((_, i) => i !== index));
+  };
+
+  const updateProductFeature = (index: number, field: string, value: any) => {
+    const updated = [...productFeatures];
+    updated[index] = { ...updated[index], [field]: value };
+    setProductFeatures(updated);
+  };
+
   const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -507,6 +528,9 @@ const Admin = () => {
         in_stock: (formData.get('in_stock') as string) === 'on',
         colors: productColors.length > 0 
           ? productColors.filter(c => c.name_ar.trim() && c.name.trim())
+          : undefined,
+        features: productFeatures.length > 0
+          ? productFeatures.filter(f => f.text_ar.trim() && f.text.trim())
           : undefined,
       };
 
@@ -577,6 +601,7 @@ const Admin = () => {
       setUploadedImages([]);
       setProductOptions([]);
       setProductColors([]);
+      setProductFeatures([]);
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -701,6 +726,7 @@ const Admin = () => {
                   setUploadedImages([]);
                   setProductOptions([]);
                   setProductColors([]);
+                  setProductFeatures([]);
                 } else if (editingProduct) {
                   // Load existing options when editing
                   const { data } = await supabase
@@ -720,6 +746,11 @@ const Admin = () => {
                   // Load existing colors
                   if (editingProduct.colors && Array.isArray(editingProduct.colors)) {
                     setProductColors(editingProduct.colors);
+                  }
+
+                  // Load existing features
+                  if (editingProduct.features && Array.isArray(editingProduct.features)) {
+                    setProductFeatures(editingProduct.features);
                   }
                 }
               }}>
@@ -1102,6 +1133,68 @@ const Admin = () => {
                                       اتركه فارغاً لاستخدام السعر الأساسي
                                     </p>
                                   </div>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Features Section */}
+                    <div className="space-y-2 border-t pt-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label>المميزات (اختياري)</Label>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={addProductFeature}
+                        >
+                          <Plus className="ml-1 h-3 w-3" />
+                          إضافة ميزة
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        أضف مميزات ومواصفات المنتج
+                      </p>
+
+                      {productFeatures.length > 0 && (
+                        <div className="space-y-3">
+                          {productFeatures.map((feature, index) => (
+                            <div key={index} className="p-3 border border-border rounded-lg bg-card/50 space-y-3">
+                              <div className="flex justify-between items-start">
+                                <span className="text-sm font-medium">ميزة {index + 1}</span>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => removeProductFeature(index)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">النص بالعربي</Label>
+                                  <Input
+                                    type="text"
+                                    value={feature.text_ar}
+                                    onChange={(e) => updateProductFeature(index, 'text_ar', e.target.value)}
+                                    placeholder="ذاكرة 16 جيجابايت"
+                                    className="h-9"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">النص بالإنجليزي</Label>
+                                  <Input
+                                    type="text"
+                                    value={feature.text}
+                                    onChange={(e) => updateProductFeature(index, 'text', e.target.value)}
+                                    placeholder="16GB Memory"
+                                    className="h-9"
+                                  />
                                 </div>
                               </div>
                             </div>

@@ -486,6 +486,26 @@ const ProductDetail = () => {
             <div className="glass-effect rounded-2xl p-6 border border-border/50">
               <h3 className="text-xl font-bold text-foreground mb-4">المميزات</h3>
               <div className="space-y-3">
+                {/* Product-specific features from database */}
+                {product.features && Array.isArray(product.features) && product.features.length > 0 && (
+                  <>
+                    {product.features.map((feature: any, index: number) => (
+                      <div key={`feature-${index}`} className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <Package className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground">{feature.text_ar}</p>
+                          {feature.text !== feature.text_ar && (
+                            <p className="text-sm text-muted-foreground">{feature.text}</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {/* Default store features */}
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <Shield className="w-5 h-5 text-primary" />
