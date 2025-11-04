@@ -115,7 +115,7 @@ const Home = () => {
           
           <div className="text-center mb-12 animate-scale-in relative z-10">
             <div className="inline-block mb-3">
-              <h2 className="text-2xl md:text-3xl font-black px-24 py-4 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground shadow-lg relative overflow-hidden">
+              <h2 className="text-2xl md:text-3xl font-black px-32 md:px-40 py-4 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground shadow-lg relative overflow-hidden">
                 {/* Glossy overlay effect */}
                 <span className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/10 to-transparent pointer-events-none" />
                 <span className="relative z-10">الأقسام</span>
