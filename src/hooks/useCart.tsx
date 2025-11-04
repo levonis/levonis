@@ -116,10 +116,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       console.log('Adding to cart:', { productId, optionId, color });
       
       // Check if item with same product, option, and color already exists
+      const normalize = (v: any) => (v ?? '').toString().trim().toLowerCase();
       const existingItem = items.find(item => 
         item.product_id === productId && 
-        (item as any).product_option_id === (optionId || null) &&
-        (item as any).selected_color === (color || null)
+        normalize((item as any).product_option_id) === normalize(optionId) &&
+        normalize((item as any).selected_color) === normalize(color)
       );
       
       console.log('Existing item found:', existingItem);
@@ -263,8 +264,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       let itemPrice = Number(item.products.price);
       
       // Add color price if selected and different from base price
-      const selectedColorData = (item as any).selected_color && item.products.colors
-        ? (item.products.colors as any[]).find((c: any) => c.name === (item as any).selected_color)
+      const selColor = (item as any).selected_color;
+      const selectedColorData = selColor && item.products?.colors
+        ? (item.products.colors as any[]).find((c: any) => c.name === selColor || c.name_ar === selColor || c.hex_code === selColor)
         : null;
       
       if (selectedColorData?.price != null) {

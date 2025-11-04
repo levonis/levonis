@@ -108,9 +108,9 @@ const Cart = () => {
         
         // Get color name and price if exists
         const itemColor = (item as any).selected_color;
-        const colorData = itemColor && item.products?.colors
-          ? (item.products.colors as any[]).find((c: any) => c.name === itemColor)
-          : null;
+          const colorData = itemColor && item.products?.colors
+            ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
+            : null;
         
         // Use color price if available
         if (colorData?.price != null) {
@@ -216,7 +216,7 @@ const Cart = () => {
                 
                 const itemColor = (item as any).selected_color;
                 const colorData = itemColor && item.products?.colors
-                  ? (item.products.colors as any[]).find((c: any) => c.name === itemColor)
+                  ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
                   : null;
                 
                 // Calculate item price based on color and option
