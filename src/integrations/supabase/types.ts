@@ -19,7 +19,7 @@ export type Database = {
           created_at: string | null
           custom_request_id: string | null
           id: string
-          product_id: string
+          product_id: string | null
           quantity: number
           updated_at: string | null
           user_id: string
@@ -28,7 +28,7 @@ export type Database = {
           created_at?: string | null
           custom_request_id?: string | null
           id?: string
-          product_id: string
+          product_id?: string | null
           quantity?: number
           updated_at?: string | null
           user_id: string
@@ -37,7 +37,7 @@ export type Database = {
           created_at?: string | null
           custom_request_id?: string | null
           id?: string
-          product_id?: string
+          product_id?: string | null
           quantity?: number
           updated_at?: string | null
           user_id?: string
