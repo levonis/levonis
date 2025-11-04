@@ -31,7 +31,7 @@ interface CartContextType {
   loading: boolean;
   itemCount: number;
   total: number;
-  addToCart: (productId: string) => Promise<void>;
+  addToCart: (productId: string, optionId?: string) => Promise<void>;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
@@ -95,24 +95,37 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     fetchCart();
   }, [user]);
 
-  const addToCart = async (productId: string) => {
+  const addToCart = async (productId: string, optionId?: string) => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
 
     try {
-      // Check if item already exists
-      const existingItem = items.find(item => item.product_id === productId);
+      // Check if item with same product and option already exists
+      const existingItem = items.find(item => 
+        item.product_id === productId && 
+        (item as any).product_option_id === (optionId || null)
+      );
       
       if (existingItem) {
         await updateQuantity(existingItem.id, existingItem.quantity + 1);
         return;
       }
 
+      const insertData: any = { 
+        user_id: user.id, 
+        product_id: productId, 
+        quantity: 1 
+      };
+      
+      if (optionId) {
+        insertData.product_option_id = optionId;
+      }
+
       const { error } = await supabase
         .from('cart_items')
-        .insert([{ user_id: user.id, product_id: productId, quantity: 1 }]);
+        .insert([insertData]);
 
       if (error) throw error;
       

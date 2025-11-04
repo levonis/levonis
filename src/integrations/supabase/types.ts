@@ -20,6 +20,7 @@ export type Database = {
           custom_request_id: string | null
           id: string
           product_id: string | null
+          product_option_id: string | null
           quantity: number
           updated_at: string | null
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           custom_request_id?: string | null
           id?: string
           product_id?: string | null
+          product_option_id?: string | null
           quantity?: number
           updated_at?: string | null
           user_id: string
@@ -38,6 +40,7 @@ export type Database = {
           custom_request_id?: string | null
           id?: string
           product_id?: string | null
+          product_option_id?: string | null
           quantity?: number
           updated_at?: string | null
           user_id?: string
@@ -55,6 +58,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cart_items_product_option_id_fkey"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
             referencedColumns: ["id"]
           },
         ]

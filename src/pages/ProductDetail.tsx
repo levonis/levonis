@@ -154,8 +154,14 @@ const ProductDetail = () => {
     : product.original_price ? Number(product.original_price) : null;
 
   const handleAddToCart = () => {
+    // Check if product has options and none selected
+    if (productOptions && productOptions.length > 0 && !selectedOption) {
+      toast.error('الرجاء اختيار أحد الخيارات المتاحة');
+      return;
+    }
+
     for (let i = 0; i < quantity; i++) {
-      addToCart(product.id);
+      addToCart(product.id, selectedOption || undefined);
     }
     toast.success(`تم إضافة ${quantity} من المنتج إلى السلة`);
     setQuantity(1);
