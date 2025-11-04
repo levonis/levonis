@@ -14,15 +14,23 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from '@/components/ui/pagination';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const Products = () => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('search') || '';
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortBy, setSortBy] = useState<'default' | 'price' | 'name'>('default');
   const ITEMS_PER_PAGE = 24;
 
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ['products', searchQuery, currentPage],
+    queryKey: ['products', searchQuery, currentPage, sortBy],
     queryFn: async () => {
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
@@ -30,9 +38,18 @@ const Products = () => {
       let query = supabase
         .from('products')
         .select('*', { count: 'exact' })
-        .eq('in_stock', true)
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .eq('in_stock', true);
+
+      // Apply sorting
+      if (sortBy === 'price') {
+        query = query.order('price', { ascending: true });
+      } else if (sortBy === 'name') {
+        query = query.order('name_ar', { ascending: true });
+      } else {
+        query = query.order('created_at', { ascending: false });
+      }
+
+      query = query.range(from, to);
 
       if (searchQuery) {
         query = query.or(`name_ar.ilike.%${searchQuery}%,description_ar.ilike.%${searchQuery}%`);
@@ -92,16 +109,37 @@ const Products = () => {
           <SearchBar />
         </div>
 
-        {searchQuery && (
-          <div className="mb-6">
-            <h2 className="text-2xl font-black text-primary">
-              نتائج البحث عن: <span className="text-foreground">{searchQuery}</span>
-            </h2>
-            <p className="text-muted-foreground mt-1">
-              {productsData?.totalCount || 0} منتج
-            </p>
+        <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+          {searchQuery ? (
+            <div>
+              <h2 className="text-2xl font-black text-primary">
+                نتائج البحث عن: <span className="text-foreground">{searchQuery}</span>
+              </h2>
+              <p className="text-muted-foreground mt-1">
+                {productsData?.totalCount || 0} منتج
+              </p>
+            </div>
+          ) : (
+            <div className="flex-1" />
+          )}
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <label className="text-sm text-muted-foreground whitespace-nowrap">ترتيب حسب:</label>
+            <Select value={sortBy} onValueChange={(value: 'default' | 'price' | 'name') => {
+              setSortBy(value);
+              setCurrentPage(1);
+            }}>
+              <SelectTrigger className="w-full sm:w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">افتراضي</SelectItem>
+                <SelectItem value="price">السعر</SelectItem>
+                <SelectItem value="name">الاسم</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        )}
+        </div>
 
         {isLoading ? (
           <div className="flex justify-center py-12">
