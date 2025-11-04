@@ -86,6 +86,38 @@ const Admin = () => {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
+  // Ensure product options, colors, and features load reliably when opening the editor
+  useEffect(() => {
+    if (productDialogOpen && editingProduct) {
+      // Initialize from the current product
+      setProductColors(Array.isArray(editingProduct.colors) ? editingProduct.colors : []);
+      setProductFeatures(Array.isArray(editingProduct.features) ? editingProduct.features : []);
+
+      // Load options from the database
+      supabase
+        .from('product_options')
+        .select('*')
+        .eq('product_id', editingProduct.id)
+        .then(({ data, error }) => {
+          if (!error && data) {
+            setProductOptions(
+              data.map((opt) => ({
+                name: opt.name,
+                name_ar: opt.name_ar,
+                price_adjustment: Number(opt.price_adjustment),
+                in_stock: opt.in_stock,
+              }))
+            );
+          }
+        });
+    } else if (productDialogOpen && !editingProduct) {
+      // New product: start clean
+      setProductOptions([]);
+      setProductColors([]);
+      setProductFeatures([]);
+    }
+  }, [productDialogOpen, editingProduct]);
+
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['admin-products'],
     queryFn: async () => {
@@ -724,7 +756,7 @@ const Admin = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-foreground">إدارة المنتجات</h2>
               
-              <Dialog open={productDialogOpen} onOpenChange={async (open) => {
+              <Dialog open={productDialogOpen} onOpenChange={(open) => {
                 setProductDialogOpen(open);
                 if (!open) {
                   setEditingProduct(null);
@@ -732,31 +764,6 @@ const Admin = () => {
                   setProductOptions([]);
                   setProductColors([]);
                   setProductFeatures([]);
-                } else if (editingProduct) {
-                  // Load existing options when editing
-                  const { data } = await supabase
-                    .from('product_options')
-                    .select('*')
-                    .eq('product_id', editingProduct.id);
-                  
-                  if (data) {
-                    setProductOptions(data.map(opt => ({
-                      name: opt.name,
-                      name_ar: opt.name_ar,
-                      price_adjustment: Number(opt.price_adjustment),
-                      in_stock: opt.in_stock
-                    })));
-                  }
-
-                  // Load existing colors
-                  if (editingProduct.colors && Array.isArray(editingProduct.colors)) {
-                    setProductColors(editingProduct.colors);
-                  }
-
-                  // Load existing features
-                  if (editingProduct.features && Array.isArray(editingProduct.features)) {
-                    setProductFeatures(editingProduct.features);
-                  }
                 }
               }}>
                 <DialogTrigger asChild>
