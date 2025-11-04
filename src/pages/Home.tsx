@@ -38,37 +38,44 @@ const Home = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
-      {/* Decorative ornamental corners */}
-      <div className="fixed top-0 right-0 w-80 h-80 pointer-events-none opacity-20 animate-float">
+      {/* Enhanced Decorative ornamental corners */}
+      <div className="fixed top-0 right-0 w-96 h-96 pointer-events-none opacity-40 animate-float">
         <svg viewBox="0 0 200 200" className="w-full h-full">
           <path d="M10,10 Q50,10 50,50 L50,150 Q50,190 90,190 L150,190" 
-                stroke="url(#goldGradient)" strokeWidth="1" fill="none" />
-          <circle cx="50" cy="50" r="3" fill="hsl(var(--ring))" />
-          <circle cx="90" cy="90" r="2" fill="hsl(var(--primary))" />
+                stroke="url(#goldGradient)" strokeWidth="2" fill="none" />
+          <circle cx="50" cy="50" r="4" fill="hsl(var(--ring))" />
+          <circle cx="90" cy="90" r="3" fill="hsl(var(--primary))" />
+          <circle cx="130" cy="130" r="2" fill="hsl(var(--accent))" />
           <defs>
             <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="hsl(var(--ring))" />
-              <stop offset="100%" stopColor="hsl(var(--accent))" />
+              <stop offset="0%" stopColor="hsl(var(--ring))" stopOpacity="0.8" />
+              <stop offset="50%" stopColor="hsl(var(--primary))" stopOpacity="0.9" />
+              <stop offset="100%" stopColor="hsl(var(--accent))" stopOpacity="0.8" />
             </linearGradient>
           </defs>
         </svg>
       </div>
       
-      <div className="fixed bottom-0 left-0 w-96 h-96 pointer-events-none opacity-15 animate-float" style={{ animationDelay: '1s' }}>
+      <div className="fixed bottom-0 left-0 w-[500px] h-[500px] pointer-events-none opacity-30 animate-float" style={{ animationDelay: '1s' }}>
         <svg viewBox="0 0 200 200" className="w-full h-full">
-          <circle cx="100" cy="100" r="80" stroke="hsl(var(--primary) / 0.3)" strokeWidth="0.5" fill="none" />
-          <circle cx="100" cy="100" r="60" stroke="hsl(var(--ring) / 0.2)" strokeWidth="0.5" fill="none" />
-          <circle cx="100" cy="100" r="40" stroke="hsl(var(--accent) / 0.3)" strokeWidth="0.5" fill="none" />
+          <circle cx="100" cy="100" r="80" stroke="hsl(var(--primary) / 0.5)" strokeWidth="1" fill="none" />
+          <circle cx="100" cy="100" r="60" stroke="hsl(var(--ring) / 0.4)" strokeWidth="1.5" fill="none" />
+          <circle cx="100" cy="100" r="40" stroke="hsl(var(--accent) / 0.5)" strokeWidth="1" fill="none" />
+          <circle cx="100" cy="100" r="20" stroke="hsl(var(--primary) / 0.3)" strokeWidth="0.5" fill="hsl(var(--ring) / 0.1)" />
         </svg>
       </div>
       
-      {/* Floating geometric patterns */}
-      <div className="fixed top-1/4 left-1/4 w-32 h-32 pointer-events-none opacity-10 animate-float" style={{ animationDelay: '2s' }}>
-        <div className="w-full h-full border border-primary/40 rotate-45 rounded-lg" />
+      {/* Enhanced Floating geometric patterns */}
+      <div className="fixed top-1/4 left-1/4 w-40 h-40 pointer-events-none opacity-25 animate-float" style={{ animationDelay: '2s' }}>
+        <div className="w-full h-full border-2 border-primary/60 rotate-45 rounded-lg shadow-lg shadow-primary/20" />
       </div>
       
-      <div className="fixed top-2/3 right-1/3 w-24 h-24 pointer-events-none opacity-10 animate-float" style={{ animationDelay: '3s' }}>
-        <div className="w-full h-full border border-ring/30 rotate-12" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
+      <div className="fixed top-2/3 right-1/3 w-32 h-32 pointer-events-none opacity-25 animate-float" style={{ animationDelay: '3s' }}>
+        <div className="w-full h-full border-2 border-ring/50 rotate-12 shadow-lg shadow-ring/20" style={{ clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)' }} />
+      </div>
+      
+      <div className="fixed top-1/2 left-1/2 w-24 h-24 pointer-events-none opacity-20 animate-float" style={{ animationDelay: '4s' }}>
+        <div className="w-full h-full border border-accent/60 rounded-full" />
       </div>
       
       <main className="relative">

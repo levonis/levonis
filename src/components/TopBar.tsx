@@ -44,14 +44,6 @@ const TopBar = () => {
         />
       </div>
       
-      {/* Floating ornamental dots */}
-      <div className="absolute inset-0 pointer-events-none opacity-20">
-        <div className="absolute top-1/2 left-10 w-1 h-1 rounded-full bg-ring animate-float" />
-        <div className="absolute top-1/2 left-32 w-1 h-1 rounded-full bg-primary animate-float" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 right-32 w-1 h-1 rounded-full bg-accent animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 right-10 w-1 h-1 rounded-full bg-ring animate-float" style={{ animationDelay: '3s' }} />
-      </div>
-      
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
