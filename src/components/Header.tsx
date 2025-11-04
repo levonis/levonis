@@ -3,6 +3,7 @@ import { Button } from './ui/button';
 import { User, LogOut, Settings, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
+import { useState, useEffect } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,9 +17,23 @@ const Header = () => {
   const { user, isAdmin, signOut } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 bg-background/60 backdrop-blur-xl border-b border-border/30 relative overflow-hidden">
+    <header className={`sticky top-0 z-50 border-b relative overflow-hidden transition-all duration-300 ${
+      isScrolled 
+        ? 'bg-background/30 backdrop-blur-md border-border/20' 
+        : 'bg-background/60 backdrop-blur-xl border-border/30'
+    }`}>
       {/* Animated decorative line */}
       <div className="absolute top-0 left-0 w-full h-px overflow-hidden">
         <div className="h-full w-full bg-gradient-to-r from-transparent via-ring to-transparent animate-shimmer" 
