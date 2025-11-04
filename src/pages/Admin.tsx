@@ -72,7 +72,7 @@ const Admin = () => {
     name: string;
     name_ar: string;
     hex_code: string;
-    price: number;
+    price?: number;
   }>>([]);
 
   useEffect(() => {
@@ -469,7 +469,7 @@ const Admin = () => {
       name: '',
       name_ar: '',
       hex_code: '#000000',
-      price: 0
+      price: undefined
     }]);
   };
 
@@ -1088,16 +1088,19 @@ const Admin = () => {
                                     </div>
                                   </div>
                                   <div className="space-y-1">
-                                    <Label className="text-xs">السعر</Label>
+                                    <Label className="text-xs">السعر (اختياري)</Label>
                                     <Input
                                       type="number"
                                       step="0.01"
                                       min="0"
-                                      value={color.price}
-                                      onChange={(e) => updateProductColor(index, 'price', Number(e.target.value))}
-                                      placeholder="0"
+                                      value={color.price || ''}
+                                      onChange={(e) => updateProductColor(index, 'price', e.target.value ? Number(e.target.value) : undefined)}
+                                      placeholder="السعر الافتراضي للمنتج"
                                       className="h-9"
                                     />
+                                    <p className="text-xs text-muted-foreground">
+                                      اتركه فارغاً لاستخدام السعر الأساسي
+                                    </p>
                                   </div>
                                 </div>
                               </div>
