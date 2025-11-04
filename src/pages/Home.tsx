@@ -37,14 +37,12 @@ const Home = () => {
   });
 
   return (
-    <div className="min-h-screen relative overflow-hidden"
+    <div className="min-h-screen relative overflow-hidden bg-background"
          style={{
            backgroundImage: 'url(/images/ornamental-frame.png)',
-           backgroundSize: 'cover',
+           backgroundSize: 'contain',
            backgroundPosition: 'center',
-           backgroundRepeat: 'no-repeat',
-           backgroundAttachment: 'fixed',
-           backgroundColor: 'hsl(var(--background))'
+           backgroundRepeat: 'no-repeat'
          }}>
       
       <main className="relative z-10">
