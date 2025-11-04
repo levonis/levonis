@@ -167,33 +167,6 @@ const Home = () => {
                   </div>
                 );
               })}
-
-              {/* الأقسام بدون قسم رئيسي */}
-              {categoriesByMainSection?.['no-section'] && categoriesByMainSection['no-section'].length > 0 && (
-                <div 
-                  className="animate-slide-in-up" 
-                  style={{ animationDelay: `${(mainSections?.length || 0) * 0.2}s` }}
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-1 h-8 bg-gradient-to-b from-primary to-accent rounded-full" />
-                    <h3 className="text-2xl font-black text-primary">أقسام أخرى</h3>
-                  </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {categoriesByMainSection['no-section'].map((category, index) => (
-                      <div key={category.id} className={`stagger-${(index % 6) + 1}`}>
-                        <CategoryCard
-                          name={category.name}
-                          nameAr={category.name_ar}
-                          slug={category.slug}
-                          icon={category.icon}
-                          description={category.description}
-                          descriptionAr={category.description_ar}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </section>
