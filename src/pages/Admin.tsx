@@ -72,6 +72,7 @@ const Admin = () => {
     name: string;
     name_ar: string;
     hex_code: string;
+    price: number;
   }>>([]);
 
   useEffect(() => {
@@ -467,7 +468,8 @@ const Admin = () => {
     setProductColors([...productColors, {
       name: '',
       name_ar: '',
-      hex_code: '#000000'
+      hex_code: '#000000',
+      price: 0
     }]);
   };
 
@@ -1042,42 +1044,59 @@ const Admin = () => {
                                 </Button>
                               </div>
                               
-                              <div className="grid grid-cols-3 gap-3">
-                                <div className="space-y-1">
-                                  <Label className="text-xs">الاسم بالعربي</Label>
-                                  <Input
-                                    type="text"
-                                    value={color.name_ar}
-                                    onChange={(e) => updateProductColor(index, 'name_ar', e.target.value)}
-                                    placeholder="أحمر"
-                                    className="h-9"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs">الاسم بالإنجليزي</Label>
-                                  <Input
-                                    type="text"
-                                    value={color.name}
-                                    onChange={(e) => updateProductColor(index, 'name', e.target.value)}
-                                    placeholder="Red"
-                                    className="h-9"
-                                  />
-                                </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs">الكود اللوني</Label>
-                                  <div className="flex gap-2">
-                                    <Input
-                                      type="color"
-                                      value={color.hex_code}
-                                      onChange={(e) => updateProductColor(index, 'hex_code', e.target.value)}
-                                      className="h-9 w-16 p-1"
-                                    />
+                              <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">الاسم بالعربي</Label>
                                     <Input
                                       type="text"
-                                      value={color.hex_code}
-                                      onChange={(e) => updateProductColor(index, 'hex_code', e.target.value)}
-                                      placeholder="#000000"
-                                      className="h-9 flex-1"
+                                      value={color.name_ar}
+                                      onChange={(e) => updateProductColor(index, 'name_ar', e.target.value)}
+                                      placeholder="أحمر"
+                                      className="h-9"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">الاسم بالإنجليزي</Label>
+                                    <Input
+                                      type="text"
+                                      value={color.name}
+                                      onChange={(e) => updateProductColor(index, 'name', e.target.value)}
+                                      placeholder="Red"
+                                      className="h-9"
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">الكود اللوني</Label>
+                                    <div className="flex gap-2">
+                                      <Input
+                                        type="color"
+                                        value={color.hex_code}
+                                        onChange={(e) => updateProductColor(index, 'hex_code', e.target.value)}
+                                        className="h-9 w-16 p-1"
+                                      />
+                                      <Input
+                                        type="text"
+                                        value={color.hex_code}
+                                        onChange={(e) => updateProductColor(index, 'hex_code', e.target.value)}
+                                        placeholder="#000000"
+                                        className="h-9 flex-1"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">السعر</Label>
+                                    <Input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={color.price}
+                                      onChange={(e) => updateProductColor(index, 'price', Number(e.target.value))}
+                                      placeholder="0"
+                                      className="h-9"
                                     />
                                   </div>
                                 </div>

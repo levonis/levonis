@@ -382,6 +382,11 @@ const ProductDetail = () => {
                           {color.name !== color.name_ar && (
                             <div className="text-xs text-muted-foreground">{color.name}</div>
                           )}
+                          {color.price && color.price > 0 && (
+                            <div className="text-sm font-bold text-primary mt-1">
+                              {formatPrice(Number(color.price))} {currency}
+                            </div>
+                          )}
                         </div>
                       </button>
                     ))}
