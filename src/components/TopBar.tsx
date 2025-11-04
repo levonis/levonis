@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package } from 'lucide-react';
+import CustomProductRequestDialog from './CustomProductRequestDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { useState, useEffect } from 'react';
@@ -85,8 +86,20 @@ const TopBar = () => {
 
           {/* Cart and User Actions */}
           <div className="flex items-center gap-3">
+            {/* Custom Product Request Button */}
+            <CustomProductRequestDialog>
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full border-primary/30 hover:border-primary"
+                title="طلب منتج مخصص"
+              >
+                <Package className="h-5 w-5" />
+              </Button>
+            </CustomProductRequestDialog>
+
             {/* Cart Button */}
-            <Button 
+            <Button
               variant="outline"
               size="icon"
               onClick={() => navigate('/cart')}
