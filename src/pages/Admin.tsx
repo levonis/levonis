@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
@@ -27,8 +27,8 @@ const productSchema = z.object({
   price: z.number().positive('السعر يجب أن يكون أكبر من صفر'),
   original_price: z.number().positive().optional(),
   currency: z.string().optional(),
-  images: z.array(z.string().url()).optional(),
-  image_url: z.string().url('رابط الصورة غير صحيح').optional(),
+  images: z.array(z.string()).optional(),
+  image_url: z.string().optional(),
   category_id: z.string().uuid('القسم غير صحيح'),
   featured: z.boolean().optional(),
   in_stock: z.boolean().optional(),
@@ -60,6 +60,8 @@ const Admin = () => {
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editingCategory, setEditingCategory] = useState<any>(null);
   const [editingMainSection, setEditingMainSection] = useState<any>(null);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -391,15 +393,53 @@ const Admin = () => {
     }
   });
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingImages(true);
+    const newImageUrls: string[] = [];
+
+    try {
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Math.random()}.${fileExt}`;
+        const filePath = `${fileName}`;
+
+        const { error: uploadError, data } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(filePath);
+
+        newImageUrls.push(publicUrl);
+      }
+
+      setUploadedImages([...uploadedImages, ...newImageUrls]);
+      toast.success('تم رفع الصور بنجاح');
+    } catch (error) {
+      console.error('Error uploading images:', error);
+      toast.error('حدث خطأ أثناء رفع الصور');
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setUploadedImages(uploadedImages.filter((_, i) => i !== index));
+  };
+
   const handleProductSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     
     try {
-      const imagesText = formData.get('images') as string;
-      const imagesArray = imagesText 
-        ? imagesText.split('\n').map(url => url.trim()).filter(url => url)
-        : [];
+      const allImages = editingProduct?.images || [];
+      const finalImages = [...allImages, ...uploadedImages];
 
       const values = productSchema.parse({
         name_ar: formData.get('name_ar') as string,
@@ -410,8 +450,8 @@ const Admin = () => {
         price: Number(formData.get('price')),
         original_price: formData.get('original_price') ? Number(formData.get('original_price')) : undefined,
         currency: formData.get('currency') as string || 'دينار عراقي',
-        images: imagesArray.length > 0 ? imagesArray : undefined,
-        image_url: imagesArray[0] || (formData.get('image_url') as string) || undefined,
+        images: finalImages.length > 0 ? finalImages : undefined,
+        image_url: finalImages[0] || undefined,
         category_id: formData.get('category_id') as string,
         featured: (formData.get('featured') as string) === 'on',
         in_stock: (formData.get('in_stock') as string) === 'on',
@@ -422,6 +462,8 @@ const Admin = () => {
       } else {
         createProduct.mutate(values);
       }
+      
+      setUploadedImages([]);
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -538,7 +580,10 @@ const Admin = () => {
               
               <Dialog open={productDialogOpen} onOpenChange={(open) => {
                 setProductDialogOpen(open);
-                if (!open) setEditingProduct(null);
+                if (!open) {
+                  setEditingProduct(null);
+                  setUploadedImages([]);
+                }
               }}>
                 <DialogTrigger asChild>
                   <Button className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90">
@@ -672,15 +717,70 @@ const Admin = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="images">روابط الصور (صورة واحدة في كل سطر)</Label>
-                      <Textarea 
-                        id="images" 
-                        name="images"
-                        defaultValue={editingProduct?.images?.join('\n') || ''}
-                        placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                        rows={4}
-                      />
-                      <p className="text-xs text-muted-foreground">أضف رابط URL لكل صورة في سطر منفصل</p>
+                      <Label>صور المنتج</Label>
+                      
+                      {/* Existing images from editing */}
+                      {editingProduct?.images && editingProduct.images.length > 0 && (
+                        <div className="mb-4">
+                          <p className="text-sm text-muted-foreground mb-2">الصور الحالية:</p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {editingProduct.images.map((img: string, index: number) => (
+                              <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                                <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Upload new images */}
+                      <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                        <Input
+                          id="image-upload"
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <Label 
+                          htmlFor="image-upload" 
+                          className="cursor-pointer flex flex-col items-center gap-2"
+                        >
+                          {uploadingImages ? (
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          ) : (
+                            <Upload className="h-8 w-8 text-muted-foreground" />
+                          )}
+                          <span className="text-sm text-muted-foreground">
+                            {uploadingImages ? 'جاري الرفع...' : 'اضغط لرفع الصور'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            يمكنك اختيار عدة صور مرة واحدة
+                          </span>
+                        </Label>
+                      </div>
+
+                      {/* Uploaded images preview */}
+                      {uploadedImages.length > 0 && (
+                        <div className="mt-4">
+                          <p className="text-sm text-muted-foreground mb-2">الصور الجديدة:</p>
+                          <div className="grid grid-cols-4 gap-2">
+                            {uploadedImages.map((img, index) => (
+                              <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
+                                <img src={img} alt={`صورة جديدة ${index + 1}`} className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(index)}
+                                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <Button 
