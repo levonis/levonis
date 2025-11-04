@@ -38,38 +38,15 @@ const Home = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-background">
-      {/* Top decorative corners - fixed */}
+      {/* Full page decorative border - fixed */}
       <div 
-        className="fixed top-0 left-0 right-0 h-64 pointer-events-none z-0 opacity-90"
+        className="fixed inset-0 pointer-events-none z-0 opacity-90"
         style={{
           backgroundImage: 'url(/images/decorative-border.png)',
-          backgroundSize: 'contain',
-          backgroundPosition: 'top center',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
-        }}
-      />
-      
-      {/* Side columns - extended */}
-      <div 
-        className="fixed top-64 left-0 bottom-0 w-32 pointer-events-none z-0 opacity-90"
-        style={{
-          backgroundImage: 'url(/images/decorative-border.png)',
-          backgroundSize: '200% auto',
-          backgroundPosition: 'left center',
-          backgroundRepeat: 'repeat-y',
-          filter: 'drop-shadow(0 0 15px rgba(212, 175, 55, 0.2))',
-        }}
-      />
-      
-      <div 
-        className="fixed top-64 right-0 bottom-0 w-32 pointer-events-none z-0 opacity-90"
-        style={{
-          backgroundImage: 'url(/images/decorative-border.png)',
-          backgroundSize: '200% auto',
-          backgroundPosition: 'right center',
-          backgroundRepeat: 'repeat-y',
-          filter: 'drop-shadow(0 0 15px rgba(212, 175, 55, 0.2))',
         }}
       />
       
