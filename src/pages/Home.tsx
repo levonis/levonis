@@ -43,7 +43,7 @@ const Home = () => {
         className="fixed inset-0 pointer-events-none z-0 opacity-90"
         style={{
           backgroundImage: 'url(/images/decorative-border.png)',
-          backgroundSize: '100% 100%',
+          backgroundSize: '110% 110%',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
