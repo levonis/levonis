@@ -114,8 +114,11 @@ const Home = () => {
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse-glow pointer-events-none" />
           
           <div className="text-center mb-12 animate-scale-in relative z-10">
-            <h2 className="text-4xl md:text-5xl font-black text-gradient-gold mb-3 animate-glow">الأقسام</h2>
-            <div className="w-24 h-1 bg-gradient-to-r from-transparent via-primary to-transparent mx-auto mb-3 animate-shimmer" />
+            <div className="inline-block mb-3">
+              <h2 className="text-2xl md:text-3xl font-black px-8 py-3 rounded-lg bg-gradient-to-b from-primary to-accent text-primary-foreground shadow-lg">
+                الأقسام
+              </h2>
+            </div>
             <p className="text-muted-foreground text-sm">اختر القسم الفرعي للانتقال</p>
           </div>
           
