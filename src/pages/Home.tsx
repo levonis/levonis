@@ -46,8 +46,6 @@ const Home = () => {
            backgroundAttachment: 'fixed',
            backgroundColor: 'hsl(var(--background))'
          }}>
-      {/* Subtle overlay for content readability */}
-      <div className="fixed inset-0 bg-background/30 pointer-events-none" />
       
       <main className="relative z-10">
         {/* Hero Section */}
