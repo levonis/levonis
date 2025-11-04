@@ -30,6 +30,8 @@ const productSchema = z.object({
   images: z.array(z.string().url()).optional(),
   image_url: z.string().url('رابط الصورة غير صحيح').optional(),
   category_id: z.string().uuid('القسم غير صحيح'),
+  featured: z.boolean().optional(),
+  in_stock: z.boolean().optional(),
 });
 
 const categorySchema = z.object({
@@ -411,6 +413,8 @@ const Admin = () => {
         images: imagesArray.length > 0 ? imagesArray : undefined,
         image_url: imagesArray[0] || (formData.get('image_url') as string) || undefined,
         category_id: formData.get('category_id') as string,
+        featured: (formData.get('featured') as string) === 'on',
+        in_stock: (formData.get('in_stock') as string) === 'on',
       });
 
       if (editingProduct) {
@@ -635,6 +639,17 @@ const Admin = () => {
                           defaultValue={editingProduct?.currency || 'دينار عراقي'}
                           placeholder="دينار عراقي"
                         />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        <input id="featured" name="featured" type="checkbox" defaultChecked={editingProduct?.featured || false} />
+                        <Label htmlFor="featured">مميز (يظهر في الرئيسية)</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input id="in_stock" name="in_stock" type="checkbox" defaultChecked={editingProduct?.in_stock ?? true} />
+                        <Label htmlFor="in_stock">متاح في المخزون</Label>
                       </div>
                     </div>
 

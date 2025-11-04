@@ -15,7 +15,7 @@ const CategoryDetail = () => {
         .from('categories')
         .select('*')
         .eq('slug', slug)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data;
