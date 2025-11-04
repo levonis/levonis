@@ -354,7 +354,7 @@ const Admin = () => {
         description: formData.get('description') as string || undefined,
         price: Number(formData.get('price')),
         original_price: formData.get('original_price') ? Number(formData.get('original_price')) : undefined,
-        currency: formData.get('currency') as string || 'ريال',
+        currency: formData.get('currency') as string || 'دينار عراقي',
         images: imagesArray.length > 0 ? imagesArray : undefined,
         image_url: imagesArray[0] || (formData.get('image_url') as string) || undefined,
         category_id: formData.get('category_id') as string,
@@ -579,8 +579,8 @@ const Admin = () => {
                         <Input 
                           id="currency" 
                           name="currency"
-                          defaultValue={editingProduct?.currency || 'ريال'}
-                          placeholder="ريال"
+                          defaultValue={editingProduct?.currency || 'دينار عراقي'}
+                          placeholder="دينار عراقي"
                         />
                       </div>
                     </div>
@@ -661,10 +661,10 @@ const Admin = () => {
                         </TableCell>
                         <TableCell className="font-medium">{product.name_ar}</TableCell>
                         <TableCell>{(product as any).categories?.name_ar}</TableCell>
-                        <TableCell>{Number(product.price).toFixed(2)} ريال</TableCell>
+                        <TableCell>{Number(product.price).toFixed(2)} دينار عراقي</TableCell>
                         <TableCell>
                           {product.original_price 
-                            ? `${Number(product.original_price).toFixed(2)} ريال`
+                            ? `${Number(product.original_price).toFixed(2)} دينار عراقي`
                             : '-'}
                         </TableCell>
                         <TableCell className="text-left">

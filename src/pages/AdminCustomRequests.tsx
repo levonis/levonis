@@ -123,7 +123,7 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
                 <TableCell>{getStatusBadge(request.status)}</TableCell>
                 <TableCell>
                   {request.suggested_price 
-                    ? `${Number(request.suggested_price).toFixed(2)} ریال`
+                    ? `${Number(request.suggested_price).toFixed(2)} دينار عراقي`
                     : '-'}
                 </TableCell>
                 <TableCell>
@@ -205,7 +205,7 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
                   <Label className="text-muted-foreground">السعر المقترح</Label>
                   <p className="font-medium">
                     {selectedRequest.suggested_price 
-                      ? `${Number(selectedRequest.suggested_price).toFixed(2)} ریال`
+                      ? `${Number(selectedRequest.suggested_price).toFixed(2)} دينار عراقي`
                       : 'لم يتم التسعير'}
                   </p>
                 </div>

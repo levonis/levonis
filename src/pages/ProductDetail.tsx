@@ -58,7 +58,7 @@ const ProductDetail = () => {
       ? [product.image_url] 
       : [];
   
-  const currency = product.currency || 'ريال';
+  const currency = product.currency || 'دينار عراقي';
 
   const handleAddToCart = () => {
     addToCart(product.id);

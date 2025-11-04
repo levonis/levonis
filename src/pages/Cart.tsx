@@ -45,8 +45,8 @@ const Cart = () => {
       items.forEach((item, index) => {
         message += `${index + 1}. ${item.products.name_ar}\n`;
         message += `   الكمية: ${item.quantity}\n`;
-        message += `   السعر: ${Number(item.products.price).toFixed(2)} ريال\n`;
-        message += `   المجموع: ${(Number(item.products.price) * item.quantity).toFixed(2)} ريال\n\n`;
+        message += `   السعر: ${Number(item.products.price).toFixed(2)} دينار عراقي\n`;
+        message += `   المجموع: ${(Number(item.products.price) * item.quantity).toFixed(2)} دينار عراقي\n\n`;
       });
 
       message += `\n👤 *معلومات المشتري:*\n`;
@@ -55,9 +55,9 @@ const Cart = () => {
       message += `المحافظة: ${profile.governorate || 'غير محددة'}\n\n`;
       
       message += `💰 *ملخص الطلب:*\n`;
-      message += `المجموع الفرعي: ${total.toFixed(2)} ريال\n`;
+      message += `المجموع الفرعي: ${total.toFixed(2)} دينار عراقي\n`;
       message += `التوصيل: مجاني\n`;
-      message += `الإجمالي: ${total.toFixed(2)} ريال`;
+      message += `الإجمالي: ${total.toFixed(2)} دينار عراقي`;
 
       // Encode the message for URL
       const encodedMessage = encodeURIComponent(message);
@@ -152,11 +152,11 @@ const Cart = () => {
                       
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-xl font-black text-primary">
-                          {Number(item.products.price).toFixed(2)} ريال
+                          {Number(item.products.price).toFixed(2)} دينار عراقي
                         </span>
                         {item.products.original_price && item.products.original_price > item.products.price && (
                           <span className="text-sm line-through text-muted-foreground/60">
-                            {Number(item.products.original_price).toFixed(2)} ريال
+                            {Number(item.products.original_price).toFixed(2)} دينار عراقي
                           </span>
                         )}
                       </div>
@@ -204,7 +204,7 @@ const Cart = () => {
                     <div className="text-left">
                       <div className="text-sm text-muted-foreground mb-1">المجموع</div>
                       <div className="text-xl font-black text-primary">
-                        {(Number(item.products.price) * item.quantity).toFixed(2)} ريال
+                        {(Number(item.products.price) * item.quantity).toFixed(2)} دينار عراقي
                       </div>
                     </div>
                   </div>
@@ -230,7 +230,7 @@ const Cart = () => {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-foreground">
                     <span>المجموع الفرعي</span>
-                    <span className="font-bold">{total.toFixed(2)} ريال</span>
+                    <span className="font-bold">{total.toFixed(2)} دينار عراقي</span>
                   </div>
                   
                   <div className="flex justify-between text-foreground">
@@ -241,7 +241,7 @@ const Cart = () => {
                   <div className="border-t border-border/40 pt-3 mt-3">
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">الإجمالي</span>
-                      <span className="text-primary">{total.toFixed(2)} ریال</span>
+                      <span className="text-primary">{total.toFixed(2)} دينار عراقي</span>
                     </div>
                   </div>
                 </div>

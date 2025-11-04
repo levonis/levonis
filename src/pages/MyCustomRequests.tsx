@@ -132,7 +132,7 @@ const MyCustomRequests = () => {
                       <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
                         <span className="text-sm font-medium">السعر المقترح:</span>
                         <span className="text-lg font-black text-primary">
-                          {Number(request.suggested_price).toFixed(2)} ریال
+                          {Number(request.suggested_price).toFixed(2)} دينار عراقي
                         </span>
                       </div>
                     )}

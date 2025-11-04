@@ -28,8 +28,8 @@ const ProductCard = ({
   originalPrice, 
   imageUrl,
   images,
-  currency = 'ريال',
-  slug 
+  currency = 'دينار عراقي',
+  slug
 }: ProductCardProps) => {
   const hasSale = originalPrice && originalPrice > price;
   const savings = hasSale ? originalPrice - price : 0;
