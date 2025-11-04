@@ -5,11 +5,37 @@ import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const { data: profile } = useQuery({
+    queryKey: ['profile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from('profiles')
+        .select('governorate')
+        .eq('id', user.id)
+        .single();
+      return data;
+    },
+    enabled: !!user?.id
+  });
+
+  const getDeliveryFee = (governorate: string | null) => {
+    if (!governorate) return 6000;
+    if (governorate.toLowerCase().includes('بغداد') || governorate.toLowerCase().includes('baghdad')) {
+      return 5000;
+    }
+    return 6000;
+  };
+
+  const deliveryFee = getDeliveryFee(profile?.governorate || null);
+  const grandTotal = total + deliveryFee;
 
   const handleCheckout = async () => {
     if (!user) {
@@ -38,6 +64,8 @@ const Cart = () => {
         return;
       }
 
+      const deliveryFee = getDeliveryFee(profile.governorate);
+
       // Build WhatsApp message
       let message = `مرحباً، أريد إتمام طلب:\n\n`;
       message += `📦 *المنتجات:*\n`;
@@ -64,8 +92,8 @@ const Cart = () => {
       
       message += `💰 *ملخص الطلب:*\n`;
       message += `المجموع الفرعي: ${total.toFixed(2)} دينار عراقي\n`;
-      message += `التوصيل: مجاني\n`;
-      message += `الإجمالي: ${total.toFixed(2)} دينار عراقي`;
+      message += `التوصيل: ${deliveryFee.toLocaleString('en-US')} دينار عراقي\n`;
+      message += `الإجمالي: ${(total + deliveryFee).toFixed(2)} دينار عراقي`;
 
       // Encode the message for URL
       const encodedMessage = encodeURIComponent(message);
@@ -251,13 +279,13 @@ const Cart = () => {
                   
                   <div className="flex justify-between text-foreground">
                     <span>التوصيل</span>
-                    <span className="font-bold">مجاني</span>
+                    <span className="font-bold">{deliveryFee.toLocaleString('en-US')} دينار عراقي</span>
                   </div>
                   
                   <div className="border-t border-border/40 pt-3 mt-3">
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">الإجمالي</span>
-                      <span className="text-primary">{total.toFixed(2)} دينار عراقي</span>
+                      <span className="text-primary">{grandTotal.toFixed(2)} دينار عراقي</span>
                     </div>
                   </div>
                 </div>
