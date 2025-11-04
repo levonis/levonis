@@ -117,7 +117,7 @@ const Cart = () => {
             <p className="text-muted-foreground mb-6">
               لم تقم بإضافة أي منتجات إلى السلة بعد
             </p>
-            <Link to="/products">
+            <Link to="/">
               <Button className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90">
                 <ArrowRight className="ml-2 h-4 w-4" />
                 تصفح المنتجات
