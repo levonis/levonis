@@ -7,6 +7,19 @@ import Footer from '@/components/Footer';
 import { Loader2 } from 'lucide-react';
 
 const Home = () => {
+  const { data: mainSections, isLoading: mainSectionsLoading } = useQuery({
+    queryKey: ['main-sections'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('main_sections')
+        .select('*')
+        .order('display_order', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const { data: categories, isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
     queryFn: async () => {
@@ -35,6 +48,16 @@ const Home = () => {
       return data;
     }
   });
+
+  // تنظيم الأقسام حسب الأقسام الرئيسية
+  const categoriesByMainSection = categories?.reduce((acc, category) => {
+    const sectionId = category.main_section_id || 'no-section';
+    if (!acc[sectionId]) {
+      acc[sectionId] = [];
+    }
+    acc[sectionId].push(category);
+    return acc;
+  }, {} as Record<string, typeof categories>);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-background">
@@ -106,67 +129,57 @@ const Home = () => {
             <p className="text-muted-foreground text-sm">اختر القسم الفرعي للانتقال</p>
           </div>
           
-          {categoriesLoading ? (
+          {categoriesLoading || mainSectionsLoading ? (
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
             <div className="space-y-16">
-              {/* First Row - Hardware Categories */}
-              <div className="animate-slide-in-up">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-1 h-8 bg-gradient-to-b from-primary to-accent rounded-full" />
-                  <h3 className="text-2xl font-black text-primary">قطع الكمبيوتر</h3>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                  {categories?.slice(0, 6).map((category, index) => (
-                    <div key={category.id} className={`stagger-${(index % 6) + 1}`}>
-                      <CategoryCard
-                        name={category.name}
-                        nameAr={category.name_ar}
-                        slug={category.slug}
-                        icon={category.icon}
-                        description={category.description}
-                        descriptionAr={category.description_ar}
-                      />
+              {/* الأقسام الرئيسية مع الأقسام الفرعية */}
+              {mainSections?.map((mainSection, sectionIndex) => {
+                const sectionCategories = categoriesByMainSection?.[mainSection.id] || [];
+                if (sectionCategories.length === 0) return null;
+                
+                return (
+                  <div 
+                    key={mainSection.id} 
+                    className="animate-slide-in-up"
+                    style={{ animationDelay: `${sectionIndex * 0.2}s` }}
+                  >
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-1 h-8 bg-gradient-to-b from-primary to-accent rounded-full" />
+                      <h3 className="text-2xl font-black text-primary">{mainSection.name_ar}</h3>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Second Row - 3D Printing Materials */}
-              {categories && categories.length > 6 && (
-                <div className="animate-slide-in-up" style={{ animationDelay: '0.2s' }}>
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-1 h-8 bg-gradient-to-b from-primary to-accent rounded-full" />
-                    <h3 className="text-2xl font-black text-primary">المواد</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                      {sectionCategories.map((category, index) => (
+                        <div key={category.id} className={`stagger-${(index % 6) + 1}`}>
+                          <CategoryCard
+                            name={category.name}
+                            nameAr={category.name_ar}
+                            slug={category.slug}
+                            icon={category.icon}
+                            description={category.description}
+                            descriptionAr={category.description_ar}
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {categories.slice(6, 12).map((category, index) => (
-                      <div key={category.id} className={`stagger-${(index % 6) + 1}`}>
-                        <CategoryCard
-                          name={category.name}
-                          nameAr={category.name_ar}
-                          slug={category.slug}
-                          icon={category.icon}
-                          description={category.description}
-                          descriptionAr={category.description_ar}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+                );
+              })}
 
-              {/* Third Row - Additional Categories */}
-              {categories && categories.length > 12 && (
-                <div className="animate-slide-in-up" style={{ animationDelay: '0.4s' }}>
+              {/* الأقسام بدون قسم رئيسي */}
+              {categoriesByMainSection?.['no-section'] && categoriesByMainSection['no-section'].length > 0 && (
+                <div 
+                  className="animate-slide-in-up" 
+                  style={{ animationDelay: `${(mainSections?.length || 0) * 0.2}s` }}
+                >
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-1 h-8 bg-gradient-to-b from-primary to-accent rounded-full" />
                     <h3 className="text-2xl font-black text-primary">أقسام أخرى</h3>
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {categories.slice(12).map((category, index) => (
+                    {categoriesByMainSection['no-section'].map((category, index) => (
                       <div key={category.id} className={`stagger-${(index % 6) + 1}`}>
                         <CategoryCard
                           name={category.name}
