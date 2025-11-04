@@ -105,33 +105,53 @@ const Admin = () => {
   });
 
   const { data: customRequests, isLoading: requestsLoading, refetch: refetchRequests } = useQuery({
-    queryKey: ['custom-requests'],
+    queryKey: ['custom-requests', isAdmin],
     queryFn: async () => {
+      console.log('Fetching custom requests, isAdmin:', isAdmin);
       const { data, error } = await supabase
         .from('custom_product_requests')
         .select('*, profiles(email)')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching custom requests:', error);
+        throw error;
+      }
+      console.log('Custom requests fetched:', data);
       return data;
     },
-    enabled: isAdmin
+    enabled: !!isAdmin,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true
   });
 
   const { data: pendingRequestsCount } = useQuery({
-    queryKey: ['pending-requests-count'],
+    queryKey: ['pending-requests-count', isAdmin],
     queryFn: async () => {
       const { count, error } = await supabase
         .from('custom_product_requests')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching pending count:', error);
+        throw error;
+      }
+      console.log('Pending requests count:', count);
       return count || 0;
     },
-    enabled: isAdmin,
-    refetchInterval: 30000 // Refresh every 30 seconds
+    enabled: !!isAdmin,
+    refetchInterval: 30000,
+    refetchOnMount: true
   });
+
+  // Refetch when isAdmin changes
+  useEffect(() => {
+    if (isAdmin) {
+      console.log('Admin status confirmed, refetching data...');
+      refetchRequests();
+    }
+  }, [isAdmin, refetchRequests]);
 
   const createProduct = useMutation({
     mutationFn: async (values: any) => {
