@@ -191,7 +191,9 @@ const Admin = () => {
           return Array.isArray(k) && (
             k[0] === 'products' ||
             k[0] === 'featured-products' ||
-            k[0] === 'category-products'
+            k[0] === 'category-products' ||
+            k[0] === 'product' ||
+            k[0] === 'product-options'
           );
         },
       });
@@ -221,7 +223,9 @@ const Admin = () => {
           return Array.isArray(k) && (
             k[0] === 'products' ||
             k[0] === 'featured-products' ||
-            k[0] === 'category-products'
+            k[0] === 'category-products' ||
+            k[0] === 'product' ||
+            k[0] === 'product-options'
           );
         },
       });
@@ -590,7 +594,8 @@ const Admin = () => {
             k[0] === 'products' ||
             k[0] === 'featured-products' ||
             k[0] === 'category-products' ||
-            k[0] === 'product'
+            k[0] === 'product' ||
+            k[0] === 'product-options'
           );
         },
       });
