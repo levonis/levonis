@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +18,7 @@ interface AdminCustomRequestsProps {
 }
 
 const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomRequestsProps) => {
+  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
@@ -62,6 +64,7 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
       toast.success('تم تحديث الطلب بنجاح');
       setDialogOpen(false);
       refetch();
+      queryClient.invalidateQueries({ queryKey: ['pending-requests-count'] });
     } catch (error) {
       console.error('Error updating request:', error);
       toast.error('حدث خطأ أثناء تحديث الطلب');

@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Plus, Pencil, Trash2, FolderOpen } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
 import AdminCustomRequests from './AdminCustomRequests';
@@ -115,6 +116,21 @@ const Admin = () => {
       return data;
     },
     enabled: isAdmin
+  });
+
+  const { data: pendingRequestsCount } = useQuery({
+    queryKey: ['pending-requests-count'],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('custom_product_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: isAdmin,
+    refetchInterval: 30000 // Refresh every 30 seconds
   });
 
   const createProduct = useMutation({
@@ -417,6 +433,18 @@ const Admin = () => {
               <FolderOpen className="h-4 w-4" />
               المنتجات
             </TabsTrigger>
+            <TabsTrigger value="custom-requests" className="gap-2 relative">
+              <FolderOpen className="h-4 w-4" />
+              الطلبات المخصصة
+              {pendingRequestsCount && pendingRequestsCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-2 -left-2 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
+                >
+                  {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="categories" className="gap-2">
               <FolderOpen className="h-4 w-4" />
               الأقسام
@@ -424,10 +452,6 @@ const Admin = () => {
             <TabsTrigger value="main-sections" className="gap-2">
               <FolderOpen className="h-4 w-4" />
               الأقسام الرئيسية
-            </TabsTrigger>
-            <TabsTrigger value="custom-requests" className="gap-2">
-              <FolderOpen className="h-4 w-4" />
-              الطلبات المخصصة
             </TabsTrigger>
           </TabsList>
 

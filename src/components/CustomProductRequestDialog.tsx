@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Button } from './ui/button';
@@ -27,6 +28,7 @@ interface CustomProductRequestDialogProps {
 }
 
 const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProps) => {
+  const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -115,6 +117,8 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
       if (error) throw error;
 
       toast.success('تم إرسال طلبك بنجاح! سنتواصل معك قريباً');
+      queryClient.invalidateQueries({ queryKey: ['pending-requests-count'] });
+      queryClient.invalidateQueries({ queryKey: ['custom-requests'] });
       form.reset();
       setSelectedImage(null);
       setImagePreview(null);
