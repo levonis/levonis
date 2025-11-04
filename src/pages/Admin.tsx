@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
 import AdminCustomRequests from './AdminCustomRequests';
+import { formatPrice } from '@/lib/utils';
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -661,10 +662,10 @@ const Admin = () => {
                         </TableCell>
                         <TableCell className="font-medium">{product.name_ar}</TableCell>
                         <TableCell>{(product as any).categories?.name_ar}</TableCell>
-                        <TableCell>{Number(product.price).toFixed(2)} دينار عراقي</TableCell>
+                        <TableCell>{formatPrice(Number(product.price))} دينار عراقي</TableCell>
                         <TableCell>
                           {product.original_price 
-                            ? `${Number(product.original_price).toFixed(2)} دينار عراقي`
+                            ? `${formatPrice(Number(product.original_price))} دينار عراقي`
                             : '-'}
                         </TableCell>
                         <TableCell className="text-left">

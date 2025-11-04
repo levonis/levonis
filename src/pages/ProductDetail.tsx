@@ -8,6 +8,7 @@ import { useCart } from '@/hooks/useCart';
 import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
+import { formatPrice } from '@/lib/utils';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -181,7 +182,7 @@ const ProductDetail = () => {
               <div className="border-t border-border/30 pt-6 mb-6">
                 <div className="flex items-baseline gap-3 mb-2">
                   <span className="text-5xl font-black text-primary">
-                    {Number(product.price).toFixed(2)}
+                    {formatPrice(Number(product.price))}
                   </span>
                   <span className="text-2xl text-muted-foreground">{currency}</span>
                 </div>
@@ -189,10 +190,10 @@ const ProductDetail = () => {
                 {hasSale && (
                   <div className="flex items-center gap-3">
                     <span className="text-2xl line-through text-muted-foreground/60">
-                      {Number(product.original_price).toFixed(2)} {currency}
+                      {formatPrice(Number(product.original_price))} {currency}
                     </span>
                     <Badge variant="secondary" className="bg-primary/10 text-primary">
-                      وفر {savings.toFixed(2)} {currency}
+                      وفر {formatPrice(savings)} {currency}
                     </Badge>
                   </div>
                 )}

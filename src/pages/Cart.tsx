@@ -6,6 +6,7 @@ import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-re
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
+import { formatPrice } from '@/lib/utils';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
@@ -81,8 +82,8 @@ const Cart = () => {
         
         message += `${index + 1}. ${itemName}${isCustomRequest ? ' ⭐ (طلب خاص)' : ''}\n`;
         message += `   الكمية: ${item.quantity}\n`;
-        message += `   السعر: ${itemPrice.toFixed(2)} دينار عراقي\n`;
-        message += `   المجموع: ${(itemPrice * item.quantity).toFixed(2)} دينار عراقي\n\n`;
+        message += `   السعر: ${formatPrice(itemPrice)} دينار عراقي\n`;
+        message += `   المجموع: ${formatPrice(itemPrice * item.quantity)} دينار عراقي\n\n`;
       });
 
       message += `\n👤 *معلومات المشتري:*\n`;
@@ -91,9 +92,9 @@ const Cart = () => {
       message += `المحافظة: ${profile.governorate || 'غير محددة'}\n\n`;
       
       message += `💰 *ملخص الطلب:*\n`;
-      message += `المجموع الفرعي: ${total.toFixed(2)} دينار عراقي\n`;
-      message += `التوصيل: ${deliveryFee.toLocaleString('en-US')} دينار عراقي\n`;
-      message += `الإجمالي: ${(total + deliveryFee).toFixed(2)} دينار عراقي`;
+      message += `المجموع الفرعي: ${formatPrice(total)} دينار عراقي\n`;
+      message += `التوصيل: ${formatPrice(deliveryFee)} دينار عراقي\n`;
+      message += `الإجمالي: ${formatPrice(total + deliveryFee)} دينار عراقي`;
 
       // Encode the message for URL
       const encodedMessage = encodeURIComponent(message);
@@ -191,13 +192,13 @@ const Cart = () => {
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-xl font-black text-primary">
                           {item.products 
-                            ? Number(item.products.price).toFixed(2) 
-                            : Number(item.custom_product_requests?.suggested_price || 0).toFixed(2)
+                            ? formatPrice(Number(item.products.price))
+                            : formatPrice(Number(item.custom_product_requests?.suggested_price || 0))
                           } دينار عراقي
                         </span>
                         {item.products?.original_price && item.products.original_price > item.products.price && (
                           <span className="text-sm line-through text-muted-foreground/60">
-                            {Number(item.products.original_price).toFixed(2)} دينار عراقي
+                            {formatPrice(Number(item.products.original_price))} دينار عراقي
                           </span>
                         )}
                       </div>
@@ -246,8 +247,8 @@ const Cart = () => {
                       <div className="text-sm text-muted-foreground mb-1">المجموع</div>
                       <div className="text-xl font-black text-primary">
                         {item.products 
-                          ? (Number(item.products.price) * item.quantity).toFixed(2)
-                          : (Number(item.custom_product_requests?.suggested_price || 0) * item.quantity).toFixed(2)
+                          ? formatPrice(Number(item.products.price) * item.quantity)
+                          : formatPrice(Number(item.custom_product_requests?.suggested_price || 0) * item.quantity)
                         } دينار عراقي
                       </div>
                     </div>
@@ -274,18 +275,18 @@ const Cart = () => {
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-foreground">
                     <span>المجموع الفرعي</span>
-                    <span className="font-bold">{total.toFixed(2)} دينار عراقي</span>
+                    <span className="font-bold">{formatPrice(total)} دينار عراقي</span>
                   </div>
                   
                   <div className="flex justify-between text-foreground">
                     <span>التوصيل</span>
-                    <span className="font-bold">{deliveryFee.toLocaleString('en-US')} دينار عراقي</span>
+                    <span className="font-bold">{formatPrice(deliveryFee)} دينار عراقي</span>
                   </div>
                   
                   <div className="border-t border-border/40 pt-3 mt-3">
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">الإجمالي</span>
-                      <span className="text-primary">{grandTotal.toFixed(2)} دينار عراقي</span>
+                      <span className="text-primary">{formatPrice(grandTotal)} دينار عراقي</span>
                     </div>
                   </div>
                 </div>

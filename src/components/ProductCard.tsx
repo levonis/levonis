@@ -3,6 +3,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
+import { formatPrice } from '@/lib/utils';
 
 interface ProductCardProps {
   id: string;
@@ -79,15 +80,15 @@ const ProductCard = ({
       <div className="flex items-center justify-between gap-2 mt-auto">
         <div className="flex flex-col">
           <span className="text-xl font-black text-primary">
-            {price.toFixed(2)} {currency}
+            {formatPrice(price)} {currency}
           </span>
           {hasSale && (
             <div className="flex items-center gap-2">
               <span className="text-sm line-through text-muted-foreground/60">
-                {originalPrice?.toFixed(2)} {currency}
+                {formatPrice(originalPrice || 0)} {currency}
               </span>
               <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-                وفر {savings.toFixed(0)}
+                وفر {formatPrice(savings)}
               </span>
             </div>
           )}

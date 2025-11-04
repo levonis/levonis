@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Pencil, Loader2, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDate, formatPrice } from '@/lib/utils';
 
 interface AdminCustomRequestsProps {
   requests: any[] | undefined;
@@ -123,11 +124,11 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
                 <TableCell>{getStatusBadge(request.status)}</TableCell>
                 <TableCell>
                   {request.suggested_price 
-                    ? `${Number(request.suggested_price).toFixed(2)} دينار عراقي`
+                    ? `${formatPrice(Number(request.suggested_price))} دينار عراقي`
                     : '-'}
                 </TableCell>
                 <TableCell>
-                  {new Date(request.created_at).toLocaleDateString('ar-SA')}
+                  {formatDate(request.created_at)}
                 </TableCell>
                 <TableCell className="text-left">
                   <div className="flex gap-2">
@@ -205,7 +206,7 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
                   <Label className="text-muted-foreground">السعر المقترح</Label>
                   <p className="font-medium">
                     {selectedRequest.suggested_price 
-                      ? `${Number(selectedRequest.suggested_price).toFixed(2)} دينار عراقي`
+                      ? `${formatPrice(Number(selectedRequest.suggested_price))} دينار عراقي`
                       : 'لم يتم التسعير'}
                   </p>
                 </div>

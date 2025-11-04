@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Package, ShoppingCart, Bell, BellDot } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
+import { formatDate, formatPrice } from '@/lib/utils';
 
 const MyCustomRequests = () => {
   const { user, loading: authLoading } = useAuth();
@@ -136,7 +137,7 @@ const MyCustomRequests = () => {
                         <h4 className="font-bold text-foreground mb-1">{notification.title}</h4>
                         <p className="text-sm text-muted-foreground">{notification.message}</p>
                         <p className="text-xs text-muted-foreground/60 mt-2">
-                          {new Date(notification.created_at).toLocaleString('ar-SA')}
+                          {formatDate(notification.created_at)}
                         </p>
                       </div>
                     </div>
@@ -219,7 +220,7 @@ const MyCustomRequests = () => {
                         <div className="flex items-center justify-between p-3 rounded-lg bg-primary/10 border border-primary/20">
                           <span className="text-sm font-medium">السعر المقترح:</span>
                           <span className="text-lg font-black text-primary">
-                            {Number(request.suggested_price).toFixed(2)} دينار عراقي
+                            {formatPrice(Number(request.suggested_price))} دينار عراقي
                           </span>
                         </div>
                         
@@ -245,7 +246,7 @@ const MyCustomRequests = () => {
                     )}
 
                     <div className="text-xs text-muted-foreground pt-2 border-t border-border/30">
-                      تاريخ الطلب: {new Date(request.created_at).toLocaleDateString('ar-SA')}
+                      تاريخ الطلب: {formatDate(request.created_at)}
                     </div>
                   </div>
                 ))}

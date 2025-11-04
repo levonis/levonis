@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, User, Mail, Calendar, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDate } from '@/lib/utils';
 
 const UserInfo = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -180,7 +181,7 @@ const UserInfo = () => {
               <div className="flex items-center justify-between py-2">
                 <span className="text-muted-foreground">تاريخ الإنشاء</span>
                 <span className="font-medium text-foreground">
-                  {user?.created_at ? new Date(user.created_at).toLocaleDateString('ar-SA') : '-'}
+                  {user?.created_at ? formatDate(user.created_at) : '-'}
                 </span>
               </div>
             </CardContent>
