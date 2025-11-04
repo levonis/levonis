@@ -47,6 +47,28 @@ const TopBar = () => {
             </div>
           </Link>
 
+          {/* Navigation Links */}
+          <div className="hidden md:flex items-center gap-6">
+            <Link 
+              to="/" 
+              className="text-foreground/80 hover:text-foreground transition-colors font-medium hover-scale"
+            >
+              الرئيسية
+            </Link>
+            <Link 
+              to="/categories" 
+              className="text-foreground/80 hover:text-foreground transition-colors font-medium hover-scale"
+            >
+              الأقسام
+            </Link>
+            <Link 
+              to="/products" 
+              className="text-foreground/80 hover:text-foreground transition-colors font-medium hover-scale"
+            >
+              المنتجات
+            </Link>
+          </div>
+
           {/* Cart and User Actions */}
           <div className="flex items-center gap-3">
             {/* Cart Button */}
