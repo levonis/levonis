@@ -42,7 +42,7 @@ const Home = () => {
       <div 
         className="fixed top-0 left-0 right-0 h-64 pointer-events-none z-0 opacity-90"
         style={{
-          backgroundImage: 'url(/images/ornamental-frame.png)',
+          backgroundImage: 'url(/images/decorative-border.png)',
           backgroundSize: 'contain',
           backgroundPosition: 'top center',
           backgroundRepeat: 'no-repeat',
@@ -54,7 +54,7 @@ const Home = () => {
       <div 
         className="fixed top-64 left-0 bottom-0 w-32 pointer-events-none z-0 opacity-90"
         style={{
-          backgroundImage: 'url(/images/ornamental-frame.png)',
+          backgroundImage: 'url(/images/decorative-border.png)',
           backgroundSize: '200% auto',
           backgroundPosition: 'left center',
           backgroundRepeat: 'repeat-y',
@@ -65,7 +65,7 @@ const Home = () => {
       <div 
         className="fixed top-64 right-0 bottom-0 w-32 pointer-events-none z-0 opacity-90"
         style={{
-          backgroundImage: 'url(/images/ornamental-frame.png)',
+          backgroundImage: 'url(/images/decorative-border.png)',
           backgroundSize: '200% auto',
           backgroundPosition: 'right center',
           backgroundRepeat: 'repeat-y',
