@@ -13,6 +13,7 @@ import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { formatPrice } from '@/lib/utils';
+import ProductCard from '@/components/ProductCard';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -72,6 +73,25 @@ const ProductDetail = () => {
       return !!data;
     },
     enabled: !!user && !!product
+  });
+
+  const { data: relatedProducts } = useQuery({
+    queryKey: ['related-products', product?.category_id, product?.id],
+    queryFn: async () => {
+      if (!product || !product.category_id) return [];
+      
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .eq('category_id', product.category_id)
+        .eq('in_stock', true)
+        .neq('id', product.id)
+        .limit(4);
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!product && !!product.category_id
   });
 
   const toggleFavoriteMutation = useMutation({
@@ -472,6 +492,31 @@ const ProductDetail = () => {
               <p className="text-muted-foreground leading-relaxed">
                 {product.description || product.description_ar}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Related Products Section */}
+        {relatedProducts && relatedProducts.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-3xl font-black text-gradient-gold mb-8">منتجات مشابهة</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedProducts.map((relatedProduct: any) => (
+                <ProductCard
+                  key={relatedProduct.id}
+                  id={relatedProduct.id}
+                  name={relatedProduct.name}
+                  nameAr={relatedProduct.name_ar}
+                  description={relatedProduct.description}
+                  descriptionAr={relatedProduct.description_ar}
+                  price={Number(relatedProduct.price)}
+                  originalPrice={relatedProduct.original_price ? Number(relatedProduct.original_price) : undefined}
+                  imageUrl={relatedProduct.image_url}
+                  images={relatedProduct.images}
+                  currency={relatedProduct.currency || 'دينار عراقي'}
+                  slug={relatedProduct.slug}
+                />
+              ))}
             </div>
           </div>
         )}
