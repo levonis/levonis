@@ -55,6 +55,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
+      console.log('Fetching cart for user:', user.id);
+      
       const { data, error } = await supabase
         .from('cart_items')
         .select(`
@@ -85,7 +87,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Fetch cart error:', error);
+        throw error;
+      }
+      
+      console.log('Cart items fetched:', data);
       setItems(data as CartItem[] || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -106,12 +113,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
+      console.log('Adding to cart:', { productId, optionId, color });
+      
       // Check if item with same product, option, and color already exists
       const existingItem = items.find(item => 
         item.product_id === productId && 
         (item as any).product_option_id === (optionId || null) &&
         (item as any).selected_color === (color || null)
       );
+      
+      console.log('Existing item found:', existingItem);
       
       if (existingItem) {
         await updateQuantity(existingItem.id, existingItem.quantity + 1);
@@ -132,11 +143,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         insertData.selected_color = color;
       }
 
+      console.log('Inserting cart item:', insertData);
+
       const { error } = await supabase
         .from('cart_items')
         .insert([insertData]);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Insert error:', error);
+        throw error;
+      }
       
       await fetchCart();
       toast.success('تمت الإضافة إلى السلة');
@@ -179,14 +195,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (quantity < 1) return;
 
     try {
+      console.log('Updating quantity:', { itemId, quantity });
+      
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity })
         .eq('id', itemId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Update quantity error:', error);
+        throw error;
+      }
       
       await fetchCart();
+      toast.success('تم تحديث الكمية');
     } catch (error) {
       console.error('Error updating quantity:', error);
       toast.error('حدث خطأ في تحديث الكمية');
@@ -195,12 +217,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const removeFromCart = async (itemId: string) => {
     try {
+      console.log('Removing from cart:', itemId);
+      
       const { error } = await supabase
         .from('cart_items')
         .delete()
         .eq('id', itemId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Remove from cart error:', error);
+        throw error;
+      }
       
       await fetchCart();
       toast.success('تم حذف المنتج من السلة');
@@ -230,9 +257,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  
   const total = items.reduce((sum, item) => {
     if (item.products) {
-      return sum + (Number(item.products.price) * item.quantity);
+      let itemPrice = Number(item.products.price);
+      
+      // Add color price if selected and different from base price
+      const selectedColorData = (item as any).selected_color && item.products.colors
+        ? (item.products.colors as any[]).find((c: any) => c.name === (item as any).selected_color)
+        : null;
+      
+      if (selectedColorData?.price != null) {
+        itemPrice = Number(selectedColorData.price);
+      }
+      
+      return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
     }

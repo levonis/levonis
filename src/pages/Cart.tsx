@@ -95,20 +95,32 @@ const Cart = () => {
         const itemName = isCustomRequest 
           ? item.custom_product_requests?.product_name 
           : item.products?.name_ar;
-        const itemPrice = isCustomRequest
+        
+        // Calculate item price based on color and option
+        let itemPrice = isCustomRequest
           ? Number(item.custom_product_requests?.suggested_price || 0)
           : Number(item.products?.price || 0);
         
-        // Get option name if exists
+        // Get option name and price adjustment if exists
         const itemOption = (item as any).product_option_id 
           ? productOptions?.find((opt: any) => opt.id === (item as any).product_option_id)
           : null;
         
-        // Get color name if exists
+        // Get color name and price if exists
         const itemColor = (item as any).selected_color;
         const colorData = itemColor && item.products?.colors
           ? (item.products.colors as any[]).find((c: any) => c.name === itemColor)
           : null;
+        
+        // Use color price if available
+        if (colorData?.price != null) {
+          itemPrice = Number(colorData.price);
+        }
+        
+        // Add option price adjustment
+        if (itemOption?.price_adjustment) {
+          itemPrice += Number(itemOption.price_adjustment);
+        }
         
         message += `${index + 1}. ${itemName}${isCustomRequest ? ' ⭐ (طلب خاص)' : ''}\n`;
         if (itemOption) {
@@ -207,6 +219,21 @@ const Cart = () => {
                   ? (item.products.colors as any[]).find((c: any) => c.name === itemColor)
                   : null;
                 
+                // Calculate item price based on color and option
+                let itemPrice = item.products 
+                  ? Number(item.products.price)
+                  : Number(item.custom_product_requests?.suggested_price || 0);
+                
+                // Use color price if available
+                if (colorData?.price != null) {
+                  itemPrice = Number(colorData.price);
+                }
+                
+                // Add option price adjustment
+                if (itemOption?.price_adjustment) {
+                  itemPrice += Number(itemOption.price_adjustment);
+                }
+                
                 return (
                   <div 
                     key={item.id}
@@ -261,12 +288,9 @@ const Cart = () => {
                         
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-xl font-black text-primary">
-                            {item.products 
-                              ? formatPrice(Number(item.products.price))
-                              : formatPrice(Number(item.custom_product_requests?.suggested_price || 0))
-                            } دينار عراقي
+                            {formatPrice(itemPrice)} دينار عراقي
                           </span>
-                          {item.products?.original_price && item.products.original_price > item.products.price && (
+                          {item.products?.original_price && item.products.original_price > itemPrice && (
                             <span className="text-sm line-through text-muted-foreground/60">
                               {formatPrice(Number(item.products.original_price))} دينار عراقي
                             </span>
@@ -316,10 +340,7 @@ const Cart = () => {
                       <div className="text-left">
                         <div className="text-sm text-muted-foreground mb-1">المجموع</div>
                         <div className="text-xl font-black text-primary">
-                          {item.products 
-                            ? formatPrice(Number(item.products.price) * item.quantity)
-                            : formatPrice(Number(item.custom_product_requests?.suggested_price || 0) * item.quantity)
-                          } دينار عراقي
+                          {formatPrice(itemPrice * item.quantity)} دينار عراقي
                         </div>
                       </div>
                     </div>
