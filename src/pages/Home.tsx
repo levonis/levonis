@@ -37,16 +37,19 @@ const Home = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden"
+    <div className="min-h-screen relative overflow-hidden"
          style={{
            backgroundImage: 'url(/images/ornamental-frame.png)',
            backgroundSize: 'cover',
            backgroundPosition: 'center',
            backgroundRepeat: 'no-repeat',
-           backgroundAttachment: 'fixed'
+           backgroundAttachment: 'fixed',
+           backgroundColor: 'hsl(var(--background))'
          }}>
+      {/* Overlay to enhance visibility */}
+      <div className="fixed inset-0 bg-background/60 pointer-events-none" />
       
-      <main className="relative">
+      <main className="relative z-10">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-5xl md:text-6xl font-black mb-4 text-gradient-gold animate-in fade-in slide-in-from-bottom-4 duration-700">
