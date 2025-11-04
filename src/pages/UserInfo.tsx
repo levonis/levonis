@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, User, Mail, Calendar, Shield } from 'lucide-react';
+import { Loader2, User, Mail, Calendar, Shield, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 
@@ -184,6 +184,29 @@ const UserInfo = () => {
                   {user?.created_at ? formatDate(user.created_at) : '-'}
                 </span>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Favorites Card */}
+          <Card className="glass-effect border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-primary" />
+                المفضلة
+              </CardTitle>
+              <CardDescription>
+                عرض وإدارة منتجاتك المفضلة
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate('/favorites')}
+              >
+                <Heart className="ml-2 h-4 w-4" />
+                عرض المفضلة
+              </Button>
             </CardContent>
           </Card>
 

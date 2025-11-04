@@ -1,11 +1,13 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useCart } from '@/hooks/useCart';
-import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { formatPrice } from '@/lib/utils';
@@ -13,8 +15,11 @@ import { formatPrice } from '@/lib/utils';
 const ProductDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { addToCart } = useCart();
+  const queryClient = useQueryClient();
   const [selectedImage, setSelectedImage] = useState(0);
+  const [quantity, setQuantity] = useState(1);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
@@ -28,6 +33,63 @@ const ProductDetail = () => {
       if (error) throw error;
       if (!data) throw new Error('Product not found');
       return data;
+    }
+  });
+
+  const { data: isFavorite, isLoading: favoriteLoading } = useQuery({
+    queryKey: ['favorite', product?.id, user?.id],
+    queryFn: async () => {
+      if (!user || !product) return false;
+      
+      const { data, error } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('product_id', product.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      return !!data;
+    },
+    enabled: !!user && !!product
+  });
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !product) {
+        throw new Error('User not authenticated');
+      }
+
+      if (isFavorite) {
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('product_id', product.id);
+        
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('favorites')
+          .insert({
+            user_id: user.id,
+            product_id: product.id
+          });
+        
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorite', product?.id, user?.id] });
+      toast.success(isFavorite ? 'تم حذف المنتج من المفضلة' : 'تم إضافة المنتج للمفضلة');
+    },
+    onError: (error: any) => {
+      if (error.message === 'User not authenticated') {
+        toast.error('يجب تسجيل الدخول أولاً');
+        navigate('/auth');
+      } else {
+        toast.error('حدث خطأ، حاول مرة أخرى');
+      }
     }
   });
 
@@ -62,8 +124,25 @@ const ProductDetail = () => {
   const currency = product.currency || 'دينار عراقي';
 
   const handleAddToCart = () => {
-    addToCart(product.id);
-    toast.success('تم إضافة المنتج إلى السلة');
+    for (let i = 0; i < quantity; i++) {
+      addToCart(product.id);
+    }
+    toast.success(`تم إضافة ${quantity} من المنتج إلى السلة`);
+    setQuantity(1);
+  };
+
+  const handleToggleFavorite = () => {
+    toggleFavoriteMutation.mutate();
+  };
+
+  const incrementQuantity = () => {
+    setQuantity(prev => prev + 1);
+  };
+
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(prev => prev - 1);
+    }
   };
 
   return (
@@ -199,6 +278,42 @@ const ProductDetail = () => {
                 )}
               </div>
 
+              {/* Quantity Selector */}
+              {product.in_stock && (
+                <div className="border-t border-border/30 pt-6 mb-6">
+                  <label className="text-sm font-medium text-foreground mb-2 block">الكمية</label>
+                  <div className="flex items-center gap-3">
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-12 w-12"
+                      onClick={decrementQuantity}
+                      disabled={quantity <= 1}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={quantity}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (val > 0) setQuantity(val);
+                      }}
+                      className="h-12 text-center text-lg font-bold w-20"
+                    />
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      className="h-12 w-12"
+                      onClick={incrementQuantity}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex gap-3">
                 <Button 
@@ -209,6 +324,16 @@ const ProductDetail = () => {
                 >
                   <ShoppingCart className="ml-2 h-5 w-5" />
                   {product.in_stock ? 'أضف إلى السلة' : 'غير متوفر'}
+                </Button>
+                
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  className={`h-14 px-6 ${isFavorite ? 'text-red-500 border-red-500' : ''}`}
+                  onClick={handleToggleFavorite}
+                  disabled={favoriteLoading || toggleFavoriteMutation.isPending}
+                >
+                  <Heart className={`h-5 w-5 ${isFavorite ? 'fill-current' : ''}`} />
                 </Button>
                 
                 <Button 

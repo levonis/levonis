@@ -15,6 +15,7 @@ import Categories from "./pages/Categories";
 import CategoryDetail from "./pages/CategoryDetail";
 import Cart from "./pages/Cart";
 import UserInfo from "./pages/UserInfo";
+import Favorites from "./pages/Favorites";
 import MyCustomRequests from "./pages/MyCustomRequests";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/category/:slug" element={<CategoryDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/user-info" element={<UserInfo />} />
+              <Route path="/favorites" element={<Favorites />} />
               <Route path="/my-requests" element={<MyCustomRequests />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<Admin />} />
