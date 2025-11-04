@@ -17,6 +17,7 @@ export type Database = {
       cart_items: {
         Row: {
           created_at: string | null
+          custom_request_id: string | null
           id: string
           product_id: string
           quantity: number
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          custom_request_id?: string | null
           id?: string
           product_id: string
           quantity?: number
@@ -33,6 +35,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          custom_request_id?: string | null
           id?: string
           product_id?: string
           quantity?: number
@@ -40,6 +43,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cart_items_custom_request_id_fkey"
+            columns: ["custom_request_id"]
+            isOneToOne: false
+            referencedRelation: "custom_product_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cart_items_product_id_fkey"
             columns: ["product_id"]
@@ -162,6 +172,39 @@ export type Database = {
           name?: string
           name_ar?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          related_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          related_id?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          related_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }

@@ -43,10 +43,18 @@ const Cart = () => {
       message += `📦 *المنتجات:*\n`;
       
       items.forEach((item, index) => {
-        message += `${index + 1}. ${item.products.name_ar}\n`;
+        const isCustomRequest = !!item.custom_request_id;
+        const itemName = isCustomRequest 
+          ? item.custom_product_requests?.product_name 
+          : item.products?.name_ar;
+        const itemPrice = isCustomRequest
+          ? Number(item.custom_product_requests?.suggested_price || 0)
+          : Number(item.products?.price || 0);
+        
+        message += `${index + 1}. ${itemName}${isCustomRequest ? ' ⭐ (طلب خاص)' : ''}\n`;
         message += `   الكمية: ${item.quantity}\n`;
-        message += `   السعر: ${Number(item.products.price).toFixed(2)} دينار عراقي\n`;
-        message += `   المجموع: ${(Number(item.products.price) * item.quantity).toFixed(2)} دينار عراقي\n\n`;
+        message += `   السعر: ${itemPrice.toFixed(2)} دينار عراقي\n`;
+        message += `   المجموع: ${(itemPrice * item.quantity).toFixed(2)} دينار عراقي\n\n`;
       });
 
       message += `\n👤 *معلومات المشتري:*\n`;
@@ -131,30 +139,35 @@ const Cart = () => {
                 >
                   <div className="flex gap-4">
                     {/* Product Image */}
-                    {item.products.image_url && (
-                      <Link to={`/product/${item.products.slug}`} className="flex-shrink-0">
+                    {((item.products?.image_url) || (item.custom_product_requests?.image_url)) && (
+                      <div className="flex-shrink-0">
                         <img 
-                          src={item.products.image_url}
-                          alt={item.products.name_ar}
+                          src={item.products?.image_url || item.custom_product_requests?.image_url || ''}
+                          alt={item.products?.name_ar || item.custom_product_requests?.product_name || ''}
                           className="w-24 h-24 object-cover rounded-xl border border-border/40"
                         />
-                      </Link>
+                      </div>
                     )}
                     
                     {/* Product Info */}
                     <div className="flex-1 min-w-0">
-                      <Link 
-                        to={`/product/${item.products.slug}`}
-                        className="font-bold text-lg text-foreground hover:text-primary transition-colors block mb-1"
-                      >
-                        {item.products.name_ar}
-                      </Link>
+                      <div className="font-bold text-lg text-foreground mb-1 flex items-center gap-2">
+                        {item.products?.name_ar || item.custom_product_requests?.product_name}
+                        {item.custom_request_id && (
+                          <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                            طلب خاص ⭐
+                          </span>
+                        )}
+                      </div>
                       
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-xl font-black text-primary">
-                          {Number(item.products.price).toFixed(2)} دينار عراقي
+                          {item.products 
+                            ? Number(item.products.price).toFixed(2) 
+                            : Number(item.custom_product_requests?.suggested_price || 0).toFixed(2)
+                          } دينار عراقي
                         </span>
-                        {item.products.original_price && item.products.original_price > item.products.price && (
+                        {item.products?.original_price && item.products.original_price > item.products.price && (
                           <span className="text-sm line-through text-muted-foreground/60">
                             {Number(item.products.original_price).toFixed(2)} دينار عراقي
                           </span>
@@ -204,7 +217,10 @@ const Cart = () => {
                     <div className="text-left">
                       <div className="text-sm text-muted-foreground mb-1">المجموع</div>
                       <div className="text-xl font-black text-primary">
-                        {(Number(item.products.price) * item.quantity).toFixed(2)} دينار عراقي
+                        {item.products 
+                          ? (Number(item.products.price) * item.quantity).toFixed(2)
+                          : (Number(item.custom_product_requests?.suggested_price || 0) * item.quantity).toFixed(2)
+                        } دينار عراقي
                       </div>
                     </div>
                   </div>

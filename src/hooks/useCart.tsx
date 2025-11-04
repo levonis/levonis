@@ -5,9 +5,10 @@ import { toast } from 'sonner';
 
 interface CartItem {
   id: string;
-  product_id: string;
+  product_id: string | null;
+  custom_request_id: string | null;
   quantity: number;
-  products: {
+  products?: {
     id: string;
     name: string;
     name_ar: string;
@@ -15,6 +16,13 @@ interface CartItem {
     original_price: number | null;
     image_url: string | null;
     slug: string;
+  };
+  custom_product_requests?: {
+    id: string;
+    product_name: string;
+    suggested_price: number;
+    image_url: string | null;
+    quantity: number;
   };
 }
 
@@ -24,6 +32,7 @@ interface CartContextType {
   itemCount: number;
   total: number;
   addToCart: (productId: string) => Promise<void>;
+  addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -50,6 +59,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .select(`
           id,
           product_id,
+          custom_request_id,
           quantity,
           products (
             id,
@@ -59,6 +69,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             original_price,
             image_url,
             slug
+          ),
+          custom_product_requests (
+            id,
+            product_name,
+            suggested_price,
+            image_url,
+            quantity
           )
         `)
         .eq('user_id', user.id)
@@ -104,6 +121,35 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error('Error adding to cart:', error);
       toast.error('حدث خطأ في إضافة المنتج');
+    }
+  };
+
+  const addCustomRequestToCart = async (customRequestId: string) => {
+    if (!user) {
+      toast.error('يجب تسجيل الدخول أولاً');
+      return;
+    }
+
+    try {
+      // Check if custom request already exists in cart
+      const existingItem = items.find(item => item.custom_request_id === customRequestId);
+      
+      if (existingItem) {
+        toast.info('هذا الطلب موجود بالفعل في السلة');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('cart_items')
+        .insert([{ user_id: user.id, product_id: null, custom_request_id: customRequestId, quantity: 1 }]);
+
+      if (error) throw error;
+      
+      await fetchCart();
+      toast.success('تمت إضافة الطلب المخصص إلى السلة');
+    } catch (error) {
+      console.error('Error adding custom request to cart:', error);
+      toast.error('حدث خطأ في إضافة الطلب المخصص');
     }
   };
 
@@ -162,7 +208,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  const total = items.reduce((sum, item) => sum + (Number(item.products.price) * item.quantity), 0);
+  const total = items.reduce((sum, item) => {
+    if (item.products) {
+      return sum + (Number(item.products.price) * item.quantity);
+    } else if (item.custom_product_requests) {
+      return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
+    }
+    return sum;
+  }, 0);
 
   return (
     <CartContext.Provider
@@ -172,6 +225,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         itemCount,
         total,
         addToCart,
+        addCustomRequestToCart,
         updateQuantity,
         removeFromCart,
         clearCart,
