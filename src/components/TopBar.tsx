@@ -17,9 +17,23 @@ const TopBar = () => {
   const { user, isAdmin, signOut } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-3xl border-border/40 shadow-lg overflow-hidden transition-all duration-500">
+    <div className={`sticky top-0 z-50 border-b overflow-hidden transition-all duration-500 ${
+      isScrolled 
+        ? 'bg-background/30 backdrop-blur-2xl border-border/20 shadow-2xl' 
+        : 'bg-background/95 backdrop-blur-3xl border-border/40 shadow-lg'
+    }`}>
       {/* Animated decorative line */}
       <div className="absolute top-0 left-0 w-full h-px overflow-hidden">
         <div className="h-full w-full bg-gradient-to-r from-transparent via-ring to-transparent animate-shimmer" 
