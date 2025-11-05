@@ -19,6 +19,9 @@ const AdminNotifications = () => {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [type, setType] = useState('info');
+  const [fontFamily, setFontFamily] = useState('Cairo');
+  const [textColor, setTextColor] = useState('#efe6c9');
+  const [backgroundColor, setBackgroundColor] = useState('#123f35');
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -36,12 +39,29 @@ const AdminNotifications = () => {
       });
       
       if (error) throw error;
+      
+      // Update styling for all newly created notifications
+      const { error: styleError } = await supabase
+        .from('notifications')
+        .update({
+          font_family: fontFamily,
+          text_color: textColor,
+          background_color: backgroundColor,
+        })
+        .eq('title', title)
+        .eq('message', message)
+        .is('font_family', null);
+      
+      if (styleError) console.error('Error updating notification styles:', styleError);
     },
     onSuccess: () => {
       toast.success('تم إرسال الإشعار لجميع المستخدمين');
       setTitle('');
       setMessage('');
       setType('info');
+      setFontFamily('Cairo');
+      setTextColor('#efe6c9');
+      setBackgroundColor('#123f35');
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
     },
     onError: (error) => {
@@ -125,6 +145,78 @@ const AdminNotifications = () => {
                     <SelectItem value="error">خطأ</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fontFamily">نوع الخط</Label>
+                <Select value={fontFamily} onValueChange={setFontFamily}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cairo">Cairo (القاهرة)</SelectItem>
+                    <SelectItem value="Tajawal">Tajawal (تجوال)</SelectItem>
+                    <SelectItem value="Almarai">Almarai (المراعي)</SelectItem>
+                    <SelectItem value="Amiri">Amiri (أميري)</SelectItem>
+                    <SelectItem value="Scheherazade New">Scheherazade New</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="textColor">لون النص</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      id="textColor"
+                      type="color"
+                      value={textColor}
+                      onChange={(e) => setTextColor(e.target.value)}
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      type="text"
+                      value={textColor}
+                      onChange={(e) => setTextColor(e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="backgroundColor">لون الخلفية</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      id="backgroundColor"
+                      type="color"
+                      value={backgroundColor}
+                      onChange={(e) => setBackgroundColor(e.target.value)}
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      type="text"
+                      value={backgroundColor}
+                      onChange={(e) => setBackgroundColor(e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Preview */}
+              <div className="space-y-2">
+                <Label>معاينة الإشعار</Label>
+                <div 
+                  className="p-4 rounded-lg border"
+                  style={{
+                    fontFamily: fontFamily,
+                    color: textColor,
+                    backgroundColor: backgroundColor,
+                  }}
+                >
+                  <h3 className="font-bold mb-1">{title || 'عنوان الإشعار'}</h3>
+                  <p className="text-sm">{message || 'نص الإشعار سيظهر هنا'}</p>
+                </div>
               </div>
 
               <Button

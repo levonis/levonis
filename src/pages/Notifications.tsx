@@ -136,7 +136,12 @@ const Notifications = () => {
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex items-start gap-3 flex-1">
-                      {getNotificationIcon(notification.type)}
+                      <div className="relative">
+                        {getNotificationIcon(notification.type)}
+                        {!notification.read && (
+                          <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500"></span>
+                        )}
+                      </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <CardTitle className="text-lg">
@@ -170,8 +175,16 @@ const Notifications = () => {
                     )}
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-foreground">{notification.message}</p>
+                <CardContent
+                  style={{
+                    fontFamily: notification.font_family || 'Cairo',
+                    color: notification.text_color || undefined,
+                    backgroundColor: notification.background_color || undefined,
+                    borderRadius: '0.5rem',
+                    padding: '1rem',
+                  }}
+                >
+                  <p>{notification.message}</p>
                   {notification.related_id && (
                     <Button
                       variant="link"

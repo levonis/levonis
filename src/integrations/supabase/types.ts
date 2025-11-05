@@ -329,34 +329,43 @@ export type Database = {
       }
       notifications: {
         Row: {
+          background_color: string | null
           created_at: string
+          font_family: string | null
           id: string
           is_general: boolean
           message: string
           read: boolean
           related_id: string | null
+          text_color: string | null
           title: string
           type: string
           user_id: string
         }
         Insert: {
+          background_color?: string | null
           created_at?: string
+          font_family?: string | null
           id?: string
           is_general?: boolean
           message: string
           read?: boolean
           related_id?: string | null
+          text_color?: string | null
           title: string
           type?: string
           user_id: string
         }
         Update: {
+          background_color?: string | null
           created_at?: string
+          font_family?: string | null
           id?: string
           is_general?: boolean
           message?: string
           read?: boolean
           related_id?: string | null
+          text_color?: string | null
           title?: string
           type?: string
           user_id?: string

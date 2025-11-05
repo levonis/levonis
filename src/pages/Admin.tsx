@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
 import AdminCustomRequests from './AdminCustomRequests';
@@ -794,8 +795,62 @@ const Admin = () => {
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-8">
           <h1 className="text-4xl font-black text-primary mb-2">لوحة التحكم</h1>
-          <p className="text-muted-foreground">إدارة المنتجات والأقسام</p>
+          <p className="text-muted-foreground">إدارة المنتجات والأقسام والإعدادات</p>
         </div>
+
+        {/* Quick Actions Section */}
+        <Card className="glass-effect border-border/50 mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FolderOpen className="h-5 w-5" />
+              الإجراءات السريعة
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <Button
+                onClick={() => navigate('/admin/notifications')}
+                variant="outline"
+                className="gap-2 h-auto py-4 flex-col"
+              >
+                <Bell className="h-6 w-6 text-primary" />
+                <span className="text-sm">إدارة الإشعارات</span>
+              </Button>
+              <Button
+                onClick={() => navigate('/admin/announcements')}
+                variant="outline"
+                className="gap-2 h-auto py-4 flex-col"
+              >
+                <Megaphone className="h-6 w-6 text-primary" />
+                <span className="text-sm">الشريط الإخباري</span>
+              </Button>
+              <Button
+                onClick={() => navigate('/admin/coupons')}
+                variant="outline"
+                className="gap-2 h-auto py-4 flex-col"
+              >
+                <Ticket className="h-6 w-6 text-primary" />
+                <span className="text-sm">إدارة الكوبونات</span>
+              </Button>
+              <Button
+                onClick={() => navigate('/my-requests')}
+                variant="outline"
+                className="gap-2 h-auto py-4 flex-col relative"
+              >
+                <FileText className="h-6 w-6 text-primary" />
+                <span className="text-sm">الطلبات المخصصة</span>
+                {pendingRequestsCount && pendingRequestsCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
+                  >
+                    {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
+                  </Badge>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="products" className="w-full">
           <TabsList className="mb-6 grid grid-cols-4 w-full max-w-3xl">
@@ -824,33 +879,6 @@ const Admin = () => {
               )}
             </TabsTrigger>
           </TabsList>
-          
-          <div className="mb-4 flex gap-2">
-            <Button
-              onClick={() => navigate('/admin/notifications')}
-              variant="outline"
-              className="gap-2"
-            >
-              <Bell className="h-4 w-4" />
-              إدارة الإشعارات
-            </Button>
-            <Button
-              onClick={() => navigate('/admin/announcements')}
-              variant="outline"
-              className="gap-2"
-            >
-              <Megaphone className="h-4 w-4" />
-              إدارة الشريط الإخباري
-            </Button>
-            <Button
-              onClick={() => navigate('/admin/coupons')}
-              variant="outline"
-              className="gap-2"
-            >
-              <Ticket className="h-4 w-4" />
-              إدارة الكوبونات
-            </Button>
-          </div>
 
           <TabsContent value="products">
             <div className="flex justify-between items-center mb-6">
