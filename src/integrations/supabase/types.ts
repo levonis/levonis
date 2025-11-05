@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcements: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          message: string
+          message_ar: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          message: string
+          message_ar: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          message?: string
+          message_ar?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cart_items: {
         Row: {
           created_at: string | null
@@ -221,6 +251,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          is_general: boolean
           message: string
           read: boolean
           related_id: string | null
@@ -231,6 +262,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          is_general?: boolean
           message: string
           read?: boolean
           related_id?: string | null
@@ -241,6 +273,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          is_general?: boolean
           message?: string
           read?: boolean
           related_id?: string | null
@@ -415,6 +448,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      send_general_notification: {
+        Args: { _message: string; _title: string; _type?: string }
+        Returns: undefined
       }
     }
     Enums: {

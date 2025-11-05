@@ -1,10 +1,12 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,6 +21,22 @@ const TopBar = () => {
   const { itemCount } = useCart();
   const navigate = useNavigate();
   const [isScrolled, setIsScrolled] = useState(false);
+
+  const { data: unreadNotifications } = useQuery({
+    queryKey: ['unread-notifications', user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id)
+        .eq('read', false);
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user?.id,
+    refetchInterval: 30000,
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -98,6 +116,24 @@ const TopBar = () => {
               </Button>
             </CustomProductRequestDialog>
 
+            {/* Notifications Button */}
+            {user && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate('/notifications')}
+                className="relative rounded-full border-primary/30 hover:border-primary"
+                title="الإشعارات"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadNotifications && unreadNotifications > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </span>
+                )}
+              </Button>
+            )}
+
             {/* Cart Button */}
             <Button
               variant="outline"
@@ -138,6 +174,15 @@ const TopBar = () => {
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-4 w-4" />
                     <span>المفضلة</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/notifications')}>
+                    <Bell className="ml-2 h-4 w-4" />
+                    <span>الإشعارات</span>
+                    {unreadNotifications && unreadNotifications > 0 && (
+                      <span className="mr-auto bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
+                        {unreadNotifications}
+                      </span>
+                    )}
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>

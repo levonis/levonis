@@ -8,6 +8,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import Header from "@/components/Header";
 import WhatsAppButton from "@/components/WhatsAppButton";
+import AnnouncementBar from "@/components/AnnouncementBar";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -16,9 +17,12 @@ import CategoryDetail from "./pages/CategoryDetail";
 import Cart from "./pages/Cart";
 import UserInfo from "./pages/UserInfo";
 import Favorites from "./pages/Favorites";
+import Notifications from "./pages/Notifications";
 import MyCustomRequests from "./pages/MyCustomRequests";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
+import AdminNotifications from "./pages/AdminNotifications";
+import AdminAnnouncements from "./pages/AdminAnnouncements";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,6 +35,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <CartProvider>
+            <AnnouncementBar />
             <Header />
             <Routes>
               <Route path="/" element={<Home />} />
@@ -41,9 +46,12 @@ const App = () => (
               <Route path="/cart" element={<Cart />} />
               <Route path="/user-info" element={<UserInfo />} />
               <Route path="/favorites" element={<Favorites />} />
+              <Route path="/notifications" element={<Notifications />} />
               <Route path="/my-requests" element={<MyCustomRequests />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<Admin />} />
+              <Route path="/admin/notifications" element={<AdminNotifications />} />
+              <Route path="/admin/announcements" element={<AdminAnnouncements />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

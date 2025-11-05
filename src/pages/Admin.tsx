@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
@@ -798,7 +798,7 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="products" className="w-full">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 grid grid-cols-4 w-full max-w-3xl">
             <TabsTrigger value="products" className="gap-2">
               <FolderOpen className="h-4 w-4" />
               المنتجات
@@ -824,6 +824,25 @@ const Admin = () => {
               )}
             </TabsTrigger>
           </TabsList>
+          
+          <div className="mb-4 flex gap-2">
+            <Button
+              onClick={() => navigate('/admin/notifications')}
+              variant="outline"
+              className="gap-2"
+            >
+              <Bell className="h-4 w-4" />
+              إدارة الإشعارات
+            </Button>
+            <Button
+              onClick={() => navigate('/admin/announcements')}
+              variant="outline"
+              className="gap-2"
+            >
+              <Megaphone className="h-4 w-4" />
+              إدارة الشريط الإخباري
+            </Button>
+          </div>
 
           <TabsContent value="products">
             <div className="flex justify-between items-center mb-6">
