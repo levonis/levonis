@@ -13,6 +13,13 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        'cairo': ['Cairo', 'sans-serif'],
+        'tajawal': ['Tajawal', 'sans-serif'],
+        'almarai': ['Almarai', 'sans-serif'],
+        'amiri': ['Amiri', 'serif'],
+        'scheherazade': ['Scheherazade New', 'serif'],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
