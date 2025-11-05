@@ -76,11 +76,16 @@ const ProductListItem = ({
           )}
         </div>
         
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex flex-col">
-            <span className="text-2xl font-black text-primary">
-              {formatPrice(price)} {currency}
-            </span>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black text-primary">
+                {formatPrice(price)}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                {currency}
+              </span>
+            </div>
             {hasSale && (
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-sm line-through text-muted-foreground/60">

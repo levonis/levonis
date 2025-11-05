@@ -78,16 +78,21 @@ const ProductCard = ({
       )}
       
       <div className="flex items-center justify-between gap-2 mt-auto">
-        <div className="flex flex-col">
-          <span className="text-lg font-black text-primary">
-            {formatPrice(price)} {currency}
-          </span>
+        <div className="flex flex-col min-w-0 flex-1">
+          <div className="flex flex-wrap items-baseline gap-1">
+            <span className="text-lg font-black text-primary whitespace-nowrap">
+              {formatPrice(price)}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {currency}
+            </span>
+          </div>
           {hasSale && (
-            <div className="flex items-center gap-1">
-              <span className="text-xs line-through text-muted-foreground/60">
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-xs line-through text-muted-foreground/60 whitespace-nowrap">
                 {formatPrice(originalPrice || 0)}
               </span>
-              <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">
+              <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full whitespace-nowrap">
                 وفر {formatPrice(savings)}
               </span>
             </div>
@@ -96,7 +101,7 @@ const ProductCard = ({
         
         <Button 
           size="sm"
-          className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 h-8 w-8 p-0"
+          className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 h-8 w-8 p-0 flex-shrink-0"
           onClick={(e) => {
             e.preventDefault();
             addToCart(id);
