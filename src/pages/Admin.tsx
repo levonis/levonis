@@ -492,17 +492,10 @@ const Admin = () => {
       .select('*')
       .eq('product_id', product.id);
 
-    // Create product data without id field
-    const { id, created_at, updated_at, ...productData } = product;
+    // Create product data without id, created_at, updated_at fields
+    const { id, created_at, updated_at, categories, ...productData } = product;
     
-    // Set all the product data for duplication
-    setEditingProduct({
-      ...productData,
-      name_ar: `${product.name_ar} (نسخة)`,
-      name: `${product.name} (Copy)`,
-      slug: `${product.slug}-copy-${Date.now()}`, // Make slug unique
-    });
-    
+    // Set uploaded images first
     setUploadedImages(product.images || []);
     setProductColors(Array.isArray(product.colors) ? product.colors : []);
     setProductFeatures(Array.isArray(product.features) ? product.features : []);
@@ -519,6 +512,15 @@ const Admin = () => {
     } else {
       setProductOptions([]);
     }
+    
+    // Set all the product data for duplication WITHOUT id
+    // This ensures useEffect won't try to reload data from database
+    setEditingProduct({
+      ...productData,
+      name_ar: `${product.name_ar} (نسخة)`,
+      name: `${product.name} (Copy)`,
+      slug: `${product.slug}-copy-${Date.now()}`, // Make slug unique
+    });
     
     setProductDialogOpen(true);
   };
