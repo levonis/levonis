@@ -1,12 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useParams, Link } from 'react-router-dom';
+import { useState } from 'react';
 import ProductCard from '@/components/ProductCard';
-import { Loader2, ArrowRight } from 'lucide-react';
+import ProductListItem from '@/components/ProductListItem';
+import { Loader2, ArrowRight, Grid3x3, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const CategoryDetail = () => {
   const { slug } = useParams<{ slug: string }>();
+  const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc'>('default');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   const { data: category, isLoading: categoryLoading } = useQuery({
     queryKey: ['category', slug],
@@ -23,16 +34,30 @@ const CategoryDetail = () => {
   });
 
   const { data: products, isLoading: productsLoading } = useQuery({
-    queryKey: ['category-products', category?.id],
+    queryKey: ['category-products', category?.id, sortBy],
     queryFn: async () => {
       if (!category?.id) return [];
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('products')
         .select('*')
         .eq('category_id', category.id)
-        .eq('in_stock', true)
-        .order('created_at', { ascending: false });
+        .eq('in_stock', true);
+
+      // Apply sorting
+      if (sortBy === 'price-asc') {
+        query = query.order('price', { ascending: true });
+      } else if (sortBy === 'price-desc') {
+        query = query.order('price', { ascending: false });
+      } else if (sortBy === 'name-asc') {
+        query = query.order('name_ar', { ascending: true });
+      } else if (sortBy === 'name-desc') {
+        query = query.order('name_ar', { ascending: false });
+      } else {
+        query = query.order('created_at', { ascending: false });
+      }
+      
+      const { data, error } = await query;
       
       if (error) throw error;
       return data;
@@ -126,31 +151,93 @@ const CategoryDetail = () => {
               </div>
             ) : products && products.length > 0 ? (
               <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-2xl font-black text-foreground">المنتجات المتاحة</h2>
-                  <span className="text-muted-foreground text-sm">
-                    عرض {products.length} {products.length === 1 ? 'منتج' : 'منتجات'}
-                  </span>
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-6 gap-4">
+                  <div className="flex items-center gap-4">
+                    <h2 className="text-2xl font-black text-foreground">المنتجات المتاحة</h2>
+                    <span className="text-muted-foreground text-sm">
+                      عرض {products.length} {products.length === 1 ? 'منتج' : 'منتجات'}
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center gap-4 w-full lg:w-auto">
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center gap-2 border border-border/40 rounded-lg p-1">
+                      <Button
+                        variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('grid')}
+                        className="h-8 w-8 p-0"
+                      >
+                        <Grid3x3 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant={viewMode === 'list' ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setViewMode('list')}
+                        className="h-8 w-8 p-0"
+                      >
+                        <List className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {/* Sort Select */}
+                    <div className="flex items-center gap-2 flex-1 lg:flex-initial">
+                      <label className="text-sm text-muted-foreground whitespace-nowrap">ترتيب:</label>
+                      <Select value={sortBy} onValueChange={(value: 'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc') => setSortBy(value)}>
+                        <SelectTrigger className="w-full lg:w-[200px]">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="default">افتراضي</SelectItem>
+                          <SelectItem value="price-asc">السعر: الأرخص للأغلى</SelectItem>
+                          <SelectItem value="price-desc">السعر: الأغلى للأرخص</SelectItem>
+                          <SelectItem value="name-asc">الاسم: A إلى Z</SelectItem>
+                          <SelectItem value="name-desc">الاسم: Z إلى A</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      id={product.id}
-                      name={product.name}
-                      nameAr={product.name_ar}
-                      description={product.description}
-                      descriptionAr={product.description_ar}
-                      price={Number(product.price)}
-                      originalPrice={product.original_price ? Number(product.original_price) : undefined}
-                      imageUrl={product.image_url || undefined}
-                      images={product.images || undefined}
-                      currency={product.currency || undefined}
-                      slug={product.slug}
-                    />
-                  ))}
-                </div>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-3 sm:gap-4">
+                    {products.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        id={product.id}
+                        name={product.name}
+                        nameAr={product.name_ar}
+                        description={product.description}
+                        descriptionAr={product.description_ar}
+                        price={Number(product.price)}
+                        originalPrice={product.original_price ? Number(product.original_price) : undefined}
+                        imageUrl={product.image_url || undefined}
+                        images={product.images || undefined}
+                        currency={product.currency || undefined}
+                        slug={product.slug}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-4">
+                    {products.map((product) => (
+                      <ProductListItem
+                        key={product.id}
+                        id={product.id}
+                        name={product.name}
+                        nameAr={product.name_ar}
+                        description={product.description}
+                        descriptionAr={product.description_ar}
+                        price={Number(product.price)}
+                        originalPrice={product.original_price ? Number(product.original_price) : undefined}
+                        imageUrl={product.image_url || undefined}
+                        images={product.images || undefined}
+                        currency={product.currency || undefined}
+                        slug={product.slug}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-16 glass-effect rounded-2xl border border-border/50">
