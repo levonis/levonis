@@ -491,61 +491,27 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Features */}
-            <div className="glass-effect rounded-2xl p-6 border border-border/50">
-              <h3 className="text-xl font-bold text-foreground mb-4">المميزات</h3>
-              <div className="space-y-3">
-                {/* Product-specific features from database */}
-                {product.features && Array.isArray(product.features) && product.features.length > 0 && (
-                  <>
-                    {product.features.map((feature: any, index: number) => (
-                      <div key={`feature-${index}`} className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <Package className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">{feature.text_ar}</p>
-                          {feature.text !== feature.text_ar && (
-                            <p className="text-sm text-muted-foreground">{feature.text}</p>
-                          )}
-                        </div>
+            {/* Features - Only admin-added features */}
+            {product.features && Array.isArray(product.features) && product.features.length > 0 && (
+              <div className="glass-effect rounded-2xl p-6 border border-border/50">
+                <h3 className="text-xl font-bold text-foreground mb-4">المميزات</h3>
+                <div className="space-y-3">
+                  {product.features.map((feature: any, index: number) => (
+                    <div key={`feature-${index}`} className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <Package className="w-5 h-5 text-primary" />
                       </div>
-                    ))}
-                  </>
-                )}
-
-                {/* Default store features */}
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Shield className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-foreground">ضمان رسمي</h4>
-                    <p className="text-sm text-muted-foreground">جميع منتجاتنا بضمان الوكيل المعتمد</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Truck className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-foreground">توصيل سريع</h4>
-                    <p className="text-sm text-muted-foreground">خدمة توصيل سريعة لجميع المحافظات</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Package className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-foreground">منتج أصلي</h4>
-                    <p className="text-sm text-muted-foreground">جميع منتجاتنا أصلية 100%</p>
-                  </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-foreground">{feature.text_ar}</p>
+                        {feature.text !== feature.text_ar && (
+                          <p className="text-sm text-muted-foreground">{feature.text}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
