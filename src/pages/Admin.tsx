@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
@@ -841,6 +841,14 @@ const Admin = () => {
             >
               <Megaphone className="h-4 w-4" />
               إدارة الشريط الإخباري
+            </Button>
+            <Button
+              onClick={() => navigate('/admin/coupons')}
+              variant="outline"
+              className="gap-2"
+            >
+              <Ticket className="h-4 w-4" />
+              إدارة الكوبونات
             </Button>
           </div>
 

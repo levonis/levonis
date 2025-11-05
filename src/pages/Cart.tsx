@@ -1,17 +1,24 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { formatPrice } from '@/lib/utils';
+import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -55,7 +62,122 @@ const Cart = () => {
   };
 
   const deliveryFee = getDeliveryFee(profile?.governorate || null);
-  const grandTotal = total + deliveryFee;
+  
+  // Calculate discount
+  const calculateDiscount = () => {
+    if (!appliedCoupon) return 0;
+    
+    if (appliedCoupon.discount_type === 'percentage') {
+      return (total * appliedCoupon.discount_value) / 100;
+    }
+    return appliedCoupon.discount_value;
+  };
+  
+  const discount = calculateDiscount();
+  const grandTotal = Math.max(0, total - discount + deliveryFee);
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast({
+        title: "خطأ",
+        description: "الرجاء إدخال رمز الكوبون",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCouponLoading(true);
+    try {
+      const { data: coupon, error } = await supabase
+        .from('coupons')
+        .select('*')
+        .eq('code', couponCode.toUpperCase().trim())
+        .eq('active', true)
+        .single();
+
+      if (error || !coupon) {
+        toast({
+          title: "كوبون غير صحيح",
+          description: "الكوبون غير موجود أو غير فعال",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if expired
+      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
+        toast({
+          title: "كوبون منتهي",
+          description: "هذا الكوبون قد انتهت صلاحيته",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if max uses reached
+      if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
+        toast({
+          title: "كوبون مكتمل",
+          description: "تم استخدام هذا الكوبون بالحد الأقصى",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check minimum purchase
+      if (coupon.min_purchase_amount && total < coupon.min_purchase_amount) {
+        toast({
+          title: "الحد الأدنى للطلب غير مستوفى",
+          description: `الحد الأدنى للطلب هو ${formatPrice(coupon.min_purchase_amount)} دينار عراقي`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if user already used this coupon
+      if (user) {
+        const { data: usage } = await supabase
+          .from('coupon_usage')
+          .select('*')
+          .eq('coupon_id', coupon.id)
+          .eq('user_id', user.id)
+          .single();
+
+        if (usage) {
+          toast({
+            title: "تم استخدامه مسبقاً",
+            description: "لقد استخدمت هذا الكوبون من قبل",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      setAppliedCoupon(coupon);
+      toast({
+        title: "تم تطبيق الكوبون",
+        description: `تم خصم ${coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `${formatPrice(coupon.discount_value)} دينار عراقي`}`,
+      });
+    } catch (error) {
+      console.error('Error applying coupon:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تطبيق الكوبون",
+        variant: "destructive",
+      });
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    toast({
+      title: "تم إزالة الكوبون",
+      description: "تم إزالة الكوبون من طلبك",
+    });
+  };
 
   const handleCheckout = async () => {
     if (!user) {
@@ -141,8 +263,25 @@ const Cart = () => {
       
       message += `💰 *ملخص الطلب:*\n`;
       message += `المجموع الفرعي: ${formatPrice(total)} دينار عراقي\n`;
+      if (appliedCoupon) {
+        message += `الخصم (${appliedCoupon.code}): -${formatPrice(discount)} دينار عراقي\n`;
+      }
       message += `التوصيل: ${formatPrice(deliveryFee)} دينار عراقي\n`;
-      message += `الإجمالي: ${formatPrice(total + deliveryFee)} دينار عراقي`;
+      message += `الإجمالي: ${formatPrice(grandTotal)} دينار عراقي`;
+
+      // If coupon was used, record it
+      if (appliedCoupon && user) {
+        await supabase.from('coupon_usage').insert({
+          coupon_id: appliedCoupon.id,
+          user_id: user.id,
+        });
+        
+        // Increment current_uses
+        await supabase
+          .from('coupons')
+          .update({ current_uses: appliedCoupon.current_uses + 1 })
+          .eq('id', appliedCoupon.id);
+      }
 
       // Encode the message for URL
       const encodedMessage = encodeURIComponent(message);
@@ -372,13 +511,61 @@ const Cart = () => {
             {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="glass-effect rounded-2xl p-6 border border-border/50 sticky top-24">
-                <h2 className="text-2xl font-black text-foreground mb-6">ملخص الطلب</h2>
                 
+                {/* Coupon Section */}
+                <div className="mb-6">
+                  <Label htmlFor="coupon" className="text-foreground mb-2 block flex items-center gap-2">
+                    <Ticket className="h-4 w-4" />
+                    كوبون الخصم
+                  </Label>
+                  {!appliedCoupon ? (
+                    <div className="flex gap-2">
+                      <Input
+                        id="coupon"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value)}
+                        placeholder="أدخل رمز الكوبون"
+                        className="flex-1"
+                        onKeyDown={(e) => e.key === 'Enter' && applyCoupon()}
+                      />
+                      <Button
+                        onClick={applyCoupon}
+                        disabled={couponLoading}
+                        variant="outline"
+                      >
+                        {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تطبيق'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+                      <div className="flex items-center gap-2">
+                        <Ticket className="h-4 w-4 text-green-600" />
+                        <span className="font-bold text-green-600">{appliedCoupon.code}</span>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={removeCoupon}
+                        className="h-6 w-6 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-foreground">
                     <span>المجموع الفرعي</span>
                     <span className="font-bold">{formatPrice(total)} دينار عراقي</span>
                   </div>
+                  
+                  {appliedCoupon && discount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>الخصم ({appliedCoupon.code})</span>
+                      <span className="font-bold">-{formatPrice(discount)} دينار عراقي</span>
+                    </div>
+                  )}
                   
                   <div className="flex justify-between text-foreground">
                     <span>التوصيل</span>
