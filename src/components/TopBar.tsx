@@ -116,24 +116,6 @@ const TopBar = () => {
               </Button>
             </CustomProductRequestDialog>
 
-            {/* Notifications Button */}
-            {user && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigate('/notifications')}
-                className="relative rounded-full border-primary/30 hover:border-primary"
-                title="الإشعارات"
-              >
-                <Bell className="h-5 w-5" />
-                {unreadNotifications && unreadNotifications > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                  </span>
-                )}
-              </Button>
-            )}
-
             {/* Cart Button */}
             <Button
               variant="outline"
@@ -155,9 +137,14 @@ const TopBar = () => {
                   <Button 
                     variant="outline" 
                     size="icon"
-                    className="rounded-full border-primary/30 hover:border-primary"
+                    className="relative rounded-full border-primary/30 hover:border-primary"
                   >
                     <User className="h-5 w-5" />
+                    {unreadNotifications && unreadNotifications > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                      </span>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-background backdrop-blur-sm border-border z-50">
@@ -174,15 +161,6 @@ const TopBar = () => {
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-4 w-4" />
                     <span>المفضلة</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/notifications')}>
-                    <Bell className="ml-2 h-4 w-4" />
-                    <span>الإشعارات</span>
-                    {unreadNotifications && unreadNotifications > 0 && (
-                      <span className="mr-auto bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full">
-                        {unreadNotifications}
-                      </span>
-                    )}
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>

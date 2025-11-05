@@ -27,18 +27,23 @@ const AnnouncementBar = () => {
 
   const announcement = announcements[0];
   
-  const bgColor = {
-    info: 'bg-blue-500/90',
-    warning: 'bg-yellow-500/90',
-    success: 'bg-green-500/90',
-    error: 'bg-red-500/90',
-  }[announcement.type] || 'bg-blue-500/90';
+  const bgColor = announcement.color || '#3b82f6';
+  const speed = announcement.speed || 20;
+  const direction = announcement.direction || 'right';
 
   return (
-    <div className={`${bgColor} text-white py-2 px-4 relative overflow-hidden`}>
+    <div 
+      className="text-white py-2 px-4 relative overflow-hidden"
+      style={{ backgroundColor: bgColor }}
+    >
       <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
         <div className="flex-1 overflow-hidden">
-          <div className="animate-marquee whitespace-nowrap">
+          <div 
+            className="whitespace-nowrap"
+            style={{ 
+              animation: `marquee-${direction} ${speed}s linear infinite` 
+            }}
+          >
             <span className="inline-block px-4">{announcement.message_ar}</span>
             <span className="inline-block px-4">{announcement.message_ar}</span>
             <span className="inline-block px-4">{announcement.message_ar}</span>
@@ -52,6 +57,17 @@ const AnnouncementBar = () => {
           <X className="h-4 w-4" />
         </button>
       </div>
+      
+      <style>{`
+        @keyframes marquee-right {
+          0% { transform: translateX(0%); }
+          100% { transform: translateX(-33.33%); }
+        }
+        @keyframes marquee-left {
+          0% { transform: translateX(-33.33%); }
+          100% { transform: translateX(0%); }
+        }
+      `}</style>
     </div>
   );
 };

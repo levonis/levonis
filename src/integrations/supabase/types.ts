@@ -17,28 +17,37 @@ export type Database = {
       announcements: {
         Row: {
           active: boolean
+          color: string | null
           created_at: string
+          direction: string | null
           id: string
           message: string
           message_ar: string
+          speed: number | null
           type: string
           updated_at: string
         }
         Insert: {
           active?: boolean
+          color?: string | null
           created_at?: string
+          direction?: string | null
           id?: string
           message: string
           message_ar: string
+          speed?: number | null
           type?: string
           updated_at?: string
         }
         Update: {
           active?: boolean
+          color?: string | null
           created_at?: string
+          direction?: string | null
           id?: string
           message?: string
           message_ar?: string
+          speed?: number | null
           type?: string
           updated_at?: string
         }

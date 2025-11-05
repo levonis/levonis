@@ -6,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, User, Mail, Calendar, Shield } from 'lucide-react';
+import { Loader2, User, Mail, Calendar, Shield, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/badge';
 
 const UserInfo = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -30,6 +32,22 @@ const UserInfo = () => {
       fetchProfile();
     }
   }, [user, authLoading, navigate]);
+
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['unread-notifications', user?.id],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user?.id)
+        .eq('read', false);
+      
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user,
+    refetchInterval: 30000,
+  });
 
   const fetchProfile = async () => {
     try {
@@ -184,6 +202,36 @@ const UserInfo = () => {
                   {user?.created_at ? formatDate(user.created_at) : '-'}
                 </span>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Notifications Card */}
+          <Card className="glass-effect border-border/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 justify-between">
+                <div className="flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-primary" />
+                  الإشعارات
+                </div>
+                {unreadCount > 0 && (
+                  <Badge variant="destructive">
+                    {unreadCount} جديد
+                  </Badge>
+                )}
+              </CardTitle>
+              <CardDescription>
+                عرض وإدارة إشعاراتك
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => navigate('/notifications')}
+              >
+                <Bell className="ml-2 h-4 w-4" />
+                عرض الإشعارات
+              </Button>
             </CardContent>
           </Card>
 

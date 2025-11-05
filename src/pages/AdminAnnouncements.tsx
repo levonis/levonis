@@ -26,6 +26,9 @@ const AdminAnnouncements = () => {
     message: '',
     type: 'info',
     active: true,
+    color: '#3b82f6',
+    speed: 20,
+    direction: 'right',
   });
 
   useEffect(() => {
@@ -134,6 +137,9 @@ const AdminAnnouncements = () => {
       message: announcement.message || '',
       type: announcement.type,
       active: announcement.active,
+      color: announcement.color || '#3b82f6',
+      speed: announcement.speed || 20,
+      direction: announcement.direction || 'right',
     });
     setDialogOpen(true);
   };
@@ -144,6 +150,9 @@ const AdminAnnouncements = () => {
       message: '',
       type: 'info',
       active: true,
+      color: '#3b82f6',
+      speed: 20,
+      direction: 'right',
     });
     setEditing(null);
   };
@@ -210,18 +219,51 @@ const AdminAnnouncements = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="type">نوع الإعلان</Label>
-                  <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="info">معلومات (أزرق)</SelectItem>
-                      <SelectItem value="success">نجاح (أخضر)</SelectItem>
-                      <SelectItem value="warning">تحذير (أصفر)</SelectItem>
-                      <SelectItem value="error">تنبيه (أحمر)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="color">لون الشريط</Label>
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      id="color"
+                      type="color"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      className="w-20 h-10"
+                    />
+                    <Input
+                      type="text"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      placeholder="#3b82f6"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="speed">السرعة (ثانية)</Label>
+                    <Input
+                      id="speed"
+                      type="number"
+                      min="5"
+                      max="60"
+                      value={formData.speed}
+                      onChange={(e) => setFormData({ ...formData, speed: parseInt(e.target.value) })}
+                    />
+                    <p className="text-xs text-muted-foreground">من 5 إلى 60 ثانية</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="direction">اتجاه الحركة</Label>
+                    <Select value={formData.direction} onValueChange={(value) => setFormData({ ...formData, direction: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="right">يمين ← يسار</SelectItem>
+                        <SelectItem value="left">يسار → يمين</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2 space-x-reverse">
