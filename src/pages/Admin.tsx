@@ -979,8 +979,18 @@ const Admin = () => {
                           <p className="text-sm text-muted-foreground mb-2">الصور الحالية:</p>
                           <div className="grid grid-cols-4 gap-2">
                             {editingProduct.images.map((img: string, index: number) => (
-                              <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                              <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
                                 <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const updatedImages = editingProduct.images.filter((_: string, i: number) => i !== index);
+                                    setEditingProduct({ ...editingProduct, images: updatedImages });
+                                  }}
+                                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="h-3 w-3" />
+                                </button>
                               </div>
                             ))}
                           </div>
