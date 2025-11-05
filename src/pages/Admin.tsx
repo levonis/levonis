@@ -977,7 +977,7 @@ const Admin = () => {
                       {editingProduct?.images && editingProduct.images.length > 0 && (
                         <div className="mb-4">
                           <p className="text-sm text-muted-foreground mb-2">الصور الحالية:</p>
-                          <div className="grid grid-cols-4 gap-2">
+                          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                             {editingProduct.images.map((img: string, index: number) => (
                               <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
                                 <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
@@ -987,7 +987,7 @@ const Admin = () => {
                                     const updatedImages = editingProduct.images.filter((_: string, i: number) => i !== index);
                                     setEditingProduct({ ...editingProduct, images: updatedImages });
                                   }}
-                                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                                 >
                                   <X className="h-3 w-3" />
                                 </button>

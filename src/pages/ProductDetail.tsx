@@ -243,7 +243,7 @@ const ProductDetail = () => {
         </div>
 
         {/* Product Details */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-12">
           {/* Image Section */}
           <div className="relative">
             <div className="glass-effect rounded-2xl p-6 border border-border/50 card-premium">
@@ -274,7 +274,7 @@ const ProductDetail = () => {
                   
                   {/* Thumbnails */}
                   {productImages.length > 1 && (
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-2">
                       {productImages.map((img, idx) => (
                         <button
                           key={idx}
