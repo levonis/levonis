@@ -242,25 +242,35 @@ const Cart = () => {
                     <div className="flex gap-4">
                       {/* Product Image */}
                       {((item.products?.image_url) || (item.custom_product_requests?.image_url)) && (
-                        <div className="flex-shrink-0">
+                        <Link 
+                          to={item.products ? `/product/${item.products.slug}` : '#'}
+                          className="flex-shrink-0"
+                        >
                           <img 
                             src={item.products?.image_url || item.custom_product_requests?.image_url || ''}
                             alt={item.products?.name_ar || item.custom_product_requests?.product_name || ''}
-                            className="w-24 h-24 object-cover rounded-xl border border-border/40"
+                            className="w-24 h-24 object-cover rounded-xl border border-border/40 hover:border-primary/50 transition-colors"
                           />
-                        </div>
+                        </Link>
                       )}
                       
                       {/* Product Info */}
                       <div className="flex-1 min-w-0">
-                        <div className="font-bold text-lg text-foreground mb-1 flex items-center gap-2">
-                          {item.products?.name_ar || item.custom_product_requests?.product_name}
-                          {item.custom_request_id && (
+                        {item.products ? (
+                          <Link 
+                            to={`/product/${item.products.slug}`}
+                            className="font-bold text-lg text-foreground mb-1 flex items-center gap-2 hover:text-primary transition-colors"
+                          >
+                            {item.products.name_ar}
+                          </Link>
+                        ) : (
+                          <div className="font-bold text-lg text-foreground mb-1 flex items-center gap-2">
+                            {item.custom_product_requests?.product_name}
                             <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
                               طلب خاص ⭐
                             </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
                         
                         {/* Display option and color info */}
                         {(itemOption || colorData) && (

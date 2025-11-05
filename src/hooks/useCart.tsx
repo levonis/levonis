@@ -32,7 +32,7 @@ interface CartContextType {
   loading: boolean;
   itemCount: number;
   total: number;
-  addToCart: (productId: string, optionId?: string, color?: string) => Promise<void>;
+  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number) => Promise<void>;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
@@ -106,14 +106,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     fetchCart();
   }, [user]);
 
-  const addToCart = async (productId: string, optionId?: string, color?: string) => {
+  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1) => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
 
     try {
-      console.log('Adding to cart:', { productId, optionId, color });
+      console.log('Adding to cart:', { productId, optionId, color, quantity });
       
       // Check if item with same product, option, and color already exists
       const normalize = (v: any) => (v ?? '').toString().trim().toLowerCase();
@@ -126,14 +126,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       console.log('Existing item found:', existingItem);
       
       if (existingItem) {
-        await updateQuantity(existingItem.id, existingItem.quantity + 1);
+        await updateQuantity(existingItem.id, existingItem.quantity + quantity);
         return;
       }
 
       const insertData: any = { 
         user_id: user.id, 
         product_id: productId, 
-        quantity: 1 
+        quantity: quantity 
       };
       
       if (optionId) {

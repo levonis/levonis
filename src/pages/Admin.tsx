@@ -492,10 +492,12 @@ const Admin = () => {
       .select('*')
       .eq('product_id', product.id);
 
+    // Create product data without id field
+    const { id, created_at, updated_at, ...productData } = product;
+    
     // Set all the product data for duplication
     setEditingProduct({
-      ...product,
-      id: null, // Clear ID so it creates a new product
+      ...productData,
       name_ar: `${product.name_ar} (نسخة)`,
       name: `${product.name} (Copy)`,
       slug: `${product.slug}-copy-${Date.now()}`, // Make slug unique
