@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus } from 'lucide-react';
+import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus, Star, Award, Check, Zap, Sparkles, Cpu, Battery, Wifi } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { formatPrice } from '@/lib/utils';
@@ -496,19 +496,26 @@ const ProductDetail = () => {
               <div className="glass-effect rounded-2xl p-6 border border-border/50">
                 <h3 className="text-xl font-bold text-foreground mb-4">المميزات</h3>
                 <div className="space-y-3">
-                  {product.features.map((feature: any, index: number) => (
-                    <div key={`feature-${index}`} className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                        <Package className="w-5 h-5 text-primary" />
+                  {product.features.map((feature: any, index: number) => {
+                    const iconName = feature.icon || 'Package';
+                    const IconComponent = {
+                      Package, Shield, Truck, Star, Award, Check, Zap, Heart, Sparkles, Cpu, Battery, Wifi
+                    }[iconName] || Package;
+                    
+                    return (
+                      <div key={`feature-${index}`} className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                          <IconComponent className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-foreground">{feature.text_ar}</p>
+                          {feature.text !== feature.text_ar && (
+                            <p className="text-sm text-muted-foreground">{feature.text}</p>
+                          )}
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{feature.text_ar}</p>
-                        {feature.text !== feature.text_ar && (
-                          <p className="text-sm text-muted-foreground">{feature.text}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

@@ -77,6 +77,7 @@ const Admin = () => {
   const [productFeatures, setProductFeatures] = useState<Array<{
     text_ar: string;
     text: string;
+    icon?: string;
   }>>([]);
 
   useEffect(() => {
@@ -597,7 +598,8 @@ const Admin = () => {
   const addProductFeature = () => {
     setProductFeatures([...productFeatures, {
       text_ar: '',
-      text: ''
+      text: '',
+      icon: 'Package'
     }]);
   };
 
@@ -1258,26 +1260,50 @@ const Admin = () => {
                                 </Button>
                               </div>
                               
-                              <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-3">
                                 <div className="space-y-1">
-                                  <Label className="text-xs">النص بالعربي</Label>
-                                  <Input
-                                    type="text"
-                                    value={feature.text_ar}
-                                    onChange={(e) => updateProductFeature(index, 'text_ar', e.target.value)}
-                                    placeholder="ذاكرة 16 جيجابايت"
-                                    className="h-9"
-                                  />
+                                  <Label className="text-xs">الأيقونة</Label>
+                                  <select
+                                    value={feature.icon || 'Package'}
+                                    onChange={(e) => updateProductFeature(index, 'icon', e.target.value)}
+                                    className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+                                  >
+                                    <option value="Package">صندوق (Package)</option>
+                                    <option value="Shield">درع (Shield)</option>
+                                    <option value="Truck">شاحنة (Truck)</option>
+                                    <option value="Star">نجمة (Star)</option>
+                                    <option value="Award">جائزة (Award)</option>
+                                    <option value="Check">علامة صح (Check)</option>
+                                    <option value="Zap">برق (Zap)</option>
+                                    <option value="Heart">قلب (Heart)</option>
+                                    <option value="Sparkles">تألق (Sparkles)</option>
+                                    <option value="Cpu">معالج (CPU)</option>
+                                    <option value="Battery">بطارية (Battery)</option>
+                                    <option value="Wifi">واي فاي (Wifi)</option>
+                                  </select>
                                 </div>
-                                <div className="space-y-1">
-                                  <Label className="text-xs">النص بالإنجليزي</Label>
-                                  <Input
-                                    type="text"
-                                    value={feature.text}
-                                    onChange={(e) => updateProductFeature(index, 'text', e.target.value)}
-                                    placeholder="16GB Memory"
-                                    className="h-9"
-                                  />
+                                
+                                <div className="grid grid-cols-2 gap-3">
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">النص بالعربي</Label>
+                                    <Input
+                                      type="text"
+                                      value={feature.text_ar}
+                                      onChange={(e) => updateProductFeature(index, 'text_ar', e.target.value)}
+                                      placeholder="ذاكرة 16 جيجابايت"
+                                      className="h-9"
+                                    />
+                                  </div>
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">النص بالإنجليزي</Label>
+                                    <Input
+                                      type="text"
+                                      value={feature.text}
+                                      onChange={(e) => updateProductFeature(index, 'text', e.target.value)}
+                                      placeholder="16GB Memory"
+                                      className="h-9"
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </div>
