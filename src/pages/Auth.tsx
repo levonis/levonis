@@ -47,6 +47,8 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [governorate, setGovernorate] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -140,6 +142,37 @@ const Auth = () => {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      const validatedEmail = z.string().email().parse(resetEmail);
+      const redirectUrl = `${window.location.origin}/auth`;
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(validatedEmail, {
+        redirectTo: redirectUrl,
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني');
+      setShowResetPassword(false);
+      setResetEmail('');
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error('بريد إلكتروني غير صحيح');
+      } else {
+        toast.error('حدث خطأ غير متوقع');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background/90 backdrop-blur-md relative overflow-hidden flex items-center justify-center p-4">
       {/* Elegant decorative frame */}
@@ -160,50 +193,107 @@ const Auth = () => {
         </div>
 
         <div className="glass-effect rounded-2xl p-6 border border-border/50 shadow-2xl">
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="signin">تسجيل الدخول</TabsTrigger>
-              <TabsTrigger value="signup">إنشاء حساب</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
+          {showResetPassword ? (
+            <div>
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-gradient-gold mb-2">إعادة تعيين كلمة المرور</h2>
+                <p className="text-sm text-muted-foreground">أدخل بريدك الإلكتروني لإرسال رابط إعادة التعيين</p>
+              </div>
+              
+              <form onSubmit={handleResetPassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">البريد الإلكتروني</Label>
+                  <Label htmlFor="reset-email">البريد الإلكتروني</Label>
                   <Input
-                    id="signin-email"
+                    id="reset-email"
                     type="email"
                     placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
                     required
                     disabled={loading}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">كلمة المرور</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
                     disabled={loading}
-                  />
+                  >
+                    {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                    إرسال رابط إعادة التعيين
+                  </Button>
+                  
+                  <Button 
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setShowResetPassword(false);
+                      setResetEmail('');
+                    }}
+                    disabled={loading}
+                  >
+                    العودة لتسجيل الدخول
+                  </Button>
                 </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                  disabled={loading}
-                >
-                  {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                  تسجيل الدخول
-                </Button>
               </form>
-            </TabsContent>
+            </div>
+          ) : (
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 mb-6">
+                <TabsTrigger value="signin">تسجيل الدخول</TabsTrigger>
+                <TabsTrigger value="signup">إنشاء حساب</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="signin">
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">البريد الإلكتروني</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">كلمة المرور</Label>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                    disabled={loading}
+                  >
+                    {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                    تسجيل الدخول
+                  </Button>
+
+                  <Button 
+                    type="button"
+                    variant="link"
+                    className="w-full text-sm text-muted-foreground hover:text-primary"
+                    onClick={() => setShowResetPassword(true)}
+                    disabled={loading}
+                  >
+                    هل نسيت كلمة المرور؟
+                  </Button>
+                </form>
+              </TabsContent>
 
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
@@ -288,7 +378,8 @@ const Auth = () => {
                 </Button>
               </form>
             </TabsContent>
-          </Tabs>
+            </Tabs>
+          )}
         </div>
       </div>
     </div>
