@@ -319,32 +319,18 @@ const ProductDetail = () => {
           {/* Details Section */}
           <div className="flex flex-col gap-6">
             <div className="glass-effect rounded-2xl p-6 border border-border/50">
-              {/* Header with Category & Favorite */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  {product.categories && (
-                    <Badge variant="outline" className="mb-4">
-                      {(product as any).categories.name_ar}
-                    </Badge>
-                  )}
-                  <h1 className="text-4xl font-black text-gradient-gold">
-                    {product.name_ar}
-                  </h1>
-                </div>
-                
-                {/* Favorite Button */}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleToggleFavorite}
-                  disabled={favoriteLoading}
-                  className={`shrink-0 ${isFavorite ? 'text-red-500 border-red-500' : ''}`}
-                >
-                  <Heart className={`h-5 w-5 ${isFavorite ? 'fill-current' : ''}`} />
-                </Button>
-              </div>
+              {/* Category Badge */}
+              {product.categories && (
+                <Badge variant="outline" className="mb-4">
+                  {(product as any).categories.name_ar}
+                </Badge>
+              )}
+
+              <h1 className="text-4xl font-black text-gradient-gold mb-4">
+                {product.name_ar}
+              </h1>
               
-              <p className="text-muted-foreground text-lg mb-6 leading-relaxed mt-4">
+              <p className="text-muted-foreground text-lg mb-6 leading-relaxed">
                 {product.description_ar || 'لا يوجد وصف متوفر'}
               </p>
 
@@ -493,6 +479,16 @@ const ProductDetail = () => {
                 >
                   <ShoppingCart className="ml-2 h-5 w-5" />
                   {product.in_stock ? 'أضف إلى السلة' : 'غير متوفر'}
+                </Button>
+                
+                <Button 
+                  size="lg"
+                  variant="outline"
+                  className={`h-14 px-6 ${isFavorite ? 'text-red-500 border-red-500' : ''}`}
+                  onClick={handleToggleFavorite}
+                  disabled={favoriteLoading || toggleFavoriteMutation.isPending}
+                >
+                  <Heart className={`h-5 w-5 ${isFavorite ? 'fill-current' : ''}`} />
                 </Button>
               </div>
             </div>
