@@ -489,43 +489,71 @@ const Admin = () => {
   };
 
   const handleDuplicateProduct = async (product: any) => {
-    // Load product options from database
-    const { data: options } = await supabase
-      .from('product_options')
-      .select('*')
-      .eq('product_id', product.id);
+    try {
+      // 1) Load original product options
+      const { data: options, error: optionsError } = await supabase
+        .from('product_options')
+        .select('*')
+        .eq('product_id', product.id);
+      if (optionsError) throw optionsError;
 
-    // Create product data without id, created_at, updated_at fields
-    const { id, created_at, updated_at, categories, ...productData } = product;
-    
-    // Set uploaded images first
-    setUploadedImages(product.images || []);
-    setProductColors(Array.isArray(product.colors) ? product.colors : []);
-    setProductFeatures(Array.isArray(product.features) ? product.features : []);
-    
-    if (options && options.length > 0) {
-      setProductOptions(
-        options.map((opt) => ({
+      // 2) Prepare new product payload (exclude id/created_at/updated_at/relations)
+      const { id, created_at, updated_at, categories, ...productData } = product;
+      const newValues = {
+        ...productData,
+        name_ar: `${product.name_ar} (نسخة)`,
+        name: `${product.name} (Copy)`,
+        slug: `${product.slug}-copy-${Date.now()}`,
+        // Ensure image_url is consistent with images if available
+        image_url: (Array.isArray(product.images) && product.images[0]) || product.image_url || null,
+      };
+
+      // 3) Insert duplicated product
+      const { data: inserted, error: insertError } = await supabase
+        .from('products')
+        .insert([newValues as any])
+        .select()
+        .single();
+      if (insertError) throw insertError;
+
+      const newProductId = inserted.id;
+
+      // 4) Duplicate options to the new product
+      if (options && options.length > 0) {
+        const optionsToInsert = options.map((opt) => ({
+          product_id: newProductId,
           name: opt.name,
           name_ar: opt.name_ar,
-          price_adjustment: Number(opt.price_adjustment),
+          price_adjustment: opt.price_adjustment,
           in_stock: opt.in_stock,
-        }))
-      );
-    } else {
-      setProductOptions([]);
+        }));
+
+        const { error: insertOptionsError } = await supabase
+          .from('product_options')
+          .insert(optionsToInsert);
+        if (insertOptionsError) throw insertOptionsError;
+      }
+
+      // 5) Refresh lists and notify
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({
+        predicate: (q) => {
+          const k = q.queryKey as unknown[];
+          return Array.isArray(k) && (
+            k[0] === 'products' ||
+            k[0] === 'featured-products' ||
+            k[0] === 'category-products' ||
+            k[0] === 'product' ||
+            k[0] === 'product-options'
+          );
+        },
+      });
+
+      toast.success('تم تكرار المنتج بنجاح');
+    } catch (error) {
+      console.error('Error duplicating product:', error);
+      toast.error('حدث خطأ أثناء تكرار المنتج');
     }
-    
-    // Set all the product data for duplication WITHOUT id
-    // This ensures useEffect won't try to reload data from database
-    setEditingProduct({
-      ...productData,
-      name_ar: `${product.name_ar} (نسخة)`,
-      name: `${product.name} (Copy)`,
-      slug: `${product.slug}-copy-${Date.now()}`, // Make slug unique
-    });
-    
-    setProductDialogOpen(true);
   };
 
   const addProductOption = () => {
