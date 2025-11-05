@@ -41,11 +41,11 @@ const ProductListItem = ({
   return (
     <Link 
       to={`/product/${slug}`}
-      className="group flex gap-4 bg-gradient-to-b from-card to-card/80 rounded-xl p-4 border border-border/40 card-premium hover:border-primary/50 transition-all hover:shadow-lg relative overflow-hidden"
+      className="group flex gap-3 sm:gap-4 bg-gradient-to-b from-card to-card/80 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border/40 card-premium hover:border-primary/50 transition-all hover:shadow-lg relative overflow-hidden"
     >
       {/* Image */}
       {displayImage && (
-        <div className="relative overflow-hidden rounded-lg w-32 h-32 flex-shrink-0">
+        <div className="relative overflow-hidden rounded-lg w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0">
           <img 
             src={displayImage} 
             alt={nameAr}
@@ -54,7 +54,7 @@ const ProductListItem = ({
           {hasSale && (
             <Badge 
               variant="secondary" 
-              className="absolute top-2 left-2 text-xs bg-primary/90 text-primary-foreground border-0 shadow-lg"
+              className="absolute top-1 left-1 sm:top-2 sm:left-2 text-xs bg-primary/90 text-primary-foreground border-0 shadow-lg"
             >
               تخفيضات
             </Badge>
@@ -63,35 +63,35 @@ const ProductListItem = ({
       )}
       
       {/* Content */}
-      <div className="flex-1 flex flex-col justify-between">
+      <div className="flex-1 flex flex-col justify-between min-w-0">
         <div>
-          <h3 className="font-bold text-xl mb-2 text-foreground group-hover:text-primary transition-colors">
+          <h3 className="font-bold text-base sm:text-lg lg:text-xl mb-1 sm:mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-1">
             {nameAr}
           </h3>
           
           {descriptionAr && (
-            <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 line-clamp-2">
               {descriptionAr}
             </p>
           )}
         </div>
         
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
           <div className="flex flex-col">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-primary">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-xl sm:text-2xl font-black text-primary whitespace-nowrap">
                 {formatPrice(price)}
               </span>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground">
                 {currency}
               </span>
             </div>
             {hasSale && (
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-sm line-through text-muted-foreground/60">
+              <div className="flex items-center gap-1.5 sm:gap-2 mt-1">
+                <span className="text-xs sm:text-sm line-through text-muted-foreground/60">
                   {formatPrice(originalPrice || 0)}
                 </span>
-                <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded-full">
+                <span className="text-xs sm:text-sm bg-primary/10 text-primary px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full">
                   وفر {formatPrice(savings)}
                 </span>
               </div>
@@ -100,7 +100,7 @@ const ProductListItem = ({
           
           <Button 
             size="default"
-            className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+            className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 w-full sm:w-auto text-sm"
             onClick={(e) => {
               e.preventDefault();
               addToCart(id);
