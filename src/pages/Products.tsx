@@ -4,7 +4,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useState } from 'react';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
-import { Loader2 } from 'lucide-react';
+import ProductListItem from '@/components/ProductListItem';
+import { Loader2, Grid3x3, List } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { z } from 'zod';
 
 // Security: Validate and sanitize search input to prevent SQL injection
@@ -42,6 +44,7 @@ const Products = () => {
   const searchQuery = searchParams.get('search') || '';
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc'>('default');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const ITEMS_PER_PAGE = 24;
 
   const { data: productsData, isLoading } = useQuery({
@@ -130,7 +133,7 @@ const Products = () => {
           <SearchBar />
         </div>
 
-        <div className="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+        <div className="mb-6 flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
           {searchQuery ? (
             <div>
               <h2 className="text-2xl font-black text-primary">
@@ -144,23 +147,46 @@ const Products = () => {
             <div className="flex-1" />
           )}
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <label className="text-sm text-muted-foreground whitespace-nowrap">ترتيب حسب:</label>
-            <Select value={sortBy} onValueChange={(value: 'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc') => {
-              setSortBy(value);
-              setCurrentPage(1);
-            }}>
-              <SelectTrigger className="w-full sm:w-[220px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">افتراضي</SelectItem>
-                <SelectItem value="price-asc">السعر: من الأدنى للأعلى</SelectItem>
-                <SelectItem value="price-desc">السعر: من الأعلى للأدنى</SelectItem>
-                <SelectItem value="name-asc">الاسم: من A إلى Z</SelectItem>
-                <SelectItem value="name-desc">الاسم: من Z إلى A</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-4 w-full lg:w-auto">
+            {/* View Mode Toggle */}
+            <div className="flex items-center gap-2 border border-border/40 rounded-lg p-1">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+                className="h-8 w-8 p-0"
+              >
+                <Grid3x3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="h-8 w-8 p-0"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Sort Select */}
+            <div className="flex items-center gap-2 flex-1 lg:flex-initial">
+              <label className="text-sm text-muted-foreground whitespace-nowrap">ترتيب:</label>
+              <Select value={sortBy} onValueChange={(value: 'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc') => {
+                setSortBy(value);
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-full lg:w-[200px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">افتراضي</SelectItem>
+                  <SelectItem value="price-asc">السعر: الأرخص للأغلى</SelectItem>
+                  <SelectItem value="price-desc">السعر: الأغلى للأرخص</SelectItem>
+                  <SelectItem value="name-asc">الاسم: A إلى Z</SelectItem>
+                  <SelectItem value="name-desc">الاسم: Z إلى A</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
 
@@ -169,24 +195,45 @@ const Products = () => {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : products && products.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                id={product.id}
-                name={product.name}
-                nameAr={product.name_ar}
-                description={product.description}
-                descriptionAr={product.description_ar}
-                price={Number(product.price)}
-                originalPrice={product.original_price ? Number(product.original_price) : undefined}
-                imageUrl={product.image_url || undefined}
-                images={product.images || undefined}
-                currency={product.currency || undefined}
-                slug={product.slug}
-              />
-            ))}
-          </div>
+          viewMode === 'grid' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-6 gap-3 sm:gap-4">
+              {products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  nameAr={product.name_ar}
+                  description={product.description}
+                  descriptionAr={product.description_ar}
+                  price={Number(product.price)}
+                  originalPrice={product.original_price ? Number(product.original_price) : undefined}
+                  imageUrl={product.image_url || undefined}
+                  images={product.images || undefined}
+                  currency={product.currency || undefined}
+                  slug={product.slug}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {products.map((product) => (
+                <ProductListItem
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  nameAr={product.name_ar}
+                  description={product.description}
+                  descriptionAr={product.description_ar}
+                  price={Number(product.price)}
+                  originalPrice={product.original_price ? Number(product.original_price) : undefined}
+                  imageUrl={product.image_url || undefined}
+                  images={product.images || undefined}
+                  currency={product.currency || undefined}
+                  slug={product.slug}
+                />
+              ))}
+            </div>
+          )
         ) : (
           <div className="text-center py-12">
             <p className="text-muted-foreground">لم يتم العثور على منتجات</p>
