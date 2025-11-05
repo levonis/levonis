@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
@@ -20,7 +20,9 @@ const TopBar = () => {
   const { user, isAdmin, signOut } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
+  const isHomePage = location.pathname === '/' || location.pathname === '/home';
 
   const { data: unreadNotifications } = useQuery({
     queryKey: ['unread-notifications', user?.id],
@@ -73,12 +75,15 @@ const TopBar = () => {
       
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="text-2xl font-black text-gradient-gold">
-              LEVONIS.IQ
-            </div>
-          </Link>
+          {/* Logo - Only show on home page */}
+          {isHomePage && (
+            <Link to="/" className="flex items-center gap-2">
+              <div className="text-2xl font-black text-gradient-gold">
+                LEVONIS.IQ
+              </div>
+            </Link>
+          )}
+          {!isHomePage && <div />}
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center gap-6">
@@ -162,12 +167,12 @@ const TopBar = () => {
                     <Heart className="ml-2 h-4 w-4" />
                     <span>المفضلة</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/notifications')} className="relative">
+                  <DropdownMenuItem onClick={() => navigate('/notifications')}>
                     <Bell className="ml-2 h-4 w-4" />
                     <span>الإشعارات</span>
                     {unreadNotifications && unreadNotifications > 0 && (
-                      <span className="mr-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                        {unreadNotifications}
+                      <span className="mr-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold min-w-[20px] text-center">
+                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
                       </span>
                     )}
                   </DropdownMenuItem>
