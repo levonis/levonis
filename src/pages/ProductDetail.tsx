@@ -164,7 +164,7 @@ const ProductDetail = () => {
   // السعر النهائي بحسب اللون والخيار
   const selectedOptionData = productOptions?.find((opt: any) => opt.id === selectedOption);
   const selectedColorData = Array.isArray(product.colors)
-    ? (product.colors as any[]).find((c: any) => c.name === selectedColor)
+    ? (product.colors as any[]).find((c: any) => c.name_ar === selectedColor)
     : null;
 
   const basePrice = selectedColorData?.price != null
@@ -377,9 +377,9 @@ const ProductDetail = () => {
                       <button
                         key={index}
                         type="button"
-                        onClick={() => setSelectedColor(selectedColor === color.name ? null : color.name)}
+                        onClick={() => setSelectedColor(selectedColor === color.name_ar ? null : color.name_ar)}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
-                          selectedColor === color.name
+                          selectedColor === color.name_ar
                             ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
                             : 'border-border hover:border-primary/50'
                         }`}
