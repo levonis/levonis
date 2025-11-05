@@ -330,17 +330,23 @@ const ProductDetail = () => {
                   <RadioGroup value={selectedOption || ''} onValueChange={setSelectedOption}>
                     <div className="space-y-3">
                       {productOptions.map((option: any) => (
-                        <div
+                        <label
                           key={option.id}
+                          htmlFor={`option-${option.id}`}
                           className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all cursor-pointer ${
                             selectedOption === option.id
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-primary/50'
-                          } ${!option.in_stock ? 'opacity-50' : ''}`}
+                              ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                              : 'border-border hover:border-primary/50 hover:bg-accent/5'
+                          } ${!option.in_stock ? 'opacity-50 cursor-not-allowed' : ''}`}
                         >
                           <div className="flex items-center gap-3 flex-1">
-                            <RadioGroupItem value={option.id} disabled={!option.in_stock} />
-                            <div className="flex-1">
+                            <RadioGroupItem 
+                              value={option.id} 
+                              id={`option-${option.id}`}
+                              disabled={!option.in_stock}
+                              className="cursor-pointer"
+                            />
+                            <div className="flex-1 cursor-pointer">
                               <div className="flex items-center gap-2">
                                 <span className="font-medium text-foreground">{option.name_ar}</span>
                                 {!option.in_stock && (
@@ -352,14 +358,14 @@ const ProductDetail = () => {
                               )}
                             </div>
                           </div>
-                          <div className="text-left">
+                          <div className="text-left pointer-events-none">
                             {option.price_adjustment !== 0 && (
                               <span className={`font-bold ${option.price_adjustment > 0 ? 'text-primary' : 'text-green-600'}`}>
                                 {option.price_adjustment > 0 ? '+' : ''}{formatPrice(Number(option.price_adjustment))} {currency}
                               </span>
                             )}
                           </div>
-                        </div>
+                        </label>
                       ))}
                     </div>
                   </RadioGroup>
