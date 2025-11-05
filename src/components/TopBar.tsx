@@ -141,7 +141,7 @@ const TopBar = () => {
                   >
                     <User className="h-5 w-5" />
                     {unreadNotifications && unreadNotifications > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
                         {unreadNotifications > 9 ? '9+' : unreadNotifications}
                       </span>
                     )}
@@ -161,6 +161,15 @@ const TopBar = () => {
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-4 w-4" />
                     <span>المفضلة</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/notifications')} className="relative">
+                    <Bell className="ml-2 h-4 w-4" />
+                    <span>الإشعارات</span>
+                    {unreadNotifications && unreadNotifications > 0 && (
+                      <span className="mr-auto bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
+                        {unreadNotifications}
+                      </span>
+                    )}
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
