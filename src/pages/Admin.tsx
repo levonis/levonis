@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
@@ -483,6 +483,42 @@ const Admin = () => {
 
   const removeImage = (index: number) => {
     setUploadedImages(uploadedImages.filter((_, i) => i !== index));
+  };
+
+  const handleDuplicateProduct = async (product: any) => {
+    // Load product options from database
+    const { data: options } = await supabase
+      .from('product_options')
+      .select('*')
+      .eq('product_id', product.id);
+
+    // Set all the product data for duplication
+    setEditingProduct({
+      ...product,
+      id: null, // Clear ID so it creates a new product
+      name_ar: `${product.name_ar} (نسخة)`,
+      name: `${product.name} (Copy)`,
+      slug: `${product.slug}-copy-${Date.now()}`, // Make slug unique
+    });
+    
+    setUploadedImages(product.images || []);
+    setProductColors(Array.isArray(product.colors) ? product.colors : []);
+    setProductFeatures(Array.isArray(product.features) ? product.features : []);
+    
+    if (options && options.length > 0) {
+      setProductOptions(
+        options.map((opt) => ({
+          name: opt.name,
+          name_ar: opt.name_ar,
+          price_adjustment: Number(opt.price_adjustment),
+          in_stock: opt.in_stock,
+        }))
+      );
+    } else {
+      setProductOptions([]);
+    }
+    
+    setProductDialogOpen(true);
   };
 
   const addProductOption = () => {
@@ -1276,8 +1312,17 @@ const Admin = () => {
                                 setEditingProduct(product);
                                 setProductDialogOpen(true);
                               }}
+                              title="تعديل"
                             >
                               <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDuplicateProduct(product)}
+                              title="تكرار المنتج"
+                            >
+                              <Copy className="h-4 w-4" />
                             </Button>
                             <Button
                               size="sm"
@@ -1287,6 +1332,7 @@ const Admin = () => {
                                   deleteProduct.mutate(product.id);
                                 }
                               }}
+                              title="حذف"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>
