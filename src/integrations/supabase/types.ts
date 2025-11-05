@@ -229,6 +229,7 @@ export type Database = {
       custom_product_requests: {
         Row: {
           admin_notes: string | null
+          code: string | null
           created_at: string
           description: string | null
           id: string
@@ -243,6 +244,7 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          code?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -257,6 +259,7 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          code?: string | null
           created_at?: string
           description?: string | null
           id?: string
@@ -531,6 +534,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_request_code: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
