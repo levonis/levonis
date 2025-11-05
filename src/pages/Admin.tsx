@@ -93,23 +93,26 @@ const Admin = () => {
       setProductColors(Array.isArray(editingProduct.colors) ? editingProduct.colors : []);
       setProductFeatures(Array.isArray(editingProduct.features) ? editingProduct.features : []);
 
-      // Load options from the database
-      supabase
-        .from('product_options')
-        .select('*')
-        .eq('product_id', editingProduct.id)
-        .then(({ data, error }) => {
-          if (!error && data) {
-            setProductOptions(
-              data.map((opt) => ({
-                name: opt.name,
-                name_ar: opt.name_ar,
-                price_adjustment: Number(opt.price_adjustment),
-                in_stock: opt.in_stock,
-              }))
-            );
-          }
-        });
+      // Load options from the database ONLY if editing an existing product (has id)
+      // For duplicated products (no id), options are already set by handleDuplicateProduct
+      if (editingProduct.id) {
+        supabase
+          .from('product_options')
+          .select('*')
+          .eq('product_id', editingProduct.id)
+          .then(({ data, error }) => {
+            if (!error && data) {
+              setProductOptions(
+                data.map((opt) => ({
+                  name: opt.name,
+                  name_ar: opt.name_ar,
+                  price_adjustment: Number(opt.price_adjustment),
+                  in_stock: opt.in_stock,
+                }))
+              );
+            }
+          });
+      }
     } else if (productDialogOpen && !editingProduct) {
       // New product: start clean
       setProductOptions([]);
