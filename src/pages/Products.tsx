@@ -5,6 +5,21 @@ import { useState } from 'react';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import { Loader2 } from 'lucide-react';
+import { z } from 'zod';
+
+// Security: Validate and sanitize search input to prevent SQL injection
+const searchSchema = z.string()
+  .max(100, 'Search query too long')
+  .regex(/^[\u0600-\u06FFa-zA-Z0-9\s]*$/, 'Invalid characters in search');
+
+const sanitizeSearchQuery = (query: string | null): string | null => {
+  if (!query) return null;
+  try {
+    return searchSchema.parse(query.trim());
+  } catch {
+    return null;
+  }
+};
 import {
   Pagination,
   PaginationContent,
@@ -55,8 +70,10 @@ const Products = () => {
 
       query = query.range(from, to);
 
-      if (searchQuery) {
-        query = query.or(`name_ar.ilike.%${searchQuery}%,description_ar.ilike.%${searchQuery}%`);
+      // Security: Sanitize search query to prevent SQL injection
+      const sanitizedSearch = sanitizeSearchQuery(searchQuery);
+      if (sanitizedSearch) {
+        query = query.or(`name_ar.ilike.%${sanitizedSearch}%,description_ar.ilike.%${sanitizedSearch}%`);
       }
       
       const { data, error, count } = await query;
