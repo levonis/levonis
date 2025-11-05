@@ -9,7 +9,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus, Star, Award, Check, Zap, Sparkles, Cpu, Battery, Wifi } from 'lucide-react';
+import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus, Star, Award, Check, CheckCircle, Zap, Sparkles, Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { formatPrice } from '@/lib/utils';
@@ -499,7 +499,13 @@ const ProductDetail = () => {
                   {product.features.map((feature: any, index: number) => {
                     const iconName = feature.icon || 'Package';
                     const IconComponent = {
-                      Package, Shield, Truck, Star, Award, Check, Zap, Heart, Sparkles, Cpu, Battery, Wifi
+                      Package, Shield, Truck, Star, Award, Check, CheckCircle, Zap, Heart, Sparkles, 
+                      Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, 
+                      Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, 
+                      Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, 
+                      Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, 
+                      ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, 
+                      User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic
                     }[iconName] || Package;
                     
                     return (
