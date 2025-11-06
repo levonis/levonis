@@ -55,6 +55,7 @@ const Admin = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('products');
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
   const [mainSectionDialogOpen, setMainSectionDialogOpen] = useState(false);
@@ -795,83 +796,124 @@ const Admin = () => {
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-8">
           <h1 className="text-4xl font-black text-primary mb-2">لوحة التحكم</h1>
-          <p className="text-muted-foreground">إدارة المنتجات والأقسام والإعدادات</p>
+          <p className="text-muted-foreground">إدارة شاملة للمنتجات والأقسام والإعدادات</p>
         </div>
 
-        {/* Admin Dashboard */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 mb-8">
-          <Button
-            onClick={() => navigate('/admin/notifications')}
-            variant="outline"
-            className="gap-2 h-auto py-6 flex-col hover:bg-primary/10"
-          >
-            <Bell className="h-8 w-8 text-primary" />
-            <span className="text-sm font-medium">الإشعارات</span>
-          </Button>
-          <Button
-            onClick={() => navigate('/admin/announcements')}
-            variant="outline"
-            className="gap-2 h-auto py-6 flex-col hover:bg-primary/10"
-          >
-            <Megaphone className="h-8 w-8 text-primary" />
-            <span className="text-sm font-medium">الشريط الإخباري</span>
-          </Button>
-          <Button
-            onClick={() => navigate('/admin/coupons')}
-            variant="outline"
-            className="gap-2 h-auto py-6 flex-col hover:bg-primary/10"
-          >
-            <Ticket className="h-8 w-8 text-primary" />
-            <span className="text-sm font-medium">الكوبونات</span>
-          </Button>
-          <Button
-            onClick={() => setProductDialogOpen(true)}
-            variant="outline"
-            className="gap-2 h-auto py-6 flex-col hover:bg-primary/10"
-          >
-            <Plus className="h-8 w-8 text-primary" />
-            <span className="text-sm font-medium">منتج جديد</span>
-          </Button>
-          <Button
-            onClick={() => setCategoryDialogOpen(true)}
-            variant="outline"
-            className="gap-2 h-auto py-6 flex-col hover:bg-primary/10"
-          >
-            <Plus className="h-8 w-8 text-primary" />
-            <span className="text-sm font-medium">قسم جديد</span>
-          </Button>
-          <Button
-            onClick={() => setMainSectionDialogOpen(true)}
-            variant="outline"
-            className="gap-2 h-auto py-6 flex-col hover:bg-primary/10"
-          >
-            <Plus className="h-8 w-8 text-primary" />
-            <span className="text-sm font-medium">قسم رئيسي</span>
-          </Button>
-          <Button
-            onClick={() => {
-              const tabsElement = document.querySelector('[value="custom-requests"]');
-              if (tabsElement) {
-                (tabsElement as HTMLElement).click();
-              }
-            }}
-            variant="outline"
-            className="gap-2 h-auto py-6 flex-col relative hover:bg-primary/10"
-          >
-            <FileText className="h-8 w-8 text-primary" />
-            <span className="text-sm font-medium">الطلبات المخصصة</span>
-            {pendingRequestsCount && pendingRequestsCount > 0 && (
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full"
+        {/* Quick Actions - Settings & Management */}
+        <Card className="mb-8 border-primary/20 shadow-lg">
+          <CardHeader className="border-b border-border/50">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Bell className="h-5 w-5 text-primary" />
+              الإعدادات والإدارة
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              <Button
+                onClick={() => navigate('/admin/notifications')}
+                variant="outline"
+                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
               >
-                {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
-              </Badge>
-            )}
-          </Button>
-        </div>
+                <Bell className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">إدارة الإشعارات</span>
+                <span className="text-xs text-muted-foreground">إرسال إشعارات للمستخدمين</span>
+              </Button>
+              
+              <Button
+                onClick={() => navigate('/admin/announcements')}
+                variant="outline"
+                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
+              >
+                <Megaphone className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">الشريط الإخباري</span>
+                <span className="text-xs text-muted-foreground">إدارة الإعلانات المتحركة</span>
+              </Button>
+              
+              <Button
+                onClick={() => navigate('/admin/coupons')}
+                variant="outline"
+                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
+              >
+                <Ticket className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">إدارة الكوبونات</span>
+                <span className="text-xs text-muted-foreground">إنشاء وإدارة الخصومات</span>
+              </Button>
+              
+              <Button
+                onClick={() => setActiveTab('custom-requests')}
+                variant="outline"
+                className="gap-3 h-auto py-8 flex-col relative hover:bg-primary/5 hover:border-primary/40 transition-all group"
+              >
+                <FileText className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">الطلبات المخصصة</span>
+                <span className="text-xs text-muted-foreground">مراجعة طلبات العملاء</span>
+                {pendingRequestsCount && pendingRequestsCount > 0 && (
+                  <Badge 
+                    variant="destructive" 
+                    className="absolute -top-2 -right-2 h-7 w-7 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
+                  >
+                    {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
+                  </Badge>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-        <Tabs defaultValue="products" className="w-full">
+        {/* Quick Actions - Content Management */}
+        <Card className="mb-8 border-primary/20 shadow-lg">
+          <CardHeader className="border-b border-border/50">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" />
+              إضافة محتوى جديد
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <Button
+                onClick={() => {
+                  setEditingProduct(null);
+                  setUploadedImages([]);
+                  setProductOptions([]);
+                  setProductColors([]);
+                  setProductFeatures([]);
+                  setProductDialogOpen(true);
+                }}
+                className="gap-3 h-auto py-8 flex-col bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all group"
+              >
+                <Plus className="h-10 w-10 group-hover:rotate-90 transition-transform" />
+                <span className="text-sm font-semibold">منتج جديد</span>
+                <span className="text-xs opacity-90">إضافة منتج للمتجر</span>
+              </Button>
+              
+              <Button
+                onClick={() => {
+                  setEditingCategory(null);
+                  setCategoryDialogOpen(true);
+                }}
+                className="gap-3 h-auto py-8 flex-col bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all group"
+              >
+                <FolderOpen className="h-10 w-10 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">قسم جديد</span>
+                <span className="text-xs opacity-90">إضافة قسم للمنتجات</span>
+              </Button>
+              
+              <Button
+                onClick={() => {
+                  setEditingMainSection(null);
+                  setMainSectionDialogOpen(true);
+                }}
+                className="gap-3 h-auto py-8 flex-col bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all group"
+              >
+                <FolderOpen className="h-10 w-10 group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">قسم رئيسي</span>
+                <span className="text-xs opacity-90">إضافة قسم رئيسي</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-6 grid grid-cols-4 w-full max-w-3xl">
             <TabsTrigger value="products" className="gap-2">
               <FolderOpen className="h-4 w-4" />
