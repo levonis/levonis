@@ -849,6 +849,12 @@ const Admin = () => {
             <span className="text-sm font-medium">قسم رئيسي</span>
           </Button>
           <Button
+            onClick={() => {
+              const tabsElement = document.querySelector('[value="custom-requests"]');
+              if (tabsElement) {
+                (tabsElement as HTMLElement).click();
+              }
+            }}
             variant="outline"
             className="gap-2 h-auto py-6 flex-col relative hover:bg-primary/10"
           >

@@ -453,7 +453,11 @@ const Cart = () => {
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8"
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                updateQuantity(item.id, item.quantity - 1);
+                              }}
                               disabled={item.quantity <= 1}
                             >
                               <Minus className="h-4 w-4" />
@@ -467,7 +471,11 @@ const Cart = () => {
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8"
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                updateQuantity(item.id, item.quantity + 1);
+                              }}
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
@@ -477,7 +485,11 @@ const Cart = () => {
                             size="sm"
                             variant="ghost"
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              removeFromCart(item.id);
+                            }}
                           >
                             <Trash2 className="h-4 w-4 ml-2" />
                             حذف

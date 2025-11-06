@@ -39,14 +39,16 @@ const AnnouncementBar = () => {
       <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
         <div className="flex-1 overflow-hidden">
           <div 
-            className="whitespace-nowrap"
+            className="flex whitespace-nowrap"
             style={{ 
-              animation: `marquee-${direction} ${speed}s linear infinite` 
+              animation: `marquee-${direction} ${speed}s linear infinite`,
+              width: 'max-content'
             }}
           >
-            <span className="inline-block px-4">{announcement.message_ar}</span>
-            <span className="inline-block px-4">{announcement.message_ar}</span>
-            <span className="inline-block px-4">{announcement.message_ar}</span>
+            <span className="inline-block px-8">{announcement.message_ar}</span>
+            <span className="inline-block px-8">{announcement.message_ar}</span>
+            <span className="inline-block px-8">{announcement.message_ar}</span>
+            <span className="inline-block px-8">{announcement.message_ar}</span>
           </div>
         </div>
         <button
@@ -61,10 +63,10 @@ const AnnouncementBar = () => {
       <style>{`
         @keyframes marquee-right {
           0% { transform: translateX(0%); }
-          100% { transform: translateX(-33.33%); }
+          100% { transform: translateX(-100%); }
         }
         @keyframes marquee-left {
-          0% { transform: translateX(-33.33%); }
+          0% { transform: translateX(-100%); }
           100% { transform: translateX(0%); }
         }
       `}</style>
