@@ -892,6 +892,7 @@ const Admin = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <Button
                 onClick={() => {
+                  setActiveTab('products');
                   setEditingProduct(null);
                   setUploadedImages([]);
                   setProductOptions([]);
@@ -908,6 +909,7 @@ const Admin = () => {
               
               <Button
                 onClick={() => {
+                  setActiveTab('categories');
                   setEditingCategory(null);
                   setCategoryDialogOpen(true);
                 }}
