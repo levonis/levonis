@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
+import React from 'react';
 
 const AnnouncementBar = () => {
   const [dismissed, setDismissed] = useState(false);
@@ -99,26 +100,36 @@ const AnnouncementBar = () => {
           {alwaysMove ? (
             <div key={currentIndex} className="relative">
               <div
-                className="flex whitespace-nowrap will-change-transform"
+                className="inline-flex whitespace-nowrap will-change-transform animate-marquee-scroll"
                 style={{
-                  animation: `marquee-${direction} ${speed}s linear infinite`,
+                  animationDuration: `${speed}s`,
+                  animationDirection: direction === 'left' ? 'normal' : 'reverse',
                 }}
               >
-                {Array.from({ length: 2 }).map((_, groupIndex) => (
-                  <div
-                    key={groupIndex}
-                    className="flex flex-shrink-0 items-center"
-                    style={{ gap: `${gap * 4}px`, paddingLeft: groupIndex === 0 ? 0 : `${gap * 4}px` }}
-                    ref={groupIndex === 0 ? unitRef : null}
-                  >
-                    {Array.from({ length: repeats }).map((_, i) => (
-                      <div key={`${groupIndex}-${i}`} className="flex items-center" style={{ gap: `${gap * 4}px` }}>
-                        <span className="inline-block">{announcement.message_ar}</span>
-                        <span className="inline-block opacity-60">•</span>
-                      </div>
-                    ))}
-                  </div>
-                ))}
+                <div
+                  className="flex items-center flex-shrink-0"
+                  style={{ gap: `${gap * 4}px` }}
+                  ref={unitRef}
+                >
+                  {Array.from({ length: repeats }).map((_, i) => (
+                    <React.Fragment key={`a-${i}`}>
+                      <span className="inline-block">{announcement.message_ar}</span>
+                      <span className="inline-block opacity-60">•</span>
+                    </React.Fragment>
+                  ))}
+                </div>
+                <div
+                  className="flex items-center flex-shrink-0"
+                  style={{ gap: `${gap * 4}px` }}
+                  aria-hidden="true"
+                >
+                  {Array.from({ length: repeats }).map((_, i) => (
+                    <React.Fragment key={`b-${i}`}>
+                      <span className="inline-block">{announcement.message_ar}</span>
+                      <span className="inline-block opacity-60">•</span>
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
             </div>
           ) : (
@@ -169,16 +180,6 @@ const AnnouncementBar = () => {
         </button>
       </div>
       
-      <style>{`
-        @keyframes marquee-left {
-          from { transform: translateX(0); }
-          to { transform: translateX(-50%); }
-        }
-        @keyframes marquee-right {
-          from { transform: translateX(-50%); }
-          to { transform: translateX(0); }
-        }
-      `}</style>
     </div>
   );
 };

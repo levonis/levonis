@@ -253,8 +253,17 @@ body::after {
     100% { transform: translateX(-33.33%); }
   }
 
+  @keyframes marquee-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
   .animate-marquee {
     animation: marquee 20s linear infinite;
+  }
+
+  .animate-marquee-scroll {
+    animation: marquee-scroll linear infinite;
   }
 }
 
