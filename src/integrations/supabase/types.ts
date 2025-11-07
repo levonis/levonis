@@ -430,6 +430,7 @@ export type Database = {
       }
       products: {
         Row: {
+          availability_type: string
           category_id: string | null
           colors: Json | null
           created_at: string | null
@@ -445,11 +446,14 @@ export type Database = {
           name: string
           name_ar: string
           original_price: number | null
+          pre_order_fast_shipping_price: number | null
+          pre_order_free_shipping_price: number | null
           price: number
           slug: string
           updated_at: string | null
         }
         Insert: {
+          availability_type?: string
           category_id?: string | null
           colors?: Json | null
           created_at?: string | null
@@ -465,11 +469,14 @@ export type Database = {
           name: string
           name_ar: string
           original_price?: number | null
+          pre_order_fast_shipping_price?: number | null
+          pre_order_free_shipping_price?: number | null
           price: number
           slug: string
           updated_at?: string | null
         }
         Update: {
+          availability_type?: string
           category_id?: string | null
           colors?: Json | null
           created_at?: string | null
@@ -485,6 +492,8 @@ export type Database = {
           name?: string
           name_ar?: string
           original_price?: number | null
+          pre_order_fast_shipping_price?: number | null
+          pre_order_free_shipping_price?: number | null
           price?: number
           slug?: string
           updated_at?: string | null

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -33,6 +33,9 @@ const productSchema = z.object({
   category_id: z.string().uuid('القسم غير صحيح'),
   featured: z.boolean().optional(),
   in_stock: z.boolean().optional(),
+  availability_type: z.enum(['in_stock', 'pre_order']).optional(),
+  pre_order_free_shipping_price: z.number().positive().optional(),
+  pre_order_fast_shipping_price: z.number().positive().optional(),
 });
 
 const categorySchema = z.object({
@@ -655,6 +658,8 @@ const Admin = () => {
       const allImages = editingProduct?.images || [];
       const finalImages = [...allImages, ...uploadedImages];
 
+      const availabilityType = (formData.get('availability_type') as string) || 'in_stock';
+      
       const values = {
         name_ar: formData.get('name_ar') as string,
         name: formData.get('name') as string,
@@ -669,6 +674,13 @@ const Admin = () => {
         category_id: formData.get('category_id') as string,
         featured: (formData.get('featured') as string) === 'on',
         in_stock: (formData.get('in_stock') as string) === 'on',
+        availability_type: availabilityType,
+        pre_order_free_shipping_price: availabilityType === 'pre_order' && formData.get('pre_order_free_shipping_price')
+          ? Number(formData.get('pre_order_free_shipping_price'))
+          : undefined,
+        pre_order_fast_shipping_price: availabilityType === 'pre_order' && formData.get('pre_order_fast_shipping_price')
+          ? Number(formData.get('pre_order_fast_shipping_price'))
+          : undefined,
         colors: productColors.length > 0 
           ? productColors.filter(c => c.name_ar.trim() && c.name.trim())
           : undefined,
@@ -1280,6 +1292,74 @@ const Admin = () => {
                       <div className="flex items-center gap-2">
                         <input id="in_stock" name="in_stock" type="checkbox" defaultChecked={editingProduct?.in_stock ?? true} />
                         <Label htmlFor="in_stock">متاح في المخزون</Label>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 border-t pt-4">
+                      <Label htmlFor="availability_type">نوع التوفر *</Label>
+                      <select
+                        id="availability_type"
+                        name="availability_type"
+                        defaultValue={editingProduct?.availability_type || 'in_stock'}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        onChange={(e) => {
+                          const preOrderSection = document.getElementById('pre-order-section');
+                          if (preOrderSection) {
+                            preOrderSection.style.display = e.target.value === 'pre_order' ? 'block' : 'none';
+                          }
+                        }}
+                      >
+                        <option value="in_stock">متاح في المخزن</option>
+                        <option value="pre_order">طلب مسبق</option>
+                      </select>
+
+                      <div 
+                        id="pre-order-section" 
+                        className="space-y-4 p-4 border border-primary/20 rounded-lg bg-primary/5"
+                        style={{ display: editingProduct?.availability_type === 'pre_order' ? 'block' : 'none' }}
+                      >
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                          <Package className="h-4 w-4" />
+                          <span>أسعار الطلب المسبق مع خيارات الشحن</span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="pre_order_free_shipping_price" className="flex items-center gap-2">
+                              <Truck className="h-4 w-4 text-primary" />
+                              شحن مجاني (45 يوماً)
+                            </Label>
+                            <Input
+                              id="pre_order_free_shipping_price"
+                              name="pre_order_free_shipping_price"
+                              type="number"
+                              step="0.01"
+                              defaultValue={editingProduct?.pre_order_free_shipping_price}
+                              placeholder="السعر للشحن المجاني"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              مدة التوصيل: 45 يوماً - شحن مجاني
+                            </p>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="pre_order_fast_shipping_price" className="flex items-center gap-2">
+                              <Zap className="h-4 w-4 text-primary" />
+                              شحن سريع (15 يوماً)
+                            </Label>
+                            <Input
+                              id="pre_order_fast_shipping_price"
+                              name="pre_order_fast_shipping_price"
+                              type="number"
+                              step="0.01"
+                              defaultValue={editingProduct?.pre_order_fast_shipping_price}
+                              placeholder="السعر للشحن السريع"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              مدة التوصيل: 15 يوماً - شحن سريع
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
 

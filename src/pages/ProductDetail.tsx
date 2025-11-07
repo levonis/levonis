@@ -27,6 +27,7 @@ const ProductDetail = () => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [colorImageUrl, setColorImageUrl] = useState<string | null>(null);
+  const [selectedShippingOption, setSelectedShippingOption] = useState<'free' | 'fast' | null>(null);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
@@ -202,6 +203,12 @@ const ProductDetail = () => {
       return;
     }
 
+    // Check if pre-order and no shipping option selected
+    if (product.availability_type === 'pre_order' && !selectedShippingOption) {
+      toast.error('الرجاء اختيار نوع الشحن للطلب المسبق');
+      return;
+    }
+
     addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity);
     toast.success(`تم إضافة ${quantity} من المنتج إلى السلة`);
     setQuantity(1);
@@ -348,6 +355,60 @@ const ProductDetail = () => {
               <p className="text-muted-foreground text-lg mb-6 leading-relaxed">
                 {product.description_ar || 'لا يوجد وصف متوفر'}
               </p>
+
+              {/* Pre-Order Shipping Options */}
+              {product.availability_type === 'pre_order' && (
+                <div className="mb-6">
+                  <Label className="text-lg font-bold mb-3 block">خيارات الشحن للطلب المسبق</Label>
+                  <RadioGroup 
+                    value={selectedShippingOption || ''} 
+                    onValueChange={(value) => setSelectedShippingOption(value as 'free' | 'fast')}
+                    className="space-y-3"
+                  >
+                    {product.pre_order_free_shipping_price && (
+                      <div className="flex items-center space-x-3 space-x-reverse p-4 border-2 border-border rounded-lg hover:border-primary/50 transition-colors bg-card/50">
+                        <RadioGroupItem value="free" id="shipping-free" className="flex-shrink-0" />
+                        <Label
+                          htmlFor="shipping-free"
+                          className="flex-1 cursor-pointer flex items-center justify-between gap-4"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Truck className="h-5 w-5 text-primary" />
+                            <div>
+                              <div className="font-bold text-foreground">شحن مجاني (45 يوماً)</div>
+                              <div className="text-sm text-muted-foreground">توصيل خلال 45 يوم عمل</div>
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-primary">
+                            {formatPrice(Number(product.pre_order_free_shipping_price))} {currency}
+                          </div>
+                        </Label>
+                      </div>
+                    )}
+
+                    {product.pre_order_fast_shipping_price && (
+                      <div className="flex items-center space-x-3 space-x-reverse p-4 border-2 border-border rounded-lg hover:border-primary/50 transition-colors bg-card/50">
+                        <RadioGroupItem value="fast" id="shipping-fast" className="flex-shrink-0" />
+                        <Label
+                          htmlFor="shipping-fast"
+                          className="flex-1 cursor-pointer flex items-center justify-between gap-4"
+                        >
+                          <div className="flex items-center gap-3">
+                            <Zap className="h-5 w-5 text-primary" />
+                            <div>
+                              <div className="font-bold text-foreground">شحن سريع (15 يوماً)</div>
+                              <div className="text-sm text-muted-foreground">توصيل خلال 15 يوم عمل</div>
+                            </div>
+                          </div>
+                          <div className="text-lg font-bold text-primary">
+                            {formatPrice(Number(product.pre_order_fast_shipping_price))} {currency}
+                          </div>
+                        </Label>
+                      </div>
+                    )}
+                  </RadioGroup>
+                </div>
+              )}
 
               {/* Product Options */}
               {productOptions && productOptions.length > 0 && (
