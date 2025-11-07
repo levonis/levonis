@@ -1,11 +1,14 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const AnnouncementBar = () => {
   const [dismissed, setDismissed] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const unitRef = useRef<HTMLDivElement>(null);
+  const [repeats, setRepeats] = useState(6);
 
   const { data: announcements } = useQuery({
     queryKey: ['active-announcements'],
@@ -51,6 +54,22 @@ const AnnouncementBar = () => {
   const gap = announcement.gap || 16;
   const hasMultiple = announcements.length > 1;
 
+  // Ensure the marquee never leaves empty space by repeating units to exceed container width
+  useEffect(() => {
+    if (!alwaysMove) return;
+    const recalc = () => {
+      const cw = containerRef.current?.offsetWidth || 0;
+      const uw = unitRef.current?.scrollWidth || 0;
+      if (cw && uw) {
+        const needed = Math.ceil(cw / uw) + 2; // buffer
+        setRepeats(Math.max(needed, 4));
+      }
+    };
+    recalc();
+    window.addEventListener('resize', recalc);
+    return () => window.removeEventListener('resize', recalc);
+  }, [currentIndex, alwaysMove, gap, announcement?.message_ar]);
+
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev - 1 + announcements.length) % announcements.length);
   };
@@ -76,7 +95,7 @@ const AnnouncementBar = () => {
           </button>
         )}
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 overflow-hidden" ref={containerRef}>
           {alwaysMove ? (
             <div key={currentIndex} className="relative">
               <div
@@ -86,27 +105,29 @@ const AnnouncementBar = () => {
                   gap: `${gap * 4}px`,
                 }}
               >
-                <div className="flex flex-shrink-0 items-center" style={{ gap: `${gap * 4}px` }}>
-                  <span className="inline-block">{announcement.message_ar}</span>
-                  <span className="inline-block opacity-60">•</span>
-                  <span className="inline-block">{announcement.message_ar}</span>
-                  <span className="inline-block opacity-60">•</span>
-                  <span className="inline-block">{announcement.message_ar}</span>
-                  <span className="inline-block opacity-60">•</span>
-                  <span className="inline-block">{announcement.message_ar}</span>
+                <div
+                  className="flex flex-shrink-0 items-center"
+                  style={{ gap: `${gap * 4}px` }}
+                  ref={unitRef}
+                >
+                  {Array.from({ length: repeats }).map((_, i) => (
+                    <div key={`a-${i}`} className="flex items-center" style={{ gap: `${gap * 4}px` }}>
+                      <span className="inline-block">{announcement.message_ar}</span>
+                      <span className="inline-block opacity-60">•</span>
+                    </div>
+                  ))}
                 </div>
                 <div
                   className="flex flex-shrink-0 items-center"
                   style={{ gap: `${gap * 4}px` }}
                   aria-hidden="true"
                 >
-                  <span className="inline-block">{announcement.message_ar}</span>
-                  <span className="inline-block opacity-60">•</span>
-                  <span className="inline-block">{announcement.message_ar}</span>
-                  <span className="inline-block opacity-60">•</span>
-                  <span className="inline-block">{announcement.message_ar}</span>
-                  <span className="inline-block opacity-60">•</span>
-                  <span className="inline-block">{announcement.message_ar}</span>
+                  {Array.from({ length: repeats }).map((_, i) => (
+                    <div key={`b-${i}`} className="flex items-center" style={{ gap: `${gap * 4}px` }}>
+                      <span className="inline-block">{announcement.message_ar}</span>
+                      <span className="inline-block opacity-60">•</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
