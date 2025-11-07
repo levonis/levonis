@@ -99,36 +99,26 @@ const AnnouncementBar = () => {
           {alwaysMove ? (
             <div key={currentIndex} className="relative">
               <div
-                className="flex whitespace-nowrap w-max will-change-transform"
+                className="flex whitespace-nowrap will-change-transform"
                 style={{
                   animation: `marquee-${direction} ${speed}s linear infinite`,
-                  gap: `${gap * 4}px`,
                 }}
               >
-                <div
-                  className="flex flex-shrink-0 items-center"
-                  style={{ gap: `${gap * 4}px` }}
-                  ref={unitRef}
-                >
-                  {Array.from({ length: repeats }).map((_, i) => (
-                    <div key={`a-${i}`} className="flex items-center" style={{ gap: `${gap * 4}px` }}>
-                      <span className="inline-block">{announcement.message_ar}</span>
-                      <span className="inline-block opacity-60">•</span>
-                    </div>
-                  ))}
-                </div>
-                <div
-                  className="flex flex-shrink-0 items-center"
-                  style={{ gap: `${gap * 4}px` }}
-                  aria-hidden="true"
-                >
-                  {Array.from({ length: repeats }).map((_, i) => (
-                    <div key={`b-${i}`} className="flex items-center" style={{ gap: `${gap * 4}px` }}>
-                      <span className="inline-block">{announcement.message_ar}</span>
-                      <span className="inline-block opacity-60">•</span>
-                    </div>
-                  ))}
-                </div>
+                {Array.from({ length: 2 }).map((_, groupIndex) => (
+                  <div
+                    key={groupIndex}
+                    className="flex flex-shrink-0 items-center"
+                    style={{ gap: `${gap * 4}px`, paddingLeft: groupIndex === 0 ? 0 : `${gap * 4}px` }}
+                    ref={groupIndex === 0 ? unitRef : null}
+                  >
+                    {Array.from({ length: repeats }).map((_, i) => (
+                      <div key={`${groupIndex}-${i}`} className="flex items-center" style={{ gap: `${gap * 4}px` }}>
+                        <span className="inline-block">{announcement.message_ar}</span>
+                        <span className="inline-block opacity-60">•</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             </div>
           ) : (
@@ -181,12 +171,12 @@ const AnnouncementBar = () => {
       
       <style>{`
         @keyframes marquee-left {
-          0% { transform: translateX(0%); }
-          100% { transform: translateX(-50%); }
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
         }
         @keyframes marquee-right {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0%); }
+          from { transform: translateX(-50%); }
+          to { transform: translateX(0); }
         }
       `}</style>
     </div>
