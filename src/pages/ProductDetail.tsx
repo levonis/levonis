@@ -26,6 +26,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [colorImageUrl, setColorImageUrl] = useState<string | null>(null);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
@@ -154,11 +155,19 @@ const ProductDetail = () => {
     );
   }
 
-  const productImages = product.images && product.images.length > 0 
-    ? product.images 
-    : product.image_url 
-      ? [product.image_url] 
-      : [];
+  // إذا كان هناك لون محدد وله صورة، استخدمها بدلاً من صور المنتج الأساسية
+  const getProductImages = () => {
+    if (colorImageUrl) {
+      return [colorImageUrl];
+    }
+    return product.images && product.images.length > 0 
+      ? product.images 
+      : product.image_url 
+        ? [product.image_url] 
+        : [];
+  };
+  
+  const productImages = getProductImages();
   
   const currency = product.currency || 'دينار عراقي';
 
@@ -407,7 +416,17 @@ const ProductDetail = () => {
                       <button
                         key={index}
                         type="button"
-                        onClick={() => setSelectedColor(selectedColor === color.name_ar ? null : color.name_ar)}
+                        onClick={() => {
+                          const newSelectedColor = selectedColor === color.name_ar ? null : color.name_ar;
+                          setSelectedColor(newSelectedColor);
+                          // إذا كان للون صورة خاصة، استخدمها
+                          if (newSelectedColor && color.image_url) {
+                            setColorImageUrl(color.image_url);
+                            setSelectedImage(0); // اذهب للصورة الأولى
+                          } else {
+                            setColorImageUrl(null);
+                          }
+                        }}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
                           selectedColor === color.name_ar
                             ? 'border-primary bg-primary/5 ring-2 ring-primary/20'

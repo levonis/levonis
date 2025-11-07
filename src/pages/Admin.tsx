@@ -75,6 +75,7 @@ const Admin = () => {
     name_ar: string;
     hex_code: string;
     price?: number;
+    image_url?: string;
   }>>([]);
   const [productFeatures, setProductFeatures] = useState<Array<{
     text_ar: string;
@@ -583,7 +584,8 @@ const Admin = () => {
       name: '',
       name_ar: '',
       hex_code: '#000000',
-      price: undefined
+      price: undefined,
+      image_url: undefined
     }]);
   };
 
@@ -1344,6 +1346,57 @@ const Admin = () => {
                                       اتركه فارغاً لاستخدام السعر الأساسي
                                     </p>
                                   </div>
+                                </div>
+                                
+                                <div className="space-y-1">
+                                  <Label className="text-xs">صورة اللون (اختياري)</Label>
+                                  <div className="flex gap-2 items-end">
+                                    <Input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={async (e) => {
+                                        const file = e.target.files?.[0];
+                                        if (!file) return;
+                                        
+                                        const fileExt = file.name.split('.').pop();
+                                        const fileName = `${Math.random()}.${fileExt}`;
+                                        const { error: uploadError, data } = await supabase.storage
+                                          .from('product-images')
+                                          .upload(fileName, file);
+                                        
+                                        if (uploadError) {
+                                          toast.error('حدث خطأ أثناء رفع الصورة');
+                                          return;
+                                        }
+                                        
+                                        const { data: { publicUrl } } = supabase.storage
+                                          .from('product-images')
+                                          .getPublicUrl(fileName);
+                                        
+                                        updateProductColor(index, 'image_url', publicUrl);
+                                        toast.success('تم رفع صورة اللون بنجاح');
+                                      }}
+                                      className="h-9"
+                                    />
+                                    {color.image_url && (
+                                      <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => updateProductColor(index, 'image_url', undefined)}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                  </div>
+                                  {color.image_url && (
+                                    <div className="mt-2 relative w-20 h-20 rounded-lg overflow-hidden border border-border">
+                                      <img src={color.image_url} alt={color.name_ar} className="w-full h-full object-cover" />
+                                    </div>
+                                  )}
+                                  <p className="text-xs text-muted-foreground">
+                                    صورة خاصة تظهر عند اختيار هذا اللون
+                                  </p>
                                 </div>
                               </div>
                             </div>

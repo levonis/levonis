@@ -8,6 +8,7 @@ interface CartItem {
   product_id: string | null;
   custom_request_id: string | null;
   quantity: number;
+  color_image_url?: string | null;
   products?: {
     id: string;
     name: string;
@@ -15,6 +16,7 @@ interface CartItem {
     price: number;
     original_price: number | null;
     image_url: string | null;
+    images?: string[];
     slug: string;
     colors?: any[];
   };
@@ -66,6 +68,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           quantity,
           product_option_id,
           selected_color,
+          color_image_url,
           products (
             id,
             name,
@@ -73,6 +76,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             price,
             original_price,
             image_url,
+            images,
             slug,
             colors
           ),
@@ -115,6 +119,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log('Adding to cart:', { productId, optionId, color, quantity });
       
+      // Get product data to find color image
+      const { data: productData } = await supabase
+        .from('products')
+        .select('colors, images, image_url')
+        .eq('id', productId)
+        .single();
+      
+      let colorImageUrl: string | null = null;
+      if (color && productData?.colors) {
+        const selectedColorData = (productData.colors as any[]).find(
+          (c: any) => c.name === color || c.name_ar === color
+        );
+        colorImageUrl = selectedColorData?.image_url || null;
+      }
+      
       // Check if item with same product, option, and color already exists
       const normalize = (v: any) => (v ?? '').toString().trim().toLowerCase();
       const existingItem = items.find(item => 
@@ -142,6 +161,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       if (color) {
         insertData.selected_color = color;
+      }
+      
+      if (colorImageUrl) {
+        insertData.color_image_url = colorImageUrl;
       }
 
       console.log('Inserting cart item:', insertData);
