@@ -63,11 +63,11 @@ const Home = () => {
     <div className="min-h-screen relative overflow-hidden bg-background">
       {/* Full page decorative border - starts below header */}
       <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-5 animate-float-decoration blur-sm max-w-full"
+        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-5 animate-float-decoration blur-sm"
         style={{
           backgroundImage: 'url(/images/decorative-border-new.png)',
-          backgroundSize: '100% auto',
-          backgroundPosition: 'center center',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
           filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
         }}
