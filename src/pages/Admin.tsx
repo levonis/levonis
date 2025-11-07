@@ -1077,6 +1077,7 @@ const Admin = () => {
               
               <Button
                 onClick={() => {
+                  setActiveTab('main-sections');
                   setEditingMainSection(null);
                   setMainSectionDialogOpen(true);
                 }}
