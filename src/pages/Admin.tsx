@@ -205,6 +205,28 @@ const Admin = () => {
     refetchOnMount: true
   });
 
+  // Statistics queries
+  const { data: stats } = useQuery({
+    queryKey: ['admin-stats', isAdmin],
+    queryFn: async () => {
+      const [productsResult, featuredResult, categoriesResult, outOfStockResult] = await Promise.all([
+        supabase.from('products').select('*', { count: 'exact', head: true }),
+        supabase.from('products').select('*', { count: 'exact', head: true }).eq('featured', true),
+        supabase.from('categories').select('*', { count: 'exact', head: true }),
+        supabase.from('products').select('*', { count: 'exact', head: true }).eq('in_stock', false)
+      ]);
+
+      return {
+        totalProducts: productsResult.count || 0,
+        featuredProducts: featuredResult.count || 0,
+        totalCategories: categoriesResult.count || 0,
+        outOfStock: outOfStockResult.count || 0
+      };
+    },
+    enabled: !!isAdmin,
+    refetchInterval: 60000
+  });
+
   // Refetch when isAdmin changes
   useEffect(() => {
     if (isAdmin) {
@@ -817,6 +839,62 @@ const Admin = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-black text-primary mb-2">لوحة التحكم</h1>
           <p className="text-muted-foreground">إدارة شاملة للمنتجات والأقسام والإعدادات</p>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-2">
+                <div className="text-4xl font-black text-primary">{stats?.totalProducts || 0}</div>
+                <div className="text-sm text-muted-foreground">إجمالي المنتجات</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-2">
+                <div className="text-4xl font-black text-primary">{stats?.featuredProducts || 0}</div>
+                <div className="text-sm text-muted-foreground">المنتجات المميزة</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-2">
+                <div className="text-4xl font-black text-primary">{stats?.totalCategories || 0}</div>
+                <div className="text-sm text-muted-foreground">الأقسام</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-2">
+                <div className="text-4xl font-black text-destructive">{stats?.outOfStock || 0}</div>
+                <div className="text-sm text-muted-foreground">غير متوفر</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-2">
+                <div className="text-4xl font-black text-orange-500">{pendingRequestsCount || 0}</div>
+                <div className="text-sm text-muted-foreground">طلبات معلقة</div>
+              </div>
+              {pendingRequestsCount && pendingRequestsCount > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
+                >
+                  !
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Quick Actions - Settings & Management */}
