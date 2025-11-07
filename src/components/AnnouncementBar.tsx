@@ -76,28 +76,31 @@ const AnnouncementBar = () => {
         )}
 
         <div className="flex-1 overflow-hidden">
-          <div 
-            key={currentIndex}
-            className="flex whitespace-nowrap animate-fade-in"
-            style={{ 
-              animation: alwaysMove 
-                ? `marquee-${direction} ${speed}s linear infinite, fade-in 0.5s ease-out`
-                : 'fade-in 0.5s ease-out',
-              width: alwaysMove ? 'max-content' : '100%',
-              justifyContent: alwaysMove ? 'flex-start' : 'center'
-            }}
-          >
-            {alwaysMove ? (
-              <>
-                <span className="inline-block px-8">{announcement.message_ar}</span>
-                <span className="inline-block px-8">{announcement.message_ar}</span>
-                <span className="inline-block px-8">{announcement.message_ar}</span>
-                <span className="inline-block px-8">{announcement.message_ar}</span>
-              </>
-            ) : (
+          {alwaysMove ? (
+            <div 
+              key={currentIndex}
+              className="flex whitespace-nowrap"
+              style={{ 
+                animation: `marquee-${direction} ${speed}s linear infinite`,
+              }}
+            >
               <span className="inline-block">{announcement.message_ar}</span>
-            )}
-          </div>
+              <span className="inline-block mx-16">•</span>
+              <span className="inline-block">{announcement.message_ar}</span>
+              <span className="inline-block mx-16">•</span>
+              <span className="inline-block">{announcement.message_ar}</span>
+              <span className="inline-block mx-16">•</span>
+              <span className="inline-block">{announcement.message_ar}</span>
+              <span className="inline-block mx-16">•</span>
+            </div>
+          ) : (
+            <div 
+              key={currentIndex}
+              className="flex justify-center animate-fade-in"
+            >
+              <span className="inline-block">{announcement.message_ar}</span>
+            </div>
+          )}
         </div>
 
         {/* Next button */}
