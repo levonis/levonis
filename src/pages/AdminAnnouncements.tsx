@@ -204,7 +204,7 @@ const AdminAnnouncements = () => {
                 إضافة إعلان
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>{editing ? 'تعديل الإعلان' : 'إضافة إعلان جديد'}</DialogTitle>
               </DialogHeader>
