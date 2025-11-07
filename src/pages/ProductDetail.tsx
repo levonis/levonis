@@ -267,6 +267,27 @@ const ProductDetail = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-12">
           {/* Image Section */}
           <div className="relative">
+            {hasSale && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="absolute -top-4 -left-4 z-20 cursor-help">
+                      <div className="relative">
+                        {/* Glow effect */}
+                        <div className="absolute inset-0 bg-primary/40 rounded-full blur-lg animate-pulse" />
+                        {/* Icon container */}
+                        <div className="relative bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full p-3 shadow-xl backdrop-blur-sm border border-primary-foreground/20 hover:scale-110 transition-transform">
+                          <Tag className="h-5 w-5" />
+                        </div>
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent className="bg-primary text-primary-foreground font-bold text-base px-4 py-2">
+                    <p>خصم {finalOriginalPrice ? Math.round((savings / Number(finalOriginalPrice)) * 100) : Math.round((savings / Number(product.original_price!)) * 100)}%</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
             <div className="glass-effect rounded-2xl p-6 border border-border/50 card-premium">
               {productImages.length > 0 ? (
                 <div className="space-y-4">
@@ -277,27 +298,6 @@ const ProductDetail = () => {
                       alt={`${product.name_ar} - صورة ${selectedImage + 1}`}
                       className="w-full h-full object-cover"
                     />
-                    {hasSale && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="absolute top-3 left-3 z-10 cursor-help">
-                              <div className="relative">
-                                {/* Glow effect */}
-                                <div className="absolute inset-0 bg-primary/40 rounded-full blur-lg animate-pulse" />
-                                {/* Icon container */}
-                                <div className="relative bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full p-3 shadow-xl backdrop-blur-sm border border-primary-foreground/20 hover:scale-110 transition-transform">
-                                  <Tag className="h-5 w-5" />
-                                </div>
-                              </div>
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent className="bg-primary text-primary-foreground font-bold text-base px-4 py-2">
-                            <p>خصم {finalOriginalPrice ? Math.round((savings / Number(finalOriginalPrice)) * 100) : Math.round((savings / Number(product.original_price!)) * 100)}%</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
                     {!product.in_stock && (
                       <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                         <Badge variant="destructive" className="text-lg px-6 py-2">
