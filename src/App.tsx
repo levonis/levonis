@@ -25,6 +25,7 @@ import AdminNotifications from "./pages/AdminNotifications";
 import AdminAnnouncements from "./pages/AdminAnnouncements";
 import AdminCoupons from "./pages/AdminCoupons";
 import MyOrders from "./pages/MyOrders";
+import OrderDetail from "./pages/OrderDetail";
 import AdminOrders from "./pages/AdminOrders";
 import NotFound from "./pages/NotFound";
 
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/my-requests" element={<MyCustomRequests />} />
               <Route path="/my-orders" element={<MyOrders />} />
+              <Route path="/order/:orderId" element={<OrderDetail />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />

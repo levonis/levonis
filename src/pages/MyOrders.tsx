@@ -186,7 +186,7 @@ const MyOrders = () => {
                       المنتجات ({order.order_items?.length || 0})
                     </h4>
                     <div className="space-y-3">
-                      {order.order_items?.map((item: any) => (
+                      {order.order_items?.slice(0, 2).map((item: any) => (
                         <div
                           key={item.id}
                           className="flex gap-4 p-3 border border-border/50 rounded-lg bg-card/50"
@@ -224,7 +224,22 @@ const MyOrders = () => {
                           </div>
                         </div>
                       ))}
+                      {order.order_items && order.order_items.length > 2 && (
+                        <div className="text-sm text-muted-foreground text-center">
+                          و {order.order_items.length - 2} منتجات أخرى
+                        </div>
+                      )}
                     </div>
+                  </div>
+
+                  {/* زر عرض التفاصيل */}
+                  <div className="mt-6 pt-4 border-t border-border/50">
+                    <Button
+                      onClick={() => navigate(`/order/${order.id}`)}
+                      className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                    >
+                      عرض تفاصيل الطلب كاملة
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
