@@ -390,6 +390,133 @@ export type Database = {
         }
         Relationships: []
       }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string
+          product_name: string
+          product_name_ar: string
+          product_option_id: string | null
+          quantity: number
+          selected_color: string | null
+          selected_option: string | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id: string
+          product_name: string
+          product_name_ar: string
+          product_option_id?: string | null
+          quantity?: number
+          selected_color?: string | null
+          selected_option?: string | null
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string
+          product_name?: string
+          product_name_ar?: string
+          product_option_id?: string | null
+          quantity?: number
+          selected_color?: string | null
+          selected_option?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_option_id_fkey"
+            columns: ["product_option_id"]
+            isOneToOne: false
+            referencedRelation: "product_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          currency: string
+          delivered_at: string | null
+          governorate: string
+          id: string
+          order_number: string
+          phone_number: string
+          shipped_at: string | null
+          shipping_address: string
+          shipping_company: string | null
+          shipping_notes: string | null
+          status: string
+          total_amount: number
+          tracking_number: string | null
+          tracking_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          delivered_at?: string | null
+          governorate: string
+          id?: string
+          order_number: string
+          phone_number: string
+          shipped_at?: string | null
+          shipping_address: string
+          shipping_company?: string | null
+          shipping_notes?: string | null
+          status?: string
+          total_amount: number
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          delivered_at?: string | null
+          governorate?: string
+          id?: string
+          order_number?: string
+          phone_number?: string
+          shipped_at?: string | null
+          shipping_address?: string
+          shipping_company?: string | null
+          shipping_notes?: string | null
+          status?: string
+          total_amount?: number
+          tracking_number?: string | null
+          tracking_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_options: {
         Row: {
           created_at: string
@@ -558,6 +685,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      generate_order_number: { Args: never; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       has_role: {
         Args: {

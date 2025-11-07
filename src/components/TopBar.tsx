@@ -160,6 +160,10 @@ const TopBar = () => {
                     <FileText className="ml-2 h-4 w-4" />
                     <span>طلباتي المخصصة</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/my-orders')}>
+                    <Package className="ml-2 h-4 w-4" />
+                    <span>طلباتي</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-4 w-4" />
                     <span>المفضلة</span>

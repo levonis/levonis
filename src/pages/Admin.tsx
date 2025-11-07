@@ -988,6 +988,16 @@ const Admin = () => {
               </Button>
               
               <Button
+                onClick={() => navigate('/admin/orders')}
+                variant="outline"
+                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
+              >
+                <Package className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">إدارة الطلبات</span>
+                <span className="text-xs text-muted-foreground">تتبع وإدارة الطلبات</span>
+              </Button>
+              
+              <Button
                 onClick={() => setActiveTab('custom-requests')}
                 variant="outline"
                 className="gap-3 h-auto py-8 flex-col relative hover:bg-primary/5 hover:border-primary/40 transition-all group"
@@ -997,7 +1007,7 @@ const Admin = () => {
                 <span className="text-xs text-muted-foreground">مراجعة طلبات العملاء</span>
                 {pendingRequestsCount && pendingRequestsCount > 0 && (
                   <Badge 
-                    variant="destructive" 
+                    variant="destructive"
                     className="absolute -top-2 -right-2 h-7 w-7 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
                   >
                     {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}

@@ -24,6 +24,8 @@ import Admin from "./pages/Admin";
 import AdminNotifications from "./pages/AdminNotifications";
 import AdminAnnouncements from "./pages/AdminAnnouncements";
 import AdminCoupons from "./pages/AdminCoupons";
+import MyOrders from "./pages/MyOrders";
+import AdminOrders from "./pages/AdminOrders";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,11 +51,13 @@ const App = () => (
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/my-requests" element={<MyCustomRequests />} />
+              <Route path="/my-orders" element={<MyOrders />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/notifications" element={<AdminNotifications />} />
               <Route path="/admin/announcements" element={<AdminAnnouncements />} />
               <Route path="/admin/coupons" element={<AdminCoupons />} />
+              <Route path="/admin/orders" element={<AdminOrders />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
