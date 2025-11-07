@@ -786,15 +786,14 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
-      {/* Full page decorative border */}
+      {/* Full page decorative border with animations */}
       <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-80"
+        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 animate-float-decoration"
         style={{
           backgroundImage: 'url(/images/decorative-border-new.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'top center',
           backgroundRepeat: 'no-repeat',
-          filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
         }}
       />
       

@@ -82,45 +82,7 @@ body {
 
 /* Decorative Elements */
 body {
-  background-image: url('/images/decorative-frame.png');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-  background-attachment: fixed;
   position: relative;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: url('/images/decorative-frame.png');
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-  opacity: 0.15;
-  pointer-events: none;
-  z-index: -1;
-}
-
-/* Top ornamental pattern */
-body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 600px;
-  height: 600px;
-  pointer-events: none;
-  opacity: 0.1;
-  z-index: 0;
-  background: radial-gradient(circle at center, hsl(var(--ring) / 0.2) 0%, transparent 70%);
-  background-image: 
-    repeating-linear-gradient(45deg, hsl(var(--primary) / 0.1) 0px, transparent 2px, transparent 10px),
-    repeating-linear-gradient(-45deg, hsl(var(--accent) / 0.1) 0px, transparent 2px, transparent 10px);
 }
   
   h1, h2, h3, h4, h5, h6 {
@@ -188,6 +150,30 @@ body::after {
     50% {
       opacity: 0.6;
     }
+  }
+  
+  @keyframes float-decoration {
+    0%, 100% { 
+      transform: translateY(0) scale(1);
+      opacity: 0.8;
+    }
+    50% { 
+      transform: translateY(-10px) scale(1.02);
+      opacity: 0.9;
+    }
+  }
+  
+  @keyframes glow-decoration {
+    0%, 100% { 
+      filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.3));
+    }
+    50% { 
+      filter: drop-shadow(0 0 35px rgba(212, 175, 55, 0.5));
+    }
+  }
+  
+  .animate-float-decoration {
+    animation: float-decoration 6s ease-in-out infinite, glow-decoration 4s ease-in-out infinite;
   }
   
   .animate-float {
