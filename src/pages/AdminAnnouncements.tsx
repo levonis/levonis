@@ -29,6 +29,8 @@ const AdminAnnouncements = () => {
     color: '#3b82f6',
     speed: 20,
     direction: 'right',
+    auto_rotate: true,
+    display_duration: 5,
   });
 
   useEffect(() => {
@@ -140,6 +142,8 @@ const AdminAnnouncements = () => {
       color: announcement.color || '#3b82f6',
       speed: announcement.speed || 20,
       direction: announcement.direction || 'right',
+      auto_rotate: announcement.auto_rotate ?? true,
+      display_duration: announcement.display_duration || 5,
     });
     setDialogOpen(true);
   };
@@ -153,6 +157,8 @@ const AdminAnnouncements = () => {
       color: '#3b82f6',
       speed: 20,
       direction: 'right',
+      auto_rotate: true,
+      display_duration: 5,
     });
     setEditing(null);
   };
@@ -240,7 +246,7 @@ const AdminAnnouncements = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="speed">السرعة (ثانية)</Label>
+                    <Label htmlFor="speed">سرعة الحركة (ثانية)</Label>
                     <Input
                       id="speed"
                       type="number"
@@ -266,13 +272,47 @@ const AdminAnnouncements = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Switch
-                    id="active"
-                    checked={formData.active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
+                <div className="space-y-2">
+                  <Label htmlFor="display_duration">مدة عرض الإعلان (ثانية)</Label>
+                  <Input
+                    id="display_duration"
+                    type="number"
+                    min="3"
+                    max="30"
+                    value={formData.display_duration}
+                    onChange={(e) => setFormData({ ...formData, display_duration: parseInt(e.target.value) })}
                   />
-                  <Label htmlFor="active">فعال</Label>
+                  <p className="text-xs text-muted-foreground">
+                    مدة عرض هذا الإعلان قبل الانتقال للإعلان التالي (من 3 إلى 30 ثانية)
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-border/50">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="active" className="text-base">تفعيل الإعلان</Label>
+                      <p className="text-xs text-muted-foreground">عرض هذا الإعلان في الموقع</p>
+                    </div>
+                    <Switch
+                      id="active"
+                      checked={formData.active}
+                      onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="auto_rotate" className="text-base">التقلب التلقائي</Label>
+                      <p className="text-xs text-muted-foreground">
+                        الانتقال تلقائياً للإعلان التالي (عند وجود أكثر من إعلان)
+                      </p>
+                    </div>
+                    <Switch
+                      id="auto_rotate"
+                      checked={formData.auto_rotate}
+                      onCheckedChange={(checked) => setFormData({ ...formData, auto_rotate: checked })}
+                    />
+                  </div>
                 </div>
 
                 <Button

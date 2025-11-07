@@ -49,15 +49,18 @@ const ProductCard = ({
           <path d="M0,0 L50,0 L50,20 Q40,20 40,10 Z" fill="hsl(var(--ring) / 0.1)" />
         </svg>
       </div>
+      
+      {/* Sale badge - above image */}
+      {hasSale && (
+        <Badge 
+          variant="secondary" 
+          className="absolute top-1 left-1 z-20 text-xs bg-primary/90 text-primary-foreground border-0 shadow-lg px-2 py-0.5 animate-pulse"
+        >
+          خصم
+        </Badge>
+      )}
+
       <div className="relative mb-2">
-        {hasSale && (
-          <Badge 
-            variant="secondary" 
-            className="absolute -top-2 left-2 z-10 text-xs bg-primary/90 text-primary-foreground border-0 shadow-lg px-2 py-0.5"
-          >
-            تخفيضات
-          </Badge>
-        )}
         {displayImage && (
           <div className="relative overflow-hidden rounded-lg aspect-square">
             <img 

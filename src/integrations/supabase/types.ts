@@ -17,9 +17,11 @@ export type Database = {
       announcements: {
         Row: {
           active: boolean
+          auto_rotate: boolean | null
           color: string | null
           created_at: string
           direction: string | null
+          display_duration: number | null
           id: string
           message: string
           message_ar: string
@@ -29,9 +31,11 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          auto_rotate?: boolean | null
           color?: string | null
           created_at?: string
           direction?: string | null
+          display_duration?: number | null
           id?: string
           message: string
           message_ar: string
@@ -41,9 +45,11 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          auto_rotate?: boolean | null
           color?: string | null
           created_at?: string
           direction?: string | null
+          display_duration?: number | null
           id?: string
           message?: string
           message_ar?: string
