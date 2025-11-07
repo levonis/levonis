@@ -10,8 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -64,6 +65,34 @@ const AdminOrders = () => {
     },
     onError: (error) => {
       toast.error('حدث خطأ أثناء تحديث الطلب');
+      console.error(error);
+    }
+  });
+
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      // حذف عناصر الطلب أولاً
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', orderId);
+
+      if (itemsError) throw itemsError;
+
+      // ثم حذف الطلب
+      const { error: orderError } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      toast.success('تم حذف الطلب بنجاح');
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ أثناء حذف الطلب');
       console.error(error);
     }
   });
@@ -241,110 +270,144 @@ const AdminOrders = () => {
                         )}
                       </TableCell>
                       <TableCell>
-                        <Dialog open={dialogOpen && editingOrder?.id === order.id} onOpenChange={(open) => {
-                          setDialogOpen(open);
-                          if (!open) setEditingOrder(null);
-                        }}>
-                          <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => {
-                                setEditingOrder(order);
-                                setDialogOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-4 w-4 ml-2" />
-                              تحديث
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle>تحديث الطلب {order.order_number}</DialogTitle>
-                            </DialogHeader>
+                        <div className="flex gap-2">
+                          <Dialog open={dialogOpen && editingOrder?.id === order.id} onOpenChange={(open) => {
+                            setDialogOpen(open);
+                            if (!open) setEditingOrder(null);
+                          }}>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingOrder(order);
+                                  setDialogOpen(true);
+                                }}
+                              >
+                                <Pencil className="h-4 w-4 ml-2" />
+                                تحديث
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle>تحديث الطلب {order.order_number}</DialogTitle>
+                              </DialogHeader>
 
-                            <form onSubmit={handleUpdateOrder} className="space-y-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="status">الحالة *</Label>
-                                <select
-                                  id="status"
-                                  name="status"
-                                  defaultValue={order.status}
-                                  required
-                                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              <form onSubmit={handleUpdateOrder} className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="status">الحالة *</Label>
+                                  <select
+                                    id="status"
+                                    name="status"
+                                    defaultValue={order.status}
+                                    required
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                  >
+                                    <option value="pending">قيد الانتظار</option>
+                                    <option value="confirmed">مؤكد</option>
+                                    <option value="processing">قيد التجهيز</option>
+                                    <option value="shipped">تم الشحن</option>
+                                    <option value="delivered">تم التوصيل</option>
+                                    <option value="cancelled">ملغي</option>
+                                  </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="shipping_company">شركة الشحن</Label>
+                                  <Input
+                                    id="shipping_company"
+                                    name="shipping_company"
+                                    defaultValue={order.shipping_company || ''}
+                                    placeholder="مثال: DHL، FedEx، aramex"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="tracking_number">رقم التتبع</Label>
+                                  <Input
+                                    id="tracking_number"
+                                    name="tracking_number"
+                                    defaultValue={order.tracking_number || ''}
+                                    placeholder="رقم تتبع الشحنة"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="tracking_url">رابط التتبع</Label>
+                                  <Input
+                                    id="tracking_url"
+                                    name="tracking_url"
+                                    type="url"
+                                    defaultValue={order.tracking_url || ''}
+                                    placeholder="https://..."
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="shipping_notes">ملاحظات الشحن</Label>
+                                  <Textarea
+                                    id="shipping_notes"
+                                    name="shipping_notes"
+                                    defaultValue={order.shipping_notes || ''}
+                                    placeholder="أي ملاحظات إضافية..."
+                                    rows={3}
+                                  />
+                                </div>
+
+                                <div className="flex gap-3 justify-end pt-4">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setDialogOpen(false);
+                                      setEditingOrder(null);
+                                    }}
+                                  >
+                                    إلغاء
+                                  </Button>
+                                  <Button type="submit" disabled={updateOrderMutation.isPending}>
+                                    {updateOrderMutation.isPending && (
+                                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                                    )}
+                                    حفظ التغييرات
+                                  </Button>
+                                </div>
+                              </form>
+                            </DialogContent>
+                          </Dialog>
+
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                              >
+                                <Trash2 className="h-4 w-4 ml-2" />
+                                حذف
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>هل أنت متأكد؟</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  سيتم حذف الطلب {order.order_number} نهائياً من قاعدة البيانات. هذا الإجراء لا يمكن التراجع عنه.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteOrderMutation.mutate(order.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                 >
-                                  <option value="pending">قيد الانتظار</option>
-                                  <option value="confirmed">مؤكد</option>
-                                  <option value="processing">قيد التجهيز</option>
-                                  <option value="shipped">تم الشحن</option>
-                                  <option value="delivered">تم التوصيل</option>
-                                  <option value="cancelled">ملغي</option>
-                                </select>
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label htmlFor="shipping_company">شركة الشحن</Label>
-                                <Input
-                                  id="shipping_company"
-                                  name="shipping_company"
-                                  defaultValue={order.shipping_company || ''}
-                                  placeholder="مثال: DHL، FedEx، aramex"
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label htmlFor="tracking_number">رقم التتبع</Label>
-                                <Input
-                                  id="tracking_number"
-                                  name="tracking_number"
-                                  defaultValue={order.tracking_number || ''}
-                                  placeholder="رقم تتبع الشحنة"
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label htmlFor="tracking_url">رابط التتبع</Label>
-                                <Input
-                                  id="tracking_url"
-                                  name="tracking_url"
-                                  type="url"
-                                  defaultValue={order.tracking_url || ''}
-                                  placeholder="https://..."
-                                />
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label htmlFor="shipping_notes">ملاحظات الشحن</Label>
-                                <Textarea
-                                  id="shipping_notes"
-                                  name="shipping_notes"
-                                  defaultValue={order.shipping_notes || ''}
-                                  placeholder="أي ملاحظات إضافية..."
-                                  rows={3}
-                                />
-                              </div>
-
-                              <div className="flex gap-3 justify-end pt-4">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setDialogOpen(false);
-                                    setEditingOrder(null);
-                                  }}
-                                >
-                                  إلغاء
-                                </Button>
-                                <Button type="submit" disabled={updateOrderMutation.isPending}>
-                                  {updateOrderMutation.isPending && (
+                                  {deleteOrderMutation.isPending && (
                                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                                   )}
-                                  حفظ التغييرات
-                                </Button>
-                              </div>
-                            </form>
-                          </DialogContent>
-                        </Dialog>
+                                  حذف نهائياً
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))
