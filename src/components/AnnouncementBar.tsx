@@ -86,7 +86,7 @@ const AnnouncementBar = () => {
 
   return (
     <div 
-      className="text-white py-2 px-4 relative overflow-hidden transition-colors duration-500"
+      className="text-white py-2 px-4 relative overflow-hidden transition-colors duration-500 -z-10"
       style={{ backgroundColor: bgColor }}
     >
       <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
