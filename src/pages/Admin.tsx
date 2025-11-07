@@ -786,6 +786,24 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
+      {/* Full page decorative border */}
+      <div 
+        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-80"
+        style={{
+          backgroundImage: 'url(/images/decorative-border-new.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'top center',
+          backgroundRepeat: 'no-repeat',
+          filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
+        }}
+      />
+      
+      {/* Glow effect overlay */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-0 left-0 w-64 h-64 bg-ring/10 rounded-full blur-3xl animate-pulse-glow" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
+      </div>
+      
       {/* Admin decorative accent */}
       <div className="fixed top-20 left-20 w-32 h-32 pointer-events-none opacity-8 animate-float">
         <div className="w-full h-full" style={{ 

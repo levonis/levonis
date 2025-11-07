@@ -120,6 +120,18 @@ const Products = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
+      {/* Full page decorative border */}
+      <div 
+        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-80"
+        style={{
+          backgroundImage: 'url(/images/decorative-border-new.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'top center',
+          backgroundRepeat: 'no-repeat',
+          filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
+        }}
+      />
+      
       {/* Decorative elements */}
       <div className="fixed top-0 left-1/3 w-64 h-64 pointer-events-none opacity-10 animate-float">
         <svg viewBox="0 0 200 200" className="w-full h-full">
