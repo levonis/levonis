@@ -177,7 +177,7 @@ const Auth = () => {
     <div className="min-h-screen bg-background/90 backdrop-blur-md relative overflow-hidden flex items-center justify-center p-4">
       {/* Full page decorative border with animations */}
       <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 animate-float-decoration"
+        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-10 animate-float-decoration"
         style={{
           backgroundImage: 'url(/images/decorative-border-new.png)',
           backgroundSize: 'cover',
