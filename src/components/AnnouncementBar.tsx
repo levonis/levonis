@@ -101,7 +101,7 @@ const AnnouncementBar = () => {
           </button>
         )}
 
-        <div className="flex-1 overflow-hidden" ref={containerRef}>
+        <div className="flex-1 overflow-hidden relative" ref={containerRef}>
           {alwaysMove ? (
             <div key={currentIndex} className="relative h-full flex items-center">
               <div
@@ -138,6 +138,19 @@ const AnnouncementBar = () => {
                   ))}
                 </div>
               </div>
+              {/* Fade effect on edges */}
+              <div 
+                className="absolute inset-y-0 right-0 w-24 pointer-events-none z-10"
+                style={{
+                  background: `linear-gradient(to left, ${bgColor}, transparent)`
+                }}
+              />
+              <div 
+                className="absolute inset-y-0 left-0 w-24 pointer-events-none z-10"
+                style={{
+                  background: `linear-gradient(to right, ${bgColor}, transparent)`
+                }}
+              />
             </div>
           ) : (
             <div 
