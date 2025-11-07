@@ -361,9 +361,10 @@ const AdminAnnouncements = () => {
                           className="flex whitespace-nowrap w-max"
                           style={{
                             animation: `marquee-${formData.direction} ${formData.speed}s linear infinite`,
+                            gap: `${formData.gap * 4}px`,
                           }}
                         >
-                          <div className={`flex flex-shrink-0 items-center gap-${formData.gap}`}>
+                          <div className="flex flex-shrink-0 items-center" style={{ gap: `${formData.gap * 4}px` }}>
                             <span className="inline-block">{formData.message_ar || 'نص الإعلان'}</span>
                             <span className="inline-block opacity-60">•</span>
                             <span className="inline-block">{formData.message_ar || 'نص الإعلان'}</span>
