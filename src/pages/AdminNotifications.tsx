@@ -99,6 +99,7 @@ const AdminNotifications = () => {
           backgroundSize: '100% 100%',
           backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
+          filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
         }}
       />
       
