@@ -256,12 +256,9 @@ const AdminAnnouncements = () => {
                     <Input
                       id="speed"
                       type="number"
-                      min="5"
-                      max="60"
                       value={formData.speed}
                       onChange={(e) => setFormData({ ...formData, speed: parseInt(e.target.value) })}
                     />
-                    <p className="text-xs text-muted-foreground">من 5 إلى 60 ثانية</p>
                   </div>
 
                   <div className="space-y-2">
