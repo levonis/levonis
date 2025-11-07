@@ -79,12 +79,12 @@ const AnnouncementBar = () => {
           {alwaysMove ? (
             <div key={currentIndex} className="relative">
               <div
-                className="flex whitespace-nowrap"
+                className="flex whitespace-nowrap w-max will-change-transform"
                 style={{
                   animation: `marquee-${direction} ${speed}s linear infinite`,
                 }}
               >
-                <div className="flex w-full flex-shrink-0 items-center gap-16">
+                <div className="flex flex-shrink-0 items-center gap-16">
                   <span className="inline-block">{announcement.message_ar}</span>
                   <span className="inline-block opacity-60">•</span>
                   <span className="inline-block">{announcement.message_ar}</span>
@@ -94,7 +94,7 @@ const AnnouncementBar = () => {
                   <span className="inline-block">{announcement.message_ar}</span>
                 </div>
                 <div
-                  className="flex w-full flex-shrink-0 items-center gap-16"
+                  className="flex flex-shrink-0 items-center gap-16"
                   aria-hidden="true"
                 >
                   <span className="inline-block">{announcement.message_ar}</span>
@@ -156,11 +156,11 @@ const AnnouncementBar = () => {
       </div>
       
       <style>{`
-        @keyframes marquee-right {
+        @keyframes marquee-left {
           0% { transform: translateX(0%); }
           100% { transform: translateX(-50%); }
         }
-        @keyframes marquee-left {
+        @keyframes marquee-right {
           0% { transform: translateX(-50%); }
           100% { transform: translateX(0%); }
         }
