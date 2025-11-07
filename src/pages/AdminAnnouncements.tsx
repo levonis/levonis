@@ -31,6 +31,7 @@ const AdminAnnouncements = () => {
     direction: 'right',
     auto_rotate: true,
     display_duration: 5,
+    always_move: false,
   });
 
   useEffect(() => {
@@ -144,6 +145,7 @@ const AdminAnnouncements = () => {
       direction: announcement.direction || 'right',
       auto_rotate: announcement.auto_rotate ?? true,
       display_duration: announcement.display_duration || 5,
+      always_move: announcement.always_move ?? false,
     });
     setDialogOpen(true);
   };
@@ -159,6 +161,7 @@ const AdminAnnouncements = () => {
       direction: 'right',
       auto_rotate: true,
       display_duration: 5,
+      always_move: false,
     });
     setEditing(null);
   };
@@ -311,6 +314,20 @@ const AdminAnnouncements = () => {
                       id="auto_rotate"
                       checked={formData.auto_rotate}
                       onCheckedChange={(checked) => setFormData({ ...formData, auto_rotate: checked })}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="always_move" className="text-base">تحريك دائم</Label>
+                      <p className="text-xs text-muted-foreground">
+                        الحركة المستمرة للنص بدون توقف
+                      </p>
+                    </div>
+                    <Switch
+                      id="always_move"
+                      checked={formData.always_move}
+                      onCheckedChange={(checked) => setFormData({ ...formData, always_move: checked })}
                     />
                   </div>
                 </div>

@@ -47,6 +47,7 @@ const AnnouncementBar = () => {
   const bgColor = announcement.color || '#3b82f6';
   const speed = announcement.speed || 20;
   const direction = announcement.direction || 'right';
+  const alwaysMove = announcement.always_move ?? false;
   const hasMultiple = announcements.length > 1;
 
   const goToPrevious = () => {
@@ -79,14 +80,23 @@ const AnnouncementBar = () => {
             key={currentIndex}
             className="flex whitespace-nowrap animate-fade-in"
             style={{ 
-              animation: `marquee-${direction} ${speed}s linear infinite, fade-in 0.5s ease-out`,
-              width: 'max-content'
+              animation: alwaysMove 
+                ? `marquee-${direction} ${speed}s linear infinite, fade-in 0.5s ease-out`
+                : 'fade-in 0.5s ease-out',
+              width: alwaysMove ? 'max-content' : '100%',
+              justifyContent: alwaysMove ? 'flex-start' : 'center'
             }}
           >
-            <span className="inline-block px-8">{announcement.message_ar}</span>
-            <span className="inline-block px-8">{announcement.message_ar}</span>
-            <span className="inline-block px-8">{announcement.message_ar}</span>
-            <span className="inline-block px-8">{announcement.message_ar}</span>
+            {alwaysMove ? (
+              <>
+                <span className="inline-block px-8">{announcement.message_ar}</span>
+                <span className="inline-block px-8">{announcement.message_ar}</span>
+                <span className="inline-block px-8">{announcement.message_ar}</span>
+                <span className="inline-block px-8">{announcement.message_ar}</span>
+              </>
+            ) : (
+              <span className="inline-block">{announcement.message_ar}</span>
+            )}
           </div>
         </div>
 

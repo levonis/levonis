@@ -17,6 +17,7 @@ export type Database = {
       announcements: {
         Row: {
           active: boolean
+          always_move: boolean
           auto_rotate: boolean | null
           color: string | null
           created_at: string
@@ -31,6 +32,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          always_move?: boolean
           auto_rotate?: boolean | null
           color?: string | null
           created_at?: string
@@ -45,6 +47,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          always_move?: boolean
           auto_rotate?: boolean | null
           color?: string | null
           created_at?: string
