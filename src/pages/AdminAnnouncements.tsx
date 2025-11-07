@@ -352,41 +352,40 @@ const AdminAnnouncements = () => {
                 <div className="space-y-2 pt-4 border-t border-border/50">
                   <Label>معاينة الإعلان</Label>
                   <div 
-                    className="text-white py-2 px-4 rounded-md overflow-hidden"
+                    className="text-white py-2 px-4 rounded-md overflow-hidden h-10 flex items-center"
                     style={{ backgroundColor: formData.color }}
                   >
                     {formData.always_move ? (
-                      <div className="relative">
+                      <div className="relative w-full overflow-hidden">
                         <div
-                          className="flex whitespace-nowrap w-max"
+                          className="flex whitespace-nowrap"
                           style={{
                             animation: `marquee-${formData.direction} ${formData.speed}s linear infinite`,
-                            gap: `${formData.gap * 4}px`,
+                            gap: `${formData.gap}px`,
                           }}
                         >
-                          <div className="flex flex-shrink-0 items-center" style={{ gap: `${formData.gap * 4}px` }}>
-                            <span className="inline-block">{formData.message_ar || 'نص الإعلان'}</span>
-                            <span className="inline-block opacity-60">•</span>
-                            <span className="inline-block">{formData.message_ar || 'نص الإعلان'}</span>
-                            <span className="inline-block opacity-60">•</span>
-                            <span className="inline-block">{formData.message_ar || 'نص الإعلان'}</span>
-                          </div>
+                          {Array.from({ length: 6 }).map((_, i) => (
+                            <span key={i} className="inline-block px-4">
+                              {formData.message_ar || 'نص الإعلان'}
+                              {i < 5 && <span className="opacity-60 px-2">•</span>}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     ) : (
-                      <div className="text-center">
+                      <div className="text-center w-full">
                         <span>{formData.message_ar || 'نص الإعلان'}</span>
                       </div>
                     )}
                   </div>
                   <style>{`
                     @keyframes marquee-left {
-                      0% { transform: translateX(0%); }
+                      0% { transform: translateX(0); }
                       100% { transform: translateX(-50%); }
                     }
                     @keyframes marquee-right {
                       0% { transform: translateX(-50%); }
-                      100% { transform: translateX(0%); }
+                      100% { transform: translateX(0); }
                     }
                   `}</style>
                 </div>

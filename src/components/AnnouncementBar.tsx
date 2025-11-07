@@ -9,7 +9,7 @@ const AnnouncementBar = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const unitRef = useRef<HTMLDivElement>(null);
-  const [repeats, setRepeats] = useState(10);
+  const [repeats, setRepeats] = useState(15);
 
   const { data: announcements } = useQuery({
     queryKey: ['active-announcements'],
@@ -49,10 +49,9 @@ const AnnouncementBar = () => {
       const cw = containerRef.current?.offsetWidth || 0;
       const uw = unitRef.current?.scrollWidth || 0;
       if (cw && uw) {
-        // Since we repeat 3 times, we need much fewer base repeats
-        const singleWidth = uw / 3; // Width of one group
-        const needed = Math.ceil(cw / singleWidth) + 2;
-        setRepeats(Math.max(needed, 8));
+        // Calculate repeats needed to fill the container width
+        const needed = Math.ceil(cw / uw) + 3;
+        setRepeats(Math.max(needed, 15));
       }
     };
 
@@ -114,20 +113,22 @@ const AnnouncementBar = () => {
                     : `marquee-scroll-reverse ${speed}s linear infinite`,
                   gap: `${gap * 4}px`,
                 }}
-                ref={unitRef}
               >
-                {/* Repeat the content multiple times for seamless scroll */}
-                {Array.from({ length: 3 }).map((_, groupIndex) => (
-                  <React.Fragment key={groupIndex}>
+                {/* Duplicate content twice for seamless infinite scroll */}
+                {Array.from({ length: 2 }).map((_, groupIndex) => (
+                  <div
+                    key={groupIndex}
+                    className="flex items-center"
+                    style={{ gap: `${gap * 4}px`, paddingRight: `${gap * 4}px` }}
+                    ref={groupIndex === 0 ? unitRef : null}
+                  >
                     {Array.from({ length: repeats }).map((_, i) => (
                       <React.Fragment key={`${groupIndex}-${i}`}>
                         <span>{announcement.message_ar}</span>
-                        {(i < repeats - 1 || groupIndex < 2) && (
-                          <span className="opacity-60">•</span>
-                        )}
+                        <span className="opacity-60">•</span>
                       </React.Fragment>
                     ))}
-                  </React.Fragment>
+                  </div>
                 ))}
               </div>
               {/* Fade effect on edges */}
