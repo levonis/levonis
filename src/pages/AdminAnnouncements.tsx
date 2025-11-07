@@ -32,6 +32,7 @@ const AdminAnnouncements = () => {
     auto_rotate: true,
     display_duration: 5,
     always_move: false,
+    gap: 16,
   });
 
   useEffect(() => {
@@ -146,6 +147,7 @@ const AdminAnnouncements = () => {
       auto_rotate: announcement.auto_rotate ?? true,
       display_duration: announcement.display_duration || 5,
       always_move: announcement.always_move ?? false,
+      gap: announcement.gap || 16,
     });
     setDialogOpen(true);
   };
@@ -162,6 +164,7 @@ const AdminAnnouncements = () => {
       auto_rotate: true,
       display_duration: 5,
       always_move: false,
+      gap: 16,
     });
     setEditing(null);
   };
@@ -276,6 +279,19 @@ const AdminAnnouncements = () => {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="gap">المسافة بين التكرارات (gap)</Label>
+                  <Input
+                    id="gap"
+                    type="number"
+                    min="4"
+                    max="64"
+                    value={formData.gap}
+                    onChange={(e) => setFormData({ ...formData, gap: parseInt(e.target.value) })}
+                  />
+                  <p className="text-xs text-muted-foreground">المسافة بين كل تكرار والآخر (من 4 إلى 64)</p>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="display_duration">مدة عرض الإعلان (ثانية)</Label>
                   <Input
                     id="display_duration"
@@ -330,6 +346,48 @@ const AdminAnnouncements = () => {
                       onCheckedChange={(checked) => setFormData({ ...formData, always_move: checked })}
                     />
                   </div>
+                </div>
+
+                {/* Preview */}
+                <div className="space-y-2 pt-4 border-t border-border/50">
+                  <Label>معاينة الإعلان</Label>
+                  <div 
+                    className="text-white py-2 px-4 rounded-md overflow-hidden"
+                    style={{ backgroundColor: formData.color }}
+                  >
+                    {formData.always_move ? (
+                      <div className="relative">
+                        <div
+                          className="flex whitespace-nowrap w-max"
+                          style={{
+                            animation: `marquee-${formData.direction} ${formData.speed}s linear infinite`,
+                          }}
+                        >
+                          <div className={`flex flex-shrink-0 items-center gap-${formData.gap}`}>
+                            <span className="inline-block">{formData.message_ar || 'نص الإعلان'}</span>
+                            <span className="inline-block opacity-60">•</span>
+                            <span className="inline-block">{formData.message_ar || 'نص الإعلان'}</span>
+                            <span className="inline-block opacity-60">•</span>
+                            <span className="inline-block">{formData.message_ar || 'نص الإعلان'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <span>{formData.message_ar || 'نص الإعلان'}</span>
+                      </div>
+                    )}
+                  </div>
+                  <style>{`
+                    @keyframes marquee-left {
+                      0% { transform: translateX(0%); }
+                      100% { transform: translateX(-50%); }
+                    }
+                    @keyframes marquee-right {
+                      0% { transform: translateX(-50%); }
+                      100% { transform: translateX(0%); }
+                    }
+                  `}</style>
                 </div>
 
                 <Button

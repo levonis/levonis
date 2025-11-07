@@ -23,6 +23,7 @@ export type Database = {
           created_at: string
           direction: string | null
           display_duration: number | null
+          gap: number | null
           id: string
           message: string
           message_ar: string
@@ -38,6 +39,7 @@ export type Database = {
           created_at?: string
           direction?: string | null
           display_duration?: number | null
+          gap?: number | null
           id?: string
           message: string
           message_ar: string
@@ -53,6 +55,7 @@ export type Database = {
           created_at?: string
           direction?: string | null
           display_duration?: number | null
+          gap?: number | null
           id?: string
           message?: string
           message_ar?: string

@@ -48,6 +48,7 @@ const AnnouncementBar = () => {
   const speed = announcement.speed || 20;
   const direction = announcement.direction || 'right';
   const alwaysMove = announcement.always_move ?? false;
+  const gap = announcement.gap || 16;
   const hasMultiple = announcements.length > 1;
 
   const goToPrevious = () => {
@@ -82,9 +83,10 @@ const AnnouncementBar = () => {
                 className="flex whitespace-nowrap w-max will-change-transform"
                 style={{
                   animation: `marquee-${direction} ${speed}s linear infinite`,
+                  gap: `${gap * 4}px`,
                 }}
               >
-                <div className="flex flex-shrink-0 items-center gap-16">
+                <div className="flex flex-shrink-0 items-center" style={{ gap: `${gap * 4}px` }}>
                   <span className="inline-block">{announcement.message_ar}</span>
                   <span className="inline-block opacity-60">•</span>
                   <span className="inline-block">{announcement.message_ar}</span>
@@ -94,7 +96,8 @@ const AnnouncementBar = () => {
                   <span className="inline-block">{announcement.message_ar}</span>
                 </div>
                 <div
-                  className="flex flex-shrink-0 items-center gap-16"
+                  className="flex flex-shrink-0 items-center"
+                  style={{ gap: `${gap * 4}px` }}
                   aria-hidden="true"
                 >
                   <span className="inline-block">{announcement.message_ar}</span>
