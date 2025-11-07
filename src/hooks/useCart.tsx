@@ -201,7 +201,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity })
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Update quantity error:', error);
@@ -223,7 +224,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const { error } = await supabase
         .from('cart_items')
         .delete()
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .eq('user_id', user.id);
 
       if (error) {
         console.error('Remove from cart error:', error);

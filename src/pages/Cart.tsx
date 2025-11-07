@@ -450,6 +450,7 @@ const Cart = () => {
                         <div className="flex items-center gap-3">
                           <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 border border-border/40">
                             <Button
+                              type="button"
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8"
@@ -459,15 +460,17 @@ const Cart = () => {
                                 updateQuantity(item.id, item.quantity - 1);
                               }}
                               disabled={item.quantity <= 1}
+                              aria-label="تقليل الكمية"
                             >
                               <Minus className="h-4 w-4" />
                             </Button>
                             
-                            <span className="w-8 text-center font-bold">
+                            <span className="w-8 text-center font-bold" aria-live="polite">
                               {item.quantity}
                             </span>
                             
                             <Button
+                              type="button"
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8"
@@ -476,12 +479,14 @@ const Cart = () => {
                                 e.stopPropagation();
                                 updateQuantity(item.id, item.quantity + 1);
                               }}
+                              aria-label="زيادة الكمية"
                             >
                               <Plus className="h-4 w-4" />
                             </Button>
                           </div>
 
                           <Button
+                            type="button"
                             size="sm"
                             variant="ghost"
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
@@ -490,6 +495,7 @@ const Cart = () => {
                               e.stopPropagation();
                               removeFromCart(item.id);
                             }}
+                            aria-label="حذف المنتج"
                           >
                             <Trash2 className="h-4 w-4 ml-2" />
                             حذف
