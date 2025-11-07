@@ -9,7 +9,7 @@ const AnnouncementBar = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const unitRef = useRef<HTMLDivElement>(null);
-  const [repeats, setRepeats] = useState(20);
+  const [repeats, setRepeats] = useState(10);
 
   const { data: announcements } = useQuery({
     queryKey: ['active-announcements'],
@@ -49,14 +49,15 @@ const AnnouncementBar = () => {
       const cw = containerRef.current?.offsetWidth || 0;
       const uw = unitRef.current?.scrollWidth || 0;
       if (cw && uw) {
-        // Calculate how many times the content needs to repeat to fill screen + buffer
-        const needed = Math.ceil((cw * 3) / uw); // 3x screen width for smooth infinite scroll
-        setRepeats(Math.max(needed, 20));
+        // Since we repeat 3 times, we need much fewer base repeats
+        const singleWidth = uw / 3; // Width of one group
+        const needed = Math.ceil(cw / singleWidth) + 2;
+        setRepeats(Math.max(needed, 8));
       }
     };
 
     recalc();
-    const timer = setTimeout(recalc, 100); // Recalculate after initial render
+    const timer = setTimeout(recalc, 100);
     window.addEventListener('resize', recalc);
     return () => {
       clearTimeout(timer);
@@ -103,8 +104,9 @@ const AnnouncementBar = () => {
 
         <div className="flex-1 overflow-hidden relative" ref={containerRef}>
           {alwaysMove ? (
-            <div key={currentIndex} className="relative h-full flex items-center">
+            <div className="relative h-full flex items-center">
               <div
+                key={currentIndex}
                 className="flex whitespace-nowrap will-change-transform"
                 style={{
                   animation: direction === 'left' 
@@ -112,31 +114,21 @@ const AnnouncementBar = () => {
                     : `marquee-scroll-reverse ${speed}s linear infinite`,
                   gap: `${gap * 4}px`,
                 }}
+                ref={unitRef}
               >
-                <div
-                  className="flex items-center"
-                  style={{ gap: `${gap * 4}px` }}
-                  ref={unitRef}
-                >
-                  {Array.from({ length: repeats }).map((_, i) => (
-                    <React.Fragment key={`a-${i}`}>
-                      <span>{announcement.message_ar}</span>
-                      <span className="opacity-60">•</span>
-                    </React.Fragment>
-                  ))}
-                </div>
-                <div
-                  className="flex items-center"
-                  style={{ gap: `${gap * 4}px` }}
-                  aria-hidden="true"
-                >
-                  {Array.from({ length: repeats }).map((_, i) => (
-                    <React.Fragment key={`b-${i}`}>
-                      <span>{announcement.message_ar}</span>
-                      <span className="opacity-60">•</span>
-                    </React.Fragment>
-                  ))}
-                </div>
+                {/* Repeat the content multiple times for seamless scroll */}
+                {Array.from({ length: 3 }).map((_, groupIndex) => (
+                  <React.Fragment key={groupIndex}>
+                    {Array.from({ length: repeats }).map((_, i) => (
+                      <React.Fragment key={`${groupIndex}-${i}`}>
+                        <span>{announcement.message_ar}</span>
+                        {(i < repeats - 1 || groupIndex < 2) && (
+                          <span className="opacity-60">•</span>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </React.Fragment>
+                ))}
               </div>
               {/* Fade effect on edges */}
               <div 
