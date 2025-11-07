@@ -268,11 +268,11 @@ const ProductDetail = () => {
                       className="w-full h-full object-cover"
                     />
                     {hasSale && (
-                      <Badge 
-                        className="absolute top-4 left-4 bg-primary text-primary-foreground text-lg px-4 py-2"
-                      >
-                        خصم {finalOriginalPrice ? Math.round((savings / Number(finalOriginalPrice)) * 100) : Math.round((savings / Number(product.original_price!)) * 100)}%
-                      </Badge>
+                      <div className="absolute top-3 left-3 z-10">
+                        <div className="bg-primary/95 text-primary-foreground rounded-full p-2 shadow-lg backdrop-blur-sm">
+                          <Tag className="h-4 w-4" />
+                        </div>
+                      </div>
                     )}
                     {!product.in_stock && (
                       <div className="absolute inset-0 bg-background/80 flex items-center justify-center">

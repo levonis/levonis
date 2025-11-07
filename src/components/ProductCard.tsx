@@ -54,9 +54,9 @@ const ProductCard = ({
       {hasSale && (
         <Badge 
           variant="secondary" 
-          className="absolute top-1 left-1 z-20 text-xs bg-primary/90 text-primary-foreground border-0 shadow-lg px-2 py-0.5 animate-pulse"
+          className="absolute top-1 left-1 z-20 text-xs bg-primary/90 text-primary-foreground border-0 shadow-lg px-2 py-0.5"
         >
-          خصم
+          تخفيضات
         </Badge>
       )}
 
