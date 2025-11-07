@@ -79,6 +79,7 @@ const Admin = () => {
     hex_code: string;
     price?: number;
     image_url?: string;
+    in_stock?: boolean;
   }>>([]);
   const [productFeatures, setProductFeatures] = useState<Array<{
     text_ar: string;
@@ -618,7 +619,8 @@ const Admin = () => {
       name_ar: '',
       hex_code: '#000000',
       price: undefined,
-      image_url: undefined
+      image_url: undefined,
+      in_stock: true
     }]);
   };
 
@@ -1697,16 +1699,32 @@ const Admin = () => {
                                       <img src={color.image_url} alt={color.name_ar} className="w-full h-full object-cover" />
                                     </div>
                                   )}
-                                  <p className="text-xs text-muted-foreground">
-                                    صورة خاصة تظهر عند اختيار هذا اللون
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                                   <p className="text-xs text-muted-foreground">
+                                     صورة خاصة تظهر عند اختيار هذا اللون
+                                   </p>
+                                 </div>
+                                 
+                                 <div className="flex items-center space-x-2 space-x-reverse pt-2">
+                                   <input
+                                     type="checkbox"
+                                     id={`color-in-stock-${index}`}
+                                     checked={color.in_stock !== false}
+                                     onChange={(e) => updateProductColor(index, 'in_stock', e.target.checked)}
+                                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                   />
+                                   <Label htmlFor={`color-in-stock-${index}`} className="text-xs cursor-pointer">
+                                     متوفر في المخزون
+                                   </Label>
+                                 </div>
+                                 <p className="text-xs text-muted-foreground">
+                                   فقط للمنتجات المتوفرة في المخزن. عند إلغاء التحديد، يظهر اللون بشكل خافت للزبون
+                                 </p>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       )}
+                     </div>
 
                     {/* Product Features Section */}
                     <div className="space-y-2 border-t pt-4">

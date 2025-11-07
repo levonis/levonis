@@ -464,36 +464,46 @@ const ProductDetail = () => {
                 <div className="border-t border-border/30 pt-6 mb-6">
                   <Label className="text-sm font-bold text-foreground mb-3 block">الألوان المتاحة</Label>
                   <div className="flex flex-wrap gap-2">
-                    {product.colors.map((color: any, index: number) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => {
-                          const newSelectedColor = selectedColor === color.name_ar ? null : color.name_ar;
-                          setSelectedColor(newSelectedColor);
-                          // إذا كان للون صورة خاصة، استخدمها
-                          if (newSelectedColor && color.image_url) {
-                            setColorImageUrl(color.image_url);
-                            setSelectedImage(0); // اذهب للصورة الأولى
-                          } else {
-                            setColorImageUrl(null);
-                          }
-                        }}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
-                          selectedColor === color.name_ar
-                            ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <div
-                          className="w-5 h-5 rounded-full border-2 border-border shadow-sm"
-                          style={{ backgroundColor: color.hex_code }}
-                        />
-                        <div className="text-right">
-                          <div className="font-medium text-foreground text-sm">{color.name_ar}</div>
-                        </div>
-                      </button>
-                    ))}
+                    {product.colors.map((color: any, index: number) => {
+                      const isColorAvailable = product.availability_type === 'pre_order' || (color.in_stock !== false);
+                      return (
+                        <button
+                          key={index}
+                          type="button"
+                          onClick={() => {
+                            if (!isColorAvailable) return;
+                            const newSelectedColor = selectedColor === color.name_ar ? null : color.name_ar;
+                            setSelectedColor(newSelectedColor);
+                            // إذا كان للون صورة خاصة، استخدمها
+                            if (newSelectedColor && color.image_url) {
+                              setColorImageUrl(color.image_url);
+                              setSelectedImage(0); // اذهب للصورة الأولى
+                            } else {
+                              setColorImageUrl(null);
+                            }
+                          }}
+                          disabled={!isColorAvailable}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
+                            selectedColor === color.name_ar
+                              ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                              : 'border-border hover:border-primary/50'
+                          } ${!isColorAvailable ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                        >
+                          <div
+                            className="w-5 h-5 rounded-full border-2 border-border shadow-sm"
+                            style={{ backgroundColor: color.hex_code }}
+                          />
+                          <div className="text-right">
+                            <div className="font-medium text-foreground text-sm flex items-center gap-2">
+                              {color.name_ar}
+                              {!isColorAvailable && (
+                                <Badge variant="destructive" className="text-xs">غير متوفر</Badge>
+                              )}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
