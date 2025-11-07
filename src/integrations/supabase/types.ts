@@ -577,6 +577,7 @@ export type Database = {
           original_price: number | null
           pre_order_fast_shipping_price: number | null
           pre_order_free_shipping_price: number | null
+          pre_order_shipping_options: Json | null
           price: number
           slug: string
           updated_at: string | null
@@ -602,6 +603,7 @@ export type Database = {
           original_price?: number | null
           pre_order_fast_shipping_price?: number | null
           pre_order_free_shipping_price?: number | null
+          pre_order_shipping_options?: Json | null
           price: number
           slug: string
           updated_at?: string | null
@@ -627,6 +629,7 @@ export type Database = {
           original_price?: number | null
           pre_order_fast_shipping_price?: number | null
           pre_order_free_shipping_price?: number | null
+          pre_order_shipping_options?: Json | null
           price?: number
           slug?: string
           updated_at?: string | null

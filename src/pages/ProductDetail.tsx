@@ -27,7 +27,7 @@ const ProductDetail = () => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [colorImageUrl, setColorImageUrl] = useState<string | null>(null);
-  const [selectedShippingOption, setSelectedShippingOption] = useState<'free' | 'fast' | null>(null);
+  const [selectedShippingOption, setSelectedShippingOption] = useState<number | null>(null);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
@@ -203,9 +203,10 @@ const ProductDetail = () => {
       return;
     }
 
-    // Check if pre-order has shipping options and none selected
-    const hasShippingOptions = product.has_pre_order && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price);
-    if (hasShippingOptions && !selectedShippingOption) {
+    // Check if pre-order has custom shipping options and none selected
+    const preOrderShippingOptions = Array.isArray(product.pre_order_shipping_options) ? product.pre_order_shipping_options : [];
+    const hasCustomShippingOptions = product.has_pre_order && preOrderShippingOptions.length > 0;
+    if (hasCustomShippingOptions && selectedShippingOption === null) {
       toast.error('الرجاء اختيار نوع الشحن للطلب المسبق');
       return;
     }
@@ -378,18 +379,66 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Pre-Order Shipping Options */}
-              {product.has_pre_order && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
+              {/* Pre-Order Custom Shipping Options */}
+              {product.has_pre_order && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
                 <div className="mb-6">
                   <Label className="text-lg font-bold mb-3 block">خيارات الشحن للطلب المسبق</Label>
                   <RadioGroup 
-                    value={selectedShippingOption || ''} 
-                    onValueChange={(value) => setSelectedShippingOption(value as 'free' | 'fast')}
+                    value={selectedShippingOption !== null ? String(selectedShippingOption) : ''} 
+                    onValueChange={(value) => setSelectedShippingOption(value ? Number(value) : null)}
+                    className="space-y-3"
+                  >
+                    {product.pre_order_shipping_options.map((option: any, index: number) => {
+                      const adjustedPrice = finalPrice + (option.price_adjustment || 0);
+                      return (
+                        <div 
+                          key={index}
+                          className="flex items-center space-x-3 space-x-reverse p-4 border-2 border-border rounded-lg hover:border-primary/50 transition-colors bg-card/50"
+                        >
+                          <RadioGroupItem value={String(index)} id={`shipping-${index}`} className="flex-shrink-0" />
+                          <Label
+                            htmlFor={`shipping-${index}`}
+                            className="flex-1 cursor-pointer flex items-center justify-between gap-4"
+                          >
+                            <div className="flex items-center gap-3">
+                              <Truck className="h-5 w-5 text-primary" />
+                              <div>
+                                <div className="font-bold text-foreground">{option.name_ar}</div>
+                                {option.name !== option.name_ar && (
+                                  <div className="text-sm text-muted-foreground">{option.name}</div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="text-left">
+                              <div className="text-lg font-bold text-primary">
+                                {formatPrice(adjustedPrice)} {currency}
+                              </div>
+                              {option.price_adjustment !== 0 && (
+                                <div className={`text-xs ${option.price_adjustment > 0 ? 'text-red-500' : 'text-green-500'}`}>
+                                  {option.price_adjustment > 0 ? '+' : ''}{formatPrice(option.price_adjustment)}
+                                </div>
+                              )}
+                            </div>
+                          </Label>
+                        </div>
+                      );
+                    })}
+                  </RadioGroup>
+                </div>
+              )}
+
+              {/* Pre-Order Shipping Options (Legacy - shown if no custom options) */}
+              {product.has_pre_order && (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0) && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
+                <div className="mb-6">
+                  <Label className="text-lg font-bold mb-3 block">خيارات الشحن للطلب المسبق</Label>
+                  <RadioGroup 
+                    value={selectedShippingOption !== null ? String(selectedShippingOption) : ''} 
+                    onValueChange={(value) => setSelectedShippingOption(value ? Number(value) : null)}
                     className="space-y-3"
                   >
                     {product.pre_order_free_shipping_price && (
                       <div className="flex items-center space-x-3 space-x-reverse p-4 border-2 border-border rounded-lg hover:border-primary/50 transition-colors bg-card/50">
-                        <RadioGroupItem value="free" id="shipping-free" className="flex-shrink-0" />
+                        <RadioGroupItem value="0" id="shipping-free" className="flex-shrink-0" />
                         <Label
                           htmlFor="shipping-free"
                           className="flex-1 cursor-pointer flex items-center justify-between gap-4"
@@ -410,7 +459,7 @@ const ProductDetail = () => {
 
                     {product.pre_order_fast_shipping_price && (
                       <div className="flex items-center space-x-3 space-x-reverse p-4 border-2 border-border rounded-lg hover:border-primary/50 transition-colors bg-card/50">
-                        <RadioGroupItem value="fast" id="shipping-fast" className="flex-shrink-0" />
+                        <RadioGroupItem value="1" id="shipping-fast" className="flex-shrink-0" />
                         <Label
                           htmlFor="shipping-fast"
                           className="flex-1 cursor-pointer flex items-center justify-between gap-4"

@@ -88,6 +88,11 @@ const Admin = () => {
     text: string;
     icon?: string;
   }>>([]);
+  const [preOrderShippingOptions, setPreOrderShippingOptions] = useState<Array<{
+    name: string;
+    name_ar: string;
+    price_adjustment: number;
+  }>>([]);
   
   // Search and filter states
   const [productSearch, setProductSearch] = useState('');
@@ -110,6 +115,7 @@ const Admin = () => {
       // Initialize from the current product
       setProductColors(Array.isArray(editingProduct.colors) ? editingProduct.colors : []);
       setProductFeatures(Array.isArray(editingProduct.features) ? editingProduct.features : []);
+      setPreOrderShippingOptions(Array.isArray(editingProduct.pre_order_shipping_options) ? editingProduct.pre_order_shipping_options : []);
 
       // Load options from the database ONLY if editing an existing product (has id)
       // For duplicated products (no id), options are already set by handleDuplicateProduct
@@ -136,6 +142,7 @@ const Admin = () => {
       setProductOptions([]);
       setProductColors([]);
       setProductFeatures([]);
+      setPreOrderShippingOptions([]);
     }
   }, [productDialogOpen, editingProduct]);
 
@@ -654,6 +661,24 @@ const Admin = () => {
     setProductFeatures(updated);
   };
 
+  const addPreOrderShippingOption = () => {
+    setPreOrderShippingOptions([...preOrderShippingOptions, {
+      name: '',
+      name_ar: '',
+      price_adjustment: 0
+    }]);
+  };
+
+  const removePreOrderShippingOption = (index: number) => {
+    setPreOrderShippingOptions(preOrderShippingOptions.filter((_, i) => i !== index));
+  };
+
+  const updatePreOrderShippingOption = (index: number, field: string, value: any) => {
+    const updated = [...preOrderShippingOptions];
+    updated[index] = { ...updated[index], [field]: value };
+    setPreOrderShippingOptions(updated);
+  };
+
   const handleProductSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -692,6 +717,9 @@ const Admin = () => {
         availability_type: availabilityType,
         has_in_stock: hasInStock,
         has_pre_order: hasPreOrder,
+        pre_order_shipping_options: hasPreOrder 
+          ? preOrderShippingOptions.filter(opt => opt.name_ar.trim() !== '' && opt.name.trim() !== '')
+          : [],
         pre_order_free_shipping_price: hasPreOrder && formData.get('pre_order_free_shipping_price') && formData.get('pre_order_free_shipping_price') !== ''
           ? Number(formData.get('pre_order_free_shipping_price'))
           : null,
@@ -1365,54 +1393,90 @@ const Admin = () => {
                         </p>
                       </div>
 
-                      <div 
-                        id="pre-order-section" 
-                        className="space-y-4 p-4 border border-primary/20 rounded-lg bg-primary/5"
-                        style={{ display: (editingProduct?.has_pre_order || editingProduct?.availability_type === 'pre_order') ? 'block' : 'none' }}
-                      >
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                          <Package className="h-4 w-4" />
-                          <span>أسعار الطلب المسبق مع خيارات الشحن (اختياري - يمكن تفعيل خيار واحد أو كلاهما)</span>
-                        </div>
+                       <div 
+                         id="pre-order-section" 
+                         className="space-y-4 p-4 border border-primary/20 rounded-lg bg-primary/5"
+                         style={{ display: (editingProduct?.has_pre_order || editingProduct?.availability_type === 'pre_order') ? 'block' : 'none' }}
+                       >
+                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                           <Package className="h-4 w-4" />
+                           <span>خيارات الشحن للطلب المسبق (مخصصة)</span>
+                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="pre_order_free_shipping_price" className="flex items-center gap-2">
-                              <Truck className="h-4 w-4 text-primary" />
-                              شحن بحري مجاناً (45 يوماً) - اختياري
-                            </Label>
-                            <Input
-                              id="pre_order_free_shipping_price"
-                              name="pre_order_free_shipping_price"
-                              type="number"
-                              step="0.01"
-                              defaultValue={editingProduct?.pre_order_free_shipping_price || ''}
-                              placeholder="اترك فارغاً لتعطيل هذا الخيار"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              مدة التوصيل: 45 يوماً - شحن بحري مجاني. اترك فارغاً لإخفاء هذا الخيار
-                            </p>
-                          </div>
+                         <div className="bg-card/50 border border-border rounded-lg p-4 mb-4">
+                           <div className="flex items-center justify-between mb-3">
+                             <Label className="text-sm font-medium">خيارات الشحن المخصصة</Label>
+                             <Button
+                               type="button"
+                               size="sm"
+                               variant="outline"
+                               onClick={addPreOrderShippingOption}
+                             >
+                               <Plus className="ml-1 h-3 w-3" />
+                               إضافة خيار
+                             </Button>
+                           </div>
+                           <p className="text-xs text-muted-foreground mb-3">
+                             أضف خيارات شحن مخصصة. السعر يمكن أن يزيد (+) أو ينقص (-) من السعر الكلي. اترك السعر 0 إذا لم يؤثر على السعر.
+                           </p>
 
-                          <div className="space-y-2">
-                            <Label htmlFor="pre_order_fast_shipping_price" className="flex items-center gap-2">
-                              <Zap className="h-4 w-4 text-primary" />
-                              شحن سريع جوي (15 يوماً) - اختياري
-                            </Label>
-                            <Input
-                              id="pre_order_fast_shipping_price"
-                              name="pre_order_fast_shipping_price"
-                              type="number"
-                              step="0.01"
-                              defaultValue={editingProduct?.pre_order_fast_shipping_price || ''}
-                              placeholder="اترك فارغاً لتعطيل هذا الخيار"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              مدة التوصيل: 15 يوماً - شحن جوي سريع. اترك فارغاً لإخفاء هذا الخيار
-                            </p>
-                          </div>
-                        </div>
-                      </div>
+                           {preOrderShippingOptions.length > 0 && (
+                             <div className="space-y-3">
+                               {preOrderShippingOptions.map((option, index) => (
+                                 <div key={index} className="p-3 border border-border rounded-lg bg-background space-y-3">
+                                   <div className="flex justify-between items-start">
+                                     <span className="text-sm font-medium">خيار {index + 1}</span>
+                                     <Button
+                                       type="button"
+                                       size="sm"
+                                       variant="ghost"
+                                       onClick={() => removePreOrderShippingOption(index)}
+                                     >
+                                       <X className="h-4 w-4" />
+                                     </Button>
+                                   </div>
+                                   
+                                   <div className="grid grid-cols-2 gap-3">
+                                     <div className="space-y-1">
+                                       <Label className="text-xs">الاسم بالعربي *</Label>
+                                       <Input
+                                         value={option.name_ar}
+                                         onChange={(e) => updatePreOrderShippingOption(index, 'name_ar', e.target.value)}
+                                         placeholder="شحن مجاني"
+                                         className="h-9"
+                                       />
+                                     </div>
+                                     <div className="space-y-1">
+                                       <Label className="text-xs">الاسم بالإنجليزي *</Label>
+                                       <Input
+                                         value={option.name}
+                                         onChange={(e) => updatePreOrderShippingOption(index, 'name', e.target.value)}
+                                         placeholder="Free Shipping"
+                                         className="h-9"
+                                       />
+                                     </div>
+                                   </div>
+
+                                   <div className="space-y-1">
+                                     <Label className="text-xs">تعديل السعر (+ يزيد، - ينقص، 0 بدون تأثير)</Label>
+                                     <Input
+                                       type="number"
+                                       step="0.01"
+                                       value={option.price_adjustment}
+                                       onChange={(e) => updatePreOrderShippingOption(index, 'price_adjustment', Number(e.target.value))}
+                                       placeholder="0"
+                                       className="h-9"
+                                     />
+                                     <p className="text-xs text-muted-foreground">
+                                       أدخل رقم موجب للإضافة، سالب للخصم، أو 0 لعدم التأثير
+                                     </p>
+                                   </div>
+                                 </div>
+                               ))}
+                             </div>
+                           )}
+                         </div>
+                       </div>
                     </div>
 
                     <div className="space-y-2">
