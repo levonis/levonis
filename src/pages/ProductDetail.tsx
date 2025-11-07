@@ -223,27 +223,6 @@ const ProductDetail = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
-      {/* Full page decorative border with animations */}
-      <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-5 animate-float-decoration blur-sm"
-        style={{
-          backgroundImage: 'url(/images/decorative-border-new.png)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-          filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
-        }}
-      />
-      
-      {/* Decorative elements */}
-      <div className="fixed top-20 right-20 w-64 h-64 pointer-events-none opacity-10 animate-float">
-        <div className="w-full h-full" style={{ 
-          background: 'var(--gradient-radial-gold)',
-          clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-          filter: 'blur(30px)'
-        }} />
-      </div>
-
       <main className="container mx-auto px-4 py-8 pt-24 relative z-10">
         {/* Back Button & Breadcrumb */}
         <div className="mb-8">
