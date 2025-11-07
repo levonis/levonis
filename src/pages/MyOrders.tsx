@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOrderRealtimeNotifications } from '@/hooks/useOrderRealtimeNotifications';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +14,9 @@ import { ar } from 'date-fns/locale';
 const MyOrders = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Enable realtime notifications
+  useOrderRealtimeNotifications();
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ['my-orders', user?.id],
