@@ -66,8 +66,8 @@ const Home = () => {
         className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-5 animate-float-decoration blur-sm"
         style={{
           backgroundImage: 'url(/images/decorative-border-new.png)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'top center',
+          backgroundSize: 'contain',
+          backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
           filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
         }}
