@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus, Star, Award, Check, CheckCircle, Zap, Sparkles, Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic } from 'lucide-react';
@@ -268,11 +269,25 @@ const ProductDetail = () => {
                       className="w-full h-full object-cover"
                     />
                     {hasSale && (
-                      <div className="absolute top-3 left-3 z-10">
-                        <div className="bg-primary/95 text-primary-foreground rounded-full p-2 shadow-lg backdrop-blur-sm">
-                          <Tag className="h-4 w-4" />
-                        </div>
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="absolute top-3 left-3 z-10 cursor-help">
+                              <div className="relative">
+                                {/* Glow effect */}
+                                <div className="absolute inset-0 bg-primary/40 rounded-full blur-lg animate-pulse" />
+                                {/* Icon container */}
+                                <div className="relative bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full p-3 shadow-xl backdrop-blur-sm border border-primary-foreground/20 hover:scale-110 transition-transform">
+                                  <Tag className="h-5 w-5" />
+                                </div>
+                              </div>
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent className="bg-primary text-primary-foreground font-bold text-base px-4 py-2">
+                            <p>خصم {finalOriginalPrice ? Math.round((savings / Number(finalOriginalPrice)) * 100) : Math.round((savings / Number(product.original_price!)) * 100)}%</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                     {!product.in_stock && (
                       <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
