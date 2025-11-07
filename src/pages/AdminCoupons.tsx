@@ -221,7 +221,7 @@ const AdminCoupons = () => {
         }}
       />
       
-      <main className="container mx-auto px-4 py-8 max-w-6xl">
+      <main className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-black text-primary mb-2 flex items-center gap-3">

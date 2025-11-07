@@ -107,7 +107,7 @@ const UserInfo = () => {
         </svg>
       </div>
 
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
+      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl relative z-10">
         <div className="mb-8">
           <h1 className="text-4xl font-black text-primary mb-2">معلومات الحساب</h1>
           <p className="text-muted-foreground">إدارة معلومات حسابك الشخصية</p>

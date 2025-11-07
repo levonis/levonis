@@ -139,7 +139,7 @@ const Products = () => {
         </svg>
       </div>
       
-      <main className="container mx-auto px-4 py-8 pt-24">
+      <main className="container mx-auto px-4 py-8 pt-24 relative z-10">
         <div className="mb-8">
           <SearchBar />
         </div>

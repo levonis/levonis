@@ -331,7 +331,7 @@ const Cart = () => {
         </svg>
       </div>
       
-      <main className="container mx-auto px-4 py-8 pt-24">
+      <main className="container mx-auto px-4 py-8 pt-24 relative z-10">
         <div className="mb-6">
           <h1 className="text-4xl font-black text-primary mb-2">سلة التسوق</h1>
           <p className="text-muted-foreground">
