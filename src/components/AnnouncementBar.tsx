@@ -9,7 +9,7 @@ const AnnouncementBar = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const unitRef = useRef<HTMLDivElement>(null);
-  const [repeats, setRepeats] = useState(6);
+  const [repeats, setRepeats] = useState(20);
 
   const { data: announcements } = useQuery({
     queryKey: ['active-announcements'],
@@ -49,14 +49,19 @@ const AnnouncementBar = () => {
       const cw = containerRef.current?.offsetWidth || 0;
       const uw = unitRef.current?.scrollWidth || 0;
       if (cw && uw) {
-        const needed = Math.ceil(cw / uw) + 4; // increased buffer
-        setRepeats(Math.max(needed, 8));
+        // Calculate how many times the content needs to repeat to fill screen + buffer
+        const needed = Math.ceil((cw * 3) / uw); // 3x screen width for smooth infinite scroll
+        setRepeats(Math.max(needed, 20));
       }
     };
 
     recalc();
+    const timer = setTimeout(recalc, 100); // Recalculate after initial render
     window.addEventListener('resize', recalc);
-    return () => window.removeEventListener('resize', recalc);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', recalc);
+    };
   }, [announcements, currentIndex]);
 
   if (!announcements || announcements.length === 0 || dismissed) {
@@ -98,35 +103,37 @@ const AnnouncementBar = () => {
 
         <div className="flex-1 overflow-hidden" ref={containerRef}>
           {alwaysMove ? (
-            <div key={currentIndex} className="relative">
+            <div key={currentIndex} className="relative h-full flex items-center">
               <div
-                className="inline-flex whitespace-nowrap will-change-transform animate-marquee-scroll"
+                className="flex whitespace-nowrap will-change-transform"
                 style={{
-                  animationDuration: `${speed}s`,
-                  animationDirection: direction === 'left' ? 'normal' : 'reverse',
+                  animation: direction === 'left' 
+                    ? `marquee-scroll ${speed}s linear infinite` 
+                    : `marquee-scroll-reverse ${speed}s linear infinite`,
+                  gap: `${gap * 4}px`,
                 }}
               >
                 <div
-                  className="flex items-center flex-shrink-0"
+                  className="flex items-center"
                   style={{ gap: `${gap * 4}px` }}
                   ref={unitRef}
                 >
                   {Array.from({ length: repeats }).map((_, i) => (
                     <React.Fragment key={`a-${i}`}>
-                      <span className="inline-block">{announcement.message_ar}</span>
-                      <span className="inline-block opacity-60">•</span>
+                      <span>{announcement.message_ar}</span>
+                      <span className="opacity-60">•</span>
                     </React.Fragment>
                   ))}
                 </div>
                 <div
-                  className="flex items-center flex-shrink-0"
+                  className="flex items-center"
                   style={{ gap: `${gap * 4}px` }}
                   aria-hidden="true"
                 >
                   {Array.from({ length: repeats }).map((_, i) => (
                     <React.Fragment key={`b-${i}`}>
-                      <span className="inline-block">{announcement.message_ar}</span>
-                      <span className="inline-block opacity-60">•</span>
+                      <span>{announcement.message_ar}</span>
+                      <span className="opacity-60">•</span>
                     </React.Fragment>
                   ))}
                 </div>
