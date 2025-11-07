@@ -82,6 +82,14 @@ const Admin = () => {
     text: string;
     icon?: string;
   }>>([]);
+  
+  // Search and filter states
+  const [productSearch, setProductSearch] = useState('');
+  const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
+  const [productStockFilter, setProductStockFilter] = useState<string>('all');
+  const [productFeaturedFilter, setProductFeaturedFilter] = useState<string>('all');
+  const [categorySearch, setCategorySearch] = useState('');
+  const [categoryMainSectionFilter, setCategoryMainSectionFilter] = useState<string>('all');
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -798,6 +806,36 @@ const Admin = () => {
     }
   };
 
+  // Filter products based on search and filters
+  const filteredProducts = products?.filter(product => {
+    const matchesSearch = productSearch === '' || 
+      product.name_ar.toLowerCase().includes(productSearch.toLowerCase()) ||
+      product.name.toLowerCase().includes(productSearch.toLowerCase());
+    
+    const matchesCategory = productCategoryFilter === 'all' || product.category_id === productCategoryFilter;
+    const matchesStock = productStockFilter === 'all' || 
+      (productStockFilter === 'in_stock' && product.in_stock) ||
+      (productStockFilter === 'out_of_stock' && !product.in_stock);
+    const matchesFeatured = productFeaturedFilter === 'all' ||
+      (productFeaturedFilter === 'featured' && product.featured) ||
+      (productFeaturedFilter === 'not_featured' && !product.featured);
+    
+    return matchesSearch && matchesCategory && matchesStock && matchesFeatured;
+  });
+
+  // Filter categories based on search and filters
+  const filteredCategories = categories?.filter(category => {
+    const matchesSearch = categorySearch === '' ||
+      category.name_ar.toLowerCase().includes(categorySearch.toLowerCase()) ||
+      category.name.toLowerCase().includes(categorySearch.toLowerCase());
+    
+    const matchesMainSection = categoryMainSectionFilter === 'all' || 
+      category.main_section_id === categoryMainSectionFilter ||
+      (categoryMainSectionFilter === 'no_section' && !category.main_section_id);
+    
+    return matchesSearch && matchesMainSection;
+  });
+
   if (authLoading || !isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -1042,6 +1080,83 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="products">
+            {/* Search and Filters for Products */}
+            <Card className="mb-6 border-primary/20">
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                  <div className="lg:col-span-2">
+                    <Label className="text-xs mb-2 block">البحث</Label>
+                    <Input
+                      placeholder="ابحث بالاسم العربي أو الإنجليزي..."
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      className="h-10"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs mb-2 block">القسم</Label>
+                    <select
+                      value={productCategoryFilter}
+                      onChange={(e) => setProductCategoryFilter(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">جميع الأقسام</option>
+                      {categories?.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name_ar}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs mb-2 block">الحالة</Label>
+                    <select
+                      value={productStockFilter}
+                      onChange={(e) => setProductStockFilter(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">الكل</option>
+                      <option value="in_stock">متوفر</option>
+                      <option value="out_of_stock">غير متوفر</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs mb-2 block">مميز</Label>
+                    <select
+                      value={productFeaturedFilter}
+                      onChange={(e) => setProductFeaturedFilter(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">الكل</option>
+                      <option value="featured">مميز</option>
+                      <option value="not_featured">غير مميز</option>
+                    </select>
+                  </div>
+                </div>
+                
+                {(productSearch || productCategoryFilter !== 'all' || productStockFilter !== 'all' || productFeaturedFilter !== 'all') && (
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {filteredProducts?.length || 0} منتج من أصل {products?.length || 0}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setProductSearch('');
+                        setProductCategoryFilter('all');
+                        setProductStockFilter('all');
+                        setProductFeaturedFilter('all');
+                      }}
+                    >
+                      إعادة تعيين
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-foreground">إدارة المنتجات</h2>
               
@@ -1677,7 +1792,7 @@ const Admin = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {products?.map((product) => (
+                    {filteredProducts?.map((product) => (
                       <TableRow key={product.id}>
                         <TableCell>
                           {product.image_url && (
@@ -1740,6 +1855,56 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="categories">
+            {/* Search and Filters for Categories */}
+            <Card className="mb-6 border-primary/20">
+              <CardContent className="pt-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs mb-2 block">البحث</Label>
+                    <Input
+                      placeholder="ابحث بالاسم العربي أو الإنجليزي..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      className="h-10"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs mb-2 block">القسم الرئيسي</Label>
+                    <select
+                      value={categoryMainSectionFilter}
+                      onChange={(e) => setCategoryMainSectionFilter(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">جميع الأقسام الرئيسية</option>
+                      <option value="no_section">بدون قسم رئيسي</option>
+                      {mainSections?.map((section) => (
+                        <option key={section.id} value={section.id}>{section.name_ar}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                
+                {(categorySearch || categoryMainSectionFilter !== 'all') && (
+                  <div className="mt-4 flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      {filteredCategories?.length || 0} قسم من أصل {categories?.length || 0}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setCategorySearch('');
+                        setCategoryMainSectionFilter('all');
+                      }}
+                    >
+                      إعادة تعيين
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-foreground">إدارة الأقسام</h2>
               
@@ -1872,7 +2037,7 @@ const Admin = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {categories?.map((category) => (
+                  {filteredCategories?.map((category) => (
                     <TableRow key={category.id}>
                       <TableCell className="text-primary font-bold">{category.icon}</TableCell>
                       <TableCell className="font-medium">{category.name_ar}</TableCell>
