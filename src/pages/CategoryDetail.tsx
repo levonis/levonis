@@ -66,33 +66,8 @@ const CategoryDetail = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
-      {/* Full page decorative border with animations */}
-      <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-5 animate-float-decoration blur-sm"
-        style={{
-          backgroundImage: 'url(/images/decorative-border-new.png)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-          filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
-        }}
-      />
-      
-      {/* Decorative elements */}
-      <div className="fixed top-0 right-0 w-80 h-80 pointer-events-none opacity-15 animate-float">
-        <svg viewBox="0 0 200 200" className="w-full h-full">
-          <path d="M10,10 Q50,10 50,50 L50,150 Q50,190 90,190" 
-                stroke="hsl(var(--ring) / 0.5)" strokeWidth="1" fill="none" />
-          <circle cx="50" cy="50" r="3" fill="hsl(var(--ring))" />
-        </svg>
-      </div>
-      
-      <div className="fixed bottom-20 left-20 w-64 h-64 pointer-events-none opacity-10 animate-float" style={{ animationDelay: '2s' }}>
-        <div className="w-full h-full border border-primary/30 rotate-45 rounded-2xl" />
-      </div>
-      
-      <main className="container mx-auto px-4 py-8 pt-24 relative z-10">
+    <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+      <main className="container mx-auto px-4 py-8 pt-24">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
           <Link to="/" className="hover:text-primary transition-colors">

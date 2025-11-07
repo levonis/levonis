@@ -94,19 +94,7 @@ const Notifications = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
-      {/* Full page decorative border with animations */}
-      <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-5 animate-float-decoration blur-sm"
-        style={{
-          backgroundImage: 'url(/images/decorative-border-new.png)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-          filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
-        }}
-      />
-      
-      <main className="container mx-auto px-4 py-8 max-w-4xl relative z-10">
+      <main className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-black text-primary mb-2 flex items-center gap-3">

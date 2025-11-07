@@ -311,28 +311,8 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
-      {/* Full page decorative border with animations */}
-      <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-5 animate-float-decoration blur-sm"
-        style={{
-          backgroundImage: 'url(/images/decorative-border-new.png)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-          filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
-        }}
-      />
-      
-      {/* Decorative elements */}
-      <div className="fixed top-20 right-20 w-64 h-64 pointer-events-none opacity-10 animate-float">
-        <svg viewBox="0 0 200 200" className="w-full h-full">
-          <circle cx="100" cy="100" r="80" stroke="hsl(var(--primary) / 0.3)" strokeWidth="0.5" fill="none" />
-          <circle cx="100" cy="100" r="60" stroke="hsl(var(--ring) / 0.2)" strokeWidth="0.5" fill="none" />
-        </svg>
-      </div>
-      
-      <main className="container mx-auto px-4 py-8 pt-24 relative z-10">
+    <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+      <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-6">
           <h1 className="text-4xl font-black text-primary mb-2">سلة التسوق</h1>
           <p className="text-muted-foreground">
