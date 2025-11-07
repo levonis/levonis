@@ -208,8 +208,94 @@ const Cart = () => {
 
       const deliveryFee = getDeliveryFee(profile.governorate);
 
+      // Generate order number
+      const { data: orderNumberData } = await supabase
+        .rpc('generate_order_number');
+      
+      const orderNumber = orderNumberData || `ORD-${Date.now()}`;
+
+      // Create order in database
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert([{
+          user_id: user.id,
+          order_number: orderNumber,
+          total_amount: grandTotal,
+          status: 'pending',
+          currency: 'دينار عراقي',
+          shipping_address: profile.governorate || '',
+          phone_number: profile.phone_number || '',
+          governorate: profile.governorate || '',
+        }])
+        .select()
+        .single();
+
+      if (orderError || !order) {
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ أثناء إنشاء الطلب",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create order items
+      const orderItems = items.map((item) => {
+        const isCustomRequest = !!item.custom_request_id;
+        const itemOption = (item as any).product_option_id 
+          ? productOptions?.find((opt: any) => opt.id === (item as any).product_option_id)
+          : null;
+        
+        const itemColor = (item as any).selected_color;
+        const colorData = itemColor && item.products?.colors
+          ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
+          : null;
+        
+        let itemPrice = isCustomRequest
+          ? Number(item.custom_product_requests?.suggested_price || 0)
+          : Number(item.products?.price || 0);
+        
+        if (colorData?.price != null) {
+          itemPrice = Number(colorData.price);
+        }
+        
+        if (itemOption?.price_adjustment) {
+          itemPrice += Number(itemOption.price_adjustment);
+        }
+
+        return {
+          order_id: order.id,
+          product_id: item.product_id,
+          product_option_id: (item as any).product_option_id || null,
+          quantity: item.quantity,
+          unit_price: itemPrice,
+          total_price: itemPrice * item.quantity,
+          selected_color: itemColor || null,
+          product_name: isCustomRequest 
+            ? item.custom_product_requests?.product_name || ''
+            : item.products?.name || '',
+          product_name_ar: isCustomRequest 
+            ? item.custom_product_requests?.product_name || ''
+            : item.products?.name_ar || '',
+        };
+      });
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) {
+        toast({
+          title: "خطأ",
+          description: "حدث خطأ أثناء حفظ عناصر الطلب",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Build WhatsApp message
       let message = `مرحباً، أريد إتمام طلب:\n\n`;
+      message += `🔖 *رقم الطلب:* ${order.order_number}\n\n`;
       message += `📦 *المنتجات:*\n`;
       
       items.forEach((item, index) => {
@@ -218,28 +304,23 @@ const Cart = () => {
           ? item.custom_product_requests?.product_name 
           : item.products?.name_ar;
         
-        // Calculate item price based on color and option
         let itemPrice = isCustomRequest
           ? Number(item.custom_product_requests?.suggested_price || 0)
           : Number(item.products?.price || 0);
         
-        // Get option name and price adjustment if exists
         const itemOption = (item as any).product_option_id 
           ? productOptions?.find((opt: any) => opt.id === (item as any).product_option_id)
           : null;
         
-        // Get color name and price if exists
         const itemColor = (item as any).selected_color;
-          const colorData = itemColor && item.products?.colors
-            ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
-            : null;
+        const colorData = itemColor && item.products?.colors
+          ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
+          : null;
         
-        // Use color price if available
         if (colorData?.price != null) {
           itemPrice = Number(colorData.price);
         }
         
-        // Add option price adjustment
         if (itemOption?.price_adjustment) {
           itemPrice += Number(itemOption.price_adjustment);
         }
@@ -276,12 +357,14 @@ const Cart = () => {
           user_id: user.id,
         });
         
-        // Increment current_uses
         await supabase
           .from('coupons')
           .update({ current_uses: appliedCoupon.current_uses + 1 })
           .eq('id', appliedCoupon.id);
       }
+
+      // Clear cart after successful order
+      await clearCart();
 
       // Encode the message for URL
       const encodedMessage = encodeURIComponent(message);
@@ -289,6 +372,11 @@ const Cart = () => {
       
       // Open WhatsApp in new window
       window.open(whatsappURL, '_blank');
+      
+      toast({
+        title: "تم إنشاء الطلب بنجاح",
+        description: `رقم الطلب: ${order.order_number}`,
+      });
       
     } catch (error) {
       console.error('Error during checkout:', error);
