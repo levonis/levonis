@@ -18,21 +18,18 @@ const AnnouncementBar = () => {
         .select('*')
         .eq('active', true)
         .order('created_at', { ascending: false });
-      
       if (error) throw error;
       return data;
     },
-    refetchInterval: 60000, // Refetch every minute
+    refetchInterval: 60000,
   });
 
   // Auto-rotate between announcements
   useEffect(() => {
     if (!announcements || announcements.length <= 1) return;
-    
-    const currentAnnouncement = announcements[currentIndex];
-    const autoRotate = currentAnnouncement?.auto_rotate ?? true;
-    const duration = (currentAnnouncement?.display_duration || 5) * 1000;
-    
+    const current = announcements[currentIndex];
+    const autoRotate = current?.auto_rotate ?? true;
+    const duration = (current?.display_duration || 5) * 1000;
     if (!autoRotate) return;
 
     const interval = setInterval(() => {
@@ -40,6 +37,25 @@ const AnnouncementBar = () => {
     }, duration);
 
     return () => clearInterval(interval);
+  }, [announcements, currentIndex]);
+
+  // Ensure the marquee never leaves empty space by repeating units to exceed container width
+  useEffect(() => {
+    const current = announcements?.[currentIndex];
+    if (!current || !(current.always_move ?? false)) return;
+
+    const recalc = () => {
+      const cw = containerRef.current?.offsetWidth || 0;
+      const uw = unitRef.current?.scrollWidth || 0;
+      if (cw && uw) {
+        const needed = Math.ceil(cw / uw) + 2; // buffer
+        setRepeats(Math.max(needed, 4));
+      }
+    };
+
+    recalc();
+    window.addEventListener('resize', recalc);
+    return () => window.removeEventListener('resize', recalc);
   }, [announcements, currentIndex]);
 
   if (!announcements || announcements.length === 0 || dismissed) {
@@ -53,22 +69,6 @@ const AnnouncementBar = () => {
   const alwaysMove = announcement.always_move ?? false;
   const gap = announcement.gap || 16;
   const hasMultiple = announcements.length > 1;
-
-  // Ensure the marquee never leaves empty space by repeating units to exceed container width
-  useEffect(() => {
-    if (!alwaysMove) return;
-    const recalc = () => {
-      const cw = containerRef.current?.offsetWidth || 0;
-      const uw = unitRef.current?.scrollWidth || 0;
-      if (cw && uw) {
-        const needed = Math.ceil(cw / uw) + 2; // buffer
-        setRepeats(Math.max(needed, 4));
-      }
-    };
-    recalc();
-    window.addEventListener('resize', recalc);
-    return () => window.removeEventListener('resize', recalc);
-  }, [currentIndex, alwaysMove, gap, announcement?.message_ar]);
 
   const goToPrevious = () => {
     setCurrentIndex((prev) => (prev - 1 + announcements.length) % announcements.length);
