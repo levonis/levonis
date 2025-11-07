@@ -193,6 +193,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const updateQuantity = async (itemId: string, quantity: number) => {
+    if (!user) {
+      toast.error('يجب تسجيل الدخول أولاً');
+      return;
+    }
     if (quantity < 1) return;
 
     try {
@@ -218,6 +222,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const removeFromCart = async (itemId: string) => {
+    if (!user) {
+      toast.error('يجب تسجيل الدخول أولاً');
+      return;
+    }
     try {
       console.log('Removing from cart:', itemId);
       
