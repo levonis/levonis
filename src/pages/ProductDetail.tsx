@@ -203,8 +203,9 @@ const ProductDetail = () => {
       return;
     }
 
-    // Check if pre-order and no shipping option selected
-    if (product.has_pre_order && !selectedShippingOption) {
+    // Check if pre-order has shipping options and none selected
+    const hasShippingOptions = product.has_pre_order && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price);
+    if (hasShippingOptions && !selectedShippingOption) {
       toast.error('الرجاء اختيار نوع الشحن للطلب المسبق');
       return;
     }
@@ -378,7 +379,7 @@ const ProductDetail = () => {
               )}
 
               {/* Pre-Order Shipping Options */}
-              {product.has_pre_order && (
+              {product.has_pre_order && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
                 <div className="mb-6">
                   <Label className="text-lg font-bold mb-3 block">خيارات الشحن للطلب المسبق</Label>
                   <RadioGroup 

@@ -36,8 +36,8 @@ const productSchema = z.object({
   availability_type: z.enum(['in_stock', 'pre_order']).optional(),
   has_in_stock: z.boolean().optional(),
   has_pre_order: z.boolean().optional(),
-  pre_order_free_shipping_price: z.number().positive().optional(),
-  pre_order_fast_shipping_price: z.number().positive().optional(),
+  pre_order_free_shipping_price: z.number().optional().nullable(),
+  pre_order_fast_shipping_price: z.number().optional().nullable(),
 });
 
 const categorySchema = z.object({
@@ -692,12 +692,12 @@ const Admin = () => {
         availability_type: availabilityType,
         has_in_stock: hasInStock,
         has_pre_order: hasPreOrder,
-        pre_order_free_shipping_price: hasPreOrder && formData.get('pre_order_free_shipping_price')
+        pre_order_free_shipping_price: hasPreOrder && formData.get('pre_order_free_shipping_price') && formData.get('pre_order_free_shipping_price') !== ''
           ? Number(formData.get('pre_order_free_shipping_price'))
-          : undefined,
-        pre_order_fast_shipping_price: hasPreOrder && formData.get('pre_order_fast_shipping_price')
+          : null,
+        pre_order_fast_shipping_price: hasPreOrder && formData.get('pre_order_fast_shipping_price') && formData.get('pre_order_fast_shipping_price') !== ''
           ? Number(formData.get('pre_order_fast_shipping_price'))
-          : undefined,
+          : null,
         colors: productColors.length > 0 
           ? productColors.filter(c => c.name_ar.trim() && c.name.trim())
           : undefined,
@@ -1372,43 +1372,43 @@ const Admin = () => {
                       >
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                           <Package className="h-4 w-4" />
-                          <span>أسعار الطلب المسبق مع خيارات الشحن</span>
+                          <span>أسعار الطلب المسبق مع خيارات الشحن (اختياري - يمكن تفعيل خيار واحد أو كلاهما)</span>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <Label htmlFor="pre_order_free_shipping_price" className="flex items-center gap-2">
                               <Truck className="h-4 w-4 text-primary" />
-                              شحن بحري مجاناً (45 يوماً)
+                              شحن بحري مجاناً (45 يوماً) - اختياري
                             </Label>
                             <Input
                               id="pre_order_free_shipping_price"
                               name="pre_order_free_shipping_price"
                               type="number"
                               step="0.01"
-                              defaultValue={editingProduct?.pre_order_free_shipping_price}
-                              placeholder="السعر للشحن المجاني"
+                              defaultValue={editingProduct?.pre_order_free_shipping_price || ''}
+                              placeholder="اترك فارغاً لتعطيل هذا الخيار"
                             />
                             <p className="text-xs text-muted-foreground">
-                              مدة التوصيل: 45 يوماً - شحن بحري مجاني
+                              مدة التوصيل: 45 يوماً - شحن بحري مجاني. اترك فارغاً لإخفاء هذا الخيار
                             </p>
                           </div>
 
                           <div className="space-y-2">
                             <Label htmlFor="pre_order_fast_shipping_price" className="flex items-center gap-2">
                               <Zap className="h-4 w-4 text-primary" />
-                              شحن سريع جوي (15 يوماً)
+                              شحن سريع جوي (15 يوماً) - اختياري
                             </Label>
                             <Input
                               id="pre_order_fast_shipping_price"
                               name="pre_order_fast_shipping_price"
                               type="number"
                               step="0.01"
-                              defaultValue={editingProduct?.pre_order_fast_shipping_price}
-                              placeholder="السعر للشحن السريع"
+                              defaultValue={editingProduct?.pre_order_fast_shipping_price || ''}
+                              placeholder="اترك فارغاً لتعطيل هذا الخيار"
                             />
                             <p className="text-xs text-muted-foreground">
-                              مدة التوصيل: 15 يوماً - شحن جوي سريع
+                              مدة التوصيل: 15 يوماً - شحن جوي سريع. اترك فارغاً لإخفاء هذا الخيار
                             </p>
                           </div>
                         </div>
