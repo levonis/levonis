@@ -6,15 +6,19 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import html2pdf from 'html2pdf.js';
+import { OrderInvoice } from '@/components/OrderInvoice';
+import { useState } from 'react';
 
 const OrderDetail = () => {
   const { orderId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
   // Enable realtime notifications
   useOrderRealtimeNotifications();
@@ -31,7 +35,8 @@ const OrderDetail = () => {
           order_items(
             *,
             products(name_ar, image_url, images)
-          )
+          ),
+          profiles(full_name, email)
         `)
         .eq('id', orderId)
         .eq('user_id', user.id)
@@ -42,6 +47,30 @@ const OrderDetail = () => {
     },
     enabled: !!user && !!orderId
   });
+
+  const handlePrintInvoice = async () => {
+    if (!order) return;
+    
+    setIsGeneratingPDF(true);
+    
+    try {
+      const element = document.getElementById('invoice-content');
+      
+      const options = {
+        margin: 10,
+        filename: `invoice-${order.order_number}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
+      };
+
+      await html2pdf().set(options).from(element).save();
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string, color: string }> = {
@@ -104,9 +133,23 @@ const OrderDetail = () => {
               <h1 className="text-4xl font-black text-primary mb-2">تفاصيل الطلب</h1>
               <p className="text-muted-foreground">رقم الطلب: {order.order_number}</p>
             </div>
-            <Badge variant={statusInfo.variant} className="text-lg px-4 py-2 w-fit">
-              {statusInfo.label}
-            </Badge>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button 
+                onClick={handlePrintInvoice}
+                disabled={isGeneratingPDF}
+                className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+              >
+                {isGeneratingPDF ? (
+                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <FileText className="ml-2 h-4 w-4" />
+                )}
+                طباعة الفاتورة
+              </Button>
+              <Badge variant={statusInfo.variant} className="text-lg px-4 py-2 w-fit">
+                {statusInfo.label}
+              </Badge>
+            </div>
           </div>
         </div>
 
@@ -338,6 +381,11 @@ const OrderDetail = () => {
           </CardContent>
         </Card>
       </main>
+
+      {/* Hidden Invoice for PDF Generation */}
+      <div className="hidden">
+        <OrderInvoice order={order} />
+      </div>
     </div>
   );
 };
