@@ -102,6 +102,7 @@ const AdminOrders = () => {
     const formData = new FormData(e.currentTarget);
 
     const values: any = {
+      order_number: formData.get('order_number') as string,
       status: formData.get('status') as string,
       tracking_number: formData.get('tracking_number') as string || null,
       tracking_url: formData.get('tracking_url') as string || null,
@@ -294,6 +295,20 @@ const AdminOrders = () => {
                               </DialogHeader>
 
                               <form onSubmit={handleUpdateOrder} className="space-y-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="order_number">رقم الطلب *</Label>
+                                  <Input
+                                    id="order_number"
+                                    name="order_number"
+                                    defaultValue={order.order_number}
+                                    placeholder="ORD-20250107-1234"
+                                    required
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    يمكنك تعديل رقم الطلب أو إضافته يدوياً
+                                  </p>
+                                </div>
+
                                 <div className="space-y-2">
                                   <Label htmlFor="status">الحالة *</Label>
                                   <select

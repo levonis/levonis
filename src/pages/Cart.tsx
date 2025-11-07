@@ -293,6 +293,21 @@ const Cart = () => {
         return;
       }
 
+      // تحديث استخدام الكوبون إذا كان موجوداً
+      if (appliedCoupon && user) {
+        await supabase
+          .from('coupon_usage')
+          .insert([{
+            coupon_id: appliedCoupon.id,
+            user_id: user.id
+          }]);
+
+        await supabase
+          .from('coupons')
+          .update({ current_uses: appliedCoupon.current_uses + 1 })
+          .eq('id', appliedCoupon.id);
+      }
+
       // Build WhatsApp message
       let message = `مرحباً، أريد إتمام طلب:\n\n`;
       message += `🔖 *رقم الطلب:* ${order.order_number}\n\n`;

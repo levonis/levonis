@@ -2132,7 +2132,7 @@ const Admin = () => {
               <Dialog open={categoryDialogOpen} onOpenChange={(open) => {
                 setCategoryDialogOpen(open);
                 if (!open) setEditingCategory(null);
-              }}>
+              }} key={editingCategory?.id || 'new-category'}>
                 <DialogTrigger asChild>
                   <Button className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90">
                     <Plus className="ml-2 h-4 w-4" />
