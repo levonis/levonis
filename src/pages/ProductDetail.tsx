@@ -204,7 +204,7 @@ const ProductDetail = () => {
     }
 
     // Check if pre-order and no shipping option selected
-    if (product.availability_type === 'pre_order' && !selectedShippingOption) {
+    if (product.has_pre_order && !selectedShippingOption) {
       toast.error('الرجاء اختيار نوع الشحن للطلب المسبق');
       return;
     }
@@ -356,8 +356,29 @@ const ProductDetail = () => {
                 {product.description_ar || 'لا يوجد وصف متوفر'}
               </p>
 
+              {/* Availability Types */}
+              {(product.has_in_stock || product.has_pre_order) && (
+                <div className="mb-6 p-4 border border-border/50 rounded-lg bg-card/30">
+                  <Label className="text-sm font-bold mb-2 block">خيارات التوفر</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {product.has_in_stock && (
+                      <Badge variant="outline" className="px-3 py-1 text-sm">
+                        <Package className="h-4 w-4 ml-1" />
+                        متاح في المخزن
+                      </Badge>
+                    )}
+                    {product.has_pre_order && (
+                      <Badge variant="outline" className="px-3 py-1 text-sm">
+                        <Truck className="h-4 w-4 ml-1" />
+                        طلب مسبق
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Pre-Order Shipping Options */}
-              {product.availability_type === 'pre_order' && (
+              {product.has_pre_order && (
                 <div className="mb-6">
                   <Label className="text-lg font-bold mb-3 block">خيارات الشحن للطلب المسبق</Label>
                   <RadioGroup 
@@ -375,7 +396,7 @@ const ProductDetail = () => {
                           <div className="flex items-center gap-3">
                             <Truck className="h-5 w-5 text-primary" />
                             <div>
-                              <div className="font-bold text-foreground">شحن مجاني (45 يوماً)</div>
+                              <div className="font-bold text-foreground">شحن بحري مجاناً (45 يوماً)</div>
                               <div className="text-sm text-muted-foreground">توصيل خلال 45 يوم عمل</div>
                             </div>
                           </div>
@@ -396,7 +417,7 @@ const ProductDetail = () => {
                           <div className="flex items-center gap-3">
                             <Zap className="h-5 w-5 text-primary" />
                             <div>
-                              <div className="font-bold text-foreground">شحن سريع (15 يوماً)</div>
+                              <div className="font-bold text-foreground">شحن سريع جوي (15 يوماً)</div>
                               <div className="text-sm text-muted-foreground">توصيل خلال 15 يوم عمل</div>
                             </div>
                           </div>
@@ -465,7 +486,8 @@ const ProductDetail = () => {
                   <Label className="text-sm font-bold text-foreground mb-3 block">الألوان المتاحة</Label>
                   <div className="flex flex-wrap gap-2">
                     {product.colors.map((color: any, index: number) => {
-                      const isColorAvailable = product.availability_type === 'pre_order' || (color.in_stock !== false);
+                      // اللون متاح إذا كان المنتج طلب مسبق، أو إذا كان متاحاً في المخزون ولم يتم تحديد أنه غير متوفر
+                      const isColorAvailable = product.has_pre_order || (product.has_in_stock && color.in_stock !== false);
                       return (
                         <button
                           key={index}

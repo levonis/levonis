@@ -34,6 +34,8 @@ const productSchema = z.object({
   featured: z.boolean().optional(),
   in_stock: z.boolean().optional(),
   availability_type: z.enum(['in_stock', 'pre_order']).optional(),
+  has_in_stock: z.boolean().optional(),
+  has_pre_order: z.boolean().optional(),
   pre_order_free_shipping_price: z.number().positive().optional(),
   pre_order_fast_shipping_price: z.number().positive().optional(),
 });
@@ -660,7 +662,18 @@ const Admin = () => {
       const allImages = editingProduct?.images || [];
       const finalImages = [...allImages, ...uploadedImages];
 
-      const availabilityType = (formData.get('availability_type') as string) || 'in_stock';
+      const hasInStock = (formData.get('has_in_stock') as string) === 'on';
+      const hasPreOrder = (formData.get('has_pre_order') as string) === 'on';
+      
+      // Determine availability_type based on selected options (for backward compatibility)
+      let availabilityType = 'in_stock';
+      if (hasPreOrder && !hasInStock) {
+        availabilityType = 'pre_order';
+      } else if (hasInStock && !hasPreOrder) {
+        availabilityType = 'in_stock';
+      } else if (hasInStock && hasPreOrder) {
+        availabilityType = 'in_stock'; // Default to in_stock if both are selected
+      }
       
       const values = {
         name_ar: formData.get('name_ar') as string,
@@ -677,10 +690,12 @@ const Admin = () => {
         featured: (formData.get('featured') as string) === 'on',
         in_stock: (formData.get('in_stock') as string) === 'on',
         availability_type: availabilityType,
-        pre_order_free_shipping_price: availabilityType === 'pre_order' && formData.get('pre_order_free_shipping_price')
+        has_in_stock: hasInStock,
+        has_pre_order: hasPreOrder,
+        pre_order_free_shipping_price: hasPreOrder && formData.get('pre_order_free_shipping_price')
           ? Number(formData.get('pre_order_free_shipping_price'))
           : undefined,
-        pre_order_fast_shipping_price: availabilityType === 'pre_order' && formData.get('pre_order_fast_shipping_price')
+        pre_order_fast_shipping_price: hasPreOrder && formData.get('pre_order_fast_shipping_price')
           ? Number(formData.get('pre_order_fast_shipping_price'))
           : undefined,
         colors: productColors.length > 0 
@@ -1308,27 +1323,51 @@ const Admin = () => {
                     </div>
 
                     <div className="space-y-4 border-t pt-4">
-                      <Label htmlFor="availability_type">نوع التوفر *</Label>
-                      <select
-                        id="availability_type"
-                        name="availability_type"
-                        defaultValue={editingProduct?.availability_type || 'in_stock'}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        onChange={(e) => {
-                          const preOrderSection = document.getElementById('pre-order-section');
-                          if (preOrderSection) {
-                            preOrderSection.style.display = e.target.value === 'pre_order' ? 'block' : 'none';
-                          }
-                        }}
-                      >
-                        <option value="in_stock">متاح في المخزن</option>
-                        <option value="pre_order">طلب مسبق</option>
-                      </select>
+                      <Label>خيارات التوفر *</Label>
+                      <div className="space-y-3 p-4 border border-border rounded-lg bg-card/30">
+                        <div className="flex items-center gap-2">
+                          <input 
+                            id="has_in_stock" 
+                            name="has_in_stock" 
+                            type="checkbox" 
+                            defaultChecked={editingProduct?.has_in_stock ?? true}
+                            onChange={(e) => {
+                              const colorsSection = document.getElementById('colors-in-stock-notice');
+                              if (colorsSection) {
+                                colorsSection.style.display = e.target.checked ? 'block' : 'none';
+                              }
+                            }}
+                          />
+                          <Label htmlFor="has_in_stock" className="cursor-pointer">متاح في المخزن</Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground pr-6">
+                          يمكن للعملاء شراء المنتج مباشرة من المخزون
+                        </p>
+                        
+                        <div className="flex items-center gap-2 pt-2">
+                          <input 
+                            id="has_pre_order" 
+                            name="has_pre_order" 
+                            type="checkbox" 
+                            defaultChecked={editingProduct?.has_pre_order ?? false}
+                            onChange={(e) => {
+                              const preOrderSection = document.getElementById('pre-order-section');
+                              if (preOrderSection) {
+                                preOrderSection.style.display = e.target.checked ? 'block' : 'none';
+                              }
+                            }}
+                          />
+                          <Label htmlFor="has_pre_order" className="cursor-pointer">طلب مسبق</Label>
+                        </div>
+                        <p className="text-xs text-muted-foreground pr-6">
+                          يمكن للعملاء طلب المنتج مسبقاً مع اختيار نوع الشحن
+                        </p>
+                      </div>
 
                       <div 
                         id="pre-order-section" 
                         className="space-y-4 p-4 border border-primary/20 rounded-lg bg-primary/5"
-                        style={{ display: editingProduct?.availability_type === 'pre_order' ? 'block' : 'none' }}
+                        style={{ display: (editingProduct?.has_pre_order || editingProduct?.availability_type === 'pre_order') ? 'block' : 'none' }}
                       >
                         <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                           <Package className="h-4 w-4" />
@@ -1339,7 +1378,7 @@ const Admin = () => {
                           <div className="space-y-2">
                             <Label htmlFor="pre_order_free_shipping_price" className="flex items-center gap-2">
                               <Truck className="h-4 w-4 text-primary" />
-                              شحن مجاني (45 يوماً)
+                              شحن بحري مجاناً (45 يوماً)
                             </Label>
                             <Input
                               id="pre_order_free_shipping_price"
@@ -1350,14 +1389,14 @@ const Admin = () => {
                               placeholder="السعر للشحن المجاني"
                             />
                             <p className="text-xs text-muted-foreground">
-                              مدة التوصيل: 45 يوماً - شحن مجاني
+                              مدة التوصيل: 45 يوماً - شحن بحري مجاني
                             </p>
                           </div>
 
                           <div className="space-y-2">
                             <Label htmlFor="pre_order_fast_shipping_price" className="flex items-center gap-2">
                               <Zap className="h-4 w-4 text-primary" />
-                              شحن سريع (15 يوماً)
+                              شحن سريع جوي (15 يوماً)
                             </Label>
                             <Input
                               id="pre_order_fast_shipping_price"
@@ -1368,7 +1407,7 @@ const Admin = () => {
                               placeholder="السعر للشحن السريع"
                             />
                             <p className="text-xs text-muted-foreground">
-                              مدة التوصيل: 15 يوماً - شحن سريع
+                              مدة التوصيل: 15 يوماً - شحن جوي سريع
                             </p>
                           </div>
                         </div>
@@ -1704,19 +1743,28 @@ const Admin = () => {
                                    </p>
                                  </div>
                                  
-                                 <div className="flex items-center space-x-2 space-x-reverse pt-2">
-                                   <input
-                                     type="checkbox"
-                                     id={`color-in-stock-${index}`}
-                                     checked={color.in_stock !== false}
-                                     onChange={(e) => updateProductColor(index, 'in_stock', e.target.checked)}
-                                     className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                   />
-                                   <Label htmlFor={`color-in-stock-${index}`} className="text-xs cursor-pointer">
-                                     متوفر في المخزون
-                                   </Label>
+                                 <div 
+                                   id="colors-in-stock-notice"
+                                   className="flex items-center space-x-2 space-x-reverse pt-2"
+                                   style={{ display: (editingProduct?.has_in_stock ?? true) ? 'block' : 'none' }}
+                                 >
+                                   <div className="flex items-center gap-2">
+                                     <input
+                                       type="checkbox"
+                                       id={`color-in-stock-${index}`}
+                                       checked={color.in_stock !== false}
+                                       onChange={(e) => updateProductColor(index, 'in_stock', e.target.checked)}
+                                       className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                     />
+                                     <Label htmlFor={`color-in-stock-${index}`} className="text-xs cursor-pointer">
+                                       متوفر في المخزون
+                                     </Label>
+                                   </div>
                                  </div>
-                                 <p className="text-xs text-muted-foreground">
+                                 <p 
+                                   className="text-xs text-muted-foreground"
+                                   style={{ display: (editingProduct?.has_in_stock ?? true) ? 'block' : 'none' }}
+                                 >
                                    فقط للمنتجات المتوفرة في المخزن. عند إلغاء التحديد، يظهر اللون بشكل خافت للزبون
                                  </p>
                                </div>

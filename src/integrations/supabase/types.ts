@@ -566,6 +566,8 @@ export type Database = {
           description_ar: string | null
           featured: boolean | null
           features: Json | null
+          has_in_stock: boolean | null
+          has_pre_order: boolean | null
           id: string
           image_url: string | null
           images: string[] | null
@@ -589,6 +591,8 @@ export type Database = {
           description_ar?: string | null
           featured?: boolean | null
           features?: Json | null
+          has_in_stock?: boolean | null
+          has_pre_order?: boolean | null
           id?: string
           image_url?: string | null
           images?: string[] | null
@@ -612,6 +616,8 @@ export type Database = {
           description_ar?: string | null
           featured?: boolean | null
           features?: Json | null
+          has_in_stock?: boolean | null
+          has_pre_order?: boolean | null
           id?: string
           image_url?: string | null
           images?: string[] | null
