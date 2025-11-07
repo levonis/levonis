@@ -4,6 +4,18 @@ import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 
+// Create audio instance for notifications
+const notificationSound = new Audio('/sounds/notification.mp3');
+notificationSound.volume = 0.5; // Set volume to 50%
+
+const playNotificationSound = () => {
+  // Reset audio to start and play
+  notificationSound.currentTime = 0;
+  notificationSound.play().catch((error) => {
+    console.log('Could not play notification sound:', error);
+  });
+};
+
 export const useOrderRealtimeNotifications = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -29,6 +41,8 @@ export const useOrderRealtimeNotifications = () => {
           
           const newOrder = payload.new as any;
           const oldOrder = payload.old as any;
+
+          let shouldPlaySound = false;
 
           // Check if status changed
           if (oldOrder.status !== newOrder.status) {
@@ -62,6 +76,7 @@ export const useOrderRealtimeNotifications = () => {
                 description: message.description,
                 duration: 5000,
               });
+              shouldPlaySound = true;
             }
           }
 
@@ -72,6 +87,12 @@ export const useOrderRealtimeNotifications = () => {
               description: `يمكنك الآن تتبع طلب رقم ${newOrder.order_number}`,
               duration: 5000,
             });
+            shouldPlaySound = true;
+          }
+
+          // Play notification sound if any update occurred
+          if (shouldPlaySound) {
+            playNotificationSound();
           }
 
           // Invalidate queries to refresh data
