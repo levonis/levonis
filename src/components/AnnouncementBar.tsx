@@ -48,8 +48,8 @@ const AnnouncementBar = () => {
       const cw = containerRef.current?.offsetWidth || 0;
       const uw = unitRef.current?.scrollWidth || 0;
       if (cw && uw) {
-        const needed = Math.ceil(cw / uw) + 2; // buffer
-        setRepeats(Math.max(needed, 4));
+        const needed = Math.ceil(cw / uw) + 4; // increased buffer
+        setRepeats(Math.max(needed, 8));
       }
     };
 
