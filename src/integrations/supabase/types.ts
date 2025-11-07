@@ -67,6 +67,7 @@ export type Database = {
       }
       cart_items: {
         Row: {
+          color_image_url: string | null
           created_at: string | null
           custom_request_id: string | null
           id: string
@@ -78,6 +79,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          color_image_url?: string | null
           created_at?: string | null
           custom_request_id?: string | null
           id?: string
@@ -89,6 +91,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          color_image_url?: string | null
           created_at?: string | null
           custom_request_id?: string | null
           id?: string
