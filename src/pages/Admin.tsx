@@ -138,11 +138,15 @@ const Admin = () => {
           });
       }
     } else if (productDialogOpen && !editingProduct) {
-      // New product: start clean
+      // New product: start with default pre-order shipping option
       setProductOptions([]);
       setProductColors([]);
       setProductFeatures([]);
-      setPreOrderShippingOptions([]);
+      setPreOrderShippingOptions([{
+        name: 'Free Shipping (45 days)',
+        name_ar: 'شحن مجاني (45 يومًا)',
+        price_adjustment: 0
+      }]);
     }
   }, [productDialogOpen, editingProduct]);
 
@@ -1359,7 +1363,7 @@ const Admin = () => {
                             id="has_in_stock" 
                             name="has_in_stock" 
                             type="checkbox" 
-                            defaultChecked={editingProduct?.has_in_stock ?? true}
+                            defaultChecked={editingProduct?.has_in_stock ?? false}
                             onChange={(e) => {
                               const colorsSection = document.getElementById('colors-in-stock-notice');
                               if (colorsSection) {
@@ -1378,7 +1382,7 @@ const Admin = () => {
                             id="has_pre_order" 
                             name="has_pre_order" 
                             type="checkbox" 
-                            defaultChecked={editingProduct?.has_pre_order ?? false}
+                            defaultChecked={editingProduct?.has_pre_order ?? true}
                             onChange={(e) => {
                               const preOrderSection = document.getElementById('pre-order-section');
                               if (preOrderSection) {
@@ -1396,7 +1400,7 @@ const Admin = () => {
                        <div 
                          id="pre-order-section" 
                          className="space-y-4 p-4 border border-primary/20 rounded-lg bg-primary/5"
-                         style={{ display: (editingProduct?.has_pre_order || editingProduct?.availability_type === 'pre_order') ? 'block' : 'none' }}
+                         style={{ display: (editingProduct ? (editingProduct?.has_pre_order || editingProduct?.availability_type === 'pre_order') : true) ? 'block' : 'none' }}
                        >
                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                            <Package className="h-4 w-4" />
