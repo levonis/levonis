@@ -12,10 +12,11 @@ import { Loader2, Save, ArrowRight, Plus, X } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const AdminDefaultSettings = () => {
+export default function AdminDefaultSettings() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [formData, setFormData] = useState<any>(null);
 
   // Fetch default settings
   const { data: settings, isLoading } = useQuery({
@@ -32,14 +33,19 @@ const AdminDefaultSettings = () => {
     },
   });
 
-  const [formData, setFormData] = useState<any>(null);
-
   // Initialize form data when settings are loaded
   useEffect(() => {
-    if (settings?.setting_value) {
+    if (settings?.setting_value && !formData) {
       setFormData(settings.setting_value);
     }
-  }, [settings]);
+  }, [settings, formData]);
+
+  // Check auth and admin status
+  useEffect(() => {
+    if (!authLoading && (!user || !isAdmin)) {
+      navigate('/');
+    }
+  }, [authLoading, user, isAdmin, navigate]);
 
   // Update mutation
   const updateMutation = useMutation({
@@ -60,12 +66,35 @@ const AdminDefaultSettings = () => {
     },
   });
 
-  // Check auth and admin status
-  useEffect(() => {
-    if (!authLoading && (!user || !isAdmin)) {
-      navigate('/');
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (formData) {
+      updateMutation.mutate(formData);
     }
-  }, [authLoading, user, isAdmin, navigate]);
+  };
+
+  const handleShippingOptionChange = (index: number, field: string, value: any) => {
+    if (!formData) return;
+    const newOptions = [...(formData.pre_order_shipping_options || [])];
+    newOptions[index] = { ...newOptions[index], [field]: value };
+    setFormData({ ...formData, pre_order_shipping_options: newOptions });
+  };
+
+  const addShippingOption = () => {
+    if (!formData) return;
+    const newOptions = [...(formData.pre_order_shipping_options || []), {
+      name: '',
+      name_ar: '',
+      price_adjustment: 0,
+    }];
+    setFormData({ ...formData, pre_order_shipping_options: newOptions });
+  };
+
+  const removeShippingOption = (index: number) => {
+    if (!formData) return;
+    const newOptions = formData.pre_order_shipping_options.filter((_: any, i: number) => i !== index);
+    setFormData({ ...formData, pre_order_shipping_options: newOptions });
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -78,31 +107,6 @@ const AdminDefaultSettings = () => {
   if (!user || !isAdmin) {
     return null;
   }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateMutation.mutate(formData);
-  };
-
-  const handleShippingOptionChange = (index: number, field: string, value: any) => {
-    const newOptions = [...(formData.pre_order_shipping_options || [])];
-    newOptions[index] = { ...newOptions[index], [field]: value };
-    setFormData({ ...formData, pre_order_shipping_options: newOptions });
-  };
-
-  const addShippingOption = () => {
-    const newOptions = [...(formData.pre_order_shipping_options || []), {
-      name: '',
-      name_ar: '',
-      price_adjustment: 0,
-    }];
-    setFormData({ ...formData, pre_order_shipping_options: newOptions });
-  };
-
-  const removeShippingOption = (index: number) => {
-    const newOptions = formData.pre_order_shipping_options.filter((_: any, i: number) => i !== index);
-    setFormData({ ...formData, pre_order_shipping_options: newOptions });
-  };
 
   if (!formData) {
     return (
@@ -320,6 +324,4 @@ const AdminDefaultSettings = () => {
       </div>
     </div>
   );
-};
-
-export default AdminDefaultSettings;
+}
