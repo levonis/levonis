@@ -3,6 +3,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,6 +31,8 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
   const queryClient = useQueryClient();
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [showDepositConfirm, setShowDepositConfirm] = useState(false);
+  const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
 
   // جلب رصيد المحفظة
   const { data: wallet } = useQuery({
@@ -115,27 +127,44 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
     },
   });
 
-  const handleDepositWallet = () => {
+  const handleDepositClick = () => {
     const amount = Number(depositAmount);
     if (!amount || amount <= 0) {
       toast.error('الرجاء إدخال مبلغ صحيح');
       return;
     }
-    depositWallet.mutate(amount);
+    setShowDepositConfirm(true);
   };
 
-  const handleWithdrawWallet = () => {
+  const handleWithdrawClick = () => {
     const amount = Number(withdrawAmount);
     if (!amount || amount <= 0) {
       toast.error('الرجاء إدخال مبلغ صحيح');
       return;
     }
+    setShowWithdrawConfirm(true);
+  };
+
+  const confirmDeposit = () => {
+    const amount = Number(depositAmount);
+    depositWallet.mutate(amount);
+    setShowDepositConfirm(false);
+  };
+
+  const confirmWithdraw = () => {
+    const amount = Number(withdrawAmount);
     withdrawWallet.mutate(amount);
+    setShowWithdrawConfirm(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent 
+          className="max-w-4xl max-h-[90vh] overflow-y-auto" 
+          dir="rtl"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Wallet className="h-6 w-6" />
@@ -185,7 +214,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
                     autoFocus={false}
                   />
                 </div>
-                <Button onClick={handleDepositWallet} disabled={depositWallet.isPending} className="w-full">
+                <Button onClick={handleDepositClick} disabled={depositWallet.isPending} className="w-full">
                   {depositWallet.isPending ? "جاري الإرسال..." : "طلب التعبئة"}
                 </Button>
               </CardContent>
@@ -211,7 +240,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
                     autoFocus={false}
                   />
                 </div>
-                <Button onClick={handleWithdrawWallet} disabled={withdrawWallet.isPending || !wallet || wallet.balance <= 0} className="w-full" variant="outline">
+                <Button onClick={handleWithdrawClick} disabled={withdrawWallet.isPending || !wallet || wallet.balance <= 0} className="w-full" variant="outline">
                   {withdrawWallet.isPending ? "جاري الإرسال..." : "طلب السحب"}
                 </Button>
               </CardContent>
@@ -268,5 +297,42 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
         </div>
       </DialogContent>
     </Dialog>
+
+      {/* Deposit Confirmation Dialog */}
+      <AlertDialog open={showDepositConfirm} onOpenChange={setShowDepositConfirm}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد طلب التعبئة</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من إرسال طلب تعبئة المحفظة بمبلغ {depositAmount} دينار عراقي؟
+              <br />
+              سيتم مراجعة الطلب من قبل الإدارة.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeposit}>تأكيد</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Withdraw Confirmation Dialog */}
+      <AlertDialog open={showWithdrawConfirm} onOpenChange={setShowWithdrawConfirm}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد طلب السحب</AlertDialogTitle>
+            <AlertDialogDescription>
+              هل أنت متأكد من إرسال طلب سحب {withdrawAmount} دينار عراقي من محفظتك؟
+              <br />
+              سيتم مراجعة الطلب من قبل الإدارة.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmWithdraw}>تأكيد</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
