@@ -1,0 +1,403 @@
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { Coins, Gift, DollarSign, ArrowRight, History } from "lucide-react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+
+export default function MyPoints() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [redeemAmount, setRedeemAmount] = useState("");
+  const [convertAmount, setConvertAmount] = useState("");
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+    }
+  }, [user, navigate]);
+
+  // جلب رصيد النقاط
+  const { data: userPoints, isLoading: loadingPoints } = useQuery({
+    queryKey: ["userPoints", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("user_points")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // جلب المعاملات
+  const { data: transactions, isLoading: loadingTransactions } = useQuery({
+    queryKey: ["pointsTransactions", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("points_transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // جلب إعدادات النقاط
+  const { data: pointsSettings } = useQuery({
+    queryKey: ["pointsSettings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("default_settings")
+        .select("setting_value")
+        .eq("setting_key", "points_settings")
+        .single();
+      
+      if (error && error.code !== "PGRST116") throw error;
+      const settings = data?.setting_value as any || { 
+        points_per_order: 10, 
+        points_per_review: 5,
+        points_to_money_rate: 100,
+        points_to_coupon_rate: 50
+      };
+      return settings;
+    },
+  });
+
+  // تحويل النقاط إلى كوبون
+  const redeemToCoupon = useMutation({
+    mutationFn: async (points: number) => {
+      if (!user?.id) throw new Error("User not found");
+      if (!userPoints || userPoints.available_points < points) {
+        throw new Error("رصيد نقاط غير كافٍ");
+      }
+
+      const couponValue = points / (pointsSettings?.points_to_coupon_rate || 50);
+      
+      // إنشاء كوبون
+      const couponCode = `POINTS-${Date.now()}`;
+      const { error: couponError } = await supabase
+        .from("coupons")
+        .insert({
+          code: couponCode,
+          discount_type: "fixed",
+          discount_value: couponValue,
+          max_uses: 1,
+          current_uses: 0,
+          active: true,
+        });
+
+      if (couponError) throw couponError;
+
+      // تحديث النقاط
+      const { error: pointsError } = await supabase
+        .from("user_points")
+        .update({
+          available_points: userPoints.available_points - points,
+          redeemed_points: userPoints.redeemed_points + points,
+        })
+        .eq("user_id", user.id);
+
+      if (pointsError) throw pointsError;
+
+      // إضافة معاملة
+      await supabase.from("points_transactions").insert({
+        user_id: user.id,
+        points: -points,
+        type: "redeemed",
+        source: "coupon",
+        description: `تحويل ${points} نقطة إلى كوبون بقيمة ${couponValue} دينار عراقي`,
+      });
+
+      return couponCode;
+    },
+    onSuccess: (couponCode) => {
+      queryClient.invalidateQueries({ queryKey: ["userPoints"] });
+      queryClient.invalidateQueries({ queryKey: ["pointsTransactions"] });
+      toast.success(`تم إنشاء الكوبون بنجاح: ${couponCode}`);
+      setRedeemAmount("");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "حدث خطأ أثناء تحويل النقاط");
+    },
+  });
+
+  // تحويل النقاط إلى أموال
+  const convertToMoney = useMutation({
+    mutationFn: async (points: number) => {
+      if (!user?.id) throw new Error("User not found");
+      if (!userPoints || userPoints.available_points < points) {
+        throw new Error("رصيد نقاط غير كافٍ");
+      }
+
+      const moneyValue = points / (pointsSettings?.points_to_money_rate || 100);
+
+      // تحديث النقاط
+      const { error: pointsError } = await supabase
+        .from("user_points")
+        .update({
+          available_points: userPoints.available_points - points,
+          redeemed_points: userPoints.redeemed_points + points,
+        })
+        .eq("user_id", user.id);
+
+      if (pointsError) throw pointsError;
+
+      // إضافة معاملة
+      await supabase.from("points_transactions").insert({
+        user_id: user.id,
+        points: -points,
+        type: "converted",
+        source: "cash",
+        description: `تحويل ${points} نقطة إلى ${moneyValue} دينار عراقي`,
+      });
+
+      return moneyValue;
+    },
+    onSuccess: (moneyValue) => {
+      queryClient.invalidateQueries({ queryKey: ["userPoints"] });
+      queryClient.invalidateQueries({ queryKey: ["pointsTransactions"] });
+      toast.success(`تم طلب تحويل النقاط إلى ${moneyValue} دينار عراقي. سيتم التواصل معك قريباً.`);
+      setConvertAmount("");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "حدث خطأ أثناء تحويل النقاط");
+    },
+  });
+
+  const handleRedeemToCoupon = () => {
+    const points = parseFloat(redeemAmount);
+    if (isNaN(points) || points <= 0) {
+      toast.error("الرجاء إدخال عدد نقاط صحيح");
+      return;
+    }
+    redeemToCoupon.mutate(points);
+  };
+
+  const handleConvertToMoney = () => {
+    const points = parseFloat(convertAmount);
+    if (isNaN(points) || points <= 0) {
+      toast.error("الرجاء إدخال عدد نقاط صحيح");
+      return;
+    }
+    convertToMoney.mutate(points);
+  };
+
+  if (!user) return null;
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+      <Header />
+      
+      <main className="flex-1 container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">نقاطي</h1>
+          <p className="text-muted-foreground">إدارة نقاط المكافآت الخاصة بك</p>
+        </div>
+
+        {loadingPoints ? (
+          <div className="text-center py-12">جاري التحميل...</div>
+        ) : (
+          <>
+            {/* رصيد النقاط */}
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
+              <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Coins className="h-5 w-5" />
+                    النقاط المتاحة
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-4xl font-bold">{userPoints?.available_points || 0}</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <History className="h-5 w-5" />
+                    إجمالي النقاط
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-4xl font-bold">{userPoints?.total_points || 0}</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Gift className="h-5 w-5" />
+                    النقاط المستخدمة
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-4xl font-bold">{userPoints?.redeemed_points || 0}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Tabs defaultValue="redeem" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="redeem">تحويل لكوبون</TabsTrigger>
+                <TabsTrigger value="convert">تحويل لأموال</TabsTrigger>
+                <TabsTrigger value="history">السجل</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="redeem" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Gift className="h-5 w-5" />
+                      تحويل النقاط إلى كوبون
+                    </CardTitle>
+                    <CardDescription>
+                      كل {pointsSettings?.points_to_coupon_rate || 50} نقطة = 1 دينار عراقي
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="redeemAmount">عدد النقاط</Label>
+                      <Input
+                        id="redeemAmount"
+                        type="number"
+                        placeholder="أدخل عدد النقاط"
+                        value={redeemAmount}
+                        onChange={(e) => setRedeemAmount(e.target.value)}
+                      />
+                      {redeemAmount && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          = {(parseFloat(redeemAmount) / (pointsSettings?.points_to_coupon_rate || 50)).toFixed(2)} دينار عراقي
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      onClick={handleRedeemToCoupon}
+                      disabled={redeemToCoupon.isPending || !redeemAmount}
+                      className="w-full"
+                    >
+                      {redeemToCoupon.isPending ? "جاري التحويل..." : "تحويل إلى كوبون"}
+                      <ArrowRight className="mr-2 h-4 w-4" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="convert" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSign className="h-5 w-5" />
+                      تحويل النقاط إلى أموال
+                    </CardTitle>
+                    <CardDescription>
+                      كل {pointsSettings?.points_to_money_rate || 100} نقطة = 1 دينار عراقي
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label htmlFor="convertAmount">عدد النقاط</Label>
+                      <Input
+                        id="convertAmount"
+                        type="number"
+                        placeholder="أدخل عدد النقاط"
+                        value={convertAmount}
+                        onChange={(e) => setConvertAmount(e.target.value)}
+                      />
+                      {convertAmount && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          = {(parseFloat(convertAmount) / (pointsSettings?.points_to_money_rate || 100)).toFixed(2)} دينار عراقي
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      onClick={handleConvertToMoney}
+                      disabled={convertToMoney.isPending || !convertAmount}
+                      className="w-full"
+                    >
+                      {convertToMoney.isPending ? "جاري التحويل..." : "طلب تحويل إلى أموال"}
+                      <ArrowRight className="mr-2 h-4 w-4" />
+                    </Button>
+                    <p className="text-sm text-muted-foreground">
+                      * سيتم التواصل معك من قبل الإدارة لإتمام عملية التحويل
+                    </p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="history" className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>سجل المعاملات</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {loadingTransactions ? (
+                      <p className="text-center py-4">جاري التحميل...</p>
+                    ) : transactions && transactions.length > 0 ? (
+                      <div className="space-y-4">
+                        {transactions.map((transaction) => (
+                          <div
+                            key={transaction.id}
+                            className="flex items-center justify-between p-4 border rounded-lg"
+                          >
+                            <div className="flex-1">
+                              <p className="font-medium">{transaction.description}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {new Date(transaction.created_at).toLocaleDateString("ar-IQ", {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                            </div>
+                            <div
+                              className={`text-xl font-bold ${
+                                transaction.type === "earned"
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {transaction.type === "earned" ? "+" : ""}
+                              {transaction.points}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center py-8 text-muted-foreground">
+                        لا توجد معاملات بعد
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </>
+        )}
+      </main>
+      
+      <Footer />
+    </div>
+  );
+}

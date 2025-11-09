@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -1194,6 +1194,16 @@ const Admin = () => {
                 <Zap className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
                 <span className="text-sm font-semibold">الإعدادات الافتراضية</span>
                 <span className="text-xs text-muted-foreground">تخصيص القيم الافتراضية</span>
+              </Button>
+              
+              <Button
+                onClick={() => navigate('/admin/points-settings')}
+                variant="outline"
+                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
+              >
+                <Coins className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">إعدادات النقاط</span>
+                <span className="text-xs text-muted-foreground">إدارة نظام المكافآت</span>
               </Button>
             </div>
           </CardContent>

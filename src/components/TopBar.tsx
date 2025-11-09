@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
@@ -167,6 +167,10 @@ const TopBar = () => {
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-4 w-4" />
                     <span>المفضلة</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/my-points')}>
+                    <Coins className="ml-2 h-4 w-4" />
+                    <span>نقاطي</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/notifications')}>
                     <Bell className="ml-2 h-4 w-4" />

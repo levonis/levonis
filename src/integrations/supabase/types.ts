@@ -553,6 +553,39 @@ export type Database = {
         }
         Relationships: []
       }
+      points_transactions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          points: number
+          related_id: string | null
+          source: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          points: number
+          related_id?: string | null
+          source: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          points?: number
+          related_id?: string | null
+          source?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       product_options: {
         Row: {
           created_at: string
@@ -750,6 +783,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_points: {
+        Row: {
+          available_points: number
+          created_at: string
+          id: string
+          redeemed_points: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_points?: number
+          created_at?: string
+          id?: string
+          redeemed_points?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_points?: number
+          created_at?: string
+          id?: string
+          redeemed_points?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {
