@@ -773,7 +773,7 @@ export type Database = {
           governorate: string | null
           id: string
           phone_number: string | null
-          username: string | null
+          username: string
         }
         Insert: {
           avatar_url?: string | null
@@ -783,7 +783,7 @@ export type Database = {
           governorate?: string | null
           id: string
           phone_number?: string | null
-          username?: string | null
+          username: string
         }
         Update: {
           avatar_url?: string | null
@@ -793,7 +793,7 @@ export type Database = {
           governorate?: string | null
           id?: string
           phone_number?: string | null
-          username?: string | null
+          username?: string
         }
         Relationships: []
       }
@@ -892,6 +892,10 @@ export type Database = {
     }
     Functions: {
       calculate_user_level: { Args: { points: number }; Returns: string }
+      check_username_available: {
+        Args: { username_to_check: string }
+        Returns: boolean
+      }
       generate_order_number: { Args: never; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       has_role: {

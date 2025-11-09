@@ -35,9 +35,13 @@ const IRAQI_GOVERNORATES = [
 const authSchema = z.object({
   email: z.string().email({ message: 'بريد إلكتروني غير صحيح' }),
   password: z.string().min(6, { message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }),
-  fullName: z.string().optional(),
-  phoneNumber: z.string().regex(/^07[3-9]\d{8}$/, { message: 'رقم الهاتف يجب أن يبدأ بـ 07 ويتكون من 11 رقماً' }).optional(),
-  governorate: z.string().optional(),
+  fullName: z.string().min(1, { message: 'الاسم الكامل مطلوب' }),
+  username: z.string()
+    .min(3, { message: 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل' })
+    .max(20, { message: 'اسم المستخدم يجب أن لا يتجاوز 20 حرف' })
+    .regex(/^[a-zA-Z0-9_]+$/, { message: 'اسم المستخدم يجب أن يحتوي على أحرف وأرقام فقط' }),
+  phoneNumber: z.string().regex(/^07[3-9]\d{8}$/, { message: 'رقم الهاتف يجب أن يبدأ بـ 07 ويتكون من 11 رقماً' }),
+  governorate: z.string().min(1, { message: 'المحافظة مطلوبة' }),
 });
 
 const Auth = () => {
@@ -45,6 +49,7 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [governorate, setGovernorate] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
@@ -101,9 +106,22 @@ const Auth = () => {
         email, 
         password, 
         fullName, 
-        phoneNumber: phoneNumber || undefined,
-        governorate: governorate || undefined
+        username,
+        phoneNumber,
+        governorate
       });
+      
+      // Check if username is available
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('username', validatedData.username)
+        .maybeSingle();
+
+      if (existingProfile) {
+        toast.error('اسم المستخدم مستخدم بالفعل، يرجى اختيار اسم آخر');
+        return;
+      }
       
       const redirectUrl = `${window.location.origin}/`;
       
@@ -113,9 +131,10 @@ const Auth = () => {
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: validatedData.fullName || '',
-            phone_number: validatedData.phoneNumber || '',
-            governorate: validatedData.governorate || '',
+            full_name: validatedData.fullName,
+            username: validatedData.username,
+            phone_number: validatedData.phoneNumber,
+            governorate: validatedData.governorate,
           }
         }
       });
@@ -310,36 +329,54 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">الاسم الكامل</Label>
+                  <Label htmlFor="signup-name">الاسم الكامل *</Label>
                   <Input
                     id="signup-name"
                     type="text"
                     placeholder="محمد أحمد"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
+                    required
                     disabled={loading}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-phone">رقم الهاتف</Label>
+                  <Label htmlFor="signup-username">اسم المستخدم *</Label>
+                  <Input
+                    id="signup-username"
+                    type="text"
+                    placeholder="user123"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    disabled={loading}
+                    maxLength={20}
+                  />
+                  <p className="text-xs text-muted-foreground">اسم فريد يظهر في التقييمات والتعليقات</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-phone">رقم الهاتف *</Label>
                   <Input
                     id="signup-phone"
                     type="tel"
                     placeholder="07XXXXXXXXX"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
+                    required
                     disabled={loading}
                     maxLength={11}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-governorate">المحافظة</Label>
+                  <Label htmlFor="signup-governorate">المحافظة *</Label>
                   <Select 
                     value={governorate} 
                     onValueChange={setGovernorate}
                     disabled={loading}
+                    required
                   >
                     <SelectTrigger id="signup-governorate">
                       <SelectValue placeholder="اختر المحافظة" />
