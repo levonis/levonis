@@ -266,18 +266,20 @@ const Admin = () => {
   const { data: stats } = useQuery({
     queryKey: ['admin-stats', isAdmin],
     queryFn: async () => {
-      const [productsResult, featuredResult, categoriesResult, outOfStockResult] = await Promise.all([
+      const [productsResult, featuredResult, categoriesResult, outOfStockResult, pendingOrdersResult] = await Promise.all([
         supabase.from('products').select('*', { count: 'exact', head: true }),
         supabase.from('products').select('*', { count: 'exact', head: true }).eq('featured', true),
         supabase.from('categories').select('*', { count: 'exact', head: true }),
-        supabase.from('products').select('*', { count: 'exact', head: true }).eq('in_stock', false)
+        supabase.from('products').select('*', { count: 'exact', head: true }).eq('in_stock', false),
+        supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending')
       ]);
 
       return {
         totalProducts: productsResult.count || 0,
         featuredProducts: featuredResult.count || 0,
         totalCategories: categoriesResult.count || 0,
-        outOfStock: outOfStockResult.count || 0
+        outOfStock: outOfStockResult.count || 0,
+        pendingOrders: pendingOrdersResult.count || 0
       };
     },
     enabled: !!isAdmin,
@@ -1063,7 +1065,7 @@ const Admin = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
           <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
@@ -1103,8 +1105,25 @@ const Admin = () => {
           <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative">
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
-                <div className="text-4xl font-black text-orange-500">{pendingRequestsCount || 0}</div>
+                <div className="text-4xl font-black text-amber-500">{stats?.pendingOrders || 0}</div>
                 <div className="text-sm text-muted-foreground">طلبات معلقة</div>
+              </div>
+              {stats?.pendingOrders && stats.pendingOrders > 0 && (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
+                >
+                  {stats.pendingOrders}
+                </Badge>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-2">
+                <div className="text-4xl font-black text-orange-500">{pendingRequestsCount || 0}</div>
+                <div className="text-sm text-muted-foreground">طلبات خاصة معلقة</div>
               </div>
               {pendingRequestsCount && pendingRequestsCount > 0 && (
                 <Badge 

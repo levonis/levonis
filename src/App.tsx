@@ -28,6 +28,7 @@ import OrderDetail from "./pages/OrderDetail";
 import AdminOrders from "./pages/AdminOrders";
 import AdminPointsSettings from "./pages/AdminPointsSettings";
 import AdminLoyaltyLevels from "./pages/AdminLoyaltyLevels";
+import AdminDefaultSettings from "./pages/AdminDefaultSettings";
 import MyPoints from "./pages/MyPoints";
 import NotFound from "./pages/NotFound";
 
@@ -65,6 +66,7 @@ export default function App() {
                 <Route path="/admin/orders" element={<AdminOrders />} />
                 <Route path="/admin/points-settings" element={<AdminPointsSettings />} />
                 <Route path="/admin/loyalty-levels" element={<AdminLoyaltyLevels />} />
+                <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
                 <Route path="/my-points" element={<MyPoints />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>

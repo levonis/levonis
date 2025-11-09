@@ -16,7 +16,7 @@ import { useState } from 'react';
 
 const OrderDetail = () => {
   const { orderId } = useParams();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
@@ -28,7 +28,7 @@ const OrderDetail = () => {
     queryFn: async () => {
       if (!user || !orderId) return null;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('orders')
         .select(`
           *,
@@ -38,9 +38,14 @@ const OrderDetail = () => {
           ),
           profiles(full_name, email)
         `)
-        .eq('id', orderId)
-        .eq('user_id', user.id)
-        .single();
+        .eq('id', orderId);
+
+      // If not admin, filter by user_id
+      if (!isAdmin) {
+        query = query.eq('user_id', user.id);
+      }
+
+      const { data, error } = await query.single();
 
       if (error) throw error;
       return data;
@@ -122,11 +127,11 @@ const OrderDetail = () => {
         <div className="mb-6">
           <Button 
             variant="ghost" 
-            onClick={() => navigate('/my-orders')}
+            onClick={() => navigate(isAdmin ? '/admin/orders' : '/my-orders')}
             className="mb-4 hover:bg-primary/10"
           >
             <ArrowRight className="ml-2 h-4 w-4" />
-            العودة إلى طلباتي
+            {isAdmin ? 'العودة إلى لوحة الطلبات' : 'العودة إلى طلباتي'}
           </Button>
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>

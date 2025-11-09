@@ -463,6 +463,14 @@ const AdminOrders = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => navigate(`/order/${order.id}`)}
+                          >
+                            <Package className="h-4 w-4 ml-2" />
+                            عرض التفاصيل
+                          </Button>
                           <Dialog open={dialogOpen && editingOrder?.id === order.id} onOpenChange={(open) => {
                             setDialogOpen(open);
                             if (!open) setEditingOrder(null);
