@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Trash2, Loader2, CheckCircle } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Star, Trash2, Loader2, CheckCircle, Upload, X, Image as ImageIcon, Video, Play } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -23,6 +24,10 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
   const [hoveredRating, setHoveredRating] = useState(0);
+  const [mediaFiles, setMediaFiles] = useState<File[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [showAllReviews, setShowAllReviews] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // جلب المراجعات
   const { data: reviews, isLoading } = useQuery({
@@ -91,11 +96,37 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
     mutationFn: async () => {
       if (!user) throw new Error('يجب تسجيل الدخول');
 
+      setUploadingMedia(true);
+      
+      // رفع الملفات
+      const uploadedUrls: string[] = [];
+      
+      for (const file of mediaFiles) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('review-media')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('review-media')
+          .getPublicUrl(fileName);
+        
+        uploadedUrls.push(publicUrl);
+      }
+
       const reviewData = {
         user_id: user.id,
         product_id: productId,
         rating,
         comment: comment.trim() || null,
+        media_files: uploadedUrls,
       };
 
       if (userReview) {
@@ -115,9 +146,12 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       queryClient.invalidateQueries({ queryKey: ['reviews', productId] });
       queryClient.invalidateQueries({ queryKey: ['user-review', productId, user?.id] });
       setComment('');
+      setMediaFiles([]);
+      setUploadingMedia(false);
       toast.success(userReview ? 'تم تحديث تقييمك بنجاح' : 'تم إضافة تقييمك بنجاح');
     },
     onError: (error: any) => {
+      setUploadingMedia(false);
       toast.error('حدث خطأ: ' + error.message);
     },
   });
@@ -150,6 +184,40 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
     submitReviewMutation.mutate();
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    
+    // التحقق من الحجم والنوع
+    const validFiles = files.filter(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`الملف ${file.name} أكبر من 10 ميجابايت`);
+        return false;
+      }
+      return true;
+    });
+
+    // السماح بـ 5 ملفات كحد أقصى
+    const currentTotal = mediaFiles.length + validFiles.length;
+    if (currentTotal > 5) {
+      toast.error('يمكنك إضافة 5 ملفات كحد أقصى');
+      setMediaFiles([...mediaFiles, ...validFiles].slice(0, 5));
+    } else {
+      setMediaFiles([...mediaFiles, ...validFiles]);
+    }
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setMediaFiles(mediaFiles.filter((_, i) => i !== index));
+  };
+
+  const isVideo = (filename: string) => {
+    return /\.(mp4|webm|mov)$/i.test(filename);
+  };
+
   const canDelete = (review: any) => {
     return isAdmin || (user && review.user_id === user.id);
   };
@@ -158,6 +226,9 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
   const averageRating = reviews?.length
     ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : 0;
+
+  // عرض 3 تقييمات فقط في البداية
+  const displayedReviews = showAllReviews ? reviews : reviews?.slice(0, 3);
 
   return (
     <div className="space-y-6">
@@ -245,15 +316,74 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                   />
                 </div>
 
+                {/* رفع الصور والفيديوهات */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    إضافة صور أو فيديوهات (اختياري)
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*"
+                    multiple
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={mediaFiles.length >= 5}
+                    className="w-full mb-3"
+                  >
+                    <Upload className="ml-2 h-4 w-4" />
+                    {mediaFiles.length > 0 
+                      ? `تم اختيار ${mediaFiles.length} ملف` 
+                      : 'إضافة صور أو فيديوهات'}
+                  </Button>
+
+                  {/* معاينة الملفات */}
+                  {mediaFiles.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {mediaFiles.map((file, index) => (
+                        <div key={index} className="relative group aspect-square rounded-lg overflow-hidden border border-border">
+                          {isVideo(file.name) ? (
+                            <div className="w-full h-full bg-muted flex items-center justify-center">
+                              <Video className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                          ) : (
+                            <img
+                              src={URL.createObjectURL(file)}
+                              alt={`معاينة ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeFile(index)}
+                            className="absolute top-1 right-1 p-1 bg-destructive text-destructive-foreground rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2">
+                    الحد الأقصى: 5 ملفات، 10 ميجابايت لكل ملف
+                  </p>
+                </div>
+
                 <Button
                   type="submit"
-                  disabled={submitReviewMutation.isPending}
+                  disabled={submitReviewMutation.isPending || uploadingMedia}
                   className="w-full"
                 >
-                  {submitReviewMutation.isPending && (
+                  {(submitReviewMutation.isPending || uploadingMedia) && (
                     <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                   )}
-                  {userReview ? 'تحديث التقييم' : 'إضافة التقييم'}
+                  {uploadingMedia ? 'جاري الرفع...' : userReview ? 'تحديث التقييم' : 'إضافة التقييم'}
                 </Button>
               </form>
             ) : (
@@ -280,7 +410,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
         </div>
       ) : (
         <div className="space-y-4">
-          {reviews?.map((review) => (
+          {displayedReviews?.map((review) => (
             <Card key={review.id}>
               <CardContent className="pt-6">
                 <div className="flex items-start gap-4">
@@ -339,11 +469,164 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                     {review.comment && (
                       <p className="mt-3 text-muted-foreground">{review.comment}</p>
                     )}
+
+                    {/* عرض الصور والفيديوهات */}
+                    {review.media_files && review.media_files.length > 0 && (
+                      <div className="mt-4 grid grid-cols-3 gap-2">
+                        {review.media_files.slice(0, 3).map((url: string, idx: number) => (
+                          <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border group cursor-pointer">
+                            {url.match(/\.(mp4|webm|mov)$/i) ? (
+                              <div className="relative w-full h-full">
+                                <video
+                                  src={url}
+                                  className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                                  <Play className="h-8 w-8 text-white" />
+                                </div>
+                              </div>
+                            ) : (
+                              <img
+                                src={url}
+                                alt={`صورة التقييم ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
+                        ))}
+                        {review.media_files.length > 3 && (
+                          <div className="aspect-square rounded-lg overflow-hidden border border-border bg-muted flex items-center justify-center">
+                            <span className="text-sm font-bold text-muted-foreground">
+                              +{review.media_files.length - 3}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
             </Card>
           ))}
+
+          {/* زر عرض كل التقييمات */}
+          {reviews && reviews.length > 3 && !showAllReviews && (
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="w-full" size="lg">
+                  عرض كل التقييمات ({reviews.length})
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>جميع التقييمات ({reviews.length})</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  {reviews.map((review) => (
+                    <Card key={review.id}>
+                      <CardContent className="pt-6">
+                        <div className="flex items-start gap-4">
+                          <Avatar>
+                            <AvatarImage src={(review as any).profiles?.avatar_url || undefined} />
+                            <AvatarFallback>
+                              {(review as any).profiles?.full_name?.[0] || (review as any).profiles?.username?.[0] || 'م'}
+                            </AvatarFallback>
+                          </Avatar>
+
+                          <div className="flex-1">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-bold">
+                                    {(review as any).profiles?.username || (review as any).profiles?.full_name || 'مستخدم'}
+                                  </span>
+                                  <LevelBadge userId={review.user_id} size="sm" />
+                                  <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                                    <CheckCircle className="h-3 w-3 ml-1" />
+                                    عملية شراء مؤكدة
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-1 my-1">
+                                  {[1, 2, 3, 4, 5].map((star) => (
+                                    <Star
+                                      key={star}
+                                      className={`h-4 w-4 ${
+                                        star <= review.rating
+                                          ? 'text-primary fill-primary'
+                                          : 'text-muted-foreground'
+                                      }`}
+                                    />
+                                  ))}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {formatDistanceToNow(new Date(review.created_at), {
+                                    addSuffix: true,
+                                    locale: ar,
+                                  })}
+                                </div>
+                              </div>
+
+                              {canDelete(review) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteReviewMutation.mutate(review.id)}
+                                  disabled={deleteReviewMutation.isPending}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              )}
+                            </div>
+
+                            {review.comment && (
+                              <p className="mt-3 text-muted-foreground">{review.comment}</p>
+                            )}
+
+                            {/* عرض الصور والفيديوهات في الـ dialog */}
+                            {review.media_files && review.media_files.length > 0 && (
+                              <div className="mt-4 grid grid-cols-4 gap-2">
+                                {review.media_files.map((url: string, idx: number) => (
+                                  <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border group cursor-pointer">
+                                    {url.match(/\.(mp4|webm|mov)$/i) ? (
+                                      <div className="relative w-full h-full">
+                                        <video
+                                          src={url}
+                                          controls
+                                          className="w-full h-full object-cover"
+                                        />
+                                      </div>
+                                    ) : (
+                                      <a href={url} target="_blank" rel="noopener noreferrer">
+                                        <img
+                                          src={url}
+                                          alt={`صورة التقييم ${idx + 1}`}
+                                          className="w-full h-full object-cover hover:scale-110 transition-transform"
+                                        />
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+          
+          {reviews && reviews.length > 3 && showAllReviews && (
+            <Button 
+              variant="outline" 
+              className="w-full" 
+              onClick={() => setShowAllReviews(false)}
+            >
+              إخفاء التقييمات الإضافية
+            </Button>
+          )}
         </div>
       )}
     </div>

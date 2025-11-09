@@ -866,6 +866,7 @@ export type Database = {
           comment: string | null
           created_at: string
           id: string
+          media_files: string[] | null
           product_id: string
           rating: number
           updated_at: string
@@ -875,6 +876,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
+          media_files?: string[] | null
           product_id: string
           rating: number
           updated_at?: string
@@ -884,6 +886,7 @@ export type Database = {
           comment?: string | null
           created_at?: string
           id?: string
+          media_files?: string[] | null
           product_id?: string
           rating?: number
           updated_at?: string
