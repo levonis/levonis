@@ -50,9 +50,8 @@ const OrderDetail = () => {
       if (error) throw error;
       return data;
     },
--    enabled: !!user && !!orderId
-+    enabled: !!orderId && !authLoading && (!!user || isAdmin)
-   });
+    enabled: !!orderId && !authLoading && (!!user || isAdmin)
+  });
 
   const handlePrintInvoice = async () => {
     if (!order) return;
