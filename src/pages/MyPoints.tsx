@@ -224,7 +224,7 @@ export default function MyPoints() {
       
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">نقاطي</h1>
+          <h1 className="text-3xl font-bold mb-2">النقاط</h1>
           <p className="text-muted-foreground">إدارة نقاط المكافآت الخاصة بك</p>
         </div>
 
@@ -286,8 +286,9 @@ export default function MyPoints() {
             </div>
 
             <Tabs defaultValue="levels" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="levels">المستويات</TabsTrigger>
+                <TabsTrigger value="earn">ربح النقاط</TabsTrigger>
                 <TabsTrigger value="redeem">تحويل لكوبون</TabsTrigger>
                 <TabsTrigger value="convert">تحويل لأموال</TabsTrigger>
                 <TabsTrigger value="history">السجل</TabsTrigger>
@@ -315,6 +316,73 @@ export default function MyPoints() {
                     </CardContent>
                   </Card>
                 )}
+              </TabsContent>
+
+              <TabsContent value="earn" className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card className="border-2 border-primary/30">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Gift className="h-5 w-5 text-primary" />
+                        طرق كسب النقاط
+                      </CardTitle>
+                      <CardDescription>اكسب نقاط إضافية بطرق متعددة</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                        <p className="font-semibold">✓ إتمام الطلبات</p>
+                        <p className="text-sm text-muted-foreground">
+                          احصل على {pointsSettings?.points_per_order || 10} نقطة لكل طلب يتم توصيله
+                          {pointsSettings?.order_value_multiplier > 0 && (
+                            <span> + نقاط إضافية حسب قيمة الطلب</span>
+                          )}
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                        <p className="font-semibold">✓ كتابة التقييمات</p>
+                        <p className="text-sm text-muted-foreground">
+                          احصل على {pointsSettings?.points_per_review || 5} نقطة لكل تقييم تكتبه
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                        <p className="font-semibold">✓ تقييم الطلبات المؤكدة</p>
+                        <p className="text-sm text-muted-foreground">
+                          احصل على {pointsSettings?.points_per_verified_review || 10} نقطة عند تقييم طلب مؤكد من الإدارة
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                        <p className="font-semibold">✓ مشاهدة الإعلانات</p>
+                        <p className="text-sm text-muted-foreground">
+                          احصل على {pointsSettings?.points_per_ad || 2} نقطة لكل إعلان تشاهده بالكامل
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-2 border-green-500/30">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Award className="h-5 w-5 text-green-500" />
+                        مشاهدة إعلان
+                      </CardTitle>
+                      <CardDescription>اكسب {pointsSettings?.points_per_ad || 2} نقطة بمشاهدة إعلان</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="aspect-video bg-muted rounded-lg flex items-center justify-center">
+                        <p className="text-muted-foreground">سيتم عرض الإعلان هنا</p>
+                      </div>
+                      <Button className="w-full" variant="default">
+                        ابدأ مشاهدة الإعلان
+                      </Button>
+                      <p className="text-xs text-muted-foreground text-center">
+                        * يجب مشاهدة الإعلان بالكامل للحصول على النقاط
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
               </TabsContent>
 
               <TabsContent value="redeem" className="space-y-4">

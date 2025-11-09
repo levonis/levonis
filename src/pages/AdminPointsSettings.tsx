@@ -19,6 +19,9 @@ export default function AdminPointsSettings() {
 
   const [pointsPerOrder, setPointsPerOrder] = useState("10");
   const [pointsPerReview, setPointsPerReview] = useState("5");
+  const [pointsPerAd, setPointsPerAd] = useState("2");
+  const [pointsPerVerifiedReview, setPointsPerVerifiedReview] = useState("10");
+  const [orderValueMultiplier, setOrderValueMultiplier] = useState("0");
   const [pointsToMoneyRate, setPointsToMoneyRate] = useState("100");
   const [pointsToCouponRate, setPointsToCouponRate] = useState("50");
 
@@ -65,6 +68,9 @@ export default function AdminPointsSettings() {
       const settings = pointsSettings.setting_value as any;
       setPointsPerOrder(settings.points_per_order?.toString() || "10");
       setPointsPerReview(settings.points_per_review?.toString() || "5");
+      setPointsPerAd(settings.points_per_ad?.toString() || "2");
+      setPointsPerVerifiedReview(settings.points_per_verified_review?.toString() || "10");
+      setOrderValueMultiplier(settings.order_value_multiplier?.toString() || "0");
       setPointsToMoneyRate(settings.points_to_money_rate?.toString() || "100");
       setPointsToCouponRate(settings.points_to_coupon_rate?.toString() || "50");
     }
@@ -76,6 +82,9 @@ export default function AdminPointsSettings() {
       const settingsValue = {
         points_per_order: parseFloat(pointsPerOrder),
         points_per_review: parseFloat(pointsPerReview),
+        points_per_ad: parseFloat(pointsPerAd),
+        points_per_verified_review: parseFloat(pointsPerVerifiedReview),
+        order_value_multiplier: parseFloat(orderValueMultiplier),
         points_to_money_rate: parseFloat(pointsToMoneyRate),
         points_to_coupon_rate: parseFloat(pointsToCouponRate),
       };
@@ -110,6 +119,9 @@ export default function AdminPointsSettings() {
   const handleSave = () => {
     const order = parseFloat(pointsPerOrder);
     const review = parseFloat(pointsPerReview);
+    const ad = parseFloat(pointsPerAd);
+    const verifiedReview = parseFloat(pointsPerVerifiedReview);
+    const orderMultiplier = parseFloat(orderValueMultiplier);
     const moneyRate = parseFloat(pointsToMoneyRate);
     const couponRate = parseFloat(pointsToCouponRate);
 
@@ -119,6 +131,18 @@ export default function AdminPointsSettings() {
     }
     if (isNaN(review) || review < 0) {
       toast.error("الرجاء إدخال عدد نقاط صحيح للتقييم");
+      return;
+    }
+    if (isNaN(ad) || ad < 0) {
+      toast.error("الرجاء إدخال عدد نقاط صحيح للإعلان");
+      return;
+    }
+    if (isNaN(verifiedReview) || verifiedReview < 0) {
+      toast.error("الرجاء إدخال عدد نقاط صحيح لتقييم الطلب");
+      return;
+    }
+    if (isNaN(orderMultiplier) || orderMultiplier < 0) {
+      toast.error("الرجاء إدخال معامل صحيح لقيمة الطلب");
       return;
     }
     if (isNaN(moneyRate) || moneyRate <= 0) {
@@ -154,12 +178,12 @@ export default function AdminPointsSettings() {
           <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>نقاط الكسب</CardTitle>
+                <CardTitle>نقاط الكسب الأساسية</CardTitle>
                 <CardDescription>عدد النقاط التي يحصل عليها المستخدم</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="pointsPerOrder">نقاط لكل طلب ناجح</Label>
+                  <Label htmlFor="pointsPerOrder">نقاط ثابتة لكل طلب</Label>
                   <Input
                     id="pointsPerOrder"
                     type="number"
@@ -169,12 +193,27 @@ export default function AdminPointsSettings() {
                     onChange={(e) => setPointsPerOrder(e.target.value)}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    يحصل المستخدم على هذه النقاط عند تسليم الطلب بنجاح
+                    نقاط ثابتة عند تسليم الطلب بنجاح
                   </p>
                 </div>
 
                 <div>
-                  <Label htmlFor="pointsPerReview">نقاط لكل تقييم</Label>
+                  <Label htmlFor="orderValueMultiplier">نقاط إضافية حسب قيمة الطلب</Label>
+                  <Input
+                    id="orderValueMultiplier"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={orderValueMultiplier}
+                    onChange={(e) => setOrderValueMultiplier(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    معامل النقاط حسب قيمة الطلب (مثال: 0.01 = 1 نقطة لكل 100 دينار)
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="pointsPerReview">نقاط لكل تقييم عادي</Label>
                   <Input
                     id="pointsPerReview"
                     type="number"
@@ -184,7 +223,45 @@ export default function AdminPointsSettings() {
                     onChange={(e) => setPointsPerReview(e.target.value)}
                   />
                   <p className="text-sm text-muted-foreground mt-1">
-                    يحصل المستخدم على هذه النقاط عند كتابة تقييم لمنتج
+                    نقاط عند كتابة تقييم لأي منتج
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>نقاط الكسب المتقدمة</CardTitle>
+                <CardDescription>طرق إضافية لكسب النقاط</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="pointsPerVerifiedReview">نقاط لتقييم الطلب المؤكد</Label>
+                  <Input
+                    id="pointsPerVerifiedReview"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={pointsPerVerifiedReview}
+                    onChange={(e) => setPointsPerVerifiedReview(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    نقاط عند تقييم طلب تم تأكيد استلامه من الإدارة
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="pointsPerAd">نقاط لكل إعلان</Label>
+                  <Input
+                    id="pointsPerAd"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={pointsPerAd}
+                    onChange={(e) => setPointsPerAd(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    نقاط عند مشاهدة إعلان كامل
                   </p>
                 </div>
               </CardContent>
@@ -232,11 +309,22 @@ export default function AdminPointsSettings() {
               <CardHeader>
                 <CardTitle>معاينة الإعدادات</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <p>✓ كل طلب ناجح = {pointsPerOrder} نقطة</p>
-                <p>✓ كل تقييم = {pointsPerReview} نقطة</p>
-                <p>✓ كل {pointsToMoneyRate} نقطة = 1 دينار عراقي نقدي</p>
-                <p>✓ كل {pointsToCouponRate} نقطة = 1 دينار عراقي كوبون</p>
+              <CardContent className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-lg mb-3">طرق كسب النقاط:</h3>
+                  <p>✓ طلب ناجح = {pointsPerOrder} نقطة ثابتة</p>
+                  {parseFloat(orderValueMultiplier) > 0 && (
+                    <p>✓ نقاط إضافية = {orderValueMultiplier} × قيمة الطلب</p>
+                  )}
+                  <p>✓ تقييم عادي = {pointsPerReview} نقطة</p>
+                  <p>✓ تقييم طلب مؤكد = {pointsPerVerifiedReview} نقطة</p>
+                  <p>✓ مشاهدة إعلان = {pointsPerAd} نقطة</p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-lg mb-3">تحويل النقاط:</h3>
+                  <p>✓ كل {pointsToMoneyRate} نقطة = 1 دينار عراقي نقدي</p>
+                  <p>✓ كل {pointsToCouponRate} نقطة = 1 دينار عراقي كوبون</p>
+                </div>
               </CardContent>
             </Card>
           </div>

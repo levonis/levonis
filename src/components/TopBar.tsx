@@ -170,7 +170,7 @@ const TopBar = () => {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/my-points')}>
                     <Coins className="ml-2 h-4 w-4" />
-                    <span>نقاطي</span>
+                    <span>النقاط</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/notifications')}>
                     <Bell className="ml-2 h-4 w-4" />
