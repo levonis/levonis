@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
+import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { useState, useEffect } from 'react';
@@ -22,6 +23,7 @@ const TopBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [walletDialogOpen, setWalletDialogOpen] = useState(false);
   const isHomePage = location.pathname === '/' || location.pathname === '/home';
 
   const { data: unreadNotifications } = useQuery({
@@ -204,7 +206,7 @@ const TopBar = () => {
                     <Heart className="ml-2 h-4 w-4" />
                     <span>المفضلة</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/my-points')} className="relative">
+                  <DropdownMenuItem onClick={() => setWalletDialogOpen(true)} className="relative">
                     <Wallet className="ml-2 h-4 w-4" />
                     <span>المحفظة</span>
                     {wallet && wallet.balance > 0 && (
@@ -252,6 +254,8 @@ const TopBar = () => {
           </div>
         </div>
       </div>
+
+      <WalletDialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen} />
     </div>
   );
 };
