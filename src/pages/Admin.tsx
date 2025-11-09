@@ -109,6 +109,24 @@ const Admin = () => {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
+  // Fetch default settings
+  const { data: defaultSettings } = useQuery({
+    queryKey: ['default-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('default_settings')
+        .select('*')
+        .eq('setting_key', 'product_defaults')
+        .single();
+      
+      if (error) {
+        console.error('Error fetching default settings:', error);
+        return null;
+      }
+      return data?.setting_value as any;
+    }
+  });
+
   // Ensure product options, colors, and features load reliably when opening the editor
   useEffect(() => {
     if (productDialogOpen && editingProduct) {
@@ -138,17 +156,23 @@ const Admin = () => {
           });
       }
     } else if (productDialogOpen && !editingProduct) {
-      // New product: start with default pre-order shipping option
+      // New product: use default settings from database
       setProductOptions([]);
       setProductColors([]);
       setProductFeatures([]);
-      setPreOrderShippingOptions([{
-        name: 'Free Shipping (45 days)',
-        name_ar: 'شحن مجاني (45 يومًا)',
-        price_adjustment: 0
-      }]);
+      
+      // Load default shipping options from settings
+      if (defaultSettings && Array.isArray(defaultSettings.pre_order_shipping_options)) {
+        setPreOrderShippingOptions(defaultSettings.pre_order_shipping_options);
+      } else {
+        setPreOrderShippingOptions([{
+          name: 'Free Shipping (45 days)',
+          name_ar: 'شحن مجاني (45 يومًا)',
+          price_adjustment: 0
+        }]);
+      }
     }
-  }, [productDialogOpen, editingProduct]);
+  }, [productDialogOpen, editingProduct, defaultSettings]);
 
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['admin-products'],
@@ -1063,6 +1087,16 @@ const Admin = () => {
                   </Badge>
                 )}
               </Button>
+              
+              <Button
+                onClick={() => navigate('/admin/default-settings')}
+                variant="outline"
+                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
+              >
+                <Zap className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">الإعدادات الافتراضية</span>
+                <span className="text-xs text-muted-foreground">تخصيص القيم الافتراضية</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1338,19 +1372,19 @@ const Admin = () => {
                         <Input 
                           id="currency" 
                           name="currency"
-                          defaultValue={editingProduct?.currency || 'دينار عراقي'}
-                          placeholder="دينار عراقي"
+                          defaultValue={editingProduct?.currency || defaultSettings?.currency || 'ريال'}
+                          placeholder="ريال"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex items-center gap-2">
-                        <input id="featured" name="featured" type="checkbox" defaultChecked={editingProduct?.featured || false} />
+                        <input id="featured" name="featured" type="checkbox" defaultChecked={editingProduct?.featured ?? defaultSettings?.featured ?? false} />
                         <Label htmlFor="featured">مميز (يظهر في الرئيسية)</Label>
                       </div>
                       <div className="flex items-center gap-2">
-                        <input id="in_stock" name="in_stock" type="checkbox" defaultChecked={editingProduct?.in_stock ?? true} />
+                        <input id="in_stock" name="in_stock" type="checkbox" defaultChecked={editingProduct?.in_stock ?? defaultSettings?.in_stock ?? true} />
                         <Label htmlFor="in_stock">متاح في المخزون</Label>
                       </div>
                     </div>
@@ -1363,7 +1397,7 @@ const Admin = () => {
                             id="has_in_stock" 
                             name="has_in_stock" 
                             type="checkbox" 
-                            defaultChecked={editingProduct?.has_in_stock ?? false}
+                            defaultChecked={editingProduct?.has_in_stock ?? defaultSettings?.has_in_stock ?? false}
                             onChange={(e) => {
                               const colorsSection = document.getElementById('colors-in-stock-notice');
                               if (colorsSection) {
@@ -1382,7 +1416,7 @@ const Admin = () => {
                             id="has_pre_order" 
                             name="has_pre_order" 
                             type="checkbox" 
-                            defaultChecked={editingProduct?.has_pre_order ?? true}
+                            defaultChecked={editingProduct?.has_pre_order ?? defaultSettings?.has_pre_order ?? true}
                             onChange={(e) => {
                               const preOrderSection = document.getElementById('pre-order-section');
                               if (preOrderSection) {
@@ -1400,7 +1434,7 @@ const Admin = () => {
                        <div 
                          id="pre-order-section" 
                          className="space-y-4 p-4 border border-primary/20 rounded-lg bg-primary/5"
-                         style={{ display: (editingProduct ? (editingProduct?.has_pre_order || editingProduct?.availability_type === 'pre_order') : true) ? 'block' : 'none' }}
+                         style={{ display: (editingProduct ? (editingProduct?.has_pre_order || editingProduct?.availability_type === 'pre_order') : (defaultSettings?.has_pre_order ?? true)) ? 'block' : 'none' }}
                        >
                          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
                            <Package className="h-4 w-4" />
