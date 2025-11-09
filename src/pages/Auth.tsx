@@ -32,7 +32,12 @@ const IRAQI_GOVERNORATES = [
   'دهوك',
 ];
 
-const authSchema = z.object({
+const signInSchema = z.object({
+  email: z.string().email({ message: 'بريد إلكتروني غير صحيح' }),
+  password: z.string().min(6, { message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }),
+});
+
+const signUpSchema = z.object({
   email: z.string().email({ message: 'بريد إلكتروني غير صحيح' }),
   password: z.string().min(6, { message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }),
   fullName: z.string().min(1, { message: 'الاسم الكامل مطلوب' }),
@@ -68,7 +73,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const validatedData = authSchema.parse({ email, password });
+      const validatedData = signInSchema.parse({ email, password });
       
       const { error } = await supabase.auth.signInWithPassword({
         email: validatedData.email,
@@ -102,7 +107,7 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const validatedData = authSchema.parse({ 
+      const validatedData = signUpSchema.parse({ 
         email, 
         password, 
         fullName, 
