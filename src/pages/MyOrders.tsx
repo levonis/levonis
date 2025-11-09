@@ -29,7 +29,7 @@ const MyOrders = () => {
           *,
           order_items!order_items_order_id_fkey(
             *,
-            products(name_ar, image_url)
+            products!order_items_product_id_fkey(name_ar, image_url)
           )
         `)
         .eq('user_id', user.id)
