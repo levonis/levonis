@@ -71,6 +71,7 @@ export type Database = {
           created_at: string | null
           custom_request_id: string | null
           id: string
+          option_image_url: string | null
           product_id: string | null
           product_option_id: string | null
           quantity: number
@@ -85,6 +86,7 @@ export type Database = {
           created_at?: string | null
           custom_request_id?: string | null
           id?: string
+          option_image_url?: string | null
           product_id?: string | null
           product_option_id?: string | null
           quantity?: number
@@ -99,6 +101,7 @@ export type Database = {
           created_at?: string | null
           custom_request_id?: string | null
           id?: string
+          option_image_url?: string | null
           product_id?: string | null
           product_option_id?: string | null
           quantity?: number
@@ -705,6 +708,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          image_url: string | null
           in_stock: boolean | null
           name: string
           name_ar: string
@@ -714,6 +718,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          image_url?: string | null
           in_stock?: boolean | null
           name: string
           name_ar: string
@@ -723,6 +728,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          image_url?: string | null
           in_stock?: boolean | null
           name?: string
           name_ar?: string

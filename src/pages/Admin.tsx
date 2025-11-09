@@ -74,6 +74,7 @@ const Admin = () => {
     name_ar: string;
     price_adjustment: number;
     in_stock: boolean;
+    image_url?: string;
   }>>([]);
   const [productColors, setProductColors] = useState<Array<{
     name: string;
@@ -154,6 +155,7 @@ const Admin = () => {
                   name_ar: opt.name_ar,
                   price_adjustment: Number(opt.price_adjustment),
                   in_stock: opt.in_stock,
+                  image_url: opt.image_url || undefined
                 }))
               );
             }
@@ -701,6 +703,7 @@ const Admin = () => {
           name_ar: opt.name_ar,
           price_adjustment: opt.price_adjustment,
           in_stock: opt.in_stock,
+          image_url: opt.image_url || null
         }));
 
         const { error: insertOptionsError } = await supabase
@@ -736,7 +739,8 @@ const Admin = () => {
       name: '',
       name_ar: '',
       price_adjustment: 0,
-      in_stock: true
+      in_stock: true,
+      image_url: undefined
     }]);
   };
 
@@ -898,7 +902,8 @@ const Admin = () => {
             name: opt.name,
             name_ar: opt.name_ar,
             price_adjustment: opt.price_adjustment,
-            in_stock: opt.in_stock
+            in_stock: opt.in_stock,
+            image_url: opt.image_url || null
           }));
 
         if (optionsToInsert.length > 0) {
@@ -1896,6 +1901,57 @@ const Admin = () => {
                                     <span className="text-sm">متاح</span>
                                   </div>
                                 </div>
+                              </div>
+                              
+                              <div className="space-y-1">
+                                <Label className="text-xs">صورة الخيار (اختياري)</Label>
+                                <div className="flex gap-2 items-end">
+                                  <Input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      
+                                      const fileExt = file.name.split('.').pop();
+                                      const fileName = `${Math.random()}.${fileExt}`;
+                                      const { error: uploadError, data } = await supabase.storage
+                                        .from('product-images')
+                                        .upload(fileName, file);
+                                      
+                                      if (uploadError) {
+                                        toast.error('حدث خطأ أثناء رفع الصورة');
+                                        return;
+                                      }
+                                      
+                                      const { data: { publicUrl } } = supabase.storage
+                                        .from('product-images')
+                                        .getPublicUrl(fileName);
+                                      
+                                      updateProductOption(index, 'image_url', publicUrl);
+                                      toast.success('تم رفع صورة الخيار بنجاح');
+                                    }}
+                                    className="h-9"
+                                  />
+                                  {option.image_url && (
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => updateProductOption(index, 'image_url', undefined)}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  )}
+                                </div>
+                                {option.image_url && (
+                                  <div className="mt-2 relative w-20 h-20 rounded-lg overflow-hidden border border-border">
+                                    <img src={option.image_url} alt={option.name_ar} className="w-full h-full object-cover" />
+                                  </div>
+                                )}
+                                <p className="text-xs text-muted-foreground">
+                                  صورة خاصة تظهر عند اختيار هذا الخيار
+                                </p>
                               </div>
                             </div>
                           ))}

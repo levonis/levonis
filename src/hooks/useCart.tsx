@@ -9,6 +9,7 @@ interface CartItem {
   custom_request_id: string | null;
   quantity: number;
   color_image_url?: string | null;
+  option_image_url?: string | null;
   products?: {
     id: string;
     name: string;
@@ -69,6 +70,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           product_option_id,
           selected_color,
           color_image_url,
+          option_image_url,
           products (
             id,
             name,
@@ -134,6 +136,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         colorImageUrl = selectedColorData?.image_url || null;
       }
       
+      // Get option data to find option image
+      let optionImageUrl: string | null = null;
+      if (optionId) {
+        const { data: optionData } = await supabase
+          .from('product_options')
+          .select('image_url')
+          .eq('id', optionId)
+          .single();
+        
+        optionImageUrl = optionData?.image_url || null;
+      }
+      
       // Check if item with same product, option, color and shipping already exists
       const normalize = (v: any) => (v ?? '').toString().trim().toLowerCase();
       const existingItem = items.find(item => 
@@ -166,6 +180,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       if (colorImageUrl) {
         insertData.color_image_url = colorImageUrl;
+      }
+      
+      if (optionImageUrl) {
+        insertData.option_image_url = optionImageUrl;
       }
       
       if (shippingInfo) {

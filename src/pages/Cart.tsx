@@ -538,13 +538,13 @@ const Cart = () => {
                   >
                     <div className="flex flex-col sm:flex-row gap-4">
                       {/* Product Image */}
-                      {((item.products?.image_url) || (item.custom_product_requests?.image_url) || (item as any).color_image_url) && (
+                      {((item.products?.image_url) || (item.custom_product_requests?.image_url) || (item as any).option_image_url || (item as any).color_image_url) && (
                         <Link 
                           to={item.products ? `/product/${item.products.slug}` : '#'}
                           className="flex-shrink-0 mx-auto sm:mx-0"
                         >
                           <img 
-                            src={(item as any).color_image_url || (item.products?.images && item.products.images[0]) || item.products?.image_url || item.custom_product_requests?.image_url || ''}
+                            src={(item as any).option_image_url || (item as any).color_image_url || (item.products?.images && item.products.images[0]) || item.products?.image_url || item.custom_product_requests?.image_url || ''}
                             alt={item.products?.name_ar || item.custom_product_requests?.product_name || ''}
                             className="w-32 h-32 sm:w-24 sm:h-24 object-cover rounded-xl border border-border/40 hover:border-primary/50 transition-colors"
                           />

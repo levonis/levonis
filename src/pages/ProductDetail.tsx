@@ -28,6 +28,7 @@ const ProductDetail = () => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [colorImageUrl, setColorImageUrl] = useState<string | null>(null);
+  const [optionImageUrl, setOptionImageUrl] = useState<string | null>(null);
   const [selectedShippingOption, setSelectedShippingOption] = useState<number | null>(null);
 
   const { data: product, isLoading } = useQuery({
@@ -157,8 +158,12 @@ const ProductDetail = () => {
     );
   }
 
-  // إذا كان هناك لون محدد وله صورة، استخدمها بدلاً من صور المنتج الأساسية
+  // إذا كان هناك خيار محدد أو لون محدد وله صورة، استخدمها بدلاً من صور المنتج الأساسية
   const getProductImages = () => {
+    // أولوية للخيار، ثم اللون، ثم الصور الأساسية
+    if (optionImageUrl) {
+      return [optionImageUrl];
+    }
     if (colorImageUrl) {
       return [colorImageUrl];
     }
@@ -502,7 +507,20 @@ const ProductDetail = () => {
               {productOptions && productOptions.length > 0 && (
                 <div className="border-t border-border/30 pt-6 mb-6">
                   <Label className="text-lg font-bold text-foreground mb-4 block">الخيارات المتاحة</Label>
-                  <RadioGroup value={selectedOption || ''} onValueChange={setSelectedOption}>
+                  <RadioGroup 
+                    value={selectedOption || ''} 
+                    onValueChange={(value) => {
+                      setSelectedOption(value);
+                      // البحث عن الخيار المحدد
+                      const option = productOptions.find((opt: any) => opt.id === value);
+                      if (option && option.image_url) {
+                        setOptionImageUrl(option.image_url);
+                        setSelectedImage(0);
+                      } else {
+                        setOptionImageUrl(null);
+                      }
+                    }}
+                  >
                     <div className="space-y-3">
                       {productOptions.map((option: any) => (
                         <label
