@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, User, Mail, Calendar, Shield } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Loader2, User, Mail, Calendar, Shield, Upload, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 
@@ -17,8 +18,12 @@ const UserInfo = () => {
   const [saving, setSaving] = useState(false);
   const [profile, setProfile] = useState({
     full_name: '',
+    username: '',
     email: '',
+    avatar_url: '',
   });
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,7 +48,9 @@ const UserInfo = () => {
 
       setProfile({
         full_name: data.full_name || '',
+        username: data.username || '',
         email: data.email || user?.email || '',
+        avatar_url: data.avatar_url || '',
       });
     } catch (error) {
       console.error('Error fetching profile:', error);
@@ -58,21 +65,51 @@ const UserInfo = () => {
     setSaving(true);
 
     try {
+      let avatarUrl = profile.avatar_url;
+
+      // Upload avatar if file selected
+      if (avatarFile) {
+        setUploadingAvatar(true);
+        const fileExt = avatarFile.name.split('.').pop();
+        const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(`avatars/${fileName}`, avatarFile);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(`avatars/${fileName}`);
+
+        avatarUrl = publicUrl;
+        setUploadingAvatar(false);
+      }
+
       const { error } = await supabase
         .from('profiles')
         .update({
           full_name: profile.full_name,
+          username: profile.username || null,
+          avatar_url: avatarUrl || null,
         })
         .eq('id', user?.id);
 
       if (error) throw error;
 
+      setProfile({ ...profile, avatar_url: avatarUrl });
+      setAvatarFile(null);
       toast.success('تم حفظ التغييرات بنجاح');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating profile:', error);
-      toast.error('حدث خطأ في حفظ التغييرات');
+      if (error.code === '23505') {
+        toast.error('اسم المستخدم موجود بالفعل، الرجاء اختيار اسم آخر');
+      } else {
+        toast.error('حدث خطأ في حفظ التغييرات');
+      }
     } finally {
       setSaving(false);
+      setUploadingAvatar(false);
     }
   };
 
@@ -108,6 +145,37 @@ const UserInfo = () => {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSave} className="space-y-4">
+                {/* Avatar Upload */}
+                <div className="flex flex-col items-center gap-4 pb-6 border-b border-border/30">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage 
+                      src={avatarFile ? URL.createObjectURL(avatarFile) : profile.avatar_url || undefined} 
+                    />
+                    <AvatarFallback className="text-2xl">
+                      {profile.username?.[0] || profile.full_name?.[0] || 'م'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <Input
+                      id="avatar"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        if (e.target.files?.[0]) {
+                          setAvatarFile(e.target.files[0]);
+                        }
+                      }}
+                    />
+                    <Label htmlFor="avatar" className="cursor-pointer">
+                      <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors">
+                        <Camera className="h-4 w-4" />
+                        <span className="text-sm">تغيير الصورة</span>
+                      </div>
+                    </Label>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
                   <Label htmlFor="full_name">الاسم الكامل</Label>
                   <Input
@@ -116,6 +184,19 @@ const UserInfo = () => {
                     onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
                     placeholder="أدخل اسمك الكامل"
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="username">اسم المستخدم</Label>
+                  <Input
+                    id="username"
+                    value={profile.username}
+                    onChange={(e) => setProfile({ ...profile, username: e.target.value })}
+                    placeholder="اختر اسم مستخدم فريد"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    يستخدم للبحث في قائمة الطلبات وظهوره في التقييمات
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -137,10 +218,10 @@ const UserInfo = () => {
                 <Button
                   type="submit"
                   className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                  disabled={saving}
+                  disabled={saving || uploadingAvatar}
                 >
-                  {saving && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                  حفظ التغييرات
+                  {(saving || uploadingAvatar) && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                  {uploadingAvatar ? 'جاري رفع الصورة...' : 'حفظ التغييرات'}
                 </Button>
               </form>
             </CardContent>

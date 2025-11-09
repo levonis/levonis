@@ -517,7 +517,7 @@ const Cart = () => {
                                   <span>{itemOption.name_ar}</span>
                                 </div>
                               )}
-                              {colorData && (
+                               {colorData && (
                                 <div className="flex items-center justify-center sm:justify-start gap-2">
                                   <span className="font-medium">اللون:</span>
                                   <div className="flex items-center gap-1.5">
@@ -527,6 +527,12 @@ const Cart = () => {
                                     />
                                     <span>{colorData.name_ar}</span>
                                   </div>
+                                </div>
+                              )}
+                              {(item as any).shipping_option_name_ar && (
+                                <div className="flex items-center justify-center sm:justify-start gap-2">
+                                  <span className="font-medium">الشحن:</span>
+                                  <span>{(item as any).shipping_option_name_ar}</span>
                                 </div>
                               )}
                             </div>

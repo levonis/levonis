@@ -39,7 +39,7 @@ const AdminOrders = () => {
             *,
             products(name_ar, image_url)
           ),
-          profiles(full_name, email)
+          profiles(full_name, email, username)
         `)
         .order('created_at', { ascending: false });
 
@@ -192,6 +192,8 @@ const AdminOrders = () => {
     const matchesSearch = searchTerm === '' ||
       order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.profiles as any)?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.profiles as any)?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (order.profiles as any)?.email?.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
@@ -363,7 +365,7 @@ const AdminOrders = () => {
                 <div className="relative">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="رقم الطلب، رقم التتبع، أو البريد الإلكتروني..."
+                    placeholder="رقم الطلب، اسم المستخدم، الاسم، رقم التتبع، أو البريد..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pr-10"
@@ -431,7 +433,11 @@ const AdminOrders = () => {
                       <TableCell className="font-mono font-bold">{order.order_number}</TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium">{order.profiles?.full_name || 'غير محدد'}</div>
+                          <div className="font-medium">
+                            {order.profiles?.username && `@${order.profiles.username}`}
+                            {order.profiles?.username && order.profiles?.full_name && ' - '}
+                            {order.profiles?.full_name || 'غير محدد'}
+                          </div>
                           <div className="text-xs text-muted-foreground">{order.profiles?.email}</div>
                         </div>
                       </TableCell>

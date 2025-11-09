@@ -34,7 +34,7 @@ interface CartContextType {
   loading: boolean;
   itemCount: number;
   total: number;
-  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number) => Promise<void>;
+  addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }) => Promise<void>;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
@@ -110,14 +110,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     fetchCart();
   }, [user]);
 
-  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1) => {
+  const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }) => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
       return;
     }
 
     try {
-      console.log('Adding to cart:', { productId, optionId, color, quantity });
+      console.log('Adding to cart:', { productId, optionId, color, quantity, shippingInfo });
       
       // Get product data to find color image
       const { data: productData } = await supabase
@@ -134,12 +134,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         colorImageUrl = selectedColorData?.image_url || null;
       }
       
-      // Check if item with same product, option, and color already exists
+      // Check if item with same product, option, color and shipping already exists
       const normalize = (v: any) => (v ?? '').toString().trim().toLowerCase();
       const existingItem = items.find(item => 
         item.product_id === productId && 
         normalize((item as any).product_option_id) === normalize(optionId) &&
-        normalize((item as any).selected_color) === normalize(color)
+        normalize((item as any).selected_color) === normalize(color) &&
+        (item as any).shipping_option_index === shippingInfo?.index
       );
       
       console.log('Existing item found:', existingItem);
@@ -165,6 +166,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       if (colorImageUrl) {
         insertData.color_image_url = colorImageUrl;
+      }
+      
+      if (shippingInfo) {
+        insertData.shipping_option_index = shippingInfo.index;
+        insertData.shipping_option_name_ar = shippingInfo.name_ar;
       }
 
       console.log('Inserting cart item:', insertData);

@@ -1510,8 +1510,8 @@ const Admin = () => {
                         <Input 
                           id="currency" 
                           name="currency"
-                          defaultValue={editingProduct?.currency || defaultSettings?.currency || 'ريال'}
-                          placeholder="ريال"
+                          defaultValue={editingProduct?.currency || defaultSettings?.currency || 'دينار عراقي'}
+                          placeholder="دينار عراقي"
                         />
                       </div>
                     </div>

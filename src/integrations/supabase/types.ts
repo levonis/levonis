@@ -75,6 +75,8 @@ export type Database = {
           product_option_id: string | null
           quantity: number
           selected_color: string | null
+          shipping_option_index: number | null
+          shipping_option_name_ar: string | null
           updated_at: string | null
           user_id: string
         }
@@ -87,6 +89,8 @@ export type Database = {
           product_option_id?: string | null
           quantity?: number
           selected_color?: string | null
+          shipping_option_index?: number | null
+          shipping_option_name_ar?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -99,6 +103,8 @@ export type Database = {
           product_option_id?: string | null
           quantity?: number
           selected_color?: string | null
+          shipping_option_index?: number | null
+          shipping_option_name_ar?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -426,6 +432,8 @@ export type Database = {
           quantity: number
           selected_color: string | null
           selected_option: string | null
+          shipping_option_name_ar: string | null
+          shipping_price_adjustment: number | null
           total_price: number
           unit_price: number
         }
@@ -440,6 +448,8 @@ export type Database = {
           quantity?: number
           selected_color?: string | null
           selected_option?: string | null
+          shipping_option_name_ar?: string | null
+          shipping_price_adjustment?: number | null
           total_price: number
           unit_price: number
         }
@@ -454,6 +464,8 @@ export type Database = {
           quantity?: number
           selected_color?: string | null
           selected_option?: string | null
+          shipping_option_name_ar?: string | null
+          shipping_price_adjustment?: number | null
           total_price?: number
           unit_price?: number
         }
@@ -670,30 +682,74 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           governorate: string | null
           id: string
           phone_number: string | null
+          username: string | null
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           governorate?: string | null
           id: string
           phone_number?: string | null
+          username?: string | null
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           governorate?: string | null
           id?: string
           phone_number?: string | null
+          username?: string | null
         }
         Relationships: []
+      }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          product_id: string
+          rating: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          product_id: string
+          rating: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          product_id?: string
+          rating?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

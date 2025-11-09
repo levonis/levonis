@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useState } from 'react';
 import { formatPrice } from '@/lib/utils';
 import ProductCard from '@/components/ProductCard';
+import ProductReviews from '@/components/ProductReviews';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -183,7 +184,15 @@ const ProductDetail = () => {
     : Number(product.price);
 
   const optionAdjustment = selectedOptionData ? Number(selectedOptionData.price_adjustment) : 0;
-  const finalPrice = basePrice + optionAdjustment;
+  
+  // إضافة سعر الشحن إذا كان محدداً
+  let shippingAdjustment = 0;
+  if (selectedShippingOption !== null && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options[selectedShippingOption]) {
+    const shippingOption = product.pre_order_shipping_options[selectedShippingOption] as any;
+    shippingAdjustment = Number(shippingOption.price_adjustment || 0);
+  }
+  
+  const finalPrice = basePrice + optionAdjustment + shippingAdjustment;
 
   // اضبط السعر الأصلي ليتماشى مع فرق سعر اللون إن وُجد، ثم أضف فرق الخيار
   let finalOriginalPrice: number | null = null;
@@ -196,7 +205,7 @@ const ProductDetail = () => {
   const hasSale = finalOriginalPrice != null && finalOriginalPrice > finalPrice;
   const savings = hasSale && finalOriginalPrice != null ? (finalOriginalPrice - finalPrice) : 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     // Check if product has options and none selected
     if (productOptions && productOptions.length > 0 && !selectedOption) {
       toast.error('الرجاء اختيار أحد الخيارات المتاحة');
@@ -211,7 +220,15 @@ const ProductDetail = () => {
       return;
     }
 
-    addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity);
+    // تحضير معلومات الشحن
+    const shippingInfo = selectedShippingOption !== null && preOrderShippingOptions[selectedShippingOption]
+      ? {
+          index: selectedShippingOption,
+          name_ar: (preOrderShippingOptions[selectedShippingOption] as any).name_ar
+        }
+      : undefined;
+
+    await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo);
     toast.success(`تم إضافة ${quantity} من المنتج إلى السلة`);
     setQuantity(1);
   };
@@ -709,6 +726,11 @@ const ProductDetail = () => {
             </div>
           </div>
         )}
+
+        {/* Reviews Section */}
+        <div className="mb-8">
+          <ProductReviews productId={product.id} />
+        </div>
 
         {/* Related Products Section */}
         {relatedProducts && relatedProducts.length > 0 && (
