@@ -105,12 +105,14 @@ serve(async (req) => {
 - استخراج جميع المعلومات المتعلقة بالمنتج بدقة
 - ترجمة المعلومات للعربية بشكل احترافي ودقيق
 - فصل الأحجام/الخيارات عن الألوان بشكل واضح
-- تجميع روابط الصور الرئيسية للمنتج فقط
+- تجميع روابط الصور الرئيسية للمنتج وصور كل خيار ولون
 
 مهم جداً:
 - لا تستخرج معلومات السعر نهائياً
 - الأحجام مثل: S, M, L, XL, 32, 34, 36, etc.
 - الألوان مثل: أحمر، أزرق، أسود، أبيض، etc.
+- لكل خيار/حجم: استخرج الصورة الخاصة به إن وجدت
+- لكل لون: استخرج الصورة الخاصة به التي تظهر المنتج بهذا اللون
 - الصور: فقط صور المنتج الرئيسية (تجاهل الأيقونات والشعارات)`
           },
           {
@@ -125,8 +127,8 @@ ${imageUrls.slice(0, 20).join('\n')}
 استخرج بدقة:
 1. اسم المنتج بالعربية والإنجليزية (ترجمة احترافية)
 2. وصف تفصيلي شامل بالعربية والإنجليزية (ترجمة كاملة ودقيقة)
-3. جميع الأحجام/الخيارات المتوفرة (مثل: S, M, L أو 32, 34, 36)
-4. جميع الألوان المتوفرة مع أسمائها بالعربية والإنجليزية
+3. جميع الأحجام/الخيارات المتوفرة مع صورة كل خيار إن وجدت
+4. جميع الألوان المتوفرة مع صورة تظهر المنتج بكل لون
 5. جميع المميزات والخصائص بالعربية والإنجليزية
 6. روابط الصور الرئيسية للمنتج فقط (اختر الأفضل من القائمة)`
           }
@@ -167,10 +169,11 @@ ${imageUrls.slice(0, 20).join('\n')}
                       type: "object",
                       properties: {
                         name: { type: "string", description: "الحجم بالإنجليزية (S, M, L, XL, 32, 34, etc.)" },
-                        name_ar: { type: "string", description: "الحجم بالعربية (صغير، وسط، كبير، etc.)" }
+                        name_ar: { type: "string", description: "الحجم بالعربية (صغير، وسط، كبير، etc.)" },
+                        image_url: { type: "string", description: "رابط صورة خاصة بهذا الخيار/الحجم إن وجدت" }
                       }
                     },
-                    description: "جميع الأحجام/الخيارات المتوفرة للمنتج (منفصلة عن الألوان)"
+                    description: "جميع الأحجام/الخيارات المتوفرة للمنتج مع صورة كل خيار (منفصلة عن الألوان)"
                   },
                   colors: {
                     type: "array",
@@ -179,10 +182,11 @@ ${imageUrls.slice(0, 20).join('\n')}
                       properties: {
                         name: { type: "string", description: "اسم اللون بالإنجليزية" },
                         name_ar: { type: "string", description: "اسم اللون بالعربية" },
-                        hex_code: { type: "string", description: "كود اللون hex إن وجد أو تقديره" }
+                        hex_code: { type: "string", description: "كود اللون hex إن وجد أو تقديره" },
+                        image_url: { type: "string", description: "رابط صورة تظهر المنتج بهذا اللون" }
                       }
                     },
-                    description: "جميع الألوان المتوفرة للمنتج فقط (بدون أحجام)"
+                    description: "جميع الألوان المتوفرة للمنتج مع صورة كل لون (بدون أحجام)"
                   },
                   features: {
                     type: "array",
@@ -236,53 +240,91 @@ ${imageUrls.slice(0, 20).join('\n')}
     const productInfo = JSON.parse(toolCall.function.arguments);
     console.log('Extracted product info:', productInfo);
 
-    // Download and upload images to Supabase Storage
+    // Helper function to upload an image
+    const uploadImage = async (imageUrl: string, prefix: string): Promise<string | null> => {
+      try {
+        const imageResponse = await fetch(imageUrl);
+        if (!imageResponse.ok) return null;
+        
+        const imageBlob = await imageResponse.blob();
+        const fileExt = imageUrl.split('.').pop()?.split('?')[0] || 'jpg';
+        const fileName = `${prefix}-${Date.now()}-${Math.random()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('product-images')
+          .upload(fileName, imageBlob, {
+            contentType: imageResponse.headers.get('content-type') || 'image/jpeg',
+            upsert: false
+          });
+        
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          return null;
+        }
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('product-images')
+          .getPublicUrl(fileName);
+        
+        return publicUrl;
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        return null;
+      }
+    };
+
+    // Download and upload main product images
     const uploadedImageUrls: string[] = [];
     if (productInfo.images && Array.isArray(productInfo.images)) {
-      console.log(`Downloading ${productInfo.images.length} images...`);
+      console.log(`Downloading ${productInfo.images.length} main images...`);
       
       for (let i = 0; i < Math.min(productInfo.images.length, 10); i++) {
-        const imageUrl = productInfo.images[i];
-        try {
-          // Download the image
-          const imageResponse = await fetch(imageUrl);
-          if (!imageResponse.ok) continue;
-          
-          const imageBlob = await imageResponse.blob();
-          const fileExt = imageUrl.split('.').pop()?.split('?')[0] || 'jpg';
-          const fileName = `${Date.now()}-${i}.${fileExt}`;
-          const filePath = `${fileName}`;
-
-          // Upload to Supabase Storage
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from('product-images')
-            .upload(filePath, imageBlob, {
-              contentType: imageResponse.headers.get('content-type') || 'image/jpeg',
-              upsert: false
-            });
-
-          if (uploadError) {
-            console.error('Upload error:', uploadError);
-            continue;
-          }
-
-          // Get public URL
-          const { data: { publicUrl } } = supabase.storage
-            .from('product-images')
-            .getPublicUrl(filePath);
-
+        const publicUrl = await uploadImage(productInfo.images[i], 'main');
+        if (publicUrl) {
           uploadedImageUrls.push(publicUrl);
-          console.log(`Image ${i + 1} uploaded successfully`);
-        } catch (error) {
-          console.error(`Error processing image ${i}:`, error);
+          console.log(`Main image ${i + 1} uploaded successfully`);
         }
       }
     }
 
-    // Replace image URLs with uploaded ones
+    // Replace main image URLs with uploaded ones
     if (uploadedImageUrls.length > 0) {
       productInfo.images = uploadedImageUrls;
-      console.log(`Successfully uploaded ${uploadedImageUrls.length} images`);
+      console.log(`Successfully uploaded ${uploadedImageUrls.length} main images`);
+    }
+
+    // Upload images for sizes/options
+    if (productInfo.sizes && Array.isArray(productInfo.sizes)) {
+      console.log(`Processing ${productInfo.sizes.length} size images...`);
+      for (let i = 0; i < productInfo.sizes.length; i++) {
+        const size = productInfo.sizes[i];
+        if (size.image_url) {
+          const publicUrl = await uploadImage(size.image_url, `size-${i}`);
+          if (publicUrl) {
+            productInfo.sizes[i].image_url = publicUrl;
+            console.log(`Size ${size.name_ar} image uploaded successfully`);
+          } else {
+            delete productInfo.sizes[i].image_url;
+          }
+        }
+      }
+    }
+
+    // Upload images for colors
+    if (productInfo.colors && Array.isArray(productInfo.colors)) {
+      console.log(`Processing ${productInfo.colors.length} color images...`);
+      for (let i = 0; i < productInfo.colors.length; i++) {
+        const color = productInfo.colors[i];
+        if (color.image_url) {
+          const publicUrl = await uploadImage(color.image_url, `color-${i}`);
+          if (publicUrl) {
+            productInfo.colors[i].image_url = publicUrl;
+            console.log(`Color ${color.name_ar} image uploaded successfully`);
+          } else {
+            delete productInfo.colors[i].image_url;
+          }
+        }
+      }
     }
 
     return new Response(

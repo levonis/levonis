@@ -631,7 +631,8 @@ const Admin = () => {
           name: size.name || '',
           name_ar: size.name_ar || '',
           price_adjustment: 0,
-          in_stock: true
+          in_stock: true,
+          image_url: size.image_url || undefined
         })));
       }
 
@@ -641,8 +642,8 @@ const Admin = () => {
           name: color.name || '',
           name_ar: color.name_ar || '',
           hex_code: color.hex_code || '#000000',
-          price: 0,
-          image_url: '',
+          price: undefined,
+          image_url: color.image_url || undefined,
           in_stock: true
         })));
       }
@@ -656,7 +657,13 @@ const Admin = () => {
         })));
       }
 
-      toast.success('تم استخراج معلومات المنتج بنجاح! تم تحميل ' + (productInfo.images?.length || 0) + ' صورة.');
+      // Count uploaded images
+      const mainImages = productInfo.images?.length || 0;
+      const optionImages = productInfo.sizes?.filter((s: any) => s.image_url).length || 0;
+      const colorImages = productInfo.colors?.filter((c: any) => c.image_url).length || 0;
+      const totalImages = mainImages + optionImages + colorImages;
+
+      toast.success(`تم استخراج معلومات المنتج بنجاح! تم تحميل ${totalImages} صورة (${mainImages} رئيسية، ${optionImages} للخيارات، ${colorImages} للألوان).`);
     } catch (error) {
       console.error('Error extracting product info:', error);
       toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء استخراج المعلومات');
