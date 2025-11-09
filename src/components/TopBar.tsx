@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
@@ -57,6 +57,24 @@ const TopBar = () => {
 
   const pointsStatus = pointsSettings?.points_status || 'active';
   const showPointsMenu = pointsStatus === 'active';
+
+  // جلب رصيد المحفظة
+  const { data: wallet } = useQuery({
+    queryKey: ['wallet-balance', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('user_wallets')
+        .select('balance, currency')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+    refetchInterval: 30000,
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -185,6 +203,15 @@ const TopBar = () => {
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-4 w-4" />
                     <span>المفضلة</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/my-points')} className="relative">
+                    <Wallet className="ml-2 h-4 w-4" />
+                    <span>المحفظة</span>
+                    {wallet && wallet.balance > 0 && (
+                      <span className="mr-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+                        {wallet.balance.toFixed(0)} د.ع
+                      </span>
+                    )}
                   </DropdownMenuItem>
                   {showPointsMenu && (
                     <DropdownMenuItem onClick={() => navigate('/my-points')}>
