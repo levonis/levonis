@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -94,6 +94,10 @@ const Admin = () => {
     price_adjustment: number;
   }>>([]);
   
+  // AI extraction states
+  const [productUrl, setProductUrl] = useState('');
+  const [extractingInfo, setExtractingInfo] = useState(false);
+  
   // Search and filter states
   const [productSearch, setProductSearch] = useState('');
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
@@ -160,6 +164,7 @@ const Admin = () => {
       setProductOptions([]);
       setProductColors([]);
       setProductFeatures([]);
+      setProductUrl(''); // Clear URL when opening for new product
       
       // Load default shipping options from settings
       if (defaultSettings && Array.isArray(defaultSettings.pre_order_shipping_options)) {
@@ -171,6 +176,9 @@ const Admin = () => {
           price_adjustment: 0
         }]);
       }
+    } else if (!productDialogOpen) {
+      // Clear URL when closing dialog
+      setProductUrl('');
     }
   }, [productDialogOpen, editingProduct, defaultSettings]);
 
@@ -561,6 +569,95 @@ const Admin = () => {
 
   const removeImage = (index: number) => {
     setUploadedImages(uploadedImages.filter((_, i) => i !== index));
+  };
+
+  const handleExtractProductInfo = async () => {
+    if (!productUrl.trim()) {
+      toast.error('يرجى إدخال رابط المنتج');
+      return;
+    }
+
+    setExtractingInfo(true);
+    try {
+      const response = await supabase.functions.invoke('extract-product-info', {
+        body: { url: productUrl }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'فشل في استخراج المعلومات');
+      }
+
+      const { productInfo } = response.data;
+      
+      if (!productInfo) {
+        throw new Error('لم يتم العثور على معلومات المنتج');
+      }
+
+      // Fill form fields with extracted data
+      const form = document.querySelector('form') as HTMLFormElement;
+      if (!form) return;
+
+      // Fill text inputs
+      if (productInfo.name_ar) {
+        (form.querySelector('#name_ar') as HTMLInputElement).value = productInfo.name_ar;
+      }
+      if (productInfo.name) {
+        (form.querySelector('#name') as HTMLInputElement).value = productInfo.name;
+      }
+      if (productInfo.name_ar && productInfo.name) {
+        // Generate slug from English name
+        const slug = productInfo.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        (form.querySelector('#slug') as HTMLInputElement).value = slug;
+      }
+      if (productInfo.description_ar) {
+        (form.querySelector('#description_ar') as HTMLTextAreaElement).value = productInfo.description_ar;
+      }
+      if (productInfo.description) {
+        (form.querySelector('#description') as HTMLTextAreaElement).value = productInfo.description;
+      }
+      if (productInfo.price) {
+        (form.querySelector('#price') as HTMLInputElement).value = productInfo.price.toString();
+      }
+      if (productInfo.original_price) {
+        (form.querySelector('#original_price') as HTMLInputElement).value = productInfo.original_price.toString();
+      }
+      if (productInfo.currency) {
+        (form.querySelector('#currency') as HTMLInputElement).value = productInfo.currency;
+      }
+
+      // Set images
+      if (productInfo.images && Array.isArray(productInfo.images) && productInfo.images.length > 0) {
+        setUploadedImages(productInfo.images);
+      }
+
+      // Set colors
+      if (productInfo.colors && Array.isArray(productInfo.colors) && productInfo.colors.length > 0) {
+        setProductColors(productInfo.colors.map((color: any) => ({
+          name: color.name || '',
+          name_ar: color.name_ar || '',
+          hex_code: color.hex_code || '#000000',
+          price: 0,
+          image_url: '',
+          in_stock: true
+        })));
+      }
+
+      // Set features
+      if (productInfo.features && Array.isArray(productInfo.features) && productInfo.features.length > 0) {
+        setProductFeatures(productInfo.features.map((feature: any) => ({
+          text: feature.text || '',
+          text_ar: feature.text_ar || '',
+          icon: ''
+        })));
+      }
+
+      toast.success('تم استخراج معلومات المنتج بنجاح!');
+    } catch (error) {
+      console.error('Error extracting product info:', error);
+      toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء استخراج المعلومات');
+    } finally {
+      setExtractingInfo(false);
+    }
   };
 
   const handleDuplicateProduct = async (product: any) => {
@@ -1288,6 +1385,46 @@ const Admin = () => {
                   </DialogHeader>
                   
                   <form key={editingProduct?.id || 'new'} onSubmit={handleProductSubmit} className="space-y-4">
+                    {/* AI Product Extraction Section */}
+                    {!editingProduct && (
+                      <div className="p-4 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 space-y-3">
+                        <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                          <Sparkles className="h-5 w-5" />
+                          <span>استخراج معلومات المنتج تلقائياً بالذكاء الاصطناعي</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          أدخل رابط المنتج وسيقوم الذكاء الاصطناعي باستخراج جميع التفاصيل تلقائياً
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="https://example.com/product"
+                            value={productUrl}
+                            onChange={(e) => setProductUrl(e.target.value)}
+                            disabled={extractingInfo}
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            onClick={handleExtractProductInfo}
+                            disabled={extractingInfo || !productUrl.trim()}
+                            className="gap-2"
+                          >
+                            {extractingInfo ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                جاري الاستخراج...
+                              </>
+                            ) : (
+                              <>
+                                <Sparkles className="h-4 w-4" />
+                                استخراج
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name_ar">الاسم بالعربي *</Label>
