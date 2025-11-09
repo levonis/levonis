@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Settings, Save, Plus, Trash2 } from "lucide-react";
-import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function AdminPointsSettings() {
   const { user } = useAuth();
@@ -32,7 +32,7 @@ export default function AdminPointsSettings() {
   const [pointsToCouponRate, setPointsToCouponRate] = useState("50");
   const [referrerPoints, setReferrerPoints] = useState("50");
   const [referredPoints, setReferredPoints] = useState("20");
-  const [pointsEnabled, setPointsEnabled] = useState(true);
+  const [pointsStatus, setPointsStatus] = useState<'active' | 'maintenance' | 'disabled'>('active');
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -113,7 +113,7 @@ export default function AdminPointsSettings() {
       setOrderValueMultiplier(settings.order_value_multiplier?.toString() || "0");
       setPointsToMoneyRate(settings.points_to_money_rate?.toString() || "100");
       setPointsToCouponRate(settings.points_to_coupon_rate?.toString() || "50");
-      setPointsEnabled(settings.points_enabled !== undefined ? settings.points_enabled : true);
+      setPointsStatus(settings.points_status || 'active');
     }
   }, [pointsSettings]);
 
@@ -129,7 +129,7 @@ export default function AdminPointsSettings() {
   const saveSettings = useMutation({
     mutationFn: async () => {
       const settingsValue: any = {
-        points_enabled: pointsEnabled,
+        points_status: pointsStatus,
         order_value_multiplier: parseFloat(orderValueMultiplier),
         points_to_money_rate: parseFloat(pointsToMoneyRate),
         points_to_coupon_rate: parseFloat(pointsToCouponRate),
@@ -268,24 +268,33 @@ export default function AdminPointsSettings() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>تفعيل/تعطيل نظام النقاط</CardTitle>
-                <CardDescription>التحكم في تشغيل نظام النقاط بالكامل</CardDescription>
+                <CardTitle>حالة نظام النقاط</CardTitle>
+                <CardDescription>التحكم في حالة نظام النقاط بالكامل</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="space-y-1">
-                    <Label htmlFor="points-enabled" className="text-base font-medium">
-                      حالة نظام النقاط
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="points-status" className="text-base font-medium">
+                      اختر حالة النظام
                     </Label>
-                    <p className="text-sm text-muted-foreground">
-                      {pointsEnabled ? "النظام مفعّل حالياً - يمكن للمستخدمين كسب واستخدام النقاط" : "النظام معطّل حالياً - لن يتمكن المستخدمون من كسب أو استخدام النقاط"}
+                    <Select value={pointsStatus} onValueChange={(value: 'active' | 'maintenance' | 'disabled') => setPointsStatus(value)}>
+                      <SelectTrigger id="points-status">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="active">مفعّل</SelectItem>
+                        <SelectItem value="maintenance">تحت الصيانة</SelectItem>
+                        <SelectItem value="disabled">معطّل</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="p-4 rounded-lg bg-muted">
+                    <p className="text-sm">
+                      {pointsStatus === 'active' && "✅ النظام مفعّل - يمكن للمستخدمين كسب واستخدام النقاط بشكل طبيعي"}
+                      {pointsStatus === 'maintenance' && "🔧 النظام تحت الصيانة - لن يتمكن المستخدمون من كسب أو استخدام النقاط مؤقتاً"}
+                      {pointsStatus === 'disabled' && "❌ النظام معطّل - تم إيقاف نظام النقاط بالكامل"}
                     </p>
                   </div>
-                  <Switch
-                    id="points-enabled"
-                    checked={pointsEnabled}
-                    onCheckedChange={setPointsEnabled}
-                  />
                 </div>
               </CardContent>
             </Card>
