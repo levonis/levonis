@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,50 +28,46 @@ import OrderDetail from "./pages/OrderDetail";
 import AdminOrders from "./pages/AdminOrders";
 import NotFound from "./pages/NotFound";
 
-const App = () => {
-  const [queryClient] = useState(() => new QueryClient());
-  
+const queryClient = new QueryClient();
+
+export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <CartProvider>
-            <AnnouncementBar />
-            <Header />
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/product/:slug" element={<ProductDetail />} />
-              <Route path="/categories" element={<Categories />} />
-              <Route path="/category/:slug" element={<CategoryDetail />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/user-info" element={<UserInfo />} />
-              <Route path="/favorites" element={<Favorites />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/my-requests" element={<MyCustomRequests />} />
-              <Route path="/my-orders" element={<MyOrders />} />
-              <Route path="/order/:orderId" element={<OrderDetail />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/admin/notifications" element={<AdminNotifications />} />
-              <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-              <Route path="/admin/coupons" element={<AdminCoupons />} />
-              <Route path="/admin/orders" element={<AdminOrders />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            
-            {/* WhatsApp Button - Fixed on all pages */}
-            <WhatsAppButton />
-          </CartProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <CartProvider>
+              <AnnouncementBar />
+              <Header />
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/products" element={<Products />} />
+                <Route path="/product/:slug" element={<ProductDetail />} />
+                <Route path="/categories" element={<Categories />} />
+                <Route path="/category/:slug" element={<CategoryDetail />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/user-info" element={<UserInfo />} />
+                <Route path="/favorites" element={<Favorites />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/my-requests" element={<MyCustomRequests />} />
+                <Route path="/my-orders" element={<MyOrders />} />
+                <Route path="/order/:orderId" element={<OrderDetail />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/notifications" element={<AdminNotifications />} />
+                <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+                <Route path="/admin/coupons" element={<AdminCoupons />} />
+                <Route path="/admin/orders" element={<AdminOrders />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              
+              <WhatsAppButton />
+            </CartProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
-};
-
-export default App;
+}
