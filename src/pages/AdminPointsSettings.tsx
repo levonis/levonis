@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Settings, Save, Plus, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 
 export default function AdminPointsSettings() {
   const { user } = useAuth();
@@ -31,6 +32,7 @@ export default function AdminPointsSettings() {
   const [pointsToCouponRate, setPointsToCouponRate] = useState("50");
   const [referrerPoints, setReferrerPoints] = useState("50");
   const [referredPoints, setReferredPoints] = useState("20");
+  const [pointsEnabled, setPointsEnabled] = useState(true);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -111,6 +113,7 @@ export default function AdminPointsSettings() {
       setOrderValueMultiplier(settings.order_value_multiplier?.toString() || "0");
       setPointsToMoneyRate(settings.points_to_money_rate?.toString() || "100");
       setPointsToCouponRate(settings.points_to_coupon_rate?.toString() || "50");
+      setPointsEnabled(settings.points_enabled !== undefined ? settings.points_enabled : true);
     }
   }, [pointsSettings]);
 
@@ -126,6 +129,7 @@ export default function AdminPointsSettings() {
   const saveSettings = useMutation({
     mutationFn: async () => {
       const settingsValue: any = {
+        points_enabled: pointsEnabled,
         order_value_multiplier: parseFloat(orderValueMultiplier),
         points_to_money_rate: parseFloat(pointsToMoneyRate),
         points_to_coupon_rate: parseFloat(pointsToCouponRate),
@@ -261,7 +265,32 @@ export default function AdminPointsSettings() {
         {isLoading ? (
           <div className="text-center py-12">جاري التحميل...</div>
         ) : (
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>تفعيل/تعطيل نظام النقاط</CardTitle>
+                <CardDescription>التحكم في تشغيل نظام النقاط بالكامل</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <Label htmlFor="points-enabled" className="text-base font-medium">
+                      حالة نظام النقاط
+                    </Label>
+                    <p className="text-sm text-muted-foreground">
+                      {pointsEnabled ? "النظام مفعّل حالياً - يمكن للمستخدمين كسب واستخدام النقاط" : "النظام معطّل حالياً - لن يتمكن المستخدمون من كسب أو استخدام النقاط"}
+                    </p>
+                  </div>
+                  <Switch
+                    id="points-enabled"
+                    checked={pointsEnabled}
+                    onCheckedChange={setPointsEnabled}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -423,6 +452,7 @@ export default function AdminPointsSettings() {
                 </div>
               </CardContent>
             </Card>
+            </div>
           </div>
         )}
 
