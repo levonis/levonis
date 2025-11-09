@@ -41,10 +41,6 @@ const AdminOrders = () => {
         .from('orders')
         .select(`
           *,
-          order_items(
-            *,
-            products(name_ar, image_url)
-          ),
           profiles(full_name, email, username)
         `)
         .order('created_at', { ascending: false });
