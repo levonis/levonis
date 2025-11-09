@@ -24,7 +24,7 @@ const OrderDetail = () => {
   useOrderRealtimeNotifications();
 
   const { data: order, isLoading } = useQuery({
-    queryKey: ['order-detail', orderId],
+    queryKey: ['order-detail', orderId, isAdmin, user?.id],
     queryFn: async () => {
       if (!user || !orderId) return null;
 
@@ -107,9 +107,9 @@ const OrderDetail = () => {
               <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-bold text-foreground mb-2">الطلب غير موجود</h3>
               <p className="text-muted-foreground mb-6">لم نتمكن من العثور على هذا الطلب</p>
-              <Button onClick={() => navigate('/my-orders')}>
+              <Button onClick={() => navigate(isAdmin ? '/admin/orders' : '/my-orders')}>
                 <ArrowRight className="ml-2 h-4 w-4" />
-                العودة إلى طلباتي
+                {isAdmin ? 'العودة إلى لوحة الطلبات' : 'العودة إلى طلباتي'}
               </Button>
             </CardContent>
           </Card>
