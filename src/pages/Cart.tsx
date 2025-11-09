@@ -4,13 +4,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { formatPrice } from '@/lib/utils';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
@@ -19,6 +20,7 @@ const Cart = () => {
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState(false);
+  const [useWalletBalance, setUseWalletBalance] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -32,6 +34,23 @@ const Cart = () => {
       return data;
     },
     enabled: !!user?.id
+  });
+
+  // جلب رصيد المحفظة
+  const { data: wallet } = useQuery({
+    queryKey: ['wallet', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('user_wallets')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!user?.id,
   });
 
   const { data: productOptions } = useQuery({
@@ -74,7 +93,13 @@ const Cart = () => {
   };
   
   const discount = calculateDiscount();
-  const grandTotal = Math.max(0, total - discount + deliveryFee);
+  
+  // حساب المبلغ المستخدم من المحفظة
+  const walletDeduction = useWalletBalance && wallet?.balance 
+    ? Math.min(wallet.balance, total - discount + deliveryFee)
+    : 0;
+  
+  const grandTotal = Math.max(0, total - discount + deliveryFee - walletDeduction);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -239,6 +264,38 @@ const Cart = () => {
         return;
       }
 
+      // إذا تم استخدام المحفظة، خصم المبلغ وتسجيل المعاملة
+      if (useWalletBalance && walletDeduction > 0 && wallet) {
+        // خصم المبلغ من المحفظة
+        const { error: walletUpdateError } = await supabase
+          .from('user_wallets')
+          .update({
+            balance: wallet.balance - walletDeduction,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (walletUpdateError) {
+          console.error('Error updating wallet:', walletUpdateError);
+          toast({
+            title: "تحذير",
+            description: "تم إنشاء الطلب ولكن حدث خطأ في خصم المبلغ من المحفظة",
+            variant: "destructive",
+          });
+        } else {
+          // تسجيل معاملة المحفظة
+          await supabase
+            .from('wallet_transactions')
+            .insert({
+              user_id: user.id,
+              type: 'order_payment',
+              amount: walletDeduction,
+              status: 'completed',
+              admin_notes: `دفع طلب رقم ${order.order_number}`,
+            });
+        }
+      }
+
       // Create order items
       const orderItems = items.map((item) => {
         const isCustomRequest = !!item.custom_request_id;
@@ -363,7 +420,13 @@ const Cart = () => {
         message += `الخصم (${appliedCoupon.code}): -${formatPrice(discount)} دينار عراقي\n`;
       }
       message += `التوصيل: ${formatPrice(deliveryFee)} دينار عراقي\n`;
-      message += `الإجمالي: ${formatPrice(grandTotal)} دينار عراقي`;
+      if (walletDeduction > 0) {
+        message += `الدفع من المحفظة: -${formatPrice(walletDeduction)} دينار عراقي\n`;
+      }
+      message += `الإجمالي${walletDeduction > 0 ? ' المتبقي' : ''}: ${formatPrice(grandTotal)} دينار عراقي`;
+      if (grandTotal === 0 && walletDeduction > 0) {
+        message += ` ✓ تم الدفع بالكامل من المحفظة`;
+      }
 
       // If coupon was used, record it
       if (appliedCoupon && user) {
@@ -697,11 +760,52 @@ const Cart = () => {
                     <span className="font-bold">{formatPrice(deliveryFee)} دينار عراقي</span>
                   </div>
                   
+                  {/* خيار الدفع من المحفظة */}
+                  {wallet && wallet.balance > 0 && (
+                    <div className="py-3 px-4 rounded-lg bg-primary/5 border border-primary/20">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Checkbox
+                            id="useWallet"
+                            checked={useWalletBalance}
+                            onCheckedChange={(checked) => setUseWalletBalance(checked as boolean)}
+                          />
+                          <Label htmlFor="useWallet" className="cursor-pointer flex items-center gap-2">
+                            <Wallet className="h-4 w-4" />
+                            الدفع من المحفظة
+                          </Label>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground flex justify-between">
+                        <span>رصيد المحفظة:</span>
+                        <span className="font-bold text-primary">{formatPrice(wallet.balance)} د.ع</span>
+                      </div>
+                      {useWalletBalance && walletDeduction > 0 && (
+                        <div className="text-xs text-green-600 mt-2 flex justify-between">
+                          <span>سيتم الخصم:</span>
+                          <span className="font-bold">-{formatPrice(walletDeduction)} د.ع</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {walletDeduction > 0 && useWalletBalance && (
+                    <div className="flex justify-between text-green-600">
+                      <span>خصم المحفظة</span>
+                      <span className="font-bold">-{formatPrice(walletDeduction)} دينار عراقي</span>
+                    </div>
+                  )}
+                  
                   <div className="border-t border-border/40 pt-3 mt-3">
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">الإجمالي</span>
                       <span className="text-primary">{formatPrice(grandTotal)} دينار عراقي</span>
                     </div>
+                    {useWalletBalance && walletDeduction > 0 && grandTotal === 0 && (
+                      <p className="text-xs text-green-600 mt-2 text-center">
+                        ✓ تم الدفع بالكامل من المحفظة
+                      </p>
+                    )}
                   </div>
                 </div>
 
