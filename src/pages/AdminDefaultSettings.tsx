@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -35,11 +35,11 @@ const AdminDefaultSettings = () => {
   const [formData, setFormData] = useState<any>(null);
 
   // Initialize form data when settings are loaded
-  useState(() => {
+  useEffect(() => {
     if (settings?.setting_value) {
       setFormData(settings.setting_value);
     }
-  });
+  }, [settings]);
 
   // Update mutation
   const updateMutation = useMutation({
