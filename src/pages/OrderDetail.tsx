@@ -16,7 +16,7 @@ import { useState } from 'react';
 
 const OrderDetail = () => {
   const { orderId } = useParams();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   
@@ -50,8 +50,9 @@ const OrderDetail = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!user && !!orderId
-  });
+-    enabled: !!user && !!orderId
++    enabled: !!orderId && !authLoading && (!!user || isAdmin)
+   });
 
   const handlePrintInvoice = async () => {
     if (!order) return;
@@ -90,7 +91,7 @@ const OrderDetail = () => {
     return statusMap[status] || { variant: 'outline' as const, label: status, color: 'text-muted-foreground' };
   };
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -98,7 +99,7 @@ const OrderDetail = () => {
     );
   }
 
-  if (!order) {
+  if (!order && !isLoading && !authLoading) {
     return (
       <div className="min-h-screen bg-background/95 backdrop-blur-sm">
         <main className="container mx-auto px-4 py-8 pt-24">

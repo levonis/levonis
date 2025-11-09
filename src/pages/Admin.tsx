@@ -1102,7 +1102,12 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative">
+          <Card 
+            className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative cursor-pointer hover:bg-primary/5"
+            role="button"
+            aria-label="عرض الطلبات المعلقة"
+            onClick={() => navigate('/admin/orders?status=pending')}
+          >
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
                 <div className="text-4xl font-black text-amber-500">{stats?.pendingOrders || 0}</div>

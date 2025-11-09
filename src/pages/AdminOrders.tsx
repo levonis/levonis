@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import LevelBadge from '@/components/LevelBadge';
 
 const AdminOrders = () => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editingOrder, setEditingOrder] = useState<any>(null);
@@ -28,6 +28,11 @@ const AdminOrders = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const status = searchParams.get('status');
+    if (status) setStatusFilter(status);
+  }, [searchParams]);
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-orders'],
@@ -47,8 +52,9 @@ const AdminOrders = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: isAdmin
-  });
+-    enabled: isAdmin
++    enabled: isAdmin && !authLoading
+   });
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, values }: { id: string; values: any }) => {
@@ -202,7 +208,7 @@ const AdminOrders = () => {
     return matchesSearch && matchesStatus;
   });
 
-  if (!isAdmin) {
+  if (!authLoading && !isAdmin) {
     navigate('/');
     return null;
   }
