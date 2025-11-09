@@ -348,6 +348,57 @@ export type Database = {
           },
         ]
       }
+      loyalty_levels: {
+        Row: {
+          benefits: Json
+          bonus_points_percentage: number | null
+          color: string
+          created_at: string
+          discount_percentage: number | null
+          display_order: number
+          free_shipping: boolean | null
+          icon: string | null
+          id: string
+          level_key: string
+          min_points: number
+          name_ar: string
+          name_en: string
+          updated_at: string
+        }
+        Insert: {
+          benefits?: Json
+          bonus_points_percentage?: number | null
+          color: string
+          created_at?: string
+          discount_percentage?: number | null
+          display_order: number
+          free_shipping?: boolean | null
+          icon?: string | null
+          id?: string
+          level_key: string
+          min_points?: number
+          name_ar: string
+          name_en: string
+          updated_at?: string
+        }
+        Update: {
+          benefits?: Json
+          bonus_points_percentage?: number | null
+          color?: string
+          created_at?: string
+          discount_percentage?: number | null
+          display_order?: number
+          free_shipping?: boolean | null
+          icon?: string | null
+          id?: string
+          level_key?: string
+          min_points?: number
+          name_ar?: string
+          name_en?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       main_sections: {
         Row: {
           created_at: string
@@ -789,6 +840,7 @@ export type Database = {
           available_points: number
           created_at: string
           id: string
+          level: string | null
           redeemed_points: number
           total_points: number
           updated_at: string
@@ -798,6 +850,7 @@ export type Database = {
           available_points?: number
           created_at?: string
           id?: string
+          level?: string | null
           redeemed_points?: number
           total_points?: number
           updated_at?: string
@@ -807,6 +860,7 @@ export type Database = {
           available_points?: number
           created_at?: string
           id?: string
+          level?: string | null
           redeemed_points?: number
           total_points?: number
           updated_at?: string
@@ -837,6 +891,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_user_level: { Args: { points: number }; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       has_role: {

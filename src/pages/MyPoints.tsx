@@ -9,9 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Coins, Gift, DollarSign, ArrowRight, History } from "lucide-react";
+import { Coins, Gift, DollarSign, ArrowRight, History, Award } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import LoyaltyLevelCard from "@/components/LoyaltyLevelCard";
 
 export default function MyPoints() {
   const { user } = useAuth();
@@ -79,6 +80,20 @@ export default function MyPoints() {
         points_to_coupon_rate: 50
       };
       return settings;
+    },
+  });
+
+  // جلب المستويات
+  const { data: loyaltyLevels, isLoading: loadingLevels } = useQuery({
+    queryKey: ["loyaltyLevels"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("loyalty_levels")
+        .select("*")
+        .order("display_order", { ascending: true });
+      
+      if (error) throw error;
+      return data;
     },
   });
 
@@ -218,7 +233,7 @@ export default function MyPoints() {
         ) : (
           <>
             {/* رصيد النقاط */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
+            <div className="grid md:grid-cols-4 gap-6 mb-8">
               <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -254,14 +269,53 @@ export default function MyPoints() {
                   <p className="text-4xl font-bold">{userPoints?.redeemed_points || 0}</p>
                 </CardContent>
               </Card>
+
+              <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border-yellow-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Award className="h-5 w-5" />
+                    مستواك
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-bold capitalize">
+                    {loyaltyLevels?.find(l => l.level_key === userPoints?.level)?.name_ar || "برونزي"}
+                  </p>
+                </CardContent>
+              </Card>
             </div>
 
-            <Tabs defaultValue="redeem" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
+            <Tabs defaultValue="levels" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="levels">المستويات</TabsTrigger>
                 <TabsTrigger value="redeem">تحويل لكوبون</TabsTrigger>
                 <TabsTrigger value="convert">تحويل لأموال</TabsTrigger>
                 <TabsTrigger value="history">السجل</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="levels" className="space-y-6">
+                {loadingLevels ? (
+                  <div className="text-center py-8">جاري التحميل...</div>
+                ) : loyaltyLevels && loyaltyLevels.length > 0 ? (
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {loyaltyLevels.map((level, index) => (
+                      <LoyaltyLevelCard
+                        key={level.level_key}
+                        level={level as any}
+                        userPoints={userPoints?.total_points || 0}
+                        currentLevel={userPoints?.level || "bronze"}
+                        nextLevel={loyaltyLevels[index + 1] as any}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <Card>
+                    <CardContent className="py-8 text-center text-muted-foreground">
+                      لا توجد مستويات متاحة حالياً
+                    </CardContent>
+                  </Card>
+                )}
+              </TabsContent>
 
               <TabsContent value="redeem" className="space-y-4">
                 <Card>
