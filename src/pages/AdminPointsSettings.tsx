@@ -8,17 +8,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Settings, Save } from "lucide-react";
+import { Settings, Save, Plus, Trash2 } from "lucide-react";
 
 export default function AdminPointsSettings() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [pointsPerOrder, setPointsPerOrder] = useState("10");
-  const [pointsPerReview, setPointsPerReview] = useState("5");
-  const [pointsPerAd, setPointsPerAd] = useState("2");
-  const [pointsPerVerifiedReview, setPointsPerVerifiedReview] = useState("10");
+  const [earningMethods, setEarningMethods] = useState<Array<{
+    key: string;
+    label: string;
+    value: string;
+  }>>([
+    { key: 'points_per_order', label: 'نقاط ثابتة لكل طلب', value: '10' },
+    { key: 'points_per_review', label: 'نقاط لكل تقييم عادي', value: '5' },
+    { key: 'points_per_verified_review', label: 'نقاط لتقييم الطلب المؤكد', value: '10' },
+    { key: 'points_per_ad', label: 'نقاط لكل إعلان', value: '2' },
+  ]);
+  
   const [orderValueMultiplier, setOrderValueMultiplier] = useState("0");
   const [pointsToMoneyRate, setPointsToMoneyRate] = useState("100");
   const [pointsToCouponRate, setPointsToCouponRate] = useState("50");
@@ -64,10 +71,26 @@ export default function AdminPointsSettings() {
   useEffect(() => {
     if (pointsSettings?.setting_value) {
       const settings = pointsSettings.setting_value as any;
-      setPointsPerOrder(settings.points_per_order?.toString() || "10");
-      setPointsPerReview(settings.points_per_review?.toString() || "5");
-      setPointsPerAd(settings.points_per_ad?.toString() || "2");
-      setPointsPerVerifiedReview(settings.points_per_verified_review?.toString() || "10");
+      
+      // تحميل طرق الكسب
+      const methods = [];
+      if (settings.points_per_order !== undefined) {
+        methods.push({ key: 'points_per_order', label: 'نقاط ثابتة لكل طلب', value: settings.points_per_order.toString() });
+      }
+      if (settings.points_per_review !== undefined) {
+        methods.push({ key: 'points_per_review', label: 'نقاط لكل تقييم عادي', value: settings.points_per_review.toString() });
+      }
+      if (settings.points_per_verified_review !== undefined) {
+        methods.push({ key: 'points_per_verified_review', label: 'نقاط لتقييم الطلب المؤكد', value: settings.points_per_verified_review.toString() });
+      }
+      if (settings.points_per_ad !== undefined) {
+        methods.push({ key: 'points_per_ad', label: 'نقاط لكل إعلان', value: settings.points_per_ad.toString() });
+      }
+      
+      if (methods.length > 0) {
+        setEarningMethods(methods);
+      }
+      
       setOrderValueMultiplier(settings.order_value_multiplier?.toString() || "0");
       setPointsToMoneyRate(settings.points_to_money_rate?.toString() || "100");
       setPointsToCouponRate(settings.points_to_coupon_rate?.toString() || "50");
@@ -77,15 +100,16 @@ export default function AdminPointsSettings() {
   // حفظ الإعدادات
   const saveSettings = useMutation({
     mutationFn: async () => {
-      const settingsValue = {
-        points_per_order: parseFloat(pointsPerOrder),
-        points_per_review: parseFloat(pointsPerReview),
-        points_per_ad: parseFloat(pointsPerAd),
-        points_per_verified_review: parseFloat(pointsPerVerifiedReview),
+      const settingsValue: any = {
         order_value_multiplier: parseFloat(orderValueMultiplier),
         points_to_money_rate: parseFloat(pointsToMoneyRate),
         points_to_coupon_rate: parseFloat(pointsToCouponRate),
       };
+      
+      // إضافة طرق الكسب
+      earningMethods.forEach(method => {
+        settingsValue[method.key] = parseFloat(method.value);
+      });
 
       if (pointsSettings) {
         const { error } = await supabase
@@ -115,30 +139,19 @@ export default function AdminPointsSettings() {
   });
 
   const handleSave = () => {
-    const order = parseFloat(pointsPerOrder);
-    const review = parseFloat(pointsPerReview);
-    const ad = parseFloat(pointsPerAd);
-    const verifiedReview = parseFloat(pointsPerVerifiedReview);
+    // التحقق من طرق الكسب
+    for (const method of earningMethods) {
+      const value = parseFloat(method.value);
+      if (isNaN(value) || value < 0) {
+        toast.error(`الرجاء إدخال قيمة صحيحة لـ ${method.label}`);
+        return;
+      }
+    }
+    
     const orderMultiplier = parseFloat(orderValueMultiplier);
     const moneyRate = parseFloat(pointsToMoneyRate);
     const couponRate = parseFloat(pointsToCouponRate);
 
-    if (isNaN(order) || order < 0) {
-      toast.error("الرجاء إدخال عدد نقاط صحيح للطلب");
-      return;
-    }
-    if (isNaN(review) || review < 0) {
-      toast.error("الرجاء إدخال عدد نقاط صحيح للتقييم");
-      return;
-    }
-    if (isNaN(ad) || ad < 0) {
-      toast.error("الرجاء إدخال عدد نقاط صحيح للإعلان");
-      return;
-    }
-    if (isNaN(verifiedReview) || verifiedReview < 0) {
-      toast.error("الرجاء إدخال عدد نقاط صحيح لتقييم الطلب");
-      return;
-    }
     if (isNaN(orderMultiplier) || orderMultiplier < 0) {
       toast.error("الرجاء إدخال معامل صحيح لقيمة الطلب");
       return;
@@ -153,6 +166,20 @@ export default function AdminPointsSettings() {
     }
 
     saveSettings.mutate();
+  };
+  
+  const addEarningMethod = () => {
+    setEarningMethods([...earningMethods, { key: `custom_${Date.now()}`, label: '', value: '0' }]);
+  };
+  
+  const removeEarningMethod = (index: number) => {
+    setEarningMethods(earningMethods.filter((_, i) => i !== index));
+  };
+  
+  const updateEarningMethod = (index: number, field: 'label' | 'value', newValue: string) => {
+    const updated = [...earningMethods];
+    updated[index][field] = newValue;
+    setEarningMethods(updated);
   };
 
   if (!user) return null;
@@ -174,26 +201,47 @@ export default function AdminPointsSettings() {
           <div className="grid md:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>نقاط الكسب الأساسية</CardTitle>
-                <CardDescription>عدد النقاط التي يحصل عليها المستخدم</CardDescription>
+                <CardTitle className="flex items-center justify-between">
+                  <span>طرق كسب النقاط</span>
+                  <Button onClick={addEarningMethod} size="sm" variant="outline">
+                    <Plus className="h-4 w-4 ml-2" />
+                    إضافة طريقة
+                  </Button>
+                </CardTitle>
+                <CardDescription>إدارة طرق كسب النقاط المختلفة</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="pointsPerOrder">نقاط ثابتة لكل طلب</Label>
-                  <Input
-                    id="pointsPerOrder"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={pointsPerOrder}
-                    onChange={(e) => setPointsPerOrder(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    نقاط ثابتة عند تسليم الطلب بنجاح
-                  </p>
-                </div>
+                {earningMethods.map((method, index) => (
+                  <div key={method.key} className="flex gap-2 items-end">
+                    <div className="flex-1 space-y-2">
+                      <Label>الوصف</Label>
+                      <Input
+                        value={method.label}
+                        onChange={(e) => updateEarningMethod(index, 'label', e.target.value)}
+                        placeholder="مثال: نقاط لكل طلب"
+                      />
+                    </div>
+                    <div className="w-32 space-y-2">
+                      <Label>النقاط</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={method.value}
+                        onChange={(e) => updateEarningMethod(index, 'value', e.target.value)}
+                      />
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      onClick={() => removeEarningMethod(index)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
 
-                <div>
+                <div className="pt-4 border-t">
                   <Label htmlFor="orderValueMultiplier">نقاط إضافية حسب قيمة الطلب</Label>
                   <Input
                     id="orderValueMultiplier"
@@ -205,59 +253,6 @@ export default function AdminPointsSettings() {
                   />
                   <p className="text-sm text-muted-foreground mt-1">
                     معامل النقاط حسب قيمة الطلب (مثال: 0.01 = 1 نقطة لكل 100 دينار)
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="pointsPerReview">نقاط لكل تقييم عادي</Label>
-                  <Input
-                    id="pointsPerReview"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={pointsPerReview}
-                    onChange={(e) => setPointsPerReview(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    نقاط عند كتابة تقييم لأي منتج
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>نقاط الكسب المتقدمة</CardTitle>
-                <CardDescription>طرق إضافية لكسب النقاط</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="pointsPerVerifiedReview">نقاط لتقييم الطلب المؤكد</Label>
-                  <Input
-                    id="pointsPerVerifiedReview"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={pointsPerVerifiedReview}
-                    onChange={(e) => setPointsPerVerifiedReview(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    نقاط عند تقييم طلب تم تأكيد استلامه من الإدارة
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="pointsPerAd">نقاط لكل إعلان</Label>
-                  <Input
-                    id="pointsPerAd"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={pointsPerAd}
-                    onChange={(e) => setPointsPerAd(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    نقاط عند مشاهدة إعلان كامل
                   </p>
                 </div>
               </CardContent>
@@ -308,13 +303,12 @@ export default function AdminPointsSettings() {
               <CardContent className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg mb-3">طرق كسب النقاط:</h3>
-                  <p>✓ طلب ناجح = {pointsPerOrder} نقطة ثابتة</p>
+                  {earningMethods.map(method => (
+                    <p key={method.key}>✓ {method.label} = {method.value} نقطة</p>
+                  ))}
                   {parseFloat(orderValueMultiplier) > 0 && (
                     <p>✓ نقاط إضافية = {orderValueMultiplier} × قيمة الطلب</p>
                   )}
-                  <p>✓ تقييم عادي = {pointsPerReview} نقطة</p>
-                  <p>✓ تقييم طلب مؤكد = {pointsPerVerifiedReview} نقطة</p>
-                  <p>✓ مشاهدة إعلان = {pointsPerAd} نقطة</p>
                 </div>
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg mb-3">تحويل النقاط:</h3>

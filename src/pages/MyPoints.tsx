@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Coins, Gift, DollarSign, ArrowRight, History, Award, CheckSquare } from "lucide-react";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import LoyaltyLevelCard from "@/components/LoyaltyLevelCard";
 import DailyTaskCard from "@/components/DailyTaskCard";
 import ReferralCard from "@/components/ReferralCard";
@@ -331,7 +332,7 @@ export default function MyPoints() {
         ) : (
           <>
             {/* رصيد النقاط */}
-            <div className="grid md:grid-cols-4 gap-6 mb-8">
+            <div className="grid md:grid-cols-3 gap-6 mb-8">
               <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -356,18 +357,6 @@ export default function MyPoints() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Gift className="h-5 w-5" />
-                    النقاط المستخدمة
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-4xl font-bold">{userPoints?.redeemed_points || 0}</p>
-                </CardContent>
-              </Card>
-
               <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border-yellow-500/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -384,14 +373,17 @@ export default function MyPoints() {
             </div>
 
             <Tabs defaultValue="tasks" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-6">
-                <TabsTrigger value="tasks">المهام</TabsTrigger>
-                <TabsTrigger value="levels">المستويات</TabsTrigger>
-                <TabsTrigger value="earn">ربح النقاط</TabsTrigger>
-                <TabsTrigger value="redeem">تحويل لكوبون</TabsTrigger>
-                <TabsTrigger value="convert">تحويل لأموال</TabsTrigger>
-                <TabsTrigger value="history">السجل</TabsTrigger>
-              </TabsList>
+              <ScrollArea className="w-full whitespace-nowrap">
+                <TabsList className="inline-flex w-auto min-w-full p-1">
+                  <TabsTrigger value="tasks" className="text-xs sm:text-sm px-3 sm:px-4">المهام</TabsTrigger>
+                  <TabsTrigger value="levels" className="text-xs sm:text-sm px-3 sm:px-4">المستويات</TabsTrigger>
+                  <TabsTrigger value="earn" className="text-xs sm:text-sm px-3 sm:px-4">ربح النقاط</TabsTrigger>
+                  <TabsTrigger value="redeem" className="text-xs sm:text-sm px-3 sm:px-4">كوبون</TabsTrigger>
+                  <TabsTrigger value="convert" className="text-xs sm:text-sm px-3 sm:px-4">أموال</TabsTrigger>
+                  <TabsTrigger value="history" className="text-xs sm:text-sm px-3 sm:px-4">السجل</TabsTrigger>
+                </TabsList>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
 
               <TabsContent value="tasks" className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
