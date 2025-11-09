@@ -9,10 +9,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Coins, Gift, DollarSign, ArrowRight, History, Award } from "lucide-react";
+import { Coins, Gift, DollarSign, ArrowRight, History, Award, CheckSquare } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import LoyaltyLevelCard from "@/components/LoyaltyLevelCard";
+import DailyTaskCard from "@/components/DailyTaskCard";
+import ReferralCard from "@/components/ReferralCard";
 
 export default function MyPoints() {
   const { user } = useAuth();
@@ -20,6 +22,7 @@ export default function MyPoints() {
   const queryClient = useQueryClient();
   const [redeemAmount, setRedeemAmount] = useState("");
   const [convertAmount, setConvertAmount] = useState("");
+  const [completingTask, setCompletingTask] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -95,6 +98,54 @@ export default function MyPoints() {
       if (error) throw error;
       return data;
     },
+  });
+
+  // جلب المهام اليومية
+  const { data: dailyTasks, isLoading: loadingTasks } = useQuery({
+    queryKey: ["dailyTasks"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_tasks")
+        .select("*")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // جلب المهام المكتملة اليوم
+  const { data: completedTasks, refetch: refetchCompletedTasks } = useQuery({
+    queryKey: ["completedTasks", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("user_task_completions")
+        .select("*")
+        .eq("user_id", user.id)
+        .gte("completed_at", new Date().toISOString().split('T')[0]);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // جلب كود الدعوة
+  const { data: referralData, refetch: refetchReferral } = useQuery({
+    queryKey: ["referralCode", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("user_referrals")
+        .select("referral_code, status, points_awarded")
+        .eq("referrer_user_id", user.id);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
   });
 
   // تحويل النقاط إلى كوبون
@@ -216,6 +267,57 @@ export default function MyPoints() {
     convertToMoney.mutate(points);
   };
 
+  // إكمال مهمة يومية
+  const handleCompleteTask = async (taskKey: string) => {
+    if (!user?.id) return;
+    
+    setCompletingTask(taskKey);
+    try {
+      const { data, error } = await supabase.rpc("complete_daily_task", {
+        task_key_param: taskKey,
+      });
+
+      if (error) throw error;
+
+      const result = data as any;
+      if (result.success) {
+        toast.success(`تم إكمال المهمة! حصلت على ${result.points_earned} نقطة`);
+        queryClient.invalidateQueries({ queryKey: ["userPoints"] });
+        queryClient.invalidateQueries({ queryKey: ["pointsTransactions"] });
+        refetchCompletedTasks();
+      } else {
+        toast.error(result.error || "حدث خطأ");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "حدث خطأ أثناء إكمال المهمة");
+    } finally {
+      setCompletingTask(null);
+    }
+  };
+
+  // إنشاء كود دعوة
+  const handleGenerateReferralCode = async () => {
+    if (!user?.id) return;
+
+    try {
+      const { data: codeData } = await supabase.rpc("generate_referral_code");
+      
+      const { error } = await supabase
+        .from("user_referrals")
+        .insert({
+          referrer_user_id: user.id,
+          referral_code: codeData as string,
+        });
+
+      if (error) throw error;
+
+      toast.success("تم إنشاء كود الدعوة بنجاح!");
+      refetchReferral();
+    } catch (error: any) {
+      toast.error(error.message || "حدث خطأ أثناء إنشاء كود الدعوة");
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -285,14 +387,60 @@ export default function MyPoints() {
               </Card>
             </div>
 
-            <Tabs defaultValue="levels" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-5">
+            <Tabs defaultValue="tasks" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="tasks">المهام</TabsTrigger>
                 <TabsTrigger value="levels">المستويات</TabsTrigger>
                 <TabsTrigger value="earn">ربح النقاط</TabsTrigger>
                 <TabsTrigger value="redeem">تحويل لكوبون</TabsTrigger>
                 <TabsTrigger value="convert">تحويل لأموال</TabsTrigger>
                 <TabsTrigger value="history">السجل</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="tasks" className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <CheckSquare className="h-5 w-5 text-primary" />
+                      المهام اليومية
+                    </h3>
+                    {loadingTasks ? (
+                      <div className="text-center py-8">جاري التحميل...</div>
+                    ) : dailyTasks && dailyTasks.length > 0 ? (
+                      <div className="space-y-3">
+                        {dailyTasks.map((task) => (
+                          <DailyTaskCard
+                            key={task.task_key}
+                            task={task}
+                            isCompleted={completedTasks?.some(ct => ct.task_key === task.task_key) || false}
+                            onComplete={handleCompleteTask}
+                            isLoading={completingTask === task.task_key}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <Card>
+                        <CardContent className="py-8 text-center text-muted-foreground">
+                          لا توجد مهام متاحة حالياً
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="text-lg font-semibold flex items-center gap-2 mb-4">
+                      <Gift className="h-5 w-5 text-primary" />
+                      برنامج الدعوات
+                    </h3>
+                    <ReferralCard
+                      referralCode={referralData?.[0]?.referral_code || ""}
+                      referralCount={referralData?.filter(r => r.status === 'completed').length || 0}
+                      totalPointsEarned={referralData?.reduce((sum, r) => sum + (r.points_awarded || 0), 0) || 0}
+                      onGenerateCode={handleGenerateReferralCode}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
 
               <TabsContent value="levels" className="space-y-6">
                 {loadingLevels ? (

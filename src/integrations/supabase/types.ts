@@ -295,6 +295,48 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_tasks: {
+        Row: {
+          created_at: string
+          description_ar: string
+          display_order: number
+          icon: string
+          id: string
+          is_active: boolean
+          points_reward: number
+          task_key: string
+          task_type: string
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar: string
+          display_order?: number
+          icon: string
+          id?: string
+          is_active?: boolean
+          points_reward?: number
+          task_key: string
+          task_type: string
+          title_ar: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string
+          display_order?: number
+          icon?: string
+          id?: string
+          is_active?: boolean
+          points_reward?: number
+          task_key?: string
+          task_type?: string
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       default_settings: {
         Row: {
           created_at: string
@@ -890,6 +932,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_referrals: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          points_awarded: number | null
+          referral_code: string
+          referred_user_id: string | null
+          referrer_user_id: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          points_awarded?: number | null
+          referral_code: string
+          referred_user_id?: string | null
+          referrer_user_id: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          points_awarded?: number | null
+          referral_code?: string
+          referred_user_id?: string | null
+          referrer_user_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -908,6 +983,33 @@ export type Database = {
         }
         Relationships: []
       }
+      user_task_completions: {
+        Row: {
+          completed_at: string
+          created_at: string
+          id: string
+          points_earned: number
+          task_key: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          points_earned?: number
+          task_key: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          id?: string
+          points_earned?: number
+          task_key?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -918,7 +1020,9 @@ export type Database = {
         Args: { username_to_check: string }
         Returns: boolean
       }
+      complete_daily_task: { Args: { task_key_param: string }; Returns: Json }
       generate_order_number: { Args: never; Returns: string }
+      generate_referral_code: { Args: never; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       has_role: {
         Args: {

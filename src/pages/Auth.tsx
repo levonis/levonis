@@ -57,6 +57,7 @@ const Auth = () => {
   const [username, setUsername] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [governorate, setGovernorate] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const navigate = useNavigate();
@@ -65,6 +66,13 @@ const Auth = () => {
   useEffect(() => {
     if (user) {
       navigate('/');
+    }
+    
+    // التحقق من كود الدعوة في URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const refCode = urlParams.get('ref');
+    if (refCode) {
+      setReferralCode(refCode);
     }
   }, [user, navigate]);
 
@@ -151,6 +159,49 @@ const Auth = () => {
           toast.error(error.message);
         }
         return;
+      }
+
+      // معالجة كود الدعوة إذا كان موجوداً
+      if (referralCode) {
+        try {
+          const { data: { user: newUser } } = await supabase.auth.getUser();
+          
+          if (newUser) {
+            // التحقق من صحة كود الدعوة
+            const { data: referralData } = await supabase
+              .from('user_referrals')
+              .select('referrer_user_id')
+              .eq('referral_code', referralCode)
+              .single();
+
+            if (referralData) {
+              // تحديث حالة الدعوة
+              await supabase
+                .from('user_referrals')
+                .update({
+                  referred_user_id: newUser.id,
+                  status: 'completed',
+                  completed_at: new Date().toISOString(),
+                })
+                .eq('referral_code', referralCode);
+
+              // منح النقاط للمُحيل
+              const { data: taskData } = await supabase
+                .from('daily_tasks')
+                .select('points_reward')
+                .eq('task_key', 'invite_friend')
+                .single();
+
+              if (taskData) {
+                await supabase.rpc('complete_daily_task', {
+                  task_key_param: 'invite_friend',
+                });
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error processing referral:', error);
+        }
       }
 
       toast.success('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن');
@@ -394,6 +445,21 @@ const Auth = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="signup-referral">كود الدعوة (اختياري)</Label>
+                  <Input
+                    id="signup-referral"
+                    type="text"
+                    placeholder="REF-XXXXXXXX"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    disabled={loading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    إذا كان لديك كود دعوة من صديق، أدخله هنا للحصول على مكافآت إضافية
+                  </p>
                 </div>
 
                 <div className="space-y-2">
