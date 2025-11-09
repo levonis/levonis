@@ -332,13 +332,23 @@ const OrderDetail = () => {
                   key={item.id}
                   className="flex gap-4 p-4 border border-border/50 rounded-xl bg-card hover:border-primary/30 transition-colors"
                 >
-                  {(item.products?.image_url || (item.products?.images && item.products.images[0])) && (
-                    <img
-                      src={(item.products?.images && item.products.images[0]) || item.products?.image_url}
-                      alt={item.product_name_ar}
-                      className="w-20 h-20 object-cover rounded-lg border border-border/40"
-                    />
-                  )}
+                  <div className="flex gap-3">
+                    {(item.products?.image_url || (item.products?.images && item.products.images[0])) && (
+                      <img
+                        src={(item.products?.images && item.products.images[0]) || item.products?.image_url}
+                        alt={item.product_name_ar}
+                        className="w-20 h-20 object-cover rounded-lg border border-border/40"
+                      />
+                    )}
+                    {item.color_image_url && (
+                      <img
+                        src={item.color_image_url}
+                        alt={`لون ${item.selected_color}`}
+                        className="w-20 h-20 object-cover rounded-lg border border-primary/40"
+                        title={`لون: ${item.selected_color}`}
+                      />
+                    )}
+                  </div>
                   <div className="flex-1">
                     <div className="font-bold text-lg text-foreground mb-1">{item.product_name_ar}</div>
                     <div className="space-y-1 text-sm text-muted-foreground">
@@ -346,7 +356,12 @@ const OrderDetail = () => {
                         <div>الخيار: <span className="text-foreground font-medium">{item.selected_option}</span></div>
                       )}
                       {item.selected_color && (
-                        <div>اللون: <span className="text-foreground font-medium">{item.selected_color}</span></div>
+                        <div className="flex items-center gap-2">
+                          اللون: <span className="text-foreground font-medium">{item.selected_color}</span>
+                        </div>
+                      )}
+                      {item.shipping_option_name_ar && (
+                        <div>نوع الشحن: <span className="text-foreground font-medium">{item.shipping_option_name_ar}</span></div>
                       )}
                       <div>الكمية: <span className="text-foreground font-medium">{item.quantity}</span></div>
                     </div>

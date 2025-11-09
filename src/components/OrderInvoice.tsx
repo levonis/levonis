@@ -111,13 +111,27 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
             {order.order_items?.map((item: any, index: number) => (
               <tr key={item.id} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
                 <td className="p-3 border-b">
-                  <div className="font-medium">{item.product_name_ar}</div>
-                  {item.selected_option && (
-                    <div className="text-sm text-gray-600">الخيار: {item.selected_option}</div>
-                  )}
-                  {item.selected_color && (
-                    <div className="text-sm text-gray-600">اللون: {item.selected_color}</div>
-                  )}
+                  <div className="flex gap-3 items-start">
+                    {item.color_image_url && (
+                      <img
+                        src={item.color_image_url}
+                        alt={`لون ${item.selected_color}`}
+                        className="w-12 h-12 object-cover rounded border border-gray-300"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="font-medium">{item.product_name_ar}</div>
+                      {item.selected_option && (
+                        <div className="text-sm text-gray-600">الخيار: {item.selected_option}</div>
+                      )}
+                      {item.selected_color && (
+                        <div className="text-sm text-gray-600">اللون: {item.selected_color}</div>
+                      )}
+                      {item.shipping_option_name_ar && (
+                        <div className="text-sm text-gray-600">نوع الشحن: {item.shipping_option_name_ar}</div>
+                      )}
+                    </div>
+                  </div>
                 </td>
                 <td className="p-3 border-b text-center">{item.quantity}</td>
                 <td className="p-3 border-b text-center">

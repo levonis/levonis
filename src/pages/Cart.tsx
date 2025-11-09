@@ -328,6 +328,9 @@ const Cart = () => {
           unit_price: itemPrice,
           total_price: itemPrice * item.quantity,
           selected_color: itemColor || null,
+          color_image_url: (item as any).color_image_url || null,
+          selected_option: itemOption?.name_ar || null,
+          shipping_option_name_ar: (item as any).shipping_option_name_ar || null,
           product_name: isCustomRequest 
             ? item.custom_product_requests?.product_name || ''
             : item.products?.name || '',

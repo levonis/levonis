@@ -518,6 +518,7 @@ export type Database = {
       }
       order_items: {
         Row: {
+          color_image_url: string | null
           created_at: string
           id: string
           order_id: string
@@ -534,6 +535,7 @@ export type Database = {
           unit_price: number
         }
         Insert: {
+          color_image_url?: string | null
           created_at?: string
           id?: string
           order_id: string
@@ -550,6 +552,7 @@ export type Database = {
           unit_price: number
         }
         Update: {
+          color_image_url?: string | null
           created_at?: string
           id?: string
           order_id?: string
