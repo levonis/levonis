@@ -40,6 +40,24 @@ const TopBar = () => {
     refetchInterval: 30000,
   });
 
+  const { data: pointsSettings } = useQuery({
+    queryKey: ['points-settings-status'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('default_settings')
+        .select('setting_value')
+        .eq('setting_key', 'points_settings')
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data?.setting_value as any;
+    },
+    refetchInterval: 60000,
+  });
+
+  const pointsStatus = pointsSettings?.points_status || 'active';
+  const showPointsMenu = pointsStatus === 'active';
+
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -168,10 +186,12 @@ const TopBar = () => {
                     <Heart className="ml-2 h-4 w-4" />
                     <span>المفضلة</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/my-points')}>
-                    <Coins className="ml-2 h-4 w-4" />
-                    <span>النقاط</span>
-                  </DropdownMenuItem>
+                  {showPointsMenu && (
+                    <DropdownMenuItem onClick={() => navigate('/my-points')}>
+                      <Coins className="ml-2 h-4 w-4" />
+                      <span>النقاط</span>
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={() => navigate('/notifications')}>
                     <Bell className="ml-2 h-4 w-4" />
                     <span>الإشعارات</span>
