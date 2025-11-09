@@ -615,15 +615,6 @@ const Admin = () => {
       if (productInfo.description) {
         (form.querySelector('#description') as HTMLTextAreaElement).value = productInfo.description;
       }
-      if (productInfo.price) {
-        (form.querySelector('#price') as HTMLInputElement).value = productInfo.price.toString();
-      }
-      if (productInfo.original_price) {
-        (form.querySelector('#original_price') as HTMLInputElement).value = productInfo.original_price.toString();
-      }
-      if (productInfo.currency) {
-        (form.querySelector('#currency') as HTMLInputElement).value = productInfo.currency;
-      }
 
       // Set images
       if (productInfo.images && Array.isArray(productInfo.images) && productInfo.images.length > 0) {

@@ -31,14 +31,36 @@ serve(async (req) => {
     const html = await pageResponse.text();
     console.log('Page fetched successfully, length:', html.length);
 
-    // Extract text content from HTML (simple extraction)
-    const textContent = html
+    // Extract text content from HTML with better content targeting
+    let textContent = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '') // Remove headers
+      .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '') // Remove footers
+      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '') // Remove navigation
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
-      .trim()
-      .substring(0, 15000); // Limit to first 15k chars to stay within token limits
+      .trim();
+    
+    // Prioritize main content area if it exists
+    const mainMatch = html.match(/<main[^>]*>([\s\S]*?)<\/main>/i);
+    const articleMatch = html.match(/<article[^>]*>([\s\S]*?)<\/article>/i);
+    const productMatch = html.match(/<div[^>]*class="[^"]*product[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+    
+    if (mainMatch || articleMatch || productMatch) {
+      const matchContent = (mainMatch || articleMatch || productMatch)!;
+      const priorityContent = matchContent[1];
+      const cleanPriority = priorityContent
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      textContent = cleanPriority + ' ' + textContent;
+    }
+    
+    // Increase limit to capture more content
+    textContent = textContent.substring(0, 40000);
 
     console.log('Extracted text content length:', textContent.length);
 
@@ -59,16 +81,23 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'أنت مساعد متخصص في استخراج معلومات المنتجات من صفحات الويب. قم باستخراج جميع التفاصيل المتاحة بدقة.'
+            content: 'أنت مساعد متخصص في استخراج معلومات المنتجات من صفحات الويب. قم بقراءة المحتوى بدقة واستخراج جميع التفاصيل المتعلقة بالمنتج: الاسم، الوصف، المميزات، الألوان، والصور. لا تستخرج معلومات السعر.'
           },
           {
             role: 'user',
-            content: `استخرج معلومات المنتج التالية من محتوى الصفحة. إذا لم تكن متأكداً من معلومة معينة، اتركها فارغة.
+            content: `اقرأ محتوى الصفحة التالي بعناية واستخرج معلومات المنتج كاملة:
 
 محتوى الصفحة:
 ${textContent}
 
-قم باستخراج المعلومات بدقة وإرجاعها.`
+استخرج:
+1. اسم المنتج بالعربية والإنجليزية
+2. وصف تفصيلي شامل بالعربية والإنجليزية
+3. جميع المميزات والخصائص
+4. الألوان المتوفرة مع أسمائها
+5. روابط جميع الصور المتاحة
+
+ملاحظة مهمة: لا تستخرج السعر أو العملة.`
           }
         ],
         tools: [
@@ -82,7 +111,7 @@ ${textContent}
                 properties: {
                   name_ar: { 
                     type: "string", 
-                    description: "اسم المنتج بالعربية" 
+                    description: "اسم المنتج بالعربية - يجب أن يكون واضحاً ومحدداً" 
                   },
                   name: { 
                     type: "string", 
@@ -90,51 +119,39 @@ ${textContent}
                   },
                   description_ar: { 
                     type: "string", 
-                    description: "وصف تفصيلي للمنتج بالعربية" 
+                    description: "وصف تفصيلي وشامل للمنتج بالعربية يتضمن جميع المعلومات المهمة" 
                   },
                   description: { 
                     type: "string", 
-                    description: "وصف تفصيلي للمنتج بالإنجليزية" 
-                  },
-                  price: { 
-                    type: "number", 
-                    description: "السعر الحالي للمنتج (رقم فقط بدون رمز العملة)" 
-                  },
-                  original_price: { 
-                    type: "number", 
-                    description: "السعر الأصلي قبل الخصم إن وجد" 
-                  },
-                  currency: { 
-                    type: "string", 
-                    description: "العملة المستخدمة (مثل: دولار، ريال، دينار)" 
+                    description: "وصف تفصيلي وشامل للمنتج بالإنجليزية" 
                   },
                   images: {
                     type: "array",
                     items: { type: "string" },
-                    description: "روابط صور المنتج"
+                    description: "جميع روابط صور المنتج المتاحة في الصفحة"
                   },
                   colors: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        name: { type: "string" },
-                        name_ar: { type: "string" },
-                        hex_code: { type: "string" }
+                        name: { type: "string", description: "اسم اللون بالإنجليزية" },
+                        name_ar: { type: "string", description: "اسم اللون بالعربية" },
+                        hex_code: { type: "string", description: "كود اللون hex إن وجد" }
                       }
                     },
-                    description: "الألوان المتوفرة للمنتج"
+                    description: "جميع الألوان المتوفرة للمنتج"
                   },
                   features: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        text: { type: "string" },
-                        text_ar: { type: "string" }
+                        text: { type: "string", description: "نص الميزة بالإنجليزية" },
+                        text_ar: { type: "string", description: "نص الميزة بالعربية" }
                       }
                     },
-                    description: "مميزات المنتج"
+                    description: "جميع مميزات وخصائص المنتج المذكورة في الصفحة"
                   }
                 },
                 required: [],
