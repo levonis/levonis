@@ -706,6 +706,8 @@ export type Database = {
       }
       product_options: {
         Row: {
+          available_for_direct_sale: boolean | null
+          available_for_pre_order: boolean | null
           created_at: string
           id: string
           image_url: string | null
@@ -716,6 +718,8 @@ export type Database = {
           product_id: string
         }
         Insert: {
+          available_for_direct_sale?: boolean | null
+          available_for_pre_order?: boolean | null
           created_at?: string
           id?: string
           image_url?: string | null
@@ -726,6 +730,8 @@ export type Database = {
           product_id: string
         }
         Update: {
+          available_for_direct_sale?: boolean | null
+          available_for_pre_order?: boolean | null
           created_at?: string
           id?: string
           image_url?: string | null

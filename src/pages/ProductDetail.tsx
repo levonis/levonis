@@ -522,44 +522,57 @@ const ProductDetail = () => {
                     }}
                   >
                     <div className="space-y-3">
-                      {productOptions.map((option: any) => (
-                        <label
-                          key={option.id}
-                          htmlFor={`option-${option.id}`}
-                          className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all cursor-pointer ${
-                            selectedOption === option.id
-                              ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                              : 'border-border hover:border-primary/50 hover:bg-accent/5'
-                          } ${!option.in_stock ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        >
-                          <div className="flex items-center gap-3 flex-1">
-                            <RadioGroupItem 
-                              value={option.id} 
-                              id={`option-${option.id}`}
-                              disabled={!option.in_stock}
-                              className="cursor-pointer"
-                            />
-                            <div className="flex-1 cursor-pointer">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-foreground">{option.name_ar}</span>
-                                {!option.in_stock && (
-                                  <Badge variant="destructive" className="text-xs">غير متوفر</Badge>
+                      {productOptions.map((option: any) => {
+                        // Check availability based on product type
+                        const isOptionAvailable = product.has_in_stock 
+                          ? (option.available_for_direct_sale ?? true)
+                          : product.has_pre_order 
+                            ? (option.available_for_pre_order ?? false)
+                            : false;
+                        
+                        const isOptionDisabled = !isOptionAvailable || !option.in_stock;
+                        
+                        return (
+                          <label
+                            key={option.id}
+                            htmlFor={`option-${option.id}`}
+                            className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
+                              isOptionDisabled ? 'cursor-not-allowed' : 'cursor-pointer'
+                            } ${
+                              selectedOption === option.id
+                                ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                                : 'border-border hover:border-primary/50 hover:bg-accent/5'
+                            } ${isOptionDisabled ? 'opacity-40 bg-muted/30' : ''}`}
+                          >
+                            <div className="flex items-center gap-3 flex-1">
+                              <RadioGroupItem 
+                                value={option.id} 
+                                id={`option-${option.id}`}
+                                disabled={isOptionDisabled}
+                                className="cursor-pointer"
+                              />
+                              <div className="flex-1 cursor-pointer">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-foreground">{option.name_ar}</span>
+                                  {isOptionDisabled && (
+                                    <Badge variant="destructive" className="text-xs">غير متوفر</Badge>
+                                  )}
+                                </div>
+                                {option.name !== option.name_ar && (
+                                  <span className="text-sm text-muted-foreground">{option.name}</span>
                                 )}
                               </div>
-                              {option.name !== option.name_ar && (
-                                <span className="text-sm text-muted-foreground">{option.name}</span>
+                            </div>
+                            <div className="text-left pointer-events-none">
+                              {option.price_adjustment !== 0 && (
+                                <span className={`font-bold ${option.price_adjustment > 0 ? 'text-primary' : 'text-green-600'}`}>
+                                  {option.price_adjustment > 0 ? '+' : ''}{formatPrice(Number(option.price_adjustment))} {currency}
+                                </span>
                               )}
                             </div>
-                          </div>
-                          <div className="text-left pointer-events-none">
-                            {option.price_adjustment !== 0 && (
-                              <span className={`font-bold ${option.price_adjustment > 0 ? 'text-primary' : 'text-green-600'}`}>
-                                {option.price_adjustment > 0 ? '+' : ''}{formatPrice(Number(option.price_adjustment))} {currency}
-                              </span>
-                            )}
-                          </div>
-                        </label>
-                      ))}
+                          </label>
+                        );
+                      })}
                     </div>
                   </RadioGroup>
                 </div>
@@ -571,8 +584,16 @@ const ProductDetail = () => {
                   <Label className="text-sm font-bold text-foreground mb-3 block">الألوان المتاحة</Label>
                   <div className="flex flex-wrap gap-2">
                     {product.colors.map((color: any, index: number) => {
-                      // اللون متاح إذا كان المنتج طلب مسبق، أو إذا كان متاحاً في المخزون ولم يتم تحديد أنه غير متوفر
-                      const isColorAvailable = product.has_pre_order || (product.has_in_stock && color.in_stock !== false);
+                      // Check color availability based on product type and color settings
+                      const isColorAvailableForProductType = product.has_in_stock 
+                        ? (color.available_for_direct_sale ?? true)
+                        : product.has_pre_order 
+                          ? (color.available_for_pre_order ?? false)
+                          : false;
+                      
+                      const isColorInStock = color.in_stock !== false;
+                      const isColorAvailable = isColorAvailableForProductType && isColorInStock;
+                      
                       return (
                         <button
                           key={index}
@@ -594,7 +615,7 @@ const ProductDetail = () => {
                             selectedColor === color.name_ar
                               ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
                               : 'border-border hover:border-primary/50'
-                          } ${!isColorAvailable ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
+                          } ${!isColorAvailable ? 'opacity-40 bg-muted/30 cursor-not-allowed' : 'cursor-pointer'}`}
                         >
                           <div
                             className="w-5 h-5 rounded-full border-2 border-border shadow-sm"

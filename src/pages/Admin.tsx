@@ -75,6 +75,8 @@ const Admin = () => {
     price_adjustment: number;
     in_stock: boolean;
     image_url?: string;
+    available_for_direct_sale?: boolean;
+    available_for_pre_order?: boolean;
   }>>([]);
   const [productColors, setProductColors] = useState<Array<{
     name: string;
@@ -83,6 +85,8 @@ const Admin = () => {
     price?: number;
     image_url?: string;
     in_stock?: boolean;
+    available_for_direct_sale?: boolean;
+    available_for_pre_order?: boolean;
   }>>([]);
   const [productFeatures, setProductFeatures] = useState<Array<{
     text_ar: string;
@@ -155,7 +159,9 @@ const Admin = () => {
                   name_ar: opt.name_ar,
                   price_adjustment: Number(opt.price_adjustment),
                   in_stock: opt.in_stock,
-                  image_url: opt.image_url || undefined
+                  image_url: opt.image_url || undefined,
+                  available_for_direct_sale: opt.available_for_direct_sale ?? true,
+                  available_for_pre_order: opt.available_for_pre_order ?? false
                 }))
               );
             }
@@ -710,7 +716,9 @@ const Admin = () => {
           name_ar: opt.name_ar,
           price_adjustment: opt.price_adjustment,
           in_stock: opt.in_stock,
-          image_url: opt.image_url || null
+          image_url: opt.image_url || null,
+          available_for_direct_sale: opt.available_for_direct_sale ?? true,
+          available_for_pre_order: opt.available_for_pre_order ?? false
         }));
 
         const { error: insertOptionsError } = await supabase
@@ -745,6 +753,8 @@ const Admin = () => {
     setProductOptions([...productOptions, {
       name: '',
       name_ar: '',
+      available_for_direct_sale: true,
+      available_for_pre_order: false,
       price_adjustment: 0,
       in_stock: true,
       image_url: undefined
@@ -765,6 +775,8 @@ const Admin = () => {
     setProductColors([...productColors, {
       name: '',
       name_ar: '',
+      available_for_direct_sale: true,
+      available_for_pre_order: false,
       hex_code: '#000000',
       price: undefined,
       image_url: undefined,
@@ -910,7 +922,9 @@ const Admin = () => {
             name_ar: opt.name_ar,
             price_adjustment: opt.price_adjustment,
             in_stock: opt.in_stock,
-            image_url: opt.image_url || null
+            image_url: opt.image_url || null,
+            available_for_direct_sale: opt.available_for_direct_sale ?? true,
+            available_for_pre_order: opt.available_for_pre_order ?? false
           }));
 
         if (optionsToInsert.length > 0) {
@@ -1881,7 +1895,7 @@ const Admin = () => {
                                 </div>
                               </div>
 
-                              <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-3">
                                 <div className="space-y-1">
                                   <Label className="text-xs">فرق السعر (+ أو -)</Label>
                                   <Input
@@ -1896,8 +1910,44 @@ const Admin = () => {
                                     أدخل رقم موجب للإضافة أو سالب للخصم
                                   </p>
                                 </div>
+                                
+                                <div className="space-y-2">
+                                  <Label className="text-xs">التوفر</Label>
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        id={`option-direct-sale-${index}`}
+                                        checked={option.available_for_direct_sale ?? true}
+                                        onChange={(e) => updateProductOption(index, 'available_for_direct_sale', e.target.checked)}
+                                        className="rounded"
+                                      />
+                                      <Label htmlFor={`option-direct-sale-${index}`} className="text-sm cursor-pointer">
+                                        متوفر للبيع المباشر
+                                      </Label>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="checkbox"
+                                        id={`option-pre-order-${index}`}
+                                        checked={option.available_for_pre_order ?? false}
+                                        onChange={(e) => updateProductOption(index, 'available_for_pre_order', e.target.checked)}
+                                        className="rounded"
+                                      />
+                                      <Label htmlFor={`option-pre-order-${index}`} className="text-sm cursor-pointer">
+                                        متوفر للطلب المسبق
+                                      </Label>
+                                    </div>
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">
+                                    {!option.available_for_direct_sale && !option.available_for_pre_order 
+                                      ? "⚠️ الخيار معطل ولن يمكن إضافته للسلة"
+                                      : "الخيار متاح للعملاء"}
+                                  </p>
+                                </div>
+                                
                                 <div className="space-y-1">
-                                  <Label className="text-xs">الحالة</Label>
+                                  <Label className="text-xs">حالة المخزون</Label>
                                   <div className="flex items-center gap-2 h-9">
                                     <input
                                       type="checkbox"
@@ -1905,7 +1955,7 @@ const Admin = () => {
                                       onChange={(e) => updateProductOption(index, 'in_stock', e.target.checked)}
                                       className="rounded"
                                     />
-                                    <span className="text-sm">متاح</span>
+                                    <span className="text-sm">متاح في المخزون</span>
                                   </div>
                                 </div>
                               </div>
@@ -2108,6 +2158,41 @@ const Admin = () => {
                                   )}
                                    <p className="text-xs text-muted-foreground">
                                      صورة خاصة تظهر عند اختيار هذا اللون
+                                   </p>
+                                 </div>
+                                 
+                                 <div className="space-y-2 pt-2">
+                                   <Label className="text-xs">التوفر</Label>
+                                   <div className="flex flex-col gap-2">
+                                     <div className="flex items-center gap-2">
+                                       <input
+                                         type="checkbox"
+                                         id={`color-direct-sale-${index}`}
+                                         checked={color.available_for_direct_sale ?? true}
+                                         onChange={(e) => updateProductColor(index, 'available_for_direct_sale', e.target.checked)}
+                                         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                       />
+                                       <Label htmlFor={`color-direct-sale-${index}`} className="text-sm cursor-pointer">
+                                         متوفر للبيع المباشر
+                                       </Label>
+                                     </div>
+                                     <div className="flex items-center gap-2">
+                                       <input
+                                         type="checkbox"
+                                         id={`color-pre-order-${index}`}
+                                         checked={color.available_for_pre_order ?? false}
+                                         onChange={(e) => updateProductColor(index, 'available_for_pre_order', e.target.checked)}
+                                         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                       />
+                                       <Label htmlFor={`color-pre-order-${index}`} className="text-sm cursor-pointer">
+                                         متوفر للطلب المسبق
+                                       </Label>
+                                     </div>
+                                   </div>
+                                   <p className="text-xs text-muted-foreground">
+                                     {!color.available_for_direct_sale && !color.available_for_pre_order 
+                                       ? "⚠️ اللون معطل ولن يمكن إضافته للسلة"
+                                       : "اللون متاح للعملاء"}
                                    </p>
                                  </div>
                                  
