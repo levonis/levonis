@@ -189,7 +189,15 @@ const Notifications = () => {
                     <Button
                       variant="link"
                       className="mt-2 p-0 h-auto"
-                      onClick={() => navigate('/my-custom-requests')}
+                      onClick={() => {
+                        const text = `${notification.title ?? ''} ${notification.message ?? ''}`;
+                        const isCustom = text.includes('المخصص');
+                        if (!isCustom && notification.related_id) {
+                          navigate(`/order/${notification.related_id}`);
+                        } else {
+                          navigate('/my-custom-requests');
+                        }
+                      }}
                     >
                       عرض التفاصيل
                     </Button>
