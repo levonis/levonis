@@ -55,7 +55,7 @@ const MyOrders = () => {
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
 
-  if (isLoading) {
+  if (!user || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

@@ -23,6 +23,8 @@ const OrderDetail = () => {
   // Enable realtime notifications
   useOrderRealtimeNotifications();
 
+  const canQuery = !!orderId && !authLoading && (!!user || isAdmin);
+
   const { data: order, isLoading } = useQuery({
     queryKey: ['order-detail', orderId, isAdmin, user?.id],
     queryFn: async () => {
@@ -51,7 +53,7 @@ const OrderDetail = () => {
       if (error) throw error;
       return data;
     },
-    enabled: !!orderId && !authLoading && (!!user || isAdmin)
+    enabled: canQuery
   });
 
   const handlePrintInvoice = async () => {
@@ -91,7 +93,7 @@ const OrderDetail = () => {
     return statusMap[status] || { variant: 'outline' as const, label: status, color: 'text-muted-foreground' };
   };
 
-  if (isLoading || authLoading) {
+  if (!canQuery || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
