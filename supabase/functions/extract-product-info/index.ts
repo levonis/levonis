@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -22,6 +23,11 @@ serve(async (req) => {
 
     console.log('Fetching product page:', url);
 
+    // Initialize Supabase client for storage uploads
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     // Fetch the webpage content
     const pageResponse = await fetch(url);
     if (!pageResponse.ok) {
@@ -35,9 +41,9 @@ serve(async (req) => {
     let textContent = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '') // Remove headers
-      .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '') // Remove footers
-      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '') // Remove navigation
+      .replace(/<header[^>]*>[\s\S]*?<\/header>/gi, '')
+      .replace(/<footer[^>]*>[\s\S]*?<\/footer>/gi, '')
+      .replace(/<nav[^>]*>[\s\S]*?<\/nav>/gi, '')
       .replace(/<[^>]+>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
@@ -62,6 +68,18 @@ serve(async (req) => {
     // Increase limit to capture more content
     textContent = textContent.substring(0, 40000);
 
+    // Extract image URLs from HTML
+    const imageUrls: string[] = [];
+    const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
+    let imgMatch;
+    while ((imgMatch = imgRegex.exec(html)) !== null) {
+      const imgUrl = imgMatch[1];
+      // Only include full URLs and exclude tiny icons/placeholders
+      if (imgUrl.startsWith('http') && !imgUrl.includes('icon') && !imgUrl.includes('logo')) {
+        imageUrls.push(imgUrl);
+      }
+    }
+
     console.log('Extracted text content length:', textContent.length);
 
     // Call Lovable AI to extract product information
@@ -81,23 +99,36 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'أنت مساعد متخصص في استخراج معلومات المنتجات من صفحات الويب. قم بقراءة المحتوى بدقة واستخراج جميع التفاصيل المتعلقة بالمنتج: الاسم، الوصف، المميزات، الألوان، والصور. لا تستخرج معلومات السعر.'
+            content: `أنت مساعد ذكاء اصطناعي متخصص في استخراج معلومات المنتجات من صفحات الويب بدقة عالية.
+
+مهمتك:
+- استخراج جميع المعلومات المتعلقة بالمنتج بدقة
+- ترجمة المعلومات للعربية بشكل احترافي ودقيق
+- فصل الأحجام/الخيارات عن الألوان بشكل واضح
+- تجميع روابط الصور الرئيسية للمنتج فقط
+
+مهم جداً:
+- لا تستخرج معلومات السعر نهائياً
+- الأحجام مثل: S, M, L, XL, 32, 34, 36, etc.
+- الألوان مثل: أحمر، أزرق، أسود، أبيض، etc.
+- الصور: فقط صور المنتج الرئيسية (تجاهل الأيقونات والشعارات)`
           },
           {
             role: 'user',
-            content: `اقرأ محتوى الصفحة التالي بعناية واستخرج معلومات المنتج كاملة:
+            content: `استخرج معلومات المنتج من المحتوى التالي:
 
-محتوى الصفحة:
 ${textContent}
 
-استخرج:
-1. اسم المنتج بالعربية والإنجليزية
-2. وصف تفصيلي شامل بالعربية والإنجليزية
-3. جميع المميزات والخصائص
-4. الألوان المتوفرة مع أسمائها
-5. روابط جميع الصور المتاحة
+الصور المتاحة في الصفحة:
+${imageUrls.slice(0, 20).join('\n')}
 
-ملاحظة مهمة: لا تستخرج السعر أو العملة.`
+استخرج بدقة:
+1. اسم المنتج بالعربية والإنجليزية (ترجمة احترافية)
+2. وصف تفصيلي شامل بالعربية والإنجليزية (ترجمة كاملة ودقيقة)
+3. جميع الأحجام/الخيارات المتوفرة (مثل: S, M, L أو 32, 34, 36)
+4. جميع الألوان المتوفرة مع أسمائها بالعربية والإنجليزية
+5. جميع المميزات والخصائص بالعربية والإنجليزية
+6. روابط الصور الرئيسية للمنتج فقط (اختر الأفضل من القائمة)`
           }
         ],
         tools: [
@@ -105,13 +136,13 @@ ${textContent}
             type: "function",
             function: {
               name: "extract_product_info",
-              description: "استخراج معلومات المنتج من صفحة الويب",
+              description: "استخراج معلومات المنتج من صفحة الويب بدقة وفصل الأحجام عن الألوان",
               parameters: {
                 type: "object",
                 properties: {
                   name_ar: { 
                     type: "string", 
-                    description: "اسم المنتج بالعربية - يجب أن يكون واضحاً ومحدداً" 
+                    description: "اسم المنتج بالعربية - ترجمة احترافية ودقيقة" 
                   },
                   name: { 
                     type: "string", 
@@ -119,7 +150,7 @@ ${textContent}
                   },
                   description_ar: { 
                     type: "string", 
-                    description: "وصف تفصيلي وشامل للمنتج بالعربية يتضمن جميع المعلومات المهمة" 
+                    description: "وصف تفصيلي وشامل للمنتج بالعربية - ترجمة احترافية كاملة" 
                   },
                   description: { 
                     type: "string", 
@@ -128,7 +159,18 @@ ${textContent}
                   images: {
                     type: "array",
                     items: { type: "string" },
-                    description: "جميع روابط صور المنتج المتاحة في الصفحة"
+                    description: "روابط الصور الرئيسية للمنتج فقط (اختر الأفضل والأوضح)"
+                  },
+                  sizes: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        name: { type: "string", description: "الحجم بالإنجليزية (S, M, L, XL, 32, 34, etc.)" },
+                        name_ar: { type: "string", description: "الحجم بالعربية (صغير، وسط، كبير، etc.)" }
+                      }
+                    },
+                    description: "جميع الأحجام/الخيارات المتوفرة للمنتج (منفصلة عن الألوان)"
                   },
                   colors: {
                     type: "array",
@@ -137,10 +179,10 @@ ${textContent}
                       properties: {
                         name: { type: "string", description: "اسم اللون بالإنجليزية" },
                         name_ar: { type: "string", description: "اسم اللون بالعربية" },
-                        hex_code: { type: "string", description: "كود اللون hex إن وجد" }
+                        hex_code: { type: "string", description: "كود اللون hex إن وجد أو تقديره" }
                       }
                     },
-                    description: "جميع الألوان المتوفرة للمنتج"
+                    description: "جميع الألوان المتوفرة للمنتج فقط (بدون أحجام)"
                   },
                   features: {
                     type: "array",
@@ -148,7 +190,7 @@ ${textContent}
                       type: "object",
                       properties: {
                         text: { type: "string", description: "نص الميزة بالإنجليزية" },
-                        text_ar: { type: "string", description: "نص الميزة بالعربية" }
+                        text_ar: { type: "string", description: "نص الميزة بالعربية - ترجمة دقيقة" }
                       }
                     },
                     description: "جميع مميزات وخصائص المنتج المذكورة في الصفحة"
@@ -193,6 +235,55 @@ ${textContent}
 
     const productInfo = JSON.parse(toolCall.function.arguments);
     console.log('Extracted product info:', productInfo);
+
+    // Download and upload images to Supabase Storage
+    const uploadedImageUrls: string[] = [];
+    if (productInfo.images && Array.isArray(productInfo.images)) {
+      console.log(`Downloading ${productInfo.images.length} images...`);
+      
+      for (let i = 0; i < Math.min(productInfo.images.length, 10); i++) {
+        const imageUrl = productInfo.images[i];
+        try {
+          // Download the image
+          const imageResponse = await fetch(imageUrl);
+          if (!imageResponse.ok) continue;
+          
+          const imageBlob = await imageResponse.blob();
+          const fileExt = imageUrl.split('.').pop()?.split('?')[0] || 'jpg';
+          const fileName = `${Date.now()}-${i}.${fileExt}`;
+          const filePath = `${fileName}`;
+
+          // Upload to Supabase Storage
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from('product-images')
+            .upload(filePath, imageBlob, {
+              contentType: imageResponse.headers.get('content-type') || 'image/jpeg',
+              upsert: false
+            });
+
+          if (uploadError) {
+            console.error('Upload error:', uploadError);
+            continue;
+          }
+
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(filePath);
+
+          uploadedImageUrls.push(publicUrl);
+          console.log(`Image ${i + 1} uploaded successfully`);
+        } catch (error) {
+          console.error(`Error processing image ${i}:`, error);
+        }
+      }
+    }
+
+    // Replace image URLs with uploaded ones
+    if (uploadedImageUrls.length > 0) {
+      productInfo.images = uploadedImageUrls;
+      console.log(`Successfully uploaded ${uploadedImageUrls.length} images`);
+    }
 
     return new Response(
       JSON.stringify({ success: true, productInfo }),

@@ -621,6 +621,16 @@ const Admin = () => {
         setUploadedImages(productInfo.images);
       }
 
+      // Set sizes/options
+      if (productInfo.sizes && Array.isArray(productInfo.sizes) && productInfo.sizes.length > 0) {
+        setProductOptions(productInfo.sizes.map((size: any) => ({
+          name: size.name || '',
+          name_ar: size.name_ar || '',
+          price_adjustment: 0,
+          in_stock: true
+        })));
+      }
+
       // Set colors
       if (productInfo.colors && Array.isArray(productInfo.colors) && productInfo.colors.length > 0) {
         setProductColors(productInfo.colors.map((color: any) => ({
@@ -642,7 +652,7 @@ const Admin = () => {
         })));
       }
 
-      toast.success('تم استخراج معلومات المنتج بنجاح!');
+      toast.success('تم استخراج معلومات المنتج بنجاح! تم تحميل ' + (productInfo.images?.length || 0) + ' صورة.');
     } catch (error) {
       console.error('Error extracting product info:', error);
       toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء استخراج المعلومات');
