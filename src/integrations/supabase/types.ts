@@ -1026,6 +1026,10 @@ export type Database = {
         | { Args: never; Returns: string }
         | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
+      has_purchased_product: {
+        Args: { p_product_id: string; p_user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -4,9 +4,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, Trash2, Loader2 } from 'lucide-react';
+import { Star, Trash2, Loader2, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -60,6 +61,27 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
 
       if (error) throw error;
       return data;
+    },
+    enabled: !!user,
+  });
+
+  // التحقق من أن المستخدم اشترى المنتج واستلمه
+  const { data: hasPurchased } = useQuery({
+    queryKey: ['has-purchased', productId, user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      
+      const { data, error } = await supabase
+        .from('order_items')
+        .select('id, orders!inner(status)')
+        .eq('product_id', productId)
+        .eq('orders.user_id', user.id)
+        .eq('orders.status', 'delivered')
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      return !!data;
     },
     enabled: !!user,
   });
@@ -184,55 +206,69 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">التقييم</label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setRating(star)}
-                      onMouseEnter={() => setHoveredRating(star)}
-                      onMouseLeave={() => setHoveredRating(0)}
-                      className="transition-transform hover:scale-110"
-                    >
-                      <Star
-                        className={`h-8 w-8 ${
-                          star <= (hoveredRating || rating)
-                            ? 'text-primary fill-primary'
-                            : 'text-muted-foreground'
-                        }`}
-                      />
-                    </button>
-                  ))}
+            {hasPurchased ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">التقييم</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        onMouseEnter={() => setHoveredRating(star)}
+                        onMouseLeave={() => setHoveredRating(0)}
+                        className="transition-transform hover:scale-110"
+                      >
+                        <Star
+                          className={`h-8 w-8 ${
+                            star <= (hoveredRating || rating)
+                              ? 'text-primary fill-primary'
+                              : 'text-muted-foreground'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  التعليق (اختياري)
-                </label>
-                <Textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  placeholder="شارك تجربتك مع هذا المنتج..."
-                  rows={4}
-                  maxLength={500}
-                />
-              </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    التعليق (اختياري)
+                  </label>
+                  <Textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="شارك تجربتك مع هذا المنتج..."
+                    rows={4}
+                    maxLength={500}
+                  />
+                </div>
 
-              <Button
-                type="submit"
-                disabled={submitReviewMutation.isPending}
-                className="w-full"
-              >
-                {submitReviewMutation.isPending && (
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                )}
-                {userReview ? 'تحديث التقييم' : 'إضافة التقييم'}
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  disabled={submitReviewMutation.isPending}
+                  className="w-full"
+                >
+                  {submitReviewMutation.isPending && (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  )}
+                  {userReview ? 'تحديث التقييم' : 'إضافة التقييم'}
+                </Button>
+              </form>
+            ) : (
+              <div className="text-center py-8 space-y-3">
+                <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center mb-4">
+                  <Star className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground font-medium">
+                  يمكنك التقييم فقط بعد شراء المنتج واستلامه
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  نريد التأكد من أن جميع التقييمات من مشترين حقيقيين
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -258,11 +294,15 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="font-bold">
                             {(review as any).profiles?.username || (review as any).profiles?.full_name || 'مستخدم'}
                           </span>
                           <LevelBadge userId={review.user_id} size="sm" />
+                          <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                            <CheckCircle className="h-3 w-3 ml-1" />
+                            عملية شراء مؤكدة
+                          </Badge>
                         </div>
                         <div className="flex items-center gap-1 my-1">
                           {[1, 2, 3, 4, 5].map((star) => (
