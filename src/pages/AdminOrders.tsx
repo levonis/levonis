@@ -17,6 +17,7 @@ import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
+import LevelBadge from '@/components/LevelBadge';
 
 const AdminOrders = () => {
   const { user, isAdmin } = useAuth();
@@ -432,11 +433,14 @@ const AdminOrders = () => {
                     <TableRow key={order.id}>
                       <TableCell className="font-mono font-bold">{order.order_number}</TableCell>
                       <TableCell>
-                        <div>
-                          <div className="font-medium">
-                            {order.profiles?.username && `@${order.profiles.username}`}
-                            {order.profiles?.username && order.profiles?.full_name && ' - '}
-                            {order.profiles?.full_name || 'غير محدد'}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {order.profiles?.username && `@${order.profiles.username}`}
+                              {order.profiles?.username && order.profiles?.full_name && ' - '}
+                              {order.profiles?.full_name || 'غير محدد'}
+                            </span>
+                            {order.user_id && <LevelBadge userId={order.user_id} size="sm" />}
                           </div>
                           <div className="text-xs text-muted-foreground">{order.profiles?.email}</div>
                         </div>

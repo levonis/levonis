@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, User, Mail, Calendar, Shield, Upload, Camera } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
+import LevelBadge from '@/components/LevelBadge';
 
 const UserInfo = () => {
   const { user, loading: authLoading, isAdmin } = useAuth();
@@ -147,14 +148,17 @@ const UserInfo = () => {
               <form onSubmit={handleSave} className="space-y-4">
                 {/* Avatar Upload */}
                 <div className="flex flex-col items-center gap-4 pb-6 border-b border-border/30">
-                  <Avatar className="h-24 w-24">
-                    <AvatarImage 
-                      src={avatarFile ? URL.createObjectURL(avatarFile) : profile.avatar_url || undefined} 
-                    />
-                    <AvatarFallback className="text-2xl">
-                      {profile.username?.[0] || profile.full_name?.[0] || 'م'}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="flex flex-col items-center gap-2">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage 
+                        src={avatarFile ? URL.createObjectURL(avatarFile) : profile.avatar_url || undefined} 
+                      />
+                      <AvatarFallback className="text-2xl">
+                        {profile.username?.[0] || profile.full_name?.[0] || 'م'}
+                      </AvatarFallback>
+                    </Avatar>
+                    {user?.id && <LevelBadge userId={user.id} size="lg" />}
+                  </div>
                   <div>
                     <Input
                       id="avatar"
@@ -243,6 +247,13 @@ const UserInfo = () => {
                   <span className="font-medium text-foreground">
                     {isAdmin ? 'مدير' : 'مستخدم'}
                   </span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between py-2 border-b border-border/30">
+                <span className="text-muted-foreground">مستوى العضوية</span>
+                <div className="flex items-center gap-2">
+                  {user?.id && <LevelBadge userId={user.id} size="md" />}
                 </div>
               </div>
 

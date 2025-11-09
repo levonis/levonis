@@ -10,6 +10,7 @@ import { Star, Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import LevelBadge from '@/components/LevelBadge';
 
 interface ProductReviewsProps {
   productId: string;
@@ -257,8 +258,11 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                   <div className="flex-1">
                     <div className="flex items-start justify-between">
                       <div>
-                        <div className="font-bold">
-                          {(review as any).profiles?.username || (review as any).profiles?.full_name || 'مستخدم'}
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold">
+                            {(review as any).profiles?.username || (review as any).profiles?.full_name || 'مستخدم'}
+                          </span>
+                          <LevelBadge userId={review.user_id} size="sm" />
                         </div>
                         <div className="flex items-center gap-1 my-1">
                           {[1, 2, 3, 4, 5].map((star) => (
