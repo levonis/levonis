@@ -26,7 +26,7 @@ const OrderDetail = () => {
   const { data: order, isLoading } = useQuery({
     queryKey: ['order-detail', orderId, isAdmin, user?.id],
     queryFn: async () => {
-      if (!user || !orderId) return null;
+      if (!orderId) return null;
 
       let query = supabase
         .from('orders')
@@ -40,8 +40,9 @@ const OrderDetail = () => {
         `)
         .eq('id', orderId);
 
-      // If not admin, filter by user_id
+      // If not admin, require user and filter by user_id
       if (!isAdmin) {
+        if (!user) return null;
         query = query.eq('user_id', user.id);
       }
 
