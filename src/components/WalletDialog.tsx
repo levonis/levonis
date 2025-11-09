@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -141,6 +141,9 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
             <Wallet className="h-6 w-6" />
             المحفظة
           </DialogTitle>
+          <DialogDescription>
+            إدارة رصيد المحفظة والمعاملات
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 mt-4">
@@ -179,6 +182,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
                     placeholder="أدخل المبلغ"
                     value={depositAmount}
                     onChange={(e) => setDepositAmount(e.target.value)}
+                    autoFocus={false}
                   />
                 </div>
                 <Button onClick={handleDepositWallet} disabled={depositWallet.isPending} className="w-full">
@@ -204,6 +208,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
                     max={wallet?.balance || 0}
+                    autoFocus={false}
                   />
                 </div>
                 <Button onClick={handleWithdrawWallet} disabled={withdrawWallet.isPending || !wallet || wallet.balance <= 0} className="w-full" variant="outline">
