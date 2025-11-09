@@ -35,7 +35,7 @@ const AdminOrders = () => {
   }, [searchParams]);
 
   const { data: orders, isLoading } = useQuery({
-    queryKey: ['admin-orders'],
+    queryKey: ['admin-orders', isAdmin],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
@@ -52,7 +52,9 @@ const AdminOrders = () => {
       if (error) throw error;
       return data || [];
     },
-    enabled: isAdmin && !authLoading
+    enabled: isAdmin,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const updateOrderMutation = useMutation({

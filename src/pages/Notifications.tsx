@@ -195,7 +195,7 @@ const Notifications = () => {
                         if (!isCustom && notification.related_id) {
                           navigate(`/order/${notification.related_id}`);
                         } else {
-                          navigate('/my-custom-requests');
+                          navigate('/my-requests');
                         }
                       }}
                     >
