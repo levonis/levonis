@@ -31,6 +31,7 @@ import AdminPointsSettings from "./pages/AdminPointsSettings";
 import AdminLoyaltyLevels from "./pages/AdminLoyaltyLevels";
 import AdminDefaultSettings from "./pages/AdminDefaultSettings";
 import AdminDailyTasks from "./pages/AdminDailyTasks";
+import AdminWallet from "./pages/AdminWallet";
 import MyPoints from "./pages/MyPoints";
 import NotFound from "./pages/NotFound";
 
@@ -66,6 +67,7 @@ function AppContent() {
         <Route path="/admin/loyalty-levels" element={<AdminLoyaltyLevels />} />
         <Route path="/admin/daily-tasks" element={<AdminDailyTasks />} />
         <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
+        <Route path="/admin/wallet" element={<AdminWallet />} />
         <Route path="/my-points" element={<MyPoints />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

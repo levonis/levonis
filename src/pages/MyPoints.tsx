@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Coins, Gift, DollarSign, ArrowRight, History, Award, CheckSquare } from "lucide-react";
+import { Coins, Gift, DollarSign, ArrowRight, History, Award, CheckSquare, Wallet, Upload, Download } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import LoyaltyLevelCard from "@/components/LoyaltyLevelCard";
 import DailyTaskCard from "@/components/DailyTaskCard";
@@ -22,6 +22,8 @@ export default function MyPoints() {
   const [redeemAmount, setRedeemAmount] = useState("");
   const [convertAmount, setConvertAmount] = useState("");
   const [completingTask, setCompletingTask] = useState<string | null>(null);
+  const [depositAmount, setDepositAmount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -53,6 +55,41 @@ export default function MyPoints() {
       if (!user?.id) return [];
       const { data, error } = await supabase
         .from("points_transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // جلب رصيد المحفظة
+  const { data: wallet } = useQuery({
+    queryKey: ["wallet", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("user_wallets")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  // جلب معاملات المحفظة
+  const { data: walletTransactions } = useQuery({
+    queryKey: ["walletTransactions", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return [];
+      const { data, error } = await supabase
+        .from("wallet_transactions")
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
@@ -205,46 +242,85 @@ export default function MyPoints() {
     },
   });
 
-  // تحويل النقاط إلى أموال
+  // تحويل النقاط إلى المحفظة
   const convertToMoney = useMutation({
     mutationFn: async (points: number) => {
-      if (!user?.id) throw new Error("User not found");
-      if (!userPoints || userPoints.available_points < points) {
-        throw new Error("رصيد نقاط غير كافٍ");
-      }
-
-      const moneyValue = points / (pointsSettings?.points_to_money_rate || 100);
-
-      // تحديث النقاط
-      const { error: pointsError } = await supabase
-        .from("user_points")
-        .update({
-          available_points: userPoints.available_points - points,
-          redeemed_points: userPoints.redeemed_points + points,
-        })
-        .eq("user_id", user.id);
-
-      if (pointsError) throw pointsError;
-
-      // إضافة معاملة
-      await supabase.from("points_transactions").insert({
-        user_id: user.id,
-        points: -points,
-        type: "converted",
-        source: "cash",
-        description: `تحويل ${points} نقطة إلى ${moneyValue} دينار عراقي`,
+      const { data, error } = await supabase.rpc('convert_points_to_wallet', {
+        points_amount: points
       });
 
-      return moneyValue;
+      if (error) throw error;
+      
+      const result = data as any;
+      if (!result?.success) throw new Error(result?.error || 'فشل تحويل النقاط');
+
+      return result;
     },
-    onSuccess: (moneyValue) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userPoints"] });
       queryClient.invalidateQueries({ queryKey: ["pointsTransactions"] });
-      toast.success(`تم طلب تحويل النقاط إلى ${moneyValue} دينار عراقي. سيتم التواصل معك قريباً.`);
+      queryClient.invalidateQueries({ queryKey: ["wallet"] });
+      queryClient.invalidateQueries({ queryKey: ["walletTransactions"] });
+      toast.success('تم تحويل النقاط إلى محفظتك بنجاح!');
       setConvertAmount("");
     },
     onError: (error: any) => {
-      toast.error(error.message || "حدث خطأ أثناء تحويل النقاط");
+      console.error('خطأ في تحويل النقاط:', error);
+      toast.error(error.message || 'حدث خطأ في تحويل النقاط');
+    },
+  });
+
+  // طلب تعبئة المحفظة
+  const depositWallet = useMutation({
+    mutationFn: async (amount: number) => {
+      const { error } = await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user!.id,
+          type: 'deposit',
+          amount: amount,
+          status: 'pending',
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["walletTransactions"] });
+      toast.success('تم إرسال طلب التعبئة! سيتم المراجعة من قبل الإدارة');
+      setDepositAmount("");
+    },
+    onError: (error) => {
+      console.error('خطأ في طلب التعبئة:', error);
+      toast.error('حدث خطأ في إرسال طلب التعبئة');
+    },
+  });
+
+  // طلب سحب من المحفظة
+  const withdrawWallet = useMutation({
+    mutationFn: async (amount: number) => {
+      if (!wallet || wallet.balance < amount) {
+        throw new Error('رصيد غير كافٍ');
+      }
+
+      const { error } = await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user!.id,
+          type: 'withdrawal',
+          amount: amount,
+          status: 'pending',
+        });
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["walletTransactions"] });
+      toast.success('تم إرسال طلب السحب! سيتم المراجعة من قبل الإدارة');
+      setWithdrawAmount("");
+    },
+    onError: (error: any) => {
+      console.error('خطأ في طلب السحب:', error);
+      toast.error(error.message || 'حدث خطأ في إرسال طلب السحب');
     },
   });
 
@@ -264,6 +340,24 @@ export default function MyPoints() {
       return;
     }
     convertToMoney.mutate(points);
+  };
+
+  const handleDepositWallet = () => {
+    const amount = Number(depositAmount);
+    if (!amount || amount <= 0) {
+      toast.error('الرجاء إدخال مبلغ صحيح');
+      return;
+    }
+    depositWallet.mutate(amount);
+  };
+
+  const handleWithdrawWallet = () => {
+    const amount = Number(withdrawAmount);
+    if (!amount || amount <= 0) {
+      toast.error('الرجاء إدخال مبلغ صحيح');
+      return;
+    }
+    withdrawWallet.mutate(amount);
   };
 
   // إكمال مهمة يومية
@@ -403,6 +497,7 @@ export default function MyPoints() {
                   <TabsTrigger value="tasks" className="text-xs sm:text-sm px-3 sm:px-4">المهام</TabsTrigger>
                   <TabsTrigger value="levels" className="text-xs sm:text-sm px-3 sm:px-4">المستويات</TabsTrigger>
                   <TabsTrigger value="earn" className="text-xs sm:text-sm px-3 sm:px-4">ربح النقاط</TabsTrigger>
+                  <TabsTrigger value="wallet" className="text-xs sm:text-sm px-3 sm:px-4">المحفظة</TabsTrigger>
                   <TabsTrigger value="redeem" className="text-xs sm:text-sm px-3 sm:px-4">كوبون</TabsTrigger>
                   <TabsTrigger value="convert" className="text-xs sm:text-sm px-3 sm:px-4">أموال</TabsTrigger>
                   <TabsTrigger value="history" className="text-xs sm:text-sm px-3 sm:px-4">السجل</TabsTrigger>
@@ -477,6 +572,120 @@ export default function MyPoints() {
                     </CardContent>
                   </Card>
                 )}
+              </TabsContent>
+
+              {/* تبويب المحفظة */}
+              <TabsContent value="wallet" className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Wallet className="h-5 w-5" />
+                      رصيد المحفظة
+                    </CardTitle>
+                    <CardDescription>رصيدك الحالي في المحفظة</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-center p-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-lg">
+                      <p className="text-4xl font-bold text-primary mb-2">
+                        {wallet?.balance?.toFixed(2) || "0.00"}
+                      </p>
+                      <p className="text-sm text-muted-foreground">{wallet?.currency || "دينار عراقي"}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Upload className="h-5 w-5" />
+                        تعبئة المحفظة
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="depositAmount">المبلغ</Label>
+                        <Input
+                          id="depositAmount"
+                          type="number"
+                          placeholder="أدخل المبلغ"
+                          value={depositAmount}
+                          onChange={(e) => setDepositAmount(e.target.value)}
+                        />
+                      </div>
+                      <Button onClick={handleDepositWallet} disabled={depositWallet.isPending} className="w-full">
+                        {depositWallet.isPending ? "جاري الإرسال..." : "طلب التعبئة"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Download className="h-5 w-5" />
+                        سحب الرصيد
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="withdrawAmount">المبلغ</Label>
+                        <Input
+                          id="withdrawAmount"
+                          type="number"
+                          placeholder="أدخل المبلغ"
+                          value={withdrawAmount}
+                          onChange={(e) => setWithdrawAmount(e.target.value)}
+                          max={wallet?.balance || 0}
+                        />
+                      </div>
+                      <Button onClick={handleWithdrawWallet} disabled={withdrawWallet.isPending || !wallet || wallet.balance <= 0} className="w-full" variant="outline">
+                        {withdrawWallet.isPending ? "جاري الإرسال..." : "طلب السحب"}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>سجل المعاملات</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-[400px]">
+                      {walletTransactions && walletTransactions.length > 0 ? (
+                        <div className="space-y-2">
+                          {walletTransactions.map((transaction: any) => (
+                            <div key={transaction.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                              <div className="flex-1">
+                                <p className="font-medium">
+                                  {transaction.type === 'deposit' && 'تعبئة المحفظة'}
+                                  {transaction.type === 'withdrawal' && 'سحب من المحفظة'}
+                                  {transaction.type === 'points_conversion' && 'تحويل من النقاط'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {new Date(transaction.created_at).toLocaleDateString('ar-IQ')}
+                                </p>
+                                <p className="text-xs">
+                                  الحالة: <span className={transaction.status === 'completed' || transaction.status === 'approved' ? 'text-green-600' : transaction.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}>
+                                    {transaction.status === 'pending' && 'قيد المراجعة'}
+                                    {transaction.status === 'approved' && 'تمت الموافقة'}
+                                    {transaction.status === 'completed' && 'مكتمل'}
+                                    {transaction.status === 'rejected' && 'مرفوض'}
+                                  </span>
+                                </p>
+                              </div>
+                              <div className={`text-lg font-bold ${transaction.type === 'withdrawal' ? 'text-red-600' : 'text-green-600'}`}>
+                                {transaction.type === 'withdrawal' ? '-' : '+'}
+                                {transaction.amount}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-center text-muted-foreground py-8">لا توجد معاملات بعد</p>
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="earn" className="space-y-6">
