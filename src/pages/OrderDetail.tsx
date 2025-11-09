@@ -45,7 +45,7 @@ const OrderDetail = () => {
         query = query.eq('user_id', user.id);
       }
 
-      const { data, error } = await query.single();
+      const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
       return data;
