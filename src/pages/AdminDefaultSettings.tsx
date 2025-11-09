@@ -61,6 +61,12 @@ const AdminDefaultSettings = () => {
   });
 
   // Check auth and admin status
+  useEffect(() => {
+    if (!authLoading && (!user || !isAdmin)) {
+      navigate('/');
+    }
+  }, [authLoading, user, isAdmin, navigate]);
+
   if (authLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -70,12 +76,7 @@ const AdminDefaultSettings = () => {
   }
 
   if (!user || !isAdmin) {
-    navigate('/');
     return null;
-  }
-
-  if (!formData && settings?.setting_value) {
-    setFormData(settings.setting_value);
   }
 
   const handleSubmit = (e: React.FormEvent) => {
