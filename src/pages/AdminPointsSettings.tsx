@@ -9,8 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Settings, Save } from "lucide-react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 
 export default function AdminPointsSettings() {
   const { user } = useAuth();
@@ -161,8 +159,6 @@ export default function AdminPointsSettings() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      <Header />
-
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
@@ -342,8 +338,6 @@ export default function AdminPointsSettings() {
           </Button>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

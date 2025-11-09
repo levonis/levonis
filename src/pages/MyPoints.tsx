@@ -10,8 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Coins, Gift, DollarSign, ArrowRight, History, Award, CheckSquare } from "lucide-react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import LoyaltyLevelCard from "@/components/LoyaltyLevelCard";
 import DailyTaskCard from "@/components/DailyTaskCard";
 import ReferralCard from "@/components/ReferralCard";
@@ -322,8 +320,6 @@ export default function MyPoints() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      <Header />
-      
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">النقاط</h1>
@@ -666,8 +662,6 @@ export default function MyPoints() {
           </>
         )}
       </main>
-      
-      <Footer />
     </div>
   );
 }

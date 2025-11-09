@@ -12,8 +12,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { CheckSquare, Edit, Trash2, Plus } from "lucide-react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import {
   Dialog,
   DialogContent,
@@ -184,8 +182,6 @@ export default function AdminDailyTasks() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      <Header />
-
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -392,8 +388,6 @@ export default function AdminDailyTasks() {
           </Card>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 }

@@ -12,8 +12,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
 import { Settings, Save, Plus, Pencil, Trash2, Award } from "lucide-react";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 
@@ -181,8 +179,6 @@ export default function AdminLoyaltyLevels() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      <Header />
-
       <main className="flex-1 container mx-auto px-4 py-8">
         <div className="mb-8 flex items-center justify-between">
           <div>
@@ -425,8 +421,6 @@ export default function AdminLoyaltyLevels() {
           </Card>
         )}
       </main>
-
-      <Footer />
     </div>
   );
 }
