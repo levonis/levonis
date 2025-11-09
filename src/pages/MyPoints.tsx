@@ -299,13 +299,38 @@ export default function MyPoints() {
     if (!user?.id) return;
 
     try {
-      const { data: codeData } = await supabase.rpc("generate_referral_code");
+      // جلب username من الprofile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", user.id)
+        .single();
+
+      if (!profile?.username) {
+        toast.error("لم يتم العثور على اسم المستخدم");
+        return;
+      }
+
+      const referralCode = `REF-${profile.username.toUpperCase()}`;
       
+      // التحقق من وجود كود دعوة سابق
+      const { data: existingReferral } = await supabase
+        .from("user_referrals")
+        .select("referral_code")
+        .eq("referrer_user_id", user.id)
+        .maybeSingle();
+
+      if (existingReferral) {
+        toast.info("لديك كود دعوة بالفعل");
+        refetchReferral();
+        return;
+      }
+
       const { error } = await supabase
         .from("user_referrals")
         .insert({
           referrer_user_id: user.id,
-          referral_code: codeData as string,
+          referral_code: referralCode,
         });
 
       if (error) throw error;

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, Users, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ReferralCardProps {
   referralCode: string;
@@ -20,6 +21,24 @@ export default function ReferralCard({
   onGenerateCode 
 }: ReferralCardProps) {
   const [copied, setCopied] = useState(false);
+  const [referrerPoints, setReferrerPoints] = useState(50);
+
+  useEffect(() => {
+    const fetchReferralSettings = async () => {
+      const { data } = await supabase
+        .from("default_settings")
+        .select("setting_value")
+        .eq("setting_key", "referral_settings")
+        .single();
+
+      if (data?.setting_value) {
+        const settings = data.setting_value as any;
+        setReferrerPoints(settings.points_for_referrer || 50);
+      }
+    };
+
+    fetchReferralSettings();
+  }, []);
 
   const handleCopy = () => {
     const referralLink = `${window.location.origin}?ref=${referralCode}`;
@@ -36,7 +55,7 @@ export default function ReferralCard({
           <Users className="h-5 w-5 text-primary" />
           برنامج دعوة الأصدقاء
         </CardTitle>
-        <CardDescription>ادع أصدقاءك واحصل على 20 نقطة لكل صديق يسجل</CardDescription>
+        <CardDescription>ادع أصدقاءك واحصل على {referrerPoints} نقطة لكل صديق يسجل</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {referralCode ? (

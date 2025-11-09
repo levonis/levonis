@@ -1022,7 +1022,9 @@ export type Database = {
       }
       complete_daily_task: { Args: { task_key_param: string }; Returns: Json }
       generate_order_number: { Args: never; Returns: string }
-      generate_referral_code: { Args: never; Returns: string }
+      generate_referral_code:
+        | { Args: never; Returns: string }
+        | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       has_role: {
         Args: {

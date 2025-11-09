@@ -170,9 +170,10 @@ const Auth = () => {
             // التحقق من صحة كود الدعوة
             const { data: referralData } = await supabase
               .from('user_referrals')
-              .select('referrer_user_id')
+              .select('referrer_user_id, id')
               .eq('referral_code', referralCode)
-              .single();
+              .eq('status', 'pending')
+              .maybeSingle();
 
             if (referralData) {
               // تحديث حالة الدعوة
@@ -183,20 +184,7 @@ const Auth = () => {
                   status: 'completed',
                   completed_at: new Date().toISOString(),
                 })
-                .eq('referral_code', referralCode);
-
-              // منح النقاط للمُحيل
-              const { data: taskData } = await supabase
-                .from('daily_tasks')
-                .select('points_reward')
-                .eq('task_key', 'invite_friend')
-                .single();
-
-              if (taskData) {
-                await supabase.rpc('complete_daily_task', {
-                  task_key_param: 'invite_friend',
-                });
-              }
+                .eq('id', referralData.id);
             }
           }
         } catch (error) {

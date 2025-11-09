@@ -29,6 +29,8 @@ export default function AdminPointsSettings() {
   const [orderValueMultiplier, setOrderValueMultiplier] = useState("0");
   const [pointsToMoneyRate, setPointsToMoneyRate] = useState("100");
   const [pointsToCouponRate, setPointsToCouponRate] = useState("50");
+  const [referrerPoints, setReferrerPoints] = useState("50");
+  const [referredPoints, setReferredPoints] = useState("20");
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -68,6 +70,21 @@ export default function AdminPointsSettings() {
     },
   });
 
+  // جلب إعدادات الدعوة
+  const { data: referralSettings } = useQuery({
+    queryKey: ["referralSettings"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("default_settings")
+        .select("*")
+        .eq("setting_key", "referral_settings")
+        .single();
+
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    },
+  });
+
   useEffect(() => {
     if (pointsSettings?.setting_value) {
       const settings = pointsSettings.setting_value as any;
@@ -97,6 +114,14 @@ export default function AdminPointsSettings() {
     }
   }, [pointsSettings]);
 
+  useEffect(() => {
+    if (referralSettings?.setting_value) {
+      const settings = referralSettings.setting_value as any;
+      setReferrerPoints(settings.points_for_referrer?.toString() || "50");
+      setReferredPoints(settings.points_for_referred?.toString() || "20");
+    }
+  }, [referralSettings]);
+
   // حفظ الإعدادات
   const saveSettings = useMutation({
     mutationFn: async () => {
@@ -111,6 +136,7 @@ export default function AdminPointsSettings() {
         settingsValue[method.key] = parseFloat(method.value);
       });
 
+      // حفظ إعدادات النقاط
       if (pointsSettings) {
         const { error } = await supabase
           .from("default_settings")
@@ -128,9 +154,34 @@ export default function AdminPointsSettings() {
 
         if (error) throw error;
       }
+
+      // حفظ إعدادات الدعوة
+      const referralSettingsValue = {
+        points_for_referrer: parseFloat(referrerPoints),
+        points_for_referred: parseFloat(referredPoints),
+      };
+
+      if (referralSettings) {
+        const { error } = await supabase
+          .from("default_settings")
+          .update({ setting_value: referralSettingsValue })
+          .eq("setting_key", "referral_settings");
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("default_settings")
+          .insert({
+            setting_key: "referral_settings",
+            setting_value: referralSettingsValue,
+          });
+
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pointsSettings"] });
+      queryClient.invalidateQueries({ queryKey: ["referralSettings"] });
       toast.success("تم حفظ الإعدادات بنجاح");
     },
     onError: (error: any) => {
@@ -162,6 +213,18 @@ export default function AdminPointsSettings() {
     }
     if (isNaN(couponRate) || couponRate <= 0) {
       toast.error("الرجاء إدخال نسبة تحويل صحيحة للكوبونات");
+      return;
+    }
+
+    const refererPts = parseFloat(referrerPoints);
+    const referedPts = parseFloat(referredPoints);
+    
+    if (isNaN(refererPts) || refererPts < 0) {
+      toast.error("الرجاء إدخال قيمة صحيحة لنقاط المُحيل");
+      return;
+    }
+    if (isNaN(referedPts) || referedPts < 0) {
+      toast.error("الرجاء إدخال قيمة صحيحة لنقاط المُحال");
       return;
     }
 
@@ -296,11 +359,49 @@ export default function AdminPointsSettings() {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle>إعدادات برنامج الدعوة</CardTitle>
+                <CardDescription>إدارة نقاط دعوة الأصدقاء</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="referrerPoints">نقاط المُحيل (من يدعو)</Label>
+                  <Input
+                    id="referrerPoints"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={referrerPoints}
+                    onChange={(e) => setReferrerPoints(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    النقاط التي يحصل عليها المستخدم عند دعوة صديق
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="referredPoints">نقاط المُحال (المدعو)</Label>
+                  <Input
+                    id="referredPoints"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={referredPoints}
+                    onChange={(e) => setReferredPoints(e.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground mt-1">
+                    النقاط التي يحصل عليها المستخدم الجديد عند التسجيل بكود دعوة
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="md:col-span-2">
               <CardHeader>
                 <CardTitle>معاينة الإعدادات</CardTitle>
               </CardHeader>
-              <CardContent className="grid md:grid-cols-2 gap-4">
+              <CardContent className="grid md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <h3 className="font-semibold text-lg mb-3">طرق كسب النقاط:</h3>
                   {earningMethods.map(method => (
@@ -314,6 +415,11 @@ export default function AdminPointsSettings() {
                   <h3 className="font-semibold text-lg mb-3">تحويل النقاط:</h3>
                   <p>✓ كل {pointsToMoneyRate} نقطة = 1 دينار عراقي نقدي</p>
                   <p>✓ كل {pointsToCouponRate} نقطة = 1 دينار عراقي كوبون</p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="font-semibold text-lg mb-3">برنامج الدعوة:</h3>
+                  <p>✓ المُحيل يحصل على {referrerPoints} نقطة</p>
+                  <p>✓ المُحال يحصل على {referredPoints} نقطة</p>
                 </div>
               </CardContent>
             </Card>
