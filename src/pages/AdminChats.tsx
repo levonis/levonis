@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight, Loader2, Send, MessageCircle, CheckCircle2, Crown, Award, Star } from 'lucide-react';
+import { ArrowRight, Loader2, Send, MessageCircle, CheckCircle2, Crown, Award, Star, Image as ImageIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -28,6 +28,7 @@ interface Message {
   sender_id: string;
   created_at: string;
   is_read: boolean;
+  image_url?: string;
 }
 
 interface UserWithLevel {
@@ -59,7 +60,11 @@ export default function AdminChats() {
   const queryClient = useQueryClient();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [message, setMessage] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -193,33 +198,97 @@ export default function AdminChats() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Handle image selection
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('يجب اختيار صورة فقط');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('حجم الصورة يجب أن يكون أقل من 5 ميجابايت');
+      return;
+    }
+
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  // Upload image to storage
+  const uploadImage = async (file: File): Promise<string> => {
+    if (!user) throw new Error('No user');
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('chat-images')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('chat-images')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, imageUrl }: { content: string; imageUrl?: string }) => {
       if (!selectedConversation || !user) throw new Error('No conversation');
 
       const { error } = await supabase.from('messages').insert({
         conversation_id: selectedConversation,
         sender_id: user.id,
         content,
+        image_url: imageUrl,
       });
 
       if (error) throw error;
     },
     onSuccess: () => {
       setMessage('');
+      setSelectedImage(null);
+      setImagePreview(null);
       queryClient.invalidateQueries({ 
         queryKey: ['admin-conversation-messages', selectedConversation] 
       });
     },
     onError: () => {
       toast.error('فشل إرسال الرسالة');
+      setUploadingImage(false);
     },
   });
 
-  const handleSend = () => {
-    if (!message.trim()) return;
-    sendMessageMutation.mutate(message);
+  const handleSend = async () => {
+    if (!message.trim() && !selectedImage) return;
+
+    try {
+      setUploadingImage(true);
+      let imageUrl: string | undefined;
+
+      if (selectedImage) {
+        imageUrl = await uploadImage(selectedImage);
+      }
+
+      await sendMessageMutation.mutateAsync({
+        content: message.trim() || 'صورة',
+        imageUrl,
+      });
+    } catch (error) {
+      toast.error('فشل إرسال الرسالة');
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const selectedConv = conversations.find((c) => c.id === selectedConversation);
@@ -359,6 +428,14 @@ export default function AdminChats() {
                                   : 'bg-muted text-foreground'
                               }`}
                             >
+                              {msg.image_url && (
+                                <img
+                                  src={msg.image_url}
+                                  alt="صورة"
+                                  className="rounded-lg mb-2 max-w-full h-auto cursor-pointer"
+                                  onClick={() => window.open(msg.image_url, '_blank')}
+                                />
+                              )}
                               <p className="text-sm break-words">{msg.content}</p>
                               <p
                                 className={`text-xs mt-1 ${
@@ -380,20 +457,56 @@ export default function AdminChats() {
                 </CardContent>
 
                 <div className="border-t p-4">
+                  {imagePreview && (
+                    <div className="mb-2 relative inline-block">
+                      <img
+                        src={imagePreview}
+                        alt="معاينة"
+                        className="h-20 w-20 object-cover rounded-lg"
+                      />
+                      <Button
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                        onClick={() => {
+                          setSelectedImage(null);
+                          setImagePreview(null);
+                          if (fileInputRef.current) fileInputRef.current.value = '';
+                        }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                   <div className="flex gap-2">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageSelect}
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingImage || sendMessageMutation.isPending}
+                    >
+                      <ImageIcon className="h-4 w-4" />
+                    </Button>
                     <Input
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                      onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                       placeholder="اكتب رسالتك..."
-                      disabled={sendMessageMutation.isPending}
+                      disabled={uploadingImage || sendMessageMutation.isPending}
                     />
                     <Button
                       onClick={handleSend}
-                      disabled={!message.trim() || sendMessageMutation.isPending}
+                      disabled={(!message.trim() && !selectedImage) || uploadingImage || sendMessageMutation.isPending}
                       size="icon"
                     >
-                      {sendMessageMutation.isPending ? (
+                      {uploadingImage || sendMessageMutation.isPending ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <Send className="h-4 w-4" />

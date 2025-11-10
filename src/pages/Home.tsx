@@ -94,24 +94,6 @@ const Home = () => {
             <SearchBar />
           </div>
           
-          <div className="flex items-center justify-center gap-4 animate-in fade-in slide-in-from-bottom-7 duration-700 delay-450">
-            <a 
-              href="https://www.facebook.com/levonisiq" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 text-sm text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-            >
-              Facebook ▾
-            </a>
-            <a 
-              href="https://www.instagram.com/levonis_iq?igsh=MTZpeWxqYXN4MGtzbw==" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border/50 text-sm text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
-            >
-              Instagram ▾
-            </a>
-          </div>
         </section>
 
         {/* Categories Section */}
