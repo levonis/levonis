@@ -7,7 +7,6 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import { useDailyLogin } from "@/hooks/useDailyLogin";
 import Header from "@/components/Header";
-import WhatsAppButton from "@/components/WhatsAppButton";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
@@ -73,8 +72,6 @@ function AppContent() {
         <Route path="/my-points" element={<MyPoints />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      
-      <WhatsAppButton />
     </>
   );
 }
