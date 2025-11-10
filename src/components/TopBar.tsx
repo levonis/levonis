@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,6 +59,34 @@ const TopBar = () => {
 
   const pointsStatus = pointsSettings?.points_status || 'active';
   const showPointsMenu = pointsStatus === 'active';
+
+  // جلب عدد الرسائل غير المقروءة للأدمن
+  const { data: adminUnreadMessages } = useQuery({
+    queryKey: ['admin-unread-messages', user?.id],
+    queryFn: async () => {
+      if (!isAdmin) return 0;
+
+      const { data: conversations } = await supabase
+        .from('conversations')
+        .select('id');
+
+      if (!conversations || conversations.length === 0) return 0;
+
+      const conversationIds = conversations.map(c => c.id);
+
+      const { count, error } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .in('conversation_id', conversationIds)
+        .neq('sender_id', user?.id || '')
+        .eq('is_read', false);
+
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!user?.id && isAdmin,
+    refetchInterval: 30000,
+  });
 
   // جلب رصيد المحفظة
   const { data: wallet } = useQuery({
@@ -170,6 +198,24 @@ const TopBar = () => {
                 </span>
               )}
             </Button>
+
+            {/* Admin Chat Button */}
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate('/admin/chats')}
+                className="relative rounded-full border-primary/30 hover:border-primary"
+                title="محادثات العملاء"
+              >
+                <MessageCircle className="h-5 w-5" />
+                {adminUnreadMessages && adminUnreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
+                    {adminUnreadMessages > 9 ? '9+' : adminUnreadMessages}
+                  </span>
+                )}
+              </Button>
+            )}
 
             {user ? (
               <DropdownMenu>

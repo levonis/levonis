@@ -271,7 +271,7 @@ export default function CustomerChat({ orderId }: CustomerChatProps) {
       {/* Chat Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 left-6 h-14 w-14 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90"
+        className="fixed bottom-6 left-4 sm:left-6 h-14 w-14 rounded-full shadow-lg z-50 bg-primary hover:bg-primary/90"
         size="icon"
       >
         <div className="relative">
@@ -286,7 +286,7 @@ export default function CustomerChat({ orderId }: CustomerChatProps) {
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 left-6 w-96 h-[500px] shadow-2xl z-50 flex flex-col">
+        <Card className="fixed bottom-24 left-4 right-4 sm:left-6 sm:right-auto sm:w-96 h-[500px] max-h-[70vh] shadow-2xl z-50 flex flex-col">
           <CardHeader className="border-b">
             <div className="flex items-center justify-between">
               <div>
