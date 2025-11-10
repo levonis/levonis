@@ -30,6 +30,7 @@ const ProductDetail = () => {
   const [colorImageUrl, setColorImageUrl] = useState<string | null>(null);
   const [optionImageUrl, setOptionImageUrl] = useState<string | null>(null);
   const [selectedShippingOption, setSelectedShippingOption] = useState<number | null>(null);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', slug],
@@ -376,9 +377,21 @@ const ProductDetail = () => {
                 {product.name_ar}
               </h1>
               
-              <p className="text-muted-foreground text-lg mb-6 leading-relaxed">
-                {product.description_ar || 'لا يوجد وصف متوفر'}
-              </p>
+              {product.description_ar && (
+                <div className="text-muted-foreground text-lg mb-6 leading-relaxed">
+                  <p className={`${!showFullDescription && product.description_ar.length > 150 ? 'line-clamp-3' : ''}`}>
+                    {product.description_ar}
+                  </p>
+                  {product.description_ar.length > 150 && (
+                    <button
+                      onClick={() => setShowFullDescription(!showFullDescription)}
+                      className="text-primary hover:underline text-sm mt-2 font-medium"
+                    >
+                      {showFullDescription ? 'عرض أقل' : 'عرض المزيد'}
+                    </button>
+                  )}
+                </div>
+              )}
 
               {/* Availability Types */}
               {(product.has_in_stock || product.has_pre_order) && (
@@ -717,51 +730,41 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Features - Only admin-added features */}
-            {product.features && Array.isArray(product.features) && product.features.length > 0 && (
-              <div className="glass-effect rounded-2xl p-6 border border-border/50">
-                <h3 className="text-xl font-bold text-foreground mb-4">المميزات</h3>
-                <div className="space-y-3">
-                  {product.features.map((feature: any, index: number) => {
-                    const iconName = feature.icon || 'Package';
-                    const IconComponent = {
-                      Package, Shield, Truck, Star, Award, Check, CheckCircle, Zap, Heart, Sparkles, 
-                      Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, 
-                      Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, 
-                      Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, 
-                      Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, 
-                      ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, 
-                      User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic
-                    }[iconName] || Package;
-                    
-                    return (
-                      <div key={`feature-${index}`} className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                          <IconComponent className="w-5 h-5 text-primary" />
-                        </div>
-                        <div className="flex-1">
-                          <p className="font-medium text-foreground">{feature.text_ar}</p>
-                          {feature.text !== feature.text_ar && (
-                            <p className="text-sm text-muted-foreground">{feature.text}</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
+            {/* Features - Only admin-added features - Removed, features now shown in main section */}
           </div>
         </div>
 
-        {/* Additional Info */}
-        {(product.description || product.name) && (
+        {/* Additional Info - Features from extraction */}
+        {product.features && Array.isArray(product.features) && product.features.length > 0 && (
           <div className="glass-effect rounded-2xl p-6 border border-border/50 mb-8">
-            <h3 className="text-2xl font-bold text-primary mb-4">معلومات إضافية</h3>
-            <div className="prose prose-invert max-w-none">
-              <p className="text-muted-foreground leading-relaxed">
-                {product.description || product.description_ar}
-              </p>
+            <h3 className="text-2xl font-bold text-primary mb-4">مواصفات المنتج</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {product.features.map((feature: any, index: number) => {
+                const iconName = feature.icon || 'Package';
+                const IconComponent = {
+                  Package, Shield, Truck, Star, Award, Check, CheckCircle, Zap, Heart, Sparkles, 
+                  Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, 
+                  Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, 
+                  Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, 
+                  Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, 
+                  ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, 
+                  User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic
+                }[iconName] || Package;
+                
+                return (
+                  <div key={`spec-${index}`} className="flex items-start gap-3 p-3 rounded-lg bg-card/30 border border-border/30">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <IconComponent className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-foreground">{feature.text_ar}</p>
+                      {feature.text && feature.text !== feature.text_ar && (
+                        <p className="text-sm text-muted-foreground mt-1">{feature.text}</p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

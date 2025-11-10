@@ -229,6 +229,43 @@ export default function AdminDefaultSettings() {
                 </div>
               </div>
 
+              {/* Options & Colors Availability Defaults */}
+              <div className="space-y-4 pt-4 border-t border-border">
+                <Label className="text-base font-semibold">إعدادات توفر الخيارات والألوان</Label>
+                
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    الإعدادات الافتراضية لتوفر الخيارات والألوان في المنتجات الجديدة
+                  </p>
+                  
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Checkbox
+                      id="default_available_for_direct_sale"
+                      checked={formData.default_available_for_direct_sale !== false}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, default_available_for_direct_sale: checked })
+                      }
+                    />
+                    <Label htmlFor="default_available_for_direct_sale" className="cursor-pointer">
+                      متوفر للبيع المباشر (افتراضي)
+                    </Label>
+                  </div>
+
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Checkbox
+                      id="default_available_for_pre_order"
+                      checked={formData.default_available_for_pre_order || false}
+                      onCheckedChange={(checked) => 
+                        setFormData({ ...formData, default_available_for_pre_order: checked })
+                      }
+                    />
+                    <Label htmlFor="default_available_for_pre_order" className="cursor-pointer">
+                      متوفر للطلب المسبق (افتراضي)
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
               {/* Pre-order Shipping Options */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
