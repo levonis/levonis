@@ -4,6 +4,7 @@ import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
+import CustomerChat from '@/components/CustomerChat';
 import { Loader2 } from 'lucide-react';
 
 const Home = () => {
@@ -206,6 +207,7 @@ const Home = () => {
 
         <Footer />
       </main>
+      <CustomerChat />
     </div>
   );
 };

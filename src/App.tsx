@@ -28,6 +28,7 @@ import MyOrders from "./pages/MyOrders";
 import OrderDetail from "./pages/OrderDetail";
 import AdminOrders from "./pages/AdminOrders";
 import AdminPointsSettings from "./pages/AdminPointsSettings";
+import AdminChats from "./pages/AdminChats";
 import AdminLoyaltyLevels from "./pages/AdminLoyaltyLevels";
 import AdminDefaultSettings from "./pages/AdminDefaultSettings";
 import AdminDailyTasks from "./pages/AdminDailyTasks";
@@ -68,6 +69,7 @@ function AppContent() {
         <Route path="/admin/daily-tasks" element={<AdminDailyTasks />} />
         <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
         <Route path="/admin/wallet" element={<AdminWallet />} />
+        <Route path="/admin/chats" element={<AdminChats />} />
         <Route path="/my-points" element={<MyPoints />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

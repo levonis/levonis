@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import html2pdf from 'html2pdf.js';
 import { OrderInvoice } from '@/components/OrderInvoice';
+import CustomerChat from '@/components/CustomerChat';
 import { useState } from 'react';
 
 const OrderDetail = () => {
@@ -409,6 +410,8 @@ const OrderDetail = () => {
       <div className="hidden">
         <OrderInvoice order={order} />
       </div>
+      
+      <CustomerChat orderId={orderId} />
     </div>
   );
 };
