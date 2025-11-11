@@ -431,6 +431,36 @@ export type Database = {
           },
         ]
       }
+      invoice_templates: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          name_ar: string
+          template_config: Json
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          name_ar: string
+          template_config?: Json
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          name_ar?: string
+          template_config?: Json
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       loyalty_levels: {
         Row: {
           benefits: Json

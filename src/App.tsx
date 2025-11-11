@@ -32,6 +32,7 @@ import AdminLoyaltyLevels from "./pages/AdminLoyaltyLevels";
 import AdminDefaultSettings from "./pages/AdminDefaultSettings";
 import AdminDailyTasks from "./pages/AdminDailyTasks";
 import AdminWallet from "./pages/AdminWallet";
+import AdminInvoiceTemplates from "./pages/AdminInvoiceTemplates";
 import MyPoints from "./pages/MyPoints";
 import ConfirmDelivery from "./pages/ConfirmDelivery";
 import NotFound from "./pages/NotFound";
@@ -71,6 +72,7 @@ function AppContent() {
         <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
         <Route path="/admin/wallet" element={<AdminWallet />} />
         <Route path="/admin/chats" element={<AdminChats />} />
+        <Route path="/admin/invoice-templates" element={<AdminInvoiceTemplates />} />
         <Route path="/my-points" element={<MyPoints />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
