@@ -192,7 +192,28 @@ const AdminOrders = () => {
 
   const handleUpdateOrder = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    
+    if (uploadingImage) return;
+    
     const formData = new FormData(e.currentTarget);
+
+    let serialImageUrl = editingOrder.serial_number_image_url;
+
+    // رفع صورة Serial Number إذا تم اختيار ملف
+    if (serialImageFile) {
+      try {
+        setUploadingImage(true);
+        serialImageUrl = await uploadSerialImage(serialImageFile, editingOrder.id);
+        toast.success('تم رفع الصورة بنجاح');
+      } catch (error) {
+        toast.error('فشل رفع الصورة');
+        console.error(error);
+        setUploadingImage(false);
+        return;
+      } finally {
+        setUploadingImage(false);
+      }
+    }
 
     const values: any = {
       order_number: formData.get('order_number') as string,
@@ -201,25 +222,8 @@ const AdminOrders = () => {
       tracking_url: formData.get('tracking_url') as string || null,
       shipping_company: formData.get('shipping_company') as string || null,
       shipping_notes: formData.get('shipping_notes') as string || null,
+      serial_number_image_url: serialImageUrl,
     };
-
-    // رفع صورة Serial Number إذا تم اختيار ملف
-    if (serialImageFile) {
-      try {
-        setUploadingImage(true);
-        const imageUrl = await uploadSerialImage(serialImageFile, editingOrder.id);
-        values.serial_number_image_url = imageUrl;
-      } catch (error) {
-        toast.error('فشل رفع الصورة');
-        setUploadingImage(false);
-        return;
-      } finally {
-        setUploadingImage(false);
-      }
-    } else if (!serialImageFile && !serialImagePreview) {
-      // إذا لم يتم رفع صورة جديدة، احتفظ بالقيمة الموجودة
-      values.serial_number_image_url = editingOrder.serial_number_image_url;
-    }
 
     // تحديث تاريخ الوصول للمخزن
     if (values.status === 'arrived_warehouse' && editingOrder?.status !== 'arrived_warehouse') {
