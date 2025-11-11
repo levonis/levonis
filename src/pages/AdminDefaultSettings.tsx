@@ -231,37 +231,97 @@ export default function AdminDefaultSettings() {
 
               {/* Options & Colors Availability Defaults */}
               <div className="space-y-4 pt-4 border-t border-border">
-                <Label className="text-base font-semibold">إعدادات توفر الخيارات والألوان</Label>
+                <Label className="text-base font-semibold">إعدادات توفر الخيارات والألوان الافتراضية</Label>
                 
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    الإعدادات الافتراضية لتوفر الخيارات والألوان في المنتجات الجديدة
+                    هذه الإعدادات سيتم تطبيقها تلقائياً على جميع الخيارات والألوان عند إضافة منتج جديد
                   </p>
                   
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Checkbox
-                      id="default_available_for_direct_sale"
-                      checked={formData.default_available_for_direct_sale !== false}
-                      onCheckedChange={(checked) => 
-                        setFormData({ ...formData, default_available_for_direct_sale: checked })
-                      }
-                    />
-                    <Label htmlFor="default_available_for_direct_sale" className="cursor-pointer">
-                      متوفر للبيع المباشر (افتراضي)
-                    </Label>
+                  <div className="space-y-3 p-4 bg-accent/10 rounded-lg">
+                    <Label className="text-sm font-semibold">إعدادات الخيارات (Options)</Label>
+                    
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id="default_option_in_stock"
+                        checked={formData.default_option_in_stock !== false}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, default_option_in_stock: checked })
+                        }
+                      />
+                      <Label htmlFor="default_option_in_stock" className="cursor-pointer text-sm">
+                        متوفر في المخزون (افتراضي)
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id="default_option_available_for_direct_sale"
+                        checked={formData.default_option_available_for_direct_sale !== false}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, default_option_available_for_direct_sale: checked })
+                        }
+                      />
+                      <Label htmlFor="default_option_available_for_direct_sale" className="cursor-pointer text-sm">
+                        متوفر للبيع المباشر (افتراضي)
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id="default_option_available_for_pre_order"
+                        checked={formData.default_option_available_for_pre_order || false}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, default_option_available_for_pre_order: checked })
+                        }
+                      />
+                      <Label htmlFor="default_option_available_for_pre_order" className="cursor-pointer text-sm">
+                        متوفر للطلب المسبق (افتراضي)
+                      </Label>
+                    </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 space-x-reverse">
-                    <Checkbox
-                      id="default_available_for_pre_order"
-                      checked={formData.default_available_for_pre_order || false}
-                      onCheckedChange={(checked) => 
-                        setFormData({ ...formData, default_available_for_pre_order: checked })
-                      }
-                    />
-                    <Label htmlFor="default_available_for_pre_order" className="cursor-pointer">
-                      متوفر للطلب المسبق (افتراضي)
-                    </Label>
+                  <div className="space-y-3 p-4 bg-accent/10 rounded-lg">
+                    <Label className="text-sm font-semibold">إعدادات الألوان (Colors)</Label>
+                    
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id="default_color_in_stock"
+                        checked={formData.default_color_in_stock !== false}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, default_color_in_stock: checked })
+                        }
+                      />
+                      <Label htmlFor="default_color_in_stock" className="cursor-pointer text-sm">
+                        متوفر في المخزون (افتراضي)
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id="default_color_available_for_direct_sale"
+                        checked={formData.default_color_available_for_direct_sale !== false}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, default_color_available_for_direct_sale: checked })
+                        }
+                      />
+                      <Label htmlFor="default_color_available_for_direct_sale" className="cursor-pointer text-sm">
+                        متوفر للبيع المباشر (افتراضي)
+                      </Label>
+                    </div>
+
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id="default_color_available_for_pre_order"
+                        checked={formData.default_color_available_for_pre_order || false}
+                        onCheckedChange={(checked) => 
+                          setFormData({ ...formData, default_color_available_for_pre_order: checked })
+                        }
+                      />
+                      <Label htmlFor="default_color_available_for_pre_order" className="cursor-pointer text-sm">
+                        متوفر للطلب المسبق (افتراضي)
+                      </Label>
+                    </div>
                   </div>
                 </div>
               </div>
