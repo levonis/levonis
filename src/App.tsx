@@ -33,6 +33,7 @@ import AdminDefaultSettings from "./pages/AdminDefaultSettings";
 import AdminDailyTasks from "./pages/AdminDailyTasks";
 import AdminWallet from "./pages/AdminWallet";
 import MyPoints from "./pages/MyPoints";
+import ConfirmDelivery from "./pages/ConfirmDelivery";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ function AppContent() {
         <Route path="/my-requests" element={<MyCustomRequests />} />
         <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/order/:orderId" element={<OrderDetail />} />
+        <Route path="/my-orders/:orderId/confirm" element={<ConfirmDelivery />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/admin/notifications" element={<AdminNotifications />} />

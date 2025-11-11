@@ -86,7 +86,9 @@ const OrderDetail = () => {
       pending: { variant: 'outline', label: 'قيد الانتظار', color: 'text-amber-500' },
       confirmed: { variant: 'secondary', label: 'مؤكد', color: 'text-blue-500' },
       processing: { variant: 'default', label: 'قيد التجهيز', color: 'text-purple-500' },
+      arrived_warehouse: { variant: 'default', label: 'وصل المخزن', color: 'text-indigo-500' },
       shipped: { variant: 'default', label: 'تم الشحن', color: 'text-cyan-500' },
+      arrived_iraq: { variant: 'default', label: 'وصل العراق', color: 'text-teal-500' },
       delivered: { variant: 'secondary', label: 'تم التوصيل', color: 'text-green-500' },
       cancelled: { variant: 'destructive', label: 'ملغي', color: 'text-red-500' },
     };
@@ -191,20 +193,53 @@ const OrderDetail = () => {
 
                 {/* Confirmed */}
                 <div className="relative flex gap-4 pr-10">
-                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['confirmed', 'processing', 'shipped', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
+                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['confirmed', 'processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
                     <CreditCard className="h-4 w-4" />
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-foreground">تم تأكيد الطلب</h4>
-                    {['confirmed', 'processing', 'shipped', 'delivered'].includes(order.status) && (
+                    {['confirmed', 'processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) && (
                       <p className="text-sm text-primary font-medium">تم التأكيد</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Processing */}
+                <div className="relative flex gap-4 pr-10">
+                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
+                    <Package className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-foreground">قيد التجهيز</h4>
+                    {['processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) && (
+                      <p className="text-sm text-primary font-medium">جاري تجهيز الطلب</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Arrived Warehouse */}
+                <div className="relative flex gap-4 pr-10">
+                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
+                    <Package className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-foreground">وصل إلى المخزن</h4>
+                    {order.arrived_warehouse_at ? (
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(order.arrived_warehouse_at), 'PPP - p', { locale: ar })}
+                      </p>
+                    ) : ['arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? (
+                      <p className="text-sm text-primary font-medium">وصل المخزن</p>
+                    ) : null}
+                    {order.serial_number_image_url && (
+                      <img src={order.serial_number_image_url} alt="Serial Number" className="mt-2 max-w-xs rounded border" />
                     )}
                   </div>
                 </div>
 
                 {/* Shipped */}
                 <div className="relative flex gap-4 pr-10">
-                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['shipped', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
+                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
                     <Truck className="h-4 w-4" />
                   </div>
                   <div className="flex-1">
@@ -213,8 +248,25 @@ const OrderDetail = () => {
                       <p className="text-sm text-muted-foreground">
                         {format(new Date(order.shipped_at), 'PPP - p', { locale: ar })}
                       </p>
-                    ) : ['shipped', 'delivered'].includes(order.status) ? (
+                    ) : ['shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? (
                       <p className="text-sm text-primary font-medium">تم الشحن</p>
+                    ) : null}
+                  </div>
+                </div>
+
+                {/* Arrived Iraq */}
+                <div className="relative flex gap-4 pr-10">
+                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['arrived_iraq', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
+                    <MapPin className="h-4 w-4" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-foreground">وصل إلى العراق</h4>
+                    {order.arrived_iraq_at ? (
+                      <p className="text-sm text-muted-foreground">
+                        {format(new Date(order.arrived_iraq_at), 'PPP - p', { locale: ar })}
+                      </p>
+                    ) : ['arrived_iraq', 'delivered'].includes(order.status) ? (
+                      <p className="text-sm text-primary font-medium">وصل العراق</p>
                     ) : null}
                   </div>
                 </div>
@@ -239,6 +291,44 @@ const OrderDetail = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Delivery Confirmation (User Only) */}
+        {!isAdmin && order.status === 'delivered' && !order.user_confirmed_delivery && (
+          <Card className="mb-6 border-green-500/50 shadow-lg bg-green-50/50">
+            <CardContent className="py-6">
+              <div className="text-center space-y-4">
+                <h3 className="text-xl font-bold text-green-700">هل استلمت طلبك؟</h3>
+                <p className="text-muted-foreground">يرجى تأكيد استلام الطلب وتقييم المنتجات</p>
+                <Button 
+                  onClick={() => navigate(`/my-orders/${order.id}/confirm`)}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  تأكيد الاستلام وتقييم المنتج
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  ملاحظة: سيتم تأكيد الاستلام تلقائياً بعد 7 أيام مع تقييم 5 نجوم
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {order.user_confirmed_delivery && (
+          <Card className="mb-6 border-primary/20 shadow-lg">
+            <CardContent className="py-4">
+              <div className="flex items-center justify-center gap-2 text-green-600">
+                <ShoppingBag className="h-5 w-5" />
+                <span className="font-bold">تم تأكيد الاستلام</span>
+                {order.auto_confirmed && <span className="text-sm text-muted-foreground">(تلقائياً)</span>}
+              </div>
+              {order.user_confirmed_at && (
+                <p className="text-center text-sm text-muted-foreground mt-2">
+                  {format(new Date(order.user_confirmed_at), 'PPP - p', { locale: ar })}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Shipping Info */}

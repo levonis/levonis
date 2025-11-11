@@ -684,6 +684,9 @@ export type Database = {
       }
       orders: {
         Row: {
+          arrived_iraq_at: string | null
+          arrived_warehouse_at: string | null
+          auto_confirmed: boolean | null
           created_at: string
           currency: string
           delivered_at: string | null
@@ -691,6 +694,7 @@ export type Database = {
           id: string
           order_number: string
           phone_number: string
+          serial_number_image_url: string | null
           shipped_at: string | null
           shipping_address: string
           shipping_company: string | null
@@ -700,9 +704,14 @@ export type Database = {
           tracking_number: string | null
           tracking_url: string | null
           updated_at: string
+          user_confirmed_at: string | null
+          user_confirmed_delivery: boolean | null
           user_id: string
         }
         Insert: {
+          arrived_iraq_at?: string | null
+          arrived_warehouse_at?: string | null
+          auto_confirmed?: boolean | null
           created_at?: string
           currency?: string
           delivered_at?: string | null
@@ -710,6 +719,7 @@ export type Database = {
           id?: string
           order_number: string
           phone_number: string
+          serial_number_image_url?: string | null
           shipped_at?: string | null
           shipping_address: string
           shipping_company?: string | null
@@ -719,9 +729,14 @@ export type Database = {
           tracking_number?: string | null
           tracking_url?: string | null
           updated_at?: string
+          user_confirmed_at?: string | null
+          user_confirmed_delivery?: boolean | null
           user_id: string
         }
         Update: {
+          arrived_iraq_at?: string | null
+          arrived_warehouse_at?: string | null
+          auto_confirmed?: boolean | null
           created_at?: string
           currency?: string
           delivered_at?: string | null
@@ -729,6 +744,7 @@ export type Database = {
           id?: string
           order_number?: string
           phone_number?: string
+          serial_number_image_url?: string | null
           shipped_at?: string | null
           shipping_address?: string
           shipping_company?: string | null
@@ -738,6 +754,8 @@ export type Database = {
           tracking_number?: string | null
           tracking_url?: string | null
           updated_at?: string
+          user_confirmed_at?: string | null
+          user_confirmed_delivery?: boolean | null
           user_id?: string
         }
         Relationships: [
@@ -1172,6 +1190,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_user_level: { Args: { points: number }; Returns: string }
       check_username_available: {
         Args: { username_to_check: string }

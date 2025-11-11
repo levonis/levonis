@@ -162,14 +162,25 @@ const AdminOrders = () => {
       tracking_url: formData.get('tracking_url') as string || null,
       shipping_company: formData.get('shipping_company') as string || null,
       shipping_notes: formData.get('shipping_notes') as string || null,
+      serial_number_image_url: formData.get('serial_number_image_url') as string || null,
     };
 
-    // تحديث تاريخ الشحن إذا تم تغيير الحالة إلى "تم الشحن"
+    // تحديث تاريخ الوصول للمخزن
+    if (values.status === 'arrived_warehouse' && editingOrder?.status !== 'arrived_warehouse') {
+      values.arrived_warehouse_at = new Date().toISOString();
+    }
+
+    // تحديث تاريخ الشحن
     if (values.status === 'shipped' && editingOrder?.status !== 'shipped') {
       values.shipped_at = new Date().toISOString();
     }
 
-    // تحديث تاريخ التوصيل إذا تم تغيير الحالة إلى "تم التوصيل"
+    // تحديث تاريخ الوصول للعراق
+    if (values.status === 'arrived_iraq' && editingOrder?.status !== 'arrived_iraq') {
+      values.arrived_iraq_at = new Date().toISOString();
+    }
+
+    // تحديث تاريخ التوصيل
     if (values.status === 'delivered' && editingOrder?.status !== 'delivered') {
       values.delivered_at = new Date().toISOString();
     }
@@ -182,7 +193,9 @@ const AdminOrders = () => {
       pending: { variant: 'outline', label: 'قيد الانتظار' },
       confirmed: { variant: 'secondary', label: 'مؤكد' },
       processing: { variant: 'default', label: 'قيد التجهيز' },
+      arrived_warehouse: { variant: 'default', label: 'وصل المخزن' },
       shipped: { variant: 'default', label: 'تم الشحن' },
+      arrived_iraq: { variant: 'default', label: 'وصل العراق' },
       delivered: { variant: 'secondary', label: 'تم التوصيل' },
       cancelled: { variant: 'destructive', label: 'ملغي' },
     };
@@ -523,10 +536,29 @@ const AdminOrders = () => {
                                     <option value="pending">قيد الانتظار</option>
                                     <option value="confirmed">مؤكد</option>
                                     <option value="processing">قيد التجهيز</option>
+                                    <option value="arrived_warehouse">وصل المخزن</option>
                                     <option value="shipped">تم الشحن</option>
+                                    <option value="arrived_iraq">وصل العراق</option>
                                     <option value="delivered">تم التوصيل</option>
                                     <option value="cancelled">ملغي</option>
                                   </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="serial_number_image_url">رابط صورة Serial Number</Label>
+                                  <Input
+                                    id="serial_number_image_url"
+                                    name="serial_number_image_url"
+                                    type="url"
+                                    defaultValue={order.serial_number_image_url || ''}
+                                    placeholder="https://..."
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    رابط صورة Serial Number عند وصول المنتج للمخزن
+                                  </p>
+                                  {order.serial_number_image_url && (
+                                    <img src={order.serial_number_image_url} alt="Serial Number" className="mt-2 max-w-xs rounded border" />
+                                  )}
                                 </div>
 
                                 <div className="space-y-2">

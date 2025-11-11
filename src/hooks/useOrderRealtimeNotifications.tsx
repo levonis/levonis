@@ -55,13 +55,21 @@ export const useOrderRealtimeNotifications = () => {
                 title: '⚙️ جاري تجهيز طلبك',
                 description: `طلب رقم ${newOrder.order_number} قيد التجهيز`
               },
+              arrived_warehouse: {
+                title: '📦 وصل طلبك للمخزن',
+                description: `طلب رقم ${newOrder.order_number} وصل إلى المخزن`
+              },
               shipped: {
                 title: '🚚 تم شحن طلبك',
                 description: `طلب رقم ${newOrder.order_number} في الطريق إليك`
               },
+              arrived_iraq: {
+                title: '🇮🇶 وصل طلبك للعراق',
+                description: `طلب رقم ${newOrder.order_number} وصل إلى العراق`
+              },
               delivered: {
                 title: '🎉 تم توصيل طلبك',
-                description: `طلب رقم ${newOrder.order_number} وصل بنجاح`
+                description: `طلب رقم ${newOrder.order_number} وصل بنجاح - يرجى تأكيد الاستلام`
               },
               cancelled: {
                 title: '❌ تم إلغاء الطلب',
@@ -85,6 +93,16 @@ export const useOrderRealtimeNotifications = () => {
             toast({
               title: '📦 تم إضافة رقم التتبع',
               description: `يمكنك الآن تتبع طلب رقم ${newOrder.order_number}`,
+              duration: 5000,
+            });
+            shouldPlaySound = true;
+          }
+
+          // Check if serial number image was added
+          if (!oldOrder.serial_number_image_url && newOrder.serial_number_image_url) {
+            toast({
+              title: '📸 تم إضافة صورة Serial Number',
+              description: `تمت إضافة صورة Serial Number لطلب رقم ${newOrder.order_number}`,
               duration: 5000,
             });
             shouldPlaySound = true;
