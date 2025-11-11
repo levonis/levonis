@@ -15,7 +15,7 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
           {/* Left side - Title */}
           <div>
             <h1 className="text-5xl font-bold text-teal-600 italic mb-2" style={{ fontFamily: 'cursive' }}>
-              levonis<span className="text-4xl not-italic">RECEIPT</span>
+              levonis<span className="text-4xl not-italic">إيصال</span>
             </h1>
             <p className="text-sm text-teal-700 font-medium">إيصال الدفع وضمان المشتري</p>
           </div>
@@ -23,11 +23,11 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
           {/* Right side - Serial and Date */}
           <div className="text-left space-y-2">
             <div className="text-sm">
-              <span className="text-teal-700 font-medium">Serial n°: </span>
-              <span className="font-bold">{order.serial_number_image_url ? order.order_number : '0938BC580601940'}</span>
+              <span className="text-teal-700 font-medium">الرقم التسلسلي: </span>
+              <span className="font-bold">{order.order_number}</span>
             </div>
             <div className="text-sm">
-              <span className="text-teal-700 font-medium">date: </span>
+              <span className="text-teal-700 font-medium">التاريخ: </span>
               <span>{format(new Date(order.created_at), 'd / M / yyyy')}</span>
             </div>
           </div>
@@ -40,46 +40,43 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
           {/* Left - Customer Info */}
           <div className="border-l-2 border-teal-600 p-6 space-y-3">
             <div>
-              <span className="text-teal-700 font-bold">Name : </span>
+              <span className="text-teal-700 font-bold">الاسم : </span>
               <span className="font-medium">{order.profiles?.full_name || 'غير محدد'}</span>
             </div>
             <div>
-              <span className="text-teal-700 font-bold">Address : </span>
+              <span className="text-teal-700 font-bold">العنوان : </span>
               <span className="font-medium">{order.shipping_address} / {order.governorate}</span>
             </div>
             <div>
-              <span className="text-teal-700 font-bold">number: </span>
+              <span className="text-teal-700 font-bold">رقم الهاتف: </span>
               <span className="font-medium">{order.phone_number}</span>
             </div>
           </div>
 
-          {/* Right - Product and Barcodes */}
+          {/* Right - Product and Serial Info */}
           <div className="p-6 space-y-4">
             <div className="text-sm">
-              <div className="font-bold mb-1">MODEL: {order.order_items?.[0]?.product_name || 'PF003-S+SA007'}</div>
-              <div className="font-bold">Product n°: {order.order_number}</div>
+              <div className="font-bold mb-1">الموديل: {order.order_items?.[0]?.product_name_ar || 'غير محدد'}</div>
+              <div className="font-bold">رقم المنتج: {order.order_number}</div>
             </div>
             
-            {/* Placeholder for barcodes */}
-            <div className="space-y-2">
-              <div className="text-xs font-mono bg-gray-100 p-2 text-center">|||||||||||||||||||||||||||||||</div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="text-xs">
-                  <div className="font-bold">BOX SN:</div>
-                  <div className="font-mono bg-gray-100 p-1 text-center text-[8px]">||||||||||||||||||||</div>
-                </div>
-                <div className="text-xs">
-                  <div className="font-bold">EAN:</div>
-                  <div className="font-mono bg-gray-100 p-1 text-center text-[8px]">||||||||||||||||||||</div>
-                </div>
+            {/* Serial Number Image */}
+            {order.serial_number_image_url && (
+              <div className="border-2 border-teal-600 p-2">
+                <img 
+                  src={order.serial_number_image_url} 
+                  alt="Serial Number" 
+                  className="w-full h-auto max-h-32 object-contain"
+                />
               </div>
-            </div>
+            )}
 
             {/* Company Info */}
             <div className="text-xs border border-gray-300 p-2">
-              <div className="font-bold mb-1">Company name: Levonis IQ</div>
-              <div>Address: العراق - بغداد</div>
-              <div>Email: info@levonis.net</div>
+              <div className="font-bold mb-1">اسم الشركة: Levonis IQ</div>
+              <div>العنوان: العراق - بغداد</div>
+              <div>البريد الإلكتروني: info@levonis.net</div>
+              <div>واتساب: 9647838455220</div>
             </div>
           </div>
         </div>
@@ -91,8 +88,8 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
           <thead>
             <tr className="bg-teal-50">
               <th className="p-3 text-right border-l border-teal-600 font-bold text-teal-700">اسم القطعة</th>
-              <th className="p-3 text-center border-l border-teal-600 font-bold text-teal-700">الوزن او الحجم</th>
-              <th className="p-3 text-center border-l border-teal-600 font-bold text-teal-700">كلفة الضمان</th>
+              <th className="p-3 text-center border-l border-teal-600 font-bold text-teal-700">الكمية</th>
+              <th className="p-3 text-center border-l border-teal-600 font-bold text-teal-700">السعر للقطعة</th>
               <th className="p-3 text-center font-bold text-teal-700">المجموع</th>
             </tr>
           </thead>
@@ -104,11 +101,16 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
                   {item.selected_color && (
                     <div className="text-sm text-gray-600">اللون: {item.selected_color}</div>
                   )}
+                  {item.selected_option && (
+                    <div className="text-sm text-gray-600">الخيار: {item.selected_option}</div>
+                  )}
                 </td>
-                <td className="p-3 text-center border-l border-teal-600">-</td>
-                <td className="p-3 text-center border-l border-teal-600">{item.quantity} قطعة</td>
+                <td className="p-3 text-center border-l border-teal-600">{item.quantity}</td>
+                <td className="p-3 text-center border-l border-teal-600">
+                  {formatPrice(Number(item.unit_price))} {order.currency}
+                </td>
                 <td className="p-3 text-center font-bold text-teal-700 text-lg">
-                  {formatPrice(Number(item.total_price))}
+                  {formatPrice(Number(item.total_price))} {order.currency}
                 </td>
               </tr>
             ))}
@@ -121,21 +123,30 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
         <table className="w-full">
           <tbody>
             <tr className="border-b-2 border-teal-600">
-              <td className="p-4 text-teal-700 font-bold text-center" colSpan={2}>
-                <div>توقيع المكتب</div>
-                <div className="text-xs mt-2 text-gray-700">
-                  يحق للمشتري استرداد المبلغ المدفوع مقدماً خلال مدة أقصاها ثلاثة (3) أيام من تاريخ الدفع، على أن يتحمل 25% من قيمة المبلغ كرسوم إدارية وتعويضية
+              <td className="p-4 text-teal-700 font-bold text-center align-top" colSpan={2}>
+                <div className="mb-4">توقيع المكتب</div>
+                <div className="text-xs mt-4 text-gray-700 leading-relaxed text-right">
+                  يحق للمشتري استرداد المبلغ المدفوع مقدماً خلال مدة أقصاها ثلاثة (3) أيام من تاريخ الدفع، 
+                  على أن يتحمل 25% من قيمة المبلغ كرسوم إدارية وتعويضية
                 </div>
               </td>
-              <td className="p-4 border-r-2 border-teal-600">
-                <div className="text-sm text-gray-700 mb-2">المجموع الفرعي مع التأمين والضمان</div>
-                <div className="text-sm text-gray-700 mb-2">ما تم دفعه مقدماً</div>
-                <div className="text-sm font-bold text-teal-700">المجموع النهائي المتبقي</div>
-              </td>
-              <td className="p-4 text-left">
-                <div className="text-lg font-bold mb-2">{formatPrice(Number(order.total_amount))}</div>
-                <div className="text-lg mb-2 italic text-gray-600">0</div>
-                <div className="text-xl font-bold text-teal-700">{formatPrice(Number(order.total_amount))}</div>
+              <td className="p-4 border-r-2 border-teal-600" colSpan={2}>
+                <table className="w-full text-sm">
+                  <tr>
+                    <td className="py-2 text-gray-700">المجموع الفرعي مع التأمين والضمان:</td>
+                    <td className="py-2 text-left font-bold text-lg">{formatPrice(Number(order.total_amount))} {order.currency}</td>
+                  </tr>
+                  <tr>
+                    <td className="py-2 text-gray-700">ما تم دفعه مقدماً:</td>
+                    <td className="py-2 text-left italic text-gray-600">0 {order.currency}</td>
+                  </tr>
+                  <tr className="border-t-2 border-teal-600">
+                    <td className="py-3 font-bold text-teal-700">المجموع النهائي المتبقي:</td>
+                    <td className="py-3 text-left font-bold text-xl text-teal-700">
+                      {formatPrice(Number(order.total_amount))} {order.currency}
+                    </td>
+                  </tr>
+                </table>
               </td>
             </tr>
           </tbody>
@@ -144,7 +155,7 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
 
       {/* Warranty Section */}
       <div className="border-4 border-teal-600 p-6 mb-6">
-        <h3 className="text-xl font-bold text-center text-teal-700 mb-4">الضمان والملكية :</h3>
+        <h3 className="text-xl font-bold text-center text-teal-700 mb-4">الضمان والملكية:</h3>
         <div className="space-y-3 text-sm leading-relaxed">
           <p className="text-center">
             نقر نحن بأننا نتحمل كافة التكاليف والنفقات في حال حصول أي خلل في القطعة مستقبلاً،
@@ -159,9 +170,10 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
 
       {/* Footer */}
       <div className="text-center">
-        <h2 className="text-4xl font-bold text-teal-600 italic" style={{ fontFamily: 'cursive' }}>
+        <h2 className="text-4xl font-bold text-teal-600 italic mb-2" style={{ fontFamily: 'cursive' }}>
           levonis iq
         </h2>
+        <p className="text-sm text-gray-600">شكراً لتسوقك معنا!</p>
       </div>
     </div>
   );

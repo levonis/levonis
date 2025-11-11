@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -29,6 +29,9 @@ const AdminOrders = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchParams] = useSearchParams();
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [serialImageFile, setSerialImageFile] = useState<File | null>(null);
+  const [serialImagePreview, setSerialImagePreview] = useState<string>('');
   useEffect(() => {
     const status = searchParams.get('status');
     if (status) setStatusFilter(status);
@@ -67,6 +70,8 @@ const AdminOrders = () => {
       toast.success('تم تحديث الطلب بنجاح');
       setDialogOpen(false);
       setEditingOrder(null);
+      setSerialImageFile(null);
+      setSerialImagePreview('');
     },
     onError: (error) => {
       toast.error('حدث خطأ أثناء تحديث الطلب');
@@ -151,7 +156,41 @@ const AdminOrders = () => {
     createOrderMutation.mutate(values);
   };
 
-  const handleUpdateOrder = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSerialImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('حجم الصورة يجب أن يكون أقل من 5 ميجابايت');
+        return;
+      }
+      setSerialImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setSerialImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadSerialImage = async (file: File, orderId: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${orderId}-${Date.now()}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('serial-number-images')
+      .upload(filePath, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('serial-number-images')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
+
+  const handleUpdateOrder = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
 
@@ -162,8 +201,25 @@ const AdminOrders = () => {
       tracking_url: formData.get('tracking_url') as string || null,
       shipping_company: formData.get('shipping_company') as string || null,
       shipping_notes: formData.get('shipping_notes') as string || null,
-      serial_number_image_url: formData.get('serial_number_image_url') as string || null,
     };
+
+    // رفع صورة Serial Number إذا تم اختيار ملف
+    if (serialImageFile) {
+      try {
+        setUploadingImage(true);
+        const imageUrl = await uploadSerialImage(serialImageFile, editingOrder.id);
+        values.serial_number_image_url = imageUrl;
+      } catch (error) {
+        toast.error('فشل رفع الصورة');
+        setUploadingImage(false);
+        return;
+      } finally {
+        setUploadingImage(false);
+      }
+    } else if (!serialImageFile && !serialImagePreview) {
+      // إذا لم يتم رفع صورة جديدة، احتفظ بالقيمة الموجودة
+      values.serial_number_image_url = editingOrder.serial_number_image_url;
+    }
 
     // تحديث تاريخ الوصول للمخزن
     if (values.status === 'arrived_warehouse' && editingOrder?.status !== 'arrived_warehouse') {
@@ -489,7 +545,11 @@ const AdminOrders = () => {
                           </Button>
                           <Dialog open={dialogOpen && editingOrder?.id === order.id} onOpenChange={(open) => {
                             setDialogOpen(open);
-                            if (!open) setEditingOrder(null);
+                            if (!open) {
+                              setEditingOrder(null);
+                              setSerialImageFile(null);
+                              setSerialImagePreview('');
+                            }
                           }}>
                             <DialogTrigger asChild>
                               <Button
@@ -497,6 +557,7 @@ const AdminOrders = () => {
                                 variant="outline"
                                 onClick={() => {
                                   setEditingOrder(order);
+                                  setSerialImagePreview(order.serial_number_image_url || '');
                                   setDialogOpen(true);
                                 }}
                               >
@@ -545,20 +606,50 @@ const AdminOrders = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                  <Label htmlFor="serial_number_image_url">رابط صورة Serial Number</Label>
-                                  <Input
-                                    id="serial_number_image_url"
-                                    name="serial_number_image_url"
-                                    type="url"
-                                    defaultValue={order.serial_number_image_url || ''}
-                                    placeholder="https://..."
-                                  />
-                                  <p className="text-xs text-muted-foreground">
-                                    رابط صورة Serial Number عند وصول المنتج للمخزن
-                                  </p>
-                                  {order.serial_number_image_url && (
-                                    <img src={order.serial_number_image_url} alt="Serial Number" className="mt-2 max-w-xs rounded border" />
-                                  )}
+                                  <Label htmlFor="serial_image">صورة Serial Number</Label>
+                                  <div className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => document.getElementById('serial_image')?.click()}
+                                        disabled={uploadingImage}
+                                      >
+                                        <Upload className="ml-2 h-4 w-4" />
+                                        {serialImageFile ? 'تغيير الصورة' : 'رفع صورة'}
+                                      </Button>
+                                      {(serialImagePreview || order.serial_number_image_url) && (
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => {
+                                            setSerialImageFile(null);
+                                            setSerialImagePreview('');
+                                          }}
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
+                                      )}
+                                    </div>
+                                    <Input
+                                      id="serial_image"
+                                      type="file"
+                                      accept="image/*"
+                                      className="hidden"
+                                      onChange={handleSerialImageChange}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                      صورة Serial Number عند وصول المنتج للمخزن (الحد الأقصى: 5 ميجابايت)
+                                    </p>
+                                    {(serialImagePreview || order.serial_number_image_url) && (
+                                      <img 
+                                        src={serialImagePreview || order.serial_number_image_url} 
+                                        alt="Serial Number Preview" 
+                                        className="mt-2 max-w-xs rounded border"
+                                      />
+                                    )}
+                                  </div>
                                 </div>
 
                                 <div className="space-y-2">
@@ -610,15 +701,17 @@ const AdminOrders = () => {
                                     onClick={() => {
                                       setDialogOpen(false);
                                       setEditingOrder(null);
+                                      setSerialImageFile(null);
+                                      setSerialImagePreview('');
                                     }}
                                   >
                                     إلغاء
                                   </Button>
-                                  <Button type="submit" disabled={updateOrderMutation.isPending}>
-                                    {updateOrderMutation.isPending && (
+                                  <Button type="submit" disabled={updateOrderMutation.isPending || uploadingImage}>
+                                    {(updateOrderMutation.isPending || uploadingImage) && (
                                       <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                                     )}
-                                    حفظ التغييرات
+                                    {uploadingImage ? 'جاري رفع الصورة...' : 'حفظ التغييرات'}
                                   </Button>
                                 </div>
                               </form>

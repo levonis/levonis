@@ -145,18 +145,23 @@ const OrderDetail = () => {
               <p className="text-muted-foreground">رقم الطلب: {order.order_number}</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button 
-                onClick={handlePrintInvoice}
-                disabled={isGeneratingPDF}
-                className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-              >
-                {isGeneratingPDF ? (
-                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <FileText className="ml-2 h-4 w-4" />
-                )}
-                طباعة الفاتورة
-              </Button>
+              {(order.status === 'arrived_warehouse' || 
+                order.status === 'shipped' || 
+                order.status === 'arrived_iraq' || 
+                order.status === 'delivered') && (
+                <Button 
+                  onClick={handlePrintInvoice}
+                  disabled={isGeneratingPDF}
+                  className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                >
+                  {isGeneratingPDF ? (
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <FileText className="ml-2 h-4 w-4" />
+                  )}
+                  طباعة الفاتورة
+                </Button>
+              )}
               <Badge variant={statusInfo.variant} className="text-lg px-4 py-2 w-fit">
                 {statusInfo.label}
               </Badge>
