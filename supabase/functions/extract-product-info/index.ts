@@ -306,7 +306,7 @@ ${textContent}
                     description: "جميع مميزات وخصائص المنتج المذكورة بوضوح في الصفحة مع اختيار أيقونة مناسبة لكل ميزة. استخرج فقط المميزات الواضحة والمحددة واختر الأيقونة الأنسب"
                   }
                 },
-                required: [],
+                required: ["name", "name_ar", "description_ar", "images", "sizes", "colors", "features"],
                 additionalProperties: false
               }
             }
