@@ -1,4 +1,5 @@
 import logo from '@/assets/logo.png';
+import logoWebp from '@/assets/logo-optimized.webp';
 
 const Footer = () => {
   return (
@@ -6,11 +7,17 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center justify-center gap-6">
           <div className="w-48 h-48 relative">
-            <img 
-              src={logo} 
-              alt="Logo" 
-              className="w-full h-full object-contain animate-fade-in"
-            />
+            <picture>
+              <source srcSet={logoWebp} type="image/webp" />
+              <img 
+                src={logo} 
+                alt="Logo" 
+                className="w-full h-full object-contain animate-fade-in"
+                loading="lazy"
+                width="192"
+                height="192"
+              />
+            </picture>
           </div>
           
           <div className="flex items-center justify-center gap-4">
