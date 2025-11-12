@@ -68,19 +68,48 @@ serve(async (req) => {
     // Increase limit to capture more content
     textContent = textContent.substring(0, 40000);
 
-    // Extract image URLs from HTML
+    // Extract image URLs and ALT texts from HTML (more robust)
     const imageUrls: string[] = [];
-    const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*>/gi;
-    let imgMatch;
-    while ((imgMatch = imgRegex.exec(html)) !== null) {
-      const imgUrl = imgMatch[1];
-      // Only include full URLs and exclude tiny icons/placeholders
-      if (imgUrl.startsWith('http') && !imgUrl.includes('icon') && !imgUrl.includes('logo')) {
-        imageUrls.push(imgUrl);
+    const altTexts: string[] = [];
+
+    const imgTagRegex = /<img[^>]*>/gi;
+    let tagMatch;
+    while ((tagMatch = imgTagRegex.exec(html)) !== null) {
+      const tag = tagMatch[0];
+
+      const srcMatch = tag.match(/src=["']([^"']+)["']/i);
+      const dataSrcMatch = tag.match(/data-src=["']([^"']+)["']/i);
+      const srcsetMatch = tag.match(/srcset=["']([^"']+)["']/i);
+      const altMatch = tag.match(/alt=["']([^"']+)["']/i);
+
+      const pushUrl = (u?: string | null) => {
+        if (!u) return;
+        if (u.startsWith('http') && !u.includes('icon') && !u.includes('logo')) {
+          imageUrls.push(u);
+        }
+      };
+
+      pushUrl(srcMatch?.[1] || null);
+      pushUrl(dataSrcMatch?.[1] || null);
+
+      if (srcsetMatch?.[1]) {
+        const candidates = srcsetMatch[1].split(',').map(s => s.trim().split(' ')[0]);
+        for (const c of candidates) pushUrl(c);
+      }
+
+      if (altMatch?.[1]) {
+        const alt = altMatch[1].trim();
+        if (alt && alt.length > 1) altTexts.push(alt);
       }
     }
 
     console.log('Extracted text content length:', textContent.length);
+
+    // Prepare data for the AI prompt
+    const unique = (arr: string[]) => Array.from(new Set(arr));
+    const imageUrlsForPrompt = unique(imageUrls).slice(0, 150);
+    const altTextsForPrompt = unique(altTexts || []).slice(0, 300);
+    console.log(`Found ${imageUrlsForPrompt.length} image URLs and ${altTextsForPrompt.length} alt texts for prompt`);
 
     // Call Lovable AI to extract product information
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -152,10 +181,13 @@ serve(async (req) => {
 
 ${textContent}
 
-الصور المتاحة في الصفحة:
-${imageUrls.slice(0, 20).join('\n')}
-
-استخرج المعلومات التالية بدقة تامة واتساق كامل:
+            الصور المتاحة في الصفحة:
+            ${imageUrlsForPrompt.join('\n')}
+            
+            نصوص ALT للصور (قد تحتوي أسماء ألوان مهمة):
+            ${altTextsForPrompt.join('\n')}
+            
+            استخرج المعلومات التالية بدقة تامة واتساق كامل:
 
 1. اسم المنتج:
    - بالعربية: ترجمة احترافية طبيعية (ليست حرفية)
