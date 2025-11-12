@@ -179,6 +179,7 @@ const TopBar = () => {
                 size="icon"
                 className="rounded-full border-primary/30 hover:border-primary"
                 title="طلب منتج مخصص"
+                aria-label="طلب منتج مخصص"
               >
                 <Package className="h-5 w-5" />
               </Button>
@@ -190,6 +191,7 @@ const TopBar = () => {
               size="icon"
               onClick={() => navigate('/cart')}
               className="relative rounded-full border-primary/30 hover:border-primary"
+              aria-label="سلة التسوق"
             >
               <ShoppingCart className="h-5 w-5" />
               {itemCount > 0 && (
@@ -207,6 +209,7 @@ const TopBar = () => {
                 onClick={() => navigate('/admin/chats')}
                 className="relative rounded-full border-primary/30 hover:border-primary"
                 title="محادثات العملاء"
+                aria-label="محادثات العملاء"
               >
                 <MessageCircle className="h-5 w-5" />
                 {adminUnreadMessages && adminUnreadMessages > 0 && (
@@ -224,6 +227,7 @@ const TopBar = () => {
                     variant="outline" 
                     size="icon"
                     className="relative rounded-full border-primary/30 hover:border-primary"
+                    aria-label="قائمة المستخدم"
                   >
                     <User className="h-5 w-5" />
                     {unreadNotifications && unreadNotifications > 0 && (

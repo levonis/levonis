@@ -114,6 +114,7 @@ const ProductCard = ({
             e.preventDefault();
             addToCart(id);
           }}
+          aria-label="أضف للسلة"
         >
           <ShoppingCart className="h-3.5 w-3.5" />
         </Button>
