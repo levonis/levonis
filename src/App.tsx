@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,34 +9,46 @@ import { CartProvider } from "@/hooks/useCart";
 import { useDailyLogin } from "@/hooks/useDailyLogin";
 import Header from "@/components/Header";
 import AnnouncementBar from "@/components/AnnouncementBar";
+import { Loader2 } from "lucide-react";
+
+// Eager load Home page for best initial load
 import Home from "./pages/Home";
-import Products from "./pages/Products";
-import ProductDetail from "./pages/ProductDetail";
-import Categories from "./pages/Categories";
-import CategoryDetail from "./pages/CategoryDetail";
-import Cart from "./pages/Cart";
-import UserInfo from "./pages/UserInfo";
-import Favorites from "./pages/Favorites";
-import Notifications from "./pages/Notifications";
-import MyCustomRequests from "./pages/MyCustomRequests";
-import Auth from "./pages/Auth";
-import Admin from "./pages/Admin";
-import AdminNotifications from "./pages/AdminNotifications";
-import AdminAnnouncements from "./pages/AdminAnnouncements";
-import AdminCoupons from "./pages/AdminCoupons";
-import MyOrders from "./pages/MyOrders";
-import OrderDetail from "./pages/OrderDetail";
-import AdminOrders from "./pages/AdminOrders";
-import AdminPointsSettings from "./pages/AdminPointsSettings";
-import AdminChats from "./pages/AdminChats";
-import AdminLoyaltyLevels from "./pages/AdminLoyaltyLevels";
-import AdminDefaultSettings from "./pages/AdminDefaultSettings";
-import AdminDailyTasks from "./pages/AdminDailyTasks";
-import AdminWallet from "./pages/AdminWallet";
-import AdminInvoiceTemplates from "./pages/AdminInvoiceTemplates";
-import MyPoints from "./pages/MyPoints";
-import ConfirmDelivery from "./pages/ConfirmDelivery";
-import NotFound from "./pages/NotFound";
+
+// Lazy load all other routes
+const Products = lazy(() => import("./pages/Products"));
+const ProductDetail = lazy(() => import("./pages/ProductDetail"));
+const Categories = lazy(() => import("./pages/Categories"));
+const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
+const Cart = lazy(() => import("./pages/Cart"));
+const UserInfo = lazy(() => import("./pages/UserInfo"));
+const Favorites = lazy(() => import("./pages/Favorites"));
+const Notifications = lazy(() => import("./pages/Notifications"));
+const MyCustomRequests = lazy(() => import("./pages/MyCustomRequests"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Admin = lazy(() => import("./pages/Admin"));
+const AdminNotifications = lazy(() => import("./pages/AdminNotifications"));
+const AdminAnnouncements = lazy(() => import("./pages/AdminAnnouncements"));
+const AdminCoupons = lazy(() => import("./pages/AdminCoupons"));
+const MyOrders = lazy(() => import("./pages/MyOrders"));
+const OrderDetail = lazy(() => import("./pages/OrderDetail"));
+const AdminOrders = lazy(() => import("./pages/AdminOrders"));
+const AdminPointsSettings = lazy(() => import("./pages/AdminPointsSettings"));
+const AdminChats = lazy(() => import("./pages/AdminChats"));
+const AdminLoyaltyLevels = lazy(() => import("./pages/AdminLoyaltyLevels"));
+const AdminDefaultSettings = lazy(() => import("./pages/AdminDefaultSettings"));
+const AdminDailyTasks = lazy(() => import("./pages/AdminDailyTasks"));
+const AdminWallet = lazy(() => import("./pages/AdminWallet"));
+const AdminInvoiceTemplates = lazy(() => import("./pages/AdminInvoiceTemplates"));
+const MyPoints = lazy(() => import("./pages/MyPoints"));
+const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+// Loading component
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 const queryClient = new QueryClient();
 
@@ -46,36 +59,38 @@ function AppContent() {
     <>
       <AnnouncementBar />
       <Header />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/products" element={<Products />} />
-        <Route path="/product/:slug" element={<ProductDetail />} />
-        <Route path="/categories" element={<Categories />} />
-        <Route path="/category/:slug" element={<CategoryDetail />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/user-info" element={<UserInfo />} />
-        <Route path="/favorites" element={<Favorites />} />
-        <Route path="/notifications" element={<Notifications />} />
-        <Route path="/my-requests" element={<MyCustomRequests />} />
-        <Route path="/my-orders" element={<MyOrders />} />
-        <Route path="/order/:orderId" element={<OrderDetail />} />
-        <Route path="/my-orders/:orderId/confirm" element={<ConfirmDelivery />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/admin/notifications" element={<AdminNotifications />} />
-        <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-        <Route path="/admin/coupons" element={<AdminCoupons />} />
-        <Route path="/admin/orders" element={<AdminOrders />} />
-        <Route path="/admin/points-settings" element={<AdminPointsSettings />} />
-        <Route path="/admin/loyalty-levels" element={<AdminLoyaltyLevels />} />
-        <Route path="/admin/daily-tasks" element={<AdminDailyTasks />} />
-        <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
-        <Route path="/admin/wallet" element={<AdminWallet />} />
-        <Route path="/admin/chats" element={<AdminChats />} />
-        <Route path="/admin/invoice-templates" element={<AdminInvoiceTemplates />} />
-        <Route path="/my-points" element={<MyPoints />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/products" element={<Products />} />
+          <Route path="/product/:slug" element={<ProductDetail />} />
+          <Route path="/categories" element={<Categories />} />
+          <Route path="/category/:slug" element={<CategoryDetail />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/user-info" element={<UserInfo />} />
+          <Route path="/favorites" element={<Favorites />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/my-requests" element={<MyCustomRequests />} />
+          <Route path="/my-orders" element={<MyOrders />} />
+          <Route path="/order/:orderId" element={<OrderDetail />} />
+          <Route path="/my-orders/:orderId/confirm" element={<ConfirmDelivery />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/notifications" element={<AdminNotifications />} />
+          <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+          <Route path="/admin/coupons" element={<AdminCoupons />} />
+          <Route path="/admin/orders" element={<AdminOrders />} />
+          <Route path="/admin/points-settings" element={<AdminPointsSettings />} />
+          <Route path="/admin/loyalty-levels" element={<AdminLoyaltyLevels />} />
+          <Route path="/admin/daily-tasks" element={<AdminDailyTasks />} />
+          <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
+          <Route path="/admin/wallet" element={<AdminWallet />} />
+          <Route path="/admin/chats" element={<AdminChats />} />
+          <Route path="/admin/invoice-templates" element={<AdminInvoiceTemplates />} />
+          <Route path="/my-points" element={<MyPoints />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </>
   );
 }
