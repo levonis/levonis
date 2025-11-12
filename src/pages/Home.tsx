@@ -127,7 +127,7 @@ const Home = () => {
         </section>
 
         {/* Categories Section */}
-        <section id="categories" className="container mx-auto px-4 py-16 relative">
+        <section id="categories" className="container mx-auto px-4 py-16 relative" style={{ minHeight: '600px', contain: 'layout' }}>
           {/* Decorative glow */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse-glow pointer-events-none" />
           
@@ -143,8 +143,14 @@ const Home = () => {
           </div>
           
           {categoriesLoading || mainSectionsLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4" style={{ minHeight: '400px' }}>
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-card/50 rounded-2xl p-5 border border-border/40 animate-pulse">
+                  <div className="w-16 h-16 bg-muted rounded-xl mb-4 mx-auto" />
+                  <div className="h-4 bg-muted rounded mb-2 w-3/4 mx-auto" />
+                  <div className="h-3 bg-muted rounded w-full" />
+                </div>
+              ))}
             </div>
           ) : (
             <div className="space-y-16">
@@ -185,15 +191,21 @@ const Home = () => {
         </section>
 
         {/* Featured Products Section */}
-        <section id="products" className="container mx-auto px-4 py-12">
+        <section id="products" className="container mx-auto px-4 py-12" style={{ minHeight: '500px', contain: 'layout' }}>
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-3xl font-black text-primary">منتجات مميزة</h2>
             <span className="text-sm text-muted-foreground">أحدث العروض</span>
           </div>
           
           {productsLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4" style={{ minHeight: '350px' }}>
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-card rounded-xl p-3 border border-border/40 animate-pulse">
+                  <div className="aspect-square bg-muted rounded-lg mb-2" />
+                  <div className="h-4 bg-muted rounded mb-2" />
+                  <div className="h-3 bg-muted rounded w-3/4" />
+                </div>
+              ))}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">

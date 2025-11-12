@@ -1,5 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900;1000&display=optional');
 
+/* Font metrics to reduce layout shift */
+@font-face {
+  font-family: 'Cairo Fallback';
+  src: local('Arial');
+  size-adjust: 107%;
+  ascent-override: 95%;
+  descent-override: 25%;
+  line-gap-override: 0%;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

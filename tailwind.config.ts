@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        'cairo': ['Cairo', 'sans-serif'],
+        'cairo': ['Cairo', 'Cairo Fallback', 'sans-serif'],
         'tajawal': ['Tajawal', 'sans-serif'],
         'almarai': ['Almarai', 'sans-serif'],
         'amiri': ['Amiri', 'serif'],
