@@ -55,7 +55,7 @@ const CategoryCard = ({
         </h3>
         
         {descriptionAr && (
-          <p className="text-xs text-muted-foreground/70 group-hover:text-muted-foreground transition-colors duration-300 text-center leading-relaxed">
+          <p className="text-xs text-muted-foreground/85 group-hover:text-muted-foreground transition-colors duration-300 text-center leading-relaxed">
             {descriptionAr}
           </p>
         )}
