@@ -62,17 +62,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-background">
-      {/* Full page decorative border - starts below header */}
-      <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-40"
-        style={{
-          backgroundImage: 'url(/images/decorative-border-new.webp)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      />
-      
       <main className="relative z-10">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 text-center">
