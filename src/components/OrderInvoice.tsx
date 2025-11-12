@@ -27,7 +27,7 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
   });
 
   const config = (template?.template_config as any) || {
-    layout: { direction: "rtl", margin: "20px" },
+    layout: { direction: "rtl", margin: "20px", backgroundColor: "#ffffff", borderWidth: "0px", borderColor: "#e5e7eb", borderRadius: "0px", boxShadow: "none" },
     header: {
       show: true,
       backgroundColor: "#123f35",
@@ -36,7 +36,25 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
       fontFamily: "Cairo",
       title: "فاتورة مبيعات",
       titleEn: "Sales Invoice",
+      logoUrl: "",
+      logoWidth: "120px",
+      logoPosition: "center",
       padding: "20px",
+      borderRadius: "0px",
+      boxShadow: "none",
+    },
+    companyInfo: {
+      show: false,
+      companyName: "",
+      companyNameEn: "",
+      address: "",
+      phone: "",
+      email: "",
+      website: "",
+      taxNumber: "",
+      fontSize: "12px",
+      textColor: "#1f2937",
+      padding: "15px",
     },
     serialSection: {
       show: true,
@@ -45,6 +63,8 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
       fontFamily: "Cairo",
       padding: "15px",
       borderRadius: "8px",
+      borderWidth: "0px",
+      borderColor: "#e5e7eb",
     },
     customerInfo: {
       show: true,
@@ -53,6 +73,8 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
       labelColor: "#123f35",
       valueColor: "#1f2937",
       padding: "10px",
+      backgroundColor: "transparent",
+      borderRadius: "0px",
     },
     itemsTable: {
       show: true,
@@ -64,6 +86,8 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
       fontSize: "14px",
       fontFamily: "Cairo",
       padding: "12px",
+      borderRadius: "0px",
+      headerFontWeight: "bold",
     },
     totalsSection: {
       show: true,
@@ -74,6 +98,9 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
       valueColor: "#1f2937",
       fontWeight: "bold",
       padding: "15px",
+      borderRadius: "8px",
+      borderWidth: "2px",
+      borderColor: "#123f35",
     },
     warrantySection: {
       show: true,
@@ -82,6 +109,7 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
       textColor: "#6b7280",
       padding: "15px",
       borderTop: "1px solid #e5e7eb",
+      backgroundColor: "transparent",
     },
     footer: {
       show: true,
@@ -92,7 +120,18 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
       text: "شكراً لتعاملكم معنا",
       textEn: "Thank you for your business",
       padding: "15px",
+      borderRadius: "0px",
     },
+    signature: {
+      show: false,
+      label: "التوقيع",
+      labelEn: "Signature",
+      imageUrl: "",
+      position: "left",
+      width: "150px",
+      padding: "20px",
+    },
+    customFields: [],
   };
 
   return (
@@ -102,7 +141,13 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
       dir={config.layout.direction}
       style={{ 
         fontFamily: config.header.fontFamily,
-        margin: config.layout.margin 
+        margin: config.layout.margin,
+        backgroundColor: config.layout.backgroundColor,
+        borderWidth: config.layout.borderWidth,
+        borderStyle: config.layout.borderWidth !== "0px" ? "solid" : "none",
+        borderColor: config.layout.borderColor,
+        borderRadius: config.layout.borderRadius,
+        boxShadow: config.layout.boxShadow,
       }}
     >
       {/* Header */}
@@ -115,11 +160,62 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
             padding: config.header.padding,
             textAlign: "center",
             fontFamily: config.header.fontFamily,
+            borderRadius: config.header.borderRadius || "0px",
+            boxShadow: config.header.boxShadow || "none",
           }}
           className="rounded-t-lg mb-6"
         >
+          {config.header.logoUrl && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: config.header.logoPosition === "left" ? "flex-start" : config.header.logoPosition === "right" ? "flex-end" : "center",
+                marginBottom: "15px",
+              }}
+            >
+              <img
+                src={config.header.logoUrl}
+                alt="Logo"
+                style={{
+                  width: config.header.logoWidth || "120px",
+                  height: "auto",
+                }}
+              />
+            </div>
+          )}
           <h1 className="font-bold mb-2">{config.header.title}</h1>
           <p className="text-sm opacity-80">{config.header.titleEn}</p>
+        </div>
+      )}
+
+      {/* Company Info */}
+      {config.companyInfo?.show && (
+        <div
+          style={{
+            fontSize: config.companyInfo.fontSize,
+            color: config.companyInfo.textColor,
+            padding: config.companyInfo.padding,
+            textAlign: "center",
+          }}
+          className="mb-6"
+        >
+          {config.companyInfo.companyName && (
+            <p className="font-bold">{config.companyInfo.companyName}</p>
+          )}
+          {config.companyInfo.companyNameEn && (
+            <p className="text-sm">{config.companyInfo.companyNameEn}</p>
+          )}
+          {config.companyInfo.address && (
+            <p className="text-sm mt-1">{config.companyInfo.address}</p>
+          )}
+          <div className="flex justify-center gap-4 text-sm mt-2">
+            {config.companyInfo.phone && <span>📞 {config.companyInfo.phone}</span>}
+            {config.companyInfo.email && <span>✉️ {config.companyInfo.email}</span>}
+            {config.companyInfo.website && <span>🌐 {config.companyInfo.website}</span>}
+          </div>
+          {config.companyInfo.taxNumber && (
+            <p className="text-sm mt-1">الرقم الضريبي: {config.companyInfo.taxNumber}</p>
+          )}
         </div>
       )}
 
@@ -327,6 +423,10 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
             fontWeight: config.totalsSection.fontWeight,
             padding: config.totalsSection.padding,
             fontFamily: config.totalsSection.fontFamily,
+            borderRadius: config.totalsSection.borderRadius || "8px",
+            borderWidth: config.totalsSection.borderWidth || "0px",
+            borderStyle: config.totalsSection.borderWidth !== "0px" ? "solid" : "none",
+            borderColor: config.totalsSection.borderColor,
           }}
           className="rounded-lg mb-6"
         >
@@ -340,6 +440,50 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
             >
               {formatPrice(Number(order.total_amount))} {order.currency}
             </span>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Fields */}
+      {config.customFields?.filter((f: any) => f.show).length > 0 && (
+        <div className="grid grid-cols-2 gap-4 my-6">
+          {config.customFields
+            .filter((f: any) => f.show)
+            .map((field: any) => (
+              <div key={field.id} className="border-b pb-2">
+                <span className="font-semibold">{field.label}</span>
+                {field.labelEn && (
+                  <span className="text-sm opacity-70 ml-2">({field.labelEn})</span>
+                )}
+                <p className="mt-1">{field.value || "___________"}</p>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {/* Signature */}
+      {config.signature?.show && config.signature?.imageUrl && (
+        <div
+          style={{
+            padding: config.signature.padding,
+            margin: "30px 0",
+            display: "flex",
+            justifyContent: config.signature.position === "left" ? "flex-start" : config.signature.position === "right" ? "flex-end" : "center",
+          }}
+        >
+          <div className="text-center">
+            <img
+              src={config.signature.imageUrl}
+              alt="Signature"
+              style={{
+                width: config.signature.width || "150px",
+                height: "auto",
+              }}
+            />
+            <p className="mt-2 font-bold">{config.signature.label}</p>
+            {config.signature.labelEn && (
+              <p className="text-sm opacity-70">{config.signature.labelEn}</p>
+            )}
           </div>
         </div>
       )}

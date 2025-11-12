@@ -40,14 +40,21 @@ export const InvoiceTemplatePreview = ({
   return (
     <div
       style={{
-        direction: config.layout.direction,
-        margin: config.layout.margin,
-        fontFamily: config.header.fontFamily,
+        direction: config.layout?.direction || "rtl",
+        margin: config.layout?.margin || "20px",
+        fontFamily: config.header?.fontFamily || "Cairo",
+        backgroundColor: config.layout?.backgroundColor || "#ffffff",
+        borderWidth: config.layout?.borderWidth || "0px",
+        borderStyle: config.layout?.borderWidth !== "0px" ? "solid" : "none",
+        borderColor: config.layout?.borderColor || "#e5e7eb",
+        borderRadius: config.layout?.borderRadius || "0px",
+        boxShadow: config.layout?.boxShadow || "none",
+        padding: "20px",
       }}
       className="bg-white"
     >
-      {/* Header */}
-      {config.header.show && (
+      {/* Header with Logo */}
+      {config.header?.show && (
         <div
           style={{
             backgroundColor: config.header.backgroundColor,
@@ -56,21 +63,75 @@ export const InvoiceTemplatePreview = ({
             padding: config.header.padding,
             textAlign: "center",
             fontFamily: config.header.fontFamily,
+            borderRadius: config.header.borderRadius || "0px",
+            boxShadow: config.header.boxShadow || "none",
           }}
         >
+          {config.header.logoUrl && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: config.header.logoPosition === "left" ? "flex-start" : config.header.logoPosition === "right" ? "flex-end" : "center",
+                marginBottom: "15px",
+              }}
+            >
+              <img
+                src={config.header.logoUrl}
+                alt="Logo"
+                style={{
+                  width: config.header.logoWidth || "120px",
+                  height: "auto",
+                }}
+              />
+            </div>
+          )}
           <h1 className="font-bold">{config.header.title}</h1>
           <p className="text-sm opacity-80">{config.header.titleEn}</p>
         </div>
       )}
 
+      {/* Company Info */}
+      {config.companyInfo?.show && (
+        <div
+          style={{
+            fontSize: config.companyInfo.fontSize,
+            color: config.companyInfo.textColor,
+            padding: config.companyInfo.padding,
+            textAlign: "center",
+            margin: "15px 0",
+          }}
+        >
+          {config.companyInfo.companyName && (
+            <p className="font-bold">{config.companyInfo.companyName}</p>
+          )}
+          {config.companyInfo.companyNameEn && (
+            <p className="text-sm">{config.companyInfo.companyNameEn}</p>
+          )}
+          {config.companyInfo.address && (
+            <p className="text-sm">{config.companyInfo.address}</p>
+          )}
+          <div className="flex justify-center gap-4 text-sm mt-2">
+            {config.companyInfo.phone && <span>{config.companyInfo.phone}</span>}
+            {config.companyInfo.email && <span>{config.companyInfo.email}</span>}
+            {config.companyInfo.website && <span>{config.companyInfo.website}</span>}
+          </div>
+          {config.companyInfo.taxNumber && (
+            <p className="text-sm mt-1">الرقم الضريبي: {config.companyInfo.taxNumber}</p>
+          )}
+        </div>
+      )}
+
       {/* Serial Section */}
-      {config.serialSection.show && (
+      {config.serialSection?.show && (
         <div
           style={{
             backgroundColor: config.serialSection.backgroundColor,
             fontSize: config.serialSection.fontSize,
             padding: config.serialSection.padding,
             borderRadius: config.serialSection.borderRadius,
+            borderWidth: config.serialSection.borderWidth || "0px",
+            borderStyle: config.serialSection.borderWidth !== "0px" ? "solid" : "none",
+            borderColor: config.serialSection.borderColor,
             margin: "20px 0",
           }}
         >
@@ -87,11 +148,13 @@ export const InvoiceTemplatePreview = ({
       )}
 
       {/* Customer Info */}
-      {config.customerInfo.show && (
+      {config.customerInfo?.show && (
         <div
           style={{
             fontSize: config.customerInfo.fontSize,
             padding: config.customerInfo.padding,
+            backgroundColor: config.customerInfo.backgroundColor,
+            borderRadius: config.customerInfo.borderRadius || "0px",
             margin: "20px 0",
           }}
         >
@@ -132,14 +195,31 @@ export const InvoiceTemplatePreview = ({
         </div>
       )}
 
+      {/* Custom Fields */}
+      {config.customFields?.filter((f: any) => f.show).length > 0 && (
+        <div className="grid grid-cols-2 gap-4 my-4">
+          {config.customFields
+            .filter((f: any) => f.show)
+            .map((field: any) => (
+              <div key={field.id}>
+                <strong>{field.label}</strong>
+                {field.labelEn && <span className="text-sm ml-2">({field.labelEn})</span>}
+                <p>{field.value || "___________"}</p>
+              </div>
+            ))}
+        </div>
+      )}
+
       {/* Items Table */}
-      {config.itemsTable.show && (
+      {config.itemsTable?.show && (
         <table
           style={{
             width: "100%",
             borderCollapse: "collapse",
             fontSize: config.itemsTable.fontSize,
             margin: "20px 0",
+            borderRadius: config.itemsTable.borderRadius || "0px",
+            overflow: "hidden",
           }}
         >
           <thead>
@@ -147,6 +227,7 @@ export const InvoiceTemplatePreview = ({
               style={{
                 backgroundColor: config.itemsTable.headerBackgroundColor,
                 color: config.itemsTable.headerTextColor,
+                fontWeight: config.itemsTable.headerFontWeight || "bold",
               }}
             >
               <th style={{ padding: config.itemsTable.padding }}>المنتج</th>
@@ -209,13 +290,17 @@ export const InvoiceTemplatePreview = ({
       )}
 
       {/* Totals */}
-      {config.totalsSection.show && (
+      {config.totalsSection?.show && (
         <div
           style={{
             backgroundColor: config.totalsSection.backgroundColor,
             fontSize: config.totalsSection.fontSize,
             fontWeight: config.totalsSection.fontWeight,
             padding: config.totalsSection.padding,
+            borderRadius: config.totalsSection.borderRadius || "0px",
+            borderWidth: config.totalsSection.borderWidth || "0px",
+            borderStyle: config.totalsSection.borderWidth !== "0px" ? "solid" : "none",
+            borderColor: config.totalsSection.borderColor,
             margin: "20px 0",
           }}
         >
@@ -230,14 +315,42 @@ export const InvoiceTemplatePreview = ({
         </div>
       )}
 
+      {/* Signature */}
+      {config.signature?.show && config.signature?.imageUrl && (
+        <div
+          style={{
+            padding: config.signature.padding,
+            margin: "30px 0",
+            display: "flex",
+            justifyContent: config.signature.position === "left" ? "flex-start" : config.signature.position === "right" ? "flex-end" : "center",
+          }}
+        >
+          <div className="text-center">
+            <img
+              src={config.signature.imageUrl}
+              alt="Signature"
+              style={{
+                width: config.signature.width || "150px",
+                height: "auto",
+              }}
+            />
+            <p className="mt-2 font-bold">{config.signature.label}</p>
+            {config.signature.labelEn && (
+              <p className="text-sm opacity-70">{config.signature.labelEn}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Warranty */}
-      {config.warrantySection.show && (
+      {config.warrantySection?.show && (
         <div
           style={{
             fontSize: config.warrantySection.fontSize,
             color: config.warrantySection.textColor,
             padding: config.warrantySection.padding,
             borderTop: config.warrantySection.borderTop,
+            backgroundColor: config.warrantySection.backgroundColor,
             margin: "20px 0",
           }}
         >
@@ -250,7 +363,7 @@ export const InvoiceTemplatePreview = ({
       )}
 
       {/* Footer */}
-      {config.footer.show && (
+      {config.footer?.show && (
         <div
           style={{
             backgroundColor: config.footer.backgroundColor,
@@ -258,6 +371,7 @@ export const InvoiceTemplatePreview = ({
             fontSize: config.footer.fontSize,
             padding: config.footer.padding,
             textAlign: "center",
+            borderRadius: config.footer.borderRadius || "0px",
             marginTop: "40px",
           }}
         >
