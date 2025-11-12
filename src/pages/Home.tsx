@@ -73,12 +73,6 @@ const Home = () => {
         }}
       />
       
-      {/* Glow effect overlay */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-0 w-64 h-64 bg-ring/10 rounded-full blur-3xl animate-pulse-glow" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
-      </div>
-      
       <main className="relative z-10">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 text-center">
