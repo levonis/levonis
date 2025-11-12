@@ -41,6 +41,7 @@ const ProductCard = ({
   return (
     <Link 
       to={`/product/${slug}`}
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
       className="group block bg-gradient-to-b from-card to-card/80 rounded-xl p-3 border border-border/40 card-premium hover:border-primary/50 transition-all hover:-translate-y-1 relative overflow-hidden"
     >
       {/* Decorative corner accent */}

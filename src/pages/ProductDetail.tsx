@@ -424,7 +424,6 @@ const ProductDetail = () => {
                     className="space-y-3"
                   >
                     {product.pre_order_shipping_options.map((option: any, index: number) => {
-                      const adjustedPrice = finalPrice + (option.price_adjustment || 0);
                       return (
                         <div 
                           key={index}
@@ -433,7 +432,7 @@ const ProductDetail = () => {
                           <RadioGroupItem value={String(index)} id={`shipping-${index}`} className="flex-shrink-0" />
                           <Label
                             htmlFor={`shipping-${index}`}
-                            className="flex-1 cursor-pointer flex items-center justify-between gap-4"
+                            className="flex-1 cursor-pointer"
                           >
                             <div className="flex items-center gap-3">
                               <Truck className="h-5 w-5 text-primary" />
@@ -443,16 +442,6 @@ const ProductDetail = () => {
                                   <div className="text-sm text-muted-foreground">{option.name}</div>
                                 )}
                               </div>
-                            </div>
-                            <div className="text-left">
-                              <div className="text-lg font-bold text-primary">
-                                {formatPrice(adjustedPrice)} {currency}
-                              </div>
-                              {option.price_adjustment !== 0 && (
-                                <div className={`text-xs ${option.price_adjustment > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                                  {option.price_adjustment > 0 ? '+' : ''}{formatPrice(option.price_adjustment)}
-                                </div>
-                              )}
                             </div>
                           </Label>
                         </div>
@@ -476,7 +465,7 @@ const ProductDetail = () => {
                         <RadioGroupItem value="0" id="shipping-free" className="flex-shrink-0" />
                         <Label
                           htmlFor="shipping-free"
-                          className="flex-1 cursor-pointer flex items-center justify-between gap-4"
+                          className="flex-1 cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
                             <Truck className="h-5 w-5 text-primary" />
@@ -484,9 +473,6 @@ const ProductDetail = () => {
                               <div className="font-bold text-foreground">شحن بحري مجاناً (45 يوماً)</div>
                               <div className="text-sm text-muted-foreground">توصيل خلال 45 يوم عمل</div>
                             </div>
-                          </div>
-                          <div className="text-lg font-bold text-primary">
-                            {formatPrice(Number(product.pre_order_free_shipping_price))} {currency}
                           </div>
                         </Label>
                       </div>
@@ -497,7 +483,7 @@ const ProductDetail = () => {
                         <RadioGroupItem value="1" id="shipping-fast" className="flex-shrink-0" />
                         <Label
                           htmlFor="shipping-fast"
-                          className="flex-1 cursor-pointer flex items-center justify-between gap-4"
+                          className="flex-1 cursor-pointer"
                         >
                           <div className="flex items-center gap-3">
                             <Zap className="h-5 w-5 text-primary" />
@@ -505,9 +491,6 @@ const ProductDetail = () => {
                               <div className="font-bold text-foreground">شحن سريع جوي (15 يوماً)</div>
                               <div className="text-sm text-muted-foreground">توصيل خلال 15 يوم عمل</div>
                             </div>
-                          </div>
-                          <div className="text-lg font-bold text-primary">
-                            {formatPrice(Number(product.pre_order_fast_shipping_price))} {currency}
                           </div>
                         </Label>
                       </div>
@@ -575,13 +558,6 @@ const ProductDetail = () => {
                                   <span className="text-sm text-muted-foreground">{option.name}</span>
                                 )}
                               </div>
-                            </div>
-                            <div className="text-left pointer-events-none">
-                              {option.price_adjustment !== 0 && (
-                                <span className={`font-bold ${option.price_adjustment > 0 ? 'text-primary' : 'text-green-600'}`}>
-                                  {option.price_adjustment > 0 ? '+' : ''}{formatPrice(Number(option.price_adjustment))} {currency}
-                                </span>
-                              )}
                             </div>
                           </label>
                         );
