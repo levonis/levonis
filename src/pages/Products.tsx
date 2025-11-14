@@ -120,7 +120,7 @@ const Products = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24">
+      <main className="container mx-auto px-4 py-8 pt-28">
         <div className="mb-8">
           <SearchBar />
         </div>
