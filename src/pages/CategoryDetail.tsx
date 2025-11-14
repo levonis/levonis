@@ -94,14 +94,6 @@ const CategoryDetail = () => {
             {/* Category Header */}
             <div className="mb-10 relative">
               <div className="glass-effect rounded-2xl p-8 border border-border/50 relative overflow-hidden">
-                {/* Decorative corner accent - Responsive */}
-                <div className="absolute top-0 left-0 w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 opacity-20">
-                  <img 
-                    src="/images/decorative-frame-new.png" 
-                    alt="" 
-                    className="w-full h-full object-contain"
-                  />
-                </div>
                 
                 <div className="flex items-start gap-6 relative z-10">
                   {/* Category Icon */}
