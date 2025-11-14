@@ -62,6 +62,29 @@ const Home = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
+      {/* Decorative corners */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <img 
+          src="/images/decorative-frame-new.png" 
+          alt="" 
+          className="absolute top-0 left-0 w-48 h-48 object-contain opacity-20"
+        />
+        <img 
+          src="/images/decorative-frame-new.png" 
+          alt="" 
+          className="absolute top-0 right-0 w-48 h-48 object-contain opacity-20 scale-x-[-1]"
+        />
+        <img 
+          src="/images/decorative-frame-new.png" 
+          alt="" 
+          className="absolute bottom-0 left-0 w-48 h-48 object-contain opacity-20 scale-y-[-1]"
+        />
+        <img 
+          src="/images/decorative-frame-new.png" 
+          alt="" 
+          className="absolute bottom-0 right-0 w-48 h-48 object-contain opacity-20 scale-[-1]"
+        />
+      </div>
       <main className="relative z-10 pt-20">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 text-center">

@@ -131,12 +131,18 @@ const TopBar = () => {
         />
       </div>
       
-      {/* Floating ornamental dots */}
-      <div className="absolute inset-0 pointer-events-none opacity-10">
-        <div className="absolute top-1/2 left-10 w-1 h-1 rounded-full bg-ring animate-float" />
-        <div className="absolute top-1/2 left-32 w-1 h-1 rounded-full bg-primary animate-float" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 right-32 w-1 h-1 rounded-full bg-accent animate-float" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-1/2 right-10 w-1 h-1 rounded-full bg-ring animate-float" style={{ animationDelay: '3s' }} />
+      {/* Decorative frame corners */}
+      <div className="absolute inset-0 pointer-events-none opacity-30">
+        <img 
+          src="/images/decorative-frame-new.png" 
+          alt="" 
+          className="absolute top-0 left-0 w-32 h-32 object-contain"
+        />
+        <img 
+          src="/images/decorative-frame-new.png" 
+          alt="" 
+          className="absolute top-0 right-0 w-32 h-32 object-contain scale-x-[-1]"
+        />
       </div>
       
       <div className="container mx-auto px-4 py-3">
