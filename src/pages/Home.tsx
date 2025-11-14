@@ -62,29 +62,16 @@ const Home = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
-      {/* Decorative corners - Responsive */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        <img 
-          src="/images/decorative-frame-new.png" 
-          alt="" 
-          className="absolute top-0 left-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20"
-        />
-        <img 
-          src="/images/decorative-frame-new.png" 
-          alt="" 
-          className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20 scale-x-[-1]"
-        />
-        <img 
-          src="/images/decorative-frame-new.png" 
-          alt="" 
-          className="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20 scale-y-[-1]"
-        />
-        <img 
-          src="/images/decorative-frame-new.png" 
-          alt="" 
-          className="absolute bottom-0 right-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20 scale-[-1]"
-        />
-      </div>
+      {/* Decorative frame - Full screen */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0 opacity-20"
+        style={{
+          backgroundImage: 'url(/images/decorative-frame-new.png)',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
       <main className="relative z-10 pt-20">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 text-center">
