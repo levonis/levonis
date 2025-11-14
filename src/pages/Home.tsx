@@ -61,7 +61,7 @@ const Home = () => {
   }, {} as Record<string, typeof categories>);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-background">
+    <div className="min-h-screen relative overflow-hidden bg-transparent">
       <main className="relative z-10 pt-20">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 text-center">
