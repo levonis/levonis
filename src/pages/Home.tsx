@@ -62,7 +62,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-background">
-      <main className="relative z-10">
+      <main className="relative z-10 pt-20">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 text-center">
           <h1 className="text-5xl md:text-6xl font-black mb-4 text-gradient-gold animate-in fade-in slide-in-from-bottom-4 duration-700">
