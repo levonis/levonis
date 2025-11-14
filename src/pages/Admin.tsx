@@ -1057,17 +1057,31 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
-      {/* Full page decorative border with animations */}
+      {/* Decorative corners - Responsive */}
       <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0 opacity-5 animate-float-decoration blur-sm"
-        style={{
-          backgroundImage: 'url(/images/decorative-border-new.webp)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-          filter: 'drop-shadow(0 0 20px rgba(212, 175, 55, 0.3))',
-        }}
-      />
+        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0"
+      >
+        <img 
+          src="/images/decorative-frame-new.png" 
+          alt="" 
+          className="absolute top-0 left-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20"
+        />
+        <img 
+          src="/images/decorative-frame-new.png" 
+          alt="" 
+          className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20 scale-x-[-1]"
+        />
+        <img 
+          src="/images/decorative-frame-new.png" 
+          alt="" 
+          className="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20 scale-y-[-1]"
+        />
+        <img 
+          src="/images/decorative-frame-new.png" 
+          alt="" 
+          className="absolute bottom-0 right-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20 scale-[-1]"
+        />
+      </div>
       
       {/* Glow effect overlay */}
       <div className="fixed inset-0 pointer-events-none z-0">

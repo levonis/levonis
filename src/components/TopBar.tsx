@@ -131,17 +131,17 @@ const TopBar = () => {
         />
       </div>
       
-      {/* Decorative frame corners */}
+      {/* Decorative frame corners - Responsive */}
       <div className="absolute inset-0 pointer-events-none opacity-30">
         <img 
           src="/images/decorative-frame-new.png" 
           alt="" 
-          className="absolute top-0 left-0 w-32 h-32 object-contain"
+          className="absolute top-0 left-0 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-32 lg:h-32 object-contain"
         />
         <img 
           src="/images/decorative-frame-new.png" 
           alt="" 
-          className="absolute top-0 right-0 w-32 h-32 object-contain scale-x-[-1]"
+          className="absolute top-0 right-0 w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-32 lg:h-32 object-contain scale-x-[-1]"
         />
       </div>
       
