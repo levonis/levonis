@@ -238,31 +238,16 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background/90 backdrop-blur-md relative overflow-hidden flex items-center justify-center p-4">
-      {/* Decorative corners - Responsive */}
+      {/* Decorative frame - Full screen */}
       <div 
-        className="fixed top-0 left-0 right-0 bottom-0 pointer-events-none z-0"
-      >
-        <img 
-          src="/images/decorative-frame-new.png" 
-          alt="" 
-          className="absolute top-0 left-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20"
-        />
-        <img 
-          src="/images/decorative-frame-new.png" 
-          alt="" 
-          className="absolute top-0 right-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20 scale-x-[-1]"
-        />
-        <img 
-          src="/images/decorative-frame-new.png" 
-          alt="" 
-          className="absolute bottom-0 left-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20 scale-y-[-1]"
-        />
-        <img 
-          src="/images/decorative-frame-new.png" 
-          alt="" 
-          className="absolute bottom-0 right-0 w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 lg:w-80 lg:h-80 xl:w-96 xl:h-96 object-contain opacity-20 scale-[-1]"
-        />
-      </div>
+        className="fixed inset-0 pointer-events-none z-0 opacity-20"
+        style={{
+          backgroundImage: 'url(/images/decorative-frame-new.png)',
+          backgroundSize: '100% 100%',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      />
       
       {/* Elegant decorative frame */}
       <div className="fixed inset-0 pointer-events-none">
