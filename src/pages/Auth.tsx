@@ -242,7 +242,7 @@ const Auth = () => {
       <div 
         className="fixed inset-0 pointer-events-none z-0 opacity-20"
         style={{
-          backgroundImage: 'url(/images/decorative-frame-new.png)',
+          backgroundImage: 'url(/images/decorative-frame-new.webp)',
           backgroundSize: '100% 100%',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
