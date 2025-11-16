@@ -103,11 +103,55 @@ serve(async (req) => {
       }
     }
 
-    console.log('Extracted text content length:', textContent.length);
+    // Extract potential color names from the raw HTML and scripts to avoid missing variants
+    const colorCandidates: string[] = [];
+
+    // From HTML data attributes commonly used in color swatches
+    for (const m of html.matchAll(/data-?color=["']([^"']+)["']/gi)) {
+      colorCandidates.push(m[1].trim());
+    }
+
+    // From aria-labels that mention color
+    for (const m of html.matchAll(/aria-label=["']([^"']*color[^"']*)["']/gi)) {
+      colorCandidates.push(m[1].trim());
+    }
+
+    // From selects like <select name="Color"> ... </select>
+    for (const sel of html.matchAll(/<select[^>]*name=["']color["'][^>]*>([\s\S]*?)<\/select>/gi)) {
+      const optionsHtml = sel[1];
+      for (const om of optionsHtml.matchAll(/<option[^>]*>([^<]+)<\/option>/gi)) {
+        colorCandidates.push(om[1].trim());
+      }
+    }
+
+    // From script blocks (Shopify/Next data) looking for Color option values and generic color keys
+    for (const s of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)) {
+      const content = s[1] || '';
+      // Options: { name: "Color", values: [ ... ] }
+      for (const block of content.matchAll(/"name"\s*:\s*"Color"[\s\S]*?"values"\s*:\s*\[([\s\S]*?)\]/gi)) {
+        const vals = block[1];
+        for (const val of vals.matchAll(/"([^"\\]+)"/g)) {
+          colorCandidates.push(val[1].trim());
+        }
+      }
+      // Variants option values like "option1": "Matte Ivory White"
+      for (const m of content.matchAll(/"option\d"\s*:\s*"([^"\\]+)"/gi)) {
+        const v = m[1].trim();
+        if (v) colorCandidates.push(v);
+      }
+      // Generic key named "color": "..."
+      for (const m of content.matchAll(/"color"\s*:\s*"([^"\\]+)"/gi)) {
+        colorCandidates.push(m[1].trim());
+      }
+    }
+
+    const uniqueColorCandidates = Array.from(new Set(colorCandidates.filter(c => c && c.length > 1))).slice(0, 300);
+
+    console.log('Extracted text content length:', textContent.length, 'color candidates:', uniqueColorCandidates.length);
 
     // Prepare data for the AI prompt
     const unique = (arr: string[]) => Array.from(new Set(arr));
-    const imageUrlsForPrompt = unique(imageUrls).slice(0, 150);
+    const imageUrlsForPrompt = unique(imageUrls).slice(0, 200);
     const altTextsForPrompt = unique(altTexts || []).slice(0, 300);
     console.log(`Found ${imageUrlsForPrompt.length} image URLs and ${altTextsForPrompt.length} alt texts for prompt`);
 
@@ -190,6 +234,9 @@ ${textContent}
             
             نصوص ALT للصور (قد تحتوي أسماء ألوان مهمة):
             ${altTextsForPrompt.join('\n')}
+            
+            قائمة الألوان المحتملة المستخرجة آلياً (تحقق من تضمينها بالكامل):
+            ${uniqueColorCandidates.join('\n')}
             
             استخرج المعلومات التالية بدقة تامة واتساق كامل:
 
