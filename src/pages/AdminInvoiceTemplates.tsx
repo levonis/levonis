@@ -120,22 +120,22 @@ export default function AdminInvoiceTemplates() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {templates?.map((template) => (
-          <Card key={template.id} className="relative">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>{template.name_ar}</span>
-                {template.is_default && (
-                  <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded">
-                    افتراضي
-                  </span>
-                )}
-              </CardTitle>
+          <Card key={template.id} className="relative hover:shadow-lg transition-shadow border-2">
+            {template.is_default && (
+              <div className="absolute -top-3 -right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold shadow-md">
+                ⭐ افتراضي
+              </div>
+            )}
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">{template.name_ar}</CardTitle>
+              <p className="text-sm text-muted-foreground">{template.name}</p>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2 flex-wrap">
+              <div className="grid grid-cols-2 gap-2 mb-4">
                 <Button
                   variant="outline"
                   size="sm"
+                  className="w-full"
                   onClick={() => setPreviewingTemplate(template)}
                 >
                   <Eye className="ml-2 h-4 w-4" />
@@ -144,6 +144,7 @@ export default function AdminInvoiceTemplates() {
                 <Button
                   variant="outline"
                   size="sm"
+                  className="w-full"
                   onClick={() => {
                     setEditingTemplate(template);
                     setIsEditorOpen(true);
@@ -152,45 +153,49 @@ export default function AdminInvoiceTemplates() {
                   <Edit className="ml-2 h-4 w-4" />
                   تعديل
                 </Button>
-                {!template.is_default && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setDefaultMutation.mutate(template.id)}
-                    >
-                      اجعله افتراضي
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => setDeletingId(template.id)}
-                    >
-                      <Trash2 className="ml-2 h-4 w-4" />
-                      حذف
-                    </Button>
-                  </>
-                )}
               </div>
+              {!template.is_default && (
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setDefaultMutation.mutate(template.id)}
+                  >
+                    اجعله افتراضي
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setDeletingId(template.id)}
+                  >
+                    <Trash2 className="ml-2 h-4 w-4" />
+                    حذف
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         ))}
       </div>
 
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
-        <DialogContent className="max-w-7xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingTemplate ? "تعديل القالب" : "إضافة قالب جديد"}
+        <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-hidden p-0">
+          <DialogHeader className="p-6 pb-4 border-b">
+            <DialogTitle className="text-2xl">
+              {editingTemplate ? "✏️ تعديل القالب" : "➕ إضافة قالب جديد"}
             </DialogTitle>
           </DialogHeader>
-          <InvoiceTemplateEditor
-            template={editingTemplate}
-            onClose={() => {
-              setIsEditorOpen(false);
-              setEditingTemplate(null);
-            }}
-          />
+          <div className="overflow-y-auto max-h-[calc(95vh-80px)]">
+            <InvoiceTemplateEditor
+              template={editingTemplate}
+              onClose={() => {
+                setIsEditorOpen(false);
+                setEditingTemplate(null);
+              }}
+            />
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -198,13 +203,19 @@ export default function AdminInvoiceTemplates() {
         open={!!previewingTemplate}
         onOpenChange={() => setPreviewingTemplate(null)}
       >
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>معاينة القالب</DialogTitle>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0">
+          <DialogHeader className="p-6 pb-4 border-b bg-muted/30">
+            <DialogTitle className="text-2xl">
+              👁️ معاينة القالب: {previewingTemplate?.name_ar}
+            </DialogTitle>
           </DialogHeader>
-          {previewingTemplate && (
-            <InvoiceTemplatePreview template={previewingTemplate} />
-          )}
+          <div className="overflow-y-auto max-h-[calc(95vh-80px)] p-6 bg-muted/10">
+            {previewingTemplate && (
+              <div className="bg-white shadow-2xl rounded-lg p-4">
+                <InvoiceTemplatePreview template={previewingTemplate} />
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
