@@ -41,15 +41,16 @@ export const InvoiceTemplatePreview = ({
     <div
       style={{
         direction: config.layout?.direction || "rtl",
-        margin: config.layout?.margin || "20px",
+        margin: "0",
         fontFamily: config.header?.fontFamily || "Cairo",
         backgroundColor: config.layout?.backgroundColor || "#ffffff",
         borderWidth: config.layout?.borderWidth || "0px",
         borderStyle: config.layout?.borderWidth !== "0px" ? "solid" : "none",
         borderColor: config.layout?.borderColor || "#e5e7eb",
-        borderRadius: config.layout?.borderRadius || "0px",
-        boxShadow: config.layout?.boxShadow || "none",
-        padding: "20px",
+        borderRadius: config.layout?.borderRadius || "8px",
+        boxShadow: config.layout?.boxShadow || "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+        padding: "30px",
+        minHeight: "600px",
       }}
       className="bg-white"
     >
