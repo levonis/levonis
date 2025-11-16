@@ -118,6 +118,14 @@ export default function AdminInvoiceTemplates() {
         </Button>
       </div>
 
+      <div className="mb-8">
+        <Card className="border-primary/20">
+          <CardHeader>
+            <CardTitle className="text-lg">القوالب المحفوظة ({templates?.length || 0})</CardTitle>
+          </CardHeader>
+        </Card>
+      </div>
+
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {templates?.map((template) => (
           <Card key={template.id} className="relative hover:shadow-lg transition-shadow border-2">

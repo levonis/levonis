@@ -241,6 +241,25 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
               <p className="font-bold text-lg">{format(new Date(order.created_at), 'd / M / yyyy')}</p>
             </div>
           </div>
+          
+          {/* Serial Number Image */}
+          {config.serialSection.showSerialImage && (order.serial_number_image_url || config.serialSection.serialImageUrl) && (
+            <div className="mt-4 pt-4 border-t border-current/20">
+              <p className="opacity-70 mb-2 text-center">صورة الرقم التسلسلي / Serial Number Image</p>
+              <div className="flex justify-center">
+                <img 
+                  src={order.serial_number_image_url || config.serialSection.serialImageUrl}
+                  alt="Serial Number" 
+                  style={{ 
+                    width: config.serialSection.serialImageWidth || '200px',
+                    maxWidth: '100%',
+                    height: 'auto',
+                    borderRadius: '4px'
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 

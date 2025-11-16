@@ -70,6 +70,9 @@ export const InvoiceTemplateEditor = ({
       borderRadius: "8px",
       borderWidth: "0px",
       borderColor: "#e5e7eb",
+      showSerialImage: true,
+      serialImageUrl: "",
+      serialImageWidth: "200px",
     },
     customerInfo: {
       show: true,
@@ -272,6 +275,30 @@ export const InvoiceTemplateEditor = ({
       toast.success("تم رفع التوقيع بنجاح");
     } catch (error) {
       toast.error("حدث خطأ في رفع التوقيع");
+    }
+  };
+
+  const handleSerialImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `serial-${Math.random()}.${fileExt}`;
+      const { data, error } = await supabase.storage
+        .from("invoice-assets")
+        .upload(fileName, file);
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from("invoice-assets")
+        .getPublicUrl(fileName);
+
+      updateConfig("serialSection", "serialImageUrl", urlData.publicUrl);
+      toast.success("تم رفع صورة الرقم التسلسلي بنجاح");
+    } catch (error) {
+      toast.error("حدث خطأ في رفع الصورة");
     }
   };
 
@@ -749,6 +776,65 @@ export const InvoiceTemplateEditor = ({
                     )
                   }
                 />
+              </div>
+              
+              <div className="space-y-3 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <Label>إظهار صورة الرقم التسلسلي</Label>
+                  <Switch
+                    checked={formData.template_config.serialSection.showSerialImage}
+                    onCheckedChange={(checked) =>
+                      updateConfig("serialSection", "showSerialImage", checked)
+                    }
+                  />
+                </div>
+                
+                {formData.template_config.serialSection.showSerialImage && (
+                  <>
+                    <div>
+                      <Label>رفع صورة افتراضية للرقم التسلسلي (اختياري)</Label>
+                      <div className="flex gap-2 mt-2">
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleSerialImageUpload}
+                        />
+                        {formData.template_config.serialSection.serialImageUrl && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              updateConfig("serialSection", "serialImageUrl", "")
+                            }
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {formData.template_config.serialSection.serialImageUrl && (
+                        <div className="mt-2 border rounded p-2">
+                          <img
+                            src={formData.template_config.serialSection.serialImageUrl}
+                            alt="صورة الرقم التسلسلي"
+                            className="max-w-[200px] h-auto"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <Label>عرض الصورة</Label>
+                      <Input
+                        value={formData.template_config.serialSection.serialImageWidth}
+                        onChange={(e) =>
+                          updateConfig("serialSection", "serialImageWidth", e.target.value)
+                        }
+                        placeholder="200px"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>

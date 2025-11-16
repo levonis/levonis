@@ -14,6 +14,7 @@ import html2pdf from 'html2pdf.js';
 import { OrderInvoice } from '@/components/OrderInvoice';
 import CustomerChat from '@/components/CustomerChat';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 const OrderDetail = () => {
   const { orderId } = useParams();
@@ -65,6 +66,30 @@ const OrderDetail = () => {
     try {
       const element = document.getElementById('invoice-content');
       
+      // Save invoice HTML to database
+      const invoiceHTML = element?.outerHTML || '';
+      
+      // Calculate warranty expiry (1 year from now as default)
+      const warrantyExpiresAt = new Date();
+      warrantyExpiresAt.setFullYear(warrantyExpiresAt.getFullYear() + 1);
+      
+      // Get the current template ID
+      const { data: template } = await supabase
+        .from("invoice_templates")
+        .select("id")
+        .eq("is_default", true)
+        .single();
+      
+      // Save to database
+      await supabase.from("saved_invoices").insert({
+        order_id: order.id,
+        invoice_html: invoiceHTML,
+        template_id: template?.id || null,
+        warranty_expires_at: warrantyExpiresAt.toISOString(),
+        notes: null
+      });
+      
+      // Generate PDF
       const options = {
         margin: 10,
         filename: `invoice-${order.order_number}.pdf`,
@@ -74,8 +99,10 @@ const OrderDetail = () => {
       };
 
       await html2pdf().set(options).from(element).save();
+      toast.success('تم حفظ الفاتورة وتنزيلها بنجاح');
     } catch (error) {
       console.error('Error generating PDF:', error);
+      toast.error('حدث خطأ في توليد الفاتورة');
     } finally {
       setIsGeneratingPDF(false);
     }

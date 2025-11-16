@@ -1304,6 +1304,16 @@ const Admin = () => {
                 <span className="text-sm font-semibold">قوالب الفواتير</span>
                 <span className="text-xs text-muted-foreground">تخصيص تصميم الفاتورة</span>
               </Button>
+              
+              <Button
+                onClick={() => navigate('/admin/saved-invoices')}
+                variant="outline"
+                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
+              >
+                <FileText className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">الفواتير المحفوظة</span>
+                <span className="text-xs text-muted-foreground">مراجعة وإدارة الفواتير</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
