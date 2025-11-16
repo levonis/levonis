@@ -201,7 +201,7 @@ const Home = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
-              {products?.map((product) => (
+              {products?.map((product, index) => (
                 <ProductCard
                   key={product.id}
                   id={product.id}
@@ -215,6 +215,7 @@ const Home = () => {
                   images={product.images || undefined}
                   currency={product.currency || undefined}
                   slug={product.slug}
+                  priority={index < 3}
                 />
               ))}
             </div>

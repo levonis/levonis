@@ -17,6 +17,7 @@ interface ProductCardProps {
   images?: string[];
   currency?: string;
   slug: string;
+  priority?: boolean;
 }
 
 const ProductCard = ({ 
@@ -30,7 +31,8 @@ const ProductCard = ({
   imageUrl,
   images,
   currency = 'دينار عراقي',
-  slug
+  slug,
+  priority = false
 }: ProductCardProps) => {
   const hasSale = originalPrice && originalPrice > price;
   const savings = hasSale ? originalPrice - price : 0;
@@ -68,7 +70,8 @@ const ProductCard = ({
               src={displayImage} 
               alt={nameAr}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
+              loading={priority ? "eager" : "lazy"}
+              fetchPriority={priority ? "high" : "auto"}
               width="400"
               height="400"
             />
