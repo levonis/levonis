@@ -438,6 +438,69 @@ ${textContent}
       throw new Error('فشل في استخراج اسم المنتج');
     }
 
+    // Augment missing colors using heuristics from HTML and image filenames
+    try {
+      const norm = (s: string) => s?.toLowerCase().replace(/\s+/g, ' ').trim() || '';
+      const existingSet = new Set<string>(
+        Array.isArray(productInfo.colors)
+          ? productInfo.colors.map((c: any) => norm(c.name || c.name_ar))
+          : []
+      );
+
+      // Derive color-like names from image filenames (e.g., Matte-Desert-Tan.png)
+      const colorNamesFromImages: string[] = Array.from(
+        new Set(
+          (imageUrls || [])
+            .map((u) => {
+              try {
+                const fname = decodeURIComponent((u.split('/')?.pop() || '').split('.')[0]);
+                return fname.replace(/[_-]+/g, ' ').trim();
+              } catch {
+                return null;
+              }
+            })
+            .filter((n): n is string => !!n)
+            .filter((n) =>
+              /matte|gloss|satin|white|black|blue|green|red|yellow|orange|pink|purple|brown|grey|gray|tan|ivory|charcoal|beige|marine|navy|desert|dark|light/i.test(
+                n
+              )
+            )
+        )
+      );
+
+      const combinedHints: string[] = Array.from(
+        new Set([...(uniqueColorCandidates || []), ...colorNamesFromImages])
+      );
+
+      const toAdd: any[] = [];
+      for (const h of combinedHints) {
+        const nh = norm(h);
+        if (!nh || existingSet.has(nh)) continue;
+        const slug = h.toLowerCase().replace(/\s+/g, '-');
+        const matchUrl =
+          (imageUrls || []).find((u) => u.toLowerCase().includes(slug)) ||
+          (imageUrls || []).find((u) => u.toLowerCase().includes(nh.split(' ').join('-'))) ||
+          null;
+
+        toAdd.push({
+          name: h,
+          name_ar: h, // سيجري تحسين الترجمة لاحقاً عند الحاجة
+          hex_code: '#808080', // قيمة افتراضية صحيحة الصيغة سيتم تحسينها لاحقاً عند توفر الصورة
+          image_url: matchUrl || undefined,
+        });
+        existingSet.add(nh);
+        if (toAdd.length > 150) break; // حماية من التضخم غير المقصود
+      }
+
+      if (toAdd.length) {
+        productInfo.colors = [...(productInfo.colors || []), ...toAdd];
+        console.log(`Augmented colors by ${toAdd.length}, total now: ${productInfo.colors.length}`);
+      }
+    } catch (e) {
+      console.warn('Color augmentation step failed:', e);
+    }
+
+
     // Download and upload main product images
     const uploadedImageUrls: string[] = [];
     if (productInfo.images && Array.isArray(productInfo.images)) {
