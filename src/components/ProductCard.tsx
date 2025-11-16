@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { formatPrice } from '@/lib/utils';
+import { resizeSupabaseImage } from '@/lib/imageUtils';
 
 interface ProductCardProps {
   id: string;
@@ -39,6 +40,8 @@ const ProductCard = ({
   const { addToCart } = useCart();
   
   const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
+  // Resize image to 400px for card display
+  const optimizedImage = resizeSupabaseImage(displayImage, 400);
 
   return (
     <Link 
@@ -64,10 +67,10 @@ const ProductCard = ({
       )}
 
       <div className="relative mb-2">
-        {displayImage && (
+        {optimizedImage && (
           <div className="relative overflow-hidden rounded-lg aspect-square">
             <img 
-              src={displayImage} 
+              src={optimizedImage} 
               alt={nameAr}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading={priority ? "eager" : "lazy"}
