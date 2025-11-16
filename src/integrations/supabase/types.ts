@@ -1041,6 +1041,57 @@ export type Database = {
           },
         ]
       }
+      saved_invoices: {
+        Row: {
+          created_at: string
+          generated_at: string
+          id: string
+          invoice_html: string
+          notes: string | null
+          order_id: string
+          template_id: string | null
+          updated_at: string
+          warranty_expires_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          invoice_html: string
+          notes?: string | null
+          order_id: string
+          template_id?: string | null
+          updated_at?: string
+          warranty_expires_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          generated_at?: string
+          id?: string
+          invoice_html?: string
+          notes?: string | null
+          order_id?: string
+          template_id?: string | null
+          updated_at?: string
+          warranty_expires_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_invoices_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_invoices_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "invoice_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_points: {
         Row: {
           available_points: number
