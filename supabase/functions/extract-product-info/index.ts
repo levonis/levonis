@@ -438,7 +438,7 @@ ${textContent}
       throw new Error('فشل في استخراج اسم المنتج');
     }
 
-    // Augment missing colors using heuristics from HTML and image filenames
+    // Augment missing colors using heuristics from HTML, scripts, ALT texts and image filenames
     try {
       const norm = (s: string) => s?.toLowerCase().replace(/\s+/g, ' ').trim() || '';
       const existingSet = new Set<string>(
@@ -446,6 +446,30 @@ ${textContent}
           ? productInfo.colors.map((c: any) => norm(c.name || c.name_ar))
           : []
       );
+
+      // Build a map from variant color name -> image url from inline product JSON (e.g. Shopify/Next)
+      const variantImageMap = new Map<string, string>();
+      for (const s of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)) {
+        const content = s[1] || '';
+        for (const m of content.matchAll(/"variants"\s*:\s*\[([\s\S]*?)\]/gi)) {
+          const block = m[1] || '';
+          for (const v of block.matchAll(/"option\d"\s*:\s*"([^"\\]+)"[\s\S]*?(?:"featured_image"[\s\S]*?"src"|"featured_media"[\s\S]*?"src"|"image"|"src")\s*:\s*"([^"\\]+)"/gi)) {
+            const name = v[1]?.trim();
+            const url = v[2]?.trim();
+            if (name && url && url.startsWith('http')) {
+              variantImageMap.set(norm(name), url);
+            }
+          }
+        }
+      }
+
+      // Pair alt text with src from <img alt=".." src="..">
+      const altSrcPairs: Array<{ alt: string; src: string }> = [];
+      for (const m of html.matchAll(/<img[^>]*alt=["']([^"']+)["'][^>]*src=["']([^"']+)["'][^>]*>/gi)) {
+        const alt = m[1]?.trim();
+        const src = m[2]?.trim();
+        if (alt && src && src.startsWith('http')) altSrcPairs.push({ alt, src });
+      }
 
       // Derive color-like names from image filenames (e.g., Matte-Desert-Tan.png)
       const colorNamesFromImages: string[] = Array.from(
@@ -468,33 +492,78 @@ ${textContent}
         )
       );
 
-      const combinedHints: string[] = Array.from(
-        new Set([...(uniqueColorCandidates || []), ...colorNamesFromImages])
+      // Colorish ALTs may contain missing variants
+      const colorishAlts: string[] = Array.from(
+        new Set((altTexts || []).filter((a) => /matte|gloss|satin|white|black|blue|green|red|yellow|orange|pink|purple|brown|grey|gray|tan|ivory|charcoal|beige|marine|navy|desert|dark|light|لون|أبيض|أسود|أزرق|أخضر|أحمر|أصفر|برتقالي|وردي|أرجواني|بني|رمادي/i.test(a)))
       );
 
+      const combinedHints: string[] = Array.from(
+        new Set([
+          ...(uniqueColorCandidates || []),
+          ...colorNamesFromImages,
+          ...Array.from(variantImageMap.keys()),
+          ...colorishAlts,
+        ])
+      );
+
+      // Helper to find best image url for a given normalized name
+      const findImageFor = (nameNorm: string): string | undefined => {
+        const viaMap = variantImageMap.get(nameNorm);
+        if (viaMap) return viaMap;
+        const fromAlt = altSrcPairs.find((p) => {
+          const a = norm(p.alt);
+          return a.includes(nameNorm) || nameNorm.includes(a);
+        })?.src;
+        if (fromAlt) return fromAlt;
+        const slug = nameNorm.replace(/\s+/g, '-');
+        const direct = (imageUrls || []).find((u) => u.toLowerCase().includes(slug));
+        if (direct) return direct;
+        return undefined;
+      };
+
+      // First, enrich existing colors missing image_url
+      if (Array.isArray(productInfo.colors)) {
+        for (let i = 0; i < productInfo.colors.length; i++) {
+          const c = productInfo.colors[i];
+          const nh = norm(c?.name || c?.name_ar);
+          if (!c.image_url) {
+            const img = nh ? findImageFor(nh) : undefined;
+            if (img) productInfo.colors[i].image_url = img;
+          }
+        }
+      }
+
+      // Then, add any missing hinted colors
       const toAdd: any[] = [];
       for (const h of combinedHints) {
         const nh = norm(h);
         if (!nh || existingSet.has(nh)) continue;
-        const slug = h.toLowerCase().replace(/\s+/g, '-');
-        const matchUrl =
-          (imageUrls || []).find((u) => u.toLowerCase().includes(slug)) ||
-          (imageUrls || []).find((u) => u.toLowerCase().includes(nh.split(' ').join('-'))) ||
-          null;
-
+        const img = findImageFor(nh);
         toAdd.push({
           name: h,
           name_ar: h, // سيجري تحسين الترجمة لاحقاً عند الحاجة
           hex_code: '#808080', // قيمة افتراضية صحيحة الصيغة سيتم تحسينها لاحقاً عند توفر الصورة
-          image_url: matchUrl || undefined,
+          image_url: img,
         });
         existingSet.add(nh);
-        if (toAdd.length > 150) break; // حماية من التضخم غير المقصود
+        if (toAdd.length > 300) break; // حماية من التضخم غير المقصود
       }
 
       if (toAdd.length) {
         productInfo.colors = [...(productInfo.colors || []), ...toAdd];
         console.log(`Augmented colors by ${toAdd.length}, total now: ${productInfo.colors.length}`);
+      }
+
+      // Final pass: ensure uniqueness and stable ordering
+      if (Array.isArray(productInfo.colors)) {
+        const seen = new Set<string>();
+        productInfo.colors = productInfo.colors.filter((c: any) => {
+          const key = norm(c?.name || c?.name_ar);
+          if (!key) return false;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
       }
     } catch (e) {
       console.warn('Color augmentation step failed:', e);
