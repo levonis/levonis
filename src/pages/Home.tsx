@@ -64,13 +64,13 @@ const Home = () => {
     <div className="min-h-screen relative overflow-hidden bg-transparent">
       {/* Decorative frame - Full screen */}
       <div 
-        className="absolute inset-0 pointer-events-none z-0 opacity-30 md:opacity-40"
+        className="fixed inset-0 pointer-events-none z-0 opacity-15 md:opacity-25"
         style={{
           backgroundImage: 'url(/images/decorative-frame-levonis.png)',
-          backgroundSize: 'contain',
+          backgroundSize: '100% 100%',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat',
-          filter: 'invert(1) contrast(1.1) brightness(1.2)'
+          mixBlendMode: 'multiply'
         }}
       />
       <main className="relative z-10 pt-20">
