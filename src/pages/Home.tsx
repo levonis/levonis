@@ -67,7 +67,7 @@ const Home = () => {
         className="fixed inset-0 pointer-events-none z-0 opacity-20"
         style={{
           backgroundImage: 'url(/images/decorative-frame-new.webp)',
-          backgroundSize: '100% 100%',
+          backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'
         }}
