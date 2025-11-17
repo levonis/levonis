@@ -54,8 +54,17 @@ const ProductListItem = ({
             alt={nameAr}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
+            decoding="async"
             width="112"
             height="112"
+            onError={(e) => {
+              const target = e.currentTarget as HTMLImageElement;
+              if (target.src !== (displayImage || '')) {
+                target.src = displayImage || '/placeholder.svg';
+              } else {
+                target.src = '/placeholder.svg';
+              }
+            }}
           />
           {hasSale && (
             <Badge 
