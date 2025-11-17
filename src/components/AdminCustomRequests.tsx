@@ -7,10 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Loader2, Eye, Trash2, Copy } from 'lucide-react';
+import { Pencil, Loader2, Eye, Trash2, Copy, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDate, formatPrice } from '@/lib/utils';
+import { Progress } from '@/components/ui/progress';
 
 interface AdminCustomRequestsProps {
   requests: any[] | undefined;
@@ -22,8 +23,12 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [retryColorsDialogOpen, setRetryColorsDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRetryingColors, setIsRetryingColors] = useState(false);
+  const [retryProgress, setRetryProgress] = useState(0);
+  const [retryResult, setRetryResult] = useState<any>(null);
   const [formData, setFormData] = useState({
     suggested_price: '',
     admin_notes: '',
@@ -97,6 +102,63 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code);
     toast.success('تم نسخ الكود');
+  };
+
+  const handleRetryColors = async (request: any) => {
+    setSelectedRequest(request);
+    setRetryColorsDialogOpen(true);
+    setRetryProgress(0);
+    setRetryResult(null);
+    setIsRetryingColors(true);
+
+    try {
+      // Get existing product colors
+      setRetryProgress(20);
+      const { data: product } = await supabase
+        .from('products')
+        .select('colors')
+        .eq('slug', request.code)
+        .single();
+
+      const existingColors = product?.colors || [];
+      
+      setRetryProgress(40);
+
+      // Call retry-extract-colors function
+      const { data, error } = await supabase.functions.invoke('retry-extract-colors', {
+        body: {
+          url: request.product_link,
+          existingColors
+        }
+      });
+
+      setRetryProgress(80);
+
+      if (error) throw error;
+
+      setRetryProgress(100);
+      setRetryResult(data);
+
+      if (data.newColorsCount > 0) {
+        // Update product with new colors
+        const existingColorsArray = Array.isArray(existingColors) ? existingColors : [];
+        const updatedColors = [...existingColorsArray, ...data.addedColors];
+        await supabase
+          .from('products')
+          .update({ colors: updatedColors })
+          .eq('slug', request.code);
+
+        toast.success(`تم إضافة ${data.newColorsCount} لون جديد`);
+      } else {
+        toast.info('لم يتم العثور على ألوان جديدة');
+      }
+    } catch (error) {
+      console.error('Error retrying colors:', error);
+      toast.error('حدث خطأ أثناء إعادة استخراج الألوان');
+      setRetryResult({ error: error.message });
+    } finally {
+      setIsRetryingColors(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -379,6 +441,95 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Retry Colors Dialog */}
+      <Dialog open={retryColorsDialogOpen} onOpenChange={setRetryColorsDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>إعادة استخراج الألوان</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {isRetryingColors && (
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">جاري إعادة استخراج الألوان...</p>
+                <Progress value={retryProgress} className="w-full" />
+                <p className="text-xs text-muted-foreground text-center">{retryProgress}%</p>
+              </div>
+            )}
+
+            {retryResult && !retryResult.error && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div className="space-y-1 p-3 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">إجمالي الألوان</p>
+                    <p className="text-2xl font-bold">{retryResult.totalColors}</p>
+                  </div>
+                  <div className="space-y-1 p-3 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">الألوان السابقة</p>
+                    <p className="text-2xl font-bold">{retryResult.existingColors}</p>
+                  </div>
+                  <div className="space-y-1 p-3 bg-primary/10 rounded-lg">
+                    <p className="text-sm text-muted-foreground">ألوان جديدة</p>
+                    <p className="text-2xl font-bold text-primary">{retryResult.newColorsCount}</p>
+                  </div>
+                </div>
+
+                {retryResult.addedColors && retryResult.addedColors.length > 0 && (
+                  <div className="space-y-2">
+                    <h4 className="font-semibold">الألوان المضافة:</h4>
+                    <div className="max-h-64 overflow-y-auto space-y-2">
+                      {retryResult.addedColors.map((color: any, idx: number) => (
+                        <div key={idx} className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+                          {color.image_url && (
+                            <img 
+                              src={color.image_url} 
+                              alt={color.name}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <p className="font-medium">{color.name}</p>
+                            <p className="text-sm text-muted-foreground">{color.name_ar}</p>
+                          </div>
+                          {color.hex_code && (
+                            <div 
+                              className="w-8 h-8 rounded border"
+                              style={{ backgroundColor: color.hex_code }}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {retryResult.newColorsCount === 0 && (
+                  <p className="text-center text-muted-foreground py-4">
+                    لم يتم العثور على ألوان جديدة. جميع الألوان مستخرجة بالفعل.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {retryResult?.error && (
+              <div className="p-4 bg-destructive/10 text-destructive rounded-lg">
+                <p className="font-semibold">خطأ:</p>
+                <p className="text-sm">{retryResult.error}</p>
+              </div>
+            )}
+
+            {!isRetryingColors && retryResult && (
+              <Button 
+                onClick={() => setRetryColorsDialogOpen(false)}
+                className="w-full"
+              >
+                إغلاق
+              </Button>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </div>
