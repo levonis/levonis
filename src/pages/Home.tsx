@@ -62,17 +62,6 @@ const Home = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
-      {/* Decorative frame - Full screen */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-0 opacity-15 md:opacity-25"
-        style={{
-          backgroundImage: 'url(/images/decorative-frame-levonis.png)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          mixBlendMode: 'multiply'
-        }}
-      />
       <main className="relative z-10 pt-20">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 text-center">
