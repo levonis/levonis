@@ -1,4 +1,4 @@
-import logoFooter from '@/assets/logo-footer.webp';
+import logoFooter from '@/assets/logo-footer-optimized.webp';
 
 const Footer = () => {
   return (
