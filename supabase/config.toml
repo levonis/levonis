@@ -2,3 +2,6 @@ project_id = "sajlfpygebpqwzpotrsg"
 
 [functions.extract-product-info]
 verify_jwt = false
+
+[functions.retry-extract-colors]
+verify_jwt = false
