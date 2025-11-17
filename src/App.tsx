@@ -9,6 +9,7 @@ import { CartProvider } from "@/hooks/useCart";
 import { useDailyLogin } from "@/hooks/useDailyLogin";
 import Header from "@/components/Header";
 import AnnouncementBar from "@/components/AnnouncementBar";
+import DecorativeFrame from "@/components/DecorativeFrame";
 import { Loader2 } from "lucide-react";
 
 // Eager load Home page for best initial load
@@ -58,6 +59,7 @@ function AppContent() {
   
   return (
     <>
+      <DecorativeFrame />
       <AnnouncementBar />
       <Header />
       <Suspense fallback={<PageLoader />}>
