@@ -66,7 +66,7 @@ const Home = () => {
       <div 
         className="absolute inset-0 pointer-events-none z-0 opacity-10 md:opacity-20"
         style={{
-          backgroundImage: 'url(/images/decorative-frame-new.webp)',
+          backgroundImage: 'url(/images/decorative-frame-levonis.png)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           backgroundRepeat: 'no-repeat'

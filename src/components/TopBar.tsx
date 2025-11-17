@@ -135,9 +135,12 @@ const TopBar = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <div className="text-2xl font-black text-gradient-gold">
-              LEVONIS.IQ
-            </div>
+            <img 
+              src="/images/logo-levonis.png" 
+              alt="LEVONIS Logo" 
+              className="h-10 w-auto object-contain"
+              loading="eager"
+            />
           </Link>
 
           {/* Navigation Links */}
