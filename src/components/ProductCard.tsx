@@ -74,9 +74,17 @@ const ProductCard = ({
               alt={nameAr}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading={priority ? "eager" : "lazy"}
-              fetchPriority={priority ? "high" : "auto"}
+              decoding="async"
               width="400"
               height="400"
+              onError={(e) => {
+                const target = e.currentTarget as HTMLImageElement;
+                if (target.src !== (displayImage || '')) {
+                  target.src = displayImage || '/placeholder.svg';
+                } else {
+                  target.src = '/placeholder.svg';
+                }
+              }}
             />
           </div>
         )}

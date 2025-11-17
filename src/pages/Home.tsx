@@ -64,7 +64,7 @@ const Home = () => {
     <div className="min-h-screen relative overflow-hidden bg-transparent">
       {/* Decorative frame - Full screen */}
       <div 
-        className="fixed inset-0 pointer-events-none z-0 opacity-20"
+        className="absolute inset-0 pointer-events-none z-0 opacity-10 md:opacity-20"
         style={{
           backgroundImage: 'url(/images/decorative-frame-new.webp)',
           backgroundSize: 'cover',
