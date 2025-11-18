@@ -62,39 +62,41 @@ function AppContent() {
       <DecorativeFrame />
       <AnnouncementBar />
       <Header />
-      <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/product/:slug" element={<ProductDetail />} />
-          <Route path="/categories" element={<Categories />} />
-          <Route path="/category/:slug" element={<CategoryDetail />} />
-          <Route path="/cart" element={<Cart />} />
-          <Route path="/user-info" element={<UserInfo />} />
-          <Route path="/favorites" element={<Favorites />} />
-          <Route path="/notifications" element={<Notifications />} />
-          <Route path="/my-requests" element={<MyCustomRequests />} />
-          <Route path="/my-orders" element={<MyOrders />} />
-          <Route path="/order/:orderId" element={<OrderDetail />} />
-          <Route path="/my-orders/:orderId/confirm" element={<ConfirmDelivery />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/admin/notifications" element={<AdminNotifications />} />
-          <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-          <Route path="/admin/coupons" element={<AdminCoupons />} />
-          <Route path="/admin/orders" element={<AdminOrders />} />
-          <Route path="/admin/points-settings" element={<AdminPointsSettings />} />
-          <Route path="/admin/loyalty-levels" element={<AdminLoyaltyLevels />} />
-          <Route path="/admin/daily-tasks" element={<AdminDailyTasks />} />
-          <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
-          <Route path="/admin/wallet" element={<AdminWallet />} />
-          <Route path="/admin/chats" element={<AdminChats />} />
-          <Route path="/admin/invoice-templates" element={<AdminInvoiceTemplates />} />
-          <Route path="/admin/saved-invoices" element={<AdminSavedInvoices />} />
-          <Route path="/my-points" element={<MyPoints />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </Suspense>
+      <main>
+        <Suspense fallback={<PageLoader />}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/product/:slug" element={<ProductDetail />} />
+            <Route path="/categories" element={<Categories />} />
+            <Route path="/category/:slug" element={<CategoryDetail />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/user-info" element={<UserInfo />} />
+            <Route path="/favorites" element={<Favorites />} />
+            <Route path="/notifications" element={<Notifications />} />
+            <Route path="/my-requests" element={<MyCustomRequests />} />
+            <Route path="/my-orders" element={<MyOrders />} />
+            <Route path="/order/:orderId" element={<OrderDetail />} />
+            <Route path="/my-orders/:orderId/confirm" element={<ConfirmDelivery />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/notifications" element={<AdminNotifications />} />
+            <Route path="/admin/announcements" element={<AdminAnnouncements />} />
+            <Route path="/admin/coupons" element={<AdminCoupons />} />
+            <Route path="/admin/orders" element={<AdminOrders />} />
+            <Route path="/admin/points-settings" element={<AdminPointsSettings />} />
+            <Route path="/admin/chats" element={<AdminChats />} />
+            <Route path="/admin/loyalty-levels" element={<AdminLoyaltyLevels />} />
+            <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
+            <Route path="/admin/daily-tasks" element={<AdminDailyTasks />} />
+            <Route path="/admin/wallet" element={<AdminWallet />} />
+            <Route path="/admin/invoice-templates" element={<AdminInvoiceTemplates />} />
+            <Route path="/admin/saved-invoices" element={<AdminSavedInvoices />} />
+            <Route path="/my-points" element={<MyPoints />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
+      </main>
     </>
   );
 }
