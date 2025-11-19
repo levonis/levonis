@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import { z } from 'zod';
@@ -60,6 +61,10 @@ const Auth = () => {
   const [referralCode, setReferralCode] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState('');
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -110,8 +115,51 @@ const Auth = () => {
     }
   };
 
+  const handleSendOtp = async () => {
+    if (!phoneNumber || !phoneNumber.match(/^07[3-9]\d{8}$/)) {
+      toast.error('يرجى إدخال رقم هاتف صحيح');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      setGeneratedOtp(otp);
+      
+      // Here you would normally send the OTP via SMS service
+      // For now, we'll show it in a toast for testing
+      toast.success(`كود التحقق: ${otp}`, {
+        description: 'في الإصدار النهائي، سيتم إرسال الكود عبر رسالة نصية',
+        duration: 10000,
+      });
+      
+      setIsOtpSent(true);
+    } catch (error) {
+      toast.error('حدث خطأ في إرسال كود التحقق');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpCode !== generatedOtp) {
+      toast.error('كود التحقق غير صحيح');
+      return;
+    }
+
+    setIsPhoneVerified(true);
+    toast.success('تم التحقق من رقم الهاتف بنجاح');
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isPhoneVerified) {
+      toast.error('يرجى التحقق من رقم الهاتف أولاً');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -401,17 +449,84 @@ const Auth = () => {
 
                 <div className="space-y-2">
                   <Label htmlFor="signup-phone">رقم الهاتف *</Label>
-                  <Input
-                    id="signup-phone"
-                    type="tel"
-                    placeholder="07XXXXXXXXX"
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    required
-                    disabled={loading}
-                    maxLength={11}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="signup-phone"
+                      type="tel"
+                      placeholder="07XXXXXXXXX"
+                      value={phoneNumber}
+                      onChange={(e) => {
+                        setPhoneNumber(e.target.value);
+                        setIsOtpSent(false);
+                        setIsPhoneVerified(false);
+                        setOtpCode('');
+                      }}
+                      required
+                      disabled={loading || isPhoneVerified}
+                      maxLength={11}
+                      className={isPhoneVerified ? 'bg-muted' : ''}
+                    />
+                    {!isPhoneVerified && (
+                      <Button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={loading || !phoneNumber || isOtpSent}
+                        variant="outline"
+                        className="whitespace-nowrap"
+                      >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isOtpSent ? 'تم الإرسال' : 'إرسال كود'}
+                      </Button>
+                    )}
+                  </div>
+                  {isPhoneVerified && (
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <span>✓</span> تم التحقق من رقم الهاتف
+                    </p>
+                  )}
                 </div>
+
+                {isOtpSent && !isPhoneVerified && (
+                  <div className="space-y-2">
+                    <Label htmlFor="otp-input">كود التحقق</Label>
+                    <div className="flex flex-col items-center gap-3">
+                      <InputOTP
+                        maxLength={6}
+                        value={otpCode}
+                        onChange={setOtpCode}
+                      >
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} />
+                          <InputOTPSlot index={1} />
+                          <InputOTPSlot index={2} />
+                          <InputOTPSlot index={3} />
+                          <InputOTPSlot index={4} />
+                          <InputOTPSlot index={5} />
+                        </InputOTPGroup>
+                      </InputOTP>
+                      <Button
+                        type="button"
+                        onClick={handleVerifyOtp}
+                        disabled={loading || otpCode.length !== 6}
+                        className="w-full"
+                      >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تحقق من الكود'}
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={handleSendOtp}
+                        disabled={loading}
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        إعادة إرسال الكود
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground text-center">
+                      تم إرسال كود التحقق المكون من 6 أرقام إلى {phoneNumber}
+                    </p>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <Label htmlFor="signup-governorate">المحافظة *</Label>
