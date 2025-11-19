@@ -449,9 +449,9 @@ const Auth = () => {
                             ? 'border-primary bg-primary/10'
                             : 'border-border hover:border-primary/50'
                         }`}
-                      >
+                       >
                         <div className="text-center">
-                          <div className="text-2xl mb-2">📧</div>
+                          <div className="text-lg mb-2">📧</div>
                           <div className="font-medium">البريد الإلكتروني</div>
                         </div>
                       </button>
@@ -470,7 +470,7 @@ const Auth = () => {
                         }`}
                       >
                         <div className="text-center">
-                          <div className="text-2xl mb-2">📱</div>
+                          <div className="text-lg mb-2">📱</div>
                           <div className="font-medium">رقم الهاتف</div>
                         </div>
                       </button>
