@@ -63,8 +63,11 @@ const Auth = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
   const [generatedOtp, setGeneratedOtp] = useState('');
+  const [signupStep, setSignupStep] = useState<'method' | 'details'>(('method'));
+  const [signupMethod, setSignupMethod] = useState<'email' | 'phone'>('email');
+  const [tempUserId, setTempUserId] = useState('');
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -116,8 +119,12 @@ const Auth = () => {
   };
 
   const handleSendOtp = async () => {
-    if (!phoneNumber || !phoneNumber.match(/^07[3-9]\d{8}$/)) {
-      toast.error('يرجى إدخال رقم هاتف صحيح');
+    const valueToVerify = signupMethod === 'email' ? email : phoneNumber;
+    const isValidEmail = signupMethod === 'email' && email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+    const isValidPhone = signupMethod === 'phone' && phoneNumber.match(/^07[3-9]\d{8}$/);
+
+    if (!valueToVerify || (signupMethod === 'email' && !isValidEmail) || (signupMethod === 'phone' && !isValidPhone)) {
+      toast.error(`يرجى إدخال ${signupMethod === 'email' ? 'بريد إلكتروني' : 'رقم هاتف'} صحيح`);
       return;
     }
 
@@ -127,10 +134,10 @@ const Auth = () => {
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       setGeneratedOtp(otp);
       
-      // Here you would normally send the OTP via SMS service
+      // Here you would normally send the OTP via SMS service or email
       // For now, we'll show it in a toast for testing
       toast.success(`كود التحقق: ${otp}`, {
-        description: 'في الإصدار النهائي، سيتم إرسال الكود عبر رسالة نصية',
+        description: 'في الإصدار النهائي، سيتم إرسال الكود عبر ' + (signupMethod === 'email' ? 'البريد الإلكتروني' : 'رسالة نصية'),
         duration: 10000,
       });
       
@@ -148,18 +155,24 @@ const Auth = () => {
       return;
     }
 
-    setIsPhoneVerified(true);
-    toast.success('تم التحقق من رقم الهاتف بنجاح');
+    setIsVerified(true);
+    toast.success(`تم التحقق من ${signupMethod === 'email' ? 'البريد الإلكتروني' : 'رقم الهاتف'} بنجاح`);
+  };
+
+  const handleFirstStep = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!isVerified) {
+      toast.error(`يرجى التحقق من ${signupMethod === 'email' ? 'البريد الإلكتروني' : 'رقم الهاتف'} أولاً`);
+      return;
+    }
+
+    setSignupStep('details');
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isPhoneVerified) {
-      toast.error('يرجى التحقق من رقم الهاتف أولاً');
-      return;
-    }
-
     setLoading(true);
 
     try {
@@ -418,187 +431,315 @@ const Auth = () => {
               </TabsContent>
 
             <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">الاسم الكامل *</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="محمد أحمد"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-username">اسم المستخدم *</Label>
-                  <Input
-                    id="signup-username"
-                    type="text"
-                    placeholder="user123"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                    disabled={loading}
-                    maxLength={20}
-                  />
-                  <p className="text-xs text-muted-foreground">اسم فريد يظهر في التقييمات والتعليقات</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-phone">رقم الهاتف *</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="signup-phone"
-                      type="tel"
-                      placeholder="07XXXXXXXXX"
-                      value={phoneNumber}
-                      onChange={(e) => {
-                        setPhoneNumber(e.target.value);
-                        setIsOtpSent(false);
-                        setIsPhoneVerified(false);
-                        setOtpCode('');
-                      }}
-                      required
-                      disabled={loading || isPhoneVerified}
-                      maxLength={11}
-                      className={isPhoneVerified ? 'bg-muted' : ''}
-                    />
-                    {!isPhoneVerified && (
-                      <Button
+              {signupStep === 'method' ? (
+                <form onSubmit={handleFirstStep} className="space-y-4">
+                  <div className="space-y-3 mb-6">
+                    <Label className="text-base">اختر طريقة التسجيل</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
                         type="button"
-                        onClick={handleSendOtp}
-                        disabled={loading || !phoneNumber || isOtpSent}
-                        variant="outline"
-                        className="whitespace-nowrap"
+                        onClick={() => {
+                          setSignupMethod('email');
+                          setIsOtpSent(false);
+                          setIsVerified(false);
+                          setOtpCode('');
+                        }}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          signupMethod === 'email'
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                        }`}
                       >
-                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isOtpSent ? 'تم الإرسال' : 'إرسال كود'}
-                      </Button>
-                    )}
-                  </div>
-                  {isPhoneVerified && (
-                    <p className="text-xs text-green-600 flex items-center gap-1">
-                      <span>✓</span> تم التحقق من رقم الهاتف
-                    </p>
-                  )}
-                </div>
-
-                {isOtpSent && !isPhoneVerified && (
-                  <div className="space-y-2">
-                    <Label htmlFor="otp-input">كود التحقق</Label>
-                    <div className="flex flex-col items-center gap-3">
-                      <InputOTP
-                        maxLength={6}
-                        value={otpCode}
-                        onChange={setOtpCode}
-                      >
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                      </InputOTP>
-                      <Button
+                        <div className="text-center">
+                          <div className="text-2xl mb-2">📧</div>
+                          <div className="font-medium">البريد الإلكتروني</div>
+                        </div>
+                      </button>
+                      <button
                         type="button"
-                        onClick={handleVerifyOtp}
-                        disabled={loading || otpCode.length !== 6}
-                        className="w-full"
+                        onClick={() => {
+                          setSignupMethod('phone');
+                          setIsOtpSent(false);
+                          setIsVerified(false);
+                          setOtpCode('');
+                        }}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          signupMethod === 'phone'
+                            ? 'border-primary bg-primary/10'
+                            : 'border-border hover:border-primary/50'
+                        }`}
                       >
-                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تحقق من الكود'}
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={handleSendOtp}
-                        disabled={loading}
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs"
-                      >
-                        إعادة إرسال الكود
-                      </Button>
+                        <div className="text-center">
+                          <div className="text-2xl mb-2">📱</div>
+                          <div className="font-medium">رقم الهاتف</div>
+                        </div>
+                      </button>
                     </div>
-                    <p className="text-xs text-muted-foreground text-center">
-                      تم إرسال كود التحقق المكون من 6 أرقام إلى {phoneNumber}
+                  </div>
+
+                  {signupMethod === 'email' ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email-step1">البريد الإلكتروني *</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="signup-email-step1"
+                          type="email"
+                          placeholder="your@email.com"
+                          value={email}
+                          onChange={(e) => {
+                            setEmail(e.target.value);
+                            setIsOtpSent(false);
+                            setIsVerified(false);
+                            setOtpCode('');
+                          }}
+                          required
+                          disabled={loading || isVerified}
+                          className={isVerified ? 'bg-muted' : ''}
+                        />
+                        {!isVerified && (
+                          <Button
+                            type="button"
+                            onClick={handleSendOtp}
+                            disabled={loading || !email || isOtpSent}
+                            variant="outline"
+                            className="whitespace-nowrap"
+                          >
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isOtpSent ? 'تم الإرسال' : 'إرسال كود'}
+                          </Button>
+                        )}
+                      </div>
+                      {isVerified && (
+                        <p className="text-xs text-green-600 flex items-center gap-1">
+                          <span>✓</span> تم التحقق من البريد الإلكتروني
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-phone-step1">رقم الهاتف *</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="signup-phone-step1"
+                          type="tel"
+                          placeholder="07XXXXXXXXX"
+                          value={phoneNumber}
+                          onChange={(e) => {
+                            setPhoneNumber(e.target.value);
+                            setIsOtpSent(false);
+                            setIsVerified(false);
+                            setOtpCode('');
+                          }}
+                          required
+                          disabled={loading || isVerified}
+                          maxLength={11}
+                          className={isVerified ? 'bg-muted' : ''}
+                        />
+                        {!isVerified && (
+                          <Button
+                            type="button"
+                            onClick={handleSendOtp}
+                            disabled={loading || !phoneNumber || isOtpSent}
+                            variant="outline"
+                            className="whitespace-nowrap"
+                          >
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : isOtpSent ? 'تم الإرسال' : 'إرسال كود'}
+                          </Button>
+                        )}
+                      </div>
+                      {isVerified && (
+                        <p className="text-xs text-green-600 flex items-center gap-1">
+                          <span>✓</span> تم التحقق من رقم الهاتف
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {isOtpSent && !isVerified && (
+                    <div className="space-y-2">
+                      <Label htmlFor="otp-input">كود التحقق</Label>
+                      <div className="flex flex-col items-center gap-3">
+                        <InputOTP
+                          maxLength={6}
+                          value={otpCode}
+                          onChange={setOtpCode}
+                        >
+                          <InputOTPGroup>
+                            <InputOTPSlot index={0} />
+                            <InputOTPSlot index={1} />
+                            <InputOTPSlot index={2} />
+                            <InputOTPSlot index={3} />
+                            <InputOTPSlot index={4} />
+                            <InputOTPSlot index={5} />
+                          </InputOTPGroup>
+                        </InputOTP>
+                        <Button
+                          type="button"
+                          onClick={handleVerifyOtp}
+                          disabled={loading || otpCode.length !== 6}
+                          className="w-full"
+                        >
+                          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تحقق من الكود'}
+                        </Button>
+                        <Button
+                          type="button"
+                          onClick={handleSendOtp}
+                          disabled={loading}
+                          variant="ghost"
+                          size="sm"
+                          className="text-xs"
+                        >
+                          إعادة إرسال الكود
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground text-center">
+                        تم إرسال كود التحقق المكون من 6 أرقام
+                      </p>
+                    </div>
+                  )}
+
+                  {isVerified && (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-password-step1">كلمة المرور *</Label>
+                        <Input
+                          id="signup-password-step1"
+                          type="password"
+                          placeholder="••••••••"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          disabled={loading}
+                          minLength={6}
+                        />
+                        <p className="text-xs text-muted-foreground">6 أحرف على الأقل</p>
+                      </div>
+
+                      <Button 
+                        type="submit" 
+                        className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                        disabled={loading || !password}
+                      >
+                        {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                        التالي - أكمل التفاصيل
+                      </Button>
+                    </>
+                  )}
+                </form>
+              ) : (
+                <form onSubmit={handleSignUp} className="space-y-4">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setSignupStep('method')}
+                    className="mb-2"
+                    disabled={loading}
+                  >
+                    ← العودة
+                  </Button>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-name">الاسم الكامل *</Label>
+                    <Input
+                      id="signup-name"
+                      type="text"
+                      placeholder="محمد أحمد"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-username">اسم المستخدم *</Label>
+                    <Input
+                      id="signup-username"
+                      type="text"
+                      placeholder="user123"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                      disabled={loading}
+                      maxLength={20}
+                    />
+                    <p className="text-xs text-muted-foreground">اسم فريد يظهر في التقييمات والتعليقات</p>
+                  </div>
+
+                  {signupMethod === 'email' ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-phone-step2">رقم الهاتف *</Label>
+                      <Input
+                        id="signup-phone-step2"
+                        type="tel"
+                        placeholder="07XXXXXXXXX"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        required
+                        disabled={loading}
+                        maxLength={11}
+                      />
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Label htmlFor="signup-email-step2">البريد الإلكتروني *</Label>
+                      <Input
+                        id="signup-email-step2"
+                        type="email"
+                        placeholder="your@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-governorate">المحافظة *</Label>
+                    <Select 
+                      value={governorate} 
+                      onValueChange={setGovernorate}
+                      disabled={loading}
+                      required
+                    >
+                      <SelectTrigger id="signup-governorate">
+                        <SelectValue placeholder="اختر المحافظة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {IRAQI_GOVERNORATES.map((gov) => (
+                          <SelectItem key={gov} value={gov}>
+                            {gov}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="signup-referral">كود الدعوة (اختياري)</Label>
+                    <Input
+                      id="signup-referral"
+                      type="text"
+                      placeholder="REF-XXXXXXXX"
+                      value={referralCode}
+                      onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                      disabled={loading}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      إذا كان لديك كود دعوة من صديق، أدخله هنا للحصول على مكافآت إضافية
                     </p>
                   </div>
-                )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="signup-governorate">المحافظة *</Label>
-                  <Select 
-                    value={governorate} 
-                    onValueChange={setGovernorate}
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
                     disabled={loading}
-                    required
                   >
-                    <SelectTrigger id="signup-governorate">
-                      <SelectValue placeholder="اختر المحافظة" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {IRAQI_GOVERNORATES.map((gov) => (
-                        <SelectItem key={gov} value={gov}>
-                          {gov}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-referral">كود الدعوة (اختياري)</Label>
-                  <Input
-                    id="signup-referral"
-                    type="text"
-                    placeholder="REF-XXXXXXXX"
-                    value={referralCode}
-                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-                    disabled={loading}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    إذا كان لديك كود دعوة من صديق، أدخله هنا للحصول على مكافآت إضافية
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">البريد الإلكتروني</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">كلمة المرور</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    disabled={loading}
-                  />
-                </div>
-
-                <Button 
-                  type="submit" 
-                  className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                  disabled={loading}
-                >
-                  {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                  إنشاء حساب
-                </Button>
-              </form>
+                    {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                    إنشاء حساب
+                  </Button>
+                </form>
+              )}
             </TabsContent>
             </Tabs>
           )}
