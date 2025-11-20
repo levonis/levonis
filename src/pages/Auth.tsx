@@ -675,12 +675,12 @@ const Auth = () => {
                         <Button
                           type="button"
                           onClick={handleSendOtp}
-                          disabled={loading}
+                          disabled={loading || resendTimer > 0}
                           variant="ghost"
                           size="sm"
                           className="text-xs"
                         >
-                          إعادة إرسال الكود
+                          {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer}ث` : 'إعادة إرسال الكود'}
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground text-center">

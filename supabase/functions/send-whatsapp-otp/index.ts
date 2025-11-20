@@ -6,6 +6,10 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const twilioAccountSid = Deno.env.get('TWILIO_ACCOUNT_SID');
+const twilioAuthToken = Deno.env.get('TWILIO_AUTH_TOKEN');
+const twilioPhoneNumber = Deno.env.get('TWILIO_PHONE_NUMBER');
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -15,54 +19,62 @@ serve(async (req) => {
   try {
     const { phoneNumber, otp } = await req.json();
     
-    console.log('Sending OTP to WhatsApp:', { phoneNumber, otp });
+    console.log('Sending OTP via SMS:', { phoneNumber, otp });
 
-    // WhatsApp message
+    if (!twilioAccountSid || !twilioAuthToken || !twilioPhoneNumber) {
+      throw new Error('Twilio credentials not configured');
+    }
+
+    // SMS message in Arabic
     const message = `رمز التحقق الخاص بك هو: ${otp}\n\nصالح لمدة 5 دقائق.\nلا تشارك هذا الرمز مع أحد.`;
     
-    // For now, we'll send to the admin WhatsApp number provided
-    // In production, you would integrate with WhatsApp Business API
-    const adminWhatsApp = '9647838455220';
+    // Format phone number for Twilio (add +964 country code if not present)
+    const formattedPhone = phoneNumber.startsWith('+') 
+      ? phoneNumber 
+      : phoneNumber.startsWith('0') 
+        ? `+964${phoneNumber.substring(1)}` 
+        : `+964${phoneNumber}`;
+
+    console.log('Formatted phone:', formattedPhone);
+
+    // Send SMS via Twilio
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${twilioAccountSid}/Messages.json`;
+    const authHeader = btoa(`${twilioAccountSid}:${twilioAuthToken}`);
     
-    // Format message for WhatsApp
-    const whatsappMessage = `طلب تحقق جديد:\nرقم الهاتف: ${phoneNumber}\nالكود: ${otp}`;
-    
-    // Here you would integrate with WhatsApp Business API or service like Twilio
-    // For testing, we'll just log it
-    console.log('WhatsApp Message:', {
-      to: adminWhatsApp,
-      message: whatsappMessage,
-      userPhone: phoneNumber
+    const response = await fetch(twilioUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${authHeader}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        From: twilioPhoneNumber,
+        To: formattedPhone,
+        Body: message
+      })
     });
 
-    // TODO: Integrate with actual WhatsApp API service
-    // Example with Twilio WhatsApp:
-    // const response = await fetch('https://api.twilio.com/2010-04-01/Accounts/YOUR_ACCOUNT_SID/Messages.json', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Authorization': `Basic ${btoa('YOUR_ACCOUNT_SID:YOUR_AUTH_TOKEN')}`,
-    //     'Content-Type': 'application/x-www-form-urlencoded',
-    //   },
-    //   body: new URLSearchParams({
-    //     From: 'whatsapp:+14155238886',
-    //     To: `whatsapp:${adminWhatsApp}`,
-    //     Body: whatsappMessage
-    //   })
-    // });
+    const twilioResponse = await response.json();
+    
+    if (!response.ok) {
+      console.error('Twilio error:', twilioResponse);
+      throw new Error(twilioResponse.message || 'Failed to send SMS');
+    }
+
+    console.log('SMS sent successfully:', twilioResponse.sid);
 
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: 'OTP sent successfully',
-        // For testing purposes, return the OTP
-        otp: otp 
+        message: 'OTP sent successfully via SMS',
+        messageSid: twilioResponse.sid
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   } catch (error) {
-    console.error('Error in send-whatsapp-otp function:', error);
+    console.error('Error in send-sms-otp function:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     return new Response(
       JSON.stringify({ 
