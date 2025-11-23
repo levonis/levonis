@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -242,6 +242,10 @@ const TopBar = () => {
                   <DropdownMenuItem onClick={() => navigate('/my-requests')}>
                     <FileText className="ml-2 h-4 w-4" />
                     <span>طلباتي المخصصة</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/addresses')}>
+                    <MapPin className="ml-2 h-4 w-4" />
+                    <span>العناوين</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/my-orders')}>
                     <Package className="ml-2 h-4 w-4" />
