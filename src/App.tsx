@@ -12,8 +12,8 @@ import AnnouncementBar from "@/components/AnnouncementBar";
 import DecorativeFrame from "@/components/DecorativeFrame";
 import { Loader2 } from "lucide-react";
 
-// Eager load Home page for best initial load
-import Home from "./pages/Home";
+// Eager load Index page for best initial load
+import Index from "./pages/Index";
 
 // Lazy load all other routes
 const Products = lazy(() => import("./pages/Products"));
@@ -65,7 +65,7 @@ function AppContent() {
       <main>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Index />} />
             <Route path="/products" element={<Products />} />
             <Route path="/product/:slug" element={<ProductDetail />} />
             <Route path="/categories" element={<Categories />} />
