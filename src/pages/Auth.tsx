@@ -40,7 +40,6 @@ const signInSchema = z.object({
 
 const signUpSchema = z.object({
   email: z.string().email({ message: 'بريد إلكتروني غير صحيح' }),
-  password: z.string().min(6, { message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }),
   fullName: z.string().min(1, { message: 'الاسم الكامل مطلوب' }),
   username: z.string()
     .min(3, { message: 'اسم المستخدم يجب أن يكون 3 أحرف على الأقل' })
@@ -60,14 +59,12 @@ const Auth = () => {
   const [governorate, setGovernorate] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
-  const [resetPhoneNumber, setResetPhoneNumber] = useState('');
+  const [resetEmail, setResetEmail] = useState('');
   const [resetOtpCode, setResetOtpCode] = useState('');
-  const [resetNewPassword, setResetNewPassword] = useState('');
-  const [resetStep, setResetStep] = useState<'phone' | 'otp' | 'password'>('phone');
+  const [resetStep, setResetStep] = useState<'email' | 'otp'>('email');
   const [otpCode, setOtpCode] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
-  const [generatedOtp, setGeneratedOtp] = useState('');
   const [signupStep, setSignupStep] = useState<'verification' | 'details'>('verification');
   const [resendTimer, setResendTimer] = useState(0);
   const navigate = useNavigate();
@@ -96,8 +93,8 @@ const Auth = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!phoneNumber.match(/^07[3-9]\d{8}$/)) {
-      toast.error('يرجى إدخال رقم هاتف صحيح');
+    if (!email) {
+      toast.error('يرجى إدخال البريد الإلكتروني');
       return;
     }
     
@@ -109,26 +106,14 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // البحث عن البريد الإلكتروني المرتبط برقم الهاتف
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('phone_number', phoneNumber)
-        .maybeSingle();
-
-      if (profileError || !profile?.email) {
-        toast.error('رقم الهاتف غير مسجل');
-        return;
-      }
-      
       const { error } = await supabase.auth.signInWithPassword({
-        email: profile.email,
+        email: email,
         password: password,
       });
 
       if (error) {
         if (error.message.includes('Invalid')) {
-          toast.error('رقم الهاتف أو كلمة المرور غير صحيحة');
+          toast.error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
         } else {
           toast.error(error.message);
         }
@@ -145,18 +130,18 @@ const Auth = () => {
   };
 
   const handleSendOtp = async () => {
-    if (!phoneNumber.match(/^07[3-9]\d{8}$/)) {
-      toast.error('يرجى إدخال رقم هاتف صحيح');
+    if (!email) {
+      toast.error('يرجى إدخال البريد الإلكتروني');
       return;
     }
 
     setLoading(true);
     try {
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedOtp(otp);
-      
-      const { data, error } = await supabase.functions.invoke('send-whatsapp-otp', {
-        body: { phoneNumber, otp }
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          shouldCreateUser: false,
+        }
       });
 
       if (error) {
@@ -165,7 +150,7 @@ const Auth = () => {
         return;
       }
 
-      toast.success('تم إرسال كود التحقق إلى رقم هاتفك عبر رسالة نصية');
+      toast.success('تم إرسال كود التحقق إلى بريدك الإلكتروني');
       setIsOtpSent(true);
       setResendTimer(120);
     } catch (error) {
@@ -177,25 +162,38 @@ const Auth = () => {
   };
 
   const handleVerifyOtp = async () => {
-    if (otpCode !== generatedOtp) {
-      toast.error('كود التحقق غير صحيح');
+    if (!otpCode || otpCode.length !== 6) {
+      toast.error('يرجى إدخال كود التحقق المكون من 6 أرقام');
       return;
     }
 
-    setIsVerified(true);
-    toast.success('تم التحقق من رقم الهاتف بنجاح');
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: email,
+        token: otpCode,
+        type: 'email'
+      });
+
+      if (error) {
+        toast.error('كود التحقق غير صحيح');
+        return;
+      }
+
+      setIsVerified(true);
+      toast.success('تم التحقق من البريد الإلكتروني بنجاح');
+    } catch (error) {
+      toast.error('حدث خطأ في التحقق');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleFirstStep = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!isVerified) {
-      toast.error('يرجى التحقق من رقم الهاتف أولاً');
-      return;
-    }
-
-    if (!password || password.length < 6) {
-      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      toast.error('يرجى التحقق من البريد الإلكتروني أولاً');
       return;
     }
 
@@ -210,7 +208,6 @@ const Auth = () => {
     try {
       const validatedData = signUpSchema.parse({ 
         email, 
-        password, 
         fullName, 
         username,
         phoneNumber,
@@ -231,61 +228,56 @@ const Auth = () => {
       
       const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
-        email: validatedData.email,
-        password: validatedData.password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: validatedData.fullName,
-            username: validatedData.username,
-            phone_number: validatedData.phoneNumber,
-            governorate: validatedData.governorate,
-          }
+      // Update the user metadata since they're already signed in via OTP
+      const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError || !currentUser) {
+        toast.error('حدث خطأ في التحقق من الحساب');
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: {
+          full_name: validatedData.fullName,
+          username: validatedData.username,
+          phone_number: validatedData.phoneNumber,
+          governorate: validatedData.governorate,
         }
       });
 
-      if (error) {
-        if (error.message.includes('already registered')) {
-          toast.error('هذا البريد الإلكتروني مسجل بالفعل');
-        } else {
-          toast.error(error.message);
-        }
+      if (updateError) {
+        toast.error('حدث خطأ في حفظ البيانات');
         return;
       }
 
       // معالجة كود الدعوة إذا كان موجوداً
       if (referralCode) {
         try {
-          const { data: { user: newUser } } = await supabase.auth.getUser();
-          
-          if (newUser) {
-            // التحقق من صحة كود الدعوة
-            const { data: referralData } = await supabase
-              .from('user_referrals')
-              .select('referrer_user_id, id')
-              .eq('referral_code', referralCode)
-              .eq('status', 'pending')
-              .maybeSingle();
+          // التحقق من صحة كود الدعوة
+          const { data: referralData } = await supabase
+            .from('user_referrals')
+            .select('referrer_user_id, id')
+            .eq('referral_code', referralCode)
+            .eq('status', 'pending')
+            .maybeSingle();
 
-            if (referralData) {
-              // تحديث حالة الدعوة
-              await supabase
-                .from('user_referrals')
-                .update({
-                  referred_user_id: newUser.id,
-                  status: 'completed',
-                  completed_at: new Date().toISOString(),
-                })
-                .eq('id', referralData.id);
-            }
+          if (referralData) {
+            // تحديث حالة الدعوة
+            await supabase
+              .from('user_referrals')
+              .update({
+                referred_user_id: currentUser.id,
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+              })
+              .eq('id', referralData.id);
           }
         } catch (error) {
           console.error('Error processing referral:', error);
         }
       }
 
-      toast.success('تم إنشاء الحساب بنجاح! يمكنك تسجيل الدخول الآن');
+      toast.success('تم إنشاء الحساب بنجاح!');
       navigate('/');
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -299,38 +291,23 @@ const Auth = () => {
   };
 
   const handleSendResetOtp = async () => {
-    if (!resetPhoneNumber.match(/^07[3-9]\d{8}$/)) {
-      toast.error('يرجى إدخال رقم هاتف صحيح');
+    if (!resetEmail) {
+      toast.error('يرجى إدخال البريد الإلكتروني');
       return;
     }
 
     setLoading(true);
     try {
-      // التحقق من وجود رقم الهاتف
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('phone_number')
-        .eq('phone_number', resetPhoneNumber)
-        .maybeSingle();
-
-      if (profileError || !profile) {
-        toast.error('رقم الهاتف غير مسجل');
-        return;
-      }
-
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      setGeneratedOtp(otp);
-      
-      const { error } = await supabase.functions.invoke('send-whatsapp-otp', {
-        body: { phoneNumber: resetPhoneNumber, otp }
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth`,
       });
 
       if (error) {
-        toast.error('حدث خطأ في إرسال كود التحقق');
+        toast.error('حدث خطأ في إرسال رابط إعادة تعيين كلمة المرور');
         return;
       }
 
-      toast.success('تم إرسال كود التحقق إلى رقم هاتفك عبر رسالة نصية');
+      toast.success('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني');
       setResetStep('otp');
       setResendTimer(120);
     } catch (error) {
@@ -340,63 +317,6 @@ const Auth = () => {
     }
   };
 
-  const handleVerifyResetOtp = async () => {
-    if (resetOtpCode !== generatedOtp) {
-      toast.error('كود التحقق غير صحيح');
-      return;
-    }
-
-    setResetStep('password');
-    toast.success('تم التحقق بنجاح');
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!resetNewPassword || resetNewPassword.length < 6) {
-      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      // البحث عن البريد الإلكتروني المرتبط برقم الهاتف
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('email')
-        .eq('phone_number', resetPhoneNumber)
-        .maybeSingle();
-
-      if (profileError || !profile?.email) {
-        toast.error('حدث خطأ، يرجى المحاولة مرة أخرى');
-        return;
-      }
-
-      // تحديث كلمة المرور عبر Edge Function
-      const { error } = await supabase.functions.invoke('reset-password', {
-        body: { 
-          email: profile.email, 
-          newPassword: resetNewPassword 
-        }
-      });
-
-      if (error) {
-        toast.error('حدث خطأ في تحديث كلمة المرور');
-        return;
-      }
-
-      toast.success('تم تحديث كلمة المرور بنجاح');
-      setShowResetPassword(false);
-      setResetPhoneNumber('');
-      setResetOtpCode('');
-      setResetNewPassword('');
-      setResetStep('phone');
-    } catch (error) {
-      toast.error('حدث خطأ غير متوقع');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background/90 backdrop-blur-md relative overflow-hidden flex items-center justify-center p-4">
@@ -434,22 +354,21 @@ const Auth = () => {
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-gradient-gold mb-2">إعادة تعيين كلمة المرور</h2>
                 <p className="text-sm text-muted-foreground">
-                  {resetStep === 'phone' && 'أدخل رقم هاتفك لإرسال كود التحقق'}
-                  {resetStep === 'otp' && 'أدخل كود التحقق المرسل'}
-                  {resetStep === 'password' && 'أدخل كلمة المرور الجديدة'}
+                  {resetStep === 'email' && 'أدخل بريدك الإلكتروني لإرسال رابط إعادة التعيين'}
+                  {resetStep === 'otp' && 'تحقق من بريدك الإلكتروني واتبع الرابط المرسل'}
                 </p>
               </div>
               
-              {resetStep === 'phone' && (
+              {resetStep === 'email' && (
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="reset-phone">رقم الهاتف</Label>
+                    <Label htmlFor="reset-email">البريد الإلكتروني</Label>
                     <Input
-                      id="reset-phone"
-                      type="tel"
-                      placeholder="07XXXXXXXXX"
-                      value={resetPhoneNumber}
-                      onChange={(e) => setResetPhoneNumber(e.target.value)}
+                      id="reset-email"
+                      type="email"
+                      placeholder="example@email.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
                       dir="ltr"
                       disabled={loading}
                     />
@@ -462,7 +381,7 @@ const Auth = () => {
                     disabled={loading || resendTimer > 0}
                   >
                     {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                    {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer}ث` : 'إرسال كود التحقق'}
+                    {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer}ث` : 'إرسال رابط إعادة التعيين'}
                   </Button>
                   
                   <Button 
@@ -471,8 +390,8 @@ const Auth = () => {
                     className="w-full"
                     onClick={() => {
                       setShowResetPassword(false);
-                      setResetPhoneNumber('');
-                      setResetStep('phone');
+                      setResetEmail('');
+                      setResetStep('email');
                     }}
                     disabled={loading}
                   >
@@ -483,72 +402,36 @@ const Auth = () => {
 
               {resetStep === 'otp' && (
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>كود التحقق</Label>
-                    <div className="flex justify-center">
-                      <InputOTP
-                        maxLength={6}
-                        value={resetOtpCode}
-                        onChange={(value) => setResetOtpCode(value)}
-                        disabled={loading}
-                      >
-                        <InputOTPGroup>
-                          <InputOTPSlot index={0} />
-                          <InputOTPSlot index={1} />
-                          <InputOTPSlot index={2} />
-                          <InputOTPSlot index={3} />
-                          <InputOTPSlot index={4} />
-                          <InputOTPSlot index={5} />
-                        </InputOTPGroup>
-                      </InputOTP>
-                    </div>
+                  <div className="p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-center">
+                      تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني. يرجى التحقق من صندوق الوارد الخاص بك واتباع التعليمات.
+                    </p>
                   </div>
-
-                  <Button 
-                    type="button"
-                    onClick={handleVerifyResetOtp}
-                    className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                    disabled={loading || resetOtpCode.length !== 6}
-                  >
-                    {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                    التحقق من الكود
-                  </Button>
 
                   <Button 
                     type="button"
                     onClick={handleSendResetOtp}
-                    variant="ghost"
+                    variant="outline"
                     className="w-full"
                     disabled={loading || resendTimer > 0}
                   >
-                    {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer}ث` : 'إعادة إرسال الكود'}
+                    {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer}ث` : 'إعادة إرسال الرابط'}
                   </Button>
-                </div>
-              )}
-
-              {resetStep === 'password' && (
-                <form onSubmit={handleResetPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-new-password">كلمة المرور الجديدة</Label>
-                    <Input
-                      id="reset-new-password"
-                      type="password"
-                      placeholder="********"
-                      value={resetNewPassword}
-                      onChange={(e) => setResetNewPassword(e.target.value)}
-                      disabled={loading}
-                    />
-                  </div>
 
                   <Button 
-                    type="submit" 
-                    className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setShowResetPassword(false);
+                      setResetEmail('');
+                      setResetStep('email');
+                    }}
                     disabled={loading}
                   >
-                    {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                    تحديث كلمة المرور
+                    العودة لتسجيل الدخول
                   </Button>
-                </form>
+                </div>
               )}
             </div>
           ) : (
@@ -561,13 +444,13 @@ const Auth = () => {
               <TabsContent value="signin">
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-phone">رقم الهاتف</Label>
+                    <Label htmlFor="signin-email">البريد الإلكتروني</Label>
                     <Input
-                      id="signin-phone"
-                      type="tel"
-                      placeholder="07XXXXXXXXX"
-                      value={phoneNumber}
-                      onChange={(e) => setPhoneNumber(e.target.value)}
+                      id="signin-email"
+                      type="email"
+                      placeholder="example@email.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
                       dir="ltr"
                       required
                       disabled={loading}
@@ -612,15 +495,15 @@ const Auth = () => {
               {signupStep === 'verification' ? (
                 <form onSubmit={handleFirstStep} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-phone-step1">رقم الهاتف *</Label>
+                    <Label htmlFor="signup-email-step1">البريد الإلكتروني *</Label>
                     <div className="flex gap-2">
                       <Input
-                        id="signup-phone-step1"
-                        type="tel"
-                        placeholder="07XXXXXXXXX"
-                        value={phoneNumber}
+                        id="signup-email-step1"
+                        type="email"
+                        placeholder="example@email.com"
+                        value={email}
                         onChange={(e) => {
-                          setPhoneNumber(e.target.value);
+                          setEmail(e.target.value);
                           setIsOtpSent(false);
                           setIsVerified(false);
                           setOtpCode('');
@@ -629,13 +512,12 @@ const Auth = () => {
                         required
                         disabled={loading || isVerified}
                         className={isVerified ? 'bg-muted' : ''}
-                        maxLength={11}
                       />
                       {!isVerified && (
                         <Button
                           type="button"
                           onClick={handleSendOtp}
-                          disabled={loading || !phoneNumber || resendTimer > 0}
+                          disabled={loading || !email || resendTimer > 0}
                           variant="outline"
                           className="whitespace-nowrap"
                         >
@@ -684,37 +566,20 @@ const Auth = () => {
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground text-center">
-                        تم إرسال كود التحقق إلى رقم هاتفك عبر رسالة نصية
+                        تم إرسال كود التحقق إلى بريدك الإلكتروني
                       </p>
                     </div>
                   )}
 
                   {isVerified && (
-                    <>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-password-step1">كلمة المرور *</Label>
-                        <Input
-                          id="signup-password-step1"
-                          type="password"
-                          placeholder="••••••••"
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          required
-                          disabled={loading}
-                          minLength={6}
-                        />
-                        <p className="text-xs text-muted-foreground">6 أحرف على الأقل</p>
-                      </div>
-
                       <Button 
                         type="submit" 
                         className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                        disabled={loading || !password}
+                        disabled={loading}
                       >
                         {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                         التالي - أكمل التفاصيل
                       </Button>
-                    </>
                   )}
                 </form>
               ) : (
