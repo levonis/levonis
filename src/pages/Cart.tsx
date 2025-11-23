@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,7 @@ const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState(false);
@@ -215,6 +216,33 @@ const Cart = () => {
     }
 
     try {
+      // Check if user has at least one address
+      const { data: addresses, error: addressError } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .limit(1);
+
+      if (addressError || !addresses || addresses.length === 0) {
+        toast({
+          title: "يجب إضافة عنوان",
+          description: "الرجاء إضافة عنوان توصيل أولاً لإتمام الطلب",
+          variant: "destructive",
+        });
+        navigate('/addresses');
+        return;
+      }
+
+      // Get default address or first address
+      const { data: defaultAddress } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_default', true)
+        .maybeSingle();
+
+      const selectedAddress = defaultAddress || addresses[0];
+
       // Get user profile information
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -231,7 +259,7 @@ const Cart = () => {
         return;
       }
 
-      const deliveryFee = getDeliveryFee(profile.governorate);
+      const deliveryFee = getDeliveryFee(selectedAddress.governorate);
 
       // Generate order number
       const { data: orderNumberData } = await supabase
@@ -239,7 +267,9 @@ const Cart = () => {
       
       const orderNumber = orderNumberData || `ORD-${Date.now()}`;
 
-      // Create order in database
+      // Create order in database with full address details
+      const shippingAddressText = `${selectedAddress.governorate} - ${selectedAddress.area} - ${selectedAddress.nearest_landmark}${selectedAddress.additional_notes ? ` - ${selectedAddress.additional_notes}` : ''}`;
+      
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert([{
@@ -248,9 +278,9 @@ const Cart = () => {
           total_amount: grandTotal,
           status: 'pending',
           currency: 'دينار عراقي',
-          shipping_address: profile.governorate || '',
-          phone_number: profile.phone_number || '',
-          governorate: profile.governorate || '',
+          shipping_address: shippingAddressText,
+          phone_number: selectedAddress.phone_number,
+          governorate: selectedAddress.governorate,
         }])
         .select()
         .single();
@@ -413,9 +443,16 @@ const Cart = () => {
       });
 
       message += `\n👤 *معلومات المشتري:*\n`;
-      message += `الاسم: ${profile.full_name || 'غير محدد'}\n`;
-      message += `رقم الهاتف: ${profile.phone_number || 'غير محدد'}\n`;
-      message += `المحافظة: ${profile.governorate || 'غير محددة'}\n\n`;
+      message += `الاسم: ${selectedAddress.full_name}\n`;
+      message += `رقم الهاتف: ${selectedAddress.phone_number}\n`;
+      message += `\n📍 *عنوان التوصيل:*\n`;
+      message += `المحافظة: ${selectedAddress.governorate}\n`;
+      message += `المنطقة: ${selectedAddress.area}\n`;
+      message += `أقرب نقطة دالة: ${selectedAddress.nearest_landmark}\n`;
+      if (selectedAddress.additional_notes) {
+        message += `ملاحظات: ${selectedAddress.additional_notes}\n`;
+      }
+      message += `\n`;
       
       message += `💰 *ملخص الطلب:*\n`;
       message += `المجموع الفرعي: ${formatPrice(total)} دينار عراقي\n`;

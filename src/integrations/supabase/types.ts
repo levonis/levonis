@@ -1092,6 +1092,48 @@ export type Database = {
           },
         ]
       }
+      user_addresses: {
+        Row: {
+          additional_notes: string | null
+          area: string
+          created_at: string
+          full_name: string
+          governorate: string
+          id: string
+          is_default: boolean
+          nearest_landmark: string
+          phone_number: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          additional_notes?: string | null
+          area: string
+          created_at?: string
+          full_name: string
+          governorate: string
+          id?: string
+          is_default?: boolean
+          nearest_landmark: string
+          phone_number: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          additional_notes?: string | null
+          area?: string
+          created_at?: string
+          full_name?: string
+          governorate?: string
+          id?: string
+          is_default?: boolean
+          nearest_landmark?: string
+          phone_number?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_points: {
         Row: {
           available_points: number
