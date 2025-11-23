@@ -67,6 +67,9 @@ const Auth = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [signupStep, setSignupStep] = useState<'verification' | 'details'>('verification');
   const [resendTimer, setResendTimer] = useState(0);
+  const [showMagicLink, setShowMagicLink] = useState(false);
+  const [magicLinkEmail, setMagicLinkEmail] = useState('');
+  const [magicLinkSent, setMagicLinkSent] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -317,6 +320,38 @@ const Auth = () => {
     }
   };
 
+  const handleMagicLinkSignIn = async () => {
+    if (!magicLinkEmail) {
+      toast.error('يرجى إدخال البريد الإلكتروني');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: magicLinkEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        }
+      });
+
+      if (error) {
+        console.error('خطأ في إرسال Magic Link:', error);
+        toast.error('حدث خطأ في إرسال رابط تسجيل الدخول');
+        return;
+      }
+
+      toast.success('تم إرسال رابط تسجيل الدخول إلى بريدك الإلكتروني');
+      setMagicLinkSent(true);
+      setResendTimer(120);
+    } catch (error) {
+      console.error('خطأ في إرسال Magic Link:', error);
+      toast.error('حدث خطأ في إرسال رابط تسجيل الدخول');
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-background/90 backdrop-blur-md relative overflow-hidden flex items-center justify-center p-4">
@@ -349,7 +384,101 @@ const Auth = () => {
         </div>
 
         <div className="glass-effect rounded-2xl p-6 border border-border/50 shadow-2xl">
-          {showResetPassword ? (
+          {showMagicLink ? (
+            <div>
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-gradient-gold mb-2">تسجيل دخول سريع</h2>
+                <p className="text-sm text-muted-foreground">
+                  {!magicLinkSent 
+                    ? 'سنرسل لك رابط تسجيل دخول مباشر بدون كلمة مرور' 
+                    : 'تحقق من بريدك الإلكتروني واضغط على الرابط لتسجيل الدخول'}
+                </p>
+              </div>
+              
+              {!magicLinkSent ? (
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="magic-link-email">البريد الإلكتروني</Label>
+                    <Input
+                      id="magic-link-email"
+                      type="email"
+                      placeholder="example@email.com"
+                      value={magicLinkEmail}
+                      onChange={(e) => setMagicLinkEmail(e.target.value)}
+                      dir="ltr"
+                      disabled={loading}
+                    />
+                  </div>
+
+                  <Button 
+                    type="button"
+                    onClick={handleMagicLinkSignIn}
+                    className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                    disabled={loading || resendTimer > 0}
+                  >
+                    {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                    {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer}ث` : 'إرسال رابط تسجيل الدخول'}
+                  </Button>
+                  
+                  <Button 
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setShowMagicLink(false);
+                      setMagicLinkEmail('');
+                      setMagicLinkSent(false);
+                    }}
+                    disabled={loading}
+                  >
+                    العودة لتسجيل الدخول
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="p-4 bg-muted/50 rounded-lg border border-primary/20">
+                    <div className="flex flex-col items-center gap-3 text-center">
+                      <div className="p-3 bg-primary/10 rounded-full">
+                        <svg className="w-8 h-8 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <p className="text-sm font-medium">
+                        تم إرسال رابط تسجيل الدخول!
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        تحقق من صندوق الوارد في <span className="font-semibold text-foreground">{magicLinkEmail}</span> واضغط على الرابط لتسجيل الدخول تلقائياً
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="button"
+                    onClick={handleMagicLinkSignIn}
+                    variant="outline"
+                    className="w-full"
+                    disabled={loading || resendTimer > 0}
+                  >
+                    {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer}ث` : 'إعادة إرسال الرابط'}
+                  </Button>
+
+                  <Button 
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setShowMagicLink(false);
+                      setMagicLinkEmail('');
+                      setMagicLinkSent(false);
+                    }}
+                    disabled={loading}
+                  >
+                    العودة لتسجيل الدخول
+                  </Button>
+                </div>
+              )}
+            </div>
+          ) : showResetPassword ? (
             <div>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-gradient-gold mb-2">إعادة تعيين كلمة المرور</h2>
@@ -477,6 +606,28 @@ const Auth = () => {
                   >
                     {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
                     تسجيل الدخول
+                  </Button>
+
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">أو</span>
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowMagicLink(true)}
+                    disabled={loading}
+                  >
+                    <svg className="ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    تسجيل دخول سريع (بدون كلمة مرور)
                   </Button>
 
                   <Button 
