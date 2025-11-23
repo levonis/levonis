@@ -165,9 +165,9 @@ const Auth = () => {
         return;
       }
 
-      toast.success('تم إرسال كود التحقق عبر الواتساب');
+      toast.success('تم إرسال كود التحقق إلى رقم هاتفك عبر رسالة نصية');
       setIsOtpSent(true);
-      setResendTimer(60);
+      setResendTimer(120);
     } catch (error) {
       console.error('خطأ في إرسال OTP:', error);
       toast.error('حدث خطأ في إرسال كود التحقق');
@@ -330,9 +330,9 @@ const Auth = () => {
         return;
       }
 
-      toast.success('تم إرسال كود التحقق عبر الواتساب');
+      toast.success('تم إرسال كود التحقق إلى رقم هاتفك عبر رسالة نصية');
       setResetStep('otp');
-      setResendTimer(60);
+      setResendTimer(120);
     } catch (error) {
       toast.error('حدث خطأ غير متوقع');
     } finally {
@@ -684,7 +684,7 @@ const Auth = () => {
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground text-center">
-                        تم إرسال كود التحقق المكون من 6 أرقام
+                        تم إرسال كود التحقق إلى رقم هاتفك عبر رسالة نصية
                       </p>
                     </div>
                   )}
