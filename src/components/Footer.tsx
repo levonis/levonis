@@ -1,4 +1,4 @@
-import logoLevonis from '@/assets/logo-levonis.png';
+import logoLevonis from '@/assets/logo-footer-optimized.webp';
 
 const Footer = () => {
   return (
