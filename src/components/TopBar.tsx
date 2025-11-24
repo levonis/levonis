@@ -136,7 +136,7 @@ const TopBar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <img 
-              src="/images/logo-levonis.png" 
+              src="/src/assets/logo-optimized.webp" 
               alt="LEVONIS Logo" 
               className="h-10 w-auto object-contain"
               loading="eager"
