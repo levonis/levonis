@@ -137,10 +137,12 @@ const Auth = () => {
 
     setLoading(true);
     try {
+      // إرسال OTP كرمز مكون من 6 أرقام
       const { error } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
-          shouldCreateUser: false,
+          shouldCreateUser: true,
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
 
@@ -150,7 +152,7 @@ const Auth = () => {
         return;
       }
 
-      toast.success('تم إرسال كود التحقق إلى بريدك الإلكتروني');
+      toast.success('تم إرسال كود التحقق المكون من 6 أرقام إلى بريدك الإلكتروني');
       setIsOtpSent(true);
       setResendTimer(120);
     } catch (error) {
@@ -169,19 +171,22 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase.auth.verifyOtp({
+      // التحقق من كود OTP
+      const { data, error } = await supabase.auth.verifyOtp({
         email: email,
         token: otpCode,
         type: 'email'
       });
 
       if (error) {
-        toast.error('كود التحقق غير صحيح');
+        toast.error('كود التحقق غير صحيح أو منتهي الصلاحية');
         return;
       }
 
-      setIsVerified(true);
-      toast.success('تم التحقق من البريد الإلكتروني بنجاح');
+      if (data.user) {
+        setIsVerified(true);
+        toast.success('تم التحقق من البريد الإلكتروني بنجاح');
+      }
     } catch (error) {
       toast.error('حدث خطأ في التحقق');
     } finally {
