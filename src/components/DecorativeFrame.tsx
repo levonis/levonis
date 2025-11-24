@@ -1,7 +1,7 @@
 const DecorativeFrame = () => {
   return (
     <div 
-      className="fixed inset-0 pointer-events-none z-0 opacity-15 md:opacity-20"
+      className="fixed inset-0 pointer-events-none z-0 opacity-25 md:opacity-20"
       style={{
         backgroundImage: 'url(/images/decorative-frame-levonis.png)',
         backgroundSize: 'cover',
