@@ -321,27 +321,6 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background/90 backdrop-blur-md relative overflow-hidden flex items-center justify-center p-4">
-      {/* Decorative frame - Full screen */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-0 opacity-20"
-        style={{
-          backgroundImage: 'url(/images/decorative-frame-new.webp)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      />
-      
-      {/* Elegant decorative frame */}
-      <div className="fixed inset-0 pointer-events-none">
-        <svg className="absolute top-0 right-0 w-96 h-96 opacity-10" viewBox="0 0 200 200">
-          <path d="M10,10 Q50,10 50,50 L50,150 Q50,190 90,190" 
-                stroke="hsl(var(--ring) / 0.5)" strokeWidth="1" fill="none" />
-        </svg>
-        <svg className="absolute bottom-0 left-0 w-80 h-80 opacity-10" viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r="70" stroke="hsl(var(--primary) / 0.4)" strokeWidth="0.5" fill="none" />
-        </svg>
-      </div>
       
       <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8">
