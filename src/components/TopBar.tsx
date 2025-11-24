@@ -136,12 +136,13 @@ const TopBar = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <img 
-              src="/src/assets/logo-optimized.webp" 
+              src="/images/logo-levonis.png" 
               alt="LEVONIS Logo" 
-              className="h-10 w-auto object-contain"
+              className="h-10 w-auto object-contain bg-transparent"
               loading="eager"
               width="50"
               height="40"
+              style={{ mixBlendMode: 'normal' }}
             />
           </Link>
 
