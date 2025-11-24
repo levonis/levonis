@@ -5,7 +5,7 @@ const DecorativeFrame = () => {
       style={{
         backgroundImage: 'url(/images/decorative-frame-levonis.png)',
         backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundPosition: 'top center',
         backgroundRepeat: 'no-repeat',
         mixBlendMode: 'multiply',
         filter: 'brightness(0)'
