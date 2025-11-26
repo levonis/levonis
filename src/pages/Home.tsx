@@ -64,15 +64,15 @@ const Home = () => {
     <div className="min-h-screen relative overflow-hidden bg-transparent">
       <main className="relative z-10 pt-20">
         {/* Hero Section */}
-        <section className="container mx-auto px-4 py-16 text-center">
-          <h1 className="text-5xl md:text-6xl font-black mb-4 text-gradient-gold animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <section className="container mx-auto px-4 py-12 text-center">
+          <h1 className="text-4xl md:text-5xl font-black mb-3 text-gradient-gold animate-in fade-in slide-in-from-bottom-4 duration-700">
             LEVONIS
           </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto mb-8 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-150">
+          <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto mb-6 animate-in fade-in slide-in-from-bottom-5 duration-700 delay-150">
             نوفّر لك أحدث الإلكترونيات من حول العالم بأسعار تنافسية… بضمان رسمي وخدمة سريعة بلا منافس
           </p>
           
-          <div className="mb-8 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
+          <div className="mb-6 animate-in fade-in slide-in-from-bottom-6 duration-700 delay-300">
             <SearchBar />
           </div>
           
@@ -109,13 +109,13 @@ const Home = () => {
         </section>
 
         {/* Categories Section */}
-        <section id="categories" className="container mx-auto px-4 py-16 relative" style={{ minHeight: '600px', contain: 'layout' }}>
+        <section id="categories" className="container mx-auto px-4 py-12 relative" style={{ minHeight: '500px', contain: 'layout' }}>
           {/* Decorative glow */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-pulse-glow pointer-events-none" />
           
-          <div className="text-center mb-12 animate-scale-in relative z-10">
-            <div className="inline-block mb-3">
-              <h2 className="text-2xl md:text-3xl font-black px-32 md:px-40 py-4 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground shadow-lg relative overflow-hidden">
+          <div className="text-center mb-8 animate-scale-in relative z-10">
+            <div className="inline-block mb-2">
+              <h2 className="text-xl md:text-2xl font-black px-24 md:px-32 py-3 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground shadow-lg relative overflow-hidden">
                 {/* Glossy overlay effect */}
                 <span className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/10 to-transparent pointer-events-none" />
                 <span className="relative z-10">الأقسام</span>
@@ -148,8 +148,8 @@ const Home = () => {
                     style={{ animationDelay: `${sectionIndex * 0.2}s` }}
                   >
                     <div className="flex items-center gap-3 mb-6">
-                      <div className="w-1 h-8 bg-gradient-to-b from-primary to-accent rounded-full" />
-                      <h3 className="text-2xl font-black text-primary">{mainSection.name_ar}</h3>
+                      <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full" />
+                      <h3 className="text-xl font-black text-primary">{mainSection.name_ar}</h3>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                       {sectionCategories.map((category, index) => (
@@ -173,9 +173,9 @@ const Home = () => {
         </section>
 
         {/* Featured Products Section */}
-        <section id="products" className="container mx-auto px-4 py-12" style={{ minHeight: '500px', contain: 'layout' }}>
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-black text-primary">منتجات مميزة</h2>
+        <section id="products" className="container mx-auto px-4 py-10" style={{ minHeight: '400px', contain: 'layout' }}>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-black text-primary">منتجات مميزة</h2>
             <span className="text-sm text-muted-foreground">أحدث العروض</span>
           </div>
           

@@ -80,7 +80,7 @@ const ProductListItem = ({
       {/* Content */}
       <div className="flex-1 flex flex-col justify-between min-w-0">
         <div>
-          <h3 className="font-bold text-base sm:text-lg lg:text-xl mb-1 sm:mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-1">
+          <h3 className="font-bold text-sm sm:text-base mb-1 sm:mb-2 text-foreground group-hover:text-primary transition-colors line-clamp-1">
             {nameAr}
           </h3>
           
@@ -94,7 +94,7 @@ const ProductListItem = ({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
           <div className="flex flex-col">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xl sm:text-2xl font-black text-primary whitespace-nowrap">
+              <span className="text-lg sm:text-xl font-black text-primary whitespace-nowrap">
                 {formatPrice(price)}
               </span>
               <span className="text-xs sm:text-sm text-muted-foreground">

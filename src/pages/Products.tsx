@@ -138,10 +138,10 @@ const Products = () => {
         <div className="mb-6 flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
           {searchQuery ? (
             <div>
-              <h2 className="text-2xl font-black text-primary">
+              <h2 className="text-xl font-black text-primary">
                 نتائج البحث عن: <span className="text-foreground">{searchQuery}</span>
               </h2>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 text-sm">
                 {productsData?.totalCount || 0} منتج
               </p>
             </div>

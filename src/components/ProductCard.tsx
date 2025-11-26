@@ -47,7 +47,7 @@ const ProductCard = ({
     <Link 
       to={`/product/${slug}`}
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      className="group block bg-gradient-to-b from-card to-card/80 rounded-xl p-3 border border-border/40 card-premium hover:border-primary/50 transition-all hover:-translate-y-1 relative overflow-hidden"
+      className="group block bg-gradient-to-b from-card to-card/80 rounded-xl p-2.5 border border-border/40 card-premium hover:border-primary/50 transition-all hover:-translate-y-1 relative overflow-hidden"
     >
       {/* Decorative corner accent */}
       <div className="absolute top-0 right-0 w-12 h-12 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
@@ -90,7 +90,7 @@ const ProductCard = ({
         )}
       </div>
       
-      <h3 className="font-bold text-base mb-1 text-foreground group-hover:text-primary transition-colors line-clamp-1">
+      <h3 className="font-bold text-sm mb-1 text-foreground group-hover:text-primary transition-colors line-clamp-1">
         {nameAr}
       </h3>
       
@@ -103,7 +103,7 @@ const ProductCard = ({
       <div className="flex items-center justify-between gap-2 mt-auto">
         <div className="flex flex-col min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline gap-1">
-            <span className="text-lg font-black text-primary whitespace-nowrap">
+            <span className="text-base font-black text-primary whitespace-nowrap">
               {formatPrice(price)}
             </span>
             <span className="text-xs text-muted-foreground">
