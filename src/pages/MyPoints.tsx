@@ -380,7 +380,7 @@ export default function MyPoints() {
               <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Coins className="h-5 w-5" />
+                    <Coins className="h-4 w-4" />
                     النقاط المتاحة
                   </CardTitle>
                 </CardHeader>
@@ -392,7 +392,7 @@ export default function MyPoints() {
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <History className="h-5 w-5" />
+                    <History className="h-4 w-4" />
                     إجمالي النقاط
                   </CardTitle>
                 </CardHeader>
@@ -404,7 +404,7 @@ export default function MyPoints() {
               <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border-yellow-500/20">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Award className="h-5 w-5" />
+                    <Award className="h-4 w-4" />
                     مستواك
                   </CardTitle>
                 </CardHeader>
@@ -569,7 +569,7 @@ export default function MyPoints() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Gift className="h-5 w-5" />
+                      <Gift className="h-4 w-4" />
                       تحويل النقاط إلى كوبون
                     </CardTitle>
                     <CardDescription>
@@ -608,7 +608,7 @@ export default function MyPoints() {
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <DollarSign className="h-5 w-5" />
+                      <DollarSign className="h-4 w-4" />
                       تحويل النقاط إلى أموال
                     </CardTitle>
                     <CardDescription>

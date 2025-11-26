@@ -349,7 +349,7 @@ const OrderDetail = () => {
           <Card className="mb-6 border-primary/20 shadow-lg">
             <CardContent className="py-4">
               <div className="flex items-center justify-center gap-2 text-green-600">
-                <ShoppingBag className="h-5 w-5" />
+                <ShoppingBag className="h-4 w-4" />
                 <span className="font-bold">تم تأكيد الاستلام</span>
                 {order.auto_confirmed && <span className="text-sm text-muted-foreground">(تلقائياً)</span>}
               </div>

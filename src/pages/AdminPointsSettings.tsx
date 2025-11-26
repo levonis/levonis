@@ -472,7 +472,7 @@ export default function AdminPointsSettings() {
             size="lg"
             className="gap-2"
           >
-            <Save className="h-5 w-5" />
+            <Save className="h-4 w-4" />
             {saveSettings.isPending ? "جاري الحفظ..." : "حفظ الإعدادات"}
           </Button>
         </div>

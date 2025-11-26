@@ -1509,7 +1509,7 @@ const Admin = () => {
                     {!editingProduct && (
                       <div className="p-4 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 space-y-3">
                         <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                          <Sparkles className="h-5 w-5" />
+                          <Sparkles className="h-4 w-4" />
                           <span>استخراج معلومات المنتج تلقائياً بالذكاء الاصطناعي</span>
                         </div>
                         <p className="text-xs text-muted-foreground">
