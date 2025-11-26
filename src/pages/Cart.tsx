@@ -520,8 +520,8 @@ const Cart = () => {
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-6">
-          <h1 className="text-4xl font-black text-primary mb-2">سلة التسوق</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-black text-primary mb-2">سلة التسوق</h1>
+          <p className="text-muted-foreground text-sm">
             {itemCount > 0 ? `لديك ${itemCount} ${itemCount === 1 ? 'منتج' : 'منتجات'} في السلة` : 'السلة فارغة'}
           </p>
         </div>
@@ -531,8 +531,8 @@ const Cart = () => {
             <div className="w-20 h-20 mx-auto mb-6 opacity-20">
               <ShoppingBag className="w-full h-full text-muted-foreground" />
             </div>
-            <h2 className="text-2xl font-bold text-foreground mb-2">سلة التسوق فارغة</h2>
-            <p className="text-muted-foreground mb-6">
+            <h2 className="text-xl font-bold text-foreground mb-2">سلة التسوق فارغة</h2>
+            <p className="text-muted-foreground mb-6 text-sm">
               لم تقم بإضافة أي منتجات إلى السلة بعد
             </p>
             <Link to="/">
@@ -598,12 +598,12 @@ const Cart = () => {
                           {item.products ? (
                             <Link 
                               to={`/product/${item.products.slug}`}
-                              className="font-bold text-lg text-foreground mb-1 inline-flex items-center gap-2 hover:text-primary transition-colors"
+                              className="font-bold text-base text-foreground mb-1 inline-flex items-center gap-2 hover:text-primary transition-colors"
                             >
                               {item.products.name_ar}
                             </Link>
                           ) : (
-                            <div className="font-bold text-lg text-foreground mb-1 inline-flex items-center gap-2">
+                            <div className="font-bold text-base text-foreground mb-1 inline-flex items-center gap-2">
                               {item.custom_product_requests?.product_name}
                               <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
                                 طلب خاص ⭐
@@ -642,7 +642,7 @@ const Cart = () => {
                           )}
                           
                           <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
-                            <span className="text-xl font-black text-primary">
+                            <span className="text-lg font-black text-primary">
                               {formatPrice(itemPrice)} دينار عراقي
                             </span>
                             {item.products?.original_price && item.products.original_price > itemPrice && (
@@ -714,7 +714,7 @@ const Cart = () => {
                           {/* Item Total */}
                           <div className="text-center sm:text-left">
                             <div className="text-sm text-muted-foreground mb-1">المجموع</div>
-                            <div className="text-xl font-black text-primary">
+                            <div className="text-lg font-black text-primary">
                               {formatPrice(itemPrice * item.quantity)} دينار عراقي
                             </div>
                           </div>
