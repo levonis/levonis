@@ -154,7 +154,7 @@ const Auth = () => {
 
       toast.success('تم إرسال كود التحقق المكون من 6 أرقام إلى بريدك الإلكتروني');
       setIsOtpSent(true);
-      setResendTimer(120);
+      setResendTimer(60);
     } catch (error) {
       console.error('خطأ في إرسال OTP:', error);
       toast.error('حدث خطأ في إرسال كود التحقق');
