@@ -179,7 +179,7 @@ const TopBar = () => {
                 title="طلب منتج مخصص"
                 aria-label="طلب منتج مخصص"
               >
-                <Package className="h-5 w-5" />
+                <Package className="h-4 w-4" />
               </Button>
             </CustomProductRequestDialog>
 
@@ -191,7 +191,7 @@ const TopBar = () => {
               className="relative rounded-full border-primary/30 hover:border-primary"
               aria-label="سلة التسوق"
             >
-              <ShoppingCart className="h-5 w-5" />
+              <ShoppingCart className="h-4 w-4" />
               {itemCount > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                   {itemCount > 9 ? '9+' : itemCount}
@@ -209,7 +209,7 @@ const TopBar = () => {
                 title="محادثات العملاء"
                 aria-label="محادثات العملاء"
               >
-                <MessageCircle className="h-5 w-5" />
+                <MessageCircle className="h-4 w-4" />
                 {adminUnreadMessages && adminUnreadMessages > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
                     {adminUnreadMessages > 9 ? '9+' : adminUnreadMessages}
@@ -227,7 +227,7 @@ const TopBar = () => {
                     className="relative rounded-full border-primary/30 hover:border-primary"
                     aria-label="قائمة المستخدم"
                   >
-                    <User className="h-5 w-5" />
+                    <User className="h-4 w-4" />
                     {unreadNotifications && unreadNotifications > 0 && (
                       <span className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow-lg">
                         {unreadNotifications > 9 ? '9+' : unreadNotifications}
@@ -239,27 +239,27 @@ const TopBar = () => {
                   <DropdownMenuLabel>حسابي</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate('/user-info')}>
-                    <User className="ml-2 h-4 w-4" />
+                    <User className="ml-2 h-3.5 w-3.5" />
                     <span>معلومات الحساب</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/my-requests')}>
-                    <FileText className="ml-2 h-4 w-4" />
+                    <FileText className="ml-2 h-3.5 w-3.5" />
                     <span>طلباتي المخصصة</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/addresses')}>
-                    <MapPin className="ml-2 h-4 w-4" />
+                    <MapPin className="ml-2 h-3.5 w-3.5" />
                     <span>العناوين</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/my-orders')}>
-                    <Package className="ml-2 h-4 w-4" />
+                    <Package className="ml-2 h-3.5 w-3.5" />
                     <span>طلباتي</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
-                    <Heart className="ml-2 h-4 w-4" />
+                    <Heart className="ml-2 h-3.5 w-3.5" />
                     <span>المفضلة</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setWalletDialogOpen(true)} className="relative">
-                    <Wallet className="ml-2 h-4 w-4" />
+                    <Wallet className="ml-2 h-3.5 w-3.5" />
                     <span>المحفظة</span>
                     {wallet && wallet.balance > 0 && (
                       <span className="mr-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
@@ -269,12 +269,12 @@ const TopBar = () => {
                   </DropdownMenuItem>
                   {showPointsMenu && (
                     <DropdownMenuItem onClick={() => navigate('/my-points')}>
-                      <Coins className="ml-2 h-4 w-4" />
+                      <Coins className="ml-2 h-3.5 w-3.5" />
                       <span>النقاط</span>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuItem onClick={() => navigate('/notifications')}>
-                    <Bell className="ml-2 h-4 w-4" />
+                    <Bell className="ml-2 h-3.5 w-3.5" />
                     <span>الإشعارات</span>
                     {unreadNotifications && unreadNotifications > 0 && (
                       <span className="mr-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold min-w-[20px] text-center">
@@ -284,13 +284,13 @@ const TopBar = () => {
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate('/admin')}>
-                      <Settings className="ml-2 h-4 w-4" />
+                      <Settings className="ml-2 h-3.5 w-3.5" />
                       <span>لوحة التحكم</span>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut} className="text-destructive">
-                    <LogOut className="ml-2 h-4 w-4" />
+                    <LogOut className="ml-2 h-3.5 w-3.5" />
                     <span>تسجيل الخروج</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
