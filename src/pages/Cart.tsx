@@ -528,7 +528,7 @@ const Cart = () => {
 
         {items.length === 0 ? (
           <div className="text-center py-16 glass-effect rounded-2xl border border-border/50">
-            <div className="w-24 h-24 mx-auto mb-6 opacity-20">
+            <div className="w-20 h-20 mx-auto mb-6 opacity-20">
               <ShoppingBag className="w-full h-full text-muted-foreground" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">سلة التسوق فارغة</h2>
@@ -671,7 +671,7 @@ const Cart = () => {
                                 disabled={item.quantity <= 1}
                                 aria-label="تقليل الكمية"
                               >
-                                <Minus className="h-5 w-5 sm:h-4 sm:w-4" />
+                                <Minus className="h-4 w-4" />
                               </Button>
                               
                               <span className="w-10 sm:w-8 text-center font-bold" aria-live="polite">
@@ -690,7 +690,7 @@ const Cart = () => {
                                 }}
                                 aria-label="زيادة الكمية"
                               >
-                                <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
+                                <Plus className="h-4 w-4" />
                               </Button>
                             </div>
 
@@ -706,7 +706,7 @@ const Cart = () => {
                               }}
                               aria-label="حذف المنتج"
                             >
-                              <Trash2 className="h-5 w-5 sm:h-4 sm:w-4 ml-2" />
+                              <Trash2 className="h-4 w-4 ml-2" />
                               <span className="hidden sm:inline">حذف</span>
                             </Button>
                           </div>

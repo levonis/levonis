@@ -300,7 +300,7 @@ const ProductDetail = () => {
                         <div className="absolute inset-0 bg-primary/40 rounded-full blur-lg animate-pulse" />
                         {/* Icon container */}
                         <div className="relative bg-gradient-to-br from-primary to-accent text-primary-foreground rounded-full p-3 shadow-xl backdrop-blur-sm border border-primary-foreground/20 hover:scale-110 transition-transform">
-                          <Tag className="h-5 w-5" />
+                          <Tag className="h-4 w-4" />
                         </div>
                       </div>
                     </div>

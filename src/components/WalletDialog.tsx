@@ -179,7 +179,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
+                <Wallet className="h-4 w-4" />
                 رصيد المحفظة
               </CardTitle>
               <CardDescription>رصيدك الحالي في المحفظة</CardDescription>
@@ -198,7 +198,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
+                  <Upload className="h-4 w-4" />
                   تعبئة المحفظة
                 </CardTitle>
               </CardHeader>
@@ -223,7 +223,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Download className="h-5 w-5" />
+                  <Download className="h-4 w-4" />
                   سحب الرصيد
                 </CardTitle>
               </CardHeader>
