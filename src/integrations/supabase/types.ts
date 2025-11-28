@@ -431,6 +431,101 @@ export type Database = {
           },
         ]
       }
+      gig_applications: {
+        Row: {
+          cover_letter: string | null
+          created_at: string
+          gig_id: string
+          id: string
+          proposed_budget: number | null
+          status: string
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          cover_letter?: string | null
+          created_at?: string
+          gig_id: string
+          id?: string
+          proposed_budget?: number | null
+          status?: string
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          cover_letter?: string | null
+          created_at?: string
+          gig_id?: string
+          id?: string
+          proposed_budget?: number | null
+          status?: string
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gig_applications_gig_id_fkey"
+            columns: ["gig_id"]
+            isOneToOne: false
+            referencedRelation: "gigs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gigs: {
+        Row: {
+          budget_max: number | null
+          budget_min: number | null
+          category: string | null
+          created_at: string
+          currency: string | null
+          deadline: string | null
+          description: string | null
+          description_ar: string | null
+          id: string
+          manager_id: string
+          skills_required: string[] | null
+          status: string
+          title: string
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          budget_max?: number | null
+          budget_min?: number | null
+          category?: string | null
+          created_at?: string
+          currency?: string | null
+          deadline?: string | null
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          manager_id: string
+          skills_required?: string[] | null
+          status?: string
+          title: string
+          title_ar: string
+          updated_at?: string
+        }
+        Update: {
+          budget_max?: number | null
+          budget_min?: number | null
+          category?: string | null
+          created_at?: string
+          currency?: string | null
+          deadline?: string | null
+          description?: string | null
+          description_ar?: string | null
+          id?: string
+          manager_id?: string
+          skills_required?: string[] | null
+          status?: string
+          title?: string
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_templates: {
         Row: {
           created_at: string | null
@@ -1346,7 +1441,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "manager" | "worker"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1474,7 +1569,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "manager", "worker"],
     },
   },
 } as const
