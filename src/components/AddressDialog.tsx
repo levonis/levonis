@@ -19,12 +19,32 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
+
+// Governorates and their areas data
+const governoratesData: Record<string, string[]> = {
+  'بغداد': ['الكرخ', 'الرصافة', 'الكاظمية', 'الأعظمية', 'المنصور'],
+  'البصرة': ['مركز البصرة'],
+  'نينوى': ['مركز نينوى'],
+  'أربيل': ['مركز أربيل'],
+  'النجف': ['مركز النجف'],
+  'كربلاء': ['مركز كربلاء'],
+  'ذي قار': ['مركز ذي قار'],
+};
+
+const governorates = Object.keys(governoratesData);
 
 const addressSchema = z.object({
   full_name: z.string().min(1, 'الاسم مطلوب').max(100, 'الاسم طويل جداً'),
@@ -192,9 +212,27 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>المحافظة</FormLabel>
-                  <FormControl>
-                    <Input placeholder="بغداد" {...field} />
-                  </FormControl>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Reset area when governorate changes
+                      form.setValue('area', '');
+                    }}
+                    value={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="اختر المحافظة" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="bg-background">
+                      {governorates.map((gov) => (
+                        <SelectItem key={gov} value={gov}>
+                          {gov}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -203,15 +241,35 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
             <FormField
               control={form.control}
               name="area"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>المنطقة</FormLabel>
-                  <FormControl>
-                    <Input placeholder="الكرادة" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const selectedGovernorate = form.watch('governorate');
+                const areas = selectedGovernorate ? governoratesData[selectedGovernorate] || [] : [];
+                
+                return (
+                  <FormItem>
+                    <FormLabel>المنطقة</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={!selectedGovernorate}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={selectedGovernorate ? "اختر المنطقة" : "اختر المحافظة أولاً"} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-background">
+                        {areas.map((area) => (
+                          <SelectItem key={area} value={area}>
+                            {area}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
