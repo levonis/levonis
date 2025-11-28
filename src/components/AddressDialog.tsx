@@ -164,6 +164,7 @@ const addressSchema = z.object({
   phone_number: z.string().min(1, 'رقم الهاتف مطلوب').max(20, 'رقم الهاتف غير صحيح'),
   governorate: z.string().min(1, 'المحافظة مطلوبة'),
   area: z.string().min(1, 'المنطقة مطلوبة'),
+  neighborhood: z.string().optional(),
   nearest_landmark: z.string().min(1, 'أقرب نقطة دالة مطلوبة'),
   additional_notes: z.string().optional(),
   is_default: z.boolean().default(false),
@@ -189,6 +190,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
       phone_number: '',
       governorate: '',
       area: '',
+      neighborhood: '',
       nearest_landmark: '',
       additional_notes: '',
       is_default: false,
@@ -202,6 +204,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
         phone_number: address.phone_number || '',
         governorate: address.governorate || '',
         area: address.area || '',
+        neighborhood: address.neighborhood || '',
         nearest_landmark: address.nearest_landmark || '',
         additional_notes: address.additional_notes || '',
         is_default: address.is_default || false,
@@ -212,6 +215,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
         phone_number: '',
         governorate: '',
         area: '',
+        neighborhood: '',
         nearest_landmark: '',
         additional_notes: '',
         is_default: false,
@@ -232,6 +236,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
             phone_number: data.phone_number,
             governorate: data.governorate,
             area: data.area,
+            neighborhood: data.neighborhood || null,
             nearest_landmark: data.nearest_landmark,
             additional_notes: data.additional_notes,
             is_default: data.is_default,
@@ -249,6 +254,7 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
             phone_number: data.phone_number,
             governorate: data.governorate,
             area: data.area,
+            neighborhood: data.neighborhood || null,
             nearest_landmark: data.nearest_landmark,
             additional_notes: data.additional_notes,
             is_default: data.is_default,
@@ -432,6 +438,20 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
                   </FormItem>
                 );
               }}
+            />
+
+            <FormField
+              control={form.control}
+              name="neighborhood"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>الحي (اختياري)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="اسم الحي" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
             />
 
             <FormField

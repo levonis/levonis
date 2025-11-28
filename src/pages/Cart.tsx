@@ -268,7 +268,7 @@ const Cart = () => {
       const orderNumber = orderNumberData || `ORD-${Date.now()}`;
 
       // Create order in database with full address details
-      const shippingAddressText = `${selectedAddress.governorate} - ${selectedAddress.area} - ${selectedAddress.nearest_landmark}${selectedAddress.additional_notes ? ` - ${selectedAddress.additional_notes}` : ''}`;
+      const shippingAddressText = `${selectedAddress.governorate} - ${selectedAddress.area}${selectedAddress.neighborhood ? ` - ${selectedAddress.neighborhood}` : ''} - ${selectedAddress.nearest_landmark}${selectedAddress.additional_notes ? ` - ${selectedAddress.additional_notes}` : ''}`;
       
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -448,6 +448,9 @@ const Cart = () => {
       message += `\n📍 *عنوان التوصيل:*\n`;
       message += `المحافظة: ${selectedAddress.governorate}\n`;
       message += `المنطقة: ${selectedAddress.area}\n`;
+      if (selectedAddress.neighborhood) {
+        message += `الحي: ${selectedAddress.neighborhood}\n`;
+      }
       message += `أقرب نقطة دالة: ${selectedAddress.nearest_landmark}\n`;
       if (selectedAddress.additional_notes) {
         message += `ملاحظات: ${selectedAddress.additional_notes}\n`;
