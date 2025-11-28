@@ -32,6 +32,10 @@ const IRAQI_GOVERNORATES = [
   'دهوك',
 ];
 
+const getDeliveryPrice = (governorate: string) => {
+  return governorate === 'بغداد' ? 5000 : 6000;
+};
+
 const signInSchema = z.object({
   email: z.string().email({ message: 'بريد إلكتروني غير صحيح' }),
   password: z.string().min(6, { message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }),
