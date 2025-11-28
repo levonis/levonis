@@ -1,4 +1,6 @@
+import * as React from 'react';
 import { useForm } from 'react-hook-form';
+import { cn } from '@/lib/utils';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,11 +28,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
 import { Input } from '@/components/ui/input';
+import { Check, ChevronsUpDown, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 
 // Governorates and their areas data - All 18 Iraqi governorates
@@ -310,28 +325,58 @@ const AddressDialog = ({ open, onOpenChange, address }: AddressDialogProps) => {
               render={({ field }) => {
                 const selectedGovernorate = form.watch('governorate');
                 const areas = selectedGovernorate ? governoratesData[selectedGovernorate] || [] : [];
+                const [areaOpen, setAreaOpen] = React.useState(false);
                 
                 return (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>المنطقة</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={!selectedGovernorate}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={selectedGovernorate ? "اختر المنطقة" : "اختر المحافظة أولاً"} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-background">
-                        {areas.map((area) => (
-                          <SelectItem key={area} value={area}>
-                            {area}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={areaOpen} onOpenChange={setAreaOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={areaOpen}
+                            disabled={!selectedGovernorate}
+                            className={cn(
+                              "w-full justify-between",
+                              !field.value && "text-muted-foreground"
+                            )}
+                          >
+                            {field.value || (selectedGovernorate ? "اختر المنطقة" : "اختر المحافظة أولاً")}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-full p-0 bg-background" align="start">
+                        <Command>
+                          <CommandInput placeholder="ابحث عن منطقة..." className="text-right" dir="rtl" />
+                          <CommandList>
+                            <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                            <CommandGroup>
+                              {areas.map((area) => (
+                                <CommandItem
+                                  key={area}
+                                  value={area}
+                                  onSelect={() => {
+                                    field.onChange(area);
+                                    setAreaOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={cn(
+                                      "ml-2 h-4 w-4",
+                                      field.value === area ? "opacity-100" : "opacity-0"
+                                    )}
+                                  />
+                                  {area}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 );
