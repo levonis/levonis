@@ -118,18 +118,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // Check if user has shipping address
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('governorate')
-      .eq('id', user.id)
-      .single();
-
-    if (!profile?.governorate) {
-      toast.error('الرجاء إضافة عنوان الشحن من معلومات الحساب أولاً');
-      return;
-    }
-
     try {
       console.log('Adding to cart:', { productId, optionId, color, quantity, shippingInfo });
       
