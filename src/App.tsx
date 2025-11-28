@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -53,8 +53,6 @@ const PageLoader = () => (
   </div>
 );
 
-const queryClient = new QueryClient();
-
 function AppContent() {
   useDailyLogin();
   
@@ -104,6 +102,16 @@ function AppContent() {
 }
 
 export default function App() {
+  // Create QueryClient inside the component using useState to ensure single instance
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5 * 60 * 1000,
+        retry: 1,
+      },
+    },
+  }));
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
