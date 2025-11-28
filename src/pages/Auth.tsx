@@ -50,6 +50,7 @@ const signUpSchema = z.object({
     .max(20, { message: 'اسم المستخدم يجب أن لا يتجاوز 20 حرف' })
     .regex(/^[a-zA-Z0-9_]+$/, { message: 'اسم المستخدم يجب أن يحتوي على أحرف وأرقام فقط' }),
   governorate: z.string().min(1, { message: 'المحافظة مطلوبة' }),
+  area: z.string().min(1, { message: 'المنطقة مطلوبة' }),
 });
 
 const Auth = () => {
@@ -59,6 +60,7 @@ const Auth = () => {
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [governorate, setGovernorate] = useState('');
+  const [area, setArea] = useState('');
   const [referralCode, setReferralCode] = useState('');
   const [showResetPassword, setShowResetPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
