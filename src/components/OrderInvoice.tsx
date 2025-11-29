@@ -449,16 +449,114 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
           }}
           className="rounded-lg mb-6"
         >
-          <div className="flex justify-between items-center">
-            <span style={{ color: config.totalsSection.labelColor }}>
-              الإجمالي / Total Amount
-            </span>
-            <span
-              style={{ color: config.totalsSection.valueColor }}
-              className="text-2xl"
-            >
-              {formatPrice(Number(order.total_amount))} {order.currency}
-            </span>
+          <div className="space-y-3">
+            {/* المبلغ الفرعي */}
+            {Number(order.subtotal) > 0 && (
+              <div className="flex justify-between items-center pb-2 border-b border-current/10">
+                <span style={{ color: config.totalsSection.labelColor }}>
+                  المبلغ الفرعي / Subtotal
+                </span>
+                <span style={{ color: config.totalsSection.valueColor }}>
+                  {formatPrice(Number(order.subtotal))} {order.currency}
+                </span>
+              </div>
+            )}
+
+            {/* الضريبة */}
+            {Number(order.tax_amount) > 0 && (
+              <div className="flex justify-between items-center pb-2 border-b border-current/10">
+                <span style={{ color: config.totalsSection.labelColor }}>
+                  الضريبة ({order.tax_percentage || 0}%) / Tax
+                </span>
+                <span style={{ color: config.totalsSection.valueColor }}>
+                  {formatPrice(Number(order.tax_amount))} {order.currency}
+                </span>
+              </div>
+            )}
+
+            {/* الخصم */}
+            {Number(order.discount_amount) > 0 && (
+              <div className="flex justify-between items-center pb-2 border-b border-current/10 text-green-600">
+                <span>
+                  الخصم / Discount
+                </span>
+                <span>
+                  -{formatPrice(Number(order.discount_amount))} {order.currency}
+                </span>
+              </div>
+            )}
+
+            {/* الإجمالي */}
+            <div className="flex justify-between items-center pt-2 border-t-2 border-current/20">
+              <span style={{ color: config.totalsSection.labelColor }} className="text-xl font-bold">
+                الإجمالي / Total Amount
+              </span>
+              <span
+                style={{ color: config.totalsSection.valueColor }}
+                className="text-2xl font-bold"
+              >
+                {formatPrice(Number(order.total_amount))} {order.currency}
+              </span>
+            </div>
+
+            {/* المبلغ المدفوع */}
+            {Number(order.paid_amount) > 0 && (
+              <div className="flex justify-between items-center pt-2 text-green-700">
+                <span className="font-semibold">
+                  المبلغ المدفوع / Paid Amount
+                </span>
+                <span className="font-bold">
+                  {formatPrice(Number(order.paid_amount))} {order.currency}
+                </span>
+              </div>
+            )}
+
+            {/* المبلغ المتبقي */}
+            {Number(order.remaining_amount) > 0 && (
+              <div className="flex justify-between items-center pt-2 text-red-600">
+                <span className="font-semibold">
+                  المبلغ المتبقي / Remaining
+                </span>
+                <span className="font-bold">
+                  {formatPrice(Number(order.remaining_amount))} {order.currency}
+                </span>
+              </div>
+            )}
+
+            {/* حالة الدفع */}
+            <div className="flex justify-between items-center pt-3 mt-2 border-t border-current/10">
+              <span style={{ color: config.totalsSection.labelColor }}>
+                حالة الدفع / Payment Status
+              </span>
+              <span 
+                className={`px-3 py-1 rounded-full text-sm font-bold ${
+                  order.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                  order.payment_status === 'partial' ? 'bg-yellow-100 text-yellow-800' :
+                  order.payment_status === 'refunded' ? 'bg-blue-100 text-blue-800' :
+                  'bg-red-100 text-red-800'
+                }`}
+              >
+                {order.payment_status === 'paid' ? 'مدفوع / Paid' : 
+                 order.payment_status === 'partial' ? 'مدفوع جزئياً / Partial' :
+                 order.payment_status === 'refunded' ? 'مسترجع / Refunded' : 
+                 'غير مدفوع / Unpaid'}
+              </span>
+            </div>
+
+            {/* طريقة الدفع */}
+            {order.payment_method && (
+              <div className="flex justify-between items-center">
+                <span style={{ color: config.totalsSection.labelColor }}>
+                  طريقة الدفع / Payment Method
+                </span>
+                <span style={{ color: config.totalsSection.valueColor }}>
+                  {order.payment_method === 'cash' ? 'نقدي / Cash' :
+                   order.payment_method === 'wallet' ? 'المحفظة / Wallet' :
+                   order.payment_method === 'bank_transfer' ? 'تحويل بنكي / Bank Transfer' :
+                   order.payment_method === 'card' ? 'بطاقة / Card' : order.payment_method}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
