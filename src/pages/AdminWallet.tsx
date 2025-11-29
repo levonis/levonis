@@ -34,20 +34,30 @@ export default function AdminWallet() {
 
   // البحث عن المستخدمين
   const { data: searchResults, isLoading: searchLoading } = useQuery({
-    queryKey: ['search-users', searchQuery],
+    queryKey: ['search-users', searchQuery, showAddFundsDialog],
     queryFn: async () => {
-      if (!searchQuery || searchQuery.length < 2) return [];
+      console.log('Searching for users with query:', searchQuery);
       
-      const { data, error } = await supabase
+      let query = supabase
         .from('profiles')
-        .select('id, full_name, username, phone_number, email')
-        .or(`full_name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%,phone_number.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
-        .limit(10);
+        .select('id, full_name, username, phone_number, email');
       
-      if (error) throw error;
-      return data;
+      // إذا كان هناك بحث، استخدم الفلترة
+      if (searchQuery && searchQuery.length >= 2) {
+        query = query.or(`full_name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%,phone_number.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false }).limit(15);
+      
+      if (error) {
+        console.error('Error searching users:', error);
+        throw error;
+      }
+      
+      console.log('Search results:', data);
+      return data || [];
     },
-    enabled: isAdmin && searchQuery.length >= 2,
+    enabled: isAdmin && showAddFundsDialog,
   });
 
   // جلب رصيد المستخدم المحدد
@@ -72,6 +82,8 @@ export default function AdminWallet() {
   const { data: pendingTransactions, isLoading } = useQuery({
     queryKey: ['admin-wallet-transactions', 'pending'],
     queryFn: async () => {
+      console.log('Fetching pending wallet transactions...');
+      
       const { data, error } = await supabase
         .from('wallet_transactions')
         .select(`
@@ -85,8 +97,13 @@ export default function AdminWallet() {
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error('Error fetching pending transactions:', error);
+        throw error;
+      }
+      
+      console.log('Pending transactions:', data);
+      return data || [];
     },
     enabled: isAdmin,
   });
@@ -485,10 +502,10 @@ export default function AdminWallet() {
               </div>
               
               {/* نتائج البحث */}
-              {searchQuery.length >= 2 && (
+              {!selectedUser && (
                 <div className="border rounded-lg max-h-48 overflow-y-auto">
                   {searchLoading ? (
-                    <p className="p-3 text-center text-muted-foreground">جاري البحث...</p>
+                    <p className="p-3 text-center text-muted-foreground">جاري التحميل...</p>
                   ) : searchResults && searchResults.length > 0 ? (
                     searchResults.map((user: any) => (
                       <button
@@ -512,7 +529,7 @@ export default function AdminWallet() {
                       </button>
                     ))
                   ) : (
-                    <p className="p-3 text-center text-muted-foreground">لا توجد نتائج</p>
+                    <p className="p-3 text-center text-muted-foreground">لا يوجد مستخدمين</p>
                   )}
                 </div>
               )}
