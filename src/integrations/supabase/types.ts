@@ -809,16 +809,26 @@ export type Database = {
       }
       orders: {
         Row: {
+          actual_weight: number | null
+          admin_files: string[] | null
+          admin_images: string[] | null
           arrived_iraq_at: string | null
           arrived_warehouse_at: string | null
           auto_confirmed: boolean | null
           created_at: string
           currency: string
+          customs_declaration_number: string | null
           delivered_at: string | null
+          estimated_delivery_date: string | null
           governorate: string
           id: string
+          internal_notes: string | null
           order_number: string
+          package_dimensions: string | null
+          payment_method: string | null
+          payment_status: string | null
           phone_number: string
+          priority: string | null
           serial_number_image_url: string | null
           shipped_at: string | null
           shipping_address: string
@@ -834,16 +844,26 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          actual_weight?: number | null
+          admin_files?: string[] | null
+          admin_images?: string[] | null
           arrived_iraq_at?: string | null
           arrived_warehouse_at?: string | null
           auto_confirmed?: boolean | null
           created_at?: string
           currency?: string
+          customs_declaration_number?: string | null
           delivered_at?: string | null
+          estimated_delivery_date?: string | null
           governorate: string
           id?: string
+          internal_notes?: string | null
           order_number: string
+          package_dimensions?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           phone_number: string
+          priority?: string | null
           serial_number_image_url?: string | null
           shipped_at?: string | null
           shipping_address: string
@@ -859,16 +879,26 @@ export type Database = {
           user_id: string
         }
         Update: {
+          actual_weight?: number | null
+          admin_files?: string[] | null
+          admin_images?: string[] | null
           arrived_iraq_at?: string | null
           arrived_warehouse_at?: string | null
           auto_confirmed?: boolean | null
           created_at?: string
           currency?: string
+          customs_declaration_number?: string | null
           delivered_at?: string | null
+          estimated_delivery_date?: string | null
           governorate?: string
           id?: string
+          internal_notes?: string | null
           order_number?: string
+          package_dimensions?: string | null
+          payment_method?: string | null
+          payment_status?: string | null
           phone_number?: string
+          priority?: string | null
           serial_number_image_url?: string | null
           shipped_at?: string | null
           shipping_address?: string
