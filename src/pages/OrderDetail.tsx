@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -58,7 +58,7 @@ const OrderDetail = () => {
     enabled: canQuery
   });
 
-  const handlePrintInvoice = async () => {
+  const handleDownloadPDF = async () => {
     if (!order) return;
     
     setIsGeneratingPDF(true);
@@ -106,6 +106,96 @@ const OrderDetail = () => {
     } finally {
       setIsGeneratingPDF(false);
     }
+  };
+
+  const handleDirectPrint = () => {
+    const printContents = document.getElementById('invoice-content');
+    if (!printContents) return;
+    
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast.error('يرجى السماح بالنوافذ المنبثقة للطباعة');
+      return;
+    }
+    
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="UTF-8">
+          <title>فاتورة - ${order?.order_number}</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: 'Cairo', Arial, sans-serif; direction: rtl; padding: 20px; }
+            @media print { body { padding: 0; } }
+            .space-y-3 > * + * { margin-top: 0.75rem; }
+            .space-y-1 > * + * { margin-top: 0.25rem; }
+            .grid { display: grid; }
+            .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .gap-4 { gap: 1rem; }
+            .flex { display: flex; }
+            .justify-between { justify-content: space-between; }
+            .items-center { align-items: center; }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .font-bold { font-weight: 700; }
+            .font-semibold { font-weight: 600; }
+            .font-medium { font-weight: 500; }
+            .text-sm { font-size: 0.875rem; }
+            .text-xs { font-size: 0.75rem; }
+            .text-lg { font-size: 1.125rem; }
+            .text-xl { font-size: 1.25rem; }
+            .text-2xl { font-size: 1.5rem; }
+            .mb-1 { margin-bottom: 0.25rem; }
+            .mb-2 { margin-bottom: 0.5rem; }
+            .mb-4 { margin-bottom: 1rem; }
+            .mb-6 { margin-bottom: 1.5rem; }
+            .mt-1 { margin-top: 0.25rem; }
+            .mt-2 { margin-top: 0.5rem; }
+            .mt-4 { margin-top: 1rem; }
+            .mt-6 { margin-top: 1.5rem; }
+            .mt-8 { margin-top: 2rem; }
+            .pt-2 { padding-top: 0.5rem; }
+            .pt-3 { padding-top: 0.75rem; }
+            .pb-2 { padding-bottom: 0.5rem; }
+            .px-3 { padding-left: 0.75rem; padding-right: 0.75rem; }
+            .py-1 { padding-top: 0.25rem; padding-bottom: 0.25rem; }
+            .opacity-70 { opacity: 0.7; }
+            .opacity-80 { opacity: 0.8; }
+            .border-b { border-bottom: 1px solid #e5e7eb; }
+            .border-t { border-top: 1px solid #e5e7eb; }
+            .border-t-2 { border-top: 2px solid #e5e7eb; }
+            .rounded-lg { border-radius: 0.5rem; }
+            .rounded-t-lg { border-top-left-radius: 0.5rem; border-top-right-radius: 0.5rem; }
+            .rounded-b-lg { border-bottom-left-radius: 0.5rem; border-bottom-right-radius: 0.5rem; }
+            .rounded-full { border-radius: 9999px; }
+            .list-disc { list-style-type: disc; }
+            .pr-5 { padding-right: 1.25rem; }
+            .bg-green-100 { background-color: #dcfce7; }
+            .bg-yellow-100 { background-color: #fef9c3; }
+            .bg-blue-100 { background-color: #dbeafe; }
+            .bg-red-100 { background-color: #fee2e2; }
+            .text-green-600 { color: #16a34a; }
+            .text-green-700 { color: #15803d; }
+            .text-green-800 { color: #166534; }
+            .text-yellow-800 { color: #854d0e; }
+            .text-blue-800 { color: #1e40af; }
+            .text-red-600 { color: #dc2626; }
+            .text-red-800 { color: #991b1b; }
+            table { width: 100%; border-collapse: collapse; }
+          </style>
+        </head>
+        <body>
+          ${printContents.outerHTML}
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 500);
   };
 
   const getStatusBadge = (status: string) => {
@@ -171,23 +261,33 @@ const OrderDetail = () => {
               <h1 className="text-4xl font-black text-primary mb-2">تفاصيل الطلب</h1>
               <p className="text-muted-foreground">رقم الطلب: {order.order_number}</p>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
               {(order.status === 'arrived_warehouse' || 
                 order.status === 'shipped' || 
                 order.status === 'arrived_iraq' || 
                 order.status === 'delivered') && (
-                <Button 
-                  onClick={handlePrintInvoice}
-                  disabled={isGeneratingPDF}
-                  className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                >
-                  {isGeneratingPDF ? (
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <FileText className="ml-2 h-4 w-4" />
-                  )}
-                  طباعة الفاتورة
-                </Button>
+                <>
+                  <Button 
+                    onClick={handleDirectPrint}
+                    variant="outline"
+                    className="border-primary text-primary hover:bg-primary/10"
+                  >
+                    <Printer className="ml-2 h-4 w-4" />
+                    طباعة مباشرة
+                  </Button>
+                  <Button 
+                    onClick={handleDownloadPDF}
+                    disabled={isGeneratingPDF}
+                    className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                  >
+                    {isGeneratingPDF ? (
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <FileText className="ml-2 h-4 w-4" />
+                    )}
+                    تحميل PDF
+                  </Button>
+                </>
               )}
               <Badge variant={statusInfo.variant} className="text-lg px-4 py-2 w-fit">
                 {statusInfo.label}
