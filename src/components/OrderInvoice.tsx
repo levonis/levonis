@@ -615,11 +615,45 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
             borderTop: config.warrantySection.borderTop,
             fontFamily: config.warrantySection.fontFamily,
           }}
-          className="space-y-3"
+          className="space-y-4"
         >
+          {/* سياسة الاسترداد */}
+          <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+            <h3 className="font-bold mb-2 text-red-700">سياسة الاسترداد / Refund Policy</h3>
+            <p className="text-sm leading-relaxed">
+              يحق للمشتري استرداد المبلغ المدفوع مقدمًا خلال مدة أقصاها ثلاثة (3) أيام من تاريخ الدفع، على أن يُخصم 25% من قيمة المبلغ كرسوم إدارية وتعويضية.
+            </p>
+            <p className="text-xs mt-1 opacity-80">
+              The buyer has the right to refund the prepaid amount within a maximum of three (3) days from the payment date, with 25% deducted as administrative and compensatory fees.
+            </p>
+          </div>
+
+          {/* إقرار الضمان */}
+          <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(34, 197, 94, 0.05)', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+            <h3 className="font-bold mb-2 text-green-700">إقرار الضمان / Warranty Acknowledgement</h3>
+            <p className="text-sm leading-relaxed">
+              نُقر نحن بأننا نتحمل كافة التكاليف والتبعات في حال حصول أي خلل في القطعة مستقبلًا، وذلك ضمن نطاق الضمان الرسمي المقرر.
+            </p>
+            <p className="text-xs mt-1 opacity-80">
+              We acknowledge that we bear all costs and consequences in case of any defect in the item in the future, within the scope of the official warranty.
+            </p>
+          </div>
+
+          {/* أهمية وصل الاستلام */}
+          <div className="p-3 rounded-lg" style={{ backgroundColor: 'rgba(251, 191, 36, 0.1)', border: '1px solid rgba(251, 191, 36, 0.3)' }}>
+            <h3 className="font-bold mb-2 text-amber-700">⚠️ تنبيه هام / Important Notice</h3>
+            <p className="text-sm leading-relaxed">
+              يُعتبر وصل الاستلام أصلًا أساسيًا لإثبات الضمان والملكية. وفي حال ضياع ورقة الاستلام، تُلغى كافة الضمانات والملكية المترتبة على القطع المشتراة من قبلنا.
+            </p>
+            <p className="text-xs mt-1 opacity-80">
+              The receipt is considered a fundamental document for proving warranty and ownership. In case of losing the receipt, all warranties and ownership of the items purchased from us will be void.
+            </p>
+          </div>
+
+          {/* شروط الضمان التفصيلية */}
           <div>
             <h3 className="font-bold mb-2">شروط الضمان / Warranty Terms</h3>
-            <ul className="list-disc pr-5 space-y-1">
+            <ul className="list-disc pr-5 space-y-1 text-sm">
               <li>جميع المنتجات مضمونة ضد عيوب الصناعة</li>
               <li>مدة الضمان حسب نوع المنتج</li>
               <li>يجب الاحتفاظ بالفاتورة الأصلية لتفعيل الضمان</li>
@@ -627,22 +661,14 @@ export const OrderInvoice = ({ order }: OrderInvoiceProps) => {
             </ul>
           </div>
 
+          {/* شروط الملكية */}
           <div>
             <h3 className="font-bold mb-2">شروط الملكية / Ownership Terms</h3>
-            <ul className="list-disc pr-5 space-y-1">
+            <ul className="list-disc pr-5 space-y-1 text-sm">
               <li>تنتقل ملكية المنتج بعد الدفع الكامل</li>
               <li>العميل مسؤول عن المنتج بعد استلامه</li>
               <li>يحق للعميل إرجاع المنتج خلال 7 أيام من الاستلام في حالة وجود عيب مصنعي</li>
               <li>المنتج يجب أن يكون بحالته الأصلية للإرجاع</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-bold mb-2">ملاحظات / Notes</h3>
-            <ul className="list-disc pr-5 space-y-1">
-              <li>هذه الفاتورة صالحة كإثبات للشراء</li>
-              <li>للاستفسارات، يرجى الاتصال بخدمة العملاء</li>
-              <li>نشكركم على ثقتكم بنا</li>
             </ul>
           </div>
         </div>
