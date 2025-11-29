@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -7,15 +7,23 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Wallet, Check, X, ArrowLeft } from 'lucide-react';
+import { Wallet, Check, X, ArrowLeft, PlusCircle, Search, User } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 
 export default function AdminWallet() {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  
+  const [showAddFundsDialog, setShowAddFundsDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [addAmount, setAddAmount] = useState('');
+  const [adminNotes, setAdminNotes] = useState('');
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -23,6 +31,42 @@ export default function AdminWallet() {
       toast.error('ليس لديك صلاحية الوصول');
     }
   }, [user, isAdmin, authLoading, navigate]);
+
+  // البحث عن المستخدمين
+  const { data: searchResults, isLoading: searchLoading } = useQuery({
+    queryKey: ['search-users', searchQuery],
+    queryFn: async () => {
+      if (!searchQuery || searchQuery.length < 2) return [];
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, phone_number, email')
+        .or(`full_name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%,phone_number.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`)
+        .limit(10);
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: isAdmin && searchQuery.length >= 2,
+  });
+
+  // جلب رصيد المستخدم المحدد
+  const { data: selectedUserWallet } = useQuery({
+    queryKey: ['user-wallet', selectedUser?.id],
+    queryFn: async () => {
+      if (!selectedUser?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('user_wallets')
+        .select('*')
+        .eq('user_id', selectedUser.id)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!selectedUser?.id,
+  });
 
   // جلب جميع معاملات المحفظة المعلقة
   const { data: pendingTransactions, isLoading } = useQuery({
@@ -102,6 +146,79 @@ export default function AdminWallet() {
     },
   });
 
+  // إضافة رصيد للمستخدم
+  const addFundsToUser = useMutation({
+    mutationFn: async ({ userId, amount, notes }: { userId: string; amount: number; notes: string }) => {
+      // إضافة المعاملة
+      const { error: transactionError } = await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: userId,
+          type: 'deposit',
+          amount: amount,
+          status: 'approved',
+          admin_notes: notes || 'تم إضافة الرصيد من قبل الإدارة',
+        });
+
+      if (transactionError) throw transactionError;
+
+      // تحديث المحفظة (التحديث يتم تلقائياً عبر trigger process_wallet_transaction)
+      // لكن نحتاج للتأكد من وجود المحفظة أولاً
+      const { data: existingWallet } = await supabase
+        .from('user_wallets')
+        .select('id')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!existingWallet) {
+        // إنشاء محفظة جديدة إذا لم تكن موجودة
+        const { error: walletError } = await supabase
+          .from('user_wallets')
+          .insert({
+            user_id: userId,
+            balance: amount,
+            currency: 'دينار عراقي',
+          });
+
+        if (walletError) throw walletError;
+      } else {
+        // تحديث المحفظة الموجودة
+        const { error: updateError } = await supabase
+          .from('user_wallets')
+          .update({
+            balance: supabase.rpc ? undefined : amount, // This will be handled by trigger
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+
+        // Note: The balance update is handled by the process_wallet_transaction trigger
+      }
+
+      // إرسال إشعار للمستخدم
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        title: 'تم إضافة رصيد لمحفظتك',
+        message: `تم إضافة ${amount} دينار عراقي إلى محفظتك من قبل الإدارة`,
+        type: 'success',
+        is_general: false,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-wallet-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+      toast.success('تم إضافة الرصيد بنجاح');
+      setShowAddFundsDialog(false);
+      setSelectedUser(null);
+      setAddAmount('');
+      setAdminNotes('');
+      setSearchQuery('');
+    },
+    onError: (error) => {
+      console.error('خطأ في إضافة الرصيد:', error);
+      toast.error('حدث خطأ في إضافة الرصيد');
+    },
+  });
+
   const handleApprove = (transactionId: string) => {
     if (confirm('هل أنت متأكد من الموافقة على هذه المعاملة؟')) {
       updateTransactionStatus.mutate({
@@ -120,6 +237,19 @@ export default function AdminWallet() {
         admin_notes: notes || 'تم الرفض من قبل الإدارة',
       });
     }
+  };
+
+  const handleAddFunds = () => {
+    const amount = Number(addAmount);
+    if (!selectedUser || !amount || amount <= 0) {
+      toast.error('الرجاء اختيار مستخدم وإدخال مبلغ صحيح');
+      return;
+    }
+    addFundsToUser.mutate({
+      userId: selectedUser.id,
+      amount,
+      notes: adminNotes,
+    });
   };
 
   const getTypeLabel = (type: string) => {
@@ -168,9 +298,15 @@ export default function AdminWallet() {
           العودة إلى لوحة التحكم
         </Button>
         
-        <div className="flex items-center gap-3 mb-2">
-          <Wallet className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">إدارة المحفظة</h1>
+        <div className="flex items-center justify-between flex-wrap gap-4 mb-2">
+          <div className="flex items-center gap-3">
+            <Wallet className="h-8 w-8 text-primary" />
+            <h1 className="text-3xl font-bold">إدارة المحفظة</h1>
+          </div>
+          <Button onClick={() => setShowAddFundsDialog(true)} className="gap-2">
+            <PlusCircle className="h-4 w-4" />
+            إضافة رصيد لمستخدم
+          </Button>
         </div>
         <p className="text-muted-foreground">
           إدارة طلبات تعبئة وسحب المحفظة
@@ -320,6 +456,137 @@ export default function AdminWallet() {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog إضافة رصيد لمستخدم */}
+      <Dialog open={showAddFundsDialog} onOpenChange={setShowAddFundsDialog}>
+        <DialogContent className="max-w-lg" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PlusCircle className="h-5 w-5" />
+              إضافة رصيد لمستخدم
+            </DialogTitle>
+            <DialogDescription>
+              البحث عن مستخدم وإضافة رصيد إلى محفظته
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4">
+            {/* البحث عن المستخدم */}
+            <div className="space-y-2">
+              <Label>البحث عن مستخدم</Label>
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="ابحث بالاسم أو رقم الهاتف أو اسم المستخدم..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+              
+              {/* نتائج البحث */}
+              {searchQuery.length >= 2 && (
+                <div className="border rounded-lg max-h-48 overflow-y-auto">
+                  {searchLoading ? (
+                    <p className="p-3 text-center text-muted-foreground">جاري البحث...</p>
+                  ) : searchResults && searchResults.length > 0 ? (
+                    searchResults.map((user: any) => (
+                      <button
+                        key={user.id}
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setSearchQuery('');
+                        }}
+                        className={`w-full p-3 text-right hover:bg-muted/50 border-b last:border-b-0 flex items-center gap-3 ${
+                          selectedUser?.id === user.id ? 'bg-primary/10' : ''
+                        }`}
+                      >
+                        <User className="h-8 w-8 p-1.5 bg-muted rounded-full" />
+                        <div className="flex-1">
+                          <p className="font-medium">{user.full_name || 'بدون اسم'}</p>
+                          <p className="text-sm text-muted-foreground">@{user.username}</p>
+                          {user.phone_number && (
+                            <p className="text-xs text-muted-foreground">{user.phone_number}</p>
+                          )}
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <p className="p-3 text-center text-muted-foreground">لا توجد نتائج</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* المستخدم المحدد */}
+            {selectedUser && (
+              <Card className="bg-primary/5 border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <User className="h-10 w-10 p-2 bg-primary/10 rounded-full text-primary" />
+                      <div>
+                        <p className="font-bold">{selectedUser.full_name || 'بدون اسم'}</p>
+                        <p className="text-sm text-muted-foreground">@{selectedUser.username}</p>
+                        {selectedUser.phone_number && (
+                          <p className="text-xs text-muted-foreground">{selectedUser.phone_number}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs text-muted-foreground">الرصيد الحالي</p>
+                      <p className="font-bold text-lg text-primary">
+                        {formatPrice(selectedUserWallet?.balance || 0)}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedUser(null)}
+                    className="mt-2 text-xs"
+                  >
+                    تغيير المستخدم
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* المبلغ */}
+            <div className="space-y-2">
+              <Label htmlFor="addAmount">المبلغ</Label>
+              <Input
+                id="addAmount"
+                type="number"
+                placeholder="أدخل المبلغ المراد إضافته"
+                value={addAmount}
+                onChange={(e) => setAddAmount(e.target.value)}
+                min="0"
+              />
+            </div>
+
+            {/* ملاحظات */}
+            <div className="space-y-2">
+              <Label htmlFor="adminNotes">ملاحظات (اختياري)</Label>
+              <Input
+                id="adminNotes"
+                placeholder="سبب الإضافة..."
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+              />
+            </div>
+
+            {/* زر الإضافة */}
+            <Button
+              onClick={handleAddFunds}
+              disabled={!selectedUser || !addAmount || Number(addAmount) <= 0 || addFundsToUser.isPending}
+              className="w-full"
+            >
+              {addFundsToUser.isPending ? 'جاري الإضافة...' : 'إضافة الرصيد'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
