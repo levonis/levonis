@@ -31,6 +31,11 @@ const AdminOrders = () => {
   const [searchParams] = useSearchParams();
   const [uploadingImage, setUploadingImage] = useState(false);
   const [serialImageFile, setSerialImageFile] = useState<File | null>(null);
+  const [adminImageFiles, setAdminImageFiles] = useState<File[]>([]);
+  const [adminFilesArray, setAdminFilesArray] = useState<File[]>([]);
+  const [adminImagePreviews, setAdminImagePreviews] = useState<string[]>([]);
+  const [existingAdminImages, setExistingAdminImages] = useState<string[]>([]);
+  const [existingAdminFiles, setExistingAdminFiles] = useState<string[]>([]);
   const [serialImagePreview, setSerialImagePreview] = useState<string>('');
   useEffect(() => {
     const status = searchParams.get('status');
@@ -72,6 +77,11 @@ const AdminOrders = () => {
       setEditingOrder(null);
       setSerialImageFile(null);
       setSerialImagePreview('');
+      setAdminImageFiles([]);
+      setAdminFilesArray([]);
+      setAdminImagePreviews([]);
+      setExistingAdminImages([]);
+      setExistingAdminFiles([]);
     },
     onError: (error) => {
       toast.error('حدث خطأ أثناء تحديث الطلب');
@@ -172,6 +182,56 @@ const AdminOrders = () => {
     }
   };
 
+  const handleAdminImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => {
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error(`الملف ${file.name} أكبر من 10 ميجابايت`);
+        return false;
+      }
+      return true;
+    });
+    
+    setAdminImageFiles(prev => [...prev, ...validFiles]);
+    
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAdminImagePreviews(prev => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleAdminFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(file => {
+      if (file.size > 20 * 1024 * 1024) {
+        toast.error(`الملف ${file.name} أكبر من 20 ميجابايت`);
+        return false;
+      }
+      return true;
+    });
+    setAdminFilesArray(prev => [...prev, ...validFiles]);
+  };
+
+  const removeAdminImage = (index: number, isExisting: boolean) => {
+    if (isExisting) {
+      setExistingAdminImages(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setAdminImageFiles(prev => prev.filter((_, i) => i !== index));
+      setAdminImagePreviews(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const removeAdminFile = (index: number, isExisting: boolean) => {
+    if (isExisting) {
+      setExistingAdminFiles(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setAdminFilesArray(prev => prev.filter((_, i) => i !== index));
+    }
+  };
+
   const uploadSerialImage = async (file: File, orderId: string): Promise<string> => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${orderId}-${Date.now()}.${fileExt}`;
@@ -190,6 +250,23 @@ const AdminOrders = () => {
     return publicUrl;
   };
 
+  const uploadOrderFile = async (file: File, orderId: string, folder: string): Promise<string> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${orderId}/${folder}/${Date.now()}-${file.name}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('order-files')
+      .upload(fileName, file, { upsert: true });
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('order-files')
+      .getPublicUrl(fileName);
+
+    return publicUrl;
+  };
+
   const handleUpdateOrder = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -199,53 +276,75 @@ const AdminOrders = () => {
 
     let serialImageUrl = editingOrder.serial_number_image_url;
 
-    // رفع صورة Serial Number إذا تم اختيار ملف
-    if (serialImageFile) {
-      try {
-        setUploadingImage(true);
+    setUploadingImage(true);
+
+    try {
+      // رفع صورة Serial Number إذا تم اختيار ملف
+      if (serialImageFile) {
         serialImageUrl = await uploadSerialImage(serialImageFile, editingOrder.id);
-        toast.success('تم رفع الصورة بنجاح');
-      } catch (error) {
-        toast.error('فشل رفع الصورة');
-        console.error(error);
-        setUploadingImage(false);
-        return;
-      } finally {
-        setUploadingImage(false);
       }
+
+      // رفع الصور الإضافية
+      const uploadedImageUrls: string[] = [...existingAdminImages];
+      for (const file of adminImageFiles) {
+        const url = await uploadOrderFile(file, editingOrder.id, 'images');
+        uploadedImageUrls.push(url);
+      }
+
+      // رفع الملفات الإضافية
+      const uploadedFileUrls: string[] = [...existingAdminFiles];
+      for (const file of adminFilesArray) {
+        const url = await uploadOrderFile(file, editingOrder.id, 'files');
+        uploadedFileUrls.push(url);
+      }
+
+      const values: any = {
+        order_number: formData.get('order_number') as string,
+        status: formData.get('status') as string,
+        tracking_number: formData.get('tracking_number') as string || null,
+        tracking_url: formData.get('tracking_url') as string || null,
+        shipping_company: formData.get('shipping_company') as string || null,
+        shipping_notes: formData.get('shipping_notes') as string || null,
+        serial_number_image_url: serialImageUrl,
+        admin_images: uploadedImageUrls,
+        admin_files: uploadedFileUrls,
+        estimated_delivery_date: formData.get('estimated_delivery_date') as string || null,
+        actual_weight: formData.get('actual_weight') ? Number(formData.get('actual_weight')) : null,
+        package_dimensions: formData.get('package_dimensions') as string || null,
+        customs_declaration_number: formData.get('customs_declaration_number') as string || null,
+        internal_notes: formData.get('internal_notes') as string || null,
+        priority: formData.get('priority') as string || 'normal',
+        payment_status: formData.get('payment_status') as string || 'pending',
+        payment_method: formData.get('payment_method') as string || null,
+      };
+
+      // تحديث تاريخ الوصول للمخزن
+      if (values.status === 'arrived_warehouse' && editingOrder?.status !== 'arrived_warehouse') {
+        values.arrived_warehouse_at = new Date().toISOString();
+      }
+
+      // تحديث تاريخ الشحن
+      if (values.status === 'shipped' && editingOrder?.status !== 'shipped') {
+        values.shipped_at = new Date().toISOString();
+      }
+
+      // تحديث تاريخ الوصول للعراق
+      if (values.status === 'arrived_iraq' && editingOrder?.status !== 'arrived_iraq') {
+        values.arrived_iraq_at = new Date().toISOString();
+      }
+
+      // تحديث تاريخ التوصيل
+      if (values.status === 'delivered' && editingOrder?.status !== 'delivered') {
+        values.delivered_at = new Date().toISOString();
+      }
+
+      updateOrderMutation.mutate({ id: editingOrder.id, values });
+    } catch (error) {
+      toast.error('فشل رفع الملفات');
+      console.error(error);
+    } finally {
+      setUploadingImage(false);
     }
-
-    const values: any = {
-      order_number: formData.get('order_number') as string,
-      status: formData.get('status') as string,
-      tracking_number: formData.get('tracking_number') as string || null,
-      tracking_url: formData.get('tracking_url') as string || null,
-      shipping_company: formData.get('shipping_company') as string || null,
-      shipping_notes: formData.get('shipping_notes') as string || null,
-      serial_number_image_url: serialImageUrl,
-    };
-
-    // تحديث تاريخ الوصول للمخزن
-    if (values.status === 'arrived_warehouse' && editingOrder?.status !== 'arrived_warehouse') {
-      values.arrived_warehouse_at = new Date().toISOString();
-    }
-
-    // تحديث تاريخ الشحن
-    if (values.status === 'shipped' && editingOrder?.status !== 'shipped') {
-      values.shipped_at = new Date().toISOString();
-    }
-
-    // تحديث تاريخ الوصول للعراق
-    if (values.status === 'arrived_iraq' && editingOrder?.status !== 'arrived_iraq') {
-      values.arrived_iraq_at = new Date().toISOString();
-    }
-
-    // تحديث تاريخ التوصيل
-    if (values.status === 'delivered' && editingOrder?.status !== 'delivered') {
-      values.delivered_at = new Date().toISOString();
-    }
-
-    updateOrderMutation.mutate({ id: editingOrder.id, values });
   };
 
   const getStatusBadge = (status: string) => {
@@ -553,6 +652,11 @@ const AdminOrders = () => {
                               setEditingOrder(null);
                               setSerialImageFile(null);
                               setSerialImagePreview('');
+                              setAdminImageFiles([]);
+                              setAdminFilesArray([]);
+                              setAdminImagePreviews([]);
+                              setExistingAdminImages([]);
+                              setExistingAdminFiles([]);
                             }
                           }}>
                             <DialogTrigger asChild>
@@ -562,6 +666,11 @@ const AdminOrders = () => {
                                 onClick={() => {
                                   setEditingOrder(order);
                                   setSerialImagePreview(order.serial_number_image_url || '');
+                                  setExistingAdminImages(order.admin_images || []);
+                                  setExistingAdminFiles(order.admin_files || []);
+                                  setAdminImageFiles([]);
+                                  setAdminFilesArray([]);
+                                  setAdminImagePreviews([]);
                                   setDialogOpen(true);
                                 }}
                               >
@@ -698,6 +807,220 @@ const AdminOrders = () => {
                                   />
                                 </div>
 
+                                {/* حقول إضافية */}
+                                <div className="border-t pt-4 mt-4">
+                                  <h4 className="font-semibold mb-4 text-primary">معلومات إضافية</h4>
+                                  
+                                  <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="priority">الأولوية</Label>
+                                      <select
+                                        id="priority"
+                                        name="priority"
+                                        defaultValue={order.priority || 'normal'}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                      >
+                                        <option value="low">منخفضة</option>
+                                        <option value="normal">عادية</option>
+                                        <option value="high">عالية</option>
+                                        <option value="urgent">عاجلة</option>
+                                      </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="payment_status">حالة الدفع</Label>
+                                      <select
+                                        id="payment_status"
+                                        name="payment_status"
+                                        defaultValue={order.payment_status || 'pending'}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                      >
+                                        <option value="pending">قيد الانتظار</option>
+                                        <option value="paid">مدفوع</option>
+                                        <option value="partial">مدفوع جزئياً</option>
+                                        <option value="refunded">مسترجع</option>
+                                      </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="payment_method">طريقة الدفع</Label>
+                                      <select
+                                        id="payment_method"
+                                        name="payment_method"
+                                        defaultValue={order.payment_method || ''}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                      >
+                                        <option value="">غير محدد</option>
+                                        <option value="cash">نقدي</option>
+                                        <option value="wallet">المحفظة</option>
+                                        <option value="bank_transfer">تحويل بنكي</option>
+                                        <option value="card">بطاقة</option>
+                                      </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="estimated_delivery_date">تاريخ التوصيل المتوقع</Label>
+                                      <Input
+                                        id="estimated_delivery_date"
+                                        name="estimated_delivery_date"
+                                        type="date"
+                                        defaultValue={order.estimated_delivery_date ? new Date(order.estimated_delivery_date).toISOString().split('T')[0] : ''}
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="actual_weight">الوزن الفعلي (كغ)</Label>
+                                      <Input
+                                        id="actual_weight"
+                                        name="actual_weight"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.actual_weight || ''}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="package_dimensions">أبعاد الطرد</Label>
+                                      <Input
+                                        id="package_dimensions"
+                                        name="package_dimensions"
+                                        defaultValue={order.package_dimensions || ''}
+                                        placeholder="الطول × العرض × الارتفاع"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-2 mt-4">
+                                    <Label htmlFor="customs_declaration_number">رقم البيان الجمركي</Label>
+                                    <Input
+                                      id="customs_declaration_number"
+                                      name="customs_declaration_number"
+                                      defaultValue={order.customs_declaration_number || ''}
+                                      placeholder="رقم البيان الجمركي"
+                                    />
+                                  </div>
+
+                                  <div className="space-y-2 mt-4">
+                                    <Label htmlFor="internal_notes">ملاحظات داخلية (للأدمن فقط)</Label>
+                                    <Textarea
+                                      id="internal_notes"
+                                      name="internal_notes"
+                                      defaultValue={order.internal_notes || ''}
+                                      placeholder="ملاحظات داخلية لا تظهر للعميل..."
+                                      rows={2}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* صور إضافية */}
+                                <div className="border-t pt-4 mt-4">
+                                  <h4 className="font-semibold mb-4 text-primary">صور إضافية</h4>
+                                  <div className="space-y-3">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => document.getElementById('admin_images')?.click()}
+                                    >
+                                      <Upload className="ml-2 h-4 w-4" />
+                                      إضافة صور
+                                    </Button>
+                                    <Input
+                                      id="admin_images"
+                                      type="file"
+                                      accept="image/*"
+                                      multiple
+                                      className="hidden"
+                                      onChange={handleAdminImagesChange}
+                                    />
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {existingAdminImages.map((url, idx) => (
+                                        <div key={`existing-${idx}`} className="relative">
+                                          <img src={url} alt={`صورة ${idx + 1}`} className="w-20 h-20 object-cover rounded border" />
+                                          <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute -top-2 -right-2 h-5 w-5"
+                                            onClick={() => removeAdminImage(idx, true)}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                      {adminImagePreviews.map((url, idx) => (
+                                        <div key={`new-${idx}`} className="relative">
+                                          <img src={url} alt={`صورة جديدة ${idx + 1}`} className="w-20 h-20 object-cover rounded border border-primary" />
+                                          <Button
+                                            type="button"
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute -top-2 -right-2 h-5 w-5"
+                                            onClick={() => removeAdminImage(idx, false)}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* ملفات إضافية */}
+                                <div className="border-t pt-4 mt-4">
+                                  <h4 className="font-semibold mb-4 text-primary">ملفات إضافية</h4>
+                                  <div className="space-y-3">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      onClick={() => document.getElementById('admin_files')?.click()}
+                                    >
+                                      <Upload className="ml-2 h-4 w-4" />
+                                      إضافة ملفات
+                                    </Button>
+                                    <Input
+                                      id="admin_files"
+                                      type="file"
+                                      multiple
+                                      className="hidden"
+                                      onChange={handleAdminFilesChange}
+                                    />
+                                    <p className="text-xs text-muted-foreground">PDF, Word, Excel وغيرها (الحد الأقصى: 20 ميجابايت)</p>
+                                    <div className="space-y-2 mt-2">
+                                      {existingAdminFiles.map((url, idx) => (
+                                        <div key={`existing-file-${idx}`} className="flex items-center gap-2 p-2 bg-muted rounded">
+                                          <a href={url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline truncate flex-1">
+                                            ملف {idx + 1}
+                                          </a>
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6"
+                                            onClick={() => removeAdminFile(idx, true)}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                      {adminFilesArray.map((file, idx) => (
+                                        <div key={`new-file-${idx}`} className="flex items-center gap-2 p-2 bg-primary/10 rounded border border-primary/20">
+                                          <span className="text-sm truncate flex-1">{file.name}</span>
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-6 w-6"
+                                            onClick={() => removeAdminFile(idx, false)}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </Button>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+
                                 <div className="flex gap-3 justify-end pt-4">
                                   <Button
                                     type="button"
@@ -707,6 +1030,11 @@ const AdminOrders = () => {
                                       setEditingOrder(null);
                                       setSerialImageFile(null);
                                       setSerialImagePreview('');
+                                      setAdminImageFiles([]);
+                                      setAdminFilesArray([]);
+                                      setAdminImagePreviews([]);
+                                      setExistingAdminImages([]);
+                                      setExistingAdminFiles([]);
                                     }}
                                   >
                                     إلغاء
