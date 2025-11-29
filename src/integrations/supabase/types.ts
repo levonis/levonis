@@ -819,25 +819,28 @@ export type Database = {
           currency: string
           customs_declaration_number: string | null
           delivered_at: string | null
+          discount_amount: number | null
           estimated_delivery_date: string | null
           governorate: string
           id: string
           internal_notes: string | null
           order_number: string
           package_dimensions: string | null
+          paid_amount: number | null
           payment_method: string | null
           payment_status: string | null
           phone_number: string
           priority: string | null
+          remaining_amount: number | null
           serial_number_image_url: string | null
           shipped_at: string | null
           shipping_address: string
-          shipping_company: string | null
           shipping_notes: string | null
           status: string
+          subtotal: number | null
+          tax_amount: number | null
+          tax_percentage: number | null
           total_amount: number
-          tracking_number: string | null
-          tracking_url: string | null
           updated_at: string
           user_confirmed_at: string | null
           user_confirmed_delivery: boolean | null
@@ -854,25 +857,28 @@ export type Database = {
           currency?: string
           customs_declaration_number?: string | null
           delivered_at?: string | null
+          discount_amount?: number | null
           estimated_delivery_date?: string | null
           governorate: string
           id?: string
           internal_notes?: string | null
           order_number: string
           package_dimensions?: string | null
+          paid_amount?: number | null
           payment_method?: string | null
           payment_status?: string | null
           phone_number: string
           priority?: string | null
+          remaining_amount?: number | null
           serial_number_image_url?: string | null
           shipped_at?: string | null
           shipping_address: string
-          shipping_company?: string | null
           shipping_notes?: string | null
           status?: string
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_percentage?: number | null
           total_amount: number
-          tracking_number?: string | null
-          tracking_url?: string | null
           updated_at?: string
           user_confirmed_at?: string | null
           user_confirmed_delivery?: boolean | null
@@ -889,25 +895,28 @@ export type Database = {
           currency?: string
           customs_declaration_number?: string | null
           delivered_at?: string | null
+          discount_amount?: number | null
           estimated_delivery_date?: string | null
           governorate?: string
           id?: string
           internal_notes?: string | null
           order_number?: string
           package_dimensions?: string | null
+          paid_amount?: number | null
           payment_method?: string | null
           payment_status?: string | null
           phone_number?: string
           priority?: string | null
+          remaining_amount?: number | null
           serial_number_image_url?: string | null
           shipped_at?: string | null
           shipping_address?: string
-          shipping_company?: string | null
           shipping_notes?: string | null
           status?: string
+          subtotal?: number | null
+          tax_amount?: number | null
+          tax_percentage?: number | null
           total_amount?: number
-          tracking_number?: string | null
-          tracking_url?: string | null
           updated_at?: string
           user_confirmed_at?: string | null
           user_confirmed_delivery?: boolean | null

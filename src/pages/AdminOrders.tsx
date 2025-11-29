@@ -274,7 +274,7 @@ const AdminOrders = () => {
     
     const formData = new FormData(e.currentTarget);
 
-    let serialImageUrl = editingOrder.serial_number_image_url;
+    let serialImageUrl = serialImagePreview === 'deleted' ? null : editingOrder.serial_number_image_url;
 
     setUploadingImage(true);
 
@@ -301,9 +301,6 @@ const AdminOrders = () => {
       const values: any = {
         order_number: formData.get('order_number') as string,
         status: formData.get('status') as string,
-        tracking_number: formData.get('tracking_number') as string || null,
-        tracking_url: formData.get('tracking_url') as string || null,
-        shipping_company: formData.get('shipping_company') as string || null,
         shipping_notes: formData.get('shipping_notes') as string || null,
         serial_number_image_url: serialImageUrl,
         admin_images: uploadedImageUrls,
@@ -316,6 +313,12 @@ const AdminOrders = () => {
         priority: formData.get('priority') as string || 'normal',
         payment_status: formData.get('payment_status') as string || 'pending',
         payment_method: formData.get('payment_method') as string || null,
+        subtotal: formData.get('subtotal') ? Number(formData.get('subtotal')) : 0,
+        tax_percentage: formData.get('tax_percentage') ? Number(formData.get('tax_percentage')) : 0,
+        tax_amount: formData.get('tax_amount') ? Number(formData.get('tax_amount')) : 0,
+        discount_amount: formData.get('discount_amount') ? Number(formData.get('discount_amount')) : 0,
+        paid_amount: formData.get('paid_amount') ? Number(formData.get('paid_amount')) : 0,
+        remaining_amount: formData.get('remaining_amount') ? Number(formData.get('remaining_amount')) : 0,
       };
 
       // تحديث تاريخ الوصول للمخزن
@@ -367,7 +370,6 @@ const AdminOrders = () => {
   const filteredOrders = orders?.filter(order => {
     const matchesSearch = searchTerm === '' ||
       order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.tracking_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (order.profiles as any)?.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (order.profiles as any)?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (order.profiles as any)?.email?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -598,7 +600,7 @@ const AdminOrders = () => {
                   <TableHead className="text-right">التاريخ</TableHead>
                   <TableHead className="text-right">المبلغ</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
-                  <TableHead className="text-right">رقم التتبع</TableHead>
+                  <TableHead className="text-right">الدفع</TableHead>
                   <TableHead className="text-right">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
@@ -628,13 +630,11 @@ const AdminOrders = () => {
                       </TableCell>
                       <TableCell>{getStatusBadge(order.status)}</TableCell>
                       <TableCell>
-                        {order.tracking_number ? (
-                          <code className="font-mono text-xs bg-primary/10 px-2 py-1 rounded">
-                            {order.tracking_number}
-                          </code>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">-</span>
-                        )}
+                        <Badge variant={order.payment_status === 'paid' ? 'secondary' : order.payment_status === 'partial' ? 'outline' : 'destructive'}>
+                          {order.payment_status === 'paid' ? 'مدفوع' : 
+                           order.payment_status === 'partial' ? 'جزئي' :
+                           order.payment_status === 'refunded' ? 'مسترجع' : 'معلق'}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -731,17 +731,18 @@ const AdminOrders = () => {
                                         <Upload className="ml-2 h-4 w-4" />
                                         {serialImageFile ? 'تغيير الصورة' : 'رفع صورة'}
                                       </Button>
-                                      {(serialImagePreview || order.serial_number_image_url) && (
+                                      {(serialImagePreview || (order.serial_number_image_url && serialImagePreview !== 'deleted')) && (
                                         <Button
                                           type="button"
-                                          variant="ghost"
+                                          variant="destructive"
                                           size="sm"
                                           onClick={() => {
                                             setSerialImageFile(null);
-                                            setSerialImagePreview('');
+                                            setSerialImagePreview('deleted');
                                           }}
                                         >
-                                          <X className="h-4 w-4" />
+                                          <X className="h-4 w-4 ml-1" />
+                                          حذف الصورة
                                         </Button>
                                       )}
                                     </div>
@@ -755,7 +756,11 @@ const AdminOrders = () => {
                                     <p className="text-xs text-muted-foreground">
                                       صورة Serial Number عند وصول المنتج للمخزن (الحد الأقصى: 5 ميجابايت)
                                     </p>
-                                    {(serialImagePreview || order.serial_number_image_url) && (
+                                    {serialImagePreview === 'deleted' ? (
+                                      <div className="text-sm text-destructive p-3 bg-destructive/10 rounded">
+                                        سيتم حذف الصورة عند الحفظ
+                                      </div>
+                                    ) : (serialImagePreview || order.serial_number_image_url) && (
                                       <img 
                                         src={serialImagePreview || order.serial_number_image_url} 
                                         alt="Serial Number Preview" 
@@ -766,38 +771,7 @@ const AdminOrders = () => {
                                 </div>
 
                                 <div className="space-y-2">
-                                  <Label htmlFor="shipping_company">شركة الشحن</Label>
-                                  <Input
-                                    id="shipping_company"
-                                    name="shipping_company"
-                                    defaultValue={order.shipping_company || ''}
-                                    placeholder="مثال: DHL، FedEx، aramex"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="tracking_number">رقم التتبع</Label>
-                                  <Input
-                                    id="tracking_number"
-                                    name="tracking_number"
-                                    defaultValue={order.tracking_number || ''}
-                                    placeholder="رقم تتبع الشحنة"
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="tracking_url">رابط التتبع</Label>
-                                  <Input
-                                    id="tracking_url"
-                                    name="tracking_url"
-                                    type="url"
-                                    defaultValue={order.tracking_url || ''}
-                                    placeholder="https://..."
-                                  />
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="shipping_notes">ملاحظات الشحن</Label>
+                                  <Label htmlFor="shipping_notes">ملاحظات</Label>
                                   <Textarea
                                     id="shipping_notes"
                                     name="shipping_notes"
@@ -805,6 +779,85 @@ const AdminOrders = () => {
                                     placeholder="أي ملاحظات إضافية..."
                                     rows={3}
                                   />
+                                </div>
+
+                                {/* تفاصيل الفاتورة */}
+                                <div className="border-t pt-4 mt-4">
+                                  <h4 className="font-semibold mb-4 text-primary">تفاصيل الفاتورة</h4>
+                                  
+                                  <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="subtotal">المبلغ الفرعي</Label>
+                                      <Input
+                                        id="subtotal"
+                                        name="subtotal"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.subtotal || order.total_amount || ''}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="tax_percentage">نسبة الضريبة (%)</Label>
+                                      <Input
+                                        id="tax_percentage"
+                                        name="tax_percentage"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.tax_percentage || '0'}
+                                        placeholder="0"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="tax_amount">مبلغ الضريبة</Label>
+                                      <Input
+                                        id="tax_amount"
+                                        name="tax_amount"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.tax_amount || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="discount_amount">مبلغ الخصم</Label>
+                                      <Input
+                                        id="discount_amount"
+                                        name="discount_amount"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.discount_amount || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="paid_amount">المبلغ المدفوع</Label>
+                                      <Input
+                                        id="paid_amount"
+                                        name="paid_amount"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.paid_amount || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="remaining_amount">المبلغ المتبقي</Label>
+                                      <Input
+                                        id="remaining_amount"
+                                        name="remaining_amount"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.remaining_amount || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+                                  </div>
                                 </div>
 
                                 {/* حقول إضافية */}

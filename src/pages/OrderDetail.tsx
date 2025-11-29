@@ -390,42 +390,50 @@ const OrderDetail = () => {
             </CardContent>
           </Card>
 
-          {/* Tracking Info */}
+          {/* Order Details Info */}
           <Card className="border-primary/20 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Truck className="h-5 w-5 text-primary" />
-                معلومات التتبع
+                تفاصيل الطلب
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {order.shipping_company ? (
+              {order.payment_status && (
                 <div>
-                  <div className="text-sm text-muted-foreground mb-1">شركة الشحن</div>
-                  <div className="font-bold text-foreground">{order.shipping_company}</div>
-                </div>
-              ) : (
-                <div className="text-sm text-muted-foreground">لم يتم إضافة معلومات الشحن بعد</div>
-              )}
-              
-              {order.tracking_number && (
-                <div>
-                  <div className="text-sm text-muted-foreground mb-1">رقم التتبع</div>
-                  <code className="font-mono font-bold text-primary bg-primary/10 px-3 py-2 rounded block">
-                    {order.tracking_number}
-                  </code>
+                  <div className="text-sm text-muted-foreground mb-1">حالة الدفع</div>
+                  <div className="font-bold text-foreground">
+                    {order.payment_status === 'paid' ? 'مدفوع' : 
+                     order.payment_status === 'partial' ? 'مدفوع جزئياً' :
+                     order.payment_status === 'refunded' ? 'مسترجع' : 'قيد الانتظار'}
+                  </div>
                 </div>
               )}
               
-              {order.tracking_url && (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => window.open(order.tracking_url, '_blank')}
-                >
-                  <ExternalLink className="h-4 w-4 ml-2" />
-                  تتبع الشحنة
-                </Button>
+              {order.payment_method && (
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">طريقة الدفع</div>
+                  <div className="font-bold text-foreground">
+                    {order.payment_method === 'cash' ? 'نقدي' :
+                     order.payment_method === 'wallet' ? 'المحفظة' :
+                     order.payment_method === 'bank_transfer' ? 'تحويل بنكي' :
+                     order.payment_method === 'card' ? 'بطاقة' : order.payment_method}
+                  </div>
+                </div>
+              )}
+
+              {Number(order.paid_amount) > 0 && (
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">المبلغ المدفوع</div>
+                  <div className="font-bold text-primary">{formatPrice(Number(order.paid_amount))} {order.currency}</div>
+                </div>
+              )}
+
+              {Number(order.remaining_amount) > 0 && (
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">المبلغ المتبقي</div>
+                  <div className="font-bold text-destructive">{formatPrice(Number(order.remaining_amount))} {order.currency}</div>
+                </div>
               )}
               
               {order.shipping_notes && (
