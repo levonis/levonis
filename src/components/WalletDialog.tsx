@@ -119,13 +119,13 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
       
       const { error: uploadError } = await supabase.storage
-        .from('order-files')
+        .from('payment-proofs')
         .upload(fileName, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('order-files')
+        .from('payment-proofs')
         .getPublicUrl(fileName);
 
       setPaymentProofUrl(publicUrl);
