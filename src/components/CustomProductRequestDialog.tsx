@@ -116,6 +116,25 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
 
       if (error) throw error;
 
+      // إرسال إشعار للتيليجرام
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user.id)
+          .single();
+        
+        const userName = profile?.full_name || profile?.username || 'مستخدم';
+        
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `📦 <b>طلب منتج مخصص جديد</b>\n\n👤 المستخدم: ${userName}\n📝 المنتج: ${data.product_name}\n🔢 الكمية: ${data.quantity}\n🔗 الرابط: ${data.product_link}`,
+          },
+        });
+      } catch (telegramError) {
+        console.error('خطأ في إرسال إشعار التيليجرام:', telegramError);
+      }
+
       toast.success('تم إرسال طلبك بنجاح! سنتواصل معك قريباً');
       queryClient.invalidateQueries({ queryKey: ['pending-requests-count'] });
       queryClient.invalidateQueries({ queryKey: ['custom-requests'] });

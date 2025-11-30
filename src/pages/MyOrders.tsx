@@ -29,7 +29,8 @@ const MyOrders = () => {
           *,
           order_items!order_items_order_id_fkey(
             *,
-            products!order_items_product_id_fkey(name_ar, image_url)
+            products!order_items_product_id_fkey(name_ar, image_url),
+            custom_product_requests(product_name, image_url, suggested_price)
           )
         `)
         .eq('user_id', user.id)
@@ -190,34 +191,48 @@ const MyOrders = () => {
                       المنتجات ({order.order_items?.length || 0})
                     </h4>
                     <div className="space-y-3">
-                      {order.order_items?.slice(0, 2).map((item: any) => (
-                        <div
-                          key={item.id}
-                          className="flex gap-4 p-3 border border-border/50 rounded-lg bg-card/50"
-                        >
-                          {item.products?.image_url && (
-                            <img
-                              src={item.products.image_url}
-                              alt={item.product_name_ar}
-                              className="w-16 h-16 object-cover rounded"
-                            />
-                          )}
-                          <div className="flex-1">
-                            <div className="font-bold text-foreground">{item.product_name_ar}</div>
-                            {item.selected_option && (
-                              <div className="text-sm text-muted-foreground">
-                                الخيار: {item.selected_option}
-                              </div>
+                      {order.order_items?.slice(0, 2).map((item: any) => {
+                        const isCustomRequest = !!item.custom_request_id;
+                        const imageUrl = isCustomRequest 
+                          ? item.custom_product_requests?.image_url 
+                          : item.products?.image_url;
+                        const productName = isCustomRequest
+                          ? item.custom_product_requests?.product_name || item.product_name_ar
+                          : item.product_name_ar;
+                        
+                        return (
+                          <div
+                            key={item.id}
+                            className="flex gap-4 p-3 border border-border/50 rounded-lg bg-card/50"
+                          >
+                            {imageUrl && (
+                              <img
+                                src={imageUrl}
+                                alt={productName}
+                                className="w-16 h-16 object-cover rounded"
+                              />
                             )}
-                            {item.selected_color && (
-                              <div className="text-sm text-muted-foreground">
-                                اللون: {item.selected_color}
+                            <div className="flex-1">
+                              <div className="font-bold text-foreground flex items-center gap-2">
+                                {productName}
+                                {isCustomRequest && (
+                                  <Badge variant="secondary" className="text-xs">طلب خاص</Badge>
+                                )}
                               </div>
-                            )}
-                            <div className="text-sm text-muted-foreground">
-                              الكمية: {item.quantity}
+                              {item.selected_option && (
+                                <div className="text-sm text-muted-foreground">
+                                  الخيار: {item.selected_option}
+                                </div>
+                              )}
+                              {item.selected_color && (
+                                <div className="text-sm text-muted-foreground">
+                                  اللون: {item.selected_color}
+                                </div>
+                              )}
+                              <div className="text-sm text-muted-foreground">
+                                الكمية: {item.quantity}
+                              </div>
                             </div>
-                          </div>
                           <div className="text-left">
                             <div className="font-bold text-primary">
                               {formatPrice(Number(item.total_price))}
@@ -227,7 +242,8 @@ const MyOrders = () => {
                             </div>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                       {order.order_items && order.order_items.length > 2 && (
                         <div className="text-sm text-muted-foreground text-center">
                           و {order.order_items.length - 2} منتجات أخرى

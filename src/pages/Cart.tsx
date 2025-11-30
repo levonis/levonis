@@ -294,6 +294,17 @@ const Cart = () => {
         return;
       }
 
+      // إرسال إشعار للتيليجرام عند إنشاء طلب جديد
+      try {
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `🛒 <b>طلب جديد</b>\n\n📋 رقم الطلب: ${order.order_number}\n💰 المبلغ: ${grandTotal.toLocaleString()} دينار عراقي\n📦 عدد المنتجات: ${items.length}\n📍 المحافظة: ${selectedAddress.governorate}`,
+          },
+        });
+      } catch (telegramError) {
+        console.error('خطأ في إرسال إشعار التيليجرام:', telegramError);
+      }
+
       // إذا تم استخدام المحفظة، خصم المبلغ وتسجيل المعاملة
       if (useWalletBalance && walletDeduction > 0 && wallet) {
         // خصم المبلغ من المحفظة
@@ -352,7 +363,8 @@ const Cart = () => {
 
         return {
           order_id: order.id,
-          product_id: item.product_id,
+          product_id: isCustomRequest ? null : item.product_id,
+          custom_request_id: isCustomRequest ? item.custom_request_id : null,
           product_option_id: (item as any).product_option_id || null,
           quantity: item.quantity,
           unit_price: itemPrice,

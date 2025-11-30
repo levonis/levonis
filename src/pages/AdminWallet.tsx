@@ -342,52 +342,7 @@ export default function AdminWallet() {
       const amount = transaction.amount;
       const type = transaction.type;
 
-      // إذا كان طلب تعبئة، أضف الرصيد للمحفظة
-      if (type === 'deposit') {
-        // التحقق من وجود المحفظة
-        const { data: existingWallet, error: walletCheckError } = await supabase
-          .from('user_wallets')
-          .select('id, balance')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (walletCheckError && walletCheckError.code !== 'PGRST116') {
-          throw walletCheckError;
-        }
-
-        if (existingWallet) {
-          const { error: updateError } = await supabase
-            .from('user_wallets')
-            .update({
-              balance: existingWallet.balance + amount,
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', userId);
-
-          if (updateError) throw updateError;
-        } else {
-          const { error: walletError } = await supabase
-            .from('user_wallets')
-            .insert({
-              user_id: userId,
-              balance: amount,
-              currency: 'دينار عراقي',
-            });
-
-          if (walletError) throw walletError;
-        }
-
-        // إرسال إشعار للمستخدم
-        await supabase.from('notifications').insert({
-          user_id: userId,
-          title: 'تمت الموافقة على طلب التعبئة',
-          message: `تم إضافة ${amount.toLocaleString()} دينار عراقي إلى محفظتك`,
-          type: 'success',
-          is_general: false,
-        });
-      }
-      
-      // إذا كان طلب سحب، اخصم الرصيد من المحفظة
+      // للسحب فقط: التحقق من وجود رصيد كافٍ قبل الموافقة
       if (type === 'withdrawal') {
         const { data: wallet, error: walletError } = await supabase
           .from('user_wallets')
@@ -401,32 +356,29 @@ export default function AdminWallet() {
           toast.error('رصيد المستخدم غير كافٍ');
           return;
         }
-
-        const { error: updateError } = await supabase
-          .from('user_wallets')
-          .update({
-            balance: wallet.balance - amount,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', userId);
-
-        if (updateError) throw updateError;
-
-        // إرسال إشعار للمستخدم
-        await supabase.from('notifications').insert({
-          user_id: userId,
-          title: 'تمت الموافقة على طلب السحب',
-          message: `تم سحب ${amount.toLocaleString()} دينار عراقي من محفظتك`,
-          type: 'success',
-          is_general: false,
-        });
       }
 
-      // تحديث حالة المعاملة
+      // تحديث حالة المعاملة فقط - الـ trigger سيتعامل مع تحديث الرصيد والإشعارات
+      // هذا يمنع التكرار في إضافة الرصيد
       updateTransactionStatus.mutate({
         id: transaction.id,
         status: 'approved',
       });
+
+      // إرسال إشعار للتيليجرام
+      try {
+        const userProfile = (transaction as any).profiles;
+        const userName = userProfile?.full_name || userProfile?.username || 'مستخدم';
+        const typeLabel = type === 'deposit' ? 'تعبئة' : 'سحب';
+        
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `✅ <b>تمت الموافقة على طلب ${typeLabel}</b>\n\n👤 المستخدم: ${userName}\n💰 المبلغ: ${amount.toLocaleString()} دينار عراقي`,
+          },
+        });
+      } catch (telegramError) {
+        console.error('خطأ في إرسال إشعار التيليجرام:', telegramError);
+      }
     } catch (error: any) {
       console.error('خطأ في الموافقة على المعاملة:', error);
       toast.error(error.message || 'حدث خطأ في الموافقة على المعاملة');

@@ -38,7 +38,8 @@ const OrderDetail = () => {
           *,
           order_items!order_items_order_id_fkey(
             *,
-            products!order_items_product_id_fkey(name_ar, image_url, images)
+            products!order_items_product_id_fkey(name_ar, image_url, images),
+            custom_product_requests(product_name, image_url, suggested_price)
           ),
           profiles(full_name, email)
         `)
@@ -558,16 +559,25 @@ const OrderDetail = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {order.order_items?.map((item: any) => (
+              {order.order_items?.map((item: any) => {
+                const isCustomRequest = !!item.custom_request_id;
+                const imageUrl = isCustomRequest 
+                  ? item.custom_product_requests?.image_url 
+                  : (item.products?.images?.[0] || item.products?.image_url);
+                const productName = isCustomRequest
+                  ? item.custom_product_requests?.product_name || item.product_name_ar
+                  : item.product_name_ar;
+                
+                return (
                 <div
                   key={item.id}
                   className="flex gap-4 p-4 border border-border/50 rounded-xl bg-card hover:border-primary/30 transition-colors"
                 >
                   <div className="flex gap-3">
-                    {(item.products?.image_url || (item.products?.images && item.products.images[0])) && (
+                    {imageUrl && (
                       <img
-                        src={(item.products?.images && item.products.images[0]) || item.products?.image_url}
-                        alt={item.product_name_ar}
+                        src={imageUrl}
+                        alt={productName}
                         className="w-20 h-20 object-cover rounded-lg border border-border/40"
                       />
                     )}
@@ -581,7 +591,12 @@ const OrderDetail = () => {
                     )}
                   </div>
                   <div className="flex-1">
-                    <div className="font-bold text-lg text-foreground mb-1">{item.product_name_ar}</div>
+                    <div className="font-bold text-lg text-foreground mb-1 flex items-center gap-2">
+                      {productName}
+                      {isCustomRequest && (
+                        <Badge variant="secondary" className="text-xs">طلب خاص</Badge>
+                      )}
+                    </div>
                     <div className="space-y-1 text-sm text-muted-foreground">
                       {item.selected_option && (
                         <div>الخيار: <span className="text-foreground font-medium">{item.selected_option}</span></div>
@@ -606,7 +621,8 @@ const OrderDetail = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>

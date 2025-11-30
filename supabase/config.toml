@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.retry-extract-colors]
 verify_jwt = false
+
+[functions.send-telegram-notification]
+verify_jwt = false
+
+[functions.cleanup-old-notifications]
+verify_jwt = false
