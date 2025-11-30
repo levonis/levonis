@@ -114,9 +114,14 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
             </TableRow>
           </TableHeader>
           <TableBody>
-            {requests?.map((request) => (
+              {requests?.map((request) => (
               <TableRow key={request.id}>
-                <TableCell>{(request as any).profiles?.email || (request.user_id ? `${request.user_id.slice(0,8)}...` : 'غير متوفر')}</TableCell>
+                <TableCell>
+                  <div>
+                    <p className="font-medium">{(request as any).profiles?.full_name || 'غير متوفر'}</p>
+                    <p className="text-sm text-muted-foreground">{(request as any).profiles?.email || (request as any).profiles?.phone_number || ''}</p>
+                  </div>
+                </TableCell>
                 <TableCell className="font-medium max-w-[200px] truncate">
                   {request.product_name}
                 </TableCell>
@@ -172,7 +177,8 @@ const AdminCustomRequests = ({ requests, isLoading, refetch }: AdminCustomReques
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">العميل</Label>
-                  <p className="font-medium">{(selectedRequest as any).profiles?.email}</p>
+                  <p className="font-medium">{(selectedRequest as any).profiles?.full_name || 'غير متوفر'}</p>
+                  <p className="text-sm text-muted-foreground">{(selectedRequest as any).profiles?.email || (selectedRequest as any).profiles?.phone_number || ''}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">الحالة</Label>

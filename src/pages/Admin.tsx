@@ -233,7 +233,9 @@ const Admin = () => {
     queryKey: ['custom-requests', isAdmin],
     queryFn: async () => {
       console.log('Fetching custom requests, isAdmin:', isAdmin);
-      const { data, error } = await supabase
+      
+      // جلب الطلبات أولاً
+      const { data: requests, error } = await supabase
         .from('custom_product_requests')
         .select('*')
         .order('created_at', { ascending: false });
@@ -242,8 +244,31 @@ const Admin = () => {
         console.error('Error fetching custom requests:', error);
         throw error;
       }
-      console.log('Custom requests fetched:', data);
-      return data;
+      
+      if (!requests || requests.length === 0) {
+        return [];
+      }
+      
+      // جلب بيانات المستخدمين
+      const userIds = [...new Set(requests.map(r => r.user_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, phone_number, email')
+        .in('id', userIds);
+      
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+      
+      // دمج البيانات
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const result = requests.map(r => ({
+        ...r,
+        profiles: profilesMap.get(r.user_id) || null,
+      }));
+      
+      console.log('Custom requests fetched:', result);
+      return result;
     },
     enabled: !!isAdmin,
     refetchOnMount: true,
