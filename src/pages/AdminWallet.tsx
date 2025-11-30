@@ -169,29 +169,30 @@ export default function AdminWallet() {
   // إضافة رصيد للمستخدم
   const addFundsToUser = useMutation({
     mutationFn: async ({ userId, amount, notes }: { userId: string; amount: number; notes: string }) => {
-      // إضافة المعاملة
-      const { error: transactionError } = await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: userId,
-          type: 'deposit',
-          amount: amount,
-          status: 'approved',
-          admin_notes: notes || 'تم إضافة الرصيد من قبل الإدارة',
-        });
-
-      if (transactionError) throw transactionError;
-
-      // تحديث المحفظة (التحديث يتم تلقائياً عبر trigger process_wallet_transaction)
-      // لكن نحتاج للتأكد من وجود المحفظة أولاً
-      const { data: existingWallet } = await supabase
+      // التحقق من وجود المحفظة أولاً
+      const { data: existingWallet, error: walletCheckError } = await supabase
         .from('user_wallets')
-        .select('id')
+        .select('id, balance')
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (!existingWallet) {
-        // إنشاء محفظة جديدة إذا لم تكن موجودة
+      if (walletCheckError && walletCheckError.code !== 'PGRST116') {
+        throw walletCheckError;
+      }
+
+      if (existingWallet) {
+        // تحديث المحفظة الموجودة
+        const { error: updateError } = await supabase
+          .from('user_wallets')
+          .update({
+            balance: existingWallet.balance + amount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+
+        if (updateError) throw updateError;
+      } else {
+        // إنشاء محفظة جديدة
         const { error: walletError } = await supabase
           .from('user_wallets')
           .insert({
@@ -202,6 +203,19 @@ export default function AdminWallet() {
 
         if (walletError) throw walletError;
       }
+
+      // إضافة المعاملة للسجل
+      const { error: transactionError } = await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: userId,
+          type: 'deposit',
+          amount: amount,
+          status: 'completed',
+          admin_notes: notes || 'تم إضافة الرصيد من قبل الإدارة',
+        });
+
+      if (transactionError) throw transactionError;
 
       // إرسال إشعار للمستخدم
       await supabase.from('notifications').insert({
@@ -222,9 +236,9 @@ export default function AdminWallet() {
       setAdminNotes('');
       setSearchQuery('');
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error('خطأ في إضافة الرصيد:', error);
-      toast.error('حدث خطأ في إضافة الرصيد');
+      toast.error(error.message || 'حدث خطأ في إضافة الرصيد');
     },
   });
 
