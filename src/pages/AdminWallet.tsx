@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Wallet, Check, X, ArrowLeft, PlusCircle, MinusCircle, Search, User } from 'lucide-react';
+import { Wallet, Check, X, ArrowLeft, PlusCircle, MinusCircle, Search, User, Settings } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 
 export default function AdminWallet() {
@@ -374,6 +374,17 @@ export default function AdminWallet() {
     }
   };
 
+  const getPaymentMethodLabel = (method: string) => {
+    switch (method) {
+      case 'mastercard_rafidain':
+        return 'ماستر كارد الرافدين';
+      case 'zaincash':
+        return 'زين كاش';
+      default:
+        return method || '-';
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
@@ -411,6 +422,10 @@ export default function AdminWallet() {
             <h1 className="text-3xl font-bold">إدارة المحفظة</h1>
           </div>
           <div className="flex gap-2">
+            <Button onClick={() => navigate('/admin/wallet-settings')} variant="outline" className="gap-2">
+              <Settings className="h-4 w-4" />
+              الإعدادات
+            </Button>
             <Button onClick={() => setShowAddFundsDialog(true)} className="gap-2">
               <PlusCircle className="h-4 w-4" />
               إضافة رصيد
@@ -442,6 +457,8 @@ export default function AdminWallet() {
                     <TableHead>المستخدم</TableHead>
                     <TableHead>النوع</TableHead>
                     <TableHead>المبلغ</TableHead>
+                    <TableHead>طريقة الدفع</TableHead>
+                    <TableHead>إثبات الدفع</TableHead>
                     <TableHead>التاريخ</TableHead>
                     <TableHead>الإجراءات</TableHead>
                   </TableRow>
@@ -468,6 +485,21 @@ export default function AdminWallet() {
                           {transaction.type === 'withdrawal' ? '-' : '+'}
                           {formatPrice(transaction.amount)}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {getPaymentMethodLabel(transaction.payment_method)}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.payment_proof_url ? (
+                          <a 
+                            href={transaction.payment_proof_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline text-sm"
+                          >
+                            عرض الصورة
+                          </a>
+                        ) : '-'}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(transaction.created_at).toLocaleString('ar-IQ')}
@@ -523,6 +555,8 @@ export default function AdminWallet() {
                     <TableHead>المستخدم</TableHead>
                     <TableHead>النوع</TableHead>
                     <TableHead>المبلغ</TableHead>
+                    <TableHead>طريقة الدفع</TableHead>
+                    <TableHead>إثبات الدفع</TableHead>
                     <TableHead>الحالة</TableHead>
                     <TableHead>التاريخ</TableHead>
                     <TableHead>ملاحظات</TableHead>
@@ -542,11 +576,26 @@ export default function AdminWallet() {
                       </TableCell>
                       <TableCell>
                         <span className={`font-bold ${
-                          transaction.type === 'withdrawal' || transaction.type === 'order_payment' ? 'text-red-600' : 'text-green-600'
+                          transaction.type === 'withdrawal' || transaction.type === 'order_payment' || transaction.type === 'admin_deduction' ? 'text-red-600' : 'text-green-600'
                         }`}>
-                          {transaction.type === 'withdrawal' || transaction.type === 'order_payment' ? '-' : '+'}
+                          {transaction.type === 'withdrawal' || transaction.type === 'order_payment' || transaction.type === 'admin_deduction' ? '-' : '+'}
                           {formatPrice(transaction.amount)}
                         </span>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {getPaymentMethodLabel(transaction.payment_method)}
+                      </TableCell>
+                      <TableCell>
+                        {transaction.payment_proof_url ? (
+                          <a 
+                            href={transaction.payment_proof_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline text-sm"
+                          >
+                            عرض الصورة
+                          </a>
+                        ) : '-'}
                       </TableCell>
                       <TableCell>
                         {getStatusBadge(transaction.status)}

@@ -1415,6 +1415,7 @@ export type Database = {
           amount: number
           created_at: string
           id: string
+          payment_method: string | null
           payment_proof_url: string | null
           status: string
           type: string
@@ -1426,6 +1427,7 @@ export type Database = {
           amount: number
           created_at?: string
           id?: string
+          payment_method?: string | null
           payment_proof_url?: string | null
           status?: string
           type: string
@@ -1437,6 +1439,7 @@ export type Database = {
           amount?: number
           created_at?: string
           id?: string
+          payment_method?: string | null
           payment_proof_url?: string | null
           status?: string
           type?: string
