@@ -493,21 +493,6 @@ export default function AdminWallet() {
     }
   };
 
-  const handleCleanOldNotifications = async () => {
-    if (!confirm('هل أنت متأكد من حذف جميع الإشعارات الأقدم من 30 يوم؟')) return;
-    
-    try {
-      const { error } = await supabase.rpc('delete_old_notifications' as any);
-      
-      if (error) throw error;
-      
-      toast.success('تم حذف الإشعارات القديمة بنجاح');
-    } catch (error: any) {
-      console.error('خطأ في حذف الإشعارات:', error);
-      toast.error(error.message || 'حدث خطأ في حذف الإشعارات');
-    }
-  };
-
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'deposit':
@@ -584,10 +569,6 @@ export default function AdminWallet() {
             <Button onClick={() => setShowDeductFundsDialog(true)} variant="outline" className="gap-2 text-destructive border-destructive hover:bg-destructive/10">
               <MinusCircle className="h-4 w-4" />
               خصم رصيد
-            </Button>
-            <Button onClick={handleCleanOldNotifications} variant="outline" className="gap-2">
-              <Trash2 className="h-4 w-4" />
-              حذف إشعارات قديمة
             </Button>
           </div>
         </div>
