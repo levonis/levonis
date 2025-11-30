@@ -307,12 +307,102 @@ export default function AdminWallet() {
     },
   });
 
-  const handleApprove = (transactionId: string) => {
-    if (confirm('هل أنت متأكد من الموافقة على هذه المعاملة؟')) {
+  const handleApprove = async (transaction: any) => {
+    if (!confirm('هل أنت متأكد من الموافقة على هذه المعاملة؟')) return;
+    
+    try {
+      const userId = transaction.user_id;
+      const amount = transaction.amount;
+      const type = transaction.type;
+
+      // إذا كان طلب تعبئة، أضف الرصيد للمحفظة
+      if (type === 'deposit') {
+        // التحقق من وجود المحفظة
+        const { data: existingWallet, error: walletCheckError } = await supabase
+          .from('user_wallets')
+          .select('id, balance')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (walletCheckError && walletCheckError.code !== 'PGRST116') {
+          throw walletCheckError;
+        }
+
+        if (existingWallet) {
+          const { error: updateError } = await supabase
+            .from('user_wallets')
+            .update({
+              balance: existingWallet.balance + amount,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', userId);
+
+          if (updateError) throw updateError;
+        } else {
+          const { error: walletError } = await supabase
+            .from('user_wallets')
+            .insert({
+              user_id: userId,
+              balance: amount,
+              currency: 'دينار عراقي',
+            });
+
+          if (walletError) throw walletError;
+        }
+
+        // إرسال إشعار للمستخدم
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          title: 'تمت الموافقة على طلب التعبئة',
+          message: `تم إضافة ${amount.toLocaleString()} دينار عراقي إلى محفظتك`,
+          type: 'success',
+          is_general: false,
+        });
+      }
+      
+      // إذا كان طلب سحب، اخصم الرصيد من المحفظة
+      if (type === 'withdrawal') {
+        const { data: wallet, error: walletError } = await supabase
+          .from('user_wallets')
+          .select('balance')
+          .eq('user_id', userId)
+          .maybeSingle();
+
+        if (walletError) throw walletError;
+        
+        if (!wallet || wallet.balance < amount) {
+          toast.error('رصيد المستخدم غير كافٍ');
+          return;
+        }
+
+        const { error: updateError } = await supabase
+          .from('user_wallets')
+          .update({
+            balance: wallet.balance - amount,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+
+        if (updateError) throw updateError;
+
+        // إرسال إشعار للمستخدم
+        await supabase.from('notifications').insert({
+          user_id: userId,
+          title: 'تمت الموافقة على طلب السحب',
+          message: `تم سحب ${amount.toLocaleString()} دينار عراقي من محفظتك`,
+          type: 'success',
+          is_general: false,
+        });
+      }
+
+      // تحديث حالة المعاملة
       updateTransactionStatus.mutate({
-        id: transactionId,
+        id: transaction.id,
         status: 'approved',
       });
+    } catch (error: any) {
+      console.error('خطأ في الموافقة على المعاملة:', error);
+      toast.error(error.message || 'حدث خطأ في الموافقة على المعاملة');
     }
   };
 
@@ -509,7 +599,7 @@ export default function AdminWallet() {
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleApprove(transaction.id)}
+                            onClick={() => handleApprove(transaction)}
                             disabled={updateTransactionStatus.isPending}
                             className="text-green-600 hover:text-green-700"
                           >
