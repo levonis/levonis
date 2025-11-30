@@ -1464,6 +1464,7 @@ export type Database = {
         Args: { points_amount: number }
         Returns: Json
       }
+      delete_old_notifications: { Args: never; Returns: undefined }
       generate_order_number: { Args: never; Returns: string }
       generate_referral_code:
         | { Args: never; Returns: string }
