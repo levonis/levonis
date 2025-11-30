@@ -721,9 +721,10 @@ export type Database = {
         Row: {
           color_image_url: string | null
           created_at: string
+          custom_request_id: string | null
           id: string
           order_id: string
-          product_id: string
+          product_id: string | null
           product_name: string
           product_name_ar: string
           product_option_id: string | null
@@ -738,9 +739,10 @@ export type Database = {
         Insert: {
           color_image_url?: string | null
           created_at?: string
+          custom_request_id?: string | null
           id?: string
           order_id: string
-          product_id: string
+          product_id?: string | null
           product_name: string
           product_name_ar: string
           product_option_id?: string | null
@@ -755,9 +757,10 @@ export type Database = {
         Update: {
           color_image_url?: string | null
           created_at?: string
+          custom_request_id?: string | null
           id?: string
           order_id?: string
-          product_id?: string
+          product_id?: string | null
           product_name?: string
           product_name_ar?: string
           product_option_id?: string | null
@@ -770,6 +773,13 @@ export type Database = {
           unit_price?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "order_items_custom_request_id_fkey"
+            columns: ["custom_request_id"]
+            isOneToOne: false
+            referencedRelation: "custom_product_requests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "order_items_order_id_fkey"
             columns: ["order_id"]

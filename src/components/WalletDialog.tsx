@@ -161,6 +161,26 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
         });
 
       if (error) throw error;
+
+      // إرسال إشعار للتيليجرام
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user!.id)
+          .single();
+        
+        const userName = profile?.full_name || profile?.username || 'مستخدم';
+        const methodDetails = activePaymentMethods.find(m => m.id === paymentMethod);
+        
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `💰 <b>طلب تعبئة محفظة جديد</b>\n\n👤 المستخدم: ${userName}\n💵 المبلغ: ${amount.toLocaleString()} دينار عراقي\n💳 طريقة الدفع: ${methodDetails?.name || paymentMethod}`,
+          },
+        });
+      } catch (telegramError) {
+        console.error('خطأ في إرسال إشعار التيليجرام:', telegramError);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["walletTransactions"] });
@@ -196,6 +216,25 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
         });
 
       if (error) throw error;
+
+      // إرسال إشعار للتيليجرام
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user!.id)
+          .single();
+        
+        const userName = profile?.full_name || profile?.username || 'مستخدم';
+        
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `📤 <b>طلب سحب رصيد جديد</b>\n\n👤 المستخدم: ${userName}\n💵 المبلغ: ${amount.toLocaleString()} دينار عراقي`,
+          },
+        });
+      } catch (telegramError) {
+        console.error('خطأ في إرسال إشعار التيليجرام:', telegramError);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["walletTransactions"] });
