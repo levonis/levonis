@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Wallet, Check, X, ArrowLeft, PlusCircle, MinusCircle, Search, User, Settings } from 'lucide-react';
+import { Wallet, Check, X, ArrowLeft, PlusCircle, MinusCircle, Search, User, Settings, Trash2 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 
 export default function AdminWallet() {
@@ -474,6 +474,40 @@ export default function AdminWallet() {
     });
   };
 
+  const handleDeleteTransaction = async (transactionId: string) => {
+    if (!confirm('هل أنت متأكد من حذف هذه المعاملة؟')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('wallet_transactions')
+        .delete()
+        .eq('id', transactionId);
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['admin-wallet-transactions'] });
+      toast.success('تم حذف المعاملة بنجاح');
+    } catch (error: any) {
+      console.error('خطأ في حذف المعاملة:', error);
+      toast.error(error.message || 'حدث خطأ في حذف المعاملة');
+    }
+  };
+
+  const handleCleanOldNotifications = async () => {
+    if (!confirm('هل أنت متأكد من حذف جميع الإشعارات الأقدم من 30 يوم؟')) return;
+    
+    try {
+      const { error } = await supabase.rpc('delete_old_notifications' as any);
+      
+      if (error) throw error;
+      
+      toast.success('تم حذف الإشعارات القديمة بنجاح');
+    } catch (error: any) {
+      console.error('خطأ في حذف الإشعارات:', error);
+      toast.error(error.message || 'حدث خطأ في حذف الإشعارات');
+    }
+  };
+
   const getTypeLabel = (type: string) => {
     switch (type) {
       case 'deposit':
@@ -550,6 +584,10 @@ export default function AdminWallet() {
             <Button onClick={() => setShowDeductFundsDialog(true)} variant="outline" className="gap-2 text-destructive border-destructive hover:bg-destructive/10">
               <MinusCircle className="h-4 w-4" />
               خصم رصيد
+            </Button>
+            <Button onClick={handleCleanOldNotifications} variant="outline" className="gap-2">
+              <Trash2 className="h-4 w-4" />
+              حذف إشعارات قديمة
             </Button>
           </div>
         </div>
@@ -677,6 +715,7 @@ export default function AdminWallet() {
                     <TableHead>الحالة</TableHead>
                     <TableHead>التاريخ</TableHead>
                     <TableHead>ملاحظات</TableHead>
+                    <TableHead>حذف</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -722,6 +761,16 @@ export default function AdminWallet() {
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
                         {transaction.admin_notes || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDeleteTransaction(transaction.id)}
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
