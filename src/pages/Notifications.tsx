@@ -191,11 +191,15 @@ const Notifications = () => {
                       className="mt-2 p-0 h-auto"
                       onClick={() => {
                         const text = `${notification.title ?? ''} ${notification.message ?? ''}`;
+                        const isWallet = text.includes('محفظة') || text.includes('تعبئة') || text.includes('سحب');
                         const isCustom = text.includes('المخصص');
-                        if (!isCustom && notification.related_id) {
-                          navigate(`/order/${notification.related_id}`);
-                        } else {
+                        
+                        if (isWallet) {
+                          navigate('/admin/wallet');
+                        } else if (isCustom) {
                           navigate('/my-requests');
+                        } else if (notification.related_id) {
+                          navigate(`/order/${notification.related_id}`);
                         }
                       }}
                     >
