@@ -87,16 +87,10 @@ export default function AdminWallet() {
     queryFn: async () => {
       console.log('Fetching pending wallet transactions...');
       
-      const { data, error } = await supabase
+      // جلب المعاملات المعلقة
+      const { data: transactions, error } = await supabase
         .from('wallet_transactions')
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            username,
-            phone_number
-          )
-        `)
+        .select('*')
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       
@@ -105,8 +99,30 @@ export default function AdminWallet() {
         throw error;
       }
       
-      console.log('Pending transactions:', data);
-      return data || [];
+      if (!transactions || transactions.length === 0) {
+        return [];
+      }
+      
+      // جلب بيانات المستخدمين
+      const userIds = [...new Set(transactions.map(t => t.user_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, phone_number')
+        .in('id', userIds);
+      
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+      }
+      
+      // دمج البيانات
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      const result = transactions.map(t => ({
+        ...t,
+        profiles: profilesMap.get(t.user_id) || null,
+      }));
+      
+      console.log('Pending transactions:', result);
+      return result;
     },
     enabled: isAdmin,
   });
@@ -115,21 +131,32 @@ export default function AdminWallet() {
   const { data: allTransactions } = useQuery({
     queryKey: ['admin-wallet-transactions', 'all'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // جلب المعاملات
+      const { data: transactions, error } = await supabase
         .from('wallet_transactions')
-        .select(`
-          *,
-          profiles:user_id (
-            full_name,
-            username,
-            phone_number
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
       
       if (error) throw error;
-      return data;
+      
+      if (!transactions || transactions.length === 0) {
+        return [];
+      }
+      
+      // جلب بيانات المستخدمين
+      const userIds = [...new Set(transactions.map(t => t.user_id))];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, phone_number')
+        .in('id', userIds);
+      
+      // دمج البيانات
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      return transactions.map(t => ({
+        ...t,
+        profiles: profilesMap.get(t.user_id) || null,
+      }));
     },
     enabled: isAdmin,
   });
