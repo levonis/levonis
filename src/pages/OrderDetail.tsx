@@ -17,6 +17,39 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { OrderTimeline } from '@/components/OrderTimeline';
 
+// Helper function to determine if order is pre-order
+// An order is DIRECT only if ALL items come from in-stock products
+// Otherwise it's a pre-order (custom requests, pre-order products, etc.)
+const checkIfPreOrder = (orderItems: any[]): boolean => {
+  if (!orderItems || orderItems.length === 0) return true;
+  
+  // Check each item
+  for (const item of orderItems) {
+    // Custom requests are always pre-orders
+    if (item.custom_request_id) {
+      return true;
+    }
+    
+    // If product has in_stock option selected (no shipping option), it's direct
+    // But we need to check the product's availability type
+    // Since we don't have product details in order_items, 
+    // we default to pre-order unless explicitly marked as in-stock
+    
+    // If the item has a shipping option name that contains "متاح في المخزون", it's direct
+    // Otherwise it's pre-order
+    if (item.shipping_option_name_ar && 
+        item.shipping_option_name_ar.includes('متاح في المخزون')) {
+      continue; // This item is direct
+    }
+    
+    // Most items without "متاح في المخزون" marker are pre-orders
+    return true;
+  }
+  
+  // All items are in-stock direct purchases
+  return false;
+};
+
 const OrderDetail = () => {
   const { orderId } = useParams();
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -309,11 +342,7 @@ const OrderDetail = () => {
           <CardContent>
             <OrderTimeline 
               order={order} 
-              isPreOrder={order.order_items?.some((item: any) => 
-                item.shipping_option_name_ar !== null && 
-                item.shipping_option_name_ar !== undefined &&
-                item.shipping_option_name_ar !== ''
-              ) || false}
+              isPreOrder={checkIfPreOrder(order.order_items)}
             />
           </CardContent>
         </Card>
