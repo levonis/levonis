@@ -42,19 +42,26 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
     
     return [
       {
-        key: 'purchased',
-        title: 'تم الشراء',
-        description: 'تم استلام طلبك بنجاح وجاري معالجته',
+        key: 'created',
+        title: 'تم إنشاء الطلب',
+        description: 'تم استلام طلبك بنجاح وجاري مراجعته',
         icon: <ShoppingCart className="h-4 w-4" />,
         isCompleted: currentIndex >= 0,
         timestamp: order.created_at,
       },
       {
-        key: 'to_warehouse',
-        title: 'في الطريق إلى المخزن',
-        description: 'تم شحن المنتج من المورد وفي طريقه إلى مخزننا',
+        key: 'confirmed',
+        title: 'تم تأكيد الطلب',
+        description: 'تم تأكيد طلبك وجاري طلب المنتج من المورد',
+        icon: <CreditCard className="h-4 w-4" />,
+        isCompleted: currentIndex >= 1,
+      },
+      {
+        key: 'processing',
+        title: 'قيد التجهيز',
+        description: 'تم طلب المنتج من المورد وفي طريقه إلى مخزننا',
         icon: <Truck className="h-4 w-4" />,
-        isCompleted: currentIndex >= 2, // processing or higher
+        isCompleted: currentIndex >= 2,
       },
       {
         key: 'arrived_warehouse',

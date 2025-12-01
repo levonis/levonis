@@ -310,9 +310,9 @@ const OrderDetail = () => {
             <OrderTimeline 
               order={order} 
               isPreOrder={order.order_items?.some((item: any) => 
-                item.shipping_option_name_ar?.includes('شحن') || 
-                item.shipping_option_name_ar?.includes('مجاني') ||
-                item.shipping_option_name_ar?.includes('سريع')
+                item.shipping_option_name_ar !== null && 
+                item.shipping_option_name_ar !== undefined &&
+                item.shipping_option_name_ar !== ''
               ) || false}
             />
           </CardContent>
