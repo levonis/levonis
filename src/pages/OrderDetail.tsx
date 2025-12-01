@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Star } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -15,6 +15,7 @@ import { OrderInvoice } from '@/components/OrderInvoice';
 import CustomerChat from '@/components/CustomerChat';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import { OrderTimeline } from '@/components/OrderTimeline';
 
 const OrderDetail = () => {
   const { orderId } = useParams();
@@ -306,122 +307,14 @@ const OrderDetail = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="relative">
-              <div className="absolute right-4 top-0 bottom-0 w-0.5 bg-border"></div>
-              <div className="space-y-6">
-                {/* Created */}
-                <div className="relative flex gap-4 pr-10">
-                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${order.created_at ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
-                    <Package className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-foreground">تم إنشاء الطلب</h4>
-                    {order.created_at && (
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(order.created_at), 'PPP - p', { locale: ar })}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Confirmed */}
-                <div className="relative flex gap-4 pr-10">
-                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['confirmed', 'processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
-                    <CreditCard className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-foreground">تم تأكيد الطلب</h4>
-                    {['confirmed', 'processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) && (
-                      <p className="text-sm text-primary font-medium">تم التأكيد</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Processing */}
-                <div className="relative flex gap-4 pr-10">
-                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
-                    <Package className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-foreground">قيد التجهيز</h4>
-                    {['processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) && (
-                      <p className="text-sm text-primary font-medium">جاري تجهيز الطلب</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Arrived Warehouse */}
-                <div className="relative flex gap-4 pr-10">
-                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
-                    <Package className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-foreground">وصل إلى المخزن</h4>
-                    {order.arrived_warehouse_at ? (
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(order.arrived_warehouse_at), 'PPP - p', { locale: ar })}
-                      </p>
-                    ) : ['arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? (
-                      <p className="text-sm text-primary font-medium">وصل المخزن</p>
-                    ) : null}
-                    {order.serial_number_image_url && (
-                      <img src={order.serial_number_image_url} alt="Serial Number" className="mt-2 max-w-xs rounded border" />
-                    )}
-                  </div>
-                </div>
-
-                {/* Shipped */}
-                <div className="relative flex gap-4 pr-10">
-                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
-                    <Truck className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-foreground">تم الشحن</h4>
-                    {order.shipped_at ? (
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(order.shipped_at), 'PPP - p', { locale: ar })}
-                      </p>
-                    ) : ['shipped', 'arrived_iraq', 'delivered'].includes(order.status) ? (
-                      <p className="text-sm text-primary font-medium">تم الشحن</p>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* Arrived Iraq */}
-                <div className="relative flex gap-4 pr-10">
-                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${['arrived_iraq', 'delivered'].includes(order.status) ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
-                    <MapPin className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-foreground">وصل إلى العراق</h4>
-                    {order.arrived_iraq_at ? (
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(order.arrived_iraq_at), 'PPP - p', { locale: ar })}
-                      </p>
-                    ) : ['arrived_iraq', 'delivered'].includes(order.status) ? (
-                      <p className="text-sm text-primary font-medium">وصل العراق</p>
-                    ) : null}
-                  </div>
-                </div>
-
-                {/* Delivered */}
-                <div className="relative flex gap-4 pr-10">
-                  <div className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background ${order.status === 'delivered' ? 'border-primary text-primary' : 'border-border text-muted-foreground'}`}>
-                    <ShoppingBag className="h-4 w-4" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-foreground">تم التوصيل</h4>
-                    {order.delivered_at ? (
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(order.delivered_at), 'PPP - p', { locale: ar })}
-                      </p>
-                    ) : order.status === 'delivered' ? (
-                      <p className="text-sm text-primary font-medium">تم التوصيل</p>
-                    ) : null}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <OrderTimeline 
+              order={order} 
+              isPreOrder={order.order_items?.some((item: any) => 
+                item.shipping_option_name_ar?.includes('شحن') || 
+                item.shipping_option_name_ar?.includes('مجاني') ||
+                item.shipping_option_name_ar?.includes('سريع')
+              ) || false}
+            />
           </CardContent>
         </Card>
 
