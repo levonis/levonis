@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, ShoppingCart, Bell, BellDot } from 'lucide-react';
+import { Loader2, Package, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import { formatDate, formatPrice } from '@/lib/utils';
@@ -40,24 +40,6 @@ const MyCustomRequests = () => {
     enabled: !!user?.id
   });
 
-  const { data: notifications, isLoading: notificationsLoading } = useQuery({
-    queryKey: ['my-notifications', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user?.id
-  });
-
   const handleAddToCart = async (request: any) => {
     if (!request.suggested_price) {
       toast.error('لم يتم تحديد سعر لهذا الطلب بعد');
@@ -68,17 +50,6 @@ const MyCustomRequests = () => {
       await addCustomRequestToCart(request.id);
     } catch (error) {
       console.error('Error adding to cart:', error);
-    }
-  };
-
-  const markNotificationAsRead = async (notificationId: string) => {
-    try {
-      await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('id', notificationId);
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
     }
   };
 
@@ -99,46 +70,6 @@ const MyCustomRequests = () => {
           <h1 className="text-4xl font-black text-primary mb-2">طلباتي المخصصة</h1>
           <p className="text-muted-foreground">جميع طلبات المنتجات المخصصة التي قمت بها</p>
         </div>
-
-        {/* Notifications Section */}
-        {notifications && notifications.length > 0 && (
-          <Card className="glass-effect border-border/50 mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                الإشعارات
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {notifications.map((notification) => (
-                  <div 
-                    key={notification.id}
-                    className={`p-4 rounded-lg border ${
-                      notification.read 
-                        ? 'bg-card/30 border-border/30' 
-                        : 'bg-primary/5 border-primary/20'
-                    }`}
-                    onClick={() => !notification.read && markNotificationAsRead(notification.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      {!notification.read && (
-                        <BellDot className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                      )}
-                      <div className="flex-1">
-                        <h4 className="font-bold text-foreground mb-1">{notification.title}</h4>
-                        <p className="text-sm text-muted-foreground">{notification.message}</p>
-                        <p className="text-xs text-muted-foreground/60 mt-2">
-                          {formatDate(notification.created_at)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         <Card className="glass-effect border-border/50">
           <CardHeader>
