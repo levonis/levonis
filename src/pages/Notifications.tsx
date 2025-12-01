@@ -176,11 +176,34 @@ const Notifications = () => {
               أضف معرف المحادثة الخاص بك لتصلك الإشعارات مباشرة على تيليجرام
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <p className="text-sm text-muted-foreground">
+                للحصول على معرفك تلقائياً:
+              </p>
+              <Button
+                variant="outline"
+                className="w-full gap-2"
+                asChild
+              >
+                <a 
+                  href="https://t.me/Updatelevobot?start=getid" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  <Send className="h-4 w-4 text-[#0088cc]" />
+                  افتح البوت للحصول على المعرف
+                </a>
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                سيرسل لك البوت معرفك، انسخه والصقه أدناه
+              </p>
+            </div>
+            
             <div className="flex gap-3">
               <div className="flex-1 space-y-2">
-                <Label htmlFor="telegram_chat_id" className="text-sm text-muted-foreground">
-                  أرسل رسالة للبوت <a href="https://t.me/Updatelevobot" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">@Updatelevobot</a> لمعرفة معرفك
+                <Label htmlFor="telegram_chat_id" className="text-sm">
+                  معرف تيليجرام الخاص بك
                 </Label>
                 <Input
                   id="telegram_chat_id"
@@ -201,7 +224,7 @@ const Notifications = () => {
               </Button>
             </div>
             {profile?.telegram_chat_id && (
-              <p className="text-xs text-green-500 mt-2 flex items-center gap-1">
+              <p className="text-xs text-green-500 flex items-center gap-1">
                 <CheckCircle className="h-3 w-3" />
                 تم تفعيل إشعارات تيليجرام
               </p>
