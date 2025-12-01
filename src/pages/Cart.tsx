@@ -337,59 +337,84 @@ const Cart = () => {
         }
       }
 
-      // Create order items
-      const orderItems = items.map((item) => {
-        const isCustomRequest = !!item.custom_request_id;
-        const itemOption = (item as any).product_option_id 
-          ? productOptions?.find((opt: any) => opt.id === (item as any).product_option_id)
-          : null;
-        
-        const itemColor = (item as any).selected_color;
-        const colorData = itemColor && item.products?.colors
-          ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
-          : null;
-        
-        let itemPrice = isCustomRequest
-          ? Number(item.custom_product_requests?.suggested_price || 0)
-          : Number(item.products?.price || 0);
-        
-        if (colorData?.price != null) {
-          itemPrice = Number(colorData.price);
-        }
-        
-        if (itemOption?.price_adjustment) {
-          itemPrice += Number(itemOption.price_adjustment);
-        }
+      // Create order items - filter out invalid items first
+      const orderItems = items
+        .filter((item) => {
+          // Ensure we have either a valid product or custom request
+          if (item.custom_request_id) {
+            return item.custom_product_requests && item.custom_product_requests.product_name;
+          }
+          return item.product_id && item.products;
+        })
+        .map((item) => {
+          const isCustomRequest = !!item.custom_request_id;
+          const itemOption = (item as any).product_option_id 
+            ? productOptions?.find((opt: any) => opt.id === (item as any).product_option_id)
+            : null;
+          
+          const itemColor = (item as any).selected_color;
+          const colorData = itemColor && item.products?.colors
+            ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
+            : null;
+          
+          let itemPrice = isCustomRequest
+            ? Number(item.custom_product_requests?.suggested_price || 0)
+            : Number(item.products?.price || 0);
+          
+          if (colorData?.price != null) {
+            itemPrice = Number(colorData.price);
+          }
+          
+          if (itemOption?.price_adjustment) {
+            itemPrice += Number(itemOption.price_adjustment);
+          }
 
-        return {
-          order_id: order.id,
-          product_id: isCustomRequest ? null : item.product_id,
-          custom_request_id: isCustomRequest ? item.custom_request_id : null,
-          product_option_id: (item as any).product_option_id || null,
-          quantity: item.quantity,
-          unit_price: itemPrice,
-          total_price: itemPrice * item.quantity,
-          selected_color: itemColor || null,
-          color_image_url: (item as any).color_image_url || null,
-          selected_option: itemOption?.name_ar || null,
-          shipping_option_name_ar: (item as any).shipping_option_name_ar || null,
-          product_name: isCustomRequest 
-            ? item.custom_product_requests?.product_name || ''
-            : item.products?.name || '',
-          product_name_ar: isCustomRequest 
-            ? item.custom_product_requests?.product_name || ''
-            : item.products?.name_ar || '',
-        };
-      });
+          // Get product name - ensure it's never empty
+          const productName = isCustomRequest 
+            ? (item.custom_product_requests?.product_name || 'طلب مخصص')
+            : (item.products?.name || 'منتج');
+          const productNameAr = isCustomRequest 
+            ? (item.custom_product_requests?.product_name || 'طلب مخصص')
+            : (item.products?.name_ar || 'منتج');
+
+          return {
+            order_id: order.id,
+            product_id: isCustomRequest ? null : item.product_id,
+            custom_request_id: isCustomRequest ? item.custom_request_id : null,
+            product_option_id: (item as any).product_option_id || null,
+            quantity: item.quantity,
+            unit_price: itemPrice,
+            total_price: itemPrice * item.quantity,
+            selected_color: itemColor || null,
+            color_image_url: (item as any).color_image_url || null,
+            selected_option: itemOption?.name_ar || null,
+            shipping_option_name_ar: (item as any).shipping_option_name_ar || null,
+            product_name: productName,
+            product_name_ar: productNameAr,
+          };
+        });
+
+      // Check if we have valid items to insert
+      if (orderItems.length === 0) {
+        toast({
+          title: "خطأ",
+          description: "لا توجد منتجات صالحة في السلة",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Inserting order items:', orderItems);
 
       const { error: itemsError } = await supabase
         .from('order_items')
         .insert(orderItems);
 
       if (itemsError) {
+        console.error('Order items insert error:', itemsError);
         toast({
           title: "خطأ",
-          description: "حدث خطأ أثناء حفظ عناصر الطلب",
+          description: "حدث خطأ أثناء حفظ عناصر الطلب: " + itemsError.message,
           variant: "destructive",
         });
         return;
