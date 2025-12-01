@@ -7,13 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, Mail, Calendar, Shield, Upload, Camera } from 'lucide-react';
+import { Loader2, User, Mail, Calendar, Shield, Camera, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 import LevelBadge from '@/components/LevelBadge';
 
 const UserInfo = () => {
-  const { user, loading: authLoading, isAdmin } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,6 +25,18 @@ const UserInfo = () => {
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  
+  // Password change state
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -111,6 +123,52 @@ const UserInfo = () => {
     } finally {
       setSaving(false);
       setUploadingAvatar(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('كلمة المرور الجديدة غير متطابقة');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 6) {
+      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      return;
+    }
+    
+    setChangingPassword(true);
+    
+    try {
+      // First verify the current password by trying to sign in
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: profile.email,
+        password: passwordData.currentPassword,
+      });
+      
+      if (signInError) {
+        toast.error('كلمة المرور الحالية غير صحيحة');
+        setChangingPassword(false);
+        return;
+      }
+      
+      // Update the password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: passwordData.newPassword,
+      });
+      
+      if (updateError) throw updateError;
+      
+      toast.success('تم تغيير كلمة المرور بنجاح');
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setShowPasswordForm(false);
+    } catch (error: any) {
+      console.error('Error changing password:', error);
+      toast.error('حدث خطأ في تغيير كلمة المرور');
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -241,25 +299,10 @@ const UserInfo = () => {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between py-2 border-b border-border/30">
-                <span className="text-muted-foreground">نوع الحساب</span>
-                <div className="flex items-center gap-2">
-                  {isAdmin && <Shield className="h-4 w-4 text-primary" />}
-                  <span className="font-medium text-foreground">
-                    {isAdmin ? 'مدير' : 'مستخدم'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between py-2 border-b border-border/30">
                 <span className="text-muted-foreground">مستوى العضوية</span>
                 <div className="flex items-center gap-2">
                   {user?.id && <LevelBadge userId={user.id} size="md" />}
                 </div>
-              </div>
-
-              <div className="flex items-center justify-between py-2 border-b border-border/30">
-                <span className="text-muted-foreground">معرف المستخدم</span>
-                <span className="font-mono text-xs text-foreground">{user?.id.slice(0, 8)}...</span>
               </div>
 
               <div className="flex items-center justify-between py-2">
@@ -283,13 +326,108 @@ const UserInfo = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => toast.info('ميزة تغيير كلمة المرور قريباً')}
-              >
-                تغيير كلمة المرور
-              </Button>
+              {!showPasswordForm ? (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setShowPasswordForm(true)}
+                >
+                  <Lock className="ml-2 h-4 w-4" />
+                  تغيير كلمة المرور
+                </Button>
+              ) : (
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">كلمة المرور الحالية</Label>
+                    <div className="relative">
+                      <Input
+                        id="currentPassword"
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                        placeholder="أدخل كلمة المرور الحالية"
+                        required
+                        className="pl-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      >
+                        {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
+                    <div className="relative">
+                      <Input
+                        id="newPassword"
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                        placeholder="أدخل كلمة المرور الجديدة"
+                        required
+                        minLength={6}
+                        className="pl-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                      >
+                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">تأكيد كلمة المرور الجديدة</Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                        placeholder="أعد إدخال كلمة المرور الجديدة"
+                        required
+                        minLength={6}
+                        className="pl-10"
+                      />
+                      <button
+                        type="button"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      type="submit"
+                      className="flex-1"
+                      disabled={changingPassword}
+                    >
+                      {changingPassword && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                      حفظ كلمة المرور
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setShowPasswordForm(false);
+                        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                      }}
+                      disabled={changingPassword}
+                    >
+                      إلغاء
+                    </Button>
+                  </div>
+                </form>
+              )}
             </CardContent>
           </Card>
         </div>
