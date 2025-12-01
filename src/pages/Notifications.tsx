@@ -173,13 +173,13 @@ const Notifications = () => {
               تلقي الإشعارات عبر تيليجرام
             </CardTitle>
             <CardDescription>
-              أضف معرف المحادثة الخاص بك لتصلك الإشعارات مباشرة على تيليجرام
+              أضف رقم ID الخاص بك لتصلك الإشعارات مباشرة على تيليجرام
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <p className="text-sm text-muted-foreground">
-                للحصول على معرفك تلقائياً:
+                للحصول على رقم ID الخاص بك تلقائياً:
               </p>
               <Button
                 variant="outline"
@@ -192,18 +192,18 @@ const Notifications = () => {
                   rel="noopener noreferrer"
                 >
                   <Send className="h-4 w-4 text-[#0088cc]" />
-                  افتح البوت للحصول على المعرف
+                  افتح البوت للحصول على رقم ID الخاص بك
                 </a>
               </Button>
               <p className="text-xs text-muted-foreground text-center">
-                سيرسل لك البوت معرفك، انسخه والصقه أدناه
+                سيرسل لك البوت رقم ID الخاص بك، انسخه والصقه أدناه
               </p>
             </div>
             
             <div className="flex gap-3">
               <div className="flex-1 space-y-2">
                 <Label htmlFor="telegram_chat_id" className="text-sm">
-                  معرف تيليجرام الخاص بك
+                  رقم ID الخاص بك
                 </Label>
                 <Input
                   id="telegram_chat_id"
