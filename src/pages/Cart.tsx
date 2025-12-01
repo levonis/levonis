@@ -337,14 +337,32 @@ const Cart = () => {
         }
       }
 
-      // Create order items - filter out invalid items first
+      // Fetch custom request data directly if needed
+      const customRequestIds = items
+        .filter(item => item.custom_request_id && !item.custom_product_requests?.product_name)
+        .map(item => item.custom_request_id)
+        .filter(Boolean) as string[];
+
+      let customRequestsData: Record<string, any> = {};
+      if (customRequestIds.length > 0) {
+        const { data: fetchedRequests } = await supabase
+          .from('custom_product_requests')
+          .select('id, product_name, suggested_price, image_url')
+          .in('id', customRequestIds);
+        
+        if (fetchedRequests) {
+          customRequestsData = fetchedRequests.reduce((acc, req) => {
+            acc[req.id] = req;
+            return acc;
+          }, {} as Record<string, any>);
+        }
+      }
+
+      // Create order items
       const orderItems = items
         .filter((item) => {
-          // Ensure we have either a valid product or custom request
-          if (item.custom_request_id) {
-            return item.custom_product_requests && item.custom_product_requests.product_name;
-          }
-          return item.product_id && item.products;
+          // Include item if it has a product_id OR custom_request_id
+          return item.product_id || item.custom_request_id;
         })
         .map((item) => {
           const isCustomRequest = !!item.custom_request_id;
@@ -357,8 +375,12 @@ const Cart = () => {
             ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
             : null;
           
+          // Get custom request data from either the item or fetched data
+          const customRequest = item.custom_product_requests || 
+            (item.custom_request_id ? customRequestsData[item.custom_request_id] : null);
+          
           let itemPrice = isCustomRequest
-            ? Number(item.custom_product_requests?.suggested_price || 0)
+            ? Number(customRequest?.suggested_price || 0)
             : Number(item.products?.price || 0);
           
           if (colorData?.price != null) {
@@ -371,10 +393,10 @@ const Cart = () => {
 
           // Get product name - ensure it's never empty
           const productName = isCustomRequest 
-            ? (item.custom_product_requests?.product_name || 'طلب مخصص')
+            ? (customRequest?.product_name || 'طلب مخصص')
             : (item.products?.name || 'منتج');
           const productNameAr = isCustomRequest 
-            ? (item.custom_product_requests?.product_name || 'طلب مخصص')
+            ? (customRequest?.product_name || 'طلب مخصص')
             : (item.products?.name_ar || 'منتج');
 
           return {
@@ -442,12 +464,17 @@ const Cart = () => {
       
       items.forEach((item, index) => {
         const isCustomRequest = !!item.custom_request_id;
+        
+        // Get custom request data from either the item or fetched data
+        const customRequest = item.custom_product_requests || 
+          (item.custom_request_id ? customRequestsData[item.custom_request_id] : null);
+        
         const itemName = isCustomRequest 
-          ? item.custom_product_requests?.product_name 
-          : item.products?.name_ar;
+          ? (customRequest?.product_name || 'طلب مخصص')
+          : (item.products?.name_ar || 'منتج');
         
         let itemPrice = isCustomRequest
-          ? Number(item.custom_product_requests?.suggested_price || 0)
+          ? Number(customRequest?.suggested_price || 0)
           : Number(item.products?.price || 0);
         
         const itemOption = (item as any).product_option_id 

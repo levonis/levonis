@@ -8,8 +8,12 @@ interface CartItem {
   product_id: string | null;
   custom_request_id: string | null;
   quantity: number;
+  product_option_id?: string | null;
+  selected_color?: string | null;
   color_image_url?: string | null;
   option_image_url?: string | null;
+  shipping_option_index?: number | null;
+  shipping_option_name_ar?: string | null;
   products?: {
     id: string;
     name: string;
@@ -71,6 +75,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           selected_color,
           color_image_url,
           option_image_url,
+          shipping_option_index,
+          shipping_option_name_ar,
           products (
             id,
             name,
@@ -82,7 +88,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             slug,
             colors
           ),
-          custom_product_requests (
+          custom_product_requests!cart_items_custom_request_id_fkey (
             id,
             product_name,
             suggested_price,
@@ -99,6 +105,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
       
       console.log('Cart items fetched:', data);
+      
+      // Log custom request data for debugging
+      data?.forEach((item: any) => {
+        if (item.custom_request_id) {
+          console.log('Custom request item:', item.custom_request_id, 'data:', item.custom_product_requests);
+        }
+      });
+      
       setItems(data as CartItem[] || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
