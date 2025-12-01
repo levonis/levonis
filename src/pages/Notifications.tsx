@@ -1,12 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Bell, Check, Info, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2, Bell, Check, Info, AlertCircle, CheckCircle, XCircle, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 
@@ -14,6 +16,8 @@ const Notifications = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [telegramChatId, setTelegramChatId] = useState('');
+  const [savingTelegram, setSavingTelegram] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -35,6 +39,50 @@ const Notifications = () => {
     },
     enabled: !!user?.id,
   });
+
+  // Fetch user's telegram chat ID
+  const { data: profile } = useQuery({
+    queryKey: ['profile-telegram', user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('telegram_chat_id')
+        .eq('id', user?.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+  });
+
+  useEffect(() => {
+    if (profile?.telegram_chat_id) {
+      setTelegramChatId(profile.telegram_chat_id);
+    }
+  }, [profile]);
+
+  const saveTelegramChatId = async () => {
+    if (!user?.id) return;
+    setSavingTelegram(true);
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ telegram_chat_id: telegramChatId || null })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      queryClient.invalidateQueries({ queryKey: ['profile-telegram'] });
+      toast.success(telegramChatId ? 'تم حفظ معرف تيليجرام بنجاح' : 'تم إزالة معرف تيليجرام');
+    } catch (error) {
+      console.error('Error saving telegram chat ID:', error);
+      toast.error('حدث خطأ في حفظ المعرف');
+    } finally {
+      setSavingTelegram(false);
+    }
+  };
 
   const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {
@@ -116,6 +164,50 @@ const Notifications = () => {
             </Button>
           )}
         </div>
+
+        {/* Telegram Notifications Card */}
+        <Card className="glass-effect border-border/50 mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Send className="h-5 w-5 text-[#0088cc]" />
+              تلقي الإشعارات عبر تيليجرام
+            </CardTitle>
+            <CardDescription>
+              أضف معرف المحادثة الخاص بك لتصلك الإشعارات مباشرة على تيليجرام
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-3">
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="telegram_chat_id" className="text-sm text-muted-foreground">
+                  أرسل رسالة للبوت <a href="https://t.me/Updatelevobot" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">@Updatelevobot</a> لمعرفة معرفك
+                </Label>
+                <Input
+                  id="telegram_chat_id"
+                  value={telegramChatId}
+                  onChange={(e) => setTelegramChatId(e.target.value)}
+                  placeholder="مثال: 123456789"
+                  dir="ltr"
+                  className="font-mono"
+                />
+              </div>
+              <Button
+                onClick={saveTelegramChatId}
+                disabled={savingTelegram}
+                className="self-end"
+              >
+                {savingTelegram && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                {profile?.telegram_chat_id ? 'تحديث' : 'حفظ'}
+              </Button>
+            </div>
+            {profile?.telegram_chat_id && (
+              <p className="text-xs text-green-500 mt-2 flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" />
+                تم تفعيل إشعارات تيليجرام
+              </p>
+            )}
+          </CardContent>
+        </Card>
 
         <div className="space-y-4">
           {!notifications || notifications.length === 0 ? (

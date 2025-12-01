@@ -9,5 +9,8 @@ verify_jwt = false
 [functions.send-telegram-notification]
 verify_jwt = false
 
+[functions.send-user-telegram-notification]
+verify_jwt = false
+
 [functions.cleanup-old-notifications]
 verify_jwt = false
