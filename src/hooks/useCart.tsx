@@ -25,6 +25,11 @@ interface CartItem {
     slug: string;
     colors?: any[];
   };
+  product_options?: {
+    id: string;
+    name_ar: string;
+    price_adjustment: number | null;
+  };
   custom_product_requests?: {
     id: string;
     product_name: string;
@@ -87,6 +92,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             images,
             slug,
             colors
+          ),
+          product_options (
+            id,
+            name_ar,
+            price_adjustment
           ),
           custom_product_requests!cart_items_custom_request_id_fkey (
             id,
@@ -342,6 +352,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       if (selectedColorData?.price != null) {
         itemPrice = Number(selectedColorData.price);
+      }
+      
+      // Add option price adjustment
+      const itemOption = (item as any).product_options;
+      if (itemOption?.price_adjustment) {
+        itemPrice += Number(itemOption.price_adjustment);
       }
       
       return sum + (itemPrice * item.quantity);
