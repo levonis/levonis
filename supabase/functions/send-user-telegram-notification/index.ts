@@ -5,6 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// This function sends notifications to users who have telegram_chat_id set
+// It can be called manually or via a webhook when a notification is created
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -12,8 +14,7 @@ Deno.serve(async (req) => {
 
   try {
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
-    const DEFAULT_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
-
+    
     if (!TELEGRAM_BOT_TOKEN) {
       console.error("Missing Telegram bot token");
       return new Response(
@@ -22,53 +23,50 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { message, parse_mode = "HTML", chat_id, user_id } = await req.json();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Determine the target chat_id
-    let targetChatId = chat_id || DEFAULT_CHAT_ID;
+    const { user_id, title, message, notification_type } = await req.json();
 
-    // If user_id is provided, fetch the user's telegram_chat_id
-    if (user_id && !chat_id) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("telegram_chat_id")
-        .eq("id", user_id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching user profile:", error);
-      } else if (profile?.telegram_chat_id) {
-        targetChatId = profile.telegram_chat_id;
-      } else {
-        // User doesn't have telegram_chat_id set, skip sending
-        console.log("User has no telegram_chat_id set, skipping notification");
-        return new Response(
-          JSON.stringify({ success: true, skipped: true, reason: "No telegram_chat_id for user" }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
-        );
-      }
-    }
-
-    if (!targetChatId) {
-      console.error("No chat_id available");
+    if (!user_id || !title || !message) {
       return new Response(
-        JSON.stringify({ success: false, error: "No chat_id available" }),
+        JSON.stringify({ success: false, error: "user_id, title, and message are required" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
 
-    if (!message) {
+    // Fetch user's telegram_chat_id
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("telegram_chat_id, full_name")
+      .eq("id", user_id)
+      .single();
+
+    if (error) {
+      console.error("Error fetching user profile:", error);
       return new Response(
-        JSON.stringify({ success: false, error: "Message is required" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+        JSON.stringify({ success: false, error: "Error fetching user profile" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
       );
     }
 
-    console.log(`Sending Telegram notification to chat_id ${targetChatId}:`, message);
+    if (!profile?.telegram_chat_id) {
+      console.log("User has no telegram_chat_id set, skipping notification");
+      return new Response(
+        JSON.stringify({ success: true, skipped: true, reason: "No telegram_chat_id for user" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+      );
+    }
+
+    // Format the notification message
+    const typeEmoji = notification_type === 'success' ? '✅' : 
+                      notification_type === 'error' ? '❌' : 
+                      notification_type === 'warning' ? '⚠️' : 'ℹ️';
+    
+    const telegramMessage = `${typeEmoji} <b>${title}</b>\n\n${message}\n\n🛍️ LEVONIS`;
+
+    console.log(`Sending notification to user ${user_id} (chat_id: ${profile.telegram_chat_id})`);
 
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     
@@ -78,9 +76,9 @@ Deno.serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        chat_id: targetChatId,
-        text: message,
-        parse_mode: parse_mode,
+        chat_id: profile.telegram_chat_id,
+        text: telegramMessage,
+        parse_mode: "HTML",
       }),
     });
 
@@ -101,7 +99,7 @@ Deno.serve(async (req) => {
     );
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error sending Telegram notification:", error);
+    console.error("Error sending user Telegram notification:", error);
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }

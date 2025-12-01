@@ -1120,6 +1120,7 @@ export type Database = {
           governorate: string | null
           id: string
           phone_number: string | null
+          telegram_chat_id: string | null
           username: string
         }
         Insert: {
@@ -1130,6 +1131,7 @@ export type Database = {
           governorate?: string | null
           id: string
           phone_number?: string | null
+          telegram_chat_id?: string | null
           username: string
         }
         Update: {
@@ -1140,6 +1142,7 @@ export type Database = {
           governorate?: string | null
           id?: string
           phone_number?: string | null
+          telegram_chat_id?: string | null
           username?: string
         }
         Relationships: []
@@ -1473,6 +1476,17 @@ export type Database = {
       convert_points_to_wallet: {
         Args: { points_amount: number }
         Returns: Json
+      }
+      create_notification_if_not_exists: {
+        Args: {
+          p_is_general?: boolean
+          p_message: string
+          p_related_id?: string
+          p_title: string
+          p_type?: string
+          p_user_id: string
+        }
+        Returns: undefined
       }
       delete_old_notifications: { Args: never; Returns: undefined }
       generate_order_number: { Args: never; Returns: string }
