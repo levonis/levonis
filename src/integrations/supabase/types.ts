@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_telegram_context: {
+        Row: {
+          admin_telegram_chat_id: string
+          conversation_id: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_telegram_chat_id: string
+          conversation_id?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_telegram_chat_id?: string
+          conversation_id?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_telegram_context_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           active: boolean

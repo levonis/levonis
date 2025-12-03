@@ -22,17 +22,17 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { message, parse_mode = "HTML", chat_id, user_id } = await req.json();
+    const { message, parse_mode = "HTML", chat_id, user_id, conversation_id, customer_user_id } = await req.json();
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Determine the target chat_id
     let targetChatId = chat_id || DEFAULT_CHAT_ID;
 
     // If user_id is provided, fetch the user's telegram_chat_id
     if (user_id && !chat_id) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("telegram_chat_id")
@@ -69,6 +69,21 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Sending Telegram notification to chat_id ${targetChatId}:`, message);
+
+    // If this is a chat notification for admin, update their context for reply
+    if (conversation_id && customer_user_id) {
+      await supabase
+        .from("admin_telegram_context")
+        .upsert({
+          admin_telegram_chat_id: targetChatId,
+          conversation_id: conversation_id,
+          user_id: customer_user_id,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: "admin_telegram_chat_id"
+        });
+      console.log(`Updated admin context for chat_id ${targetChatId} with conversation ${conversation_id}`);
+    }
 
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     
