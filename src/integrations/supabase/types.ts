@@ -878,6 +878,7 @@ export type Database = {
           shipped_at: string | null
           shipping_address: string
           shipping_notes: string | null
+          shipping_route_type: string | null
           status: string
           subtotal: number | null
           tax_amount: number | null
@@ -916,6 +917,7 @@ export type Database = {
           shipped_at?: string | null
           shipping_address: string
           shipping_notes?: string | null
+          shipping_route_type?: string | null
           status?: string
           subtotal?: number | null
           tax_amount?: number | null
@@ -954,6 +956,7 @@ export type Database = {
           shipped_at?: string | null
           shipping_address?: string
           shipping_notes?: string | null
+          shipping_route_type?: string | null
           status?: string
           subtotal?: number | null
           tax_amount?: number | null
