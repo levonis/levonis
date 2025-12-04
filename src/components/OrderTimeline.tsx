@@ -228,6 +228,8 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
           <ShippingRouteMap 
             routeType={order.shipping_route_type as 'sea_guangzhou_umm_qasr' | 'air_guangzhou_erbil'} 
             isShipped={['shipped', 'arrived_iraq', 'delivered'].includes(order.status)}
+            shippedAt={order.shipped_at}
+            estimatedDeliveryDate={order.estimated_delivery_date}
           />
         </div>
       )}

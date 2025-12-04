@@ -1,16 +1,63 @@
 import { Ship, Plane } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { differenceInMilliseconds, differenceInDays } from 'date-fns';
 
 interface ShippingRouteMapProps {
   routeType: 'sea_guangzhou_umm_qasr' | 'air_guangzhou_erbil' | null;
   isShipped?: boolean;
+  shippedAt?: string | null;
+  estimatedDeliveryDate?: string | null;
 }
 
-export const ShippingRouteMap = ({ routeType, isShipped = false }: ShippingRouteMapProps) => {
+export const ShippingRouteMap = ({ 
+  routeType, 
+  isShipped = false,
+  shippedAt,
+  estimatedDeliveryDate 
+}: ShippingRouteMapProps) => {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (isShipped) {
+    if (!isShipped) {
+      setProgress(0);
+      return;
+    }
+
+    // Calculate real progress based on dates
+    if (shippedAt && estimatedDeliveryDate) {
+      const updateProgress = () => {
+        const now = new Date();
+        const shipped = new Date(shippedAt);
+        const estimated = new Date(estimatedDeliveryDate);
+        
+        const totalDuration = differenceInMilliseconds(estimated, shipped);
+        const elapsed = differenceInMilliseconds(now, shipped);
+        
+        if (totalDuration <= 0) {
+          setProgress(100);
+          return;
+        }
+        
+        const calculatedProgress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+        setProgress(calculatedProgress);
+      };
+
+      // Update immediately
+      updateProgress();
+      
+      // Calculate update interval based on total duration
+      // For longer durations, update less frequently
+      const shipped = new Date(shippedAt);
+      const estimated = new Date(estimatedDeliveryDate);
+      const totalDays = differenceInDays(estimated, shipped);
+      
+      // Update more frequently for shorter durations
+      const intervalMs = totalDays <= 1 ? 1000 : totalDays <= 7 ? 30000 : 60000;
+      
+      const interval = setInterval(updateProgress, intervalMs);
+      return () => clearInterval(interval);
+    } else {
+      // Fallback animation if dates not provided
       const interval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 100) return 0;
@@ -19,7 +66,7 @@ export const ShippingRouteMap = ({ routeType, isShipped = false }: ShippingRoute
       }, 50);
       return () => clearInterval(interval);
     }
-  }, [isShipped]);
+  }, [isShipped, shippedAt, estimatedDeliveryDate]);
 
   if (!routeType) return null;
 
@@ -42,7 +89,6 @@ export const ShippingRouteMap = ({ routeType, isShipped = false }: ShippingRoute
         x: 50,
         y: 48,
       },
-      // Sea route waypoints (curved path through South China Sea, Indian Ocean, Persian Gulf)
       path: 'M 85 45 Q 75 55 65 52 Q 55 48 50 48',
       color: 'hsl(var(--primary))',
       icon: Ship,
@@ -62,7 +108,6 @@ export const ShippingRouteMap = ({ routeType, isShipped = false }: ShippingRoute
         x: 45,
         y: 38,
       },
-      // Air route (more direct line)
       path: 'M 85 40 Q 65 32 45 38',
       color: 'hsl(var(--accent))',
       icon: Plane,
@@ -74,7 +119,6 @@ export const ShippingRouteMap = ({ routeType, isShipped = false }: ShippingRoute
 
   // Calculate position along path for animation
   const getPositionOnPath = (t: number) => {
-    // Simple quadratic bezier interpolation
     const from = { x: route.from.x, y: route.from.y };
     const to = { x: route.to.x, y: route.to.y };
     const control = isSea 
@@ -89,23 +133,64 @@ export const ShippingRouteMap = ({ routeType, isShipped = false }: ShippingRoute
 
   const iconPosition = getPositionOnPath(progress / 100);
 
+  // Calculate remaining info
+  const getRemainingInfo = () => {
+    if (!shippedAt || !estimatedDeliveryDate) return null;
+    
+    const now = new Date();
+    const estimated = new Date(estimatedDeliveryDate);
+    const remainingDays = differenceInDays(estimated, now);
+    
+    if (remainingDays < 0) return { text: 'متأخر', color: 'text-red-500' };
+    if (remainingDays === 0) return { text: 'متوقع اليوم', color: 'text-green-500' };
+    if (remainingDays === 1) return { text: 'متبقي يوم واحد', color: 'text-amber-500' };
+    if (remainingDays === 2) return { text: 'متبقي يومان', color: 'text-amber-500' };
+    return { text: `متبقي ${remainingDays} أيام`, color: 'text-muted-foreground' };
+  };
+
+  const remainingInfo = getRemainingInfo();
+
   return (
     <div className="w-full bg-gradient-to-br from-primary/5 to-accent/5 rounded-xl border border-primary/20 overflow-hidden">
       {/* Header */}
       <div className="bg-primary/10 px-4 py-3 border-b border-primary/20">
-        <div className="flex items-center gap-2">
-          <Icon className="h-5 w-5 text-primary" />
-          <div>
-            <h3 className="font-bold text-foreground text-sm">{route.name}</h3>
-            <p className="text-xs text-muted-foreground">{route.nameEn}</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="font-bold text-foreground text-sm">{route.name}</h3>
+              <p className="text-xs text-muted-foreground">{route.nameEn}</p>
+            </div>
           </div>
+          {isShipped && (
+            <div className="text-left">
+              <div className="text-xs text-muted-foreground">نسبة الإنجاز</div>
+              <div className="text-lg font-bold text-primary">{Math.round(progress)}%</div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Progress bar */}
+      {isShipped && (
+        <div className="px-4 pt-3">
+          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-1000 ease-linear rounded-full"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          {remainingInfo && (
+            <p className={`text-xs mt-1 text-center ${remainingInfo.color}`}>
+              {remainingInfo.text}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Map SVG */}
       <div className="relative p-4">
         <svg viewBox="0 0 100 70" className="w-full h-auto" style={{ minHeight: '200px' }}>
-          {/* Simple world map background - Asia/Middle East region */}
           <defs>
             <linearGradient id="oceanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.05" />
@@ -114,6 +199,10 @@ export const ShippingRouteMap = ({ routeType, isShipped = false }: ShippingRoute
             <linearGradient id="landGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" stopColor="hsl(var(--muted-foreground))" stopOpacity="0.15" />
               <stop offset="100%" stopColor="hsl(var(--muted-foreground))" stopOpacity="0.25" />
+            </linearGradient>
+            <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="hsl(var(--primary))" />
+              <stop offset="100%" stopColor="hsl(var(--accent))" />
             </linearGradient>
             <filter id="glow">
               <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
@@ -152,28 +241,30 @@ export const ShippingRouteMap = ({ routeType, isShipped = false }: ShippingRoute
             strokeWidth="0.3"
           />
 
-          {/* Route path - dashed background */}
+          {/* Route path - full dashed background */}
           <path 
             d={route.path} 
             fill="none" 
             stroke="hsl(var(--muted-foreground))" 
-            strokeWidth="0.5" 
+            strokeWidth="0.8" 
             strokeDasharray="2,2"
             opacity="0.3"
           />
 
-          {/* Route path - animated */}
-          <path 
-            d={route.path} 
-            fill="none" 
-            stroke={route.color}
-            strokeWidth="1.5" 
-            strokeLinecap="round"
-            strokeDasharray={isShipped ? "200" : "3,3"}
-            strokeDashoffset={isShipped ? 200 - (progress * 2) : 0}
-            filter="url(#glow)"
-            opacity="0.8"
-          />
+          {/* Route path - completed portion */}
+          {isShipped && (
+            <path 
+              d={route.path} 
+              fill="none" 
+              stroke="url(#routeGradient)"
+              strokeWidth="1.5" 
+              strokeLinecap="round"
+              strokeDasharray="200"
+              strokeDashoffset={200 - (progress * 2)}
+              filter="url(#glow)"
+              opacity="0.9"
+            />
+          )}
 
           {/* Origin marker */}
           <g>
@@ -221,38 +312,33 @@ export const ShippingRouteMap = ({ routeType, isShipped = false }: ShippingRoute
               strokeWidth="1"
               filter="url(#glow)"
             />
-            <circle 
-              cx={route.to.x} 
-              cy={route.to.y} 
-              r="5" 
-              fill="none" 
-              stroke="hsl(var(--accent))" 
-              strokeWidth="0.5"
-              opacity="0.5"
-            >
-              <animate 
-                attributeName="r" 
-                values="3;6;3" 
-                dur="2s" 
-                repeatCount="indefinite"
-                begin="1s"
-              />
-              <animate 
-                attributeName="opacity" 
-                values="0.5;0;0.5" 
-                dur="2s" 
-                repeatCount="indefinite"
-                begin="1s"
-              />
-            </circle>
+            {progress < 100 && (
+              <circle 
+                cx={route.to.x} 
+                cy={route.to.y} 
+                r="5" 
+                fill="none" 
+                stroke="hsl(var(--accent))" 
+                strokeWidth="0.5"
+                opacity="0.5"
+              >
+                <animate 
+                  attributeName="r" 
+                  values="3;6;3" 
+                  dur="2s" 
+                  repeatCount="indefinite"
+                  begin="1s"
+                />
+                <animate 
+                  attributeName="opacity" 
+                  values="0.5;0;0.5" 
+                  dur="2s" 
+                  repeatCount="indefinite"
+                  begin="1s"
+                />
+              </circle>
+            )}
           </g>
-
-          {/* Moving icon */}
-          {isShipped && (
-            <g transform={`translate(${iconPosition.x - 2}, ${iconPosition.y - 2})`}>
-              <circle r="3" cx="2" cy="2" fill="white" filter="url(#glow)" />
-            </g>
-          )}
 
           {/* Labels */}
           <text 
@@ -273,19 +359,26 @@ export const ShippingRouteMap = ({ routeType, isShipped = false }: ShippingRoute
           </text>
         </svg>
 
-        {/* Floating icon animation */}
+        {/* Floating icon */}
         {isShipped && (
           <div 
-            className="absolute transition-all duration-100 ease-linear"
+            className="absolute transition-all duration-1000 ease-linear"
             style={{
               left: `${iconPosition.x}%`,
               top: `${iconPosition.y + 15}%`,
               transform: 'translate(-50%, -50%)',
             }}
           >
-            <div className="p-1.5 bg-primary rounded-full shadow-lg animate-bounce">
-              <Icon className="h-4 w-4 text-primary-foreground" />
+            <div className="p-2 bg-primary rounded-full shadow-lg shadow-primary/30">
+              <Icon className="h-5 w-5 text-primary-foreground" />
             </div>
+          </div>
+        )}
+
+        {/* Completed badge */}
+        {progress >= 100 && (
+          <div className="absolute top-4 left-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold animate-scale-in">
+            ✓ تم الوصول
           </div>
         )}
       </div>
