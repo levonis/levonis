@@ -1,19 +1,19 @@
 import { Ship, Plane } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { differenceInMilliseconds, differenceInDays } from 'date-fns';
+import { differenceInMilliseconds, addDays } from 'date-fns';
 
 interface ShippingRouteMapProps {
   routeType: 'sea_guangzhou_umm_qasr' | 'air_guangzhou_erbil' | null;
   isShipped?: boolean;
   shippedAt?: string | null;
-  estimatedDeliveryDate?: string | null;
+  shippingDurationDays?: number | null;
 }
 
 export const ShippingRouteMap = ({ 
   routeType, 
   isShipped = false,
   shippedAt,
-  estimatedDeliveryDate 
+  shippingDurationDays
 }: ShippingRouteMapProps) => {
   const [progress, setProgress] = useState(0);
 
@@ -23,12 +23,12 @@ export const ShippingRouteMap = ({
       return;
     }
 
-    // Calculate real progress based on dates
-    if (shippedAt && estimatedDeliveryDate) {
+    // Calculate real progress based on shipped date and duration
+    if (shippedAt && shippingDurationDays && shippingDurationDays > 0) {
       const updateProgress = () => {
         const now = new Date();
         const shipped = new Date(shippedAt);
-        const estimated = new Date(estimatedDeliveryDate);
+        const estimated = addDays(shipped, shippingDurationDays);
         
         const totalDuration = differenceInMilliseconds(estimated, shipped);
         const elapsed = differenceInMilliseconds(now, shipped);
@@ -45,19 +45,13 @@ export const ShippingRouteMap = ({
       // Update immediately
       updateProgress();
       
-      // Calculate update interval based on total duration
-      // For longer durations, update less frequently
-      const shipped = new Date(shippedAt);
-      const estimated = new Date(estimatedDeliveryDate);
-      const totalDays = differenceInDays(estimated, shipped);
-      
-      // Update more frequently for shorter durations
-      const intervalMs = totalDays <= 1 ? 1000 : totalDays <= 7 ? 30000 : 60000;
+      // Update interval based on duration
+      const intervalMs = shippingDurationDays <= 1 ? 1000 : shippingDurationDays <= 7 ? 30000 : 60000;
       
       const interval = setInterval(updateProgress, intervalMs);
       return () => clearInterval(interval);
     } else {
-      // Fallback animation if dates not provided
+      // Fallback animation if duration not provided
       const interval = setInterval(() => {
         setProgress(prev => {
           if (prev >= 100) return 0;
@@ -66,7 +60,7 @@ export const ShippingRouteMap = ({
       }, 50);
       return () => clearInterval(interval);
     }
-  }, [isShipped, shippedAt, estimatedDeliveryDate]);
+  }, [isShipped, shippedAt, shippingDurationDays]);
 
   if (!routeType) return null;
 
@@ -117,7 +111,7 @@ export const ShippingRouteMap = ({
   const route = routes[routeType];
   const Icon = route.icon;
 
-  // Calculate position along path for animation
+  // Calculate position along path
   const getPositionOnPath = (t: number) => {
     const from = { x: route.from.x, y: route.from.y };
     const to = { x: route.to.x, y: route.to.y };
@@ -135,11 +129,13 @@ export const ShippingRouteMap = ({
 
   // Calculate remaining info
   const getRemainingInfo = () => {
-    if (!shippedAt || !estimatedDeliveryDate) return null;
+    if (!shippedAt || !shippingDurationDays) return null;
     
     const now = new Date();
-    const estimated = new Date(estimatedDeliveryDate);
-    const remainingDays = differenceInDays(estimated, now);
+    const shipped = new Date(shippedAt);
+    const estimated = addDays(shipped, shippingDurationDays);
+    const remainingMs = estimated.getTime() - now.getTime();
+    const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
     
     if (remainingDays < 0) return { text: 'متأخر', color: 'text-red-500' };
     if (remainingDays === 0) return { text: 'متوقع اليوم', color: 'text-green-500' };
@@ -185,6 +181,11 @@ export const ShippingRouteMap = ({
               {remainingInfo.text}
             </p>
           )}
+          {shippingDurationDays && (
+            <p className="text-[10px] text-muted-foreground text-center mt-0.5">
+              مدة الشحن: {shippingDurationDays} يوم
+            </p>
+          )}
         </div>
       )}
 
@@ -217,7 +218,6 @@ export const ShippingRouteMap = ({
           <rect x="0" y="0" width="100" height="70" fill="url(#oceanGradient)" />
 
           {/* Simplified land masses */}
-          {/* China */}
           <path 
             d="M 70 25 Q 85 20 95 25 L 95 50 Q 90 55 80 52 Q 75 48 70 45 Z" 
             fill="url(#landGradient)" 
@@ -225,7 +225,6 @@ export const ShippingRouteMap = ({
             strokeWidth="0.3"
           />
           
-          {/* Middle East / Iraq */}
           <path 
             d="M 35 30 Q 50 28 55 35 Q 55 50 50 55 Q 40 52 35 48 Z" 
             fill="url(#landGradient)" 
@@ -233,7 +232,6 @@ export const ShippingRouteMap = ({
             strokeWidth="0.3"
           />
 
-          {/* India */}
           <path 
             d="M 58 40 Q 68 38 72 45 Q 70 58 62 60 Q 56 55 58 40 Z" 
             fill="url(#landGradient)" 
@@ -286,18 +284,8 @@ export const ShippingRouteMap = ({
               strokeWidth="0.5"
               opacity="0.5"
             >
-              <animate 
-                attributeName="r" 
-                values="3;6;3" 
-                dur="2s" 
-                repeatCount="indefinite"
-              />
-              <animate 
-                attributeName="opacity" 
-                values="0.5;0;0.5" 
-                dur="2s" 
-                repeatCount="indefinite"
-              />
+              <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite" />
+              <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
             </circle>
           </g>
 
@@ -322,39 +310,17 @@ export const ShippingRouteMap = ({
                 strokeWidth="0.5"
                 opacity="0.5"
               >
-                <animate 
-                  attributeName="r" 
-                  values="3;6;3" 
-                  dur="2s" 
-                  repeatCount="indefinite"
-                  begin="1s"
-                />
-                <animate 
-                  attributeName="opacity" 
-                  values="0.5;0;0.5" 
-                  dur="2s" 
-                  repeatCount="indefinite"
-                  begin="1s"
-                />
+                <animate attributeName="r" values="3;6;3" dur="2s" repeatCount="indefinite" begin="1s" />
+                <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" begin="1s" />
               </circle>
             )}
           </g>
 
           {/* Labels */}
-          <text 
-            x={route.from.x} 
-            y={route.from.y - 6} 
-            textAnchor="middle" 
-            className="fill-foreground text-[2.5px] font-bold"
-          >
+          <text x={route.from.x} y={route.from.y - 6} textAnchor="middle" className="fill-foreground text-[2.5px] font-bold">
             الصين
           </text>
-          <text 
-            x={route.to.x} 
-            y={route.to.y - 6} 
-            textAnchor="middle" 
-            className="fill-foreground text-[2.5px] font-bold"
-          >
+          <text x={route.to.x} y={route.to.y - 6} textAnchor="middle" className="fill-foreground text-[2.5px] font-bold">
             العراق
           </text>
         </svg>

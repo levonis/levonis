@@ -320,6 +320,7 @@ const AdminOrders = () => {
         paid_amount: formData.get('paid_amount') ? Number(formData.get('paid_amount')) : 0,
         remaining_amount: formData.get('remaining_amount') ? Number(formData.get('remaining_amount')) : 0,
         shipping_route_type: formData.get('shipping_route_type') as string || null,
+        shipping_duration_days: formData.get('shipping_duration_days') ? Number(formData.get('shipping_duration_days')) : null,
       };
 
       // تحديث تاريخ الوصول للمخزن
@@ -733,6 +734,21 @@ const AdminOrders = () => {
                                   </select>
                                   <p className="text-xs text-muted-foreground">
                                     اختر نوع الشحن لعرض خارطة التتبع للعميل
+                                  </p>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="shipping_duration_days">مدة الشحن (بالأيام)</Label>
+                                  <Input
+                                    id="shipping_duration_days"
+                                    name="shipping_duration_days"
+                                    type="number"
+                                    min="1"
+                                    defaultValue={order.shipping_duration_days || ''}
+                                    placeholder="مثال: 30"
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    حدد مدة الشحن لحساب سرعة تحرك الأيقونة على الخريطة
                                   </p>
                                 </div>
 

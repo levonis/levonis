@@ -877,6 +877,7 @@ export type Database = {
           serial_number_image_url: string | null
           shipped_at: string | null
           shipping_address: string
+          shipping_duration_days: number | null
           shipping_notes: string | null
           shipping_route_type: string | null
           status: string
@@ -916,6 +917,7 @@ export type Database = {
           serial_number_image_url?: string | null
           shipped_at?: string | null
           shipping_address: string
+          shipping_duration_days?: number | null
           shipping_notes?: string | null
           shipping_route_type?: string | null
           status?: string
@@ -955,6 +957,7 @@ export type Database = {
           serial_number_image_url?: string | null
           shipped_at?: string | null
           shipping_address?: string
+          shipping_duration_days?: number | null
           shipping_notes?: string | null
           shipping_route_type?: string | null
           status?: string
