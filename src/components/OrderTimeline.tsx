@@ -9,7 +9,8 @@ import {
   CheckCircle2, 
   Clock,
   CreditCard,
-  PackageCheck
+  PackageCheck,
+  Calendar
 } from 'lucide-react';
 
 interface OrderTimelineProps {
@@ -21,6 +22,7 @@ interface OrderTimelineProps {
     arrived_iraq_at?: string | null;
     delivered_at?: string | null;
     serial_number_image_url?: string | null;
+    estimated_delivery_date?: string | null;
   };
   isPreOrder: boolean;
 }
@@ -57,10 +59,10 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
         isCompleted: currentIndex >= 1,
       },
       {
-        key: 'processing',
-        title: 'قيد التجهيز',
-        description: 'تم طلب المنتج من المورد وفي طريقه إلى مخزننا',
-        icon: <Truck className="h-4 w-4" />,
+        key: 'purchased',
+        title: 'تم الشراء',
+        description: 'تم شراء المنتج من المورد وجاري الشحن إلى مخزننا',
+        icon: <PackageCheck className="h-4 w-4" />,
         isCompleted: currentIndex >= 2,
       },
       {
@@ -217,8 +219,23 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
         })}
       </div>
       
+      {/* Estimated delivery date for pre-orders */}
+      {isPreOrder && order.estimated_delivery_date && (
+        <div className="mt-6 pt-4 border-t border-border/50">
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <Calendar className="h-5 w-5 text-primary" />
+            <div>
+              <p className="text-sm font-bold text-foreground">التاريخ المتوقع للوصول</p>
+              <p className="text-sm text-primary font-medium">
+                {format(new Date(order.estimated_delivery_date), 'PPP', { locale: ar })}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Order type indicator */}
-      <div className="mt-6 pt-4 border-t border-border/50">
+      <div className="mt-4 pt-4 border-t border-border/50">
         <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
           isPreOrder 
             ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' 
