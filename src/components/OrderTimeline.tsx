@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { format, differenceInDays, isPast, isToday } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { 
   ShoppingCart, 
@@ -10,7 +10,8 @@ import {
   Clock,
   CreditCard,
   PackageCheck,
-  Calendar
+  Calendar,
+  Timer
 } from 'lucide-react';
 
 interface OrderTimelineProps {
@@ -220,19 +221,81 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
       </div>
       
       {/* Estimated delivery date for pre-orders */}
-      {isPreOrder && order.estimated_delivery_date && (
-        <div className="mt-6 pt-4 border-t border-border/50">
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
-            <Calendar className="h-5 w-5 text-primary" />
-            <div>
-              <p className="text-sm font-bold text-foreground">التاريخ المتوقع للوصول</p>
-              <p className="text-sm text-primary font-medium">
-                {format(new Date(order.estimated_delivery_date), 'PPP', { locale: ar })}
-              </p>
+      {isPreOrder && order.estimated_delivery_date && (() => {
+        const estimatedDate = new Date(order.estimated_delivery_date);
+        const today = new Date();
+        const daysRemaining = differenceInDays(estimatedDate, today);
+        const isOverdue = isPast(estimatedDate) && !isToday(estimatedDate);
+        const isDeliveryToday = isToday(estimatedDate);
+        
+        return (
+          <div className="mt-6 pt-4 border-t border-border/50">
+            <div className={`p-4 rounded-xl border ${
+              isOverdue 
+                ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' 
+                : isDeliveryToday 
+                  ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
+                  : 'bg-primary/5 border-primary/20'
+            }`}>
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${
+                  isOverdue 
+                    ? 'bg-red-100 dark:bg-red-900/30' 
+                    : isDeliveryToday 
+                      ? 'bg-green-100 dark:bg-green-900/30'
+                      : 'bg-primary/10'
+                }`}>
+                  <Calendar className={`h-5 w-5 ${
+                    isOverdue 
+                      ? 'text-red-600 dark:text-red-400' 
+                      : isDeliveryToday 
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-primary'
+                  }`} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-foreground mb-1">التاريخ المتوقع للوصول</p>
+                  <p className={`text-lg font-bold ${
+                    isOverdue 
+                      ? 'text-red-600 dark:text-red-400' 
+                      : isDeliveryToday 
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-primary'
+                  }`}>
+                    {format(estimatedDate, 'EEEE، d MMMM yyyy', { locale: ar })}
+                  </p>
+                  
+                  {/* Remaining days indicator */}
+                  <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                    isOverdue 
+                      ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' 
+                      : isDeliveryToday 
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                        : daysRemaining <= 3
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                          : 'bg-primary/10 text-primary'
+                  }`}>
+                    <Timer className="h-3 w-3" />
+                    {isOverdue ? (
+                      <span>متأخر بـ {Math.abs(daysRemaining)} يوم</span>
+                    ) : isDeliveryToday ? (
+                      <span>متوقع الوصول اليوم!</span>
+                    ) : daysRemaining === 1 ? (
+                      <span>متبقي يوم واحد</span>
+                    ) : daysRemaining === 2 ? (
+                      <span>متبقي يومان</span>
+                    ) : daysRemaining <= 10 ? (
+                      <span>متبقي {daysRemaining} أيام</span>
+                    ) : (
+                      <span>متبقي {daysRemaining} يوم</span>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
       
       {/* Order type indicator */}
       <div className="mt-4 pt-4 border-t border-border/50">
