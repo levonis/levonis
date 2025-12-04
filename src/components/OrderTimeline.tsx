@@ -13,6 +13,7 @@ import {
   Calendar,
   Timer
 } from 'lucide-react';
+import { ShippingRouteMap } from './ShippingRouteMap';
 
 interface OrderTimelineProps {
   order: {
@@ -24,6 +25,7 @@ interface OrderTimelineProps {
     delivered_at?: string | null;
     serial_number_image_url?: string | null;
     estimated_delivery_date?: string | null;
+    shipping_route_type?: string | null;
   };
   isPreOrder: boolean;
 }
@@ -219,6 +221,16 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
           );
         })}
       </div>
+      
+      {/* Shipping Route Map */}
+      {isPreOrder && order.shipping_route_type && (order.shipping_route_type === 'sea_guangzhou_umm_qasr' || order.shipping_route_type === 'air_guangzhou_erbil') && (
+        <div className="mt-6 pt-4 border-t border-border/50">
+          <ShippingRouteMap 
+            routeType={order.shipping_route_type as 'sea_guangzhou_umm_qasr' | 'air_guangzhou_erbil'} 
+            isShipped={['shipped', 'arrived_iraq', 'delivered'].includes(order.status)}
+          />
+        </div>
+      )}
       
       {/* Estimated delivery date for pre-orders */}
       {isPreOrder && order.estimated_delivery_date && (() => {

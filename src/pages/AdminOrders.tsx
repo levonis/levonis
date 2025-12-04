@@ -319,6 +319,7 @@ const AdminOrders = () => {
         discount_amount: formData.get('discount_amount') ? Number(formData.get('discount_amount')) : 0,
         paid_amount: formData.get('paid_amount') ? Number(formData.get('paid_amount')) : 0,
         remaining_amount: formData.get('remaining_amount') ? Number(formData.get('remaining_amount')) : 0,
+        shipping_route_type: formData.get('shipping_route_type') as string || null,
       };
 
       // تحديث تاريخ الوصول للمخزن
@@ -716,6 +717,23 @@ const AdminOrders = () => {
                                     <option value="delivered">تم التوصيل</option>
                                     <option value="cancelled">ملغي</option>
                                   </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="shipping_route_type">خارطة التتبع</Label>
+                                  <select
+                                    id="shipping_route_type"
+                                    name="shipping_route_type"
+                                    defaultValue={order.shipping_route_type || ''}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                  >
+                                    <option value="">بدون خارطة</option>
+                                    <option value="sea_guangzhou_umm_qasr">🚢 بحري - من قوانغتشو إلى أم قصر</option>
+                                    <option value="air_guangzhou_erbil">✈️ جوي - من قوانغتشو إلى أربيل</option>
+                                  </select>
+                                  <p className="text-xs text-muted-foreground">
+                                    اختر نوع الشحن لعرض خارطة التتبع للعميل
+                                  </p>
                                 </div>
 
                                 <div className="space-y-2">
