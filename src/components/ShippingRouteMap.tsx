@@ -1,9 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import mapboxgl from 'mapbox-gl';
-import 'mapbox-gl/dist/mapbox-gl.css';
+import { useEffect, useState } from 'react';
 import { Ship, Plane } from 'lucide-react';
 import { differenceInMilliseconds, addDays } from 'date-fns';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ShippingRouteMapProps {
   routeType: 'sea_guangzhou_umm_qasr' | 'air_guangzhou_erbil' | null;
@@ -12,90 +9,66 @@ interface ShippingRouteMapProps {
   shippingDurationDays?: number | null;
 }
 
-// Real coordinates [longitude, latitude]
-const LOCATIONS = {
-  guangzhou_port: { 
-    coords: [113.5461, 22.6235] as [number, number], 
-    nameAr: 'ميناء نانشا', 
-    nameEn: 'Nansha Port' 
-  },
-  jebel_ali: { 
-    coords: [55.0272, 24.9857] as [number, number], 
-    nameAr: 'ميناء جبل علي (ترانزيت)', 
-    nameEn: 'Jebel Ali Port (Transshipment)' 
-  },
-  umm_qasr: { 
-    coords: [47.9392, 30.0534] as [number, number], 
-    nameAr: 'ميناء أم قصر', 
-    nameEn: 'Umm Qasr Port' 
-  },
-  guangzhou_airport: { 
-    coords: [113.2989, 23.3925] as [number, number], 
-    nameAr: 'مطار قوانغتشو باييون الدولي', 
-    nameEn: 'Guangzhou Baiyun Airport' 
-  },
-  erbil_airport: { 
-    coords: [43.9578, 36.2358] as [number, number], 
-    nameAr: 'مطار أربيل الدولي', 
-    nameEn: 'Erbil International Airport' 
-  },
+// SVG coordinates for the sea route points
+const SEA_ROUTE_POINTS = [
+  { x: 92, y: 52, name: 'ميناء نانشا', nameEn: 'Nansha Port' },
+  { x: 88, y: 58, name: 'بحر الصين الجنوبي', nameEn: 'South China Sea' },
+  { x: 80, y: 68, name: 'مضيق ملقا', nameEn: 'Malacca Strait' },
+  { x: 65, y: 65, name: 'المحيط الهندي', nameEn: 'Indian Ocean' },
+  { x: 50, y: 55, name: 'بحر العرب', nameEn: 'Arabian Sea' },
+  { x: 42, y: 48, name: 'ميناء جبل علي', nameEn: 'Jebel Ali Port' },
+  { x: 38, y: 42, name: 'الخليج العربي', nameEn: 'Arabian Gulf' },
+  { x: 35, y: 40, name: 'ميناء أم قصر', nameEn: 'Umm Qasr Port' },
+];
+
+const AIR_ROUTE_POINTS = [
+  { x: 92, y: 50, name: 'مطار قوانغتشو', nameEn: 'Guangzhou Airport' },
+  { x: 75, y: 45, name: 'فوق الهند', nameEn: 'Over India' },
+  { x: 55, y: 40, name: 'فوق إيران', nameEn: 'Over Iran' },
+  { x: 40, y: 38, name: 'مطار أربيل', nameEn: 'Erbil Airport' },
+];
+
+// Generate smooth path from points
+const generatePath = (points: typeof SEA_ROUTE_POINTS): string => {
+  if (points.length < 2) return '';
+  
+  let path = `M ${points[0].x} ${points[0].y}`;
+  
+  for (let i = 1; i < points.length; i++) {
+    const prev = points[i - 1];
+    const curr = points[i];
+    const cpX = (prev.x + curr.x) / 2;
+    const cpY = (prev.y + curr.y) / 2;
+    path += ` Q ${prev.x} ${prev.y} ${cpX} ${cpY}`;
+  }
+  
+  const last = points[points.length - 1];
+  path += ` L ${last.x} ${last.y}`;
+  
+  return path;
 };
 
-// Realistic sea shipping route: Nansha Port → South China Sea → Malacca Strait → Indian Ocean → Jebel Ali Port (UAE) → Arabian Gulf → Umm Qasr Port
-const SEA_ROUTE_WAYPOINTS: [number, number][] = [
-  [113.5461, 22.6235],  // Nansha Port (origin)
-  [114.3, 21.5],        // Exit Pearl River Delta
-  [113.5, 18.0],        // South China Sea
-  [110.0, 12.0],        // South China Sea (central)
-  [107.0, 7.0],         // Approaching Vietnam coast
-  [104.5, 2.0],         // Singapore Strait approach
-  [103.8, 1.3],         // Singapore Strait
-  [100.0, 3.5],         // Malacca Strait
-  [95.5, 6.0],          // Exit Malacca Strait
-  [85.0, 7.0],          // Indian Ocean (Bay of Bengal edge)
-  [75.0, 10.0],         // Indian Ocean (south of India)
-  [65.0, 15.0],         // Arabian Sea
-  [58.0, 21.0],         // Approaching UAE
-  [55.0272, 24.9857],   // Jebel Ali Port (UAE - Transshipment)
-  [52.5, 26.5],         // Exit Jebel Ali, entering Arabian Gulf
-  [50.5, 28.5],         // Arabian Gulf
-  [48.8, 29.8],         // Approaching Shatt al-Arab
-  [47.9392, 30.0534],   // Umm Qasr Port (destination)
-];
-
-// Realistic air route: Guangzhou → over Southeast Asia → India → Pakistan → Iran → Erbil
-const AIR_ROUTE_WAYPOINTS: [number, number][] = [
-  [113.2989, 23.3925],  // Guangzhou Baiyun Airport
-  [108.0, 24.5],        // Over Guangxi
-  [100.5, 26.8],        // Over Yunnan/Myanmar border
-  [92.5, 28.5],         // Over Bangladesh
-  [85.3, 27.7],         // Over Nepal/India
-  [77.1, 28.6],         // Over Delhi
-  [68.3, 31.5],         // Over Pakistan (Lahore)
-  [57.0, 35.7],         // Over Iran (Mashhad)
-  [48.5, 36.1],         // Over Iran/Iraq border
-  [43.9578, 36.2358],   // Erbil International Airport
-];
-
-// Interpolate position along route
-const getPositionOnRoute = (waypoints: [number, number][], progress: number): [number, number] => {
-  if (progress <= 0) return waypoints[0];
-  if (progress >= 100) return waypoints[waypoints.length - 1];
-
-  const totalSegments = waypoints.length - 1;
+// Get position along path based on progress
+const getPositionOnPath = (points: typeof SEA_ROUTE_POINTS, progress: number) => {
+  if (progress <= 0) return points[0];
+  if (progress >= 100) return points[points.length - 1];
+  
+  const totalSegments = points.length - 1;
   const progressPerSegment = 100 / totalSegments;
   const currentSegment = Math.floor(progress / progressPerSegment);
   const segmentProgress = (progress % progressPerSegment) / progressPerSegment;
-
-  if (currentSegment >= totalSegments) return waypoints[waypoints.length - 1];
-
-  const start = waypoints[currentSegment];
-  const end = waypoints[currentSegment + 1];
-
-  return [
-    start[0] + (end[0] - start[0]) * segmentProgress,
-    start[1] + (end[1] - start[1]) * segmentProgress,
-  ];
+  
+  if (currentSegment >= totalSegments) return points[points.length - 1];
+  
+  const start = points[currentSegment];
+  const end = points[currentSegment + 1];
+  
+  return {
+    x: start.x + (end.x - start.x) * segmentProgress,
+    y: start.y + (end.y - start.y) * segmentProgress,
+    name: start.name,
+    nameEn: start.nameEn,
+  };
 };
 
 export const ShippingRouteMap = ({ 
@@ -104,16 +77,12 @@ export const ShippingRouteMap = ({
   shippedAt,
   shippingDurationDays
 }: ShippingRouteMapProps) => {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null);
   const [progress, setProgress] = useState(0);
-  const [mapLoaded, setMapLoaded] = useState(false);
 
   const isSea = routeType === 'sea_guangzhou_umm_qasr';
-  const waypoints = isSea ? SEA_ROUTE_WAYPOINTS : AIR_ROUTE_WAYPOINTS;
-  const fromLoc = isSea ? LOCATIONS.guangzhou_port : LOCATIONS.guangzhou_airport;
-  const toLoc = isSea ? LOCATIONS.umm_qasr : LOCATIONS.erbil_airport;
+  const routePoints = isSea ? SEA_ROUTE_POINTS : AIR_ROUTE_POINTS;
+  const fromLoc = routePoints[0];
+  const toLoc = routePoints[routePoints.length - 1];
 
   // Calculate progress based on shipping dates
   useEffect(() => {
@@ -147,209 +116,12 @@ export const ShippingRouteMap = ({
     } else {
       // Demo animation
       const interval = setInterval(() => {
-        setProgress(prev => prev >= 100 ? 0 : prev + 0.5);
-      }, 100);
+        setProgress(prev => prev >= 100 ? 0 : prev + 0.3);
+      }, 50);
       return () => clearInterval(interval);
     }
   }, [isShipped, shippedAt, shippingDurationDays]);
 
-  // Initialize map
-  useEffect(() => {
-    if (!mapContainer.current || !routeType) return;
-
-    const initMap = async () => {
-      try {
-        // Fetch Mapbox token from edge function
-        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
-        
-        if (error || !data?.token) {
-          console.error('Failed to get Mapbox token:', error);
-          return;
-        }
-
-        mapboxgl.accessToken = data.token;
-
-        const bounds = new mapboxgl.LngLatBounds();
-        waypoints.forEach(coord => bounds.extend(coord));
-
-        map.current = new mapboxgl.Map({
-          container: mapContainer.current!,
-          style: 'mapbox://styles/mapbox/streets-v12',
-          bounds: bounds,
-          fitBoundsOptions: { padding: 40 },
-          interactive: true,
-          attributionControl: false,
-          projection: 'mercator',
-        });
-
-        map.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
-
-        map.current.on('load', () => {
-          if (!map.current) return;
-
-          // Add route line
-          map.current.addSource('route', {
-            type: 'geojson',
-            data: {
-              type: 'Feature',
-              properties: {},
-              geometry: {
-                type: 'LineString',
-                coordinates: waypoints,
-              },
-            },
-          });
-
-          // Route background (dashed)
-          map.current.addLayer({
-            id: 'route-background',
-            type: 'line',
-            source: 'route',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round',
-            },
-            paint: {
-              'line-color': isSea ? '#1e40af' : '#0369a1',
-              'line-width': 3,
-              'line-opacity': 0.4,
-              'line-dasharray': [2, 2],
-            },
-          });
-
-          // Route progress line
-          map.current.addLayer({
-            id: 'route-progress',
-            type: 'line',
-            source: 'route',
-            layout: {
-              'line-join': 'round',
-              'line-cap': 'round',
-            },
-            paint: {
-              'line-color': isSea ? '#3b82f6' : '#0ea5e9',
-              'line-width': 4,
-              'line-opacity': 0.9,
-            },
-          });
-
-          // Origin marker
-          new mapboxgl.Marker({ color: '#22c55e' })
-            .setLngLat(fromLoc.coords)
-            .setPopup(new mapboxgl.Popup().setHTML(`<strong>${fromLoc.nameAr}</strong><br/>${fromLoc.nameEn}`))
-            .addTo(map.current);
-
-          // Transshipment marker (Jebel Ali for sea route)
-          if (isSea) {
-            new mapboxgl.Marker({ color: '#f59e0b' })
-              .setLngLat(LOCATIONS.jebel_ali.coords)
-              .setPopup(new mapboxgl.Popup().setHTML(`<strong>${LOCATIONS.jebel_ali.nameAr}</strong><br/>${LOCATIONS.jebel_ali.nameEn}`))
-              .addTo(map.current);
-          }
-
-          // Destination marker
-          new mapboxgl.Marker({ color: '#ef4444' })
-            .setLngLat(toLoc.coords)
-            .setPopup(new mapboxgl.Popup().setHTML(`<strong>${toLoc.nameAr}</strong><br/>${toLoc.nameEn}`))
-            .addTo(map.current);
-
-          setMapLoaded(true);
-        });
-      } catch (err) {
-        console.error('Error initializing map:', err);
-      }
-    };
-
-    initMap();
-
-    return () => {
-      if (markerRef.current) {
-        markerRef.current.remove();
-        markerRef.current = null;
-      }
-      map.current?.remove();
-      map.current = null;
-      setMapLoaded(false);
-    };
-  }, [routeType]);
-
-  // Update vehicle marker position
-  useEffect(() => {
-    if (!map.current || !mapLoaded || !isShipped) return;
-
-    const position = getPositionOnRoute(waypoints, progress);
-
-    // Create custom marker element with ship/plane icon
-    if (!markerRef.current) {
-      const el = document.createElement('div');
-      el.className = 'vehicle-marker';
-      
-      if (isSea) {
-        // Realistic cargo ship icon
-        el.innerHTML = `
-          <div style="
-            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
-            border-radius: 8px;
-            width: 48px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5), 0 0 0 3px rgba(255,255,255,0.9);
-            position: relative;
-          ">
-            <span style="font-size: 24px; line-height: 1;">🚢</span>
-          </div>
-        `;
-      } else {
-        // Airplane icon
-        el.innerHTML = `
-          <div style="
-            background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%);
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 20px rgba(14, 165, 233, 0.5), 0 0 0 3px rgba(255,255,255,0.9);
-          ">
-            <span style="font-size: 22px; line-height: 1;">✈️</span>
-          </div>
-        `;
-      }
-
-      markerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
-        .setLngLat(position)
-        .addTo(map.current);
-    } else {
-      markerRef.current.setLngLat(position);
-    }
-
-    // Update route progress visualization
-    const progressIndex = Math.floor((progress / 100) * (waypoints.length - 1)) + 1;
-    const progressCoords = waypoints.slice(0, Math.min(progressIndex + 1, waypoints.length));
-    
-    // Add current position to progress coords
-    if (progress > 0 && progress < 100) {
-      progressCoords[progressCoords.length - 1] = position;
-    }
-
-    const source = map.current.getSource('route') as mapboxgl.GeoJSONSource;
-    if (source) {
-      source.setData({
-        type: 'Feature',
-        properties: {},
-        geometry: {
-          type: 'LineString',
-          coordinates: waypoints,
-        },
-      });
-    }
-
-  }, [progress, mapLoaded, isShipped, waypoints, isSea]);
-
-  // Calculate remaining info
   const getRemainingInfo = () => {
     if (!shippedAt || !shippingDurationDays) return null;
     
@@ -368,6 +140,8 @@ export const ShippingRouteMap = ({
 
   const remainingInfo = getRemainingInfo();
   const Icon = isSea ? Ship : Plane;
+  const currentPosition = getPositionOnPath(routePoints, progress);
+  const pathD = generatePath(routePoints);
 
   if (!routeType) return null;
 
@@ -385,7 +159,7 @@ export const ShippingRouteMap = ({
                 {isSea ? 'الشحن البحري' : 'الشحن الجوي'}
               </h3>
               <p className="text-xs text-muted-foreground">
-                {isSea ? 'Sea Freight' : 'Air Freight'}
+                {isSea ? 'Sea Freight (Container)' : 'Air Freight'}
               </p>
             </div>
           </div>
@@ -403,7 +177,7 @@ export const ShippingRouteMap = ({
         <div className="px-4 pt-3">
           <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
             <div 
-              className={`h-full transition-all duration-1000 ease-linear rounded-full ${
+              className={`h-full transition-all duration-300 ease-linear rounded-full ${
                 isSea ? 'bg-gradient-to-r from-blue-600 to-blue-400' : 'bg-gradient-to-r from-sky-600 to-sky-400'
               }`}
               style={{ width: `${progress}%` }}
@@ -422,16 +196,157 @@ export const ShippingRouteMap = ({
         </div>
       )}
 
-      {/* Map Container */}
-      <div className="relative">
-        <div ref={mapContainer} className="w-full h-[280px]" />
-        
-        {/* Completed badge */}
-        {progress >= 100 && (
-          <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg z-10">
-            ✓ تم الوصول
-          </div>
-        )}
+      {/* SVG Map */}
+      <div className="relative p-2">
+        <svg 
+          viewBox="0 0 100 80" 
+          className="w-full h-[260px]"
+          style={{ background: 'linear-gradient(180deg, #1e3a5f 0%, #0c1929 100%)' }}
+        >
+          {/* Ocean background */}
+          <rect x="0" y="0" width="100" height="80" fill="url(#oceanGradient)" />
+          
+          {/* Gradients */}
+          <defs>
+            <linearGradient id="oceanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#1e3a5f" />
+              <stop offset="100%" stopColor="#0c1929" />
+            </linearGradient>
+            <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor={isSea ? '#3b82f6' : '#0ea5e9'} />
+              <stop offset="100%" stopColor={isSea ? '#60a5fa' : '#38bdf8'} />
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
+          {/* Simplified land masses */}
+          {/* Asia */}
+          <path 
+            d="M 70 10 L 98 10 L 98 45 L 95 48 L 90 46 L 85 50 L 80 48 L 75 52 L 70 50 L 65 45 L 60 40 L 55 35 L 50 30 L 45 28 L 40 25 L 35 22 L 30 20 L 25 18 L 20 15 L 15 12 L 10 10 L 5 8 L 0 5 L 0 0 L 70 0 Z" 
+            fill="#2d4a3e" 
+            opacity="0.7"
+          />
+          
+          {/* Southeast Asia / Indonesia */}
+          <path 
+            d="M 78 55 L 85 58 L 88 62 L 85 65 L 80 63 L 75 66 L 72 64 L 75 60 L 78 55" 
+            fill="#2d4a3e" 
+            opacity="0.6"
+          />
+          
+          {/* India */}
+          <path 
+            d="M 55 35 L 60 40 L 58 50 L 55 55 L 50 60 L 48 55 L 50 48 L 52 42 L 55 35" 
+            fill="#2d4a3e" 
+            opacity="0.7"
+          />
+          
+          {/* Arabian Peninsula */}
+          <path 
+            d="M 35 35 L 45 38 L 48 45 L 45 52 L 40 55 L 35 52 L 32 48 L 30 42 L 32 38 L 35 35" 
+            fill="#2d4a3e" 
+            opacity="0.7"
+          />
+          
+          {/* Middle East / Iraq */}
+          <path 
+            d="M 30 28 L 40 30 L 42 35 L 38 38 L 32 36 L 28 32 L 30 28" 
+            fill="#2d4a3e" 
+            opacity="0.7"
+          />
+          
+          {/* Africa (partial) */}
+          <path 
+            d="M 0 30 L 15 35 L 25 45 L 30 55 L 28 65 L 20 75 L 10 80 L 0 80 L 0 30" 
+            fill="#2d4a3e" 
+            opacity="0.6"
+          />
+
+          {/* Route path - dashed background */}
+          <path
+            d={pathD}
+            fill="none"
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth="0.8"
+            strokeDasharray="2,2"
+          />
+          
+          {/* Route path - active */}
+          <path
+            d={pathD}
+            fill="none"
+            stroke="url(#routeGradient)"
+            strokeWidth="1.2"
+            strokeLinecap="round"
+            filter="url(#glow)"
+            strokeDasharray={`${progress * 2}, 1000`}
+          />
+
+          {/* Route points */}
+          {routePoints.map((point, index) => {
+            const isStart = index === 0;
+            const isEnd = index === routePoints.length - 1;
+            const isTransit = isSea && point.nameEn === 'Jebel Ali Port';
+            
+            return (
+              <g key={index}>
+                {/* Point marker */}
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={isStart || isEnd || isTransit ? 2 : 1}
+                  fill={isStart ? '#22c55e' : isEnd ? '#ef4444' : isTransit ? '#f59e0b' : 'rgba(255,255,255,0.5)'}
+                  filter={isStart || isEnd || isTransit ? 'url(#glow)' : undefined}
+                />
+                {/* Labels for key points */}
+                {(isStart || isEnd || isTransit) && (
+                  <text
+                    x={point.x}
+                    y={point.y - 4}
+                    fontSize="2.5"
+                    fill="white"
+                    textAnchor="middle"
+                    fontFamily="Arial"
+                  >
+                    {point.nameEn}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+
+          {/* Vehicle icon */}
+          {isShipped && (
+            <g transform={`translate(${currentPosition.x}, ${currentPosition.y})`}>
+              <circle r="4" fill={isSea ? '#3b82f6' : '#0ea5e9'} filter="url(#glow)" />
+              <text
+                x="0"
+                y="1.5"
+                fontSize="5"
+                textAnchor="middle"
+                dominantBaseline="middle"
+              >
+                {isSea ? '🚢' : '✈️'}
+              </text>
+            </g>
+          )}
+
+          {/* Completed badge */}
+          {progress >= 100 && (
+            <g transform="translate(50, 15)">
+              <rect x="-12" y="-4" width="24" height="8" rx="4" fill="#22c55e" />
+              <text x="0" y="1" fontSize="3" fill="white" textAnchor="middle" dominantBaseline="middle" fontFamily="Arial">
+                ✓ تم الوصول
+              </text>
+            </g>
+          )}
+        </svg>
       </div>
 
       {/* Route info footer */}
@@ -440,7 +355,7 @@ export const ShippingRouteMap = ({
           <div className="flex items-center gap-2 flex-1">
             <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
             <div className="text-right">
-              <p className="font-bold text-foreground text-xs">{fromLoc.nameAr}</p>
+              <p className="font-bold text-foreground text-xs">{fromLoc.name}</p>
               <p className="text-muted-foreground text-[10px]">{fromLoc.nameEn}</p>
             </div>
           </div>
@@ -453,12 +368,21 @@ export const ShippingRouteMap = ({
           
           <div className="flex items-center gap-2 flex-1 justify-end">
             <div className="text-left">
-              <p className="font-bold text-foreground text-xs">{toLoc.nameAr}</p>
+              <p className="font-bold text-foreground text-xs">{toLoc.name}</p>
               <p className="text-muted-foreground text-[10px]">{toLoc.nameEn}</p>
             </div>
             <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></div>
           </div>
         </div>
+
+        {/* Route stages */}
+        {isSea && (
+          <div className="mt-3 pt-3 border-t border-border/50">
+            <p className="text-[10px] text-muted-foreground text-center">
+              نانشا ← بحر الصين الجنوبي ← مضيق ملقا ← المحيط الهندي ← جبل علي (ترانزيت) ← الخليج العربي ← أم قصر
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
