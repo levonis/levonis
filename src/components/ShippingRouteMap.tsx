@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Ship, Plane } from 'lucide-react';
+import { Ship, Plane, Anchor } from 'lucide-react';
 import { differenceInMilliseconds, addDays } from 'date-fns';
 
 interface ShippingRouteMapProps {
@@ -9,26 +9,28 @@ interface ShippingRouteMapProps {
   shippingDurationDays?: number | null;
 }
 
-// SVG coordinates for the sea route points
+// SVG coordinates for the sea route points (adjusted for better accuracy)
 const SEA_ROUTE_POINTS = [
-  { x: 92, y: 52, name: 'ميناء نانشا', nameEn: 'Nansha Port' },
-  { x: 88, y: 58, name: 'بحر الصين الجنوبي', nameEn: 'South China Sea' },
-  { x: 80, y: 68, name: 'مضيق ملقا', nameEn: 'Malacca Strait' },
-  { x: 65, y: 65, name: 'المحيط الهندي', nameEn: 'Indian Ocean' },
-  { x: 50, y: 55, name: 'بحر العرب', nameEn: 'Arabian Sea' },
-  { x: 42, y: 48, name: 'ميناء جبل علي', nameEn: 'Jebel Ali Port' },
-  { x: 38, y: 42, name: 'الخليج العربي', nameEn: 'Arabian Gulf' },
-  { x: 35, y: 40, name: 'ميناء أم قصر', nameEn: 'Umm Qasr Port' },
+  { x: 88, y: 38, name: 'ميناء نانشا', nameEn: 'Nansha Port', isPort: true },
+  { x: 85, y: 45, name: 'بحر الصين الجنوبي', nameEn: 'South China Sea', isPort: false },
+  { x: 78, y: 55, name: 'سنغافورة', nameEn: 'Singapore', isPort: false },
+  { x: 68, y: 58, name: 'مضيق ملقا', nameEn: 'Malacca Strait', isPort: false },
+  { x: 52, y: 55, name: 'المحيط الهندي', nameEn: 'Indian Ocean', isPort: false },
+  { x: 38, y: 48, name: 'بحر العرب', nameEn: 'Arabian Sea', isPort: false },
+  { x: 30, y: 40, name: 'ميناء جبل علي', nameEn: 'Jebel Ali Port', isPort: true },
+  { x: 28, y: 34, name: 'الخليج العربي', nameEn: 'Arabian Gulf', isPort: false },
+  { x: 26, y: 28, name: 'ميناء أم قصر', nameEn: 'Umm Qasr Port', isPort: true },
 ];
 
 const AIR_ROUTE_POINTS = [
-  { x: 92, y: 50, name: 'مطار قوانغتشو', nameEn: 'Guangzhou Airport' },
-  { x: 75, y: 45, name: 'فوق الهند', nameEn: 'Over India' },
-  { x: 55, y: 40, name: 'فوق إيران', nameEn: 'Over Iran' },
-  { x: 40, y: 38, name: 'مطار أربيل', nameEn: 'Erbil Airport' },
+  { x: 88, y: 36, name: 'مطار قوانغتشو', nameEn: 'Guangzhou Airport', isPort: true },
+  { x: 70, y: 32, name: 'فوق ميانمار', nameEn: 'Over Myanmar', isPort: false },
+  { x: 52, y: 30, name: 'فوق الهند', nameEn: 'Over India', isPort: false },
+  { x: 38, y: 26, name: 'فوق إيران', nameEn: 'Over Iran', isPort: false },
+  { x: 28, y: 24, name: 'مطار أربيل', nameEn: 'Erbil Airport', isPort: true },
 ];
 
-// Generate smooth path from points
+// Generate smooth curved path from points
 const generatePath = (points: typeof SEA_ROUTE_POINTS): string => {
   if (points.length < 2) return '';
   
@@ -68,6 +70,7 @@ const getPositionOnPath = (points: typeof SEA_ROUTE_POINTS, progress: number) =>
     y: start.y + (end.y - start.y) * segmentProgress,
     name: start.name,
     nameEn: start.nameEn,
+    isPort: false,
   };
 };
 
@@ -199,85 +202,207 @@ export const ShippingRouteMap = ({
       {/* SVG Map */}
       <div className="relative p-2">
         <svg 
-          viewBox="0 0 100 80" 
-          className="w-full h-[260px]"
-          style={{ background: 'linear-gradient(180deg, #1e3a5f 0%, #0c1929 100%)' }}
+          viewBox="0 0 100 70" 
+          className="w-full h-[280px]"
         >
-          {/* Ocean background */}
-          <rect x="0" y="0" width="100" height="80" fill="url(#oceanGradient)" />
-          
-          {/* Gradients */}
+          {/* Definitions */}
           <defs>
-            <linearGradient id="oceanGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#1e3a5f" />
-              <stop offset="100%" stopColor="#0c1929" />
+            {/* Ocean gradient */}
+            <linearGradient id="oceanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#0a1628" />
+              <stop offset="50%" stopColor="#0f2744" />
+              <stop offset="100%" stopColor="#0a1628" />
             </linearGradient>
+            
+            {/* Land gradient */}
+            <linearGradient id="landGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#3d5a45" />
+              <stop offset="100%" stopColor="#2a3d30" />
+            </linearGradient>
+            
+            {/* Desert gradient */}
+            <linearGradient id="desertGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor="#8b7355" />
+              <stop offset="100%" stopColor="#6b5344" />
+            </linearGradient>
+            
+            {/* Route gradient */}
             <linearGradient id="routeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor={isSea ? '#3b82f6' : '#0ea5e9'} />
-              <stop offset="100%" stopColor={isSea ? '#60a5fa' : '#38bdf8'} />
+              <stop offset="50%" stopColor={isSea ? '#60a5fa' : '#38bdf8'} />
+              <stop offset="100%" stopColor={isSea ? '#93c5fd' : '#7dd3fc'} />
             </linearGradient>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+            
+            {/* Glow filter */}
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="0.8" result="coloredBlur"/>
               <feMerge>
                 <feMergeNode in="coloredBlur"/>
                 <feMergeNode in="SourceGraphic"/>
               </feMerge>
             </filter>
+            
+            {/* Strong glow */}
+            <filter id="strongGlow" x="-100%" y="-100%" width="300%" height="300%">
+              <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+            
+            {/* Water pattern */}
+            <pattern id="waterPattern" patternUnits="userSpaceOnUse" width="4" height="4">
+              <circle cx="2" cy="2" r="0.3" fill="rgba(100,150,200,0.1)" />
+            </pattern>
           </defs>
 
-          {/* Simplified land masses */}
-          {/* Asia */}
+          {/* Ocean background */}
+          <rect x="0" y="0" width="100" height="70" fill="url(#oceanGradient)" />
+          <rect x="0" y="0" width="100" height="70" fill="url(#waterPattern)" />
+          
+          {/* Grid lines (latitude/longitude effect) */}
+          {[10, 20, 30, 40, 50, 60, 70, 80, 90].map(x => (
+            <line key={`v-${x}`} x1={x} y1="0" x2={x} y2="70" stroke="rgba(100,150,200,0.08)" strokeWidth="0.2" />
+          ))}
+          {[10, 20, 30, 40, 50, 60].map(y => (
+            <line key={`h-${y}`} x1="0" y1={y} x2="100" y2={y} stroke="rgba(100,150,200,0.08)" strokeWidth="0.2" />
+          ))}
+
+          {/* LANDMASSES */}
+          
+          {/* China */}
           <path 
-            d="M 70 10 L 98 10 L 98 45 L 95 48 L 90 46 L 85 50 L 80 48 L 75 52 L 70 50 L 65 45 L 60 40 L 55 35 L 50 30 L 45 28 L 40 25 L 35 22 L 30 20 L 25 18 L 20 15 L 15 12 L 10 10 L 5 8 L 0 5 L 0 0 L 70 0 Z" 
-            fill="#2d4a3e" 
-            opacity="0.7"
+            d="M 75 5 L 98 5 L 98 35 L 95 38 L 90 36 L 85 40 L 82 38 L 78 35 L 75 30 L 72 25 L 70 20 L 68 15 L 70 10 L 75 5" 
+            fill="url(#landGradient)" 
+            stroke="#4a6b52"
+            strokeWidth="0.3"
+          />
+          <text x="85" y="25" fontSize="2.5" fill="rgba(255,255,255,0.6)" textAnchor="middle">الصين</text>
+          
+          {/* Vietnam/Indochina */}
+          <path 
+            d="M 78 35 L 82 38 L 80 45 L 78 50 L 75 48 L 73 45 L 75 40 L 78 35" 
+            fill="url(#landGradient)" 
+            stroke="#4a6b52"
+            strokeWidth="0.3"
           />
           
-          {/* Southeast Asia / Indonesia */}
+          {/* Thailand/Malaysia */}
           <path 
-            d="M 78 55 L 85 58 L 88 62 L 85 65 L 80 63 L 75 66 L 72 64 L 75 60 L 78 55" 
-            fill="#2d4a3e" 
-            opacity="0.6"
+            d="M 70 42 L 75 45 L 73 52 L 70 58 L 68 62 L 65 60 L 67 55 L 68 50 L 70 42" 
+            fill="url(#landGradient)" 
+            stroke="#4a6b52"
+            strokeWidth="0.3"
+          />
+          
+          {/* Indonesia (Sumatra) */}
+          <path 
+            d="M 60 58 L 68 62 L 70 65 L 65 68 L 58 66 L 55 62 L 58 58 L 60 58" 
+            fill="url(#landGradient)" 
+            stroke="#4a6b52"
+            strokeWidth="0.3"
+          />
+          
+          {/* Indonesia (Java/Borneo) */}
+          <path 
+            d="M 72 60 L 80 58 L 85 62 L 82 66 L 75 68 L 70 65 L 72 60" 
+            fill="url(#landGradient)" 
+            stroke="#4a6b52"
+            strokeWidth="0.3"
           />
           
           {/* India */}
           <path 
-            d="M 55 35 L 60 40 L 58 50 L 55 55 L 50 60 L 48 55 L 50 48 L 52 42 L 55 35" 
-            fill="#2d4a3e" 
-            opacity="0.7"
+            d="M 42 18 L 55 15 L 58 22 L 55 32 L 52 42 L 48 50 L 44 55 L 40 52 L 42 45 L 44 38 L 45 30 L 44 25 L 42 18" 
+            fill="url(#landGradient)" 
+            stroke="#4a6b52"
+            strokeWidth="0.3"
           />
+          <text x="48" y="35" fontSize="2" fill="rgba(255,255,255,0.5)" textAnchor="middle">الهند</text>
+          
+          {/* Sri Lanka */}
+          <circle cx="50" cy="52" r="2" fill="url(#landGradient)" stroke="#4a6b52" strokeWidth="0.2" />
           
           {/* Arabian Peninsula */}
           <path 
-            d="M 35 35 L 45 38 L 48 45 L 45 52 L 40 55 L 35 52 L 32 48 L 30 42 L 32 38 L 35 35" 
-            fill="#2d4a3e" 
-            opacity="0.7"
+            d="M 22 32 L 35 28 L 38 35 L 36 45 L 32 52 L 26 55 L 20 52 L 18 45 L 20 38 L 22 32" 
+            fill="url(#desertGradient)" 
+            stroke="#7a6a55"
+            strokeWidth="0.3"
+          />
+          <text x="28" y="45" fontSize="1.8" fill="rgba(255,255,255,0.5)" textAnchor="middle">السعودية</text>
+          
+          {/* UAE */}
+          <text x="32" y="40" fontSize="1.5" fill="rgba(255,255,255,0.4)" textAnchor="middle">الإمارات</text>
+          
+          {/* Iran */}
+          <path 
+            d="M 25 20 L 42 18 L 45 25 L 42 32 L 38 35 L 35 28 L 30 25 L 25 22 L 25 20" 
+            fill="url(#landGradient)" 
+            stroke="#4a6b52"
+            strokeWidth="0.3"
+          />
+          <text x="35" y="25" fontSize="1.8" fill="rgba(255,255,255,0.5)" textAnchor="middle">إيران</text>
+          
+          {/* Iraq */}
+          <path 
+            d="M 22 15 L 30 15 L 32 20 L 30 25 L 25 22 L 22 18 L 22 15" 
+            fill="url(#desertGradient)" 
+            stroke="#7a6a55"
+            strokeWidth="0.3"
+          />
+          <text x="26" y="20" fontSize="1.5" fill="rgba(255,255,255,0.5)" textAnchor="middle">العراق</text>
+          
+          {/* Turkey */}
+          <path 
+            d="M 15 10 L 28 8 L 30 12 L 25 15 L 18 14 L 15 10" 
+            fill="url(#landGradient)" 
+            stroke="#4a6b52"
+            strokeWidth="0.3"
           />
           
-          {/* Middle East / Iraq */}
+          {/* Africa (East) */}
           <path 
-            d="M 30 28 L 40 30 L 42 35 L 38 38 L 32 36 L 28 32 L 30 28" 
-            fill="#2d4a3e" 
-            opacity="0.7"
+            d="M 5 25 L 18 30 L 22 40 L 20 52 L 15 60 L 10 65 L 5 68 L 2 60 L 3 50 L 5 40 L 5 25" 
+            fill="url(#landGradient)" 
+            stroke="#4a6b52"
+            strokeWidth="0.3"
           />
-          
-          {/* Africa (partial) */}
-          <path 
-            d="M 0 30 L 15 35 L 25 45 L 30 55 L 28 65 L 20 75 L 10 80 L 0 80 L 0 30" 
-            fill="#2d4a3e" 
-            opacity="0.6"
-          />
+          <text x="10" y="50" fontSize="1.8" fill="rgba(255,255,255,0.4)" textAnchor="middle">أفريقيا</text>
+
+          {/* Sea labels */}
+          <text x="82" y="48" fontSize="1.5" fill="rgba(100,180,255,0.4)" textAnchor="middle" fontStyle="italic">بحر الصين الجنوبي</text>
+          <text x="55" y="60" fontSize="1.5" fill="rgba(100,180,255,0.4)" textAnchor="middle" fontStyle="italic">المحيط الهندي</text>
+          <text x="35" y="55" fontSize="1.5" fill="rgba(100,180,255,0.4)" textAnchor="middle" fontStyle="italic">بحر العرب</text>
+          <text x="25" y="35" fontSize="1.3" fill="rgba(100,180,255,0.4)" textAnchor="middle" fontStyle="italic">الخليج العربي</text>
 
           {/* Route path - dashed background */}
           <path
             d={pathD}
             fill="none"
-            stroke="rgba(255,255,255,0.2)"
-            strokeWidth="0.8"
-            strokeDasharray="2,2"
+            stroke="rgba(255,255,255,0.15)"
+            strokeWidth="1"
+            strokeDasharray="2,1.5"
           />
           
-          {/* Route path - active */}
+          {/* Route path - active glow */}
+          <path
+            d={pathD}
+            fill="none"
+            stroke={isSea ? 'rgba(59,130,246,0.3)' : 'rgba(14,165,233,0.3)'}
+            strokeWidth="3"
+            strokeLinecap="round"
+            filter="url(#strongGlow)"
+            style={{
+              strokeDasharray: '1000',
+              strokeDashoffset: 1000 - (progress * 10),
+              transition: 'stroke-dashoffset 0.3s ease-out'
+            }}
+          />
+          
+          {/* Route path - main line */}
           <path
             d={pathD}
             fill="none"
@@ -285,37 +410,69 @@ export const ShippingRouteMap = ({
             strokeWidth="1.2"
             strokeLinecap="round"
             filter="url(#glow)"
-            strokeDasharray={`${progress * 2}, 1000`}
+            style={{
+              strokeDasharray: '1000',
+              strokeDashoffset: 1000 - (progress * 10),
+              transition: 'stroke-dashoffset 0.3s ease-out'
+            }}
           />
 
-          {/* Route points */}
+          {/* Route waypoints */}
           {routePoints.map((point, index) => {
             const isStart = index === 0;
             const isEnd = index === routePoints.length - 1;
-            const isTransit = isSea && point.nameEn === 'Jebel Ali Port';
+            const isTransit = point.isPort && !isStart && !isEnd;
+            const passedPoint = (index / (routePoints.length - 1)) * 100 <= progress;
             
             return (
               <g key={index}>
-                {/* Point marker */}
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r={isStart || isEnd || isTransit ? 2 : 1}
-                  fill={isStart ? '#22c55e' : isEnd ? '#ef4444' : isTransit ? '#f59e0b' : 'rgba(255,255,255,0.5)'}
-                  filter={isStart || isEnd || isTransit ? 'url(#glow)' : undefined}
-                />
-                {/* Labels for key points */}
-                {(isStart || isEnd || isTransit) && (
-                  <text
-                    x={point.x}
-                    y={point.y - 4}
-                    fontSize="2.5"
-                    fill="white"
-                    textAnchor="middle"
-                    fontFamily="Arial"
-                  >
-                    {point.nameEn}
-                  </text>
+                {/* Port markers with anchor icon */}
+                {point.isPort ? (
+                  <>
+                    <circle
+                      cx={point.x}
+                      cy={point.y}
+                      r={2.5}
+                      fill={isStart ? '#22c55e' : isEnd ? '#ef4444' : '#f59e0b'}
+                      filter="url(#strongGlow)"
+                      opacity={passedPoint ? 1 : 0.5}
+                    />
+                    <circle
+                      cx={point.x}
+                      cy={point.y}
+                      r={1.5}
+                      fill="white"
+                      opacity={passedPoint ? 0.9 : 0.4}
+                    />
+                    {/* Port label */}
+                    <rect 
+                      x={point.x - 10} 
+                      y={point.y - 7} 
+                      width="20" 
+                      height="4" 
+                      rx="1" 
+                      fill="rgba(0,0,0,0.7)"
+                    />
+                    <text
+                      x={point.x}
+                      y={point.y - 4.5}
+                      fontSize="2"
+                      fill="white"
+                      textAnchor="middle"
+                      fontWeight="bold"
+                    >
+                      {point.nameEn}
+                    </text>
+                  </>
+                ) : (
+                  /* Waypoint dots */
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r={0.8}
+                    fill={passedPoint ? (isSea ? '#60a5fa' : '#38bdf8') : 'rgba(255,255,255,0.3)'}
+                    filter={passedPoint ? 'url(#glow)' : undefined}
+                  />
                 )}
               </g>
             );
@@ -324,11 +481,16 @@ export const ShippingRouteMap = ({
           {/* Vehicle icon */}
           {isShipped && (
             <g transform={`translate(${currentPosition.x}, ${currentPosition.y})`}>
-              <circle r="4" fill={isSea ? '#3b82f6' : '#0ea5e9'} filter="url(#glow)" />
+              {/* Outer glow */}
+              <circle r="5" fill={isSea ? 'rgba(59,130,246,0.3)' : 'rgba(14,165,233,0.3)'} filter="url(#strongGlow)" />
+              {/* Inner circle */}
+              <circle r="3.5" fill={isSea ? '#1e40af' : '#0369a1'} />
+              <circle r="2.8" fill={isSea ? '#3b82f6' : '#0ea5e9'} />
+              {/* Icon */}
               <text
                 x="0"
-                y="1.5"
-                fontSize="5"
+                y="1.2"
+                fontSize="4"
                 textAnchor="middle"
                 dominantBaseline="middle"
               >
@@ -339,9 +501,9 @@ export const ShippingRouteMap = ({
 
           {/* Completed badge */}
           {progress >= 100 && (
-            <g transform="translate(50, 15)">
-              <rect x="-12" y="-4" width="24" height="8" rx="4" fill="#22c55e" />
-              <text x="0" y="1" fontSize="3" fill="white" textAnchor="middle" dominantBaseline="middle" fontFamily="Arial">
+            <g transform="translate(50, 10)">
+              <rect x="-14" y="-5" width="28" height="10" rx="5" fill="#22c55e" filter="url(#strongGlow)" />
+              <text x="0" y="1" fontSize="3.5" fill="white" textAnchor="middle" dominantBaseline="middle" fontWeight="bold">
                 ✓ تم الوصول
               </text>
             </g>
@@ -353,7 +515,9 @@ export const ShippingRouteMap = ({
       <div className="px-4 py-3 border-t border-border bg-muted/30">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 flex-1">
-            <div className="w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50"></div>
+            <div className="w-3 h-3 rounded-full bg-green-500 shadow-sm shadow-green-500/50 flex items-center justify-center">
+              <Anchor className="w-2 h-2 text-white" />
+            </div>
             <div className="text-right">
               <p className="font-bold text-foreground text-xs">{fromLoc.name}</p>
               <p className="text-muted-foreground text-[10px]">{fromLoc.nameEn}</p>
@@ -361,9 +525,9 @@ export const ShippingRouteMap = ({
           </div>
           
           <div className="flex items-center gap-1 px-3">
-            <div className={`h-0.5 w-8 rounded ${isSea ? 'bg-blue-500' : 'bg-sky-500'}`}></div>
+            <div className={`h-0.5 w-6 rounded ${isSea ? 'bg-blue-500' : 'bg-sky-500'}`}></div>
             <Icon className={`h-4 w-4 ${isSea ? 'text-blue-500' : 'text-sky-500'}`} />
-            <div className={`h-0.5 w-8 rounded ${isSea ? 'bg-blue-500' : 'bg-sky-500'}`}></div>
+            <div className={`h-0.5 w-6 rounded ${isSea ? 'bg-blue-500' : 'bg-sky-500'}`}></div>
           </div>
           
           <div className="flex items-center gap-2 flex-1 justify-end">
@@ -371,16 +535,28 @@ export const ShippingRouteMap = ({
               <p className="font-bold text-foreground text-xs">{toLoc.name}</p>
               <p className="text-muted-foreground text-[10px]">{toLoc.nameEn}</p>
             </div>
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm shadow-red-500/50"></div>
+            <div className="w-3 h-3 rounded-full bg-red-500 shadow-sm shadow-red-500/50 flex items-center justify-center">
+              <Anchor className="w-2 h-2 text-white" />
+            </div>
           </div>
         </div>
 
         {/* Route stages */}
         {isSea && (
           <div className="mt-3 pt-3 border-t border-border/50">
-            <p className="text-[10px] text-muted-foreground text-center">
-              نانشا ← بحر الصين الجنوبي ← مضيق ملقا ← المحيط الهندي ← جبل علي (ترانزيت) ← الخليج العربي ← أم قصر
-            </p>
+            <div className="flex items-center justify-center gap-1 flex-wrap">
+              {['نانشا', 'بحر الصين', 'ملقا', 'المحيط الهندي', 'جبل علي', 'الخليج', 'أم قصر'].map((stage, i, arr) => (
+                <span key={i} className="flex items-center gap-1">
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                    i === 0 ? 'bg-green-500/20 text-green-400' : 
+                    i === arr.length - 1 ? 'bg-red-500/20 text-red-400' :
+                    i === 4 ? 'bg-amber-500/20 text-amber-400' :
+                    'bg-muted text-muted-foreground'
+                  }`}>{stage}</span>
+                  {i < arr.length - 1 && <span className="text-muted-foreground text-[8px]">→</span>}
+                </span>
+              ))}
+            </div>
           </div>
         )}
       </div>
