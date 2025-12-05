@@ -15,9 +15,14 @@ interface ShippingRouteMapProps {
 // Real coordinates [longitude, latitude]
 const LOCATIONS = {
   guangzhou_port: { 
-    coords: [113.6605, 22.6692] as [number, number], 
-    nameAr: 'ميناء قوانغتشو نانشا', 
-    nameEn: 'Guangzhou Nansha Port' 
+    coords: [113.5461, 22.6235] as [number, number], 
+    nameAr: 'ميناء نانشا', 
+    nameEn: 'Nansha Port' 
+  },
+  jebel_ali: { 
+    coords: [55.0272, 24.9857] as [number, number], 
+    nameAr: 'ميناء جبل علي (ترانزيت)', 
+    nameEn: 'Jebel Ali Port (Transshipment)' 
   },
   umm_qasr: { 
     coords: [47.9392, 30.0534] as [number, number], 
@@ -36,25 +41,25 @@ const LOCATIONS = {
   },
 };
 
-// Realistic sea shipping route: Guangzhou → South China Sea → Malacca Strait → Indian Ocean → Arabian Sea → Gulf of Oman → Strait of Hormuz → Persian Gulf → Umm Qasr
+// Realistic sea shipping route: Nansha Port → South China Sea → Malacca Strait → Indian Ocean → Jebel Ali Port (UAE) → Arabian Gulf → Umm Qasr Port
 const SEA_ROUTE_WAYPOINTS: [number, number][] = [
-  [113.6605, 22.6692],  // Guangzhou Nansha Port (origin)
-  [114.1, 21.8],        // Exit Pearl River Delta
-  [114.5, 20.5],        // South China Sea
-  [112.0, 16.5],        // Paracel Islands area
-  [109.5, 10.5],        // Vietnam coast (Cam Ranh)
-  [106.8, 6.5],         // Approaching Singapore
-  [104.0, 1.3],         // Singapore Strait
-  [100.5, 2.5],         // Malacca Strait entrance
-  [96.5, 5.8],          // Malacca Strait exit (Andaman Sea)
-  [80.2, 6.0],          // Sri Lanka south
-  [72.8, 10.5],         // Arabian Sea (Lakshadweep)
-  [65.5, 16.5],         // Arabian Sea central
-  [58.5, 22.5],         // Gulf of Oman entrance
-  [56.3, 25.3],         // Strait of Hormuz
-  [52.5, 26.8],         // Persian Gulf entrance
-  [50.2, 28.8],         // Persian Gulf central
-  [48.5, 29.8],         // Approaching Shatt al-Arab
+  [113.5461, 22.6235],  // Nansha Port (origin)
+  [114.3, 21.5],        // Exit Pearl River Delta
+  [113.5, 18.0],        // South China Sea
+  [110.0, 12.0],        // South China Sea (central)
+  [107.0, 7.0],         // Approaching Vietnam coast
+  [104.5, 2.0],         // Singapore Strait approach
+  [103.8, 1.3],         // Singapore Strait
+  [100.0, 3.5],         // Malacca Strait
+  [95.5, 6.0],          // Exit Malacca Strait
+  [85.0, 7.0],          // Indian Ocean (Bay of Bengal edge)
+  [75.0, 10.0],         // Indian Ocean (south of India)
+  [65.0, 15.0],         // Arabian Sea
+  [58.0, 21.0],         // Approaching UAE
+  [55.0272, 24.9857],   // Jebel Ali Port (UAE - Transshipment)
+  [52.5, 26.5],         // Exit Jebel Ali, entering Arabian Gulf
+  [50.5, 28.5],         // Arabian Gulf
+  [48.8, 29.8],         // Approaching Shatt al-Arab
   [47.9392, 30.0534],   // Umm Qasr Port (destination)
 ];
 
@@ -169,11 +174,12 @@ export const ShippingRouteMap = ({
 
         map.current = new mapboxgl.Map({
           container: mapContainer.current!,
-          style: 'mapbox://styles/mapbox/dark-v11',
+          style: 'mapbox://styles/mapbox/streets-v12',
           bounds: bounds,
-          fitBoundsOptions: { padding: 50 },
+          fitBoundsOptions: { padding: 40 },
           interactive: true,
           attributionControl: false,
+          projection: 'mercator',
         });
 
         map.current.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
@@ -232,6 +238,14 @@ export const ShippingRouteMap = ({
             .setLngLat(fromLoc.coords)
             .setPopup(new mapboxgl.Popup().setHTML(`<strong>${fromLoc.nameAr}</strong><br/>${fromLoc.nameEn}`))
             .addTo(map.current);
+
+          // Transshipment marker (Jebel Ali for sea route)
+          if (isSea) {
+            new mapboxgl.Marker({ color: '#f59e0b' })
+              .setLngLat(LOCATIONS.jebel_ali.coords)
+              .setPopup(new mapboxgl.Popup().setHTML(`<strong>${LOCATIONS.jebel_ali.nameAr}</strong><br/>${LOCATIONS.jebel_ali.nameEn}`))
+              .addTo(map.current);
+          }
 
           // Destination marker
           new mapboxgl.Marker({ color: '#ef4444' })
