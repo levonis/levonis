@@ -36,32 +36,39 @@ const LOCATIONS = {
   },
 };
 
-// Sea route waypoints through real maritime routes
+// Realistic sea shipping route: Guangzhou → South China Sea → Malacca Strait → Indian Ocean → Arabian Sea → Gulf of Oman → Strait of Hormuz → Persian Gulf → Umm Qasr
 const SEA_ROUTE_WAYPOINTS: [number, number][] = [
-  [113.6605, 22.6692],  // Guangzhou Nansha Port
-  [114.2, 21.5],        // South China Sea
-  [110.5, 18.0],        // Near Hainan
-  [106.0, 10.0],        // Vietnam coast
-  [103.5, 5.5],         // Singapore Strait
-  [98.0, 4.5],          // Malacca Strait
-  [85.0, 8.0],          // Bay of Bengal
-  [72.0, 12.0],         // Arabian Sea
-  [60.0, 22.0],         // Gulf of Oman
-  [56.5, 25.0],         // Strait of Hormuz
-  [50.5, 27.5],         // Persian Gulf
-  [48.5, 29.5],         // Near Basra
-  [47.9392, 30.0534],   // Umm Qasr Port
+  [113.6605, 22.6692],  // Guangzhou Nansha Port (origin)
+  [114.1, 21.8],        // Exit Pearl River Delta
+  [114.5, 20.5],        // South China Sea
+  [112.0, 16.5],        // Paracel Islands area
+  [109.5, 10.5],        // Vietnam coast (Cam Ranh)
+  [106.8, 6.5],         // Approaching Singapore
+  [104.0, 1.3],         // Singapore Strait
+  [100.5, 2.5],         // Malacca Strait entrance
+  [96.5, 5.8],          // Malacca Strait exit (Andaman Sea)
+  [80.2, 6.0],          // Sri Lanka south
+  [72.8, 10.5],         // Arabian Sea (Lakshadweep)
+  [65.5, 16.5],         // Arabian Sea central
+  [58.5, 22.5],         // Gulf of Oman entrance
+  [56.3, 25.3],         // Strait of Hormuz
+  [52.5, 26.8],         // Persian Gulf entrance
+  [50.2, 28.8],         // Persian Gulf central
+  [48.5, 29.8],         // Approaching Shatt al-Arab
+  [47.9392, 30.0534],   // Umm Qasr Port (destination)
 ];
 
-// Air route waypoints (more direct great circle route)
+// Realistic air route: Guangzhou → over Southeast Asia → India → Pakistan → Iran → Erbil
 const AIR_ROUTE_WAYPOINTS: [number, number][] = [
   [113.2989, 23.3925],  // Guangzhou Baiyun Airport
-  [105.0, 25.0],        // Over Yunnan
-  [95.0, 27.0],         // Over Myanmar
-  [85.0, 30.0],         // Over India
-  [75.0, 32.0],         // Over Pakistan
-  [65.0, 34.0],         // Over Afghanistan
-  [55.0, 35.5],         // Over Iran
+  [108.0, 24.5],        // Over Guangxi
+  [100.5, 26.8],        // Over Yunnan/Myanmar border
+  [92.5, 28.5],         // Over Bangladesh
+  [85.3, 27.7],         // Over Nepal/India
+  [77.1, 28.6],         // Over Delhi
+  [68.3, 31.5],         // Over Pakistan (Lahore)
+  [57.0, 35.7],         // Over Iran (Mashhad)
+  [48.5, 36.1],         // Over Iran/Iraq border
   [43.9578, 36.2358],   // Erbil International Airport
 ];
 
@@ -258,30 +265,45 @@ export const ShippingRouteMap = ({
 
     const position = getPositionOnRoute(waypoints, progress);
 
-    // Create custom marker element
+    // Create custom marker element with ship/plane icon
     if (!markerRef.current) {
       const el = document.createElement('div');
       el.className = 'vehicle-marker';
-      el.innerHTML = `
-        <div style="
-          background: ${isSea ? '#3b82f6' : '#0ea5e9'};
-          border-radius: 50%;
-          width: 36px;
-          height: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 0 15px ${isSea ? 'rgba(59, 130, 246, 0.6)' : 'rgba(14, 165, 233, 0.6)'};
-          border: 3px solid white;
-        ">
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            ${isSea 
-              ? '<path d="M2 21c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1 .6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1"></path><path d="M19.38 20A11.6 11.6 0 0 0 21 14l-9-4-9 4c0 2.9.94 5.34 2.81 7.76"></path><path d="M19 13V7a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v6"></path><path d="M12 10v4"></path><path d="M12 2v3"></path>'
-              : '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>'
-            }
-          </svg>
-        </div>
-      `;
+      
+      if (isSea) {
+        // Realistic cargo ship icon
+        el.innerHTML = `
+          <div style="
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            border-radius: 8px;
+            width: 48px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(59, 130, 246, 0.5), 0 0 0 3px rgba(255,255,255,0.9);
+            position: relative;
+          ">
+            <span style="font-size: 24px; line-height: 1;">🚢</span>
+          </div>
+        `;
+      } else {
+        // Airplane icon
+        el.innerHTML = `
+          <div style="
+            background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(14, 165, 233, 0.5), 0 0 0 3px rgba(255,255,255,0.9);
+          ">
+            <span style="font-size: 22px; line-height: 1;">✈️</span>
+          </div>
+        `;
+      }
 
       markerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat(position)
