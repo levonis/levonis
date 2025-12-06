@@ -12,24 +12,26 @@ interface ShippingRouteMapProps {
   shippingDurationDays?: number | null;
 }
 
-// Sea route waypoints (following actual shipping lanes through water)
+// Sea route waypoints (following actual shipping lanes through water ONLY)
 const SEA_ROUTE_COORDINATES: [number, number][] = [
-  [113.5, 22.8],   // Nansha Port, Guangzhou
-  [114.5, 20.0],   // South China Sea
-  [112.0, 15.0],   // South China Sea (avoiding Vietnam)
-  [108.0, 8.0],    // Approaching Malacca
-  [104.0, 2.0],    // Singapore Strait
-  [100.0, 3.0],    // Malacca Strait
-  [95.0, 6.0],     // Exiting Malacca into Indian Ocean
-  [85.0, 8.0],     // Indian Ocean
-  [75.0, 10.0],    // Indian Ocean (south of India)
-  [65.0, 15.0],    // Arabian Sea
-  [58.0, 22.0],    // Approaching Gulf of Oman
-  [56.5, 24.5],    // Gulf of Oman
-  [55.0, 25.2],    // Jebel Ali Port, UAE (Transshipment)
-  [52.5, 26.5],    // Arabian Gulf
-  [50.0, 28.0],    // Arabian Gulf
-  [48.5, 29.8],    // Umm Qasr Port, Iraq
+  [113.5, 22.5],   // Nansha Port, Guangzhou
+  [115.0, 19.0],   // South China Sea (east, away from coast)
+  [115.0, 14.0],   // South China Sea
+  [114.0, 8.0],    // South China Sea (east of Vietnam/Philippines)
+  [110.0, 4.0],    // Approaching Singapore
+  [104.5, 1.3],    // Singapore Strait
+  [100.0, 2.5],    // Malacca Strait (in water between Malaysia/Sumatra)
+  [95.0, 5.5],     // Andaman Sea
+  [88.0, 6.0],     // Bay of Bengal (south)
+  [80.0, 6.0],     // South of Sri Lanka
+  [72.0, 8.0],     // Arabian Sea
+  [62.0, 16.0],    // Arabian Sea (approaching Oman)
+  [58.5, 22.5],    // Gulf of Oman
+  [56.0, 25.0],    // Strait of Hormuz
+  [55.0, 25.2],    // Jebel Ali Port, UAE
+  [52.0, 26.8],    // Arabian Gulf
+  [50.0, 29.0],    // Arabian Gulf
+  [48.0, 29.9],    // Umm Qasr Port, Iraq
 ];
 
 // Air route waypoints
@@ -44,9 +46,9 @@ const AIR_ROUTE_COORDINATES: [number, number][] = [
 
 const PORT_MARKERS = {
   sea: [
-    { coords: [113.5, 22.8] as [number, number], name: 'ميناء نانشا', nameEn: 'Nansha Port', type: 'start' },
+    { coords: [113.5, 22.5] as [number, number], name: 'ميناء نانشا', nameEn: 'Nansha Port', type: 'start' },
     { coords: [55.0, 25.2] as [number, number], name: 'ميناء جبل علي', nameEn: 'Jebel Ali (Transit)', type: 'transit' },
-    { coords: [48.5, 29.8] as [number, number], name: 'ميناء أم قصر', nameEn: 'Umm Qasr Port', type: 'end' },
+    { coords: [48.0, 29.9] as [number, number], name: 'ميناء أم قصر', nameEn: 'Umm Qasr Port', type: 'end' },
   ],
   air: [
     { coords: [113.3, 23.4] as [number, number], name: 'مطار قوانغتشو', nameEn: 'Guangzhou Airport', type: 'start' },
@@ -241,16 +243,19 @@ export const ShippingRouteMap = ({
           .addTo(map.current!);
       });
 
-      // Add vehicle marker
+      // Add vehicle marker with smooth animation
       const vehicleEl = document.createElement('div');
       vehicleEl.style.cssText = `
         font-size: 28px;
         filter: drop-shadow(0 0 8px ${isSea ? '#3b82f6' : '#0ea5e9'});
-        transition: transform 0.1s ease-out;
+        will-change: transform;
       `;
       vehicleEl.innerHTML = isSea ? '🚢' : '✈️';
 
-      vehicleMarker.current = new mapboxgl.Marker(vehicleEl)
+      vehicleMarker.current = new mapboxgl.Marker({
+        element: vehicleEl,
+        anchor: 'center',
+      })
         .setLngLat(routeCoordinates[0])
         .addTo(map.current);
     });
