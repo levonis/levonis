@@ -40,6 +40,7 @@ const AdminOrders = () => {
   const [serialImagePreview, setSerialImagePreview] = useState<string>('');
   const [showRouteEditor, setShowRouteEditor] = useState(false);
   const [routeWaypoints, setRouteWaypoints] = useState<[number, number][]>([]);
+  const [routeEditorOrderId, setRouteEditorOrderId] = useState<string>('');
   useEffect(() => {
     const status = searchParams.get('status');
     if (status) setStatusFilter(status);
@@ -755,7 +756,13 @@ const AdminOrders = () => {
                                   <Button
                                     type="button"
                                     variant="outline"
-                                    onClick={() => setShowRouteEditor(true)}
+                                    onClick={() => {
+                                      setRouteEditorOrderId(order.id);
+                                      if (!routeWaypoints.length && order.shipping_route_waypoints) {
+                                        setRouteWaypoints(order.shipping_route_waypoints as [number, number][]);
+                                      }
+                                      setShowRouteEditor(true);
+                                    }}
                                     className="w-full gap-2"
                                   >
                                     <MapPin className="h-4 w-4" />
@@ -1137,26 +1144,6 @@ const AdminOrders = () => {
                                   </div>
                                 </div>
 
-                                {/* Route Editor Dialog */}
-                                {showRouteEditor && (
-                                  <Dialog open={showRouteEditor} onOpenChange={setShowRouteEditor}>
-                                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                                      <DialogHeader>
-                                        <DialogTitle>رسم مسار الشحن</DialogTitle>
-                                      </DialogHeader>
-                                      <ShippingRouteEditor
-                                        orderId={order.id}
-                                        initialWaypoints={routeWaypoints.length > 0 ? routeWaypoints : (order.shipping_route_waypoints as [number, number][] || [])}
-                                        onSave={(waypoints) => {
-                                          setRouteWaypoints(waypoints);
-                                          setShowRouteEditor(false);
-                                          toast.success(`تم حفظ المسار (${waypoints.length} نقطة)`);
-                                        }}
-                                        onCancel={() => setShowRouteEditor(false)}
-                                      />
-                                    </DialogContent>
-                                  </Dialog>
-                                )}
 
                                 <div className="flex gap-3 justify-end pt-4">
                                   <Button
@@ -1236,6 +1223,25 @@ const AdminOrders = () => {
           </div>
         </Card>
       </main>
+
+      {/* Route Editor Dialog - Separate from edit dialog */}
+      <Dialog open={showRouteEditor} onOpenChange={setShowRouteEditor}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>رسم مسار الشحن</DialogTitle>
+          </DialogHeader>
+          <ShippingRouteEditor
+            orderId={routeEditorOrderId}
+            initialWaypoints={routeWaypoints}
+            onSave={(waypoints) => {
+              setRouteWaypoints(waypoints);
+              setShowRouteEditor(false);
+              toast.success(`تم حفظ المسار (${waypoints.length} نقطة)`);
+            }}
+            onCancel={() => setShowRouteEditor(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
