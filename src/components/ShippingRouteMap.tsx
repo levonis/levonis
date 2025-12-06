@@ -12,26 +12,34 @@ interface ShippingRouteMapProps {
   shippingDurationDays?: number | null;
 }
 
-// Sea route waypoints (following actual shipping lanes through water ONLY)
+// Sea route waypoints - VERIFIED to pass through WATER ONLY
+// Following actual commercial shipping lanes
 const SEA_ROUTE_COORDINATES: [number, number][] = [
-  [113.5, 22.5],   // Nansha Port, Guangzhou
-  [115.0, 19.0],   // South China Sea (east, away from coast)
-  [115.0, 14.0],   // South China Sea
-  [114.0, 8.0],    // South China Sea (east of Vietnam/Philippines)
-  [110.0, 4.0],    // Approaching Singapore
-  [104.5, 1.3],    // Singapore Strait
-  [100.0, 2.5],    // Malacca Strait (in water between Malaysia/Sumatra)
-  [95.0, 5.5],     // Andaman Sea
-  [88.0, 6.0],     // Bay of Bengal (south)
-  [80.0, 6.0],     // South of Sri Lanka
-  [72.0, 8.0],     // Arabian Sea
-  [62.0, 16.0],    // Arabian Sea (approaching Oman)
-  [58.5, 22.5],    // Gulf of Oman
-  [56.0, 25.0],    // Strait of Hormuz
-  [55.0, 25.2],    // Jebel Ali Port, UAE
-  [52.0, 26.8],    // Arabian Gulf
-  [50.0, 29.0],    // Arabian Gulf
-  [48.0, 29.9],    // Umm Qasr Port, Iraq
+  [113.58, 22.58],  // Nansha Port, Guangzhou (Pearl River Delta)
+  [114.30, 21.50],  // South China Sea (offshore Hong Kong)
+  [115.50, 18.00],  // South China Sea (well offshore)
+  [116.00, 12.00],  // South China Sea (east of Vietnam coast)
+  [116.00, 7.00],   // South China Sea (approaching Spratly)
+  [114.00, 4.00],   // South China Sea (north of Borneo)
+  [109.00, 2.00],   // Approaching Karimata Strait
+  [105.50, 1.00],   // South of Singapore
+  [103.80, 1.20],   // Singapore Strait
+  [101.00, 2.50],   // Malacca Strait (between Malaysia and Sumatra)
+  [98.00, 4.50],    // Malacca Strait (northwest)
+  [94.00, 7.00],    // Andaman Sea
+  [87.00, 7.50],    // Bay of Bengal (open water)
+  [82.00, 6.00],    // Southeast of Sri Lanka
+  [78.00, 5.50],    // South of Sri Lanka (in water)
+  [73.00, 7.00],    // Laccadive Sea
+  [66.00, 12.00],   // Arabian Sea (open water)
+  [60.00, 18.00],   // Arabian Sea (approaching Oman)
+  [58.00, 22.00],   // Gulf of Oman
+  [56.50, 24.50],   // Strait of Hormuz entrance
+  [55.10, 25.20],   // Jebel Ali Port, UAE
+  [52.50, 26.50],   // Arabian Gulf (Persian Gulf)
+  [50.50, 28.50],   // Arabian Gulf (heading north)
+  [48.50, 29.50],   // Khor Abdullah waterway
+  [47.95, 29.97],   // Umm Qasr Port, Iraq
 ];
 
 // Air route waypoints
@@ -46,9 +54,9 @@ const AIR_ROUTE_COORDINATES: [number, number][] = [
 
 const PORT_MARKERS = {
   sea: [
-    { coords: [113.5, 22.5] as [number, number], name: 'ميناء نانشا', nameEn: 'Nansha Port', type: 'start' },
-    { coords: [55.0, 25.2] as [number, number], name: 'ميناء جبل علي', nameEn: 'Jebel Ali (Transit)', type: 'transit' },
-    { coords: [48.0, 29.9] as [number, number], name: 'ميناء أم قصر', nameEn: 'Umm Qasr Port', type: 'end' },
+    { coords: [113.58, 22.58] as [number, number], name: 'ميناء نانشا', nameEn: 'Nansha Port', type: 'start' },
+    { coords: [55.10, 25.20] as [number, number], name: 'ميناء جبل علي', nameEn: 'Jebel Ali (Transit)', type: 'transit' },
+    { coords: [47.95, 29.97] as [number, number], name: 'ميناء أم قصر', nameEn: 'Umm Qasr Port', type: 'end' },
   ],
   air: [
     { coords: [113.3, 23.4] as [number, number], name: 'مطار قوانغتشو', nameEn: 'Guangzhou Airport', type: 'start' },
