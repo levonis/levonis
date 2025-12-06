@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
-import { Ship, Plane } from 'lucide-react';
+import { Ship, Plane, MapPin } from 'lucide-react';
 import { differenceInMilliseconds, addDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -10,65 +10,31 @@ interface ShippingRouteMapProps {
   isShipped?: boolean;
   shippedAt?: string | null;
   shippingDurationDays?: number | null;
+  customWaypoints?: [number, number][] | null;
 }
 
-// Sea route waypoints - VERIFIED to pass through WATER ONLY
-// Following actual commercial shipping lanes
-const SEA_ROUTE_COORDINATES: [number, number][] = [
-  [113.58, 22.58],  // Nansha Port, Guangzhou (Pearl River Delta)
-  [114.30, 21.50],  // South China Sea (offshore Hong Kong)
-  [115.50, 18.00],  // South China Sea (well offshore)
-  [116.00, 12.00],  // South China Sea (east of Vietnam coast)
-  [116.00, 7.00],   // South China Sea (approaching Spratly)
-  [114.00, 4.00],   // South China Sea (north of Borneo)
-  [109.00, 2.00],   // Approaching Karimata Strait
-  [105.50, 1.00],   // South of Singapore
-  [103.80, 1.20],   // Singapore Strait
-  [101.00, 2.50],   // Malacca Strait (between Malaysia and Sumatra)
-  [98.00, 4.50],    // Malacca Strait (northwest)
-  [94.00, 7.00],    // Andaman Sea
-  [87.00, 7.50],    // Bay of Bengal (open water)
-  [82.00, 6.00],    // Southeast of Sri Lanka
-  [78.00, 5.50],    // South of Sri Lanka (in water)
-  [73.00, 7.00],    // Laccadive Sea
-  [66.00, 12.00],   // Arabian Sea (open water)
-  [60.00, 18.00],   // Arabian Sea (approaching Oman)
-  [58.00, 22.00],   // Gulf of Oman
-  [56.50, 24.50],   // Strait of Hormuz entrance
-  [55.10, 25.20],   // Jebel Ali Port, UAE
-  [52.50, 26.50],   // Arabian Gulf (Persian Gulf)
-  [50.50, 28.50],   // Arabian Gulf (heading north)
-  [48.50, 29.50],   // Khor Abdullah waterway
-  [47.95, 29.97],   // Umm Qasr Port, Iraq
+// Default route coordinates (fallback when no custom waypoints)
+const DEFAULT_SEA_ROUTE: [number, number][] = [
+  [113.58, 22.58], [114.30, 21.50], [115.50, 18.00], [116.00, 12.00],
+  [116.00, 7.00], [114.00, 4.00], [109.00, 2.00], [105.50, 1.00],
+  [103.80, 1.20], [101.00, 2.50], [98.00, 4.50], [94.00, 7.00],
+  [87.00, 7.50], [82.00, 6.00], [78.00, 5.50], [73.00, 7.00],
+  [66.00, 12.00], [60.00, 18.00], [58.00, 22.00], [56.50, 24.50],
+  [55.10, 25.20], [52.50, 26.50], [50.50, 28.50], [48.50, 29.50],
+  [47.95, 29.97],
 ];
 
-// Air route waypoints
-const AIR_ROUTE_COORDINATES: [number, number][] = [
-  [113.3, 23.4],   // Guangzhou Baiyun Airport
-  [100.0, 25.0],   // Over Southeast Asia
-  [85.0, 28.0],    // Over India
-  [70.0, 32.0],    // Over Pakistan
-  [55.0, 35.0],    // Over Iran
-  [44.0, 36.2],    // Erbil Airport, Iraq
+const DEFAULT_AIR_ROUTE: [number, number][] = [
+  [113.3, 23.4], [100.0, 25.0], [85.0, 28.0],
+  [70.0, 32.0], [55.0, 35.0], [44.0, 36.2],
 ];
-
-const PORT_MARKERS = {
-  sea: [
-    { coords: [113.58, 22.58] as [number, number], name: 'ميناء نانشا', nameEn: 'Nansha Port', type: 'start' },
-    { coords: [55.10, 25.20] as [number, number], name: 'ميناء جبل علي', nameEn: 'Jebel Ali (Transit)', type: 'transit' },
-    { coords: [47.95, 29.97] as [number, number], name: 'ميناء أم قصر', nameEn: 'Umm Qasr Port', type: 'end' },
-  ],
-  air: [
-    { coords: [113.3, 23.4] as [number, number], name: 'مطار قوانغتشو', nameEn: 'Guangzhou Airport', type: 'start' },
-    { coords: [44.0, 36.2] as [number, number], name: 'مطار أربيل', nameEn: 'Erbil Airport', type: 'end' },
-  ],
-};
 
 export const ShippingRouteMap = ({ 
   routeType, 
   isShipped = false,
   shippedAt,
-  shippingDurationDays
+  shippingDurationDays,
+  customWaypoints
 }: ShippingRouteMapProps) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -78,8 +44,33 @@ export const ShippingRouteMap = ({
   const [mapLoaded, setMapLoaded] = useState(false);
 
   const isSea = routeType === 'sea_guangzhou_umm_qasr';
-  const routeCoordinates = isSea ? SEA_ROUTE_COORDINATES : AIR_ROUTE_COORDINATES;
-  const markers = isSea ? PORT_MARKERS.sea : PORT_MARKERS.air;
+  const isCustomRoute = customWaypoints && customWaypoints.length >= 2;
+  
+  // Use custom waypoints if available, otherwise use default routes
+  const routeCoordinates = isCustomRoute 
+    ? customWaypoints 
+    : (isSea ? DEFAULT_SEA_ROUTE : DEFAULT_AIR_ROUTE);
+
+  // Generate port markers from custom waypoints
+  const markers = isCustomRoute 
+    ? [
+        { coords: customWaypoints[0], name: 'نقطة البداية', nameEn: 'Start Point', type: 'start' as const },
+        ...(customWaypoints.length > 2 
+          ? [{ coords: customWaypoints[Math.floor(customWaypoints.length / 2)], name: 'نقطة عبور', nameEn: 'Transit Point', type: 'transit' as const }] 
+          : []),
+        { coords: customWaypoints[customWaypoints.length - 1], name: 'نقطة الوصول', nameEn: 'End Point', type: 'end' as const },
+      ]
+    : (isSea 
+        ? [
+            { coords: [113.58, 22.58] as [number, number], name: 'ميناء نانشا', nameEn: 'Nansha Port', type: 'start' as const },
+            { coords: [55.10, 25.20] as [number, number], name: 'ميناء جبل علي', nameEn: 'Jebel Ali (Transit)', type: 'transit' as const },
+            { coords: [47.95, 29.97] as [number, number], name: 'ميناء أم قصر', nameEn: 'Umm Qasr Port', type: 'end' as const },
+          ]
+        : [
+            { coords: [113.3, 23.4] as [number, number], name: 'مطار قوانغتشو', nameEn: 'Guangzhou Airport', type: 'start' as const },
+            { coords: [44.0, 36.2] as [number, number], name: 'مطار أربيل', nameEn: 'Erbil Airport', type: 'end' as const },
+          ]
+      );
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -311,9 +302,10 @@ export const ShippingRouteMap = ({
   };
 
   const remainingInfo = getRemainingInfo();
-  const Icon = isSea ? Ship : Plane;
+  const Icon = isCustomRoute ? MapPin : (isSea ? Ship : Plane);
+  const routeLabel = isCustomRoute ? 'مسار مخصص' : (isSea ? 'الشحن البحري' : 'الشحن الجوي');
 
-  if (!routeType) return null;
+  if (!routeType && !isCustomRoute) return null;
 
   return (
     <div className="w-full bg-card rounded-xl border border-border overflow-hidden">
@@ -321,12 +313,12 @@ export const ShippingRouteMap = ({
       <div className="bg-muted/50 px-4 py-3 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={`p-2 rounded-lg ${isSea ? 'bg-blue-500/20' : 'bg-sky-500/20'}`}>
-              <Icon className={`h-5 w-5 ${isSea ? 'text-blue-500' : 'text-sky-500'}`} />
+            <div className={`p-2 rounded-lg ${isCustomRoute ? 'bg-primary/20' : (isSea ? 'bg-blue-500/20' : 'bg-sky-500/20')}`}>
+              <Icon className={`h-5 w-5 ${isCustomRoute ? 'text-primary' : (isSea ? 'text-blue-500' : 'text-sky-500')}`} />
             </div>
             <div>
               <h3 className="font-bold text-foreground text-sm">
-                {isSea ? 'الشحن البحري' : 'الشحن الجوي'}
+                {routeLabel}
               </h3>
               <p className="text-xs text-muted-foreground">
                 {isSea ? 'Sea Freight (Container)' : 'Air Freight'}

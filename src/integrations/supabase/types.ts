@@ -880,6 +880,7 @@ export type Database = {
           shipping_duration_days: number | null
           shipping_notes: string | null
           shipping_route_type: string | null
+          shipping_route_waypoints: Json | null
           status: string
           subtotal: number | null
           tax_amount: number | null
@@ -920,6 +921,7 @@ export type Database = {
           shipping_duration_days?: number | null
           shipping_notes?: string | null
           shipping_route_type?: string | null
+          shipping_route_waypoints?: Json | null
           status?: string
           subtotal?: number | null
           tax_amount?: number | null
@@ -960,6 +962,7 @@ export type Database = {
           shipping_duration_days?: number | null
           shipping_notes?: string | null
           shipping_route_type?: string | null
+          shipping_route_waypoints?: Json | null
           status?: string
           subtotal?: number | null
           tax_amount?: number | null
