@@ -27,6 +27,7 @@ interface OrderTimelineProps {
     estimated_delivery_date?: string | null;
     shipping_route_type?: string | null;
     shipping_duration_days?: number | null;
+    shipping_route_waypoints?: unknown;
   };
   isPreOrder: boolean;
 }
@@ -224,13 +225,18 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
       </div>
       
       {/* Shipping Route Map */}
-      {isPreOrder && order.shipping_route_type && (order.shipping_route_type === 'sea_guangzhou_umm_qasr' || order.shipping_route_type === 'air_guangzhou_erbil') && (
+      {isPreOrder && order.shipping_route_type && (
+        order.shipping_route_type === 'sea_guangzhou_umm_qasr' || 
+        order.shipping_route_type === 'air_guangzhou_erbil' ||
+        (order.shipping_route_type === 'custom' && order.shipping_route_waypoints)
+      ) && (
         <div className="mt-6 pt-4 border-t border-border/50">
           <ShippingRouteMap 
-            routeType={order.shipping_route_type as 'sea_guangzhou_umm_qasr' | 'air_guangzhou_erbil'} 
+            routeType={order.shipping_route_type === 'custom' ? 'sea_guangzhou_umm_qasr' : order.shipping_route_type as 'sea_guangzhou_umm_qasr' | 'air_guangzhou_erbil'} 
             isShipped={['shipped', 'arrived_iraq', 'delivered'].includes(order.status)}
             shippedAt={order.shipped_at}
             shippingDurationDays={order.shipping_duration_days}
+            customWaypoints={order.shipping_route_waypoints as [number, number][] | null}
           />
         </div>
       )}

@@ -12,12 +12,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, MapPin } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
 import LevelBadge from '@/components/LevelBadge';
+import { ShippingRouteEditor } from '@/components/ShippingRouteEditor';
 
 const AdminOrders = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -37,6 +38,8 @@ const AdminOrders = () => {
   const [existingAdminImages, setExistingAdminImages] = useState<string[]>([]);
   const [existingAdminFiles, setExistingAdminFiles] = useState<string[]>([]);
   const [serialImagePreview, setSerialImagePreview] = useState<string>('');
+  const [showRouteEditor, setShowRouteEditor] = useState(false);
+  const [routeWaypoints, setRouteWaypoints] = useState<[number, number][]>([]);
   useEffect(() => {
     const status = searchParams.get('status');
     if (status) setStatusFilter(status);
@@ -321,6 +324,7 @@ const AdminOrders = () => {
         remaining_amount: formData.get('remaining_amount') ? Number(formData.get('remaining_amount')) : 0,
         shipping_route_type: formData.get('shipping_route_type') as string || null,
         shipping_duration_days: formData.get('shipping_duration_days') ? Number(formData.get('shipping_duration_days')) : null,
+        shipping_route_waypoints: routeWaypoints.length >= 2 ? routeWaypoints : null,
       };
 
       // تحديث تاريخ الوصول للمخزن
@@ -731,9 +735,34 @@ const AdminOrders = () => {
                                     <option value="">بدون خارطة</option>
                                     <option value="sea_guangzhou_umm_qasr">🚢 بحري - من قوانغتشو إلى أم قصر</option>
                                     <option value="air_guangzhou_erbil">✈️ جوي - من قوانغتشو إلى أربيل</option>
+                                    <option value="custom">🗺️ مسار مخصص</option>
                                   </select>
                                   <p className="text-xs text-muted-foreground">
                                     اختر نوع الشحن لعرض خارطة التتبع للعميل
+                                  </p>
+                                </div>
+
+                                {/* Custom Route Editor Button */}
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <Label>مسار الشحن المخصص</Label>
+                                    {routeWaypoints.length >= 2 && (
+                                      <Badge variant="outline" className="text-xs">
+                                        {routeWaypoints.length} نقطة
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowRouteEditor(true)}
+                                    className="w-full gap-2"
+                                  >
+                                    <MapPin className="h-4 w-4" />
+                                    {routeWaypoints.length >= 2 ? 'تعديل المسار المخصص' : 'رسم مسار مخصص على الخريطة'}
+                                  </Button>
+                                  <p className="text-xs text-muted-foreground">
+                                    ارسم مسار الشحن يدوياً بالنقر على الخريطة
                                   </p>
                                 </div>
 
@@ -1108,6 +1137,27 @@ const AdminOrders = () => {
                                   </div>
                                 </div>
 
+                                {/* Route Editor Dialog */}
+                                {showRouteEditor && (
+                                  <Dialog open={showRouteEditor} onOpenChange={setShowRouteEditor}>
+                                    <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                                      <DialogHeader>
+                                        <DialogTitle>رسم مسار الشحن</DialogTitle>
+                                      </DialogHeader>
+                                      <ShippingRouteEditor
+                                        orderId={order.id}
+                                        initialWaypoints={routeWaypoints.length > 0 ? routeWaypoints : (order.shipping_route_waypoints as [number, number][] || [])}
+                                        onSave={(waypoints) => {
+                                          setRouteWaypoints(waypoints);
+                                          setShowRouteEditor(false);
+                                          toast.success(`تم حفظ المسار (${waypoints.length} نقطة)`);
+                                        }}
+                                        onCancel={() => setShowRouteEditor(false)}
+                                      />
+                                    </DialogContent>
+                                  </Dialog>
+                                )}
+
                                 <div className="flex gap-3 justify-end pt-4">
                                   <Button
                                     type="button"
@@ -1122,6 +1172,8 @@ const AdminOrders = () => {
                                       setAdminImagePreviews([]);
                                       setExistingAdminImages([]);
                                       setExistingAdminFiles([]);
+                                      setShowRouteEditor(false);
+                                      setRouteWaypoints([]);
                                     }}
                                   >
                                     إلغاء
