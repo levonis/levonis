@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
 import { 
   Loader2, 
   DollarSign, 
@@ -18,17 +19,28 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Calendar,
-  Package
+  Package,
+  Check,
+  X,
+  Send
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
+interface EditingCell {
+  orderId: string;
+  field: string;
+  value: number;
+}
+
 const AdminFinancials = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-financials', dateFrom, dateTo],
@@ -51,6 +63,92 @@ const AdminFinancials = () => {
     },
     enabled: isAdmin,
   });
+
+  const updateOrderMutation = useMutation({
+    mutationFn: async ({ orderId, field, value }: { orderId: string; field: string; value: number }) => {
+      const { error } = await supabase
+        .from('orders')
+        .update({ [field]: value })
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-financials'] });
+      toast.success('تم تحديث البيانات');
+      setEditingCell(null);
+    },
+    onError: () => {
+      toast.error('حدث خطأ أثناء التحديث');
+    },
+  });
+
+  const handleCellClick = (orderId: string, field: string, currentValue: number) => {
+    setEditingCell({ orderId, field, value: currentValue });
+  };
+
+  const handleSaveEdit = () => {
+    if (editingCell) {
+      updateOrderMutation.mutate({
+        orderId: editingCell.orderId,
+        field: editingCell.field,
+        value: editingCell.value,
+      });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCell(null);
+  };
+
+  const renderEditableCell = (orderId: string, field: string, value: number, colorClass: string) => {
+    const isEditing = editingCell?.orderId === orderId && editingCell?.field === field;
+
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-1">
+          <Input
+            type="number"
+            step="0.01"
+            value={editingCell.value}
+            onChange={(e) => setEditingCell({ ...editingCell, value: parseFloat(e.target.value) || 0 })}
+            className="w-24 h-7 text-xs"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSaveEdit();
+              if (e.key === 'Escape') handleCancelEdit();
+            }}
+          />
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6"
+            onClick={handleSaveEdit}
+            disabled={updateOrderMutation.isPending}
+          >
+            <Check className="h-3 w-3 text-green-600" />
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6"
+            onClick={handleCancelEdit}
+          >
+            <X className="h-3 w-3 text-red-600" />
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <span
+        className={`${colorClass} cursor-pointer hover:underline hover:opacity-80 transition-opacity`}
+        onClick={() => handleCellClick(orderId, field, value)}
+        title="اضغط للتعديل"
+      >
+        {formatPrice(value)}
+      </span>
+    );
+  };
 
   if (authLoading) {
     return (
@@ -117,7 +215,7 @@ const AdminFinancials = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">التحليلات المالية</h1>
-            <p className="text-muted-foreground">تتبع الإيرادات والتكاليف والأرباح</p>
+            <p className="text-muted-foreground">تتبع الإيرادات والتكاليف والأرباح - اضغط على أي رقم لتعديله</p>
           </div>
           <Button variant="outline" onClick={() => navigate('/admin')}>
             العودة للوحة التحكم
@@ -221,10 +319,10 @@ const AdminFinancials = () => {
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-cyan-500/20 rounded-lg">
-                  <ArrowDownRight className="h-5 w-5 text-cyan-600" />
+                  <Send className="h-5 w-5 text-cyan-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">ما دفعناه</p>
+                  <p className="text-xs text-muted-foreground">المبلغ المحول</p>
                   <p className="text-lg font-bold text-cyan-600">{formatPrice(totals.totalAdminPaid)}</p>
                 </div>
               </div>
@@ -317,7 +415,7 @@ const AdminFinancials = () => {
                           <TableHead className="text-right">التاريخ</TableHead>
                           <TableHead className="text-right">المبلغ الإجمالي</TableHead>
                           <TableHead className="text-right">دفع الزبون</TableHead>
-                          <TableHead className="text-right">دفعنا</TableHead>
+                          <TableHead className="text-right">المبلغ المحول</TableHead>
                           <TableHead className="text-right">تكلفة المنتج</TableHead>
                           <TableHead className="text-right">تكلفة الشحن</TableHead>
                           <TableHead className="text-right">تكاليف أخرى</TableHead>
@@ -341,20 +439,20 @@ const AdminFinancials = () => {
                                 {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
                               </TableCell>
                               <TableCell>{formatPrice(order.total_amount)}</TableCell>
-                              <TableCell className="text-green-600">
-                                {formatPrice(order.customer_paid_amount || 0)}
+                              <TableCell>
+                                {renderEditableCell(order.id, 'customer_paid_amount', order.customer_paid_amount || 0, 'text-green-600')}
                               </TableCell>
-                              <TableCell className="text-blue-600">
-                                {formatPrice(order.admin_paid_amount || 0)}
+                              <TableCell>
+                                {renderEditableCell(order.id, 'admin_paid_amount', order.admin_paid_amount || 0, 'text-cyan-600')}
                               </TableCell>
-                              <TableCell className="text-red-600">
-                                {formatPrice(order.admin_product_cost || 0)}
+                              <TableCell>
+                                {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-600')}
                               </TableCell>
-                              <TableCell className="text-amber-600">
-                                {formatPrice(order.admin_shipping_cost || 0)}
+                              <TableCell>
+                                {renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-amber-600')}
                               </TableCell>
-                              <TableCell className="text-pink-600">
-                                {formatPrice(order.admin_other_costs || 0)}
+                              <TableCell>
+                                {renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-pink-600')}
                               </TableCell>
                               <TableCell className={orderProfit >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
                                 {formatPrice(orderProfit)}
@@ -397,6 +495,7 @@ const AdminFinancials = () => {
                       <TableRow>
                         <TableHead className="text-right">رقم الطلب</TableHead>
                         <TableHead className="text-right">التاريخ</TableHead>
+                        <TableHead className="text-right">المبلغ المحول</TableHead>
                         <TableHead className="text-right">تكلفة المنتج</TableHead>
                         <TableHead className="text-right">تكلفة الشحن</TableHead>
                         <TableHead className="text-right">تكاليف أخرى</TableHead>
@@ -423,14 +522,17 @@ const AdminFinancials = () => {
                             <TableCell className="text-xs">
                               {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
                             </TableCell>
-                            <TableCell className="text-red-600">
-                              {formatPrice(order.admin_product_cost || 0)}
+                            <TableCell>
+                              {renderEditableCell(order.id, 'admin_paid_amount', order.admin_paid_amount || 0, 'text-cyan-600')}
                             </TableCell>
-                            <TableCell className="text-amber-600">
-                              {formatPrice(order.admin_shipping_cost || 0)}
+                            <TableCell>
+                              {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-600')}
                             </TableCell>
-                            <TableCell className="text-pink-600">
-                              {formatPrice(order.admin_other_costs || 0)}
+                            <TableCell>
+                              {renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-amber-600')}
+                            </TableCell>
+                            <TableCell>
+                              {renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-pink-600')}
                             </TableCell>
                             <TableCell className={orderProfit >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
                               {formatPrice(orderProfit)}
@@ -461,6 +563,7 @@ const AdminFinancials = () => {
                         <TableHead className="text-right">رقم الطلب</TableHead>
                         <TableHead className="text-right">التاريخ</TableHead>
                         <TableHead className="text-right">المبلغ المدفوع</TableHead>
+                        <TableHead className="text-right">المبلغ المحول</TableHead>
                         <TableHead className="text-right">إجمالي التكاليف</TableHead>
                         <TableHead className="text-right">صافي الربح</TableHead>
                         <TableHead className="text-right">نسبة الربح</TableHead>
@@ -487,8 +590,11 @@ const AdminFinancials = () => {
                             <TableCell className="text-xs">
                               {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
                             </TableCell>
-                            <TableCell className="text-green-600">
-                              {formatPrice(order.customer_paid_amount || 0)}
+                            <TableCell>
+                              {renderEditableCell(order.id, 'customer_paid_amount', order.customer_paid_amount || 0, 'text-green-600')}
+                            </TableCell>
+                            <TableCell>
+                              {renderEditableCell(order.id, 'admin_paid_amount', order.admin_paid_amount || 0, 'text-cyan-600')}
                             </TableCell>
                             <TableCell className="text-red-600">
                               {formatPrice(orderTotalCost)}
