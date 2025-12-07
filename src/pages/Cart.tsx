@@ -83,6 +83,19 @@ const Cart = () => {
   });
 
   // جلب إعدادات الدفع الجزئي
+  interface FeeTier {
+    min_amount: number;
+    max_amount: number;
+    fee_percentage: number;
+  }
+  
+  interface PartialPaymentSettingsData {
+    fee_label_ar: string;
+    fee_label_en: string;
+    fee_tiers?: FeeTier[];
+    quarter_payment_fee_percentage?: number; // للتوافق مع الإعدادات القديمة
+  }
+  
   const { data: partialPaymentSettings } = useQuery({
     queryKey: ['partial-payment-settings'],
     queryFn: async () => {
@@ -91,13 +104,11 @@ const Cart = () => {
         .select('setting_value')
         .eq('setting_key', 'partial_payment_settings')
         .single();
-      return data?.setting_value as { quarter_payment_fee_percentage: number; fee_label_ar: string } | null;
+      return data?.setting_value as unknown as PartialPaymentSettingsData | null;
     },
     staleTime: 0,
     refetchOnMount: 'always',
   });
-
-  const quarterPaymentFeePercentage = partialPaymentSettings?.quarter_payment_fee_percentage ?? 10;
 
   const getDeliveryFee = (governorate: string | null) => {
     if (!governorate) return 6000;
@@ -124,10 +135,31 @@ const Cart = () => {
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const subtotalAfterDiscount = total - discount;
   
-  // حساب رسوم الدفع الجزئي (تُضاف للمبلغ المتبقي وليس للدفعة الأولى)
-  const partialPaymentFee = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
-    ? Math.ceil(subtotalAfterDiscount * (quarterPaymentFeePercentage / 100))
-    : 0;
+  // حساب رسوم الدفع الجزئي بناءً على الشرائح (تُضاف للمبلغ المتبقي وليس للدفعة الأولى)
+  const calculatePartialPaymentFee = () => {
+    if (!hasPreOrderItems || preOrderPaymentOption !== 'quarter') return 0;
+    
+    // استخدام الشرائح إذا كانت موجودة
+    if (partialPaymentSettings?.fee_tiers && partialPaymentSettings.fee_tiers.length > 0) {
+      const applicableTier = partialPaymentSettings.fee_tiers.find(
+        tier => subtotalAfterDiscount >= tier.min_amount && subtotalAfterDiscount <= tier.max_amount
+      );
+      if (applicableTier) {
+        return Math.ceil(subtotalAfterDiscount * (applicableTier.fee_percentage / 100));
+      }
+      // إذا لم يجد شريحة مطابقة، استخدم آخر شريحة إذا كان المبلغ أكبر
+      const lastTier = partialPaymentSettings.fee_tiers[partialPaymentSettings.fee_tiers.length - 1];
+      if (subtotalAfterDiscount > lastTier.max_amount) {
+        return Math.ceil(subtotalAfterDiscount * (lastTier.fee_percentage / 100));
+      }
+    }
+    
+    // للتوافق مع الإعدادات القديمة
+    const fallbackPercentage = partialPaymentSettings?.quarter_payment_fee_percentage ?? 10;
+    return Math.ceil(subtotalAfterDiscount * (fallbackPercentage / 100));
+  };
+  
+  const partialPaymentFee = calculatePartialPaymentFee();
   
   const preOrderPaymentAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
     ? Math.ceil(subtotalAfterDiscount * 0.25) 
@@ -977,10 +1009,10 @@ const Cart = () => {
                           <Label htmlFor="payment-quarter" className="flex-1 cursor-pointer">
                             <div className="font-bold text-foreground">دفع ربع المبلغ</div>
                             <div className="text-xs text-muted-foreground">
-                              ادفع الآن: {formatPrice(Math.ceil((total - discount) * 0.25))} د.ع + رسوم {quarterPaymentFeePercentage}%: {formatPrice(Math.ceil((total - discount) * (quarterPaymentFeePercentage / 100)))} د.ع
+                              ادفع الآن: {formatPrice(Math.ceil((total - discount) * 0.25))} د.ع
                             </div>
                             <div className="text-xs text-orange-500 mt-1">
-                              المتبقي عند الاستلام: {formatPrice(Math.ceil((total - discount) * 0.75))} د.ع
+                              المتبقي عند الاستلام: {formatPrice(remainingAmount)} د.ع (يشمل رسوم إضافية)
                             </div>
                           </Label>
                         </div>
@@ -1032,7 +1064,7 @@ const Cart = () => {
                           <span className="font-bold">{formatPrice(preOrderPaymentAmount)} د.ع</span>
                         </div>
                         <div className="flex justify-between text-sm text-amber-600 mb-2">
-                          <span>رسوم الدفع الجزئي ({quarterPaymentFeePercentage}%)</span>
+                          <span>{partialPaymentSettings?.fee_label_ar || 'رسوم إضافية'}</span>
                           <span className="font-bold">+{formatPrice(partialPaymentFee)} د.ع</span>
                         </div>
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
