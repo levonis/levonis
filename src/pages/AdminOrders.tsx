@@ -319,6 +319,11 @@ const AdminOrders = () => {
         discount_amount: formData.get('discount_amount') ? Number(formData.get('discount_amount')) : 0,
         paid_amount: formData.get('paid_amount') ? Number(formData.get('paid_amount')) : 0,
         remaining_amount: formData.get('remaining_amount') ? Number(formData.get('remaining_amount')) : 0,
+        admin_product_cost: formData.get('admin_product_cost') ? Number(formData.get('admin_product_cost')) : 0,
+        admin_shipping_cost: formData.get('admin_shipping_cost') ? Number(formData.get('admin_shipping_cost')) : 0,
+        admin_other_costs: formData.get('admin_other_costs') ? Number(formData.get('admin_other_costs')) : 0,
+        profit_amount: formData.get('profit_amount') ? Number(formData.get('profit_amount')) : 0,
+        financial_notes: formData.get('financial_notes') as string || null,
       };
 
       // تحديث تاريخ الشحن
@@ -964,6 +969,74 @@ const AdminOrders = () => {
                                       name="internal_notes"
                                       defaultValue={order.internal_notes || ''}
                                       placeholder="ملاحظات داخلية لا تظهر للعميل..."
+                                      rows={2}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* التكاليف المالية - للإدارة فقط */}
+                                <div className="border-t pt-4 mt-4">
+                                  <h4 className="font-semibold mb-4 text-primary flex items-center gap-2">
+                                    💰 التكاليف المالية (للإدارة فقط - لا يظهر للزبون)
+                                  </h4>
+                                  
+                                  <div className="grid md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="admin_product_cost">تكلفة المنتج</Label>
+                                      <Input
+                                        id="admin_product_cost"
+                                        name="admin_product_cost"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.admin_product_cost || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="admin_shipping_cost">تكلفة الشحن</Label>
+                                      <Input
+                                        id="admin_shipping_cost"
+                                        name="admin_shipping_cost"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.admin_shipping_cost || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="admin_other_costs">تكاليف أخرى</Label>
+                                      <Input
+                                        id="admin_other_costs"
+                                        name="admin_other_costs"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.admin_other_costs || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="profit_amount">الربح</Label>
+                                      <Input
+                                        id="profit_amount"
+                                        name="profit_amount"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.profit_amount || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-2 mt-4">
+                                    <Label htmlFor="financial_notes">ملاحظات مالية</Label>
+                                    <Textarea
+                                      id="financial_notes"
+                                      name="financial_notes"
+                                      defaultValue={order.financial_notes || ''}
+                                      placeholder="ملاحظات مالية خاصة بالإدارة..."
                                       rows={2}
                                     />
                                   </div>
