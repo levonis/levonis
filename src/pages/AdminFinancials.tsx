@@ -576,7 +576,7 @@ const AdminFinancials = () => {
                   إضافة طلب يدوي
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md" dir="rtl">
+              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
                 <DialogHeader>
                   <DialogTitle>إضافة طلب يدوي</DialogTitle>
                 </DialogHeader>
