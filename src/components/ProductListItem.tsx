@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { ShoppingCart } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
+import { Heart } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { resizeSupabaseImage } from '@/lib/imageUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface ProductListItemProps {
   id: string;
@@ -33,13 +35,52 @@ const ProductListItem = ({
   currency = 'دينار عراقي',
   slug
 }: ProductListItemProps) => {
+  const [isAdding, setIsAdding] = useState(false);
   const hasSale = originalPrice && originalPrice > price;
   const savings = hasSale ? originalPrice - price : 0;
-  const { addToCart } = useCart();
   
   const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
   // Resize image to 300px for list item display
   const optimizedImage = resizeSupabaseImage(displayImage, 300);
+
+  const handleAddToFavorites = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setIsAdding(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('يرجى تسجيل الدخول أولاً');
+        return;
+      }
+
+      // Check if already in favorites
+      const { data: existing } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('product_id', id)
+        .maybeSingle();
+
+      if (existing) {
+        toast.info('المنتج موجود بالفعل في المفضلة');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('favorites')
+        .insert({ user_id: user.id, product_id: id });
+
+      if (error) throw error;
+      toast.success('تمت الإضافة إلى المفضلة');
+    } catch (error) {
+      console.error('Error adding to favorites:', error);
+      toast.error('حدث خطأ أثناء الإضافة للمفضلة');
+    } finally {
+      setIsAdding(false);
+    }
+  };
 
   return (
     <Link 
@@ -116,13 +157,11 @@ const ProductListItem = ({
           <Button 
             size="default"
             className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 w-full sm:w-auto text-sm"
-            onClick={(e) => {
-              e.preventDefault();
-              addToCart(id);
-            }}
+            onClick={handleAddToFavorites}
+            disabled={isAdding}
           >
-            <ShoppingCart className="h-4 w-4 ml-2" />
-            أضف للسلة
+            <Heart className="h-4 w-4 ml-2" />
+            أضف للمفضلة
           </Button>
         </div>
       </div>

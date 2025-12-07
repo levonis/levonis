@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
-import { ShoppingCart } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
+import { Heart } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { resizeSupabaseImage } from '@/lib/imageUtils';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 interface ProductCardProps {
   id: string;
@@ -35,13 +37,52 @@ const ProductCard = ({
   slug,
   priority = false
 }: ProductCardProps) => {
+  const [isAdding, setIsAdding] = useState(false);
   const hasSale = originalPrice && originalPrice > price;
   const savings = hasSale ? originalPrice - price : 0;
-  const { addToCart } = useCart();
   
   const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
   // Resize image to 400px for card display
   const optimizedImage = resizeSupabaseImage(displayImage, 400);
+
+  const handleAddToFavorites = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setIsAdding(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('يرجى تسجيل الدخول أولاً');
+        return;
+      }
+
+      // Check if already in favorites
+      const { data: existing } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('product_id', id)
+        .maybeSingle();
+
+      if (existing) {
+        toast.info('المنتج موجود بالفعل في المفضلة');
+        return;
+      }
+
+      const { error } = await supabase
+        .from('favorites')
+        .insert({ user_id: user.id, product_id: id });
+
+      if (error) throw error;
+      toast.success('تمت الإضافة إلى المفضلة');
+    } catch (error) {
+      console.error('Error adding to favorites:', error);
+      toast.error('حدث خطأ أثناء الإضافة للمفضلة');
+    } finally {
+      setIsAdding(false);
+    }
+  };
 
   return (
     <Link 
@@ -125,13 +166,11 @@ const ProductCard = ({
         <Button 
           size="sm"
           className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 h-8 w-8 p-0 flex-shrink-0"
-          onClick={(e) => {
-            e.preventDefault();
-            addToCart(id);
-          }}
-          aria-label="أضف للسلة"
+          onClick={handleAddToFavorites}
+          disabled={isAdding}
+          aria-label="أضف للمفضلة"
         >
-          <ShoppingCart className="h-3.5 w-3.5" />
+          <Heart className="h-3.5 w-3.5" />
         </Button>
       </div>
     </Link>
