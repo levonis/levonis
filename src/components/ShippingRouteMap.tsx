@@ -13,15 +13,23 @@ interface ShippingRouteMapProps {
   customWaypoints?: [number, number][] | null;
 }
 
-// Default route coordinates (fallback when no custom waypoints)
+// Default route coordinates - Maritime-only path (Nansha Port → Umm Qasr Port)
 const DEFAULT_SEA_ROUTE: [number, number][] = [
-  [113.58, 22.58], [114.30, 21.50], [115.50, 18.00], [116.00, 12.00],
-  [116.00, 7.00], [114.00, 4.00], [109.00, 2.00], [105.50, 1.00],
-  [103.80, 1.20], [101.00, 2.50], [98.00, 4.50], [94.00, 7.00],
-  [87.00, 7.50], [82.00, 6.00], [78.00, 5.50], [73.00, 7.00],
-  [66.00, 12.00], [60.00, 18.00], [58.00, 22.00], [56.50, 24.50],
-  [55.10, 25.20], [52.50, 26.50], [50.50, 28.50], [48.50, 29.50],
-  [47.95, 29.97],
+  [113.6668, 22.661],  // Nansha Port, China
+  [114.5, 21.5],       // South China Sea (offshore Hong Kong/Macau)
+  [114.0, 16.0],       // South China Sea (southwest)
+  [104.0, 4.0],        // Entering Strait of Malacca
+  [101.0, 3.0],        // Strait of Malacca
+  [95.0, 5.0],         // Exit to Indian Ocean
+  [80.0, 5.0],         // South of Sri Lanka
+  [65.0, 15.0],        // Arabian Sea
+  [60.0, 22.0],        // Approaching Gulf of Oman
+  [56.3, 26.5],        // Gulf of Oman / Strait of Hormuz
+  [51.5, 27.5],        // Inside Arabian Gulf
+  [49.5, 29.5],        // Northwest Arabian Gulf
+  [48.21, 29.9833],    // Approaching Khor Abdullah
+  [48.05, 30.0],       // Khor Abdullah channel
+  [47.973, 30.0274],   // Umm Qasr Port, Iraq
 ];
 
 const DEFAULT_AIR_ROUTE: [number, number][] = [
