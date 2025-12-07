@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { 
   Loader2, 
@@ -22,7 +24,9 @@ import {
   Package,
   Check,
   X,
-  Send
+  Send,
+  Plus,
+  Eye
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -34,6 +38,48 @@ interface EditingCell {
   value: number;
 }
 
+interface OrderWithDetails {
+  id: string;
+  order_number: string;
+  created_at: string;
+  total_amount: number;
+  customer_paid_amount: number | null;
+  admin_paid_amount: number | null;
+  admin_product_cost: number | null;
+  admin_shipping_cost: number | null;
+  admin_other_costs: number | null;
+  tax_amount: number | null;
+  remaining_amount: number | null;
+  status: string;
+  financial_notes: string | null;
+  user_id: string;
+  profile?: {
+    username: string;
+    full_name: string | null;
+  };
+  order_items?: {
+    id: string;
+    product_name: string;
+    product_name_ar: string;
+    quantity: number;
+    unit_price: number;
+    total_price: number;
+  }[];
+}
+
+interface ManualOrderForm {
+  customer_name: string;
+  product_names: string;
+  total_amount: number;
+  customer_paid_amount: number;
+  admin_paid_amount: number;
+  admin_product_cost: number;
+  admin_shipping_cost: number;
+  admin_other_costs: number;
+  tax_amount: number;
+  financial_notes: string;
+}
+
 const AdminFinancials = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -41,13 +87,31 @@ const AdminFinancials = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [manualOrderForm, setManualOrderForm] = useState<ManualOrderForm>({
+    customer_name: '',
+    product_names: '',
+    total_amount: 0,
+    customer_paid_amount: 0,
+    admin_paid_amount: 0,
+    admin_product_cost: 0,
+    admin_shipping_cost: 0,
+    admin_other_costs: 0,
+    tax_amount: 0,
+    financial_notes: '',
+  });
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-financials', dateFrom, dateTo],
     queryFn: async () => {
       let query = supabase
         .from('orders')
-        .select('*')
+        .select(`
+          *,
+          profile:profiles!orders_user_id_fkey_profiles(username, full_name),
+          order_items(id, product_name, product_name_ar, quantity, unit_price, total_price)
+        `)
         .order('created_at', { ascending: false });
 
       if (dateFrom) {
@@ -59,7 +123,7 @@ const AdminFinancials = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data || [];
+      return (data || []) as OrderWithDetails[];
     },
     enabled: isAdmin,
   });
@@ -82,6 +146,80 @@ const AdminFinancials = () => {
     },
   });
 
+  const addManualOrderMutation = useMutation({
+    mutationFn: async (form: ManualOrderForm) => {
+      // Generate order number
+      const orderNumber = `MAN-${Date.now()}`;
+      
+      // Create manual order (using admin's user_id as placeholder)
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          order_number: orderNumber,
+          user_id: user?.id || '',
+          total_amount: form.total_amount,
+          customer_paid_amount: form.customer_paid_amount,
+          admin_paid_amount: form.admin_paid_amount,
+          admin_product_cost: form.admin_product_cost,
+          admin_shipping_cost: form.admin_shipping_cost,
+          admin_other_costs: form.admin_other_costs,
+          tax_amount: form.tax_amount,
+          financial_notes: `اسم العميل: ${form.customer_name}\n${form.financial_notes}`,
+          remaining_amount: form.total_amount - form.customer_paid_amount,
+          status: 'delivered',
+          shipping_address: 'طلب يدوي',
+          phone_number: '-',
+          governorate: '-',
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // Add order items if product names provided
+      if (form.product_names.trim() && order) {
+        const productNames = form.product_names.split('\n').filter(n => n.trim());
+        const orderItems = productNames.map(name => ({
+          order_id: order.id,
+          product_name: name.trim(),
+          product_name_ar: name.trim(),
+          quantity: 1,
+          unit_price: form.total_amount / productNames.length,
+          total_price: form.total_amount / productNames.length,
+        }));
+
+        const { error: itemsError } = await supabase
+          .from('order_items')
+          .insert(orderItems);
+
+        if (itemsError) throw itemsError;
+      }
+
+      return order;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-financials'] });
+      toast.success('تم إضافة الطلب بنجاح');
+      setIsAddDialogOpen(false);
+      setManualOrderForm({
+        customer_name: '',
+        product_names: '',
+        total_amount: 0,
+        customer_paid_amount: 0,
+        admin_paid_amount: 0,
+        admin_product_cost: 0,
+        admin_shipping_cost: 0,
+        admin_other_costs: 0,
+        tax_amount: 0,
+        financial_notes: '',
+      });
+    },
+    onError: (error) => {
+      console.error('Error adding manual order:', error);
+      toast.error('حدث خطأ أثناء إضافة الطلب');
+    },
+  });
+
   const handleCellClick = (orderId: string, field: string, currentValue: number) => {
     setEditingCell({ orderId, field, value: currentValue });
   };
@@ -98,6 +236,20 @@ const AdminFinancials = () => {
 
   const handleCancelEdit = () => {
     setEditingCell(null);
+  };
+
+  const getProductNames = (order: OrderWithDetails): string => {
+    if (!order.order_items || order.order_items.length === 0) {
+      return '-';
+    }
+    return order.order_items.map(item => item.product_name_ar || item.product_name).join('، ');
+  };
+
+  const getUsername = (order: OrderWithDetails): string => {
+    if (order.profile) {
+      return order.profile.full_name || order.profile.username;
+    }
+    return '-';
   };
 
   const renderEditableCell = (orderId: string, field: string, value: number, colorClass: string) => {
@@ -211,6 +363,110 @@ const AdminFinancials = () => {
   const totalCosts = totals.totalProductCost + totals.totalShippingCost + totals.totalOtherCosts;
   const calculatedProfit = totals.totalRevenue - totalCosts;
 
+  const renderOrderTable = (ordersList: OrderWithDetails[] | undefined, showNotes = false) => (
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="text-right">رقم الطلب</TableHead>
+            <TableHead className="text-right">اسم المستخدم</TableHead>
+            <TableHead className="text-right">المنتجات</TableHead>
+            <TableHead className="text-right">التاريخ</TableHead>
+            <TableHead className="text-right">المبلغ الإجمالي</TableHead>
+            <TableHead className="text-right">دفع الزبون</TableHead>
+            <TableHead className="text-right">المبلغ المحول</TableHead>
+            <TableHead className="text-right">تكلفة المنتج</TableHead>
+            <TableHead className="text-right">تكلفة الشحن</TableHead>
+            <TableHead className="text-right">تكاليف أخرى</TableHead>
+            <TableHead className="text-right">الضريبة</TableHead>
+            <TableHead className="text-right">الربح الصافي</TableHead>
+            <TableHead className="text-right">الحالة</TableHead>
+            {showNotes && <TableHead className="text-right">ملاحظات مالية</TableHead>}
+            <TableHead className="text-right">تفاصيل</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {ordersList?.map((order) => {
+            const orderProfit = (order.total_amount || 0) - 
+              (order.admin_product_cost || 0) - 
+              (order.admin_shipping_cost || 0) -
+              (order.admin_other_costs || 0);
+            
+            return (
+              <TableRow key={order.id}>
+                <TableCell className="font-mono text-xs">
+                  {order.order_number}
+                </TableCell>
+                <TableCell className="text-xs font-medium">
+                  {getUsername(order)}
+                </TableCell>
+                <TableCell className="text-xs max-w-[150px] truncate" title={getProductNames(order)}>
+                  {getProductNames(order)}
+                </TableCell>
+                <TableCell className="text-xs">
+                  {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
+                </TableCell>
+                <TableCell>{formatPrice(order.total_amount)}</TableCell>
+                <TableCell>
+                  {renderEditableCell(order.id, 'customer_paid_amount', order.customer_paid_amount || 0, 'text-green-600')}
+                </TableCell>
+                <TableCell>
+                  {renderEditableCell(order.id, 'admin_paid_amount', order.admin_paid_amount || 0, 'text-cyan-600')}
+                </TableCell>
+                <TableCell>
+                  {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-600')}
+                </TableCell>
+                <TableCell>
+                  {renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-amber-600')}
+                </TableCell>
+                <TableCell>
+                  {renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-pink-600')}
+                </TableCell>
+                <TableCell>
+                  {renderEditableCell(order.id, 'tax_amount', order.tax_amount || 0, 'text-teal-600')}
+                </TableCell>
+                <TableCell className={orderProfit >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
+                  {formatPrice(orderProfit)}
+                </TableCell>
+                <TableCell>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                    order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {order.status === 'pending' ? 'قيد الانتظار' :
+                     order.status === 'purchased' ? 'تم الشراء' :
+                     order.status === 'confirmed' ? 'مؤكد' :
+                     order.status === 'processing' ? 'قيد التجهيز' :
+                     order.status === 'shipped' ? 'تم الشحن' :
+                     order.status === 'delivered' ? 'تم التوصيل' :
+                     order.status === 'cancelled' ? 'ملغي' : order.status}
+                  </span>
+                </TableCell>
+                {showNotes && (
+                  <TableCell className="text-xs max-w-[200px] truncate">
+                    {order.financial_notes || '-'}
+                  </TableCell>
+                )}
+                <TableCell>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => setSelectedOrder(order)}
+                    aria-label="عرض التفاصيل"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-6" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -220,9 +476,120 @@ const AdminFinancials = () => {
             <h1 className="text-2xl md:text-3xl font-bold text-foreground">التحليلات المالية</h1>
             <p className="text-muted-foreground">تتبع الإيرادات والتكاليف والأرباح - اضغط على أي رقم لتعديله</p>
           </div>
-          <Button variant="outline" onClick={() => navigate('/admin')}>
-            العودة للوحة التحكم
-          </Button>
+          <div className="flex gap-2">
+            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="default" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  إضافة طلب يدوي
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md" dir="rtl">
+                <DialogHeader>
+                  <DialogTitle>إضافة طلب يدوي</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-4">
+                  <div className="space-y-2">
+                    <Label>اسم العميل</Label>
+                    <Input
+                      value={manualOrderForm.customer_name}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_name: e.target.value })}
+                      placeholder="اسم العميل"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>أسماء المنتجات (كل منتج في سطر)</Label>
+                    <Textarea
+                      value={manualOrderForm.product_names}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, product_names: e.target.value })}
+                      placeholder="منتج 1&#10;منتج 2&#10;منتج 3"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>المبلغ الإجمالي</Label>
+                      <Input
+                        type="number"
+                        value={manualOrderForm.total_amount}
+                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, total_amount: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>دفع الزبون</Label>
+                      <Input
+                        type="number"
+                        value={manualOrderForm.customer_paid_amount}
+                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_paid_amount: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>المبلغ المحول</Label>
+                      <Input
+                        type="number"
+                        value={manualOrderForm.admin_paid_amount}
+                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, admin_paid_amount: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تكلفة المنتج</Label>
+                      <Input
+                        type="number"
+                        value={manualOrderForm.admin_product_cost}
+                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, admin_product_cost: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تكلفة الشحن</Label>
+                      <Input
+                        type="number"
+                        value={manualOrderForm.admin_shipping_cost}
+                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, admin_shipping_cost: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تكاليف أخرى</Label>
+                      <Input
+                        type="number"
+                        value={manualOrderForm.admin_other_costs}
+                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, admin_other_costs: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>الضريبة</Label>
+                      <Input
+                        type="number"
+                        value={manualOrderForm.tax_amount}
+                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, tax_amount: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>ملاحظات مالية</Label>
+                    <Textarea
+                      value={manualOrderForm.financial_notes}
+                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, financial_notes: e.target.value })}
+                      placeholder="ملاحظات إضافية..."
+                      rows={2}
+                    />
+                  </div>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => addManualOrderMutation.mutate(manualOrderForm)}
+                    disabled={addManualOrderMutation.isPending || !manualOrderForm.customer_name}
+                  >
+                    {addManualOrderMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                    ) : null}
+                    إضافة الطلب
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" onClick={() => navigate('/admin')}>
+              العودة للوحة التحكم
+            </Button>
+          </div>
         </div>
 
         {/* Date Filters */}
@@ -410,82 +777,7 @@ const AdminFinancials = () => {
                     <Loader2 className="h-8 w-8 animate-spin" />
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="text-right">رقم الطلب</TableHead>
-                          <TableHead className="text-right">التاريخ</TableHead>
-                          <TableHead className="text-right">المبلغ الإجمالي</TableHead>
-                          <TableHead className="text-right">دفع الزبون</TableHead>
-                          <TableHead className="text-right">المبلغ المحول</TableHead>
-                          <TableHead className="text-right">تكلفة المنتج</TableHead>
-                          <TableHead className="text-right">تكلفة الشحن</TableHead>
-                          <TableHead className="text-right">تكاليف أخرى</TableHead>
-                          <TableHead className="text-right">الضريبة</TableHead>
-                          <TableHead className="text-right">الربح الصافي</TableHead>
-                          <TableHead className="text-right">الحالة</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {orders?.map((order) => {
-                          // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى (الضريبة جزء من الربح)
-                          const orderProfit = (order.total_amount || 0) - 
-                            (order.admin_product_cost || 0) - 
-                            (order.admin_shipping_cost || 0) -
-                            (order.admin_other_costs || 0);
-                          
-                          return (
-                            <TableRow key={order.id}>
-                              <TableCell className="font-mono text-xs">
-                                {order.order_number}
-                              </TableCell>
-                              <TableCell className="text-xs">
-                                {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
-                              </TableCell>
-                              <TableCell>{formatPrice(order.total_amount)}</TableCell>
-                              <TableCell>
-                                {renderEditableCell(order.id, 'customer_paid_amount', order.customer_paid_amount || 0, 'text-green-600')}
-                              </TableCell>
-                              <TableCell>
-                                {renderEditableCell(order.id, 'admin_paid_amount', order.admin_paid_amount || 0, 'text-cyan-600')}
-                              </TableCell>
-                              <TableCell>
-                                {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-600')}
-                              </TableCell>
-                              <TableCell>
-                                {renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-amber-600')}
-                              </TableCell>
-                              <TableCell>
-                                {renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-pink-600')}
-                              </TableCell>
-                              <TableCell>
-                                {renderEditableCell(order.id, 'tax_amount', order.tax_amount || 0, 'text-teal-600')}
-                              </TableCell>
-                              <TableCell className={orderProfit >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
-                                {formatPrice(orderProfit)}
-                              </TableCell>
-                              <TableCell>
-                                <span className={`px-2 py-1 rounded-full text-xs ${
-                                  order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                                  order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                                  'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {order.status === 'pending' ? 'قيد الانتظار' :
-                                   order.status === 'purchased' ? 'تم الشراء' :
-                                   order.status === 'confirmed' ? 'مؤكد' :
-                                   order.status === 'processing' ? 'قيد التجهيز' :
-                                   order.status === 'shipped' ? 'تم الشحن' :
-                                   order.status === 'delivered' ? 'تم التوصيل' :
-                                   order.status === 'cancelled' ? 'ملغي' : order.status}
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </div>
+                  renderOrderTable(orders)
                 )}
               </CardContent>
             </Card>
@@ -497,68 +789,14 @@ const AdminFinancials = () => {
                 <CardTitle className="text-lg">طلبات تم تسجيل تكاليفها</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">رقم الطلب</TableHead>
-                        <TableHead className="text-right">التاريخ</TableHead>
-                        <TableHead className="text-right">المبلغ المحول</TableHead>
-                        <TableHead className="text-right">تكلفة المنتج</TableHead>
-                        <TableHead className="text-right">تكلفة الشحن</TableHead>
-                        <TableHead className="text-right">تكاليف أخرى</TableHead>
-                        <TableHead className="text-right">الضريبة</TableHead>
-                        <TableHead className="text-right">الربح</TableHead>
-                        <TableHead className="text-right">ملاحظات مالية</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {orders?.filter(o => 
-                        (o.admin_product_cost || 0) > 0 || 
-                        (o.admin_shipping_cost || 0) > 0 || 
-                        (o.admin_other_costs || 0) > 0
-                      ).map((order) => {
-                        // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى (الضريبة جزء من الربح)
-                        const orderProfit = (order.total_amount || 0) - 
-                          (order.admin_product_cost || 0) - 
-                          (order.admin_shipping_cost || 0) -
-                          (order.admin_other_costs || 0);
-                        
-                        return (
-                          <TableRow key={order.id}>
-                            <TableCell className="font-mono text-xs">
-                              {order.order_number}
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
-                            </TableCell>
-                            <TableCell>
-                              {renderEditableCell(order.id, 'admin_paid_amount', order.admin_paid_amount || 0, 'text-cyan-600')}
-                            </TableCell>
-                            <TableCell>
-                              {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-600')}
-                            </TableCell>
-                            <TableCell>
-                              {renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-amber-600')}
-                            </TableCell>
-                            <TableCell>
-                              {renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-pink-600')}
-                            </TableCell>
-                            <TableCell>
-                              {renderEditableCell(order.id, 'tax_amount', order.tax_amount || 0, 'text-teal-600')}
-                            </TableCell>
-                            <TableCell className={orderProfit >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
-                              {formatPrice(orderProfit)}
-                            </TableCell>
-                            <TableCell className="text-xs max-w-[200px] truncate">
-                              {order.financial_notes || '-'}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                {renderOrderTable(
+                  orders?.filter(o => 
+                    (o.admin_product_cost || 0) > 0 || 
+                    (o.admin_shipping_cost || 0) > 0 || 
+                    (o.admin_other_costs || 0) > 0
+                  ),
+                  true
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -569,66 +807,132 @@ const AdminFinancials = () => {
                 <CardTitle className="text-lg">الطلبات المربحة</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">رقم الطلب</TableHead>
-                        <TableHead className="text-right">التاريخ</TableHead>
-                        <TableHead className="text-right">المبلغ المدفوع</TableHead>
-                        <TableHead className="text-right">المبلغ المحول</TableHead>
-                        <TableHead className="text-right">إجمالي التكاليف</TableHead>
-                        <TableHead className="text-right">صافي الربح</TableHead>
-                        <TableHead className="text-right">نسبة الربح</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {orders?.filter(o => {
-                        // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى (الضريبة جزء من الربح)
-                        const orderProfit = (o.total_amount || 0) - 
-                          (o.admin_product_cost || 0) - 
-                          (o.admin_shipping_cost || 0) -
-                          (o.admin_other_costs || 0);
-                        const hasCosts = (o.admin_product_cost || 0) > 0 || (o.admin_shipping_cost || 0) > 0 || (o.admin_other_costs || 0) > 0;
-                        return orderProfit > 0 && hasCosts;
-                      }).map((order) => {
-                        const orderTotalCost = (order.admin_product_cost || 0) + (order.admin_shipping_cost || 0) + (order.admin_other_costs || 0);
-                        const orderProfit = (order.total_amount || 0) - orderTotalCost;
-                        const profitPercent = orderTotalCost > 0 ? ((orderProfit / orderTotalCost) * 100).toFixed(1) : 0;
-                        
-                        return (
-                          <TableRow key={order.id}>
-                            <TableCell className="font-mono text-xs">
-                              {order.order_number}
-                            </TableCell>
-                            <TableCell className="text-xs">
-                              {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
-                            </TableCell>
-                            <TableCell>
-                              {renderEditableCell(order.id, 'customer_paid_amount', order.customer_paid_amount || 0, 'text-green-600')}
-                            </TableCell>
-                            <TableCell>
-                              {renderEditableCell(order.id, 'admin_paid_amount', order.admin_paid_amount || 0, 'text-cyan-600')}
-                            </TableCell>
-                            <TableCell className="text-red-600">
-                              {formatPrice(orderTotalCost)}
-                            </TableCell>
-                            <TableCell className="text-emerald-600 font-semibold">
-                              {formatPrice(orderProfit)}
-                            </TableCell>
-                            <TableCell className="text-emerald-600">
-                              {profitPercent}%
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
+                {renderOrderTable(
+                  orders?.filter(o => {
+                    const orderProfit = (o.total_amount || 0) - 
+                      (o.admin_product_cost || 0) - 
+                      (o.admin_shipping_cost || 0) -
+                      (o.admin_other_costs || 0);
+                    const hasCosts = (o.admin_product_cost || 0) > 0 || (o.admin_shipping_cost || 0) > 0 || (o.admin_other_costs || 0) > 0;
+                    return orderProfit > 0 && hasCosts;
+                  })
+                )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Order Details Dialog */}
+        <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+          <DialogContent className="max-w-lg" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>تفاصيل الطلب</DialogTitle>
+            </DialogHeader>
+            {selectedOrder && (
+              <div className="space-y-4 mt-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">رقم الطلب:</span>
+                    <p className="font-mono font-semibold">{selectedOrder.order_number}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">اسم المستخدم:</span>
+                    <p className="font-semibold">{getUsername(selectedOrder)}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">التاريخ:</span>
+                    <p>{format(new Date(selectedOrder.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">الحالة:</span>
+                    <p className={`font-semibold ${
+                      selectedOrder.status === 'delivered' ? 'text-green-600' :
+                      selectedOrder.status === 'cancelled' ? 'text-red-600' : 'text-yellow-600'
+                    }`}>
+                      {selectedOrder.status === 'pending' ? 'قيد الانتظار' :
+                       selectedOrder.status === 'purchased' ? 'تم الشراء' :
+                       selectedOrder.status === 'confirmed' ? 'مؤكد' :
+                       selectedOrder.status === 'processing' ? 'قيد التجهيز' :
+                       selectedOrder.status === 'shipped' ? 'تم الشحن' :
+                       selectedOrder.status === 'delivered' ? 'تم التوصيل' :
+                       selectedOrder.status === 'cancelled' ? 'ملغي' : selectedOrder.status}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-2">المنتجات:</h4>
+                  {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
+                    <ul className="space-y-2">
+                      {selectedOrder.order_items.map((item) => (
+                        <li key={item.id} className="flex justify-between items-center text-sm bg-muted/50 p-2 rounded">
+                          <span>{item.product_name_ar || item.product_name}</span>
+                          <span className="text-muted-foreground">
+                            {item.quantity} × {formatPrice(item.unit_price)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">لا توجد منتجات</p>
+                  )}
+                </div>
+
+                <div className="border-t pt-4 grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">المبلغ الإجمالي:</span>
+                    <span className="font-semibold">{formatPrice(selectedOrder.total_amount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">دفع الزبون:</span>
+                    <span className="text-green-600">{formatPrice(selectedOrder.customer_paid_amount || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">تكلفة المنتج:</span>
+                    <span className="text-red-600">{formatPrice(selectedOrder.admin_product_cost || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">تكلفة الشحن:</span>
+                    <span className="text-amber-600">{formatPrice(selectedOrder.admin_shipping_cost || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">تكاليف أخرى:</span>
+                    <span className="text-pink-600">{formatPrice(selectedOrder.admin_other_costs || 0)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">الضريبة:</span>
+                    <span className="text-teal-600">{formatPrice(selectedOrder.tax_amount || 0)}</span>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>صافي الربح:</span>
+                    <span className={
+                      ((selectedOrder.total_amount || 0) - (selectedOrder.admin_product_cost || 0) - (selectedOrder.admin_shipping_cost || 0) - (selectedOrder.admin_other_costs || 0)) >= 0 
+                        ? 'text-emerald-600' 
+                        : 'text-red-600'
+                    }>
+                      {formatPrice(
+                        (selectedOrder.total_amount || 0) - 
+                        (selectedOrder.admin_product_cost || 0) - 
+                        (selectedOrder.admin_shipping_cost || 0) - 
+                        (selectedOrder.admin_other_costs || 0)
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {selectedOrder.financial_notes && (
+                  <div className="border-t pt-4">
+                    <h4 className="font-semibold mb-2">ملاحظات مالية:</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedOrder.financial_notes}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
