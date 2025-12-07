@@ -39,12 +39,14 @@ const AdminOrders = () => {
   const [serialImagePreview, setSerialImagePreview] = useState<string>('');
   
   // Financial fields state for live calculation
-  const [customerPaidAmount, setCustomerPaidAmount] = useState<number>(0);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
   const [adminProductCost, setAdminProductCost] = useState<number>(0);
+  const [adminShippingCost, setAdminShippingCost] = useState<number>(0);
   const [adminOtherCosts, setAdminOtherCosts] = useState<number>(0);
+  const [taxAmount, setTaxAmount] = useState<number>(0);
   
-  // Calculate profit dynamically
-  const calculatedProfit = customerPaidAmount - adminProductCost - adminOtherCosts;
+  // Calculate profit dynamically: المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - التكاليف الأخرى + الضريبة
+  const calculatedProfit = totalAmount - adminProductCost - adminShippingCost - adminOtherCosts + taxAmount;
   useEffect(() => {
     const status = searchParams.get('status');
     if (status) setStatusFilter(status);
@@ -685,9 +687,11 @@ const AdminOrders = () => {
                                   setAdminFilesArray([]);
                                   setAdminImagePreviews([]);
                                   // Initialize financial fields for live calculation
-                                  setCustomerPaidAmount(parseFloat(order.customer_paid_amount) || 0);
+                                  setTotalAmount(parseFloat(order.total_amount) || 0);
                                   setAdminProductCost(parseFloat(order.admin_product_cost) || 0);
+                                  setAdminShippingCost(parseFloat(order.admin_shipping_cost) || 0);
                                   setAdminOtherCosts(parseFloat(order.admin_other_costs) || 0);
+                                  setTaxAmount(parseFloat(order.tax_amount) || 0);
                                   setDialogOpen(true);
                                 }}
                               >
@@ -994,27 +998,28 @@ const AdminOrders = () => {
                                   
                                   <div className="grid md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                      <Label htmlFor="customer_paid_amount">المبلغ الذي دفعه الزبون</Label>
+                                      <Label htmlFor="total_amount_display">المبلغ الإجمالي</Label>
                                       <Input
-                                        id="customer_paid_amount"
-                                        name="customer_paid_amount"
+                                        id="total_amount_display"
                                         type="number"
                                         step="0.01"
-                                        value={customerPaidAmount}
-                                        onChange={(e) => setCustomerPaidAmount(parseFloat(e.target.value) || 0)}
+                                        value={totalAmount}
+                                        onChange={(e) => setTotalAmount(parseFloat(e.target.value) || 0)}
                                         placeholder="0.00"
+                                        className="bg-primary/5"
                                       />
                                     </div>
 
                                     <div className="space-y-2">
-                                      <Label htmlFor="admin_paid_amount">المبلغ الذي دفعناه (تكلفتنا)</Label>
+                                      <Label htmlFor="tax_amount_calc">الضريبة (تُضاف للربح)</Label>
                                       <Input
-                                        id="admin_paid_amount"
-                                        name="admin_paid_amount"
+                                        id="tax_amount_calc"
                                         type="number"
                                         step="0.01"
-                                        defaultValue={order.admin_paid_amount || '0'}
+                                        value={taxAmount}
+                                        onChange={(e) => setTaxAmount(parseFloat(e.target.value) || 0)}
                                         placeholder="0.00"
+                                        className="bg-green-50 dark:bg-green-950/20"
                                       />
                                     </div>
 
@@ -1032,13 +1037,14 @@ const AdminOrders = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                      <Label htmlFor="admin_shipping_cost">تكلفة الشحن (للمعلومات فقط)</Label>
+                                      <Label htmlFor="admin_shipping_cost">تكلفة الشحن</Label>
                                       <Input
                                         id="admin_shipping_cost"
                                         name="admin_shipping_cost"
                                         type="number"
                                         step="0.01"
-                                        defaultValue={order.admin_shipping_cost || '0'}
+                                        value={adminShippingCost}
+                                        onChange={(e) => setAdminShippingCost(parseFloat(e.target.value) || 0)}
                                         placeholder="0.00"
                                       />
                                     </div>
@@ -1067,7 +1073,31 @@ const AdminOrders = () => {
                                         readOnly
                                         className={`bg-muted font-bold ${calculatedProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
                                       />
-                                      <p className="text-xs text-muted-foreground">= المبلغ الذي دفعه الزبون - تكلفة المنتج - تكاليف أخرى (بدون تكلفة الشحن)</p>
+                                      <p className="text-xs text-muted-foreground">= المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى + الضريبة</p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="customer_paid_amount">المبلغ الذي دفعه الزبون</Label>
+                                      <Input
+                                        id="customer_paid_amount"
+                                        name="customer_paid_amount"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.customer_paid_amount || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="admin_paid_amount">المبلغ الذي دفعناه (تكلفتنا)</Label>
+                                      <Input
+                                        id="admin_paid_amount"
+                                        name="admin_paid_amount"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.admin_paid_amount || '0'}
+                                        placeholder="0.00"
+                                      />
                                     </div>
                                   </div>
 
