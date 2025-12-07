@@ -43,6 +43,7 @@ const AdminWallet = lazy(() => import("./pages/AdminWallet"));
 const AdminWalletSettings = lazy(() => import("./pages/AdminWalletSettings"));
 const AdminInvoiceTemplates = lazy(() => import("./pages/AdminInvoiceTemplates"));
 const AdminSavedInvoices = lazy(() => import("./pages/AdminSavedInvoices"));
+const AdminFinancials = lazy(() => import("./pages/AdminFinancials"));
 const MyPoints = lazy(() => import("./pages/MyPoints"));
 const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -94,6 +95,7 @@ function AppContent() {
             <Route path="/admin/wallet-settings" element={<AdminWalletSettings />} />
             <Route path="/admin/invoice-templates" element={<AdminInvoiceTemplates />} />
             <Route path="/admin/saved-invoices" element={<AdminSavedInvoices />} />
+            <Route path="/admin/financials" element={<AdminFinancials />} />
             <Route path="/my-points" element={<MyPoints />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

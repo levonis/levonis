@@ -854,6 +854,9 @@ export type Database = {
           actual_weight: number | null
           admin_files: string[] | null
           admin_images: string[] | null
+          admin_other_costs: number | null
+          admin_product_cost: number | null
+          admin_shipping_cost: number | null
           arrived_iraq_at: string | null
           arrived_warehouse_at: string | null
           auto_confirmed: boolean | null
@@ -863,6 +866,7 @@ export type Database = {
           delivered_at: string | null
           discount_amount: number | null
           estimated_delivery_date: string | null
+          financial_notes: string | null
           governorate: string
           id: string
           internal_notes: string | null
@@ -873,6 +877,7 @@ export type Database = {
           payment_status: string | null
           phone_number: string
           priority: string | null
+          profit_amount: number | null
           remaining_amount: number | null
           serial_number_image_url: string | null
           shipped_at: string | null
@@ -895,6 +900,9 @@ export type Database = {
           actual_weight?: number | null
           admin_files?: string[] | null
           admin_images?: string[] | null
+          admin_other_costs?: number | null
+          admin_product_cost?: number | null
+          admin_shipping_cost?: number | null
           arrived_iraq_at?: string | null
           arrived_warehouse_at?: string | null
           auto_confirmed?: boolean | null
@@ -904,6 +912,7 @@ export type Database = {
           delivered_at?: string | null
           discount_amount?: number | null
           estimated_delivery_date?: string | null
+          financial_notes?: string | null
           governorate: string
           id?: string
           internal_notes?: string | null
@@ -914,6 +923,7 @@ export type Database = {
           payment_status?: string | null
           phone_number: string
           priority?: string | null
+          profit_amount?: number | null
           remaining_amount?: number | null
           serial_number_image_url?: string | null
           shipped_at?: string | null
@@ -936,6 +946,9 @@ export type Database = {
           actual_weight?: number | null
           admin_files?: string[] | null
           admin_images?: string[] | null
+          admin_other_costs?: number | null
+          admin_product_cost?: number | null
+          admin_shipping_cost?: number | null
           arrived_iraq_at?: string | null
           arrived_warehouse_at?: string | null
           auto_confirmed?: boolean | null
@@ -945,6 +958,7 @@ export type Database = {
           delivered_at?: string | null
           discount_amount?: number | null
           estimated_delivery_date?: string | null
+          financial_notes?: string | null
           governorate?: string
           id?: string
           internal_notes?: string | null
@@ -955,6 +969,7 @@ export type Database = {
           payment_status?: string | null
           phone_number?: string
           priority?: string | null
+          profit_amount?: number | null
           remaining_amount?: number | null
           serial_number_image_url?: string | null
           shipped_at?: string | null
