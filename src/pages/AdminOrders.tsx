@@ -982,6 +982,30 @@ const AdminOrders = () => {
                                   
                                   <div className="grid md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
+                                      <Label htmlFor="customer_paid_amount">المبلغ الذي دفعه الزبون</Label>
+                                      <Input
+                                        id="customer_paid_amount"
+                                        name="customer_paid_amount"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.customer_paid_amount || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                      <Label htmlFor="admin_paid_amount">المبلغ الذي دفعناه (تكلفتنا)</Label>
+                                      <Input
+                                        id="admin_paid_amount"
+                                        name="admin_paid_amount"
+                                        type="number"
+                                        step="0.01"
+                                        defaultValue={order.admin_paid_amount || '0'}
+                                        placeholder="0.00"
+                                      />
+                                    </div>
+
+                                    <div className="space-y-2">
                                       <Label htmlFor="admin_product_cost">تكلفة المنتج</Label>
                                       <Input
                                         id="admin_product_cost"
@@ -994,7 +1018,7 @@ const AdminOrders = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                      <Label htmlFor="admin_shipping_cost">تكلفة الشحن</Label>
+                                      <Label htmlFor="admin_shipping_cost">تكلفة الشحن (للمعلومات فقط)</Label>
                                       <Input
                                         id="admin_shipping_cost"
                                         name="admin_shipping_cost"
@@ -1018,15 +1042,21 @@ const AdminOrders = () => {
                                     </div>
 
                                     <div className="space-y-2">
-                                      <Label htmlFor="profit_amount">الربح</Label>
+                                      <Label htmlFor="profit_amount">الربح الصافي (محسوب تلقائياً)</Label>
                                       <Input
                                         id="profit_amount"
                                         name="profit_amount"
                                         type="number"
                                         step="0.01"
-                                        defaultValue={order.profit_amount || '0'}
-                                        placeholder="0.00"
+                                        value={
+                                          (parseFloat(order.customer_paid_amount || '0') || 0) - 
+                                          (parseFloat(order.admin_product_cost || '0') || 0) - 
+                                          (parseFloat(order.admin_other_costs || '0') || 0)
+                                        }
+                                        readOnly
+                                        className="bg-muted"
                                       />
+                                      <p className="text-xs text-muted-foreground">= المبلغ الذي دفعه الزبون - تكلفة المنتج - تكاليف أخرى (بدون تكلفة الشحن)</p>
                                     </div>
                                   </div>
 

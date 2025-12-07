@@ -855,6 +855,7 @@ export type Database = {
           admin_files: string[] | null
           admin_images: string[] | null
           admin_other_costs: number | null
+          admin_paid_amount: number | null
           admin_product_cost: number | null
           admin_shipping_cost: number | null
           arrived_iraq_at: string | null
@@ -862,6 +863,7 @@ export type Database = {
           auto_confirmed: boolean | null
           created_at: string
           currency: string
+          customer_paid_amount: number | null
           customs_declaration_number: string | null
           delivered_at: string | null
           discount_amount: number | null
@@ -901,6 +903,7 @@ export type Database = {
           admin_files?: string[] | null
           admin_images?: string[] | null
           admin_other_costs?: number | null
+          admin_paid_amount?: number | null
           admin_product_cost?: number | null
           admin_shipping_cost?: number | null
           arrived_iraq_at?: string | null
@@ -908,6 +911,7 @@ export type Database = {
           auto_confirmed?: boolean | null
           created_at?: string
           currency?: string
+          customer_paid_amount?: number | null
           customs_declaration_number?: string | null
           delivered_at?: string | null
           discount_amount?: number | null
@@ -947,6 +951,7 @@ export type Database = {
           admin_files?: string[] | null
           admin_images?: string[] | null
           admin_other_costs?: number | null
+          admin_paid_amount?: number | null
           admin_product_cost?: number | null
           admin_shipping_cost?: number | null
           arrived_iraq_at?: string | null
@@ -954,6 +959,7 @@ export type Database = {
           auto_confirmed?: boolean | null
           created_at?: string
           currency?: string
+          customer_paid_amount?: number | null
           customs_declaration_number?: string | null
           delivered_at?: string | null
           discount_amount?: number | null
