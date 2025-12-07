@@ -93,6 +93,8 @@ const Cart = () => {
         .single();
       return data?.setting_value as { quarter_payment_fee_percentage: number; fee_label_ar: string } | null;
     },
+    staleTime: 0,
+    refetchOnMount: 'always',
   });
 
   const quarterPaymentFeePercentage = partialPaymentSettings?.quarter_payment_fee_percentage ?? 10;
