@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
@@ -12,6 +12,7 @@ import { formatPrice } from '@/lib/utils';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
@@ -23,6 +24,13 @@ const Cart = () => {
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'quarter'>('full');
+
+  // التحقق من وجود منتجات طلب مسبق
+  const hasPreOrderItems = items.some((item: any) => 
+    item.shipping_option_name_ar || 
+    (item as any).shipping_option_index !== null
+  );
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -96,12 +104,23 @@ const Cart = () => {
   
   const discount = calculateDiscount();
   
+  // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
+  const subtotalAfterDiscount = total - discount;
+  const preOrderPaymentAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
+    ? Math.ceil(subtotalAfterDiscount * 0.25) 
+    : subtotalAfterDiscount;
+  
   // حساب المبلغ المستخدم من المحفظة
   const walletDeduction = useWalletBalance && wallet?.balance 
-    ? Math.min(wallet.balance, total - discount + deliveryFee)
+    ? Math.min(wallet.balance, preOrderPaymentAmount + deliveryFee)
     : 0;
   
-  const grandTotal = Math.max(0, total - discount + deliveryFee - walletDeduction);
+  const grandTotal = Math.max(0, preOrderPaymentAmount + deliveryFee - walletDeduction);
+  
+  // المبلغ المتبقي للطلب المسبق
+  const remainingAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
+    ? subtotalAfterDiscount - preOrderPaymentAmount 
+    : 0;
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -274,12 +293,22 @@ const Cart = () => {
       // Create order in database with full address details
       const shippingAddressText = `${selectedAddress.governorate} - ${selectedAddress.area}${selectedAddress.neighborhood ? ` - ${selectedAddress.neighborhood}` : ''} - ${selectedAddress.nearest_landmark}${selectedAddress.additional_notes ? ` - ${selectedAddress.additional_notes}` : ''}`;
       
+      // Calculate payment info for pre-orders
+      const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'quarter';
+      const orderSubtotal = total - discount;
+      const paidNow = isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal;
+      const orderRemaining = isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0;
+      
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert([{
           user_id: user.id,
           order_number: orderNumber,
-          total_amount: grandTotal,
+          total_amount: orderSubtotal + deliveryFee,
+          subtotal: orderSubtotal,
+          paid_amount: paidNow + deliveryFee - walletDeduction,
+          remaining_amount: orderRemaining,
+          payment_status: isPreOrderWithPartialPayment ? 'partial' : 'pending',
           status: 'pending',
           currency: 'دينار عراقي',
           shipping_address: shippingAddressText,
@@ -873,6 +902,48 @@ const Cart = () => {
                     <span className="font-bold">{formatPrice(deliveryFee)} دينار عراقي</span>
                   </div>
                   
+                  {/* خيارات الدفع للطلب المسبق */}
+                  {hasPreOrderItems && (
+                    <div className="py-4 px-4 rounded-lg bg-accent/10 border border-accent/30">
+                      <div className="flex items-center gap-2 mb-3">
+                        <CreditCard className="h-5 w-5 text-accent" />
+                        <span className="font-bold text-foreground">خيارات الدفع للطلب المسبق</span>
+                      </div>
+                      <RadioGroup 
+                        value={preOrderPaymentOption} 
+                        onValueChange={(value) => setPreOrderPaymentOption(value as 'full' | 'quarter')}
+                        className="space-y-3"
+                      >
+                        <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                          preOrderPaymentOption === 'full' 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-border/40 hover:border-primary/50'
+                        }`}>
+                          <RadioGroupItem value="full" id="payment-full" />
+                          <Label htmlFor="payment-full" className="flex-1 cursor-pointer">
+                            <div className="font-bold text-foreground">الدفع الكامل مقدماً</div>
+                            <div className="text-xs text-muted-foreground">
+                              ادفع المبلغ كاملاً الآن ({formatPrice(total - discount)} د.ع)
+                            </div>
+                          </Label>
+                        </div>
+                        <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                          preOrderPaymentOption === 'quarter' 
+                            ? 'border-primary bg-primary/5' 
+                            : 'border-border/40 hover:border-primary/50'
+                        }`}>
+                          <RadioGroupItem value="quarter" id="payment-quarter" />
+                          <Label htmlFor="payment-quarter" className="flex-1 cursor-pointer">
+                            <div className="font-bold text-foreground">دفع ربع المبلغ</div>
+                            <div className="text-xs text-muted-foreground">
+                              ادفع الآن: {formatPrice(Math.ceil((total - discount) * 0.25))} د.ع • المتبقي عند الاستلام: {formatPrice(Math.ceil((total - discount) * 0.75))} د.ع
+                            </div>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  )}
+                  
                   {/* خيار الدفع من المحفظة */}
                   {wallet && wallet.balance > 0 && (
                     <div className="py-3 px-4 rounded-lg bg-primary/5 border border-primary/20">
@@ -910,8 +981,22 @@ const Cart = () => {
                   )}
                   
                   <div className="border-t border-border/40 pt-3 mt-3">
+                    {hasPreOrderItems && preOrderPaymentOption === 'quarter' && (
+                      <>
+                        <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                          <span>المبلغ المطلوب الآن</span>
+                          <span className="font-bold">{formatPrice(preOrderPaymentAmount)} + {formatPrice(deliveryFee)} توصيل</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-orange-500 mb-3">
+                          <span>المتبقي عند الاستلام</span>
+                          <span className="font-bold">{formatPrice(remainingAmount)} دينار عراقي</span>
+                        </div>
+                      </>
+                    )}
                     <div className="flex justify-between text-xl font-black">
-                      <span className="text-foreground">الإجمالي</span>
+                      <span className="text-foreground">
+                        {hasPreOrderItems && preOrderPaymentOption === 'quarter' ? 'المطلوب الآن' : 'الإجمالي'}
+                      </span>
                       <span className="text-primary">{formatPrice(grandTotal)} دينار عراقي</span>
                     </div>
                     {useWalletBalance && walletDeduction > 0 && grandTotal === 0 && (
