@@ -108,27 +108,21 @@ const ProductCard = ({
       )}
 
       <div className="relative mb-2">
-        {optimizedImage && (
-          <div className="relative overflow-hidden rounded-lg aspect-square">
-            <img 
-              src={optimizedImage} 
-              alt={nameAr}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading={priority ? "eager" : "lazy"}
-              decoding="async"
-              width="400"
-              height="400"
-              onError={(e) => {
-                const target = e.currentTarget as HTMLImageElement;
-                if (target.src !== (displayImage || '')) {
-                  target.src = displayImage || '/placeholder.svg';
-                } else {
-                  target.src = '/placeholder.svg';
-                }
-              }}
-            />
-          </div>
-        )}
+        <div className="relative overflow-hidden rounded-lg aspect-square bg-muted/30">
+          <img 
+            src={optimizedImage || '/placeholder.svg'} 
+            alt={nameAr}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            width="400"
+            height="400"
+            onError={(e) => {
+              const target = e.currentTarget as HTMLImageElement;
+              target.src = '/placeholder.svg';
+            }}
+          />
+        </div>
       </div>
       
       <h3 className="font-bold text-sm mb-1 text-foreground group-hover:text-primary transition-colors line-clamp-1">
