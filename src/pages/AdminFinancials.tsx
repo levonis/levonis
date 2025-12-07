@@ -431,7 +431,7 @@ const AdminFinancials = () => {
             <TableHead className="text-right">التاريخ</TableHead>
             <TableHead className="text-right">المبلغ الإجمالي</TableHead>
             <TableHead className="text-right">دفع الزبون</TableHead>
-            <TableHead className="text-right">المبلغ المحول</TableHead>
+            <TableHead className="text-right">المبلغ المكمل من قبل الإدارة</TableHead>
             <TableHead className="text-right">تكلفة المنتج</TableHead>
             <TableHead className="text-right">تكلفة الشحن</TableHead>
             <TableHead className="text-right">تكاليف أخرى</TableHead>
@@ -616,7 +616,7 @@ const AdminFinancials = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label>المبلغ المحول</Label>
+                      <Label>المبلغ المكمل من قبل الإدارة</Label>
                       <Input
                         type="number"
                         value={manualOrderForm.admin_paid_amount}
@@ -784,7 +784,7 @@ const AdminFinancials = () => {
                   <Send className="h-5 w-5 text-cyan-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">المبلغ المحول</p>
+                  <p className="text-xs text-muted-foreground">المبلغ المكمل من قبل الإدارة</p>
                   <p className="text-lg font-bold text-cyan-600">{formatPrice(totals.totalAdminPaid)}</p>
                 </div>
               </div>
