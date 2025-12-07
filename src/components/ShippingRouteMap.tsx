@@ -6,7 +6,7 @@ import { differenceInMilliseconds, addDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ShippingRouteMapProps {
-  routeType: 'sea_guangzhou_umm_qasr' | 'air_guangzhou_erbil' | null;
+  routeType: 'sea_guangzhou_umm_qasr' | 'air_guangzhou_erbil' | 'custom' | null;
   isShipped?: boolean;
   shippedAt?: string | null;
   shippingDurationDays?: number | null;
@@ -47,17 +47,18 @@ export const ShippingRouteMap = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const vehicleMarker = useRef<mapboxgl.Marker | null>(null);
+  const animationRef = useRef<number | null>(null);
   const [progress, setProgress] = useState(0);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
 
-  const isSea = routeType === 'sea_guangzhou_umm_qasr';
+  const isSea = routeType === 'sea_guangzhou_umm_qasr' || routeType === 'custom';
   const isCustomRoute = customWaypoints && customWaypoints.length >= 2;
   
   // Use custom waypoints if available, otherwise use default routes
   const routeCoordinates = isCustomRoute 
     ? customWaypoints 
-    : (isSea ? DEFAULT_SEA_ROUTE : DEFAULT_AIR_ROUTE);
+    : (routeType === 'sea_guangzhou_umm_qasr' ? DEFAULT_SEA_ROUTE : DEFAULT_AIR_ROUTE);
 
   // Generate port markers from custom waypoints
   const markers = isCustomRoute 
@@ -68,7 +69,7 @@ export const ShippingRouteMap = ({
           : []),
         { coords: customWaypoints[customWaypoints.length - 1], name: 'نقطة الوصول', nameEn: 'End Point', type: 'end' as const },
       ]
-    : (isSea 
+    : (routeType === 'sea_guangzhou_umm_qasr'
         ? [
             { coords: [113.58, 22.58] as [number, number], name: 'ميناء نانشا', nameEn: 'Nansha Port', type: 'start' as const },
             { coords: [55.10, 25.20] as [number, number], name: 'ميناء جبل علي', nameEn: 'Jebel Ali (Transit)', type: 'transit' as const },
@@ -98,6 +99,12 @@ export const ShippingRouteMap = ({
 
   // Calculate progress based on shipping dates
   useEffect(() => {
+    // Cleanup previous animation
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+
     if (!isShipped) {
       setProgress(0);
       return;
@@ -126,11 +133,22 @@ export const ShippingRouteMap = ({
       const interval = setInterval(updateProgress, intervalMs);
       return () => clearInterval(interval);
     } else {
-      // Demo animation
-      const interval = setInterval(() => {
-        setProgress(prev => prev >= 100 ? 0 : prev + 0.5);
-      }, 100);
-      return () => clearInterval(interval);
+      // Demo animation with smooth requestAnimationFrame
+      let lastTime = performance.now();
+      const animate = (currentTime: number) => {
+        const deltaTime = currentTime - lastTime;
+        if (deltaTime >= 50) { // Update every 50ms
+          lastTime = currentTime;
+          setProgress(prev => prev >= 100 ? 0 : prev + 0.3);
+        }
+        animationRef.current = requestAnimationFrame(animate);
+      };
+      animationRef.current = requestAnimationFrame(animate);
+      return () => {
+        if (animationRef.current) {
+          cancelAnimationFrame(animationRef.current);
+        }
+      };
     }
   }, [isShipped, shippedAt, shippingDurationDays]);
 
@@ -310,8 +328,9 @@ export const ShippingRouteMap = ({
   };
 
   const remainingInfo = getRemainingInfo();
-  const Icon = isCustomRoute ? MapPin : (isSea ? Ship : Plane);
-  const routeLabel = isCustomRoute ? 'مسار مخصص' : (isSea ? 'الشحن البحري' : 'الشحن الجوي');
+  const isAir = routeType === 'air_guangzhou_erbil';
+  const Icon = isCustomRoute ? MapPin : (isAir ? Plane : Ship);
+  const routeLabel = isCustomRoute ? 'مسار مخصص' : (isAir ? 'الشحن الجوي' : 'الشحن البحري');
 
   if (!routeType && !isCustomRoute) return null;
 
