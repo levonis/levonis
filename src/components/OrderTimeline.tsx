@@ -13,7 +13,6 @@ import {
   Calendar,
   Timer
 } from 'lucide-react';
-import { ShippingRouteMap } from './ShippingRouteMap';
 
 interface OrderTimelineProps {
   order: {
@@ -25,9 +24,6 @@ interface OrderTimelineProps {
     delivered_at?: string | null;
     serial_number_image_url?: string | null;
     estimated_delivery_date?: string | null;
-    shipping_route_type?: string | null;
-    shipping_duration_days?: number | null;
-    shipping_route_waypoints?: unknown;
   };
   isPreOrder: boolean;
 }
@@ -167,26 +163,25 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
       <div className="space-y-6">
         {steps.map((step, index) => {
           const isCurrent = index === currentStepIndex;
-          const isPast = step.isCompleted;
-          const isFuture = !step.isCompleted;
+          const isPastStep = step.isCompleted;
           
           return (
             <div key={step.key} className="relative flex gap-4 pr-10">
               {/* Icon circle */}
               <div 
                 className={`absolute right-0 w-8 h-8 rounded-full border-2 flex items-center justify-center bg-background transition-all duration-300 ${
-                  isPast 
+                  isPastStep 
                     ? 'border-primary text-primary' 
                     : 'border-border text-muted-foreground'
                 } ${isCurrent ? 'ring-4 ring-primary/20 scale-110' : ''}`}
               >
-                {isPast ? step.icon : <Clock className="h-4 w-4" />}
+                {isPastStep ? step.icon : <Clock className="h-4 w-4" />}
               </div>
               
               {/* Content */}
               <div className="flex-1 pb-2">
                 <div className="flex items-center gap-2">
-                  <h4 className={`font-bold ${isPast ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <h4 className={`font-bold ${isPastStep ? 'text-foreground' : 'text-muted-foreground'}`}>
                     {step.title}
                   </h4>
                   {isCurrent && (
@@ -196,18 +191,18 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
                   )}
                 </div>
                 
-                <p className={`text-sm mt-0.5 ${isPast ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}>
+                <p className={`text-sm mt-0.5 ${isPastStep ? 'text-muted-foreground' : 'text-muted-foreground/60'}`}>
                   {step.description}
                 </p>
                 
-                {step.timestamp && isPast && (
+                {step.timestamp && isPastStep && (
                   <p className="text-xs text-primary font-medium mt-1">
                     {format(new Date(step.timestamp), 'PPP - p', { locale: ar })}
                   </p>
                 )}
                 
                 {/* Serial number image for warehouse step */}
-                {step.showImage && order.serial_number_image_url && isPast && (
+                {step.showImage && order.serial_number_image_url && isPastStep && (
                   <div className="mt-3">
                     <p className="text-xs text-muted-foreground mb-1">صورة الرقم التسلسلي:</p>
                     <img 
@@ -223,23 +218,6 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
           );
         })}
       </div>
-      
-      {/* Shipping Route Map */}
-      {isPreOrder && order.shipping_route_type && (
-        order.shipping_route_type === 'sea_guangzhou_umm_qasr' || 
-        order.shipping_route_type === 'air_guangzhou_erbil' ||
-        (order.shipping_route_type === 'custom' && order.shipping_route_waypoints)
-      ) && (
-        <div className="mt-6 pt-4 border-t border-border/50">
-          <ShippingRouteMap 
-            routeType={order.shipping_route_type === 'custom' ? 'sea_guangzhou_umm_qasr' : order.shipping_route_type as 'sea_guangzhou_umm_qasr' | 'air_guangzhou_erbil'} 
-            isShipped={['shipped', 'arrived_iraq', 'delivered'].includes(order.status)}
-            shippedAt={order.shipped_at}
-            shippingDurationDays={order.shipping_duration_days}
-            customWaypoints={order.shipping_route_waypoints as [number, number][] | null}
-          />
-        </div>
-      )}
       
       {/* Estimated delivery date for pre-orders */}
       {isPreOrder && order.estimated_delivery_date && (() => {
