@@ -429,37 +429,100 @@ ${textContent}
     const productInfo = JSON.parse(toolCall.function.arguments);
     console.log('Extracted product info:', productInfo);
 
-    // Helper function to upload an image
-    const uploadImage = async (imageUrl: string, prefix: string): Promise<string | null> => {
-      try {
-        const imageResponse = await fetch(imageUrl);
-        if (!imageResponse.ok) return null;
-        
-        const imageBlob = await imageResponse.blob();
-        const fileExt = imageUrl.split('.').pop()?.split('?')[0] || 'jpg';
-        const fileName = `${prefix}-${Date.now()}-${Math.random()}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('product-images')
-          .upload(fileName, imageBlob, {
-            contentType: imageResponse.headers.get('content-type') || 'image/jpeg',
-            upsert: false
+    // Helper function to upload images to Supabase storage with retry and verification
+    const uploadImage = async (imageUrl: string, prefix: string, maxRetries: number = 3): Promise<string | null> => {
+      let lastError: Error | null = null;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          console.log(`[Upload] Attempt ${attempt}/${maxRetries} for: ${prefix}`);
+          
+          // Fetch the image with proper headers
+          const imageResponse = await fetch(imageUrl, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'image/*',
+            },
           });
-        
-        if (uploadError) {
-          console.error('Upload error:', uploadError);
-          return null;
+          
+          if (!imageResponse.ok) {
+            console.warn(`[Upload] Failed to fetch image (status ${imageResponse.status})`);
+            lastError = new Error(`HTTP ${imageResponse.status}`);
+            continue;
+          }
+          
+          const imageBlob = await imageResponse.blob();
+          
+          // Check minimum size
+          if (imageBlob.size < 100) {
+            console.warn(`[Upload] Image too small (${imageBlob.size} bytes), skipping`);
+            return null;
+          }
+          
+          // Determine file extension from content type
+          const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+          let fileExt = 'jpg';
+          if (contentType.includes('png')) fileExt = 'png';
+          else if (contentType.includes('webp')) fileExt = 'webp';
+          else if (contentType.includes('gif')) fileExt = 'gif';
+          
+          // Generate unique filename with timestamp for tracking
+          const timestamp = Date.now();
+          const random = Math.random().toString().substring(2, 10);
+          const fileName = `${prefix}-${timestamp}-${random}.${fileExt}`;
+          
+          console.log(`[Upload] Uploading: ${fileName} (${imageBlob.size} bytes)`);
+          
+          // Upload to Supabase storage
+          const { error: uploadError } = await supabase.storage
+            .from('product-images')
+            .upload(fileName, imageBlob, {
+              contentType: contentType,
+              upsert: false
+            });
+          
+          if (uploadError) {
+            console.error(`[Upload] Storage error:`, uploadError.message);
+            lastError = new Error(uploadError.message);
+            continue;
+          }
+          
+          // Get public URL
+          const { data: { publicUrl } } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(fileName);
+          
+          // Verify the upload by checking if file exists
+          try {
+            const verifyResponse = await fetch(publicUrl, { method: 'HEAD' });
+            if (!verifyResponse.ok) {
+              console.error(`[Upload] Verification failed for: ${fileName}`);
+              // Clean up failed upload
+              await supabase.storage.from('product-images').remove([fileName]);
+              lastError = new Error('Verification failed');
+              continue;
+            }
+            console.log(`[Upload] Verified successfully: ${fileName}`);
+          } catch (verifyErr) {
+            console.warn(`[Upload] Verification check failed, but file may exist: ${fileName}`);
+          }
+          
+          return publicUrl;
+          
+        } catch (error) {
+          console.error(`[Upload] Attempt ${attempt} error:`, error);
+          lastError = error instanceof Error ? error : new Error(String(error));
+          
+          // Wait before retry with exponential backoff
+          if (attempt < maxRetries) {
+            const waitMs = Math.min(1000 * Math.pow(2, attempt - 1), 4000);
+            await new Promise(resolve => setTimeout(resolve, waitMs));
+          }
         }
-        
-        const { data: { publicUrl } } = supabase.storage
-          .from('product-images')
-          .getPublicUrl(fileName);
-        
-        return publicUrl;
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        return null;
       }
+      
+      console.error(`[Upload] All ${maxRetries} attempts failed for prefix: ${prefix}`);
+      return null;
     };
 
     // Validate extracted data
