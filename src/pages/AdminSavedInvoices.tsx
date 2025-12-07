@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, Eye, Trash2, Download, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
+import DOMPurify from "dompurify";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import {
@@ -209,7 +210,7 @@ export default function AdminSavedInvoices() {
           {viewingInvoice && (
             <div 
               className="border rounded-lg p-4"
-              dangerouslySetInnerHTML={{ __html: viewingInvoice.invoice_html }}
+              dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(viewingInvoice.invoice_html) }}
             />
           )}
         </DialogContent>
