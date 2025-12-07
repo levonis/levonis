@@ -22,6 +22,7 @@ const Cart = () => {
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [useWalletBalance, setUseWalletBalance] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const { data: profile } = useQuery({
     queryKey: ['profile', user?.id],
@@ -206,6 +207,8 @@ const Cart = () => {
   };
 
   const handleCheckout = async () => {
+    if (isCheckingOut) return; // Prevent double-click
+    
     if (!user) {
       toast({
         title: "يجب تسجيل الدخول",
@@ -215,6 +218,7 @@ const Cart = () => {
       return;
     }
 
+    setIsCheckingOut(true);
     try {
       // Check if user has at least one address
       const { data: addresses, error: addressError } = await supabase
@@ -570,6 +574,8 @@ const Cart = () => {
         description: "حدث خطأ أثناء إتمام الطلب",
         variant: "destructive",
       });
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
@@ -920,8 +926,16 @@ const Cart = () => {
                   className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 mb-3"
                   size="lg"
                   onClick={handleCheckout}
+                  disabled={isCheckingOut}
                 >
-                  إتمام الطلب
+                  {isCheckingOut ? (
+                    <>
+                      <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                      جاري إتمام الطلب...
+                    </>
+                  ) : (
+                    'إتمام الطلب'
+                  )}
                 </Button>
 
                 <Link to="/products">
