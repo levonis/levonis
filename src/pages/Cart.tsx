@@ -269,7 +269,7 @@ const Cart = () => {
       // Get user profile information
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('full_name, phone_number, governorate')
+        .select('full_name, phone_number, governorate, username')
         .eq('id', user.id)
         .single();
 
@@ -329,9 +329,27 @@ const Cart = () => {
 
       // إرسال إشعار للتيليجرام عند إنشاء طلب جديد
       try {
+        const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'quarter';
+        const paymentStatusText = isPreOrderWithPartialPayment ? 'دفع جزئي (ربع المبلغ)' : 'مطلوب الدفع الكامل';
+        const orderTotalAmount = (total - discount) + deliveryFee;
+        const paidAmountNow = grandTotal;
+        const remainingToPay = isPreOrderWithPartialPayment ? remainingAmount : 0;
+        
         await supabase.functions.invoke('send-telegram-notification', {
           body: {
-            message: `🛒 <b>طلب جديد</b>\n\n📋 رقم الطلب: ${order.order_number}\n💰 المبلغ: ${grandTotal.toLocaleString()} دينار عراقي\n📦 عدد المنتجات: ${items.length}\n📍 المحافظة: ${selectedAddress.governorate}`,
+            message: `🛒 <b>طلب جديد</b>\n\n` +
+              `👤 العميل: ${profile?.full_name || 'غير محدد'}\n` +
+              `📱 اليوزر: @${profile?.username || 'غير محدد'}\n` +
+              `📞 الهاتف: ${selectedAddress.phone_number}\n\n` +
+              `📋 رقم الطلب: ${order.order_number}\n` +
+              `📦 عدد المنتجات: ${items.length}\n` +
+              `📍 المحافظة: ${selectedAddress.governorate}\n\n` +
+              `💰 <b>تفاصيل الدفع:</b>\n` +
+              `• المبلغ الإجمالي: ${orderTotalAmount.toLocaleString()} د.ع\n` +
+              `• المدفوع الآن: ${paidAmountNow.toLocaleString()} د.ع\n` +
+              (remainingToPay > 0 ? `• المتبقي عند الاستلام: ${remainingToPay.toLocaleString()} د.ع\n` : '') +
+              `• حالة الدفع: ${paymentStatusText}` +
+              (useWalletBalance && walletDeduction > 0 ? `\n• خصم المحفظة: ${walletDeduction.toLocaleString()} د.ع` : ''),
           },
         });
       } catch (telegramError) {
