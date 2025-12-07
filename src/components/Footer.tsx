@@ -4,15 +4,18 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center justify-center gap-6">
           <div className="w-48 h-48 relative">
-            <img 
-              src="/images/logo-levonis.png"
-              alt="LEVONIS Logo" 
-              className="w-full h-full object-contain animate-fade-in bg-transparent"
-              loading="lazy"
-              width="192"
-              height="192"
-              style={{ mixBlendMode: 'normal' }}
-            />
+            <picture>
+              <source srcSet="/images/logo-levonis.webp" type="image/webp" />
+              <img 
+                src="/images/logo-levonis.png"
+                alt="LEVONIS Logo" 
+                className="w-full h-full object-contain animate-fade-in bg-transparent"
+                loading="lazy"
+                width="192"
+                height="192"
+                style={{ mixBlendMode: 'normal' }}
+              />
+            </picture>
           </div>
           
           <div className="flex items-center justify-center gap-4">
