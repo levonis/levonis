@@ -708,6 +708,7 @@ const AdminOrders = () => {
                                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                   >
                                     <option value="pending">قيد الانتظار</option>
+                                    <option value="purchased">تم الشراء</option>
                                     <option value="confirmed">مؤكد</option>
                                     <option value="processing">قيد التجهيز</option>
                                     <option value="arrived_warehouse">وصل المخزن</option>
