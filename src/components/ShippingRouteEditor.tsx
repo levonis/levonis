@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Button } from '@/components/ui/button';
-import { Trash2, RotateCcw, Save, MapPin } from 'lucide-react';
+import { Trash2, RotateCcw, Save, MapPin, Ship, Plane, Route } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -12,6 +12,98 @@ interface ShippingRouteEditorProps {
   onSave: (waypoints: [number, number][]) => void;
   onCancel: () => void;
 }
+
+// Route templates
+const ROUTE_TEMPLATES = {
+  sea_china_iraq: {
+    name: '🚢 بحري - الصين إلى العراق',
+    description: 'ميناء نانشا → مضيق ملقا → بحر العرب → أم قصر',
+    waypoints: [
+      [113.6668, 22.661],
+      [114.5, 21.5],
+      [114.0, 16.0],
+      [104.0, 4.0],
+      [101.0, 3.0],
+      [95.0, 5.0],
+      [80.0, 5.0],
+      [65.0, 15.0],
+      [60.0, 22.0],
+      [56.3, 26.5],
+      [51.5, 27.5],
+      [49.5, 29.5],
+      [48.21, 29.9833],
+      [48.05, 30.0],
+      [47.973, 30.0274],
+    ] as [number, number][],
+  },
+  sea_dubai_iraq: {
+    name: '🚢 بحري - دبي إلى العراق',
+    description: 'ميناء جبل علي → الخليج العربي → أم قصر',
+    waypoints: [
+      [55.1, 25.2],
+      [54.0, 26.0],
+      [52.0, 27.0],
+      [50.5, 28.5],
+      [49.5, 29.5],
+      [48.21, 29.9833],
+      [48.05, 30.0],
+      [47.973, 30.0274],
+    ] as [number, number][],
+  },
+  sea_turkey_iraq: {
+    name: '🚢 بحري - تركيا إلى العراق',
+    description: 'ميناء مرسين → البحر المتوسط → قناة السويس → البحر الأحمر → أم قصر',
+    waypoints: [
+      [34.6, 36.8],
+      [33.0, 35.0],
+      [32.0, 32.0],
+      [32.5, 30.0],
+      [32.55, 29.9],
+      [34.0, 28.0],
+      [38.0, 22.0],
+      [43.0, 14.0],
+      [48.0, 12.0],
+      [58.0, 20.0],
+      [56.3, 26.5],
+      [51.5, 27.5],
+      [49.5, 29.5],
+      [48.21, 29.9833],
+      [47.973, 30.0274],
+    ] as [number, number][],
+  },
+  air_china_erbil: {
+    name: '✈️ جوي - الصين إلى أربيل',
+    description: 'مطار قوانغتشو → مطار أربيل الدولي',
+    waypoints: [
+      [113.3, 23.4],
+      [100.0, 25.0],
+      [85.0, 28.0],
+      [70.0, 32.0],
+      [55.0, 35.0],
+      [44.0, 36.2],
+    ] as [number, number][],
+  },
+  air_dubai_baghdad: {
+    name: '✈️ جوي - دبي إلى بغداد',
+    description: 'مطار دبي الدولي → مطار بغداد الدولي',
+    waypoints: [
+      [55.36, 25.25],
+      [52.0, 28.0],
+      [48.0, 32.0],
+      [44.23, 33.26],
+    ] as [number, number][],
+  },
+  air_turkey_baghdad: {
+    name: '✈️ جوي - تركيا إلى بغداد',
+    description: 'مطار إسطنبول → مطار بغداد الدولي',
+    waypoints: [
+      [28.8, 41.0],
+      [32.0, 38.0],
+      [38.0, 36.0],
+      [44.23, 33.26],
+    ] as [number, number][],
+  },
+};
 
 export const ShippingRouteEditor = ({ 
   orderId, 
@@ -25,8 +117,9 @@ export const ShippingRouteEditor = ({
   const [waypoints, setWaypoints] = useState<[number, number][]>(initialWaypoints || []);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [isAddingPoint, setIsAddingPoint] = useState(true); // Start in adding mode
-  const isAddingPointRef = useRef(true); // Ref to track adding state for event handlers
+  const [isAddingPoint, setIsAddingPoint] = useState(true);
+  const isAddingPointRef = useRef(true);
+  const [showTemplates, setShowTemplates] = useState(false);
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -47,7 +140,7 @@ export const ShippingRouteEditor = ({
 
   // Update route line on map
   const updateRouteLine = useCallback(() => {
-    if (!map.current || !mapLoaded || waypoints.length < 2) return;
+    if (!map.current || !mapLoaded) return;
 
     const source = map.current.getSource('route') as mapboxgl.GeoJSONSource;
     if (source) {
@@ -56,7 +149,7 @@ export const ShippingRouteEditor = ({
         properties: {},
         geometry: {
           type: 'LineString',
-          coordinates: waypoints,
+          coordinates: waypoints.length >= 2 ? waypoints : [],
         },
       });
     }
@@ -83,6 +176,7 @@ export const ShippingRouteEditor = ({
         font-size: 12px;
         font-weight: bold;
         cursor: grab;
+        color: white;
         border: 3px solid white;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         ${index === 0 ? 'background: #22c55e;' : ''}
@@ -140,8 +234,25 @@ export const ShippingRouteEditor = ({
           properties: {},
           geometry: {
             type: 'LineString',
-            coordinates: waypoints,
+            coordinates: waypoints.length >= 2 ? waypoints : [],
           },
+        },
+      });
+
+      // Add glow effect first (behind main line)
+      map.current.addLayer({
+        id: 'route-glow',
+        type: 'line',
+        source: 'route',
+        layout: {
+          'line-join': 'round',
+          'line-cap': 'round',
+        },
+        paint: {
+          'line-color': '#60a5fa',
+          'line-width': 10,
+          'line-opacity': 0.3,
+          'line-blur': 4,
         },
       });
 
@@ -161,22 +272,9 @@ export const ShippingRouteEditor = ({
         },
       });
 
-      // Add glow effect
-      map.current.addLayer({
-        id: 'route-glow',
-        type: 'line',
-        source: 'route',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round',
-        },
-        paint: {
-          'line-color': '#60a5fa',
-          'line-width': 10,
-          'line-opacity': 0.3,
-          'line-blur': 4,
-        },
-      });
+      // Update markers after map loads
+      updateMarkers();
+      updateRouteLine();
     });
 
     // Handle click to add points
@@ -229,6 +327,22 @@ export const ShippingRouteEditor = ({
     onSave(waypoints);
   };
 
+  const handleLoadTemplate = (templateKey: string) => {
+    const template = ROUTE_TEMPLATES[templateKey as keyof typeof ROUTE_TEMPLATES];
+    if (template) {
+      setWaypoints(template.waypoints);
+      setShowTemplates(false);
+      toast.success(`تم تحميل قالب: ${template.name}`);
+      
+      // Fit map to show the route
+      if (map.current && template.waypoints.length >= 2) {
+        const bounds = new mapboxgl.LngLatBounds();
+        template.waypoints.forEach(coord => bounds.extend(coord));
+        map.current.fitBounds(bounds, { padding: 50 });
+      }
+    }
+  };
+
   return (
     <div className="w-full bg-card rounded-xl border border-border overflow-hidden">
       {/* Header */}
@@ -244,6 +358,42 @@ export const ShippingRouteEditor = ({
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Templates Section */}
+      <div className="px-4 py-3 bg-muted/20 border-b border-border">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-sm font-medium flex items-center gap-2">
+            <Route className="h-4 w-4" />
+            قوالب المسارات الجاهزة
+          </span>
+          <Button
+            type="button"
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowTemplates(!showTemplates)}
+          >
+            {showTemplates ? 'إخفاء' : 'عرض القوالب'}
+          </Button>
+        </div>
+        
+        {showTemplates && (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-3">
+            {Object.entries(ROUTE_TEMPLATES).map(([key, template]) => (
+              <Button
+                key={key}
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => handleLoadTemplate(key)}
+                className="flex flex-col items-start h-auto py-2 px-3 text-right"
+              >
+                <span className="text-xs font-medium">{template.name}</span>
+                <span className="text-[10px] text-muted-foreground mt-1">{template.description}</span>
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Toolbar */}
@@ -312,7 +462,7 @@ export const ShippingRouteEditor = ({
 
       {/* Instructions */}
       <div className="px-4 py-2 bg-muted/30 border-t border-border text-xs text-muted-foreground">
-        <p>💡 <strong>تعليمات:</strong> اضغط "إضافة نقاط" ثم انقر على الخريطة لرسم المسار. يمكنك سحب النقاط لتعديل مواقعها.</p>
+        <p>💡 <strong>تعليمات:</strong> اختر قالب جاهز أو اضغط "إضافة نقاط" ثم انقر على الخريطة لرسم المسار. يمكنك سحب النقاط لتعديل مواقعها.</p>
       </div>
 
       {/* Footer Actions */}

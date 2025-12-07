@@ -328,14 +328,18 @@ const AdminOrders = () => {
         shipping_route_waypoints: routeWaypoints.length >= 2 ? routeWaypoints : null,
       };
 
+      // Handle shipped_at date - allow manual override
+      const shippedAtValue = formData.get('shipped_at') as string;
+      if (shippedAtValue) {
+        values.shipped_at = new Date(shippedAtValue).toISOString();
+      } else if (values.status === 'shipped' && editingOrder?.status !== 'shipped' && !editingOrder?.shipped_at) {
+        // Auto-set shipped_at only if status changed to shipped and no previous date
+        values.shipped_at = new Date().toISOString();
+      }
+
       // تحديث تاريخ الوصول للمخزن
       if (values.status === 'arrived_warehouse' && editingOrder?.status !== 'arrived_warehouse') {
         values.arrived_warehouse_at = new Date().toISOString();
-      }
-
-      // تحديث تاريخ الشحن
-      if (values.status === 'shipped' && editingOrder?.status !== 'shipped') {
-        values.shipped_at = new Date().toISOString();
       }
 
       // تحديث تاريخ الوصول للعراق
@@ -678,6 +682,8 @@ const AdminOrders = () => {
                                   setAdminImageFiles([]);
                                   setAdminFilesArray([]);
                                   setAdminImagePreviews([]);
+                                  // Initialize route waypoints from order data
+                                  setRouteWaypoints(order.shipping_route_waypoints as [number, number][] || []);
                                   setDialogOpen(true);
                                 }}
                               >
@@ -785,6 +791,19 @@ const AdminOrders = () => {
                                   />
                                   <p className="text-xs text-muted-foreground">
                                     حدد مدة الشحن لحساب سرعة تحرك الأيقونة على الخريطة
+                                  </p>
+                                </div>
+
+                                <div className="space-y-2">
+                                  <Label htmlFor="shipped_at">تاريخ انطلاق الشحنة</Label>
+                                  <Input
+                                    id="shipped_at"
+                                    name="shipped_at"
+                                    type="datetime-local"
+                                    defaultValue={order.shipped_at ? new Date(order.shipped_at).toISOString().slice(0, 16) : ''}
+                                  />
+                                  <p className="text-xs text-muted-foreground">
+                                    تاريخ بدء تحرك الشحنة - يستخدم لحساب موقع الأيقونة على الخريطة
                                   </p>
                                 </div>
 
