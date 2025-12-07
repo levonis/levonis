@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { 
@@ -18,19 +19,20 @@ import {
   TrendingUp, 
   Truck, 
   CreditCard, 
-  ArrowUpRight,
   ArrowDownRight,
-  Calendar,
   Package,
   Check,
   X,
   Send,
   Plus,
-  Eye
+  Eye,
+  Trash2,
+  BarChart3
 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 
 interface EditingCell {
   orderId: string;
@@ -79,6 +81,8 @@ interface ManualOrderForm {
   tax_amount: number;
   financial_notes: string;
 }
+
+const CHART_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 const AdminFinancials = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -146,12 +150,36 @@ const AdminFinancials = () => {
     },
   });
 
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      // First delete order items
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', orderId);
+      if (itemsError) throw itemsError;
+
+      // Then delete the order
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-financials'] });
+      toast.success('تم حذف الطلب بنجاح');
+    },
+    onError: (error) => {
+      console.error('Error deleting order:', error);
+      toast.error('حدث خطأ أثناء حذف الطلب');
+    },
+  });
+
   const addManualOrderMutation = useMutation({
     mutationFn: async (form: ManualOrderForm) => {
-      // Generate order number
       const orderNumber = `MAN-${Date.now()}`;
       
-      // Create manual order (using admin's user_id as placeholder)
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -176,7 +204,6 @@ const AdminFinancials = () => {
 
       if (orderError) throw orderError;
 
-      // Add order items if product names provided
       if (form.product_names.trim() && order) {
         const productNames = form.product_names.split('\n').filter(n => n.trim());
         const orderItems = productNames.map(name => ({
@@ -236,6 +263,10 @@ const AdminFinancials = () => {
 
   const handleCancelEdit = () => {
     setEditingCell(null);
+  };
+
+  const isManualOrder = (orderNumber: string): boolean => {
+    return orderNumber.startsWith('MAN-');
   };
 
   const getProductNames = (order: OrderWithDetails): string => {
@@ -317,7 +348,6 @@ const AdminFinancials = () => {
 
   // Calculate totals
   const totals = orders?.reduce((acc, order) => {
-    // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى (الضريبة جزء من الربح)
     const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0);
     
     return {
@@ -359,9 +389,36 @@ const AdminFinancials = () => {
     deliveredCount: 0,
   };
 
-  // الربح الصافي = المبلغ الإجمالي - جميع التكاليف (بدون الضريبة، الضريبة جزء من الربح)
   const totalCosts = totals.totalProductCost + totals.totalShippingCost + totals.totalOtherCosts;
   const calculatedProfit = totals.totalRevenue - totalCosts;
+
+  // Prepare chart data
+  const costsBreakdownData = [
+    { name: 'تكلفة المنتجات', value: totals.totalProductCost, color: '#ef4444' },
+    { name: 'تكلفة الشحن', value: totals.totalShippingCost, color: '#f59e0b' },
+    { name: 'تكاليف أخرى', value: totals.totalOtherCosts, color: '#ec4899' },
+  ].filter(item => item.value > 0);
+
+  const revenueVsCostsData = [
+    { name: 'الإيرادات', value: totals.totalRevenue },
+    { name: 'التكاليف', value: totalCosts },
+    { name: 'الربح', value: calculatedProfit },
+  ];
+
+  // Group orders by date for trend chart
+  const ordersByDate = orders?.reduce((acc, order) => {
+    const date = format(new Date(order.created_at), 'MM/dd');
+    if (!acc[date]) {
+      acc[date] = { date, revenue: 0, profit: 0, count: 0 };
+    }
+    const profit = (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0);
+    acc[date].revenue += order.total_amount || 0;
+    acc[date].profit += profit;
+    acc[date].count += 1;
+    return acc;
+  }, {} as Record<string, { date: string; revenue: number; profit: number; count: number }>);
+
+  const trendData = Object.values(ordersByDate || {}).slice(-14).reverse();
 
   const renderOrderTable = (ordersList: OrderWithDetails[] | undefined, showNotes = false) => (
     <div className="overflow-x-auto">
@@ -382,7 +439,7 @@ const AdminFinancials = () => {
             <TableHead className="text-right">الربح الصافي</TableHead>
             <TableHead className="text-right">الحالة</TableHead>
             {showNotes && <TableHead className="text-right">ملاحظات مالية</TableHead>}
-            <TableHead className="text-right">تفاصيل</TableHead>
+            <TableHead className="text-right">إجراءات</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -395,7 +452,9 @@ const AdminFinancials = () => {
             return (
               <TableRow key={order.id}>
                 <TableCell className="font-mono text-xs">
-                  {order.order_number}
+                  <span className={isManualOrder(order.order_number) ? 'text-purple-600' : ''}>
+                    {order.order_number}
+                  </span>
                 </TableCell>
                 <TableCell className="text-xs font-medium">
                   {getUsername(order)}
@@ -449,15 +508,48 @@ const AdminFinancials = () => {
                   </TableCell>
                 )}
                 <TableCell>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7"
-                    onClick={() => setSelectedOrder(order)}
-                    aria-label="عرض التفاصيل"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => setSelectedOrder(order)}
+                      aria-label="عرض التفاصيل"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    {isManualOrder(order.order_number) && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            aria-label="حذف الطلب"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent dir="rtl">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>حذف الطلب اليدوي</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              هل أنت متأكد من حذف الطلب رقم {order.order_number}؟ لا يمكن التراجع عن هذا الإجراء.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="gap-2">
+                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-red-600 hover:bg-red-700"
+                              onClick={() => deleteOrderMutation.mutate(order.id)}
+                            >
+                              حذف
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             );
@@ -720,7 +812,7 @@ const AdminFinancials = () => {
                   <Truck className="h-5 w-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">تكلفة الشحن (معلومات)</p>
+                  <p className="text-xs text-muted-foreground">تكلفة الشحن</p>
                   <p className="text-lg font-bold text-amber-600">{formatPrice(totals.totalShippingCost)}</p>
                 </div>
               </div>
@@ -758,12 +850,131 @@ const AdminFinancials = () => {
           </Card>
         </div>
 
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Revenue Trend Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                اتجاه الإيرادات والأرباح
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {trendData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value: number) => formatPrice(value)}
+                      labelFormatter={(label) => `التاريخ: ${label}`}
+                    />
+                    <Legend />
+                    <Line type="monotone" dataKey="revenue" name="الإيرادات" stroke="#10b981" strokeWidth={2} />
+                    <Line type="monotone" dataKey="profit" name="الربح" stroke="#3b82f6" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                  لا توجد بيانات كافية لعرض الرسم البياني
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Revenue vs Costs Bar Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">الإيرادات مقابل التكاليف والربح</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={revenueVsCostsData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip formatter={(value: number) => formatPrice(value)} />
+                  <Bar dataKey="value" fill="#10b981">
+                    {revenueVsCostsData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={index === 0 ? '#10b981' : index === 1 ? '#ef4444' : '#3b82f6'} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Costs Breakdown Pie Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">توزيع التكاليف</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {costsBreakdownData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={costsBreakdownData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {costsBreakdownData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value: number) => formatPrice(value)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                  لا توجد تكاليف مسجلة
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Orders Count by Date */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">عدد الطلبات حسب التاريخ</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {trendData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={trendData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="count" name="عدد الطلبات" fill="#8b5cf6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                  لا توجد بيانات كافية لعرض الرسم البياني
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Orders Table */}
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="mb-4">
             <TabsTrigger value="all">جميع الطلبات</TabsTrigger>
             <TabsTrigger value="with-costs">طلبات بتكاليف</TabsTrigger>
             <TabsTrigger value="profitable">طلبات مربحة</TabsTrigger>
+            <TabsTrigger value="manual">طلبات يدوية</TabsTrigger>
           </TabsList>
 
           <TabsContent value="all">
@@ -816,6 +1027,20 @@ const AdminFinancials = () => {
                     const hasCosts = (o.admin_product_cost || 0) > 0 || (o.admin_shipping_cost || 0) > 0 || (o.admin_other_costs || 0) > 0;
                     return orderProfit > 0 && hasCosts;
                   })
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="manual">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">الطلبات اليدوية</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {renderOrderTable(
+                  orders?.filter(o => isManualOrder(o.order_number)),
+                  true
                 )}
               </CardContent>
             </Card>
