@@ -82,6 +82,21 @@ const Cart = () => {
     enabled: items.length > 0
   });
 
+  // جلب إعدادات الدفع الجزئي
+  const { data: partialPaymentSettings } = useQuery({
+    queryKey: ['partial-payment-settings'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('default_settings')
+        .select('setting_value')
+        .eq('setting_key', 'partial_payment_settings')
+        .single();
+      return data?.setting_value as { quarter_payment_fee_percentage: number; fee_label_ar: string } | null;
+    },
+  });
+
+  const quarterPaymentFeePercentage = partialPaymentSettings?.quarter_payment_fee_percentage ?? 10;
+
   const getDeliveryFee = (governorate: string | null) => {
     if (!governorate) return 6000;
     if (governorate.toLowerCase().includes('بغداد') || governorate.toLowerCase().includes('baghdad')) {
@@ -106,16 +121,22 @@ const Cart = () => {
   
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const subtotalAfterDiscount = total - discount;
+  
+  // حساب رسوم الدفع الجزئي (تُضاف فقط عند اختيار دفع ربع المبلغ)
+  const partialPaymentFee = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
+    ? Math.ceil(subtotalAfterDiscount * (quarterPaymentFeePercentage / 100))
+    : 0;
+  
   const preOrderPaymentAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
     ? Math.ceil(subtotalAfterDiscount * 0.25) 
     : subtotalAfterDiscount;
   
   // حساب المبلغ المستخدم من المحفظة
   const walletDeduction = useWalletBalance && wallet?.balance 
-    ? Math.min(wallet.balance, preOrderPaymentAmount + deliveryFee)
+    ? Math.min(wallet.balance, preOrderPaymentAmount + partialPaymentFee + deliveryFee)
     : 0;
   
-  const grandTotal = Math.max(0, preOrderPaymentAmount + deliveryFee - walletDeduction);
+  const grandTotal = Math.max(0, preOrderPaymentAmount + partialPaymentFee + deliveryFee - walletDeduction);
   
   // المبلغ المتبقي للطلب المسبق
   const remainingAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
@@ -954,7 +975,10 @@ const Cart = () => {
                           <Label htmlFor="payment-quarter" className="flex-1 cursor-pointer">
                             <div className="font-bold text-foreground">دفع ربع المبلغ</div>
                             <div className="text-xs text-muted-foreground">
-                              ادفع الآن: {formatPrice(Math.ceil((total - discount) * 0.25))} د.ع • المتبقي عند الاستلام: {formatPrice(Math.ceil((total - discount) * 0.75))} د.ع
+                              ادفع الآن: {formatPrice(Math.ceil((total - discount) * 0.25))} د.ع + رسوم {quarterPaymentFeePercentage}%: {formatPrice(Math.ceil((total - discount) * (quarterPaymentFeePercentage / 100)))} د.ع
+                            </div>
+                            <div className="text-xs text-orange-500 mt-1">
+                              المتبقي عند الاستلام: {formatPrice(Math.ceil((total - discount) * 0.75))} د.ع
                             </div>
                           </Label>
                         </div>
@@ -1002,8 +1026,16 @@ const Cart = () => {
                     {hasPreOrderItems && preOrderPaymentOption === 'quarter' && (
                       <>
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
-                          <span>المبلغ المطلوب الآن</span>
-                          <span className="font-bold">{formatPrice(preOrderPaymentAmount)} + {formatPrice(deliveryFee)} توصيل</span>
+                          <span>ربع المبلغ (25%)</span>
+                          <span className="font-bold">{formatPrice(preOrderPaymentAmount)} د.ع</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-amber-600 mb-2">
+                          <span>رسوم الدفع الجزئي ({quarterPaymentFeePercentage}%)</span>
+                          <span className="font-bold">+{formatPrice(partialPaymentFee)} د.ع</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-muted-foreground mb-2">
+                          <span>التوصيل</span>
+                          <span className="font-bold">{formatPrice(deliveryFee)} د.ع</span>
                         </div>
                         <div className="flex justify-between text-sm text-orange-500 mb-3">
                           <span>المتبقي عند الاستلام</span>
