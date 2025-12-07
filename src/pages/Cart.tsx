@@ -122,7 +122,7 @@ const Cart = () => {
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const subtotalAfterDiscount = total - discount;
   
-  // حساب رسوم الدفع الجزئي (تُضاف فقط عند اختيار دفع ربع المبلغ)
+  // حساب رسوم الدفع الجزئي (تُضاف للمبلغ المتبقي وليس للدفعة الأولى)
   const partialPaymentFee = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
     ? Math.ceil(subtotalAfterDiscount * (quarterPaymentFeePercentage / 100))
     : 0;
@@ -131,16 +131,16 @@ const Cart = () => {
     ? Math.ceil(subtotalAfterDiscount * 0.25) 
     : subtotalAfterDiscount;
   
-  // حساب المبلغ المستخدم من المحفظة
+  // حساب المبلغ المستخدم من المحفظة (بدون رسوم الدفع الجزئي لأنها تُدفع لاحقاً)
   const walletDeduction = useWalletBalance && wallet?.balance 
-    ? Math.min(wallet.balance, preOrderPaymentAmount + partialPaymentFee + deliveryFee)
+    ? Math.min(wallet.balance, preOrderPaymentAmount + deliveryFee)
     : 0;
   
-  const grandTotal = Math.max(0, preOrderPaymentAmount + partialPaymentFee + deliveryFee - walletDeduction);
+  const grandTotal = Math.max(0, preOrderPaymentAmount + deliveryFee - walletDeduction);
   
-  // المبلغ المتبقي للطلب المسبق
+  // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي)
   const remainingAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
-    ? subtotalAfterDiscount - preOrderPaymentAmount 
+    ? (subtotalAfterDiscount - preOrderPaymentAmount) + partialPaymentFee
     : 0;
 
   const applyCoupon = async () => {
