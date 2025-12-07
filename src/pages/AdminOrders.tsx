@@ -12,13 +12,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, MapPin } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
 import LevelBadge from '@/components/LevelBadge';
-import { ShippingRouteEditor } from '@/components/ShippingRouteEditor';
 
 const AdminOrders = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -38,9 +37,6 @@ const AdminOrders = () => {
   const [existingAdminImages, setExistingAdminImages] = useState<string[]>([]);
   const [existingAdminFiles, setExistingAdminFiles] = useState<string[]>([]);
   const [serialImagePreview, setSerialImagePreview] = useState<string>('');
-  const [showRouteEditor, setShowRouteEditor] = useState(false);
-  const [routeWaypoints, setRouteWaypoints] = useState<[number, number][]>([]);
-  const [routeEditorOrderId, setRouteEditorOrderId] = useState<string>('');
   useEffect(() => {
     const status = searchParams.get('status');
     if (status) setStatusFilter(status);
@@ -323,17 +319,10 @@ const AdminOrders = () => {
         discount_amount: formData.get('discount_amount') ? Number(formData.get('discount_amount')) : 0,
         paid_amount: formData.get('paid_amount') ? Number(formData.get('paid_amount')) : 0,
         remaining_amount: formData.get('remaining_amount') ? Number(formData.get('remaining_amount')) : 0,
-        shipping_route_type: formData.get('shipping_route_type') as string || null,
-        shipping_duration_days: formData.get('shipping_duration_days') ? Number(formData.get('shipping_duration_days')) : null,
-        shipping_route_waypoints: routeWaypoints.length >= 2 ? routeWaypoints : null,
       };
 
-      // Handle shipped_at date - allow manual override
-      const shippedAtValue = formData.get('shipped_at') as string;
-      if (shippedAtValue) {
-        values.shipped_at = new Date(shippedAtValue).toISOString();
-      } else if (values.status === 'shipped' && editingOrder?.status !== 'shipped' && !editingOrder?.shipped_at) {
-        // Auto-set shipped_at only if status changed to shipped and no previous date
+      // تحديث تاريخ الشحن
+      if (values.status === 'shipped' && editingOrder?.status !== 'shipped') {
         values.shipped_at = new Date().toISOString();
       }
 
@@ -682,8 +671,6 @@ const AdminOrders = () => {
                                   setAdminImageFiles([]);
                                   setAdminFilesArray([]);
                                   setAdminImagePreviews([]);
-                                  // Initialize route waypoints from order data
-                                  setRouteWaypoints(order.shipping_route_waypoints as [number, number][] || []);
                                   setDialogOpen(true);
                                 }}
                               >
@@ -731,81 +718,7 @@ const AdminOrders = () => {
                                   </select>
                                 </div>
 
-                                <div className="space-y-2">
-                                  <Label htmlFor="shipping_route_type">خارطة التتبع</Label>
-                                  <select
-                                    id="shipping_route_type"
-                                    name="shipping_route_type"
-                                    defaultValue={order.shipping_route_type || ''}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                  >
-                                    <option value="">بدون خارطة</option>
-                                    <option value="sea_guangzhou_umm_qasr">🚢 بحري - من قوانغتشو إلى أم قصر</option>
-                                    <option value="air_guangzhou_erbil">✈️ جوي - من قوانغتشو إلى أربيل</option>
-                                    <option value="custom">🗺️ مسار مخصص</option>
-                                  </select>
-                                  <p className="text-xs text-muted-foreground">
-                                    اختر نوع الشحن لعرض خارطة التتبع للعميل
-                                  </p>
-                                </div>
 
-                                {/* Custom Route Editor Button */}
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between">
-                                    <Label>مسار الشحن المخصص</Label>
-                                    {routeWaypoints.length >= 2 && (
-                                      <Badge variant="outline" className="text-xs">
-                                        {routeWaypoints.length} نقطة
-                                      </Badge>
-                                    )}
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => {
-                                      setRouteEditorOrderId(order.id);
-                                      if (!routeWaypoints.length && order.shipping_route_waypoints) {
-                                        setRouteWaypoints(order.shipping_route_waypoints as [number, number][]);
-                                      }
-                                      setShowRouteEditor(true);
-                                    }}
-                                    className="w-full gap-2"
-                                  >
-                                    <MapPin className="h-4 w-4" />
-                                    {routeWaypoints.length >= 2 ? 'تعديل المسار المخصص' : 'رسم مسار مخصص على الخريطة'}
-                                  </Button>
-                                  <p className="text-xs text-muted-foreground">
-                                    ارسم مسار الشحن يدوياً بالنقر على الخريطة
-                                  </p>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="shipping_duration_days">مدة الشحن (بالأيام)</Label>
-                                  <Input
-                                    id="shipping_duration_days"
-                                    name="shipping_duration_days"
-                                    type="number"
-                                    min="1"
-                                    defaultValue={order.shipping_duration_days || ''}
-                                    placeholder="مثال: 30"
-                                  />
-                                  <p className="text-xs text-muted-foreground">
-                                    حدد مدة الشحن لحساب سرعة تحرك الأيقونة على الخريطة
-                                  </p>
-                                </div>
-
-                                <div className="space-y-2">
-                                  <Label htmlFor="shipped_at">تاريخ انطلاق الشحنة</Label>
-                                  <Input
-                                    id="shipped_at"
-                                    name="shipped_at"
-                                    type="datetime-local"
-                                    defaultValue={order.shipped_at ? new Date(order.shipped_at).toISOString().slice(0, 16) : ''}
-                                  />
-                                  <p className="text-xs text-muted-foreground">
-                                    تاريخ بدء تحرك الشحنة - يستخدم لحساب موقع الأيقونة على الخريطة
-                                  </p>
-                                </div>
 
                                 <div className="space-y-2">
                                   <Label htmlFor="serial_image">صورة Serial Number</Label>
@@ -1178,8 +1091,6 @@ const AdminOrders = () => {
                                       setAdminImagePreviews([]);
                                       setExistingAdminImages([]);
                                       setExistingAdminFiles([]);
-                                      setShowRouteEditor(false);
-                                      setRouteWaypoints([]);
                                     }}
                                   >
                                     إلغاء
@@ -1242,25 +1153,6 @@ const AdminOrders = () => {
           </div>
         </Card>
       </main>
-
-      {/* Route Editor Dialog - Separate from edit dialog */}
-      <Dialog open={showRouteEditor} onOpenChange={setShowRouteEditor}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>رسم مسار الشحن</DialogTitle>
-          </DialogHeader>
-          <ShippingRouteEditor
-            orderId={routeEditorOrderId}
-            initialWaypoints={routeWaypoints}
-            onSave={(waypoints) => {
-              setRouteWaypoints(waypoints);
-              setShowRouteEditor(false);
-              toast.success(`تم حفظ المسار (${waypoints.length} نقطة)`);
-            }}
-            onCancel={() => setShowRouteEditor(false)}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
