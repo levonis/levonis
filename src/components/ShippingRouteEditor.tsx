@@ -25,7 +25,8 @@ export const ShippingRouteEditor = ({
   const [waypoints, setWaypoints] = useState<[number, number][]>(initialWaypoints || []);
   const [mapboxToken, setMapboxToken] = useState<string | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [isAddingPoint, setIsAddingPoint] = useState(false);
+  const [isAddingPoint, setIsAddingPoint] = useState(true); // Start in adding mode
+  const isAddingPointRef = useRef(true); // Ref to track adding state for event handlers
 
   // Fetch Mapbox token
   useEffect(() => {
@@ -180,7 +181,7 @@ export const ShippingRouteEditor = ({
 
     // Handle click to add points
     map.current.on('click', (e) => {
-      if (!isAddingPoint) return;
+      if (!isAddingPointRef.current) return;
       const { lng, lat } = e.lngLat;
       setWaypoints(prev => [...prev, [lng, lat]]);
     });
@@ -198,8 +199,9 @@ export const ShippingRouteEditor = ({
     updateMarkers();
   }, [waypoints, updateRouteLine, updateMarkers]);
 
-  // Update cursor when in adding mode
+  // Update cursor and ref when in adding mode
   useEffect(() => {
+    isAddingPointRef.current = isAddingPoint;
     if (!map.current) return;
     map.current.getCanvas().style.cursor = isAddingPoint ? 'crosshair' : '';
   }, [isAddingPoint]);
