@@ -88,35 +88,29 @@ const ProductListItem = ({
       className="group flex gap-3 sm:gap-4 bg-gradient-to-b from-card to-card/80 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-border/40 card-premium hover:border-primary/50 transition-all hover:shadow-lg relative overflow-hidden"
     >
       {/* Image */}
-      {optimizedImage && (
-        <div className="relative overflow-hidden rounded-lg w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0">
-          <img 
-            src={optimizedImage} 
-            alt={nameAr}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
-            decoding="async"
-            width="112"
-            height="112"
-            onError={(e) => {
-              const target = e.currentTarget as HTMLImageElement;
-              if (target.src !== (displayImage || '')) {
-                target.src = displayImage || '/placeholder.svg';
-              } else {
-                target.src = '/placeholder.svg';
-              }
-            }}
-          />
-          {hasSale && (
-            <Badge 
-              variant="secondary" 
-              className="absolute top-1 left-1 sm:top-2 sm:left-2 text-xs bg-primary/90 text-primary-foreground border-0 shadow-lg"
-            >
-              تخفيضات
-            </Badge>
-          )}
-        </div>
-      )}
+      <div className="relative overflow-hidden rounded-lg w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 bg-muted/30">
+        <img 
+          src={displayImage || '/placeholder.svg'} 
+          alt={nameAr}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+          decoding="async"
+          width="112"
+          height="112"
+          onError={(e) => {
+            const target = e.currentTarget as HTMLImageElement;
+            target.src = '/placeholder.svg';
+          }}
+        />
+        {hasSale && (
+          <Badge 
+            variant="secondary" 
+            className="absolute top-1 left-1 sm:top-2 sm:left-2 text-xs bg-primary/90 text-primary-foreground border-0 shadow-lg"
+          >
+            تخفيضات
+          </Badge>
+        )}
+      </div>
       
       {/* Content */}
       <div className="flex-1 flex flex-col justify-between min-w-0">
