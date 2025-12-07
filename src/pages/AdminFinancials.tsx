@@ -165,8 +165,8 @@ const AdminFinancials = () => {
 
   // Calculate totals
   const totals = orders?.reduce((acc, order) => {
-    // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى - الضريبة
-    const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0) - (order.tax_amount || 0);
+    // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى (الضريبة جزء من الربح)
+    const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0);
     
     return {
       totalRevenue: acc.totalRevenue + (order.total_amount || 0),
@@ -207,8 +207,8 @@ const AdminFinancials = () => {
     deliveredCount: 0,
   };
 
-  // الربح الصافي = المبلغ الإجمالي - جميع التكاليف - الضريبة
-  const totalCosts = totals.totalProductCost + totals.totalShippingCost + totals.totalOtherCosts + totals.totalTax;
+  // الربح الصافي = المبلغ الإجمالي - جميع التكاليف (بدون الضريبة، الضريبة جزء من الربح)
+  const totalCosts = totals.totalProductCost + totals.totalShippingCost + totals.totalOtherCosts;
   const calculatedProfit = totals.totalRevenue - totalCosts;
 
   return (
@@ -422,18 +422,18 @@ const AdminFinancials = () => {
                           <TableHead className="text-right">تكلفة المنتج</TableHead>
                           <TableHead className="text-right">تكلفة الشحن</TableHead>
                           <TableHead className="text-right">تكاليف أخرى</TableHead>
+                          <TableHead className="text-right">الضريبة</TableHead>
                           <TableHead className="text-right">الربح الصافي</TableHead>
                           <TableHead className="text-right">الحالة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {orders?.map((order) => {
-                          // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى - الضريبة
+                          // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى (الضريبة جزء من الربح)
                           const orderProfit = (order.total_amount || 0) - 
                             (order.admin_product_cost || 0) - 
                             (order.admin_shipping_cost || 0) -
-                            (order.admin_other_costs || 0) -
-                            (order.tax_amount || 0);
+                            (order.admin_other_costs || 0);
                           
                           return (
                             <TableRow key={order.id}>
@@ -458,6 +458,9 @@ const AdminFinancials = () => {
                               </TableCell>
                               <TableCell>
                                 {renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-pink-600')}
+                              </TableCell>
+                              <TableCell>
+                                {renderEditableCell(order.id, 'tax_amount', order.tax_amount || 0, 'text-teal-600')}
                               </TableCell>
                               <TableCell className={orderProfit >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
                                 {formatPrice(orderProfit)}
@@ -504,6 +507,7 @@ const AdminFinancials = () => {
                         <TableHead className="text-right">تكلفة المنتج</TableHead>
                         <TableHead className="text-right">تكلفة الشحن</TableHead>
                         <TableHead className="text-right">تكاليف أخرى</TableHead>
+                        <TableHead className="text-right">الضريبة</TableHead>
                         <TableHead className="text-right">الربح</TableHead>
                         <TableHead className="text-right">ملاحظات مالية</TableHead>
                       </TableRow>
@@ -514,12 +518,11 @@ const AdminFinancials = () => {
                         (o.admin_shipping_cost || 0) > 0 || 
                         (o.admin_other_costs || 0) > 0
                       ).map((order) => {
-                        // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى - الضريبة
+                        // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى (الضريبة جزء من الربح)
                         const orderProfit = (order.total_amount || 0) - 
                           (order.admin_product_cost || 0) - 
                           (order.admin_shipping_cost || 0) -
-                          (order.admin_other_costs || 0) -
-                          (order.tax_amount || 0);
+                          (order.admin_other_costs || 0);
                         
                         return (
                           <TableRow key={order.id}>
@@ -540,6 +543,9 @@ const AdminFinancials = () => {
                             </TableCell>
                             <TableCell>
                               {renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-pink-600')}
+                            </TableCell>
+                            <TableCell>
+                              {renderEditableCell(order.id, 'tax_amount', order.tax_amount || 0, 'text-teal-600')}
                             </TableCell>
                             <TableCell className={orderProfit >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
                               {formatPrice(orderProfit)}
@@ -578,16 +584,15 @@ const AdminFinancials = () => {
                     </TableHeader>
                     <TableBody>
                       {orders?.filter(o => {
-                        // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى - الضريبة
+                        // الربح الصافي = المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - تكاليف أخرى (الضريبة جزء من الربح)
                         const orderProfit = (o.total_amount || 0) - 
                           (o.admin_product_cost || 0) - 
                           (o.admin_shipping_cost || 0) -
-                          (o.admin_other_costs || 0) -
-                          (o.tax_amount || 0);
+                          (o.admin_other_costs || 0);
                         const hasCosts = (o.admin_product_cost || 0) > 0 || (o.admin_shipping_cost || 0) > 0 || (o.admin_other_costs || 0) > 0;
                         return orderProfit > 0 && hasCosts;
                       }).map((order) => {
-                        const orderTotalCost = (order.admin_product_cost || 0) + (order.admin_shipping_cost || 0) + (order.admin_other_costs || 0) + (order.tax_amount || 0);
+                        const orderTotalCost = (order.admin_product_cost || 0) + (order.admin_shipping_cost || 0) + (order.admin_other_costs || 0);
                         const orderProfit = (order.total_amount || 0) - orderTotalCost;
                         const profitPercent = orderTotalCost > 0 ? ((orderProfit / orderTotalCost) * 100).toFixed(1) : 0;
                         
