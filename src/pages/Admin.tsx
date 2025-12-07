@@ -572,30 +572,59 @@ const Admin = () => {
 
     setUploadingImages(true);
     const newImageUrls: string[] = [];
+    const failedUploads: string[] = [];
 
     try {
       for (const file of Array.from(files)) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Math.random()}.${fileExt}`;
-        const filePath = `${fileName}`;
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const timestamp = Date.now();
+        const random = Math.random().toString().substring(2, 10);
+        const fileName = `manual-${timestamp}-${random}.${fileExt}`;
 
-        const { error: uploadError, data } = await supabase.storage
+        console.log(`[ImageUpload] Uploading: ${fileName} (${file.size} bytes)`);
+
+        const { error: uploadError } = await supabase.storage
           .from('product-images')
-          .upload(filePath, file);
+          .upload(fileName, file);
 
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          console.error(`[ImageUpload] Upload error for ${file.name}:`, uploadError);
+          failedUploads.push(file.name);
+          continue;
+        }
 
         const { data: { publicUrl } } = supabase.storage
           .from('product-images')
-          .getPublicUrl(filePath);
+          .getPublicUrl(fileName);
+
+        // Verify the upload was successful
+        try {
+          const verifyResponse = await fetch(publicUrl, { method: 'HEAD' });
+          if (!verifyResponse.ok) {
+            console.error(`[ImageUpload] Verification failed for ${fileName}`);
+            failedUploads.push(file.name);
+            // Clean up failed upload
+            await supabase.storage.from('product-images').remove([fileName]);
+            continue;
+          }
+          console.log(`[ImageUpload] Verified: ${fileName}`);
+        } catch (verifyErr) {
+          console.warn(`[ImageUpload] Could not verify ${fileName}, but proceeding`);
+        }
 
         newImageUrls.push(publicUrl);
       }
 
-      setUploadedImages([...uploadedImages, ...newImageUrls]);
-      toast.success('تم رفع الصور بنجاح');
+      if (newImageUrls.length > 0) {
+        setUploadedImages([...uploadedImages, ...newImageUrls]);
+        toast.success(`تم رفع ${newImageUrls.length} صورة بنجاح`);
+      }
+      
+      if (failedUploads.length > 0) {
+        toast.error(`فشل رفع ${failedUploads.length} صورة: ${failedUploads.join(', ')}`);
+      }
     } catch (error) {
-      console.error('Error uploading images:', error);
+      console.error('[ImageUpload] Error:', error);
       toast.error('حدث خطأ أثناء رفع الصور');
     } finally {
       setUploadingImages(false);
