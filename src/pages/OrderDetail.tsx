@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Star } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Star, Image, File, Download } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -572,6 +572,68 @@ const OrderDetail = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Additional Images and Files */}
+        {((order.admin_images && order.admin_images.length > 0) || (order.admin_files && order.admin_files.length > 0)) && (
+          <Card className="mt-6 border-primary/20 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Image className="h-5 w-5 text-primary" />
+                صور وملفات إضافية
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Images */}
+              {order.admin_images && order.admin_images.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-3">الصور</h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    {order.admin_images.map((imageUrl: string, index: number) => (
+                      <a
+                        key={index}
+                        href={imageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block aspect-square rounded-lg overflow-hidden border border-border/50 hover:border-primary/50 transition-colors"
+                      >
+                        <img
+                          src={imageUrl}
+                          alt={`صورة ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Files */}
+              {order.admin_files && order.admin_files.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-3">الملفات</h4>
+                  <div className="space-y-2">
+                    {order.admin_files.map((fileUrl: string, index: number) => {
+                      const fileName = fileUrl.split('/').pop() || `ملف ${index + 1}`;
+                      return (
+                        <a
+                          key={index}
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted transition-colors"
+                        >
+                          <File className="h-5 w-5 text-primary" />
+                          <span className="flex-1 text-sm font-medium truncate">{fileName}</span>
+                          <Download className="h-4 w-4 text-muted-foreground" />
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </main>
 
       {/* Hidden Invoice for PDF Generation */}
