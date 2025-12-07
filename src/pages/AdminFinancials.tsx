@@ -67,20 +67,25 @@ const AdminFinancials = () => {
 
   // Calculate totals
   const totals = orders?.reduce((acc, order) => {
+    // الربح الصافي = المبلغ الذي دفعه الزبون - تكلفة المنتج - تكاليف أخرى (بدون تكلفة الشحن)
+    const netProfit = (order.customer_paid_amount || 0) - (order.admin_product_cost || 0) - (order.admin_other_costs || 0);
+    
     return {
       totalRevenue: acc.totalRevenue + (order.total_amount || 0),
-      totalPaid: acc.totalPaid + (order.paid_amount || 0),
+      totalCustomerPaid: acc.totalCustomerPaid + (order.customer_paid_amount || 0),
+      totalAdminPaid: acc.totalAdminPaid + (order.admin_paid_amount || 0),
       totalRemaining: acc.totalRemaining + (order.remaining_amount || 0),
       totalProductCost: acc.totalProductCost + (order.admin_product_cost || 0),
       totalShippingCost: acc.totalShippingCost + (order.admin_shipping_cost || 0),
       totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
-      totalProfit: acc.totalProfit + (order.profit_amount || 0),
+      totalProfit: acc.totalProfit + netProfit,
       orderCount: acc.orderCount + 1,
       deliveredCount: acc.deliveredCount + (order.status === 'delivered' ? 1 : 0),
     };
   }, {
     totalRevenue: 0,
-    totalPaid: 0,
+    totalCustomerPaid: 0,
+    totalAdminPaid: 0,
     totalRemaining: 0,
     totalProductCost: 0,
     totalShippingCost: 0,
@@ -90,7 +95,8 @@ const AdminFinancials = () => {
     deliveredCount: 0,
   }) || {
     totalRevenue: 0,
-    totalPaid: 0,
+    totalCustomerPaid: 0,
+    totalAdminPaid: 0,
     totalRemaining: 0,
     totalProductCost: 0,
     totalShippingCost: 0,
@@ -100,8 +106,9 @@ const AdminFinancials = () => {
     deliveredCount: 0,
   };
 
-  const totalCosts = totals.totalProductCost + totals.totalShippingCost + totals.totalOtherCosts;
-  const calculatedProfit = totals.totalPaid - totalCosts;
+  // الربح الصافي بدون تكلفة الشحن
+  const totalCosts = totals.totalProductCost + totals.totalOtherCosts;
+  const calculatedProfit = totals.totalCustomerPaid - totalCosts;
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-6" dir="rtl">
@@ -172,8 +179,8 @@ const AdminFinancials = () => {
                   <CreditCard className="h-5 w-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">المبالغ المدفوعة</p>
-                  <p className="text-lg font-bold text-blue-600">{formatPrice(totals.totalPaid)}</p>
+                  <p className="text-xs text-muted-foreground">دفعات الزبائن</p>
+                  <p className="text-lg font-bold text-blue-600">{formatPrice(totals.totalCustomerPaid)}</p>
                 </div>
               </div>
             </CardContent>
@@ -209,7 +216,21 @@ const AdminFinancials = () => {
         </div>
 
         {/* Costs & Profit Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-cyan-500/20 rounded-lg">
+                  <ArrowDownRight className="h-5 w-5 text-cyan-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">ما دفعناه</p>
+                  <p className="text-lg font-bold text-cyan-600">{formatPrice(totals.totalAdminPaid)}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -231,7 +252,7 @@ const AdminFinancials = () => {
                   <Truck className="h-5 w-5 text-amber-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">تكلفة الشحن</p>
+                  <p className="text-xs text-muted-foreground">تكلفة الشحن (معلومات)</p>
                   <p className="text-lg font-bold text-amber-600">{formatPrice(totals.totalShippingCost)}</p>
                 </div>
               </div>
@@ -245,7 +266,7 @@ const AdminFinancials = () => {
                   <ArrowDownRight className="h-5 w-5 text-pink-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">إجمالي التكاليف</p>
+                  <p className="text-xs text-muted-foreground">التكاليف (بدون الشحن)</p>
                   <p className="text-lg font-bold text-pink-600">{formatPrice(totalCosts)}</p>
                 </div>
               </div>
@@ -295,21 +316,21 @@ const AdminFinancials = () => {
                           <TableHead className="text-right">رقم الطلب</TableHead>
                           <TableHead className="text-right">التاريخ</TableHead>
                           <TableHead className="text-right">المبلغ الإجمالي</TableHead>
-                          <TableHead className="text-right">المدفوع</TableHead>
-                          <TableHead className="text-right">المتبقي</TableHead>
+                          <TableHead className="text-right">دفع الزبون</TableHead>
+                          <TableHead className="text-right">دفعنا</TableHead>
                           <TableHead className="text-right">تكلفة المنتج</TableHead>
                           <TableHead className="text-right">تكلفة الشحن</TableHead>
                           <TableHead className="text-right">تكاليف أخرى</TableHead>
-                          <TableHead className="text-right">الربح</TableHead>
+                          <TableHead className="text-right">الربح الصافي</TableHead>
                           <TableHead className="text-right">الحالة</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {orders?.map((order) => {
-                          const orderTotalCost = (order.admin_product_cost || 0) + 
-                            (order.admin_shipping_cost || 0) + 
+                          // الربح الصافي = المبلغ الذي دفعه الزبون - تكلفة المنتج - تكاليف أخرى (بدون تكلفة الشحن)
+                          const orderProfit = (order.customer_paid_amount || 0) - 
+                            (order.admin_product_cost || 0) - 
                             (order.admin_other_costs || 0);
-                          const orderProfit = (order.paid_amount || 0) - orderTotalCost;
                           
                           return (
                             <TableRow key={order.id}>
@@ -321,10 +342,10 @@ const AdminFinancials = () => {
                               </TableCell>
                               <TableCell>{formatPrice(order.total_amount)}</TableCell>
                               <TableCell className="text-green-600">
-                                {formatPrice(order.paid_amount || 0)}
+                                {formatPrice(order.customer_paid_amount || 0)}
                               </TableCell>
-                              <TableCell className="text-orange-600">
-                                {formatPrice(order.remaining_amount || 0)}
+                              <TableCell className="text-blue-600">
+                                {formatPrice(order.admin_paid_amount || 0)}
                               </TableCell>
                               <TableCell className="text-red-600">
                                 {formatPrice(order.admin_product_cost || 0)}
@@ -389,10 +410,10 @@ const AdminFinancials = () => {
                         (o.admin_shipping_cost || 0) > 0 || 
                         (o.admin_other_costs || 0) > 0
                       ).map((order) => {
-                        const orderTotalCost = (order.admin_product_cost || 0) + 
-                          (order.admin_shipping_cost || 0) + 
+                        // الربح الصافي = المبلغ الذي دفعه الزبون - تكلفة المنتج - تكاليف أخرى (بدون تكلفة الشحن)
+                        const orderProfit = (order.customer_paid_amount || 0) - 
+                          (order.admin_product_cost || 0) - 
                           (order.admin_other_costs || 0);
-                        const orderProfit = (order.paid_amount || 0) - orderTotalCost;
                         
                         return (
                           <TableRow key={order.id}>
@@ -447,16 +468,15 @@ const AdminFinancials = () => {
                     </TableHeader>
                     <TableBody>
                       {orders?.filter(o => {
-                        const orderTotalCost = (o.admin_product_cost || 0) + 
-                          (o.admin_shipping_cost || 0) + 
+                        // الربح الصافي = المبلغ الذي دفعه الزبون - تكلفة المنتج - تكاليف أخرى (بدون تكلفة الشحن)
+                        const orderProfit = (o.customer_paid_amount || 0) - 
+                          (o.admin_product_cost || 0) - 
                           (o.admin_other_costs || 0);
-                        const orderProfit = (o.paid_amount || 0) - orderTotalCost;
-                        return orderProfit > 0 && orderTotalCost > 0;
+                        const hasCosts = (o.admin_product_cost || 0) > 0 || (o.admin_other_costs || 0) > 0;
+                        return orderProfit > 0 && hasCosts;
                       }).map((order) => {
-                        const orderTotalCost = (order.admin_product_cost || 0) + 
-                          (order.admin_shipping_cost || 0) + 
-                          (order.admin_other_costs || 0);
-                        const orderProfit = (order.paid_amount || 0) - orderTotalCost;
+                        const orderTotalCost = (order.admin_product_cost || 0) + (order.admin_other_costs || 0);
+                        const orderProfit = (order.customer_paid_amount || 0) - orderTotalCost;
                         const profitPercent = orderTotalCost > 0 ? ((orderProfit / orderTotalCost) * 100).toFixed(1) : 0;
                         
                         return (
@@ -468,7 +488,7 @@ const AdminFinancials = () => {
                               {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
                             </TableCell>
                             <TableCell className="text-green-600">
-                              {formatPrice(order.paid_amount || 0)}
+                              {formatPrice(order.customer_paid_amount || 0)}
                             </TableCell>
                             <TableCell className="text-red-600">
                               {formatPrice(orderTotalCost)}
