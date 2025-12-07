@@ -37,6 +37,14 @@ const AdminOrders = () => {
   const [existingAdminImages, setExistingAdminImages] = useState<string[]>([]);
   const [existingAdminFiles, setExistingAdminFiles] = useState<string[]>([]);
   const [serialImagePreview, setSerialImagePreview] = useState<string>('');
+  
+  // Financial fields state for live calculation
+  const [customerPaidAmount, setCustomerPaidAmount] = useState<number>(0);
+  const [adminProductCost, setAdminProductCost] = useState<number>(0);
+  const [adminOtherCosts, setAdminOtherCosts] = useState<number>(0);
+  
+  // Calculate profit dynamically
+  const calculatedProfit = customerPaidAmount - adminProductCost - adminOtherCosts;
   useEffect(() => {
     const status = searchParams.get('status');
     if (status) setStatusFilter(status);
@@ -676,6 +684,10 @@ const AdminOrders = () => {
                                   setAdminImageFiles([]);
                                   setAdminFilesArray([]);
                                   setAdminImagePreviews([]);
+                                  // Initialize financial fields for live calculation
+                                  setCustomerPaidAmount(parseFloat(order.customer_paid_amount) || 0);
+                                  setAdminProductCost(parseFloat(order.admin_product_cost) || 0);
+                                  setAdminOtherCosts(parseFloat(order.admin_other_costs) || 0);
                                   setDialogOpen(true);
                                 }}
                               >
@@ -988,7 +1000,8 @@ const AdminOrders = () => {
                                         name="customer_paid_amount"
                                         type="number"
                                         step="0.01"
-                                        defaultValue={order.customer_paid_amount || '0'}
+                                        value={customerPaidAmount}
+                                        onChange={(e) => setCustomerPaidAmount(parseFloat(e.target.value) || 0)}
                                         placeholder="0.00"
                                       />
                                     </div>
@@ -1012,7 +1025,8 @@ const AdminOrders = () => {
                                         name="admin_product_cost"
                                         type="number"
                                         step="0.01"
-                                        defaultValue={order.admin_product_cost || '0'}
+                                        value={adminProductCost}
+                                        onChange={(e) => setAdminProductCost(parseFloat(e.target.value) || 0)}
                                         placeholder="0.00"
                                       />
                                     </div>
@@ -1036,7 +1050,8 @@ const AdminOrders = () => {
                                         name="admin_other_costs"
                                         type="number"
                                         step="0.01"
-                                        defaultValue={order.admin_other_costs || '0'}
+                                        value={adminOtherCosts}
+                                        onChange={(e) => setAdminOtherCosts(parseFloat(e.target.value) || 0)}
                                         placeholder="0.00"
                                       />
                                     </div>
@@ -1048,13 +1063,9 @@ const AdminOrders = () => {
                                         name="profit_amount"
                                         type="number"
                                         step="0.01"
-                                        value={
-                                          (parseFloat(order.customer_paid_amount || '0') || 0) - 
-                                          (parseFloat(order.admin_product_cost || '0') || 0) - 
-                                          (parseFloat(order.admin_other_costs || '0') || 0)
-                                        }
+                                        value={calculatedProfit.toFixed(2)}
                                         readOnly
-                                        className="bg-muted"
+                                        className={`bg-muted font-bold ${calculatedProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}
                                       />
                                       <p className="text-xs text-muted-foreground">= المبلغ الذي دفعه الزبون - تكلفة المنتج - تكاليف أخرى (بدون تكلفة الشحن)</p>
                                     </div>
