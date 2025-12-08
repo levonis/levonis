@@ -1571,6 +1571,7 @@ export type Database = {
         Args: { _message: string; _title: string; _type?: string }
         Returns: undefined
       }
+      validate_coupon: { Args: { coupon_code: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "user" | "manager" | "worker"
