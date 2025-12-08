@@ -81,32 +81,27 @@
     --shadow-deep: 0 12px 30px rgba(0, 0, 0, 0.25);
     --shadow-hover: 0 16px 36px rgba(0, 0, 0, 0.35);
     
-  /* Transitions */
-  --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-}
+    /* Transitions */
+    --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
 
-* {
-  @apply border-border;
-}
+  * {
+    @apply border-border;
+  }
 
-html {
-  direction: rtl;
-}
+  html {
+    direction: rtl;
+  }
 
-body {
-  @apply bg-background text-foreground;
-  font-family: 'Cairo', system-ui, -apple-system, sans-serif;
-  font-feature-settings: 'cv11', 'ss01';
-  font-variation-settings: 'opsz' 32;
-  position: relative;
-  overflow-x: hidden;
-}
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
+    font-variation-settings: 'opsz' 32;
+    position: relative;
+    overflow-x: hidden;
+  }
 
-/* Decorative Elements */
-body {
-  position: relative;
-}
-  
   h1, h2, h3, h4, h5, h6 {
     font-weight: 900;
     letter-spacing: 0.5px;
