@@ -52,8 +52,22 @@
     --whatsapp: 142 77% 49%;          /* #25D366 */
     
     /* Borders & inputs */
-    --border: 44 51% 64% / 0.2;
-    --input: 44 51% 64% / 0.25;
+    --border: 44 30% 40%;
+    --input: 44 30% 35%;
+    
+    /* Popover */
+    --popover: 160 52% 16%;
+    --popover-foreground: 44 44% 89%;
+    
+    /* Sidebar */
+    --sidebar-background: 160 52% 16%;
+    --sidebar-foreground: 44 44% 89%;
+    --sidebar-primary: 44 39% 60%;
+    --sidebar-primary-foreground: 40 67% 15%;
+    --sidebar-accent: 36 42% 40%;
+    --sidebar-accent-foreground: 44 44% 89%;
+    --sidebar-border: 44 30% 40%;
+    --sidebar-ring: 44 51% 64%;
     
     --radius: 0.875rem;
     
