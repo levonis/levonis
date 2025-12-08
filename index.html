@@ -40,7 +40,19 @@
   <meta name="twitter:title" content="LEVONIS — iq">
   <meta property="og:description" content="تسوق أحدث الإلكترونيات والأجهزة الذكية | أسعار منافسة وضمان رسمي | توصيل سريع لجميع أنحاء العراق | LEVONIS متجرك الموثوق للتقنية">
   <meta name="twitter:description" content="تسوق أحدث الإلكترونيات والأجهزة الذكية | أسعار منافسة وضمان رسمي | توصيل سريع لجميع أنحاء العراق | LEVONIS متجرك الموثوق للتقنية">
-</head>
+    <!-- Inline script to make CSS non-render-blocking -->
+    <script>
+      (function() {
+        var links = document.querySelectorAll('link[rel="stylesheet"]');
+        links.forEach(function(link) {
+          if (!link.hasAttribute('media') || link.getAttribute('media') === 'all') {
+            link.setAttribute('media', 'print');
+            link.setAttribute('onload', "this.media='all'");
+          }
+        });
+      })();
+    </script>
+  </head>
 
   <body>
     <div id="root"></div>
