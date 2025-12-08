@@ -189,75 +189,51 @@ const Cart = () => {
 
     setCouponLoading(true);
     try {
-      const { data: coupon, error } = await supabase
-        .from('coupons')
-        .select('*')
-        .eq('code', couponCode.toUpperCase().trim())
-        .eq('active', true)
-        .single();
+      // Use secure RPC function to validate coupon without exposing all codes
+      const { data: result, error } = await supabase
+        .rpc('validate_coupon', { coupon_code: couponCode.toUpperCase().trim() });
 
-      if (error || !coupon) {
+      if (error) {
         toast({
-          title: "كوبون غير صحيح",
-          description: "الكوبون غير موجود أو غير فعال",
+          title: "خطأ",
+          description: "حدث خطأ أثناء التحقق من الكوبون",
           variant: "destructive",
         });
         return;
       }
 
-      // Check if expired
-      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-        toast({
-          title: "كوبون منتهي",
-          description: "هذا الكوبون قد انتهت صلاحيته",
-          variant: "destructive",
-        });
-        return;
-      }
+      const couponResult = result as { valid: boolean; error?: string; id?: string; code?: string; discount_type?: string; discount_value?: number; min_purchase_amount?: number };
 
-      // Check if max uses reached
-      if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
+      if (!couponResult.valid) {
         toast({
-          title: "كوبون مكتمل",
-          description: "تم استخدام هذا الكوبون بالحد الأقصى",
+          title: "كوبون غير صالح",
+          description: couponResult.error || "الكوبون غير صحيح",
           variant: "destructive",
         });
         return;
       }
 
       // Check minimum purchase
-      if (coupon.min_purchase_amount && total < coupon.min_purchase_amount) {
+      if (couponResult.min_purchase_amount && total < couponResult.min_purchase_amount) {
         toast({
           title: "الحد الأدنى للطلب غير مستوفى",
-          description: `الحد الأدنى للطلب هو ${formatPrice(coupon.min_purchase_amount)} دينار عراقي`,
+          description: `الحد الأدنى للطلب هو ${formatPrice(couponResult.min_purchase_amount)} دينار عراقي`,
           variant: "destructive",
         });
         return;
       }
 
-      // Check if user already used this coupon
-      if (user) {
-        const { data: usage } = await supabase
-          .from('coupon_usage')
-          .select('*')
-          .eq('coupon_id', coupon.id)
-          .eq('user_id', user.id)
-          .single();
-
-        if (usage) {
-          toast({
-            title: "تم استخدامه مسبقاً",
-            description: "لقد استخدمت هذا الكوبون من قبل",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
-      setAppliedCoupon(coupon);
+      setAppliedCoupon({
+        id: couponResult.id,
+        code: couponResult.code,
+        discount_type: couponResult.discount_type,
+        discount_value: couponResult.discount_value,
+        min_purchase_amount: couponResult.min_purchase_amount,
+      });
+      
       toast({
         title: "تم تطبيق الكوبون",
-        description: `تم خصم ${coupon.discount_type === 'percentage' ? `${coupon.discount_value}%` : `${formatPrice(coupon.discount_value)} دينار عراقي`}`,
+        description: `تم خصم ${couponResult.discount_type === 'percentage' ? `${couponResult.discount_value}%` : `${formatPrice(couponResult.discount_value || 0)} دينار عراقي`}`,
       });
     } catch (error) {
       console.error('Error applying coupon:', error);
