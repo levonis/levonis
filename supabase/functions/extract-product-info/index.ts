@@ -97,33 +97,87 @@ serve(async (req) => {
     // Increase limit to capture more content
     textContent = textContent.substring(0, 40000);
 
-    // Extract image URLs and ALT texts from HTML (more robust)
+    // Extract image URLs and ALT texts from HTML (enhanced extraction)
     const imageUrls: string[] = [];
     const altTexts: string[] = [];
 
+    // Helper to validate and normalize image URLs
+    const isValidImageUrl = (u: string | null | undefined): boolean => {
+      if (!u) return false;
+      const lower = u.toLowerCase();
+      // Skip tiny icons, logos, tracking pixels, and placeholder images
+      if (lower.includes('icon') || lower.includes('logo') || lower.includes('pixel') ||
+          lower.includes('tracking') || lower.includes('placeholder') || lower.includes('blank') ||
+          lower.includes('spacer') || lower.includes('1x1') || lower.includes('loading')) {
+        return false;
+      }
+      // Must be a valid HTTP(S) URL or protocol-relative URL
+      return u.startsWith('http') || u.startsWith('//');
+    };
+
+    const normalizeUrl = (u: string, baseUrl: string): string => {
+      if (u.startsWith('//')) {
+        return 'https:' + u;
+      }
+      if (u.startsWith('/') && !u.startsWith('//')) {
+        try {
+          const urlObj = new URL(baseUrl);
+          return urlObj.origin + u;
+        } catch {
+          return u;
+        }
+      }
+      return u;
+    };
+
+    const pushUrl = (u?: string | null) => {
+      if (!u) return;
+      const normalized = normalizeUrl(u, url);
+      if (isValidImageUrl(normalized)) {
+        // Extract the highest resolution from srcset-style URLs
+        const cleaned = normalized.split(' ')[0];
+        if (!imageUrls.includes(cleaned)) {
+          imageUrls.push(cleaned);
+        }
+      }
+    };
+
+    // Method 1: Standard <img> tags
     const imgTagRegex = /<img[^>]*>/gi;
     let tagMatch;
     while ((tagMatch = imgTagRegex.exec(html)) !== null) {
       const tag = tagMatch[0];
 
+      // Multiple source attributes in priority order
       const srcMatch = tag.match(/src=["']([^"']+)["']/i);
       const dataSrcMatch = tag.match(/data-src=["']([^"']+)["']/i);
+      const dataLazySrcMatch = tag.match(/data-lazy-src=["']([^"']+)["']/i);
+      const dataOriginalMatch = tag.match(/data-original=["']([^"']+)["']/i);
+      const dataZoomMatch = tag.match(/data-zoom-image=["']([^"']+)["']/i);
+      const dataLargeMatch = tag.match(/data-large[_-]?image=["']([^"']+)["']/i);
       const srcsetMatch = tag.match(/srcset=["']([^"']+)["']/i);
       const altMatch = tag.match(/alt=["']([^"']+)["']/i);
 
-      const pushUrl = (u?: string | null) => {
-        if (!u) return;
-        if (u.startsWith('http') && !u.includes('icon') && !u.includes('logo')) {
-          imageUrls.push(u);
-        }
-      };
+      // Prefer high-res sources
+      pushUrl(dataZoomMatch?.[1]);
+      pushUrl(dataLargeMatch?.[1]);
+      pushUrl(dataOriginalMatch?.[1]);
+      pushUrl(dataSrcMatch?.[1]);
+      pushUrl(dataLazySrcMatch?.[1]);
+      pushUrl(srcMatch?.[1]);
 
-      pushUrl(srcMatch?.[1] || null);
-      pushUrl(dataSrcMatch?.[1] || null);
-
+      // Extract all srcset candidates and pick highest resolution
       if (srcsetMatch?.[1]) {
-        const candidates = srcsetMatch[1].split(',').map(s => s.trim().split(' ')[0]);
-        for (const c of candidates) pushUrl(c);
+        const candidates = srcsetMatch[1].split(',').map(s => {
+          const parts = s.trim().split(/\s+/);
+          const imgUrl = parts[0];
+          const sizeStr = parts[1] || '0w';
+          const size = parseInt(sizeStr.replace(/[wx]/i, '')) || 0;
+          return { url: imgUrl, size };
+        });
+        // Sort by size descending to get highest resolution first
+        candidates.sort((a, b) => b.size - a.size);
+        for (const c of candidates) pushUrl(c.url);
       }
 
       if (altMatch?.[1]) {
@@ -131,6 +185,82 @@ serve(async (req) => {
         if (alt && alt.length > 1) altTexts.push(alt);
       }
     }
+
+    // Method 2: <source> tags (picture elements)
+    for (const sourceMatch of html.matchAll(/<source[^>]*>/gi)) {
+      const tag = sourceMatch[0];
+      const srcsetMatch = tag.match(/srcset=["']([^"']+)["']/i);
+      if (srcsetMatch?.[1]) {
+        const candidates = srcsetMatch[1].split(',').map(s => s.trim().split(/\s+/)[0]);
+        for (const c of candidates) pushUrl(c);
+      }
+    }
+
+    // Method 3: Background images in style attributes
+    for (const bgMatch of html.matchAll(/style=["'][^"']*background(?:-image)?:\s*url\(['"]?([^'")]+)['"]?\)/gi)) {
+      pushUrl(bgMatch[1]);
+    }
+
+    // Method 4: <a> tags with href pointing to images
+    for (const aMatch of html.matchAll(/<a[^>]*href=["']([^"']+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^"']*)?)[^"']*["'][^>]*>/gi)) {
+      pushUrl(aMatch[1]);
+    }
+
+    // Method 5: JSON-LD structured data (common in e-commerce)
+    for (const scriptMatch of html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)) {
+      try {
+        const jsonContent = scriptMatch[1];
+        // Extract image URLs from JSON
+        for (const imgMatch of jsonContent.matchAll(/"image"\s*:\s*(?:"([^"]+)"|\[([^\]]+)\])/gi)) {
+          if (imgMatch[1]) pushUrl(imgMatch[1]);
+          if (imgMatch[2]) {
+            for (const urlMatch of imgMatch[2].matchAll(/"([^"]+)"/g)) {
+              pushUrl(urlMatch[1]);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('Error parsing JSON-LD:', e);
+      }
+    }
+
+    // Method 6: Product image galleries (common patterns)
+    for (const galleryMatch of html.matchAll(/data-(?:gallery|images|photos|media)=["']([^"']+)["']/gi)) {
+      try {
+        const decoded = decodeURIComponent(galleryMatch[1]);
+        // Try parsing as JSON array
+        if (decoded.startsWith('[')) {
+          const urls = JSON.parse(decoded);
+          if (Array.isArray(urls)) {
+            for (const item of urls) {
+              if (typeof item === 'string') pushUrl(item);
+              else if (item?.src) pushUrl(item.src);
+              else if (item?.url) pushUrl(item.url);
+            }
+          }
+        }
+      } catch (e) {
+        // Not valid JSON, extract URLs directly
+        for (const urlMatch of galleryMatch[1].matchAll(/https?:\/\/[^\s"',\]]+/gi)) {
+          pushUrl(urlMatch[0]);
+        }
+      }
+    }
+
+    // Method 7: Extract from inline scripts (Shopify, WooCommerce, etc.)
+    for (const scriptMatch of html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)) {
+      const content = scriptMatch[1] || '';
+      // Product media/images in JSON
+      for (const imgMatch of content.matchAll(/"(?:src|url|image|featured_image|original|zoom)"\s*:\s*"(https?:[^"]+(?:jpg|jpeg|png|webp|gif)[^"]*)"/gi)) {
+        pushUrl(imgMatch[1]);
+      }
+      // Variant images
+      for (const variantMatch of content.matchAll(/"variant_ids?"[\s\S]*?"featured_image"\s*:\s*\{[^}]*"src"\s*:\s*"([^"]+)"/gi)) {
+        pushUrl(variantMatch[1]);
+      }
+    }
+
+    console.log(`Image extraction complete: found ${imageUrls.length} unique images and ${altTexts.length} alt texts`);
 
     // Extract potential color names from the raw HTML and scripts to avoid missing variants
     const colorCandidates: string[] = [];
