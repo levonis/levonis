@@ -559,12 +559,38 @@ const OrderDetail = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex justify-between text-lg">
+              {/* المبلغ الفرعي */}
+              {Number(order.subtotal) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">المبلغ الفرعي:</span>
+                  <span className="font-medium">{formatPrice(Number(order.subtotal))} {order.currency}</span>
+                </div>
+              )}
+              
+              {/* الضريبة */}
+              {Number(order.tax_amount) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">الضريبة ({order.tax_percentage || 0}%):</span>
+                  <span className="font-medium">{formatPrice(Number(order.tax_amount))} {order.currency}</span>
+                </div>
+              )}
+              
+              {/* الخصم */}
+              {Number(order.discount_amount) > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>الخصم:</span>
+                  <span className="font-medium">-{formatPrice(Number(order.discount_amount))} {order.currency}</span>
+                </div>
+              )}
+              
+              {/* الإجمالي */}
+              <div className="flex justify-between text-lg pt-2 border-t border-border/50">
                 <span className="text-muted-foreground">الإجمالي:</span>
                 <span className="font-black text-2xl text-primary">
                   {formatPrice(Number(order.total_amount))} {order.currency}
                 </span>
               </div>
+              
               <div className="flex justify-between text-sm">
                 <span className="text-muted-foreground">العملة:</span>
                 <span className="font-medium">{order.currency}</span>

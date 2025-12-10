@@ -44,6 +44,16 @@ const AdminOrders = () => {
   const [adminShippingCost, setAdminShippingCost] = useState<number>(0);
   const [adminOtherCosts, setAdminOtherCosts] = useState<number>(0);
   const [taxAmount, setTaxAmount] = useState<number>(0);
+  const [subtotalAmount, setSubtotalAmount] = useState<number>(0);
+  const [taxPercentage, setTaxPercentage] = useState<number>(0);
+  
+  // Auto-calculate tax_amount when tax_percentage or subtotal changes
+  useEffect(() => {
+    if (taxPercentage > 0 && subtotalAmount > 0) {
+      const calculatedTax = Math.round((subtotalAmount * taxPercentage) / 100);
+      setTaxAmount(calculatedTax);
+    }
+  }, [taxPercentage, subtotalAmount]);
   
   // Calculate profit dynamically: المبلغ الإجمالي - تكلفة المنتج - تكلفة الشحن - التكاليف الأخرى + الضريبة
   const calculatedProfit = totalAmount - adminProductCost - adminShippingCost - adminOtherCosts + taxAmount;
@@ -688,6 +698,8 @@ const AdminOrders = () => {
                                   setAdminImagePreviews([]);
                                   // Initialize financial fields for live calculation
                                   setTotalAmount(parseFloat(order.total_amount) || 0);
+                                  setSubtotalAmount(parseFloat(order.subtotal) || parseFloat(order.total_amount) || 0);
+                                  setTaxPercentage(parseFloat(order.tax_percentage) || 0);
                                   setAdminProductCost(parseFloat(order.admin_product_cost) || 0);
                                   setAdminShippingCost(parseFloat(order.admin_shipping_cost) || 0);
                                   setAdminOtherCosts(parseFloat(order.admin_other_costs) || 0);
@@ -817,7 +829,8 @@ const AdminOrders = () => {
                                         name="subtotal"
                                         type="number"
                                         step="0.01"
-                                        defaultValue={order.subtotal || order.total_amount || ''}
+                                        value={subtotalAmount}
+                                        onChange={(e) => setSubtotalAmount(parseFloat(e.target.value) || 0)}
                                         placeholder="0.00"
                                       />
                                     </div>
@@ -829,20 +842,26 @@ const AdminOrders = () => {
                                         name="tax_percentage"
                                         type="number"
                                         step="0.01"
-                                        defaultValue={order.tax_percentage || '0'}
+                                        value={taxPercentage}
+                                        onChange={(e) => setTaxPercentage(parseFloat(e.target.value) || 0)}
                                         placeholder="0"
                                       />
+                                      <p className="text-xs text-muted-foreground">
+                                        سيتم حساب مبلغ الضريبة تلقائياً
+                                      </p>
                                     </div>
 
                                     <div className="space-y-2">
-                                      <Label htmlFor="tax_amount">مبلغ الضريبة</Label>
+                                      <Label htmlFor="tax_amount">مبلغ الضريبة (محسوب تلقائياً)</Label>
                                       <Input
                                         id="tax_amount"
                                         name="tax_amount"
                                         type="number"
                                         step="0.01"
-                                        defaultValue={order.tax_amount || '0'}
+                                        value={taxAmount}
+                                        onChange={(e) => setTaxAmount(parseFloat(e.target.value) || 0)}
                                         placeholder="0.00"
+                                        className="bg-muted/50"
                                       />
                                     </div>
 
