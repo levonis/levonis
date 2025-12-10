@@ -5,15 +5,22 @@ const DecorativeFrame = () => {
 
   useEffect(() => {
     // Defer loading the decorative frame to not block FCP
-    const timer = requestIdleCallback ? 
-      requestIdleCallback(() => setLoaded(true)) : 
-      setTimeout(() => setLoaded(true), 100);
+    // Use requestIdleCallback if available, otherwise fall back to setTimeout
+    const hasIdleCallback = typeof window !== 'undefined' && 'requestIdleCallback' in window;
+    
+    let timerId: number;
+    
+    if (hasIdleCallback) {
+      timerId = window.requestIdleCallback(() => setLoaded(true));
+    } else {
+      timerId = window.setTimeout(() => setLoaded(true), 100);
+    }
     
     return () => {
-      if (requestIdleCallback && typeof timer === 'number') {
-        cancelIdleCallback(timer);
+      if (hasIdleCallback) {
+        window.cancelIdleCallback(timerId);
       } else {
-        clearTimeout(timer as unknown as number);
+        window.clearTimeout(timerId);
       }
     };
   }, []);
