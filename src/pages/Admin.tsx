@@ -1579,45 +1579,51 @@ const Admin = () => {
                   </DialogHeader>
                   
                   <form key={editingProduct?.id || 'new'} onSubmit={handleProductSubmit} className="space-y-4">
-                    {/* AI Product Extraction Section */}
-                    {!editingProduct && (
-                      <div className="p-4 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-medium text-primary">
-                          <Sparkles className="h-4 w-4" />
-                          <span>استخراج معلومات المنتج تلقائياً بالذكاء الاصطناعي</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          أدخل رابط المنتج وسيقوم الذكاء الاصطناعي باستخراج جميع التفاصيل تلقائياً
-                        </p>
-                        <div className="flex gap-2">
-                          <Input
-                            placeholder="https://example.com/product"
-                            value={productUrl}
-                            onChange={(e) => setProductUrl(e.target.value)}
-                            disabled={extractingInfo}
-                            className="flex-1"
-                          />
-                          <Button
-                            type="button"
-                            onClick={handleExtractProductInfo}
-                            disabled={extractingInfo || !productUrl.trim()}
-                            className="gap-2"
-                          >
-                            {extractingInfo ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                                جاري الاستخراج...
-                              </>
-                            ) : (
-                              <>
-                                <Sparkles className="h-4 w-4" />
-                                استخراج
-                              </>
-                            )}
-                          </Button>
-                        </div>
+                    {/* AI Product Extraction Section - Always visible for both new and editing */}
+                    <div className="p-4 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 space-y-3">
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                        <Sparkles className="h-4 w-4" />
+                        <span>
+                          {editingProduct 
+                            ? 'تحديث معلومات المنتج بالذكاء الاصطناعي' 
+                            : 'استخراج معلومات المنتج تلقائياً بالذكاء الاصطناعي'
+                          }
+                        </span>
                       </div>
-                    )}
+                      <p className="text-xs text-muted-foreground">
+                        {editingProduct 
+                          ? 'أدخل رابط المنتج لتحديث البيانات (سيتم استبدال البيانات الحالية)'
+                          : 'أدخل رابط المنتج وسيقوم الذكاء الاصطناعي باستخراج جميع التفاصيل تلقائياً'
+                        }
+                      </p>
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="https://example.com/product"
+                          value={productUrl}
+                          onChange={(e) => setProductUrl(e.target.value)}
+                          disabled={extractingInfo}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleExtractProductInfo}
+                          disabled={extractingInfo || !productUrl.trim()}
+                          className="gap-2"
+                        >
+                          {extractingInfo ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              جاري الاستخراج...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles className="h-4 w-4" />
+                              {editingProduct ? 'تحديث' : 'استخراج'}
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
