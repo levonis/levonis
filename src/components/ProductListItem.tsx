@@ -90,7 +90,7 @@ const ProductListItem = ({
       {/* Image */}
       <div className="relative overflow-hidden rounded-lg w-24 h-24 sm:w-28 sm:h-28 flex-shrink-0 bg-muted/30">
         <img 
-          src={displayImage || '/placeholder.svg'} 
+          src={optimizedImage || '/placeholder.svg'} 
           alt={nameAr}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           loading="lazy"

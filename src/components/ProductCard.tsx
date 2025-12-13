@@ -110,10 +110,11 @@ const ProductCard = ({
       <div className="relative mb-2">
         <div className="relative overflow-hidden rounded-lg aspect-square bg-muted/30">
           <img 
-            src={displayImage || '/placeholder.svg'} 
+            src={optimizedImage || '/placeholder.svg'} 
             alt={nameAr}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
             decoding="async"
             width="400"
             height="400"
