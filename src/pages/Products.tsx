@@ -45,10 +45,11 @@ const Products = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc'>('default');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'out-of-stock'>('all');
   const ITEMS_PER_PAGE = 24;
 
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ['products', searchQuery, currentPage, sortBy],
+    queryKey: ['products', searchQuery, currentPage, sortBy, stockFilter],
     queryFn: async () => {
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
@@ -56,6 +57,13 @@ const Products = () => {
       let query = supabase
         .from('products')
         .select('*', { count: 'exact' });
+
+      // Apply stock filter
+      if (stockFilter === 'in-stock') {
+        query = query.eq('in_stock', true);
+      } else if (stockFilter === 'out-of-stock') {
+        query = query.eq('in_stock', false);
+      }
 
       // Apply sorting
       if (sortBy === 'price-asc') {
@@ -148,7 +156,7 @@ const Products = () => {
             <div className="flex-1" />
           )}
 
-          <div className="flex items-center gap-4 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
             {/* View Mode Toggle */}
             <div className="flex items-center gap-2 border border-border/40 rounded-lg p-1">
               <Button
@@ -167,6 +175,24 @@ const Products = () => {
               >
                 <List className="h-4 w-4" />
               </Button>
+            </div>
+
+            {/* Stock Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground whitespace-nowrap">الحالة:</label>
+              <Select value={stockFilter} onValueChange={(value: 'all' | 'in-stock' | 'out-of-stock') => {
+                setStockFilter(value);
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">الكل</SelectItem>
+                  <SelectItem value="in-stock">متوفر</SelectItem>
+                  <SelectItem value="out-of-stock">غير متوفر</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Sort Select */}
