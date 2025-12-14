@@ -46,10 +46,24 @@ const Products = () => {
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc'>('default');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'out-of-stock'>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const ITEMS_PER_PAGE = 24;
 
+  // Fetch categories for filter
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name_ar')
+        .order('name_ar');
+      if (error) throw error;
+      return data;
+    }
+  });
+
   const { data: productsData, isLoading } = useQuery({
-    queryKey: ['products', searchQuery, currentPage, sortBy, stockFilter],
+    queryKey: ['products', searchQuery, currentPage, sortBy, stockFilter, categoryFilter],
     queryFn: async () => {
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
@@ -57,6 +71,11 @@ const Products = () => {
       let query = supabase
         .from('products')
         .select('*', { count: 'exact' });
+
+      // Apply category filter
+      if (categoryFilter !== 'all') {
+        query = query.eq('category_id', categoryFilter);
+      }
 
       // Apply stock filter
       if (stockFilter === 'in-stock') {
@@ -175,6 +194,27 @@ const Products = () => {
               >
                 <List className="h-4 w-4" />
               </Button>
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-muted-foreground whitespace-nowrap">الفئة:</label>
+              <Select value={categoryFilter} onValueChange={(value: string) => {
+                setCategoryFilter(value);
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الفئات</SelectItem>
+                  {categories?.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name_ar}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Stock Filter */}
