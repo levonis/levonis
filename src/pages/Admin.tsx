@@ -1449,6 +1449,16 @@ const Admin = () => {
                 <span className="text-sm font-semibold">رسوم الدفع الجزئي</span>
                 <span className="text-xs text-muted-foreground">إعداد رسوم دفع ربع المبلغ</span>
               </Button>
+              
+              <Button
+                onClick={() => navigate('/admin/broken-images')}
+                variant="outline"
+                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
+              >
+                <ImageIcon className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
+                <span className="text-sm font-semibold">فحص الصور</span>
+                <span className="text-xs text-muted-foreground">اكتشاف الصور المفقودة</span>
+              </Button>
             </div>
           </CardContent>
         </Card>
