@@ -109,6 +109,8 @@ const Admin = () => {
   const [productCategoryFilter, setProductCategoryFilter] = useState<string>('all');
   const [productStockFilter, setProductStockFilter] = useState<string>('all');
   const [productFeaturedFilter, setProductFeaturedFilter] = useState<string>('all');
+  const [productAvailabilityTypeFilter, setProductAvailabilityTypeFilter] = useState<string>('all');
+  const [productOptionsStockFilter, setProductOptionsStockFilter] = useState<string>('all');
   const [categorySearch, setCategorySearch] = useState('');
   const [categoryMainSectionFilter, setCategoryMainSectionFilter] = useState<string>('all');
 
@@ -1146,7 +1148,21 @@ const Admin = () => {
       (productFeaturedFilter === 'featured' && product.featured) ||
       (productFeaturedFilter === 'not_featured' && !product.featured);
     
-    return matchesSearch && matchesCategory && matchesStock && matchesFeatured;
+    // Filter by availability type
+    const matchesAvailabilityType = productAvailabilityTypeFilter === 'all' ||
+      (productAvailabilityTypeFilter === 'in_stock_only' && product.has_in_stock && !product.has_pre_order) ||
+      (productAvailabilityTypeFilter === 'pre_order_only' && product.has_pre_order && !product.has_in_stock) ||
+      (productAvailabilityTypeFilter === 'both' && product.has_in_stock && product.has_pre_order);
+    
+    // Filter by options/colors stock status
+    const colors = Array.isArray(product.colors) ? product.colors : [];
+    const hasOutOfStockColor = colors.some((c: any) => c.in_stock === false);
+    const hasOutOfStockOption = false; // Will be checked after fetching options
+    
+    const matchesOptionsStock = productOptionsStockFilter === 'all' ||
+      (productOptionsStockFilter === 'has_out_of_stock_color' && hasOutOfStockColor);
+    
+    return matchesSearch && matchesCategory && matchesStock && matchesFeatured && matchesAvailabilityType && matchesOptionsStock;
   });
 
   // Filter categories based on search and filters
@@ -1601,9 +1617,35 @@ const Admin = () => {
                       <option value="not_featured">غير مميز</option>
                     </select>
                   </div>
+                  
+                  <div>
+                    <Label className="text-xs mb-2 block">نوع التوفر</Label>
+                    <select
+                      value={productAvailabilityTypeFilter}
+                      onChange={(e) => setProductAvailabilityTypeFilter(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">الكل</option>
+                      <option value="in_stock_only">مباشر فقط</option>
+                      <option value="pre_order_only">طلب مسبق فقط</option>
+                      <option value="both">مباشر وطلب مسبق</option>
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs mb-2 block">ألوان غير متوفرة</Label>
+                    <select
+                      value={productOptionsStockFilter}
+                      onChange={(e) => setProductOptionsStockFilter(e.target.value)}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="all">الكل</option>
+                      <option value="has_out_of_stock_color">يحتوي ألوان غير متوفرة</option>
+                    </select>
+                  </div>
                 </div>
                 
-                {(productSearch || productCategoryFilter !== 'all' || productStockFilter !== 'all' || productFeaturedFilter !== 'all') && (
+                {(productSearch || productCategoryFilter !== 'all' || productStockFilter !== 'all' || productFeaturedFilter !== 'all' || productAvailabilityTypeFilter !== 'all' || productOptionsStockFilter !== 'all') && (
                   <div className="mt-4 flex items-center gap-2">
                     <span className="text-sm text-muted-foreground">
                       {filteredProducts?.length || 0} منتج من أصل {products?.length || 0}
@@ -1616,6 +1658,8 @@ const Admin = () => {
                         setProductCategoryFilter('all');
                         setProductStockFilter('all');
                         setProductFeaturedFilter('all');
+                        setProductAvailabilityTypeFilter('all');
+                        setProductOptionsStockFilter('all');
                       }}
                     >
                       إعادة تعيين
