@@ -20,6 +20,7 @@ interface ProductListItemProps {
   images?: string[];
   currency?: string;
   slug: string;
+  inStock?: boolean;
 }
 
 const ProductListItem = ({ 
@@ -33,7 +34,8 @@ const ProductListItem = ({
   imageUrl,
   images,
   currency = 'دينار عراقي',
-  slug
+  slug,
+  inStock = true
 }: ProductListItemProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const hasSale = originalPrice && originalPrice > price;
@@ -108,6 +110,14 @@ const ProductListItem = ({
             className="absolute top-1 left-1 sm:top-2 sm:left-2 text-xs bg-primary/90 text-primary-foreground border-0 shadow-lg"
           >
             تخفيضات
+          </Badge>
+        )}
+        {!inStock && (
+          <Badge 
+            variant="destructive" 
+            className="absolute top-1 right-1 sm:top-2 sm:right-2 text-xs border-0 shadow-lg"
+          >
+            غير متوفر
           </Badge>
         )}
       </div>

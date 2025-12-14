@@ -55,8 +55,7 @@ const Products = () => {
 
       let query = supabase
         .from('products')
-        .select('*', { count: 'exact' })
-        .eq('in_stock', true);
+        .select('*', { count: 'exact' });
 
       // Apply sorting
       if (sortBy === 'price-asc') {
@@ -199,7 +198,7 @@ const Products = () => {
         ) : products && products.length > 0 ? (
           viewMode === 'grid' ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 sm:gap-4">
-              {products.map((product) => (
+            {products.map((product) => (
                 <ProductCard
                   key={product.id}
                   id={product.id}
@@ -213,12 +212,13 @@ const Products = () => {
                   images={product.images || undefined}
                   currency={product.currency || undefined}
                   slug={product.slug}
+                  inStock={product.in_stock ?? true}
                 />
               ))}
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              {products.map((product) => (
+            {products.map((product) => (
                 <ProductListItem
                   key={product.id}
                   id={product.id}
@@ -232,6 +232,7 @@ const Products = () => {
                   images={product.images || undefined}
                   currency={product.currency || undefined}
                   slug={product.slug}
+                  inStock={product.in_stock ?? true}
                 />
               ))}
             </div>
