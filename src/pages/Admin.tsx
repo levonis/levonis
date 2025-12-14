@@ -194,7 +194,7 @@ const Admin = () => {
   }, [productDialogOpen, editingProduct, defaultSettings]);
 
   const { data: products, isLoading: productsLoading } = useQuery({
-    queryKey: ['admin-products'],
+    queryKey: ['admin-products-with-options'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
@@ -340,7 +340,7 @@ const Admin = () => {
     },
     onSuccess: () => {
       // Invalidate all product-related queries across the app
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
       queryClient.invalidateQueries({
         predicate: (q) => {
           const k = q.queryKey as unknown[];
@@ -349,7 +349,8 @@ const Admin = () => {
             k[0] === 'featured-products' ||
             k[0] === 'category-products' ||
             k[0] === 'product' ||
-            k[0] === 'product-options'
+            k[0] === 'product-options' ||
+            k[0] === 'admin-products'
           );
         },
       });
@@ -372,7 +373,7 @@ const Admin = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
       queryClient.invalidateQueries({
         predicate: (q) => {
           const k = q.queryKey as unknown[];
@@ -381,7 +382,8 @@ const Admin = () => {
             k[0] === 'featured-products' ||
             k[0] === 'category-products' ||
             k[0] === 'product' ||
-            k[0] === 'product-options'
+            k[0] === 'product-options' ||
+            k[0] === 'admin-products'
           );
         },
       });
@@ -405,14 +407,15 @@ const Admin = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
       queryClient.invalidateQueries({
         predicate: (q) => {
           const k = q.queryKey as unknown[];
           return Array.isArray(k) && (
             k[0] === 'products' ||
             k[0] === 'featured-products' ||
-            k[0] === 'category-products'
+            k[0] === 'category-products' ||
+            k[0] === 'admin-products'
           );
         },
       });
@@ -773,7 +776,7 @@ const Admin = () => {
       if (updateError) throw updateError;
 
       // Invalidate queries to refresh the UI
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
       queryClient.invalidateQueries({
         predicate: (q) => {
           const k = q.queryKey as unknown[];
@@ -781,7 +784,8 @@ const Admin = () => {
             k[0] === 'products' ||
             k[0] === 'featured-products' ||
             k[0] === 'category-products' ||
-            k[0] === 'product'
+            k[0] === 'product' ||
+            k[0] === 'admin-products'
           );
         },
       });
@@ -845,7 +849,7 @@ const Admin = () => {
       }
 
       // 5) Refresh lists and notify
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
       queryClient.invalidateQueries({
         predicate: (q) => {
           const k = q.queryKey as unknown[];
@@ -854,7 +858,8 @@ const Admin = () => {
             k[0] === 'featured-products' ||
             k[0] === 'category-products' ||
             k[0] === 'product' ||
-            k[0] === 'product-options'
+            k[0] === 'product-options' ||
+            k[0] === 'admin-products'
           );
         },
       });
@@ -1053,7 +1058,7 @@ const Admin = () => {
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-products-with-options'] });
       queryClient.invalidateQueries({
         predicate: (q) => {
           const k = q.queryKey as unknown[];
@@ -1062,7 +1067,8 @@ const Admin = () => {
             k[0] === 'featured-products' ||
             k[0] === 'category-products' ||
             k[0] === 'product' ||
-            k[0] === 'product-options'
+            k[0] === 'product-options' ||
+            k[0] === 'admin-products'
           );
         },
       });
