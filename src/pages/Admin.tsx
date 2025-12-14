@@ -198,7 +198,7 @@ const Admin = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, categories(name_ar)')
+        .select('*, categories(name_ar), product_options(id, in_stock)')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -1156,11 +1156,14 @@ const Admin = () => {
     
     // Filter by options/colors stock status
     const colors = Array.isArray(product.colors) ? product.colors : [];
+    const options = Array.isArray(product.product_options) ? product.product_options : [];
     const hasOutOfStockColor = colors.some((c: any) => c.in_stock === false);
-    const hasOutOfStockOption = false; // Will be checked after fetching options
+    const hasOutOfStockOption = options.some((o: any) => o.in_stock === false);
     
     const matchesOptionsStock = productOptionsStockFilter === 'all' ||
-      (productOptionsStockFilter === 'has_out_of_stock_color' && hasOutOfStockColor);
+      (productOptionsStockFilter === 'has_out_of_stock_color' && hasOutOfStockColor) ||
+      (productOptionsStockFilter === 'has_out_of_stock_option' && hasOutOfStockOption) ||
+      (productOptionsStockFilter === 'has_any_out_of_stock' && (hasOutOfStockColor || hasOutOfStockOption));
     
     return matchesSearch && matchesCategory && matchesStock && matchesFeatured && matchesAvailabilityType && matchesOptionsStock;
   });
@@ -1633,14 +1636,16 @@ const Admin = () => {
                   </div>
                   
                   <div>
-                    <Label className="text-xs mb-2 block">ألوان غير متوفرة</Label>
+                    <Label className="text-xs mb-2 block">ألوان/خيارات غير متوفرة</Label>
                     <select
                       value={productOptionsStockFilter}
                       onChange={(e) => setProductOptionsStockFilter(e.target.value)}
                       className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <option value="all">الكل</option>
-                      <option value="has_out_of_stock_color">يحتوي ألوان غير متوفرة</option>
+                      <option value="has_out_of_stock_color">ألوان غير متوفرة</option>
+                      <option value="has_out_of_stock_option">خيارات غير متوفرة</option>
+                      <option value="has_any_out_of_stock">أي عنصر غير متوفر</option>
                     </select>
                   </div>
                 </div>
