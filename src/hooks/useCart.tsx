@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 
-interface CartItem {
+export interface CartItem {
   id: string;
   product_id: string | null;
   custom_request_id: string | null;
