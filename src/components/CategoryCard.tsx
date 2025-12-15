@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 
 interface CategoryCardProps {
@@ -68,4 +69,4 @@ const CategoryCard = ({
   );
 };
 
-export default CategoryCard;
+export default memo(CategoryCard);

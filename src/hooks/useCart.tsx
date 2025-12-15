@@ -68,7 +68,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      console.log('Fetching cart for user:', user.id);
       
       const { data, error } = await supabase
         .from('cart_items')
@@ -116,15 +115,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         throw error;
       }
       
-      console.log('Cart items fetched:', data);
-      
-      // Log custom request data for debugging
-      data?.forEach((item: any) => {
-        if (item.custom_request_id) {
-          console.log('Custom request item:', item.custom_request_id, 'data:', item.custom_product_requests);
-        }
-      });
-      
       setItems(data as CartItem[] || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
@@ -145,8 +135,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
 
     try {
-      console.log('Adding to cart:', { productId, optionId, color, quantity, shippingInfo });
-      
       // Get product data to find color image
       const { data: productData } = await supabase
         .from('products')
@@ -187,8 +175,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         normalizeShippingIndex((item as any).shipping_option_index) === targetShippingIndex
       );
       
-      console.log('Existing item found:', existingItem);
-      
       if (existingItem) {
         await updateQuantity(existingItem.id, existingItem.quantity + quantity);
         return;
@@ -223,8 +209,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         insertData.shipping_option_index = Math.trunc(safeShippingIndex);
         insertData.shipping_option_name_ar = safeShippingNameAr || null;
       }
-
-      console.log('Inserting cart item:', insertData);
 
       const { error } = await supabase
         .from('cart_items')
@@ -281,8 +265,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     if (quantity < 1) return;
 
     try {
-      console.log('Updating quantity:', { itemId, quantity });
-      
       const { error } = await supabase
         .from('cart_items')
         .update({ quantity })
@@ -308,8 +290,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
     try {
-      console.log('Removing from cart:', itemId);
-      
       const { error } = await supabase
         .from('cart_items')
         .delete()

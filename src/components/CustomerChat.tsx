@@ -117,7 +117,8 @@ export default function CustomerChat({ orderId }: CustomerChatProps) {
       return count || 0;
     },
     enabled: !!user,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    refetchInterval: 60000, // Increased to 60 seconds
+    staleTime: 30000,
   });
 
   // Subscribe to new messages
