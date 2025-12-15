@@ -216,9 +216,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         insertData.option_image_url = optionImageUrl;
       }
       
-      if (shippingInfo) {
-        insertData.shipping_option_index = shippingInfo.index;
-        insertData.shipping_option_name_ar = shippingInfo.name_ar;
+      const safeShippingIndex = normalizeShippingIndex(shippingInfo?.index);
+      const safeShippingNameAr = shippingInfo?.name_ar;
+
+      if (safeShippingIndex !== null && Number.isFinite(safeShippingIndex)) {
+        insertData.shipping_option_index = Math.trunc(safeShippingIndex);
+        insertData.shipping_option_name_ar = safeShippingNameAr || null;
       }
 
       console.log('Inserting cart item:', insertData);
@@ -234,9 +237,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       await fetchCart();
       toast.success('تمت الإضافة إلى السلة');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding to cart:', error);
-      toast.error('حدث خطأ في إضافة المنتج');
+      const msg = error?.message || error?.error_description || 'حدث خطأ في إضافة المنتج';
+      toast.error(msg);
     }
   };
 
