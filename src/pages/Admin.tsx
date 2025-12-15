@@ -2004,23 +2004,46 @@ const Admin = () => {
                       {/* Existing images from editing */}
                       {editingProduct?.images && editingProduct.images.length > 0 && (
                         <div className="mb-4">
-                          <p className="text-sm text-muted-foreground mb-2">الصور الحالية:</p>
+                          <p className="text-sm text-muted-foreground mb-2">الصور الحالية: <span className="text-primary">(اضغط على الصورة لتعيينها كصورة رئيسية)</span></p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                            {editingProduct.images.map((img: string, index: number) => (
-                              <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
-                                <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
-                                <button
-                                  type="button"
+                            {editingProduct.images.map((img: string, index: number) => {
+                              const isMainImage = editingProduct.image_url === img || (index === 0 && !editingProduct.image_url);
+                              return (
+                                <div 
+                                  key={index} 
+                                  className={`relative aspect-square rounded-lg overflow-hidden border-2 group cursor-pointer transition-all ${
+                                    isMainImage 
+                                      ? 'border-primary ring-2 ring-primary/30' 
+                                      : 'border-border hover:border-primary/50'
+                                  }`}
                                   onClick={() => {
-                                    const updatedImages = editingProduct.images.filter((_: string, i: number) => i !== index);
-                                    setEditingProduct({ ...editingProduct, images: updatedImages });
+                                    // Set this image as the main image
+                                    const updatedImages = [img, ...editingProduct.images.filter((_: string, i: number) => i !== index)];
+                                    setEditingProduct({ ...editingProduct, images: updatedImages, image_url: img });
+                                    toast.success('تم تعيين الصورة كصورة رئيسية');
                                   }}
-                                  className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                                 >
-                                  <X className="h-3 w-3" />
-                                </button>
-                              </div>
-                            ))}
+                                  <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
+                                  {isMainImage && (
+                                    <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium">
+                                      رئيسية
+                                    </div>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const updatedImages = editingProduct.images.filter((_: string, i: number) => i !== index);
+                                      const newImageUrl = isMainImage ? (updatedImages[0] || null) : editingProduct.image_url;
+                                      setEditingProduct({ ...editingProduct, images: updatedImages, image_url: newImageUrl });
+                                    }}
+                                    className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
                         </div>
                       )}
