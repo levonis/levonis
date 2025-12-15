@@ -1,3 +1,4 @@
+import { memo, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
@@ -6,7 +7,6 @@ import { formatPrice } from '@/lib/utils';
 import { resizeSupabaseImage } from '@/lib/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useState } from 'react';
 
 interface ProductCardProps {
   id: string;
@@ -47,7 +47,7 @@ const ProductCard = ({
   // Resize image to 400px for card display
   const optimizedImage = resizeSupabaseImage(displayImage, 400);
 
-  const handleAddToFavorites = async (e: React.MouseEvent) => {
+  const handleAddToFavorites = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -84,7 +84,7 @@ const ProductCard = ({
     } finally {
       setIsAdding(false);
     }
-  };
+  }, [id]);
 
   return (
     <Link 
@@ -184,4 +184,4 @@ const ProductCard = ({
   );
 };
 
-export default ProductCard;
+export default memo(ProductCard);

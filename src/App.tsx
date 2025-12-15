@@ -115,8 +115,11 @@ export default function App() {
   const [queryClient] = useState(() => new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 5 * 60 * 1000,
+        staleTime: 10 * 60 * 1000, // 10 minutes - reduced refetching
+        gcTime: 30 * 60 * 1000, // 30 minutes garbage collection
         retry: 1,
+        refetchOnWindowFocus: false, // Prevent refetch on tab switch
+        refetchOnReconnect: false,
       },
     },
   }));

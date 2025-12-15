@@ -1,19 +1,18 @@
-import { useState, useEffect } from 'react';
+import { memo, useState, useEffect } from 'react';
 
-const DecorativeFrame = () => {
+const DecorativeFrame = memo(() => {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     // Defer loading the decorative frame to not block FCP
-    // Use requestIdleCallback if available, otherwise fall back to setTimeout
     const hasIdleCallback = typeof window !== 'undefined' && 'requestIdleCallback' in window;
     
     let timerId: number;
     
     if (hasIdleCallback) {
-      timerId = window.requestIdleCallback(() => setLoaded(true));
+      timerId = window.requestIdleCallback(() => setLoaded(true), { timeout: 2000 });
     } else {
-      timerId = window.setTimeout(() => setLoaded(true), 100);
+      timerId = window.setTimeout(() => setLoaded(true), 200);
     }
     
     return () => {
@@ -29,16 +28,21 @@ const DecorativeFrame = () => {
 
   return (
     <div 
-      className="fixed inset-0 pointer-events-none z-0 opacity-25"
+      className="fixed inset-0 pointer-events-none z-0 opacity-20"
       style={{
         backgroundImage: 'url(/images/decorative-frame-levonis.png)',
         backgroundSize: '100% 100%',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         mixBlendMode: 'multiply',
+        willChange: 'auto',
+        contain: 'strict',
       }}
+      aria-hidden="true"
     />
   );
-};
+});
+
+DecorativeFrame.displayName = 'DecorativeFrame';
 
 export default DecorativeFrame;

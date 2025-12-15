@@ -1,11 +1,14 @@
+import { useMemo, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import SearchBar from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
-import CustomerChat from '@/components/CustomerChat';
 import { Loader2 } from 'lucide-react';
+
+// Lazy load non-critical component
+const CustomerChat = lazy(() => import('@/components/CustomerChat'));
 
 const Home = () => {
   const { data: mainSections, isLoading: mainSectionsLoading } = useQuery({
@@ -50,15 +53,18 @@ const Home = () => {
     }
   });
 
-  // تنظيم الأقسام حسب الأقسام الرئيسية
-  const categoriesByMainSection = categories?.reduce((acc, category) => {
-    const sectionId = category.main_section_id || 'no-section';
-    if (!acc[sectionId]) {
-      acc[sectionId] = [];
-    }
-    acc[sectionId].push(category);
-    return acc;
-  }, {} as Record<string, typeof categories>);
+  // تنظيم الأقسام حسب الأقسام الرئيسية - memoized
+  const categoriesByMainSection = useMemo(() => {
+    if (!categories) return {};
+    return categories.reduce((acc, category) => {
+      const sectionId = category.main_section_id || 'no-section';
+      if (!acc[sectionId]) {
+        acc[sectionId] = [];
+      }
+      acc[sectionId].push(category);
+      return acc;
+    }, {} as Record<string, typeof categories>);
+  }, [categories]);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
@@ -214,7 +220,9 @@ const Home = () => {
 
         <Footer />
       </main>
-      <CustomerChat />
+      <Suspense fallback={null}>
+        <CustomerChat />
+      </Suspense>
     </div>
   );
 };

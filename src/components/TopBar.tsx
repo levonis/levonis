@@ -39,7 +39,8 @@ const TopBar = () => {
       return count || 0;
     },
     enabled: !!user?.id,
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Increased to 60 seconds
+    staleTime: 30000,
   });
 
   const { data: pointsSettings } = useQuery({
@@ -54,7 +55,8 @@ const TopBar = () => {
       if (error) throw error;
       return data?.setting_value as any;
     },
-    refetchInterval: 60000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   const pointsStatus = pointsSettings?.points_status || 'active';
@@ -85,7 +87,8 @@ const TopBar = () => {
       return count || 0;
     },
     enabled: !!user?.id && isAdmin,
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Increased to 60 seconds
+    staleTime: 30000,
   });
 
   // جلب رصيد المحفظة
@@ -103,7 +106,8 @@ const TopBar = () => {
       return data;
     },
     enabled: !!user?.id,
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Increased to 60 seconds
+    staleTime: 30000,
   });
 
   useEffect(() => {
