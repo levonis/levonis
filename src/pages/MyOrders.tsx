@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, Ship, Plane, ShoppingBag } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -85,14 +85,38 @@ const MyOrders = () => {
           </Card>
         ) : (
           <div className="space-y-6">
-            {orders.map((order: any) => (
+            {orders.map((order: any) => {
+              // Check if order is pre-order based on shipping_option_name_ar in order items
+              const isPreOrder = order.order_items?.some((item: any) => item.shipping_option_name_ar && item.shipping_option_name_ar.trim() !== '');
+              
+              // Get shipping type from first item with shipping option
+              const shippingItem = order.order_items?.find((item: any) => item.shipping_option_name_ar);
+              const shippingOptionName = shippingItem?.shipping_option_name_ar || '';
+              const isFastShipping = shippingOptionName.includes('سريع') || shippingOptionName.includes('جوي');
+              
+              return (
               <Card key={order.id} className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
                 <CardHeader className="border-b border-border/50">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="space-y-2">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
                         <CardTitle className="text-xl">طلب رقم: {order.order_number}</CardTitle>
                         {getStatusBadge(order.status)}
+                        {/* Order Type Badge */}
+                        <Badge variant={isPreOrder ? "outline" : "secondary"} className="flex items-center gap-1">
+                          <ShoppingBag className="h-3 w-3" />
+                          {isPreOrder ? 'طلب مسبق' : 'طلب مباشر'}
+                        </Badge>
+                        {/* Shipping Type Badge - only for pre-orders */}
+                        {isPreOrder && shippingOptionName && (
+                          <Badge 
+                            variant="outline" 
+                            className={`flex items-center gap-1 ${isFastShipping ? 'border-amber-500 text-amber-600' : 'border-blue-500 text-blue-600'}`}
+                          >
+                            {isFastShipping ? <Plane className="h-3 w-3" /> : <Ship className="h-3 w-3" />}
+                            {shippingOptionName}
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Calendar className="h-4 w-4" />
@@ -263,7 +287,8 @@ const MyOrders = () => {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            );
+            })}
           </div>
         )}
       </main>
