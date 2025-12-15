@@ -63,24 +63,6 @@ const Cart = () => {
     enabled: !!user?.id,
   });
 
-  const { data: productOptions } = useQuery({
-    queryKey: ['cart-product-options'],
-    queryFn: async () => {
-      const optionIds = items
-        .map((item: any) => item.product_option_id)
-        .filter((id: string | null) => id !== null);
-      
-      if (optionIds.length === 0) return [];
-      
-      const { data } = await supabase
-        .from('product_options')
-        .select('*')
-        .in('id', optionIds);
-      
-      return data || [];
-    },
-    enabled: items.length > 0
-  });
 
   // جلب إعدادات الدفع الجزئي
   interface FeeTier {
@@ -448,9 +430,8 @@ const Cart = () => {
         })
         .map((item) => {
           const isCustomRequest = !!item.custom_request_id;
-          const itemOption = (item as any).product_option_id 
-            ? productOptions?.find((opt: any) => opt.id === (item as any).product_option_id)
-            : null;
+          // Use product_options data directly from the cart item
+          const itemOption = (item as any).product_options;
           
           const itemColor = (item as any).selected_color;
           const colorData = itemColor && item.products?.colors
@@ -559,9 +540,8 @@ const Cart = () => {
           ? Number(customRequest?.suggested_price || 0)
           : Number(item.products?.price || 0);
         
-        const itemOption = (item as any).product_option_id 
-          ? productOptions?.find((opt: any) => opt.id === (item as any).product_option_id)
-          : null;
+        // Use product_options data directly from the cart item
+        const itemOption = (item as any).product_options;
         
         const itemColor = (item as any).selected_color;
         const colorData = itemColor && item.products?.colors
@@ -698,9 +678,8 @@ const Cart = () => {
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
               {items.map((item) => {
-                const itemOption = (item as any).product_option_id 
-                  ? productOptions?.find((opt: any) => opt.id === (item as any).product_option_id)
-                  : null;
+                // Use the product_options data directly from the cart item
+                const itemOption = (item as any).product_options;
                 
                 const itemColor = (item as any).selected_color;
                 const colorData = itemColor && item.products?.colors
@@ -762,8 +741,8 @@ const Cart = () => {
                             </div>
                           )}
                           
-                          {/* Display option and color info */}
-                          {(itemOption || colorData) && (
+                          {/* Display option, color and shipping info */}
+                          {(itemOption || colorData || (item as any).shipping_option_name_ar) && (
                             <div className="text-sm text-muted-foreground mb-2 space-y-1">
                               {itemOption && (
                                 <div className="flex items-center justify-center sm:justify-start gap-2">
