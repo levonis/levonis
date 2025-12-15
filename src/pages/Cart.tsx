@@ -2,9 +2,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useCart } from '@/hooks/useCart';
+import { useCart, CartItem } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package } from 'lucide-react';
+import GroupedCartItem from '@/components/GroupedCartItem';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
@@ -693,191 +694,221 @@ const Cart = () => {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {items.map((item) => {
-                // Use the product_options data directly from the cart item
-                const itemOption = (item as any).product_options;
-                
-                const itemColor = (item as any).selected_color;
-                const colorData = itemColor && item.products?.colors
-                  ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
-                  : null;
-                
-                // Calculate item price based on color and option
-                let itemPrice = item.products 
-                  ? Number(item.products.price)
-                  : Number(item.custom_product_requests?.suggested_price || 0);
-                
-                // Use color price if available
-                if (colorData?.price != null) {
-                  itemPrice = Number(colorData.price);
-                }
-                
-                // Add option price adjustment
-                if (itemOption?.price_adjustment) {
-                  itemPrice += Number(itemOption.price_adjustment);
-                }
+              {(() => {
+                // Group items by product + option + color combination
+                const groupedItems = items.reduce((acc, item) => {
+                  // Custom requests are not grouped
+                  if (item.custom_request_id) {
+                    acc.push({ type: 'single', items: [item] });
+                    return acc;
+                  }
+                  
+                  // Create a key for grouping (product + option + color)
+                  const key = `${item.product_id || ''}_${item.product_option_id || ''}_${(item as any).selected_color || ''}`;
+                  
+                  // Find existing group
+                  const existingGroup = acc.find(
+                    (g) => g.type === 'grouped' && g.key === key
+                  );
+                  
+                  if (existingGroup) {
+                    existingGroup.items.push(item);
+                  } else {
+                    acc.push({ type: 'grouped', key, items: [item] });
+                  }
+                  
+                  return acc;
+                }, [] as { type: string; key?: string; items: CartItem[] }[]);
 
-                // Add pre-order shipping adjustment (if chosen)
-                const shippingIndex = (item as any).shipping_option_index;
-                const shippingOptions = item.products?.pre_order_shipping_options;
-                if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
-                  const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
-                  itemPrice += shippingAdjustment;
-                }
-                
-                return (
-                  <div 
-                    key={item.id}
-                    className="glass-effect rounded-2xl p-4 border border-border/50 group hover:border-primary/30 transition-all"
-                  >
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      {/* Product Image */}
-                      {((item.products?.image_url) || (item.custom_product_requests?.image_url) || (item as any).option_image_url || (item as any).color_image_url) && (
-                        <Link 
-                          to={item.products ? `/product/${item.products.slug}` : '#'}
-                          className="flex-shrink-0 mx-auto sm:mx-0"
-                        >
-                          <img 
-                            src={(item as any).option_image_url || (item as any).color_image_url || (item.products?.images && item.products.images[0]) || item.products?.image_url || item.custom_product_requests?.image_url || ''}
-                            alt={item.products?.name_ar || item.custom_product_requests?.product_name || ''}
-                            className="w-32 h-32 sm:w-24 sm:h-24 object-cover rounded-xl border border-border/40 hover:border-primary/50 transition-colors"
-                          />
-                        </Link>
-                      )}
-                      
-                      {/* Product Info and Controls Container */}
-                      <div className="flex-1 flex flex-col gap-3">
-                        {/* Product Info */}
-                        <div className="text-center sm:text-right">
-                          {item.products ? (
+                return groupedItems.map((group, groupIndex) => {
+                  // If it's a single item (custom request or single shipping option)
+                  if (group.type === 'single' || group.items.length === 1) {
+                    const item = group.items[0];
+                    const itemOption = (item as any).product_options;
+                    const itemColor = (item as any).selected_color;
+                    const colorData = itemColor && item.products?.colors
+                      ? (item.products.colors as any[]).find((c: any) => c.name === itemColor || c.name_ar === itemColor || c.hex_code === itemColor)
+                      : null;
+                    
+                    let itemPrice = item.products 
+                      ? Number(item.products.price)
+                      : Number(item.custom_product_requests?.suggested_price || 0);
+                    
+                    if (colorData?.price != null) {
+                      itemPrice = Number(colorData.price);
+                    }
+                    
+                    if (itemOption?.price_adjustment) {
+                      itemPrice += Number(itemOption.price_adjustment);
+                    }
+
+                    const shippingIndex = (item as any).shipping_option_index;
+                    const shippingOptions = item.products?.pre_order_shipping_options;
+                    if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
+                      const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
+                      itemPrice += shippingAdjustment;
+                    }
+                    
+                    return (
+                      <div 
+                        key={item.id}
+                        className="glass-effect rounded-2xl p-4 border border-border/50 group hover:border-primary/30 transition-all"
+                      >
+                        <div className="flex flex-col sm:flex-row gap-4">
+                          {((item.products?.image_url) || (item.custom_product_requests?.image_url) || (item as any).option_image_url || (item as any).color_image_url) && (
                             <Link 
-                              to={`/product/${item.products.slug}`}
-                              className="font-bold text-base text-foreground mb-1 inline-flex items-center gap-2 hover:text-primary transition-colors"
+                              to={item.products ? `/product/${item.products.slug}` : '#'}
+                              className="flex-shrink-0 mx-auto sm:mx-0"
                             >
-                              {item.products.name_ar}
+                              <img 
+                                src={(item as any).option_image_url || (item as any).color_image_url || (item.products?.images && item.products.images[0]) || item.products?.image_url || item.custom_product_requests?.image_url || ''}
+                                alt={item.products?.name_ar || item.custom_product_requests?.product_name || ''}
+                                className="w-32 h-32 sm:w-24 sm:h-24 object-cover rounded-xl border border-border/40 hover:border-primary/50 transition-colors"
+                              />
                             </Link>
-                          ) : (
-                            <div className="font-bold text-base text-foreground mb-1 inline-flex items-center gap-2">
-                              {item.custom_product_requests?.product_name}
-                              <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
-                                طلب خاص ⭐
-                              </span>
-                            </div>
                           )}
                           
-                          {/* Display option, color and shipping info */}
-                          {(itemOption || colorData || (item as any).shipping_option_name_ar) && (
-                            <div className="text-sm text-muted-foreground mb-2 space-y-1">
-                              {itemOption && (
-                                <div className="flex items-center justify-center sm:justify-start gap-2">
-                                  <span className="font-medium">الخيار:</span>
-                                  <span>{itemOption.name_ar}</span>
+                          <div className="flex-1 flex flex-col gap-3">
+                            <div className="text-center sm:text-right">
+                              {item.products ? (
+                                <Link 
+                                  to={`/product/${item.products.slug}`}
+                                  className="font-bold text-base text-foreground mb-1 inline-flex items-center gap-2 hover:text-primary transition-colors"
+                                >
+                                  {item.products.name_ar}
+                                </Link>
+                              ) : (
+                                <div className="font-bold text-base text-foreground mb-1 inline-flex items-center gap-2">
+                                  {item.custom_product_requests?.product_name}
+                                  <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full">
+                                    طلب خاص ⭐
+                                  </span>
                                 </div>
                               )}
-                               {colorData && (
-                                <div className="flex items-center justify-center sm:justify-start gap-2">
-                                  <span className="font-medium">اللون:</span>
-                                  <div className="flex items-center gap-1.5">
-                                    <div 
-                                      className="w-4 h-4 rounded-full border border-border"
-                                      style={{ backgroundColor: colorData.hex_code }}
-                                    />
-                                    <span>{colorData.name_ar}</span>
-                                  </div>
-                                </div>
-                              )}
-                              {(item as any).shipping_option_name_ar && (
-                                <div className="flex items-center justify-center sm:justify-start gap-2">
-                                  <span className="font-medium">الشحن:</span>
-                                  <span>{(item as any).shipping_option_name_ar}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
-                          <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
-                            <span className="text-lg font-black text-primary">
-                              {formatPrice(itemPrice)} دينار عراقي
-                            </span>
-                            {item.products?.original_price && item.products.original_price > itemPrice && (
-                              <span className="text-sm line-through text-muted-foreground/60">
-                                {formatPrice(Number(item.products.original_price))} دينار عراقي
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Bottom Section: Quantity Controls and Total */}
-                        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border/20">
-                          {/* Quantity Controls */}
-                          <div className="flex items-center gap-3 w-full sm:w-auto">
-                            <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 border border-border/40">
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  updateQuantity(item.id, item.quantity - 1);
-                                }}
-                                disabled={item.quantity <= 1}
-                                aria-label="تقليل الكمية"
-                              >
-                                <Minus className="h-4 w-4" />
-                              </Button>
                               
-                              <span className="w-10 sm:w-8 text-center font-bold" aria-live="polite">
-                                {item.quantity}
-                              </span>
+                              {(itemOption || colorData || (item as any).shipping_option_name_ar) && (
+                                <div className="text-sm text-muted-foreground mb-2 space-y-1">
+                                  {itemOption && (
+                                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                                      <span className="font-medium">الخيار:</span>
+                                      <span>{itemOption.name_ar}</span>
+                                    </div>
+                                  )}
+                                   {colorData && (
+                                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                                      <span className="font-medium">اللون:</span>
+                                      <div className="flex items-center gap-1.5">
+                                        <div 
+                                          className="w-4 h-4 rounded-full border border-border"
+                                          style={{ backgroundColor: colorData.hex_code }}
+                                        />
+                                        <span>{colorData.name_ar}</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  {(item as any).shipping_option_name_ar && (
+                                    <div className="flex items-center justify-center sm:justify-start gap-2">
+                                      <span className="font-medium">الشحن:</span>
+                                      <span>{(item as any).shipping_option_name_ar}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                               
-                              <Button
-                                type="button"
-                                size="icon"
-                                variant="ghost"
-                                className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  updateQuantity(item.id, item.quantity + 1);
-                                }}
-                                aria-label="زيادة الكمية"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center justify-center sm:justify-start gap-2 mb-3">
+                                <span className="text-lg font-black text-primary">
+                                  {formatPrice(itemPrice)} دينار عراقي
+                                </span>
+                                {item.products?.original_price && item.products.original_price > itemPrice && (
+                                  <span className="text-sm line-through text-muted-foreground/60">
+                                    {formatPrice(Number(item.products.original_price))} دينار عراقي
+                                  </span>
+                                )}
+                              </div>
                             </div>
 
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-10 px-4 sm:h-8 touch-manipulation"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                removeFromCart(item.id);
-                              }}
-                              aria-label="حذف المنتج"
-                            >
-                              <Trash2 className="h-4 w-4 ml-2" />
-                              <span className="hidden sm:inline">حذف</span>
-                            </Button>
-                          </div>
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-border/20">
+                              <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 border border-border/40">
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      updateQuantity(item.id, item.quantity - 1);
+                                    }}
+                                    disabled={item.quantity <= 1}
+                                    aria-label="تقليل الكمية"
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                  
+                                  <span className="w-10 sm:w-8 text-center font-bold" aria-live="polite">
+                                    {item.quantity}
+                                  </span>
+                                  
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-10 w-10 sm:h-8 sm:w-8 touch-manipulation"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      updateQuantity(item.id, item.quantity + 1);
+                                    }}
+                                    aria-label="زيادة الكمية"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
 
-                          {/* Item Total */}
-                          <div className="text-center sm:text-left">
-                            <div className="text-sm text-muted-foreground mb-1">المجموع</div>
-                            <div className="text-lg font-black text-primary">
-                              {formatPrice(itemPrice * item.quantity)} دينار عراقي
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10 h-10 px-4 sm:h-8 touch-manipulation"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    removeFromCart(item.id);
+                                  }}
+                                  aria-label="حذف المنتج"
+                                >
+                                  <Trash2 className="h-4 w-4 ml-2" />
+                                  <span className="hidden sm:inline">حذف</span>
+                                </Button>
+                              </div>
+
+                              <div className="text-center sm:text-left">
+                                <div className="text-sm text-muted-foreground mb-1">المجموع</div>
+                                <div className="text-lg font-black text-primary">
+                                  {formatPrice(itemPrice * item.quantity)} دينار عراقي
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
+                    );
+                  }
+                  
+                  // Grouped items (same product with different shipping options)
+                  return (
+                    <GroupedCartItem
+                      key={group.key}
+                      productId={group.items[0].product_id || ''}
+                      items={group.items}
+                      updateQuantity={updateQuantity}
+                      removeFromCart={removeFromCart}
+                      formatPrice={formatPrice}
+                    />
+                  );
+                });
+              })()}
 
               {/* Clear Cart Button */}
               <Button
