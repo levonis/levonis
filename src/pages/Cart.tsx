@@ -454,6 +454,14 @@ const Cart = () => {
             itemPrice += Number(itemOption.price_adjustment);
           }
 
+          // Add pre-order shipping adjustment (if chosen)
+          const shippingIndex = (item as any).shipping_option_index;
+          const shippingOptions = item.products?.pre_order_shipping_options;
+          if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
+            const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
+            itemPrice += shippingAdjustment;
+          }
+
           // Get product name - ensure it's never empty
           const productName = isCustomRequest 
             ? (customRequest?.product_name || 'طلب مخصص')
@@ -554,6 +562,14 @@ const Cart = () => {
         
         if (itemOption?.price_adjustment) {
           itemPrice += Number(itemOption.price_adjustment);
+        }
+
+        // Add pre-order shipping adjustment (if chosen)
+        const shippingIndex = (item as any).shipping_option_index;
+        const shippingOptions = item.products?.pre_order_shipping_options;
+        if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
+          const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
+          itemPrice += shippingAdjustment;
         }
         
         message += `${index + 1}. ${itemName}${isCustomRequest ? ' ⭐ (طلب خاص)' : ''}\n`;
@@ -699,6 +715,14 @@ const Cart = () => {
                 // Add option price adjustment
                 if (itemOption?.price_adjustment) {
                   itemPrice += Number(itemOption.price_adjustment);
+                }
+
+                // Add pre-order shipping adjustment (if chosen)
+                const shippingIndex = (item as any).shipping_option_index;
+                const shippingOptions = item.products?.pre_order_shipping_options;
+                if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
+                  const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
+                  itemPrice += shippingAdjustment;
                 }
                 
                 return (
