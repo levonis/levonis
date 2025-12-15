@@ -176,11 +176,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       
       // Check if item with same product, option, color and shipping already exists
       const normalize = (v: any) => (v ?? '').toString().trim().toLowerCase();
+      const normalizeShippingIndex = (v: any): number | null => (v === null || v === undefined) ? null : Number(v);
+      
+      const targetShippingIndex = normalizeShippingIndex(shippingInfo?.index);
+      
       const existingItem = items.find(item => 
         item.product_id === productId && 
         normalize((item as any).product_option_id) === normalize(optionId) &&
         normalize((item as any).selected_color) === normalize(color) &&
-        (item as any).shipping_option_index === shippingInfo?.index
+        normalizeShippingIndex((item as any).shipping_option_index) === targetShippingIndex
       );
       
       console.log('Existing item found:', existingItem);
