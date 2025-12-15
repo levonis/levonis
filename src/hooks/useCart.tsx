@@ -24,6 +24,7 @@ interface CartItem {
     images?: string[];
     slug: string;
     colors?: any[];
+    pre_order_shipping_options?: any;
   };
   product_options?: {
     id: string;
@@ -91,7 +92,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             image_url,
             images,
             slug,
-            colors
+            colors,
+            pre_order_shipping_options
           ),
           product_options (
             id,
@@ -343,23 +345,31 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const total = items.reduce((sum, item) => {
     if (item.products) {
       let itemPrice = Number(item.products.price);
-      
+
       // Add color price if selected and different from base price
       const selColor = (item as any).selected_color;
       const selectedColorData = selColor && item.products?.colors
         ? (item.products.colors as any[]).find((c: any) => c.name === selColor || c.name_ar === selColor || c.hex_code === selColor)
         : null;
-      
+
       if (selectedColorData?.price != null) {
         itemPrice = Number(selectedColorData.price);
       }
-      
+
       // Add option price adjustment
       const itemOption = (item as any).product_options;
       if (itemOption?.price_adjustment) {
         itemPrice += Number(itemOption.price_adjustment);
       }
-      
+
+      // Add pre-order shipping adjustment (if chosen)
+      const shippingIndex = (item as any).shipping_option_index;
+      const shippingOptions = item.products?.pre_order_shipping_options;
+      if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
+        const shippingAdjustment = Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
+        itemPrice += shippingAdjustment;
+      }
+
       return sum + (itemPrice * item.quantity);
     } else if (item.custom_product_requests) {
       return sum + (Number(item.custom_product_requests.suggested_price) * item.quantity);
