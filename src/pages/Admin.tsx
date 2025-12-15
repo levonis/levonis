@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -111,6 +111,7 @@ const Admin = () => {
   const [productFeaturedFilter, setProductFeaturedFilter] = useState<string>('all');
   const [productAvailabilityTypeFilter, setProductAvailabilityTypeFilter] = useState<string>('all');
   const [productOptionsStockFilter, setProductOptionsStockFilter] = useState<string>('all');
+  const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
   const [categorySearch, setCategorySearch] = useState('');
   const [categoryMainSectionFilter, setCategoryMainSectionFilter] = useState<string>('all');
 
@@ -2004,26 +2005,54 @@ const Admin = () => {
                       {/* Existing images from editing */}
                       {editingProduct?.images && editingProduct.images.length > 0 && (
                         <div className="mb-4">
-                          <p className="text-sm text-muted-foreground mb-2">الصور الحالية: <span className="text-primary">(اضغط على الصورة لتعيينها كصورة رئيسية)</span></p>
+                          <p className="text-sm text-muted-foreground mb-2">
+                            الصور الحالية: <span className="text-primary">(اسحب لإعادة الترتيب - الصورة الأولى هي الرئيسية)</span>
+                          </p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                             {editingProduct.images.map((img: string, index: number) => {
-                              const isMainImage = editingProduct.image_url === img || (index === 0 && !editingProduct.image_url);
+                              const isMainImage = index === 0;
                               return (
                                 <div 
-                                  key={index} 
-                                  className={`relative aspect-square rounded-lg overflow-hidden border-2 group cursor-pointer transition-all ${
+                                  key={img} 
+                                  draggable
+                                  onDragStart={(e) => {
+                                    setDraggedImageIndex(index);
+                                    e.dataTransfer.effectAllowed = 'move';
+                                  }}
+                                  onDragEnd={() => setDraggedImageIndex(null)}
+                                  onDragOver={(e) => {
+                                    e.preventDefault();
+                                    e.dataTransfer.dropEffect = 'move';
+                                  }}
+                                  onDrop={(e) => {
+                                    e.preventDefault();
+                                    if (draggedImageIndex === null || draggedImageIndex === index) return;
+                                    
+                                    const newImages = [...editingProduct.images];
+                                    const [draggedItem] = newImages.splice(draggedImageIndex, 1);
+                                    newImages.splice(index, 0, draggedItem);
+                                    
+                                    setEditingProduct({ 
+                                      ...editingProduct, 
+                                      images: newImages, 
+                                      image_url: newImages[0] 
+                                    });
+                                    setDraggedImageIndex(null);
+                                    toast.success('تم إعادة ترتيب الصور');
+                                  }}
+                                  className={`relative aspect-square rounded-lg overflow-hidden border-2 group cursor-grab active:cursor-grabbing transition-all ${
                                     isMainImage 
                                       ? 'border-primary ring-2 ring-primary/30' 
                                       : 'border-border hover:border-primary/50'
-                                  }`}
-                                  onClick={() => {
-                                    // Set this image as the main image
-                                    const updatedImages = [img, ...editingProduct.images.filter((_: string, i: number) => i !== index)];
-                                    setEditingProduct({ ...editingProduct, images: updatedImages, image_url: img });
-                                    toast.success('تم تعيين الصورة كصورة رئيسية');
-                                  }}
+                                  } ${draggedImageIndex === index ? 'opacity-50 scale-95' : ''}`}
                                 >
-                                  <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover" />
+                                  <img src={img} alt={`صورة ${index + 1}`} className="w-full h-full object-cover pointer-events-none" />
+                                  
+                                  {/* Drag handle indicator */}
+                                  <div className="absolute bottom-1 left-1 bg-background/80 text-muted-foreground p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <GripVertical className="h-3 w-3" />
+                                  </div>
+                                  
                                   {isMainImage && (
                                     <div className="absolute top-1 left-1 bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-xs font-medium">
                                       رئيسية
@@ -2034,8 +2063,11 @@ const Admin = () => {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       const updatedImages = editingProduct.images.filter((_: string, i: number) => i !== index);
-                                      const newImageUrl = isMainImage ? (updatedImages[0] || null) : editingProduct.image_url;
-                                      setEditingProduct({ ...editingProduct, images: updatedImages, image_url: newImageUrl });
+                                      setEditingProduct({ 
+                                        ...editingProduct, 
+                                        images: updatedImages, 
+                                        image_url: updatedImages[0] || null 
+                                      });
                                     }}
                                     className="absolute top-1 right-1 bg-destructive text-destructive-foreground p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:scale-110"
                                   >
