@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -69,7 +69,8 @@ const AdminOrders = () => {
         .from('orders')
         .select(`
           *,
-          profiles(full_name, email, username)
+          profiles(full_name, email, username),
+          order_items!order_items_order_id_fkey(shipping_option_name_ar, custom_request_id)
         `)
         .order('created_at', { ascending: false });
 
@@ -80,6 +81,25 @@ const AdminOrders = () => {
     refetchOnMount: true,
     refetchOnWindowFocus: true,
   });
+
+  // Helper function to check if order is pre-order
+  const checkIfPreOrder = (orderItems: any[]): boolean => {
+    if (!orderItems || orderItems.length === 0) return true;
+    for (const item of orderItems) {
+      if (item.custom_request_id) return true;
+      if (item.shipping_option_name_ar && item.shipping_option_name_ar.includes('متاح في المخزون')) continue;
+      return true;
+    }
+    return false;
+  };
+
+  // Helper function to get shipping info
+  const getShippingInfo = (orderItems: any[]): { name: string; isFast: boolean } => {
+    const shippingItem = orderItems?.find((item: any) => item.shipping_option_name_ar);
+    const name = shippingItem?.shipping_option_name_ar || '';
+    const isFast = name.includes('سريع') || name.includes('جوي');
+    return { name, isFast };
+  };
 
   const updateOrderMutation = useMutation({
     mutationFn: async ({ id, values }: { id: string; values: any }) => {
@@ -653,7 +673,33 @@ const AdminOrders = () => {
                       <TableCell className="font-bold text-primary">
                         {formatPrice(Number(order.total_amount))} {order.currency}
                       </TableCell>
-                      <TableCell>{getStatusBadge(order.status)}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col gap-1">
+                          {getStatusBadge(order.status)}
+                          {/* Order Type Badge */}
+                          {(() => {
+                            const isPreOrder = checkIfPreOrder(order.order_items);
+                            const shippingInfo = getShippingInfo(order.order_items);
+                            return (
+                              <div className="flex flex-wrap gap-1">
+                                <Badge variant={isPreOrder ? "outline" : "secondary"} className="text-xs flex items-center gap-0.5">
+                                  <ShoppingBag className="h-2.5 w-2.5" />
+                                  {isPreOrder ? 'مسبق' : 'مباشر'}
+                                </Badge>
+                                {isPreOrder && shippingInfo.name && (
+                                  <Badge 
+                                    variant="outline" 
+                                    className={`text-xs flex items-center gap-0.5 ${shippingInfo.isFast ? 'border-amber-500 text-amber-600' : 'border-blue-500 text-blue-600'}`}
+                                  >
+                                    {shippingInfo.isFast ? <Plane className="h-2.5 w-2.5" /> : <Ship className="h-2.5 w-2.5" />}
+                                    {shippingInfo.isFast ? 'جوي' : 'بحري'}
+                                  </Badge>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Badge variant={order.payment_status === 'paid' ? 'secondary' : order.payment_status === 'partial' ? 'outline' : 'destructive'}>
                           {order.payment_status === 'paid' ? 'مدفوع' : 
