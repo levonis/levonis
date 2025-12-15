@@ -6,7 +6,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Star, Image, File, Download } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Star, Image, File, Download, Ship, Plane } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -277,6 +277,14 @@ const OrderDetail = () => {
   }
 
   const statusInfo = getStatusBadge(order.status);
+  
+  // Check if order is pre-order
+  const isPreOrder = checkIfPreOrder(order.order_items);
+  
+  // Get shipping type from first item with shipping option
+  const shippingItem = order.order_items?.find((item: any) => item.shipping_option_name_ar);
+  const shippingOptionName = shippingItem?.shipping_option_name_ar || '';
+  const isFastShipping = shippingOptionName.includes('سريع') || shippingOptionName.includes('جوي');
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
@@ -294,7 +302,24 @@ const OrderDetail = () => {
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-4xl font-black text-primary mb-2">تفاصيل الطلب</h1>
-              <p className="text-muted-foreground">رقم الطلب: {order.order_number}</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-muted-foreground">رقم الطلب: {order.order_number}</p>
+                {/* Order Type Badge */}
+                <Badge variant={isPreOrder ? "outline" : "secondary"} className="flex items-center gap-1">
+                  <ShoppingBag className="h-3 w-3" />
+                  {isPreOrder ? 'طلب مسبق' : 'طلب مباشر'}
+                </Badge>
+                {/* Shipping Type Badge - only for pre-orders */}
+                {isPreOrder && shippingOptionName && (
+                  <Badge 
+                    variant="outline" 
+                    className={`flex items-center gap-1 ${isFastShipping ? 'border-amber-500 text-amber-600' : 'border-blue-500 text-blue-600'}`}
+                  >
+                    {isFastShipping ? <Plane className="h-3 w-3" /> : <Ship className="h-3 w-3" />}
+                    {shippingOptionName}
+                  </Badge>
+                )}
+              </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
               {(order.status === 'arrived_warehouse' || 
