@@ -28,15 +28,15 @@ const DecorativeFrame = memo(() => {
 
   return (
     <div 
-      className="fixed inset-0 pointer-events-none z-0 opacity-20"
+      className="fixed inset-0 pointer-events-none z-0 opacity-15"
       style={{
-        backgroundImage: 'url(/images/decorative-frame-levonis.png)',
+        backgroundImage: 'url(/images/decorative-frame-new.webp)',
         backgroundSize: '100% 100%',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         mixBlendMode: 'multiply',
-        willChange: 'auto',
         contain: 'strict',
+        contentVisibility: 'auto',
       }}
       aria-hidden="true"
     />

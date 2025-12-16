@@ -109,10 +109,19 @@
 }
 
 @layer utilities {
-  /* Animations */
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Optimized Animations */
   @keyframes floatY {
     0% { transform: translateY(0px); }
-    100% { transform: translateY(-15px); }
+    100% { transform: translateY(-10px); }
   }
   
   @keyframes shimmer {
@@ -122,26 +131,24 @@
   
   @keyframes float {
     0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-8px); }
   }
   
   @keyframes glow {
     0%, 100% { 
-      box-shadow: 0 0 20px hsl(var(--ring) / 0.3),
-                  0 0 40px hsl(var(--ring) / 0.2),
-                  0 8px 24px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 0 15px hsl(var(--ring) / 0.2),
+                  0 8px 20px rgba(0, 0, 0, 0.2);
     }
     50% { 
-      box-shadow: 0 0 30px hsl(var(--ring) / 0.5),
-                  0 0 60px hsl(var(--ring) / 0.3),
-                  0 12px 32px rgba(0, 0, 0, 0.3);
+      box-shadow: 0 0 20px hsl(var(--ring) / 0.3),
+                  0 10px 25px rgba(0, 0, 0, 0.25);
     }
   }
   
   @keyframes slideInUp {
     from {
       opacity: 0;
-      transform: translateY(30px);
+      transform: translateY(20px);
     }
     to {
       opacity: 1;
@@ -152,7 +159,7 @@
   @keyframes scaleIn {
     from {
       opacity: 0;
-      transform: scale(0.9);
+      transform: scale(0.95);
     }
     to {
       opacity: 1;
@@ -161,70 +168,58 @@
   }
   
   @keyframes pulse-glow {
-    0%, 100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.6;
-    }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
   }
   
   @keyframes float-decoration {
     0%, 100% { 
-      transform: translateY(0) scale(1);
+      transform: translateY(0);
       opacity: 0.8;
     }
     50% { 
-      transform: translateY(-10px) scale(1.02);
-      opacity: 0.9;
-    }
-  }
-  
-  @keyframes glow-decoration {
-    0%, 100% { 
-      filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.3));
-    }
-    50% { 
-      filter: drop-shadow(0 0 35px rgba(212, 175, 55, 0.5));
+      transform: translateY(-8px);
+      opacity: 0.85;
     }
   }
   
   .animate-float-decoration {
-    animation: float-decoration 6s ease-in-out infinite, glow-decoration 4s ease-in-out infinite;
+    animation: float-decoration 8s ease-in-out infinite;
+    will-change: transform;
   }
   
   .animate-float {
-    animation: floatY 6s ease-in-out infinite alternate;
+    animation: floatY 8s ease-in-out infinite alternate;
   }
   
   .animate-shimmer {
-    animation: shimmer 2s linear infinite;
-    background: linear-gradient(90deg, transparent, hsl(var(--ring) / 0.2), transparent);
-    background-size: 1000px 100%;
+    animation: shimmer 3s linear infinite;
+    background: linear-gradient(90deg, transparent, hsl(var(--ring) / 0.15), transparent);
+    background-size: 800px 100%;
   }
   
   .animate-glow {
-    animation: glow 3s ease-in-out infinite;
+    animation: glow 4s ease-in-out infinite;
   }
   
   .animate-slide-in-up {
-    animation: slideInUp 0.6s ease-out forwards;
+    animation: slideInUp 0.5s ease-out forwards;
   }
   
   .animate-scale-in {
-    animation: scaleIn 0.5s ease-out forwards;
+    animation: scaleIn 0.4s ease-out forwards;
   }
   
   .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
+    animation: pulse-glow 3s ease-in-out infinite;
   }
   
-  .stagger-1 { animation-delay: 0.1s; }
-  .stagger-2 { animation-delay: 0.2s; }
-  .stagger-3 { animation-delay: 0.3s; }
-  .stagger-4 { animation-delay: 0.4s; }
-  .stagger-5 { animation-delay: 0.5s; }
-  .stagger-6 { animation-delay: 0.6s; }
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
   
   /* Gradient text */
   .text-gradient-gold {

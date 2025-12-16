@@ -1,15 +1,15 @@
+import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
 import React from 'react';
 
-const AnnouncementBar = () => {
+const AnnouncementBar = memo(() => {
   const [dismissed, setDismissed] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const unitRef = useRef<HTMLDivElement>(null);
-  const [repeats, setRepeats] = useState(15);
+  const [repeats, setRepeats] = useState(8);
 
   const { data: announcements } = useQuery({
     queryKey: ['active-announcements'],
@@ -49,9 +49,8 @@ const AnnouncementBar = () => {
       const cw = containerRef.current?.offsetWidth || 0;
       const uw = unitRef.current?.scrollWidth || 0;
       if (cw && uw) {
-        // Calculate repeats needed to fill the container width
-        const needed = Math.ceil(cw / uw) + 3;
-        setRepeats(Math.max(needed, 15));
+        const needed = Math.ceil(cw / uw) + 2;
+        setRepeats(Math.max(needed, 6));
       }
     };
 
@@ -195,6 +194,8 @@ const AnnouncementBar = () => {
       
     </div>
   );
-};
+});
+
+AnnouncementBar.displayName = 'AnnouncementBar';
 
 export default AnnouncementBar;

@@ -1,3 +1,4 @@
+import { memo, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin } from 'lucide-react';
@@ -5,7 +6,6 @@ import CustomProductRequestDialog from './CustomProductRequestDialog';
 import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -17,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 
-const TopBar = () => {
+const TopBar = memo(() => {
   const { user, isAdmin, signOut } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
@@ -110,14 +110,14 @@ const TopBar = () => {
     staleTime: 30000,
   });
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+  const handleScroll = useCallback(() => {
+    setIsScrolled(window.scrollY > 20);
   }, []);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   return (
     <div className={`sticky top-0 z-50 border-b overflow-hidden transition-all duration-500 ${
@@ -314,6 +314,8 @@ const TopBar = () => {
       <WalletDialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen} />
     </div>
   );
-};
+});
+
+TopBar.displayName = 'TopBar';
 
 export default TopBar;
