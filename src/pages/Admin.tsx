@@ -23,21 +23,24 @@ const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
   name: z.string().min(1, 'الاسم بالإنجليزية مطلوب'),
   slug: z.string().min(1, 'الرابط مطلوب'),
-  description_ar: z.string().optional(),
-  description: z.string().optional(),
+  description_ar: z.string().nullable().optional(),
+  description: z.string().nullable().optional(),
   price: z.number().positive('السعر يجب أن يكون أكبر من صفر'),
-  original_price: z.number().positive().optional(),
+  original_price: z.number().positive().nullable().optional(),
   currency: z.string().optional(),
   images: z.array(z.string()).optional(),
-  image_url: z.string().optional(),
+  image_url: z.string().nullable().optional(),
   category_id: z.string().uuid('القسم غير صحيح'),
   featured: z.boolean().optional(),
   in_stock: z.boolean().optional(),
   availability_type: z.enum(['in_stock', 'pre_order']).optional(),
   has_in_stock: z.boolean().optional(),
   has_pre_order: z.boolean().optional(),
-  pre_order_free_shipping_price: z.number().optional().nullable(),
-  pre_order_fast_shipping_price: z.number().optional().nullable(),
+  pre_order_free_shipping_price: z.number().nullable().optional(),
+  pre_order_fast_shipping_price: z.number().nullable().optional(),
+  colors: z.array(z.any()).optional(),
+  features: z.array(z.any()).optional(),
+  pre_order_shipping_options: z.array(z.any()).optional(),
 });
 
 const categorySchema = z.object({
@@ -974,17 +977,24 @@ const Admin = () => {
         availabilityType = 'in_stock'; // Default to in_stock if both are selected
       }
       
+      // Filter valid colors and features
+      const validColors = productColors.filter(c => c.name_ar.trim() && c.name.trim());
+      const validFeatures = productFeatures.filter(f => f.text_ar.trim() && f.text.trim());
+      
       const values = {
         name_ar: formData.get('name_ar') as string,
         name: formData.get('name') as string,
         slug: formData.get('slug') as string,
-        description_ar: (formData.get('description_ar') as string) || undefined,
-        description: (formData.get('description') as string) || undefined,
+        description_ar: (formData.get('description_ar') as string) || null,
+        description: (formData.get('description') as string) || null,
         price: Number(formData.get('price')),
-        original_price: formData.get('original_price') ? Number(formData.get('original_price')) : undefined,
+        // Use null to clear the value, not undefined
+        original_price: formData.get('original_price') && formData.get('original_price') !== '' 
+          ? Number(formData.get('original_price')) 
+          : null,
         currency: (formData.get('currency') as string) || 'دينار عراقي',
-        images: finalImages.length > 0 ? finalImages : undefined,
-        image_url: finalImages[0] || undefined,
+        images: finalImages.length > 0 ? finalImages : [],
+        image_url: finalImages[0] || null,
         category_id: formData.get('category_id') as string,
         featured: (formData.get('featured') as string) === 'on',
         in_stock: (formData.get('in_stock') as string) === 'on',
@@ -1000,12 +1010,9 @@ const Admin = () => {
         pre_order_fast_shipping_price: hasPreOrder && formData.get('pre_order_fast_shipping_price') && formData.get('pre_order_fast_shipping_price') !== ''
           ? Number(formData.get('pre_order_fast_shipping_price'))
           : null,
-        colors: productColors.length > 0 
-          ? productColors.filter(c => c.name_ar.trim() && c.name.trim())
-          : undefined,
-        features: productFeatures.length > 0
-          ? productFeatures.filter(f => f.text_ar.trim() && f.text.trim())
-          : undefined,
+        // Use empty array [] instead of undefined to actually clear data
+        colors: validColors.length > 0 ? validColors : [],
+        features: validFeatures.length > 0 ? validFeatures : [],
       };
 
       // Validate with zod
@@ -1026,9 +1033,9 @@ const Admin = () => {
         productId = data.id;
       }
 
-      // Save product options
-      if (productOptions.length > 0 && productId) {
-        // Delete existing options if editing
+      // Save product options - always delete existing options when editing
+      if (productId) {
+        // Delete existing options if editing (even if no new options)
         if (editingProduct) {
           await supabase
             .from('product_options')
@@ -1036,7 +1043,7 @@ const Admin = () => {
             .eq('product_id', productId);
         }
 
-        // Insert new options
+        // Insert new options if any
         const optionsToInsert = productOptions
           .filter(opt => opt.name_ar.trim() && opt.name.trim())
           .map(opt => ({
