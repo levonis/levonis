@@ -16,6 +16,8 @@ import { Trophy, Ticket, Users, Calendar, Gift, Loader2, Clock, Crown, Wallet, P
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
+import CountdownTimer from "@/components/CountdownTimer";
+import CelebrationEffect from "@/components/CelebrationEffect";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free';
 
@@ -55,6 +57,8 @@ export default function Competitions() {
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [ticketQuantity, setTicketQuantity] = useState(1);
+  const [showWinCelebration, setShowWinCelebration] = useState(false);
+  const [winningTicket, setWinningTicket] = useState<string | null>(null);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -257,10 +261,20 @@ export default function Competitions() {
                         </div>
                       )}
                       {isWinner && (
-                        <div className="absolute inset-0 bg-primary/80 flex items-center justify-center">
+                        <div 
+                          className="absolute inset-0 bg-primary/80 flex items-center justify-center cursor-pointer"
+                          onClick={() => {
+                            const winTicket = myTicketList.find(t => t.is_winner);
+                            if (winTicket) {
+                              setWinningTicket(winTicket.ticket_number);
+                              setShowWinCelebration(true);
+                            }
+                          }}
+                        >
                           <div className="text-center text-white">
-                            <Crown className="h-12 w-12 mx-auto mb-2" />
+                            <Crown className="h-12 w-12 mx-auto mb-2 animate-bounce" />
                             <span className="text-xl font-bold">مبروك! لقد فزت! 🎉</span>
+                            <p className="text-sm mt-2 opacity-80">اضغط للاحتفال</p>
                           </div>
                         </div>
                       )}
@@ -309,10 +323,9 @@ export default function Competitions() {
                       )}
                     </div>
 
-                    {comp.end_date && comp.status !== 'completed' && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="h-4 w-4 text-orange-500" />
-                        <span>{getTimeRemaining(comp.end_date)}</span>
+                    {comp.end_date && comp.status !== 'completed' && comp.competition_type === 'timed' && (
+                      <div className="bg-orange-500/10 rounded-lg p-3 border border-orange-500/20">
+                        <CountdownTimer endDate={comp.end_date} />
                       </div>
                     )}
 
@@ -484,6 +497,15 @@ export default function Competitions() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <CelebrationEffect
+        isActive={showWinCelebration}
+        ticketNumber={winningTicket || undefined}
+        onComplete={() => {
+          setShowWinCelebration(false);
+          setWinningTicket(null);
+        }}
+      />
 
       <Footer />
     </div>

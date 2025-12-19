@@ -10,10 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown } from "lucide-react";
+import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import CelebrationEffect from "@/components/CelebrationEffect";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free';
 type CompetitionStatus = 'draft' | 'active' | 'completed' | 'cancelled';
@@ -67,6 +68,9 @@ export default function AdminCompetitions() {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [winnerInfo, setWinnerInfo] = useState<{ name: string; ticket: string } | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -183,12 +187,42 @@ export default function AdminCompetitions() {
     onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['admin-competitions'] });
       if (data.success) {
-        toast.success(`🎉 الفائز: ${data.winner_name} - التذكرة: ${data.winner_ticket_number}`);
+        setWinnerInfo({ name: data.winner_name, ticket: data.winner_ticket_number });
+        setShowCelebration(true);
       } else {
         toast.error(data.error);
       }
     }
   });
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `prizes/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('competition-images')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('competition-images')
+        .getPublicUrl(filePath);
+
+      setFormData({ ...formData, image_url: publicUrl });
+      toast.success('تم رفع الصورة بنجاح');
+    } catch (error: any) {
+      toast.error('خطأ في رفع الصورة: ' + error.message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   const resetForm = () => {
     setFormData({
@@ -303,12 +337,45 @@ export default function AdminCompetitions() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>رابط الصورة</Label>
-                  <Input
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://..."
-                  />
+                  <Label>صورة الجائزة</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      value={formData.image_url}
+                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                      placeholder="رابط الصورة أو ارفع صورة"
+                      className="flex-1"
+                    />
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        disabled={uploadingImage}
+                      />
+                      <Button type="button" variant="outline" disabled={uploadingImage}>
+                        {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      </Button>
+                    </div>
+                  </div>
+                  {formData.image_url && (
+                    <div className="relative w-32 h-32 mt-2">
+                      <img
+                        src={formData.image_url}
+                        alt="معاينة"
+                        className="w-full h-full object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="icon"
+                        className="absolute -top-2 -right-2 h-6 w-6"
+                        onClick={() => setFormData({ ...formData, image_url: '' })}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -531,6 +598,16 @@ export default function AdminCompetitions() {
           </div>
         )}
       </div>
+      
+      <CelebrationEffect
+        isActive={showCelebration}
+        winnerName={winnerInfo?.name}
+        ticketNumber={winnerInfo?.ticket}
+        onComplete={() => {
+          setShowCelebration(false);
+          setWinnerInfo(null);
+        }}
+      />
     </div>
   );
 }
