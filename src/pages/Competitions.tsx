@@ -593,19 +593,26 @@ export default function Competitions() {
                       </div>
                     )}
                     
-                    {/* Progress */}
-                    {(comp.max_tickets || comp.target_participants) && (
-                      <div className="space-y-1">
-                        <Progress value={getProgress(comp)} className="h-1.5" />
-                        <div className="flex justify-between text-xs text-muted-foreground">
-                          <span className="flex items-center gap-0.5">
-                            <Users className="h-3 w-3" />
-                            {ticketCount}
-                          </span>
-                          <span>{comp.max_tickets || comp.target_participants}</span>
+                    {/* Participants Count - Always Show */}
+                    <div className="space-y-1">
+                      {(comp.max_tickets || comp.target_participants) ? (
+                        <>
+                          <Progress value={getProgress(comp)} className="h-1.5" />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span className="flex items-center gap-0.5">
+                              <Users className="h-3 w-3" />
+                              {ticketCount} مشترك
+                            </span>
+                            <span>/ {comp.max_tickets || comp.target_participants}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Users className="h-3 w-3" />
+                          <span>{ticketCount} مشترك</span>
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
                     
                     {/* My Tickets */}
                     {hasTicket && (
