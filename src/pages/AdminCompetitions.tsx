@@ -12,8 +12,34 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye, RotateCcw, ImagePlus, Settings, Save } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, addHours, parseISO } from "date-fns";
 import { ar } from "date-fns/locale";
+
+// Helper function to format date in Baghdad timezone (UTC+3)
+const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy - hh:mm a') => {
+  const date = new Date(dateString);
+  // Baghdad is UTC+3
+  const baghdadDate = addHours(date, 3);
+  return format(baghdadDate, formatStr, { locale: ar });
+};
+
+// Helper function to convert Baghdad local time to UTC for storage
+const baghdadToUTC = (localDateString: string): string => {
+  if (!localDateString) return '';
+  // Input is in Baghdad local time, we need to subtract 3 hours to get UTC
+  const localDate = new Date(localDateString);
+  const utcDate = addHours(localDate, -3);
+  return utcDate.toISOString();
+};
+
+// Helper function to convert UTC to Baghdad local time for form display
+const utcToBaghdadLocal = (utcDateString: string | null): string => {
+  if (!utcDateString) return '';
+  const utcDate = new Date(utcDateString);
+  const baghdadDate = addHours(utcDate, 3);
+  // Format for datetime-local input
+  return format(baghdadDate, "yyyy-MM-dd'T'HH:mm");
+};
 import CelebrationEffect from "@/components/CelebrationEffect";
 import CompetitionParticipantsDialog from "@/components/CompetitionParticipantsDialog";
 
@@ -190,9 +216,9 @@ export default function AdminCompetitions() {
         prize_value: data.prize_value ? parseFloat(data.prize_value) : null,
         max_tickets: data.max_tickets ? parseInt(data.max_tickets) : null,
         target_participants: data.target_participants ? parseInt(data.target_participants) : null,
-        start_date: data.start_date || new Date().toISOString(),
-        end_date: data.end_date || null,
-        draw_date: data.draw_date || null,
+        start_date: data.start_date ? baghdadToUTC(data.start_date) : new Date().toISOString(),
+        end_date: data.end_date ? baghdadToUTC(data.end_date) : null,
+        draw_date: data.draw_date ? baghdadToUTC(data.draw_date) : null,
         competition_type: data.competition_type,
         status: data.status,
         required_tickets: parseInt(data.required_tickets) || 1
@@ -388,9 +414,9 @@ export default function AdminCompetitions() {
       ticket_price: comp.ticket_price.toString(),
       max_tickets: comp.max_tickets?.toString() || '',
       target_participants: comp.target_participants?.toString() || '',
-      start_date: comp.start_date ? comp.start_date.slice(0, 16) : '',
-      end_date: comp.end_date ? comp.end_date.slice(0, 16) : '',
-      draw_date: comp.draw_date ? comp.draw_date.slice(0, 16) : '',
+      start_date: utcToBaghdadLocal(comp.start_date),
+      end_date: utcToBaghdadLocal(comp.end_date),
+      draw_date: utcToBaghdadLocal(comp.draw_date),
       max_tickets_per_user: '',
       terms_conditions: '',
       required_tickets: (comp as any).required_tickets?.toString() || '1',

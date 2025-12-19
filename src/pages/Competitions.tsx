@@ -14,8 +14,16 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Trophy, Ticket, Users, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History, ChevronLeft, ChevronRight, Images, ChevronDown, Calendar, ShoppingCart, ArrowRight, Info, Eye } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, addHours } from "date-fns";
 import { ar } from "date-fns/locale";
+
+// Helper function to format date in Baghdad timezone (UTC+3)
+const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy - hh:mm a') => {
+  const date = new Date(dateString);
+  // Baghdad is UTC+3
+  const baghdadDate = addHours(date, 3);
+  return format(baghdadDate, formatStr, { locale: ar });
+};
 import CountdownTimer from "@/components/CountdownTimer";
 import CelebrationEffect from "@/components/CelebrationEffect";
 
@@ -467,10 +475,6 @@ export default function Competitions() {
                         src={compImages[currentImageIndex]} 
                         alt={comp.title_ar}
                         className="w-full h-full object-cover cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openGallery(comp, currentImageIndex);
-                        }}
                       />
                       
                       {compImages.length > 1 && (
@@ -570,7 +574,7 @@ export default function Competitions() {
                     {comp.status === 'active' && comp.end_date && comp.competition_type !== 'timed' && (
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Calendar className="h-3 w-3" />
-                        <span>ينتهي: {format(new Date(comp.end_date), 'dd MMM yyyy', { locale: ar })}</span>
+                        <span>ينتهي: {formatBaghdadTime(comp.end_date, 'dd MMM yyyy')}</span>
                       </div>
                     )}
                     
@@ -836,19 +840,19 @@ export default function Competitions() {
                       {comp.start_date && (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Calendar className="h-4 w-4" />
-                          <span>بداية: {format(new Date(comp.start_date), 'dd MMM yyyy - hh:mm a', { locale: ar })}</span>
+                          <span>بداية: {formatBaghdadTime(comp.start_date)}</span>
                         </div>
                       )}
                       {comp.end_date && (
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Clock className="h-4 w-4" />
-                          <span>نهاية: {format(new Date(comp.end_date), 'dd MMM yyyy - hh:mm a', { locale: ar })}</span>
+                          <span>نهاية: {formatBaghdadTime(comp.end_date)}</span>
                         </div>
                       )}
                       {comp.draw_date && (
                         <div className="flex items-center gap-2 text-primary">
                           <Trophy className="h-4 w-4" />
-                          <span>موعد السحب: {format(new Date(comp.draw_date), 'dd MMM yyyy - hh:mm a', { locale: ar })}</span>
+                          <span>موعد السحب: {formatBaghdadTime(comp.draw_date)}</span>
                         </div>
                       )}
                     </div>
