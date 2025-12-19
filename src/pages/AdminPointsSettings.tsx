@@ -7,32 +7,57 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Settings, Save, Plus, Trash2 } from "lucide-react";
+import { Settings, Save, Plus, Trash2, CheckSquare, Edit, Coins, Gift, LogIn, Share2, UserPlus, Star, ShoppingCart } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
+// الطرق المدعومة للكسب في النظام
+const SYSTEM_EARNING_METHODS = [
+  { key: 'points_per_order', label: 'نقاط ثابتة لكل طلب مكتمل', icon: ShoppingCart, description: 'يمنح تلقائياً عند تسليم الطلب' },
+  { key: 'points_per_review', label: 'نقاط لكل تقييم', icon: Star, description: 'يمنح تلقائياً عند إضافة تقييم' },
+  { key: 'points_per_verified_review', label: 'نقاط إضافية لتقييم الطلب المؤكد', icon: Star, description: 'يمنح للتقييمات على طلبات مؤكدة' },
+];
 
 export default function AdminPointsSettings() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const [earningMethods, setEarningMethods] = useState<Array<{
-    key: string;
-    label: string;
-    value: string;
-  }>>([
-    { key: 'points_per_order', label: 'نقاط ثابتة لكل طلب', value: '10' },
-    { key: 'points_per_review', label: 'نقاط لكل تقييم عادي', value: '5' },
-    { key: 'points_per_verified_review', label: 'نقاط لتقييم الطلب المؤكد', value: '10' },
-    { key: 'points_per_ad', label: 'نقاط لكل إعلان', value: '2' },
-  ]);
-  
+  // إعدادات النقاط
+  const [pointsPerOrder, setPointsPerOrder] = useState("10");
+  const [pointsPerReview, setPointsPerReview] = useState("5");
+  const [pointsPerVerifiedReview, setPointsPerVerifiedReview] = useState("10");
   const [orderValueMultiplier, setOrderValueMultiplier] = useState("0");
   const [pointsToMoneyRate, setPointsToMoneyRate] = useState("100");
   const [pointsToCouponRate, setPointsToCouponRate] = useState("50");
   const [referrerPoints, setReferrerPoints] = useState("50");
   const [referredPoints, setReferredPoints] = useState("20");
   const [pointsStatus, setPointsStatus] = useState<'active' | 'maintenance' | 'disabled'>('active');
+
+  // المهام اليومية
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
+  const [taskKey, setTaskKey] = useState("");
+  const [titleAr, setTitleAr] = useState("");
+  const [descriptionAr, setDescriptionAr] = useState("");
+  const [icon, setIcon] = useState("Gift");
+  const [pointsReward, setPointsReward] = useState("5");
+  const [taskType, setTaskType] = useState("daily");
+  const [isActive, setIsActive] = useState(true);
+  const [displayOrder, setDisplayOrder] = useState("0");
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -58,7 +83,7 @@ export default function AdminPointsSettings() {
   }, [user, navigate]);
 
   // جلب إعدادات النقاط
-  const { data: pointsSettings, isLoading } = useQuery({
+  const { data: pointsSettings, isLoading: isLoadingSettings } = useQuery({
     queryKey: ["pointsSettings"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -87,31 +112,28 @@ export default function AdminPointsSettings() {
     },
   });
 
+  // جلب المهام اليومية
+  const { data: tasks, isLoading: isLoadingTasks } = useQuery({
+    queryKey: ["dailyTasks"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("daily_tasks")
+        .select("*")
+        .order("display_order", { ascending: true });
+
+      if (error) throw error;
+      return data;
+    },
+  });
+
   useEffect(() => {
     if (pointsSettings?.setting_value) {
       const settings = pointsSettings.setting_value as any;
-      
-      // تحميل طرق الكسب
-      const methods = [];
-      if (settings.points_per_order !== undefined) {
-        methods.push({ key: 'points_per_order', label: 'نقاط ثابتة لكل طلب', value: settings.points_per_order.toString() });
-      }
-      if (settings.points_per_review !== undefined) {
-        methods.push({ key: 'points_per_review', label: 'نقاط لكل تقييم عادي', value: settings.points_per_review.toString() });
-      }
-      if (settings.points_per_verified_review !== undefined) {
-        methods.push({ key: 'points_per_verified_review', label: 'نقاط لتقييم الطلب المؤكد', value: settings.points_per_verified_review.toString() });
-      }
-      if (settings.points_per_ad !== undefined) {
-        methods.push({ key: 'points_per_ad', label: 'نقاط لكل إعلان', value: settings.points_per_ad.toString() });
-      }
-      
-      if (methods.length > 0) {
-        setEarningMethods(methods);
-      }
-      
+      setPointsPerOrder(settings.points_per_order?.toString() || "10");
+      setPointsPerReview(settings.points_per_review?.toString() || "5");
+      setPointsPerVerifiedReview(settings.points_per_verified_review?.toString() || "10");
       setOrderValueMultiplier(settings.order_value_multiplier?.toString() || "0");
-      setPointsToMoneyRate(settings.points_to_money_rate?.toString() || "100");
+      setPointsToMoneyRate(settings.conversion_rate?.toString() || settings.points_to_money_rate?.toString() || "100");
       setPointsToCouponRate(settings.points_to_coupon_rate?.toString() || "50");
       setPointsStatus(settings.points_status || 'active');
     }
@@ -125,22 +147,20 @@ export default function AdminPointsSettings() {
     }
   }, [referralSettings]);
 
-  // حفظ الإعدادات
+  // حفظ إعدادات النقاط
   const saveSettings = useMutation({
     mutationFn: async () => {
-      const settingsValue: any = {
+      const settingsValue = {
         points_status: pointsStatus,
+        points_per_order: parseFloat(pointsPerOrder),
+        points_per_review: parseFloat(pointsPerReview),
+        points_per_verified_review: parseFloat(pointsPerVerifiedReview),
         order_value_multiplier: parseFloat(orderValueMultiplier),
+        conversion_rate: parseFloat(pointsToMoneyRate),
         points_to_money_rate: parseFloat(pointsToMoneyRate),
         points_to_coupon_rate: parseFloat(pointsToCouponRate),
       };
-      
-      // إضافة طرق الكسب
-      earningMethods.forEach(method => {
-        settingsValue[method.key] = parseFloat(method.value);
-      });
 
-      // حفظ إعدادات النقاط
       if (pointsSettings) {
         const { error } = await supabase
           .from("default_settings")
@@ -193,63 +213,133 @@ export default function AdminPointsSettings() {
     },
   });
 
-  const handleSave = () => {
-    // التحقق من طرق الكسب
-    for (const method of earningMethods) {
-      const value = parseFloat(method.value);
-      if (isNaN(value) || value < 0) {
-        toast.error(`الرجاء إدخال قيمة صحيحة لـ ${method.label}`);
-        return;
+  // حذف مهمة
+  const deleteTask = useMutation({
+    mutationFn: async (taskId: string) => {
+      const { error } = await supabase
+        .from("daily_tasks")
+        .delete()
+        .eq("id", taskId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dailyTasks"] });
+      toast.success("تم حذف المهمة بنجاح");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "حدث خطأ أثناء حذف المهمة");
+    },
+  });
+
+  // إضافة أو تحديث مهمة
+  const saveTask = useMutation({
+    mutationFn: async () => {
+      const taskData = {
+        task_key: taskKey,
+        title_ar: titleAr,
+        description_ar: descriptionAr,
+        icon,
+        points_reward: parseFloat(pointsReward),
+        task_type: taskType,
+        is_active: isActive,
+        display_order: parseInt(displayOrder),
+      };
+
+      if (editingTask) {
+        const { error } = await supabase
+          .from("daily_tasks")
+          .update(taskData)
+          .eq("id", editingTask.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("daily_tasks")
+          .insert(taskData);
+
+        if (error) throw error;
       }
-    }
-    
-    const orderMultiplier = parseFloat(orderValueMultiplier);
-    const moneyRate = parseFloat(pointsToMoneyRate);
-    const couponRate = parseFloat(pointsToCouponRate);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dailyTasks"] });
+      toast.success(editingTask ? "تم تحديث المهمة بنجاح" : "تم إضافة المهمة بنجاح");
+      handleCloseDialog();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
 
-    if (isNaN(orderMultiplier) || orderMultiplier < 0) {
-      toast.error("الرجاء إدخال معامل صحيح لقيمة الطلب");
-      return;
-    }
-    if (isNaN(moneyRate) || moneyRate <= 0) {
-      toast.error("الرجاء إدخال نسبة تحويل صحيحة للأموال");
-      return;
-    }
-    if (isNaN(couponRate) || couponRate <= 0) {
-      toast.error("الرجاء إدخال نسبة تحويل صحيحة للكوبونات");
-      return;
-    }
+  const handleSaveSettings = () => {
+    const values = [
+      parseFloat(pointsPerOrder),
+      parseFloat(pointsPerReview),
+      parseFloat(pointsPerVerifiedReview),
+      parseFloat(orderValueMultiplier),
+      parseFloat(pointsToMoneyRate),
+      parseFloat(pointsToCouponRate),
+      parseFloat(referrerPoints),
+      parseFloat(referredPoints),
+    ];
 
-    const refererPts = parseFloat(referrerPoints);
-    const referedPts = parseFloat(referredPoints);
-    
-    if (isNaN(refererPts) || refererPts < 0) {
-      toast.error("الرجاء إدخال قيمة صحيحة لنقاط المُحيل");
-      return;
-    }
-    if (isNaN(referedPts) || referedPts < 0) {
-      toast.error("الرجاء إدخال قيمة صحيحة لنقاط المُحال");
+    if (values.some(v => isNaN(v) || v < 0)) {
+      toast.error("الرجاء إدخال قيم صحيحة");
       return;
     }
 
     saveSettings.mutate();
   };
-  
-  const addEarningMethod = () => {
-    setEarningMethods([...earningMethods, { key: `custom_${Date.now()}`, label: '', value: '0' }]);
+
+  const handleOpenDialog = (task?: any) => {
+    if (task) {
+      setEditingTask(task);
+      setTaskKey(task.task_key);
+      setTitleAr(task.title_ar);
+      setDescriptionAr(task.description_ar);
+      setIcon(task.icon);
+      setPointsReward(task.points_reward.toString());
+      setTaskType(task.task_type);
+      setIsActive(task.is_active);
+      setDisplayOrder(task.display_order.toString());
+    } else {
+      setEditingTask(null);
+      setTaskKey("");
+      setTitleAr("");
+      setDescriptionAr("");
+      setIcon("Gift");
+      setPointsReward("5");
+      setTaskType("daily");
+      setIsActive(true);
+      setDisplayOrder("0");
+    }
+    setIsDialogOpen(true);
   };
-  
-  const removeEarningMethod = (index: number) => {
-    setEarningMethods(earningMethods.filter((_, i) => i !== index));
+
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+    setEditingTask(null);
   };
-  
-  const updateEarningMethod = (index: number, field: 'label' | 'value', newValue: string) => {
-    const updated = [...earningMethods];
-    updated[index][field] = newValue;
-    setEarningMethods(updated);
+
+  const handleSaveTask = () => {
+    if (!taskKey || !titleAr || !descriptionAr) {
+      toast.error("الرجاء ملء جميع الحقول المطلوبة");
+      return;
+    }
+    saveTask.mutate();
+  };
+
+  const getIconComponent = (iconName: string) => {
+    const icons: Record<string, any> = {
+      Gift, LogIn, Share2, UserPlus, Coins, Star, ShoppingCart, CheckSquare
+    };
+    const IconComponent = icons[iconName] || Gift;
+    return <IconComponent className="h-4 w-4" />;
   };
 
   if (!user) return null;
+
+  const isLoading = isLoadingSettings || isLoadingTasks;
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
@@ -257,28 +347,37 @@ export default function AdminPointsSettings() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
             <Settings className="h-8 w-8" />
-            إعدادات نظام النقاط
+            إعدادات نظام النقاط والمهام
           </h1>
-          <p className="text-muted-foreground">إدارة إعدادات المكافآت والنقاط</p>
+          <p className="text-muted-foreground">إدارة إعدادات المكافآت والنقاط والمهام اليومية</p>
         </div>
 
         {isLoading ? (
           <div className="text-center py-12">جاري التحميل...</div>
         ) : (
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>حالة نظام النقاط</CardTitle>
-                <CardDescription>التحكم في حالة نظام النقاط بالكامل</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="points-status" className="text-base font-medium">
-                      اختر حالة النظام
-                    </Label>
+          <Tabs defaultValue="settings" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="settings" className="flex items-center gap-2">
+                <Coins className="h-4 w-4" />
+                إعدادات النقاط
+              </TabsTrigger>
+              <TabsTrigger value="tasks" className="flex items-center gap-2">
+                <CheckSquare className="h-4 w-4" />
+                المهام اليومية
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="settings" className="space-y-6">
+              {/* حالة النظام */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>حالة نظام النقاط</CardTitle>
+                  <CardDescription>التحكم في حالة نظام النقاط بالكامل</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
                     <Select value={pointsStatus} onValueChange={(value: 'active' | 'maintenance' | 'disabled') => setPointsStatus(value)}>
-                      <SelectTrigger id="points-status">
+                      <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -287,195 +386,373 @@ export default function AdminPointsSettings() {
                         <SelectItem value="disabled">معطّل</SelectItem>
                       </SelectContent>
                     </Select>
+                    <div className="p-4 rounded-lg bg-muted">
+                      <p className="text-sm">
+                        {pointsStatus === 'active' && "✅ النظام مفعّل - يمكن للمستخدمين كسب واستخدام النقاط"}
+                        {pointsStatus === 'maintenance' && "🔧 تحت الصيانة - لن يتمكن المستخدمون من كسب أو استخدام النقاط مؤقتاً"}
+                        {pointsStatus === 'disabled' && "❌ معطّل - تم إيقاف نظام النقاط بالكامل"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-4 rounded-lg bg-muted">
-                    <p className="text-sm">
-                      {pointsStatus === 'active' && "✅ النظام مفعّل - يمكن للمستخدمين كسب واستخدام النقاط بشكل طبيعي"}
-                      {pointsStatus === 'maintenance' && "🔧 النظام تحت الصيانة - لن يتمكن المستخدمون من كسب أو استخدام النقاط مؤقتاً"}
-                      {pointsStatus === 'disabled' && "❌ النظام معطّل - تم إيقاف نظام النقاط بالكامل"}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <div className="grid md:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>طرق كسب النقاط</span>
-                  <Button onClick={addEarningMethod} size="sm" variant="outline">
-                    <Plus className="h-4 w-4 ml-2" />
-                    إضافة طريقة
-                  </Button>
-                </CardTitle>
-                <CardDescription>إدارة طرق كسب النقاط المختلفة</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {earningMethods.map((method, index) => (
-                  <div key={method.key} className="flex gap-2 items-end">
-                    <div className="flex-1 space-y-2">
-                      <Label>الوصف</Label>
+              {/* طرق كسب النقاط المربوطة بالنظام */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Coins className="h-5 w-5" />
+                    طرق كسب النقاط (مربوطة بالنظام)
+                  </CardTitle>
+                  <CardDescription>هذه الطرق تعمل تلقائياً عند تحقق الشروط</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {SYSTEM_EARNING_METHODS.map((method) => (
+                    <div key={method.key} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                          <method.icon className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium">{method.label}</p>
+                          <p className="text-sm text-muted-foreground">{method.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          className="w-24"
+                          value={
+                            method.key === 'points_per_order' ? pointsPerOrder :
+                            method.key === 'points_per_review' ? pointsPerReview :
+                            pointsPerVerifiedReview
+                          }
+                          onChange={(e) => {
+                            if (method.key === 'points_per_order') setPointsPerOrder(e.target.value);
+                            else if (method.key === 'points_per_review') setPointsPerReview(e.target.value);
+                            else setPointsPerVerifiedReview(e.target.value);
+                          }}
+                        />
+                        <span className="text-sm text-muted-foreground">نقطة</span>
+                      </div>
+                    </div>
+                  ))}
+
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="font-medium">نقاط إضافية حسب قيمة الطلب</p>
+                        <p className="text-sm text-muted-foreground">معامل النقاط لكل دينار (مثال: 0.01 = 1 نقطة لكل 100 دينار)</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.001"
+                          className="w-24"
+                          value={orderValueMultiplier}
+                          onChange={(e) => setOrderValueMultiplier(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* نسب التحويل */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>نسب التحويل</CardTitle>
+                    <CardDescription>معدلات تحويل النقاط إلى قيمة</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>نقاط = 1 دينار عراقي (نقدي)</Label>
                       <Input
-                        value={method.label}
-                        onChange={(e) => updateEarningMethod(index, 'label', e.target.value)}
-                        placeholder="مثال: نقاط لكل طلب"
+                        type="number"
+                        min="1"
+                        value={pointsToMoneyRate}
+                        onChange={(e) => setPointsToMoneyRate(e.target.value)}
+                      />
+                      <p className="text-sm text-muted-foreground mt-1">
+                        مثال: 100 نقطة = 1 دينار عراقي
+                      </p>
+                    </div>
+                    <div>
+                      <Label>نقاط = 1 دينار عراقي (كوبون)</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        value={pointsToCouponRate}
+                        onChange={(e) => setPointsToCouponRate(e.target.value)}
                       />
                     </div>
-                    <div className="w-32 space-y-2">
-                      <Label>النقاط</Label>
+                  </CardContent>
+                </Card>
+
+                {/* برنامج الدعوة */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <UserPlus className="h-5 w-5" />
+                      برنامج الدعوة
+                    </CardTitle>
+                    <CardDescription>نقاط دعوة الأصدقاء</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <Label>نقاط المُحيل (من يدعو)</Label>
                       <Input
                         type="number"
                         min="0"
-                        step="1"
-                        value={method.value}
-                        onChange={(e) => updateEarningMethod(index, 'value', e.target.value)}
+                        value={referrerPoints}
+                        onChange={(e) => setReferrerPoints(e.target.value)}
                       />
                     </div>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => removeEarningMethod(index)}
-                    >
-                      <Trash2 className="h-4 w-4" />
+                    <div>
+                      <Label>نقاط المُحال (المدعو)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={referredPoints}
+                        onChange={(e) => setReferredPoints(e.target.value)}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <Button 
+                onClick={handleSaveSettings} 
+                disabled={saveSettings.isPending}
+                className="w-full"
+                size="lg"
+              >
+                <Save className="ml-2 h-5 w-5" />
+                {saveSettings.isPending ? "جاري الحفظ..." : "حفظ الإعدادات"}
+              </Button>
+            </TabsContent>
+
+            <TabsContent value="tasks" className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h2 className="text-xl font-semibold">المهام والتحديات</h2>
+                  <p className="text-muted-foreground">إدارة المهام اليومية والأسبوعية للمستخدمين</p>
+                </div>
+                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button onClick={() => handleOpenDialog()}>
+                      <Plus className="ml-2 h-4 w-4" />
+                      إضافة مهمة
                     </Button>
-                  </div>
-                ))}
+                  </DialogTrigger>
+                  <DialogContent className="max-w-lg">
+                    <DialogHeader>
+                      <DialogTitle>{editingTask ? "تعديل المهمة" : "إضافة مهمة جديدة"}</DialogTitle>
+                      <DialogDescription>
+                        قم بتعبئة المعلومات لإضافة أو تعديل مهمة
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>مفتاح المهمة (بالإنجليزية)</Label>
+                        <Input
+                          value={taskKey}
+                          onChange={(e) => setTaskKey(e.target.value)}
+                          placeholder="daily_login"
+                          disabled={!!editingTask}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          استخدم: daily_login للدخول اليومي، share_product للمشاركة، etc
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>العنوان</Label>
+                        <Input
+                          value={titleAr}
+                          onChange={(e) => setTitleAr(e.target.value)}
+                          placeholder="تسجيل الدخول اليومي"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>الوصف</Label>
+                        <Input
+                          value={descriptionAr}
+                          onChange={(e) => setDescriptionAr(e.target.value)}
+                          placeholder="سجل دخولك كل يوم..."
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>الأيقونة</Label>
+                          <Select value={icon} onValueChange={setIcon}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="LogIn">تسجيل دخول</SelectItem>
+                              <SelectItem value="Share2">مشاركة</SelectItem>
+                              <SelectItem value="UserPlus">دعوة</SelectItem>
+                              <SelectItem value="Gift">هدية</SelectItem>
+                              <SelectItem value="Coins">عملات</SelectItem>
+                              <SelectItem value="Star">نجمة</SelectItem>
+                              <SelectItem value="ShoppingCart">سلة</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>النقاط</Label>
+                          <Input
+                            type="number"
+                            value={pointsReward}
+                            onChange={(e) => setPointsReward(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>نوع المهمة</Label>
+                          <Select value={taskType} onValueChange={setTaskType}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="daily">يومي</SelectItem>
+                              <SelectItem value="weekly">أسبوعي</SelectItem>
+                              <SelectItem value="once">مرة واحدة</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>الترتيب</Label>
+                          <Input
+                            type="number"
+                            value={displayOrder}
+                            onChange={(e) => setDisplayOrder(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2 space-x-reverse">
+                        <Switch
+                          checked={isActive}
+                          onCheckedChange={setIsActive}
+                        />
+                        <Label>مفعلة</Label>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button variant="outline" onClick={handleCloseDialog}>
+                        إلغاء
+                      </Button>
+                      <Button onClick={handleSaveTask} disabled={saveTask.isPending}>
+                        {saveTask.isPending ? "جاري الحفظ..." : "حفظ"}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
 
-                <div className="pt-4 border-t">
-                  <Label htmlFor="orderValueMultiplier">نقاط إضافية حسب قيمة الطلب</Label>
-                  <Input
-                    id="orderValueMultiplier"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={orderValueMultiplier}
-                    onChange={(e) => setOrderValueMultiplier(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    معامل النقاط حسب قيمة الطلب (مثال: 0.01 = 1 نقطة لكل 100 دينار)
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle>قائمة المهام</CardTitle>
+                  <CardDescription>
+                    المهام المربوطة بالنظام (مثل daily_login) تعمل تلقائياً
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>المهمة</TableHead>
+                        <TableHead>النوع</TableHead>
+                        <TableHead>النقاط</TableHead>
+                        <TableHead>الحالة</TableHead>
+                        <TableHead className="text-left">الإجراءات</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {tasks && tasks.length > 0 ? (
+                        tasks.map((task) => (
+                          <TableRow key={task.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div className="p-2 bg-primary/10 rounded-lg">
+                                  {getIconComponent(task.icon)}
+                                </div>
+                                <div>
+                                  <p className="font-medium">{task.title_ar}</p>
+                                  <p className="text-sm text-muted-foreground">{task.description_ar}</p>
+                                  <Badge variant="outline" className="mt-1 text-xs">
+                                    {task.task_key}
+                                  </Badge>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">
+                                {task.task_type === "daily" ? "يومي" : 
+                                 task.task_type === "weekly" ? "أسبوعي" : "مرة واحدة"}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-semibold">{task.points_reward}</span> نقطة
+                            </TableCell>
+                            <TableCell>
+                              {task.is_active ? (
+                                <Badge variant="default">مفعلة</Badge>
+                              ) : (
+                                <Badge variant="secondary">معطلة</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-left">
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => handleOpenDialog(task)}
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="destructive"
+                                  size="icon"
+                                  onClick={() => deleteTask.mutate(task.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8">
+                            لا توجد مهام - أضف مهمة جديدة للبدء
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>نسب التحويل</CardTitle>
-                <CardDescription>معدلات تحويل النقاط إلى قيمة</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="pointsToMoneyRate">نقاط = 1 دينار عراقي (نقدي)</Label>
-                  <Input
-                    id="pointsToMoneyRate"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={pointsToMoneyRate}
-                    onChange={(e) => setPointsToMoneyRate(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    مثال: 100 نقطة = 1 دينار عراقي نقدي
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="pointsToCouponRate">نقاط = 1 دينار عراقي (كوبون)</Label>
-                  <Input
-                    id="pointsToCouponRate"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={pointsToCouponRate}
-                    onChange={(e) => setPointsToCouponRate(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    مثال: 50 نقطة = 1 دينار عراقي كوبون
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>إعدادات برنامج الدعوة</CardTitle>
-                <CardDescription>إدارة نقاط دعوة الأصدقاء</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="referrerPoints">نقاط المُحيل (من يدعو)</Label>
-                  <Input
-                    id="referrerPoints"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={referrerPoints}
-                    onChange={(e) => setReferrerPoints(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    النقاط التي يحصل عليها المستخدم عند دعوة صديق
-                  </p>
-                </div>
-
-                <div>
-                  <Label htmlFor="referredPoints">نقاط المُحال (المدعو)</Label>
-                  <Input
-                    id="referredPoints"
-                    type="number"
-                    min="0"
-                    step="1"
-                    value={referredPoints}
-                    onChange={(e) => setReferredPoints(e.target.value)}
-                  />
-                  <p className="text-sm text-muted-foreground mt-1">
-                    النقاط التي يحصل عليها المستخدم الجديد عند التسجيل بكود دعوة
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="md:col-span-2">
-              <CardHeader>
-                <CardTitle>معاينة الإعدادات</CardTitle>
-              </CardHeader>
-              <CardContent className="grid md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg mb-3">طرق كسب النقاط:</h3>
-                  {earningMethods.map(method => (
-                    <p key={method.key}>✓ {method.label} = {method.value} نقطة</p>
-                  ))}
-                  {parseFloat(orderValueMultiplier) > 0 && (
-                    <p>✓ نقاط إضافية = {orderValueMultiplier} × قيمة الطلب</p>
-                  )}
-                </div>
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg mb-3">تحويل النقاط:</h3>
-                  <p>✓ كل {pointsToMoneyRate} نقطة = 1 دينار عراقي نقدي</p>
-                  <p>✓ كل {pointsToCouponRate} نقطة = 1 دينار عراقي كوبون</p>
-                </div>
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-lg mb-3">برنامج الدعوة:</h3>
-                  <p>✓ المُحيل يحصل على {referrerPoints} نقطة</p>
-                  <p>✓ المُحال يحصل على {referredPoints} نقطة</p>
-                </div>
-              </CardContent>
-            </Card>
-            </div>
-          </div>
+              {/* معلومات مهمة */}
+              <Card className="border-primary/20 bg-primary/5">
+                <CardHeader>
+                  <CardTitle className="text-lg">كيف تعمل المهام؟</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2 text-sm">
+                  <p>• <strong>daily_login:</strong> يتم تنفيذها تلقائياً عند دخول المستخدم للتطبيق</p>
+                  <p>• المهام الأخرى يمكن ربطها بأزرار في التطبيق حسب task_key</p>
+                  <p>• المهام اليومية تتجدد كل يوم، والأسبوعية كل أسبوع</p>
+                  <p>• المهام "مرة واحدة" تُنفذ مرة واحدة فقط لكل مستخدم</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         )}
-
-        <div className="mt-8 flex justify-end">
-          <Button
-            onClick={handleSave}
-            disabled={saveSettings.isPending}
-            size="lg"
-            className="gap-2"
-          >
-            <Save className="h-4 w-4" />
-            {saveSettings.isPending ? "جاري الحفظ..." : "حفظ الإعدادات"}
-          </Button>
-        </div>
       </main>
     </div>
   );
