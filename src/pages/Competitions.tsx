@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -55,6 +56,8 @@ export default function Competitions() {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
   const [ticketPurchaseQuantity, setTicketPurchaseQuantity] = useState(1);
+  const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
+  const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -258,6 +261,57 @@ export default function Competitions() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col" dir="rtl">
+      {/* Insufficient Balance Dialog */}
+      <AlertDialog open={showInsufficientBalance} onOpenChange={setShowInsufficientBalance}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Wallet className="h-5 w-5" />
+              رصيد غير كافٍ
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              رصيد المحفظة غير كافٍ لشراء {ticketPurchaseQuantity} تذكرة.
+              <br />
+              المطلوب: <span className="font-bold text-foreground">{totalTicketCost.toLocaleString()} دينار</span>
+              <br />
+              رصيدك الحالي: <span className="font-bold text-foreground">{(wallet?.balance || 0).toLocaleString()} دينار</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogCancel>إغلاق</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Purchase Confirmation Dialog */}
+      <AlertDialog open={showPurchaseConfirm} onOpenChange={setShowPurchaseConfirm}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Ticket className="h-5 w-5 text-primary" />
+              تأكيد شراء التذاكر
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              هل تريد شراء <span className="font-bold text-foreground">{ticketPurchaseQuantity} تذكرة</span> بمبلغ <span className="font-bold text-foreground">{totalTicketCost.toLocaleString()} دينار</span>؟
+              <br />
+              <span className="text-muted-foreground text-sm">سيتم خصم المبلغ من رصيد المحفظة.</span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction
+              onClick={() => {
+                purchaseTicketsMutation.mutate(ticketPurchaseQuantity);
+                setShowPurchaseConfirm(false);
+              }}
+              className="gap-1"
+            >
+              <ShoppingCart className="h-4 w-4" />
+              تأكيد الشراء
+            </AlertDialogAction>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* Fixed Ticket Purchase Bar */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
         <div className="container mx-auto px-4 py-3">
@@ -308,9 +362,13 @@ export default function Competitions() {
                     navigate('/auth');
                     return;
                   }
-                  purchaseTicketsMutation.mutate(ticketPurchaseQuantity);
+                  if (!canBuyTickets) {
+                    setShowInsufficientBalance(true);
+                    return;
+                  }
+                  setShowPurchaseConfirm(true);
                 }}
-                disabled={purchaseTicketsMutation.isPending || !canBuyTickets}
+                disabled={purchaseTicketsMutation.isPending}
               >
                 {purchaseTicketsMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
