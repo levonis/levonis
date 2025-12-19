@@ -585,18 +585,25 @@ export default function Competitions() {
                   <CardContent className="p-3 space-y-2">
                     <h3 className="font-bold text-sm line-clamp-1">{comp.title_ar}</h3>
                     
-                    {/* Prize Description */}
-                    <div className="text-xs text-muted-foreground">
-                      <div className="flex items-start gap-1">
-                        <Gift className="h-3 w-3 mt-0.5 flex-shrink-0 text-primary" />
-                        <span className={shouldTruncate && !isDescriptionExpanded ? 'line-clamp-1' : ''}>
-                          {prizeText}
-                        </span>
+                    {/* Prize Description - Enhanced Display */}
+                    <div className="bg-gradient-to-l from-primary/10 to-transparent rounded-md p-2 border-r-2 border-primary/50">
+                      <div className="flex items-start gap-1.5">
+                        <Gift className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-primary" />
+                        <div className="flex-1 min-w-0">
+                          <span className={`text-xs font-medium text-foreground leading-relaxed ${shouldTruncate && !isDescriptionExpanded ? 'line-clamp-2' : ''}`}>
+                            {prizeText}
+                          </span>
+                          {comp.prize_value && (
+                            <p className="text-xs font-bold text-primary mt-0.5">
+                              {comp.prize_value.toLocaleString()} {comp.currency}
+                            </p>
+                          )}
+                        </div>
                       </div>
                       {shouldTruncate && (
                         <Button 
                           variant="link" 
-                          className="h-auto p-0 text-xs text-primary"
+                          className="h-auto p-0 text-xs text-primary mt-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             toggleDescription(comp.id);
@@ -932,28 +939,39 @@ export default function Competitions() {
                       )}
                     </div>
 
-                    {/* Prize */}
-                    <div className="bg-primary/10 rounded-lg p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Gift className="h-5 w-5 text-primary" />
-                        <span className="font-semibold">الجائزة</span>
+                    {/* Prize - Enhanced Display */}
+                    <div className="relative overflow-hidden rounded-xl border border-primary/20">
+                      {/* Decorative gradient background */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent" />
+                      <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+                      
+                      <div className="relative p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-full bg-primary/20">
+                            <Gift className="h-5 w-5 text-primary" />
+                          </div>
+                          <span className="font-bold text-lg">الجائزة</span>
+                          {comp.prize_value && (
+                            <Badge variant="secondary" className="mr-auto bg-primary/20 text-primary border-0">
+                              {comp.prize_value.toLocaleString()} {comp.currency}
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <div className="pr-2 border-r-3 border-primary/40">
+                          <p className="text-foreground leading-relaxed">{comp.prize_description_ar}</p>
+                        </div>
                       </div>
-                      <p className="text-foreground">{comp.prize_description_ar}</p>
-                      {comp.prize_value && (
-                        <p className="text-primary font-bold mt-1">
-                          القيمة: {comp.prize_value.toLocaleString()} {comp.currency}
-                        </p>
-                      )}
                     </div>
 
-                    {/* Description */}
-                    {comp.description_ar && (
-                      <div>
-                        <h3 className="font-semibold mb-2 flex items-center gap-2">
-                          <Info className="h-4 w-4" />
-                          التفاصيل
+                    {/* Description - Show only if different from prize description */}
+                    {comp.description_ar && comp.description_ar !== comp.prize_description_ar && (
+                      <div className="bg-secondary/30 rounded-lg p-4">
+                        <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                          تفاصيل المسابقة
                         </h3>
-                        <p className="text-muted-foreground text-sm">{comp.description_ar}</p>
+                        <p className="text-muted-foreground text-sm leading-relaxed">{comp.description_ar}</p>
                       </div>
                     )}
 
