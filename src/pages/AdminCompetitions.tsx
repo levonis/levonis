@@ -188,10 +188,11 @@ export default function AdminCompetitions() {
         prize_description: data.prize_description,
         prize_description_ar: data.prize_description_ar,
         prize_value: data.prize_value ? parseFloat(data.prize_value) : null,
-        ticket_price: parseFloat(data.ticket_price) || 0,
         max_tickets: data.max_tickets ? parseInt(data.max_tickets) : null,
         target_participants: data.target_participants ? parseInt(data.target_participants) : null,
+        start_date: data.start_date || new Date().toISOString(),
         end_date: data.end_date || null,
+        draw_date: data.draw_date || null,
         competition_type: data.competition_type,
         status: data.status,
         required_tickets: parseInt(data.required_tickets) || 1
@@ -555,7 +556,7 @@ export default function AdminCompetitions() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>قيمة الجائزة (اختياري)</Label>
                     <Input
@@ -563,15 +564,6 @@ export default function AdminCompetitions() {
                       value={formData.prize_value}
                       onChange={(e) => setFormData({ ...formData, prize_value: e.target.value })}
                       placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>سعر التذكرة</Label>
-                    <Input
-                      type="number"
-                      value={formData.ticket_price}
-                      onChange={(e) => setFormData({ ...formData, ticket_price: e.target.value })}
-                      placeholder="0 للمجانية"
                     />
                   </div>
                   <div className="space-y-2">

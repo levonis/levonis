@@ -11,7 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Trophy, Ticket, Users, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History, ChevronLeft, ChevronRight, Images, ChevronDown, Calendar, ShoppingCart } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Trophy, Ticket, Users, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History, ChevronLeft, ChevronRight, Images, ChevronDown, Calendar, ShoppingCart, ArrowRight, Info, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -60,6 +61,8 @@ export default function Competitions() {
   const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
   const [showEnterConfirm, setShowEnterConfirm] = useState(false);
   const [selectedCompetitionForEntry, setSelectedCompetitionForEntry] = useState<Competition | null>(null);
+  const [selectedCompetitionForDetails, setSelectedCompetitionForDetails] = useState<Competition | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -452,7 +455,11 @@ export default function Competitions() {
               return (
                 <Card 
                   key={comp.id} 
-                  className="overflow-hidden hover:shadow-md transition-all"
+                  className="overflow-hidden hover:shadow-md transition-all cursor-pointer"
+                  onClick={() => {
+                    setSelectedCompetitionForDetails(comp);
+                    setShowDetailsDialog(true);
+                  }}
                 >
                   {compImages.length > 0 && (
                     <div className="relative h-28 overflow-hidden group">
@@ -460,7 +467,10 @@ export default function Competitions() {
                         src={compImages[currentImageIndex]} 
                         alt={comp.title_ar}
                         className="w-full h-full object-cover cursor-pointer"
-                        onClick={() => openGallery(comp, currentImageIndex)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openGallery(comp, currentImageIndex);
+                        }}
                       />
                       
                       {compImages.length > 1 && (
@@ -539,7 +549,10 @@ export default function Competitions() {
                         <Button 
                           variant="link" 
                           className="h-auto p-0 text-xs text-primary"
-                          onClick={() => toggleDescription(comp.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleDescription(comp.id);
+                          }}
                         >
                           {isDescriptionExpanded ? 'عرض أقل' : 'المزيد'}
                           <ChevronDown className={`h-3 w-3 mr-1 transition-transform ${isDescriptionExpanded ? 'rotate-180' : ''}`} />
@@ -587,7 +600,8 @@ export default function Competitions() {
                       <Button
                         size="sm"
                         className="w-full gap-1 text-xs"
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (!user) {
                             toast.error('يجب تسجيل الدخول أولاً');
                             navigate('/auth');
@@ -705,6 +719,207 @@ export default function Competitions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Competition Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden" dir="rtl">
+          {selectedCompetitionForDetails && (() => {
+            const comp = selectedCompetitionForDetails;
+            const compImages = getAllImages(comp);
+            const ticketCount = ticketCounts?.[comp.id] || 0;
+            const myTicketList = myTickets?.[comp.id] || [];
+            const hasTicket = myTicketList.length > 0;
+            const isWinner = myTicketList.some(t => t.is_winner);
+            const isSoldOut = comp.max_tickets ? ticketCount >= comp.max_tickets : false;
+            const isEnded = comp.status === 'completed' || (comp.end_date && new Date(comp.end_date) < new Date());
+            const requiredTickets = comp.required_tickets || 1;
+            const canEnter = (userTicketBalance || 0) >= requiredTickets;
+
+            return (
+              <>
+                {/* Header Image */}
+                {compImages.length > 0 && (
+                  <div className="relative h-48 overflow-hidden">
+                    <img 
+                      src={compImages[0]} 
+                      alt={comp.title_ar}
+                      className="w-full h-full object-cover"
+                    />
+                    {isWinner && (
+                      <div className="absolute inset-0 bg-yellow-500/80 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <Crown className="h-12 w-12 mx-auto mb-2" />
+                          <p className="font-bold text-lg">مبروك! أنت الفائز!</p>
+                        </div>
+                      </div>
+                    )}
+                    {comp.status === 'completed' && !isWinner && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                        <Badge variant="secondary" className="text-lg px-4 py-2">انتهت المسابقة</Badge>
+                      </div>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+                      onClick={() => setShowDetailsDialog(false)}
+                    >
+                      <ArrowRight className="h-5 w-5" />
+                    </Button>
+                  </div>
+                )}
+
+                <ScrollArea className="max-h-[calc(90vh-12rem)]">
+                  <div className="p-5 space-y-4">
+                    {/* Title */}
+                    <div>
+                      <h2 className="text-xl font-bold">{comp.title_ar}</h2>
+                      {comp.title !== comp.title_ar && (
+                        <p className="text-sm text-muted-foreground">{comp.title}</p>
+                      )}
+                    </div>
+
+                    {/* Prize */}
+                    <div className="bg-primary/10 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Gift className="h-5 w-5 text-primary" />
+                        <span className="font-semibold">الجائزة</span>
+                      </div>
+                      <p className="text-foreground">{comp.prize_description_ar}</p>
+                      {comp.prize_value && (
+                        <p className="text-primary font-bold mt-1">
+                          القيمة: {comp.prize_value.toLocaleString()} {comp.currency}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Description */}
+                    {comp.description_ar && (
+                      <div>
+                        <h3 className="font-semibold mb-2 flex items-center gap-2">
+                          <Info className="h-4 w-4" />
+                          التفاصيل
+                        </h3>
+                        <p className="text-muted-foreground text-sm">{comp.description_ar}</p>
+                      </div>
+                    )}
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                        <Users className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                        <p className="text-lg font-bold">{ticketCount}</p>
+                        <p className="text-xs text-muted-foreground">مشترك</p>
+                      </div>
+                      <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                        <Ticket className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                        <p className="text-lg font-bold">{requiredTickets}</p>
+                        <p className="text-xs text-muted-foreground">تذاكر للدخول</p>
+                      </div>
+                    </div>
+
+                    {/* Progress */}
+                    {(comp.max_tickets || comp.target_participants) && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>التقدم</span>
+                          <span className="text-muted-foreground">
+                            {ticketCount} / {comp.max_tickets || comp.target_participants}
+                          </span>
+                        </div>
+                        <Progress value={getProgress(comp)} className="h-2" />
+                      </div>
+                    )}
+
+                    {/* Dates */}
+                    <div className="space-y-2 text-sm">
+                      {comp.start_date && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Calendar className="h-4 w-4" />
+                          <span>بداية: {format(new Date(comp.start_date), 'dd MMM yyyy - hh:mm a', { locale: ar })}</span>
+                        </div>
+                      )}
+                      {comp.end_date && (
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          <span>نهاية: {format(new Date(comp.end_date), 'dd MMM yyyy - hh:mm a', { locale: ar })}</span>
+                        </div>
+                      )}
+                      {comp.draw_date && (
+                        <div className="flex items-center gap-2 text-primary">
+                          <Trophy className="h-4 w-4" />
+                          <span>موعد السحب: {format(new Date(comp.draw_date), 'dd MMM yyyy - hh:mm a', { locale: ar })}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Countdown for timed competitions */}
+                    {comp.status === 'active' && comp.competition_type === 'timed' && comp.end_date && (
+                      <div className="border rounded-lg p-3">
+                        <p className="text-sm text-muted-foreground mb-2 text-center">الوقت المتبقي</p>
+                        <CountdownTimer endDate={comp.end_date} />
+                      </div>
+                    )}
+
+                    {/* My Tickets */}
+                    {hasTicket && (
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                        <p className="font-semibold mb-2 flex items-center gap-2">
+                          <Ticket className="h-4 w-4" />
+                          تذاكري ({myTicketList.length})
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {myTicketList.map((t, idx) => (
+                            <Badge 
+                              key={idx} 
+                              variant={t.is_winner ? "default" : "secondary"}
+                              className={t.is_winner ? "bg-yellow-500 text-white" : ""}
+                            >
+                              {t.ticket_number}
+                              {t.is_winner && <Crown className="h-3 w-3 mr-1" />}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Enter Button */}
+                    {comp.status === 'active' && !isSoldOut && !isEnded && (
+                      <Button
+                        className="w-full gap-2"
+                        size="lg"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!user) {
+                            toast.error('يجب تسجيل الدخول أولاً');
+                            navigate('/auth');
+                            return;
+                          }
+                          setSelectedCompetitionForEntry(comp);
+                          setShowEnterConfirm(true);
+                          setShowDetailsDialog(false);
+                        }}
+                        disabled={enterCompetitionMutation.isPending || !canEnter}
+                      >
+                        {enterCompetitionMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Ticket className="h-4 w-4" />
+                        )}
+                        {canEnter ? `دخول المسابقة (${requiredTickets} تذكرة)` : `تحتاج ${requiredTickets} تذكرة للدخول`}
+                      </Button>
+                    )}
+
+                    {isSoldOut && comp.status === 'active' && (
+                      <Badge variant="secondary" className="w-full justify-center py-3 text-base">نفذت التذاكر</Badge>
+                    )}
+                  </div>
+                </ScrollArea>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
 
       <CelebrationEffect 
         isActive={showWinCelebration} 
