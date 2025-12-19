@@ -795,74 +795,129 @@ export default function Competitions() {
 
             return (
               <>
-                {/* Header Image Slideshow */}
+                {/* Header Image Slideshow - Enhanced Prize Display */}
                 {compImages.length > 0 && (
-                  <div className="relative h-48 overflow-hidden">
-                    {/* Auto-sliding images */}
-                    {compImages.map((img, idx) => (
+                  <div className="relative h-56 md:h-64 overflow-hidden bg-gradient-to-b from-background/5 to-background">
+                    {/* Background blur effect */}
+                    <div className="absolute inset-0 overflow-hidden">
                       <img 
-                        key={idx}
-                        src={img} 
-                        alt={`${comp.title_ar} - ${idx + 1}`}
-                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
-                          idx === (detailsSlideIndex % compImages.length) ? 'opacity-100' : 'opacity-0'
-                        }`}
+                        src={compImages[detailsSlideIndex % compImages.length]} 
+                        alt=""
+                        className="w-full h-full object-cover blur-2xl scale-110 opacity-40"
                       />
+                    </div>
+                    
+                    {/* Main sliding images with Ken Burns effect */}
+                    {compImages.map((img, idx) => (
+                      <div
+                        key={idx}
+                        className={`absolute inset-0 flex items-center justify-center transition-all duration-700 ease-out ${
+                          idx === (detailsSlideIndex % compImages.length) 
+                            ? 'opacity-100 scale-100' 
+                            : 'opacity-0 scale-95'
+                        }`}
+                      >
+                        <img 
+                          src={img} 
+                          alt={`${comp.title_ar} - ${idx + 1}`}
+                          className="max-w-[90%] max-h-[90%] object-contain rounded-lg shadow-2xl"
+                          style={{
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                          }}
+                        />
+                      </div>
                     ))}
+                    
+                    {/* Gradient overlays for depth */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-background/80 to-transparent pointer-events-none" />
+                    
                     {isWinner && (
-                      <div className="absolute inset-0 bg-yellow-500/80 flex items-center justify-center">
-                        <div className="text-center text-white">
-                          <Crown className="h-12 w-12 mx-auto mb-2" />
-                          <p className="font-bold text-lg">مبروك! أنت الفائز!</p>
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/90 to-amber-600/90 flex items-center justify-center backdrop-blur-sm">
+                        <div className="text-center text-white animate-pulse">
+                          <Crown className="h-16 w-16 mx-auto mb-3 drop-shadow-lg" />
+                          <p className="font-bold text-xl">مبروك! أنت الفائز!</p>
                         </div>
                       </div>
                     )}
                     {comp.status === 'completed' && !isWinner && (
-                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                        <Badge variant="secondary" className="text-lg px-4 py-2">انتهت المسابقة</Badge>
+                      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center">
+                        <Badge variant="secondary" className="text-lg px-6 py-3 shadow-xl">انتهت المسابقة</Badge>
                       </div>
                     )}
+                    
+                    {/* Close button with improved styling */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white z-10"
+                      className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white z-10 backdrop-blur-sm rounded-full h-10 w-10 shadow-lg transition-all hover:scale-105"
                       onClick={() => setShowDetailsDialog(false)}
                     >
                       <ArrowRight className="h-5 w-5" />
                     </Button>
                     
-                    {/* Dot Indicators */}
+                    {/* Navigation arrows for multiple images */}
                     {compImages.length > 1 && (
-                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white z-10 backdrop-blur-sm rounded-full h-10 w-10 shadow-lg transition-all hover:scale-105"
+                          onClick={() => setDetailsSlideIndex(prev => (prev - 1 + compImages.length) % compImages.length)}
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white z-10 backdrop-blur-sm rounded-full h-10 w-10 shadow-lg transition-all hover:scale-105"
+                          onClick={() => setDetailsSlideIndex(prev => (prev + 1) % compImages.length)}
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </Button>
+                      </>
+                    )}
+                    
+                    {/* Enhanced dot indicators */}
+                    {compImages.length > 1 && (
+                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 bg-black/30 backdrop-blur-md px-3 py-2 rounded-full">
                         {compImages.map((_, idx) => (
                           <button
                             key={idx}
                             onClick={() => setDetailsSlideIndex(idx)}
-                            className={`w-2 h-2 rounded-full transition-all ${
+                            className={`rounded-full transition-all duration-300 ${
                               idx === (detailsSlideIndex % compImages.length) 
-                                ? 'bg-white w-4' 
-                                : 'bg-white/50 hover:bg-white/70'
+                                ? 'bg-white w-6 h-2' 
+                                : 'bg-white/40 hover:bg-white/60 w-2 h-2'
                             }`}
                           />
                         ))}
                       </div>
                     )}
                     
-                    {/* Gallery Button */}
-                    {compImages.length > 1 && (
+                    {/* Gallery/Fullscreen Button */}
+                    {compImages.length > 0 && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="absolute bottom-2 left-2 bg-black/50 hover:bg-black/70 text-white gap-1 z-10"
+                        className="absolute bottom-4 left-3 bg-black/40 hover:bg-black/60 text-white gap-1.5 z-10 backdrop-blur-sm rounded-full shadow-lg transition-all hover:scale-105"
                         onClick={() => {
                           setGalleryCompetition(comp);
-                          setGalleryIndex(0);
+                          setGalleryIndex(detailsSlideIndex % compImages.length);
                           setGalleryOpen(true);
                         }}
                       >
-                        <Images className="h-4 w-4" />
-                        {compImages.length} صور
+                        <Eye className="h-4 w-4" />
+                        {compImages.length > 1 ? `عرض ${compImages.length} صور` : 'تكبير'}
                       </Button>
+                    )}
+                    
+                    {/* Image counter badge */}
+                    {compImages.length > 1 && (
+                      <Badge className="absolute top-3 left-3 bg-black/40 backdrop-blur-sm text-white gap-1 text-xs px-2.5 py-1 border-0 shadow-md">
+                        <Images className="h-3.5 w-3.5" />
+                        {(detailsSlideIndex % compImages.length) + 1}/{compImages.length}
+                      </Badge>
                     )}
                   </div>
                 )}
