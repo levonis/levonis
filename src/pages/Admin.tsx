@@ -1414,16 +1414,6 @@ const Admin = () => {
               </Button>
               
               <Button
-                onClick={() => navigate('/admin/daily-tasks')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Sparkles className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">المهام اليومية</span>
-                <span className="text-xs text-muted-foreground">إدارة المهام والتحديات</span>
-              </Button>
-              
-              <Button
                 onClick={() => navigate('/admin/wallet')}
                 variant="outline"
                 className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"

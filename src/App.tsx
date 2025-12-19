@@ -39,7 +39,6 @@ const AdminPointsSettings = lazy(() => import("./pages/AdminPointsSettings"));
 const AdminChats = lazy(() => import("./pages/AdminChats"));
 const AdminLoyaltyLevels = lazy(() => import("./pages/AdminLoyaltyLevels"));
 const AdminDefaultSettings = lazy(() => import("./pages/AdminDefaultSettings"));
-const AdminDailyTasks = lazy(() => import("./pages/AdminDailyTasks"));
 const AdminWallet = lazy(() => import("./pages/AdminWallet"));
 const AdminWalletSettings = lazy(() => import("./pages/AdminWalletSettings"));
 const AdminInvoiceTemplates = lazy(() => import("./pages/AdminInvoiceTemplates"));
@@ -93,7 +92,7 @@ function AppContent() {
             <Route path="/admin/chats" element={<AdminChats />} />
             <Route path="/admin/loyalty-levels" element={<AdminLoyaltyLevels />} />
             <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
-            <Route path="/admin/daily-tasks" element={<AdminDailyTasks />} />
+            <Route path="/admin/wallet" element={<AdminWallet />} />
             <Route path="/admin/wallet" element={<AdminWallet />} />
             <Route path="/admin/wallet-settings" element={<AdminWalletSettings />} />
             <Route path="/admin/invoice-templates" element={<AdminInvoiceTemplates />} />
