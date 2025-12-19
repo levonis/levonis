@@ -211,6 +211,116 @@ export type Database = {
           },
         ]
       }
+      competition_tickets: {
+        Row: {
+          competition_id: string
+          id: string
+          is_winner: boolean
+          purchased_at: string
+          ticket_number: string
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          id?: string
+          is_winner?: boolean
+          purchased_at?: string
+          ticket_number: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          id?: string
+          is_winner?: boolean
+          purchased_at?: string
+          ticket_number?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_tickets_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      competitions: {
+        Row: {
+          competition_type: Database["public"]["Enums"]["competition_type"]
+          created_at: string
+          currency: string
+          description: string | null
+          description_ar: string | null
+          draw_date: string | null
+          end_date: string | null
+          id: string
+          image_url: string | null
+          max_tickets: number | null
+          prize_description: string
+          prize_description_ar: string
+          prize_value: number | null
+          start_date: string
+          status: Database["public"]["Enums"]["competition_status"]
+          target_participants: number | null
+          ticket_price: number
+          title: string
+          title_ar: string
+          updated_at: string
+          winner_ticket_id: string | null
+          winner_user_id: string | null
+        }
+        Insert: {
+          competition_type?: Database["public"]["Enums"]["competition_type"]
+          created_at?: string
+          currency?: string
+          description?: string | null
+          description_ar?: string | null
+          draw_date?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          max_tickets?: number | null
+          prize_description: string
+          prize_description_ar: string
+          prize_value?: number | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["competition_status"]
+          target_participants?: number | null
+          ticket_price?: number
+          title: string
+          title_ar: string
+          updated_at?: string
+          winner_ticket_id?: string | null
+          winner_user_id?: string | null
+        }
+        Update: {
+          competition_type?: Database["public"]["Enums"]["competition_type"]
+          created_at?: string
+          currency?: string
+          description?: string | null
+          description_ar?: string | null
+          draw_date?: string | null
+          end_date?: string | null
+          id?: string
+          image_url?: string | null
+          max_tickets?: number | null
+          prize_description?: string
+          prize_description_ar?: string
+          prize_value?: number | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["competition_status"]
+          target_participants?: number | null
+          ticket_price?: number
+          title?: string
+          title_ar?: string
+          updated_at?: string
+          winner_ticket_id?: string | null
+          winner_user_id?: string | null
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           created_at: string
@@ -1551,11 +1661,13 @@ export type Database = {
         Returns: undefined
       }
       delete_old_notifications: { Args: never; Returns: undefined }
+      draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
       generate_order_number: { Args: never; Returns: string }
       generate_referral_code:
         | { Args: never; Returns: string }
         | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
+      generate_ticket_number: { Args: { comp_id: string }; Returns: string }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
         Returns: boolean
@@ -1567,6 +1679,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      purchase_competition_ticket: { Args: { comp_id: string }; Returns: Json }
       send_general_notification: {
         Args: { _message: string; _title: string; _type?: string }
         Returns: undefined
@@ -1575,6 +1688,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user" | "manager" | "worker"
+      competition_status: "draft" | "active" | "completed" | "cancelled"
+      competition_type: "ticket_count" | "all_tickets_sold" | "timed" | "free"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1703,6 +1818,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user", "manager", "worker"],
+      competition_status: ["draft", "active", "completed", "cancelled"],
+      competition_type: ["ticket_count", "all_tickets_sold", "timed", "free"],
     },
   },
 } as const

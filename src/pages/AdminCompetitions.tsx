@@ -1,0 +1,536 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown } from "lucide-react";
+import { toast } from "sonner";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
+
+type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free';
+type CompetitionStatus = 'draft' | 'active' | 'completed' | 'cancelled';
+
+interface Competition {
+  id: string;
+  title: string;
+  title_ar: string;
+  description: string | null;
+  description_ar: string | null;
+  image_url: string | null;
+  prize_description: string;
+  prize_description_ar: string;
+  prize_value: number | null;
+  ticket_price: number;
+  max_tickets: number | null;
+  target_participants: number | null;
+  start_date: string;
+  end_date: string | null;
+  draw_date: string | null;
+  competition_type: CompetitionType;
+  status: CompetitionStatus;
+  winner_user_id: string | null;
+  currency: string;
+  created_at: string;
+}
+
+const competitionTypeLabels: Record<CompetitionType, string> = {
+  ticket_count: 'عند وصول المشاركين لعدد معين',
+  all_tickets_sold: 'عند بيع جميع التذاكر',
+  timed: 'مسابقة بوقت محدد',
+  free: 'مسابقة مجانية'
+};
+
+const statusLabels: Record<CompetitionStatus, string> = {
+  draft: 'مسودة',
+  active: 'نشطة',
+  completed: 'مكتملة',
+  cancelled: 'ملغاة'
+};
+
+const statusColors: Record<CompetitionStatus, string> = {
+  draft: 'bg-gray-500',
+  active: 'bg-green-500',
+  completed: 'bg-blue-500',
+  cancelled: 'bg-red-500'
+};
+
+export default function AdminCompetitions() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingCompetition, setEditingCompetition] = useState<Competition | null>(null);
+  
+  const [formData, setFormData] = useState({
+    title: '',
+    title_ar: '',
+    description: '',
+    description_ar: '',
+    image_url: '',
+    prize_description: '',
+    prize_description_ar: '',
+    prize_value: '',
+    ticket_price: '0',
+    max_tickets: '',
+    target_participants: '',
+    end_date: '',
+    competition_type: 'ticket_count' as CompetitionType,
+    status: 'draft' as CompetitionStatus
+  });
+
+  const { data: competitions, isLoading } = useQuery({
+    queryKey: ['admin-competitions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('competitions')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data as Competition[];
+    }
+  });
+
+  const { data: ticketCounts } = useQuery({
+    queryKey: ['competition-ticket-counts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('competition_tickets')
+        .select('competition_id');
+      
+      if (error) throw error;
+      
+      const counts: Record<string, number> = {};
+      data?.forEach(ticket => {
+        counts[ticket.competition_id] = (counts[ticket.competition_id] || 0) + 1;
+      });
+      return counts;
+    }
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const payload = {
+        title: data.title,
+        title_ar: data.title_ar,
+        description: data.description || null,
+        description_ar: data.description_ar || null,
+        image_url: data.image_url || null,
+        prize_description: data.prize_description,
+        prize_description_ar: data.prize_description_ar,
+        prize_value: data.prize_value ? parseFloat(data.prize_value) : null,
+        ticket_price: parseFloat(data.ticket_price) || 0,
+        max_tickets: data.max_tickets ? parseInt(data.max_tickets) : null,
+        target_participants: data.target_participants ? parseInt(data.target_participants) : null,
+        end_date: data.end_date || null,
+        competition_type: data.competition_type,
+        status: data.status
+      };
+
+      if (editingCompetition) {
+        const { error } = await supabase
+          .from('competitions')
+          .update(payload)
+          .eq('id', editingCompetition.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('competitions')
+          .insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-competitions'] });
+      toast.success(editingCompetition ? 'تم تحديث المسابقة' : 'تم إنشاء المسابقة');
+      setIsDialogOpen(false);
+      resetForm();
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ: ' + error.message);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('competitions')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-competitions'] });
+      toast.success('تم حذف المسابقة');
+    }
+  });
+
+  const drawWinnerMutation = useMutation({
+    mutationFn: async (competitionId: string) => {
+      const { data, error } = await supabase.rpc('draw_competition_winner', {
+        comp_id: competitionId
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-competitions'] });
+      if (data.success) {
+        toast.success(`🎉 الفائز: ${data.winner_name} - التذكرة: ${data.winner_ticket_number}`);
+      } else {
+        toast.error(data.error);
+      }
+    }
+  });
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      title_ar: '',
+      description: '',
+      description_ar: '',
+      image_url: '',
+      prize_description: '',
+      prize_description_ar: '',
+      prize_value: '',
+      ticket_price: '0',
+      max_tickets: '',
+      target_participants: '',
+      end_date: '',
+      competition_type: 'ticket_count',
+      status: 'draft'
+    });
+    setEditingCompetition(null);
+  };
+
+  const handleEdit = (comp: Competition) => {
+    setEditingCompetition(comp);
+    setFormData({
+      title: comp.title,
+      title_ar: comp.title_ar,
+      description: comp.description || '',
+      description_ar: comp.description_ar || '',
+      image_url: comp.image_url || '',
+      prize_description: comp.prize_description,
+      prize_description_ar: comp.prize_description_ar,
+      prize_value: comp.prize_value?.toString() || '',
+      ticket_price: comp.ticket_price.toString(),
+      max_tickets: comp.max_tickets?.toString() || '',
+      target_participants: comp.target_participants?.toString() || '',
+      end_date: comp.end_date ? comp.end_date.slice(0, 16) : '',
+      competition_type: comp.competition_type,
+      status: comp.status
+    });
+    setIsDialogOpen(true);
+  };
+
+  return (
+    <div className="min-h-screen bg-background" dir="rtl">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <Trophy className="h-6 w-6 text-primary" />
+                إدارة المسابقات
+              </h1>
+              <p className="text-muted-foreground">إنشاء وإدارة المسابقات والسحوبات</p>
+            </div>
+          </div>
+
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open);
+            if (!open) resetForm();
+          }}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="h-4 w-4" />
+                إنشاء مسابقة
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>{editingCompetition ? 'تعديل المسابقة' : 'إنشاء مسابقة جديدة'}</DialogTitle>
+              </DialogHeader>
+              
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>العنوان (عربي)</Label>
+                    <Input
+                      value={formData.title_ar}
+                      onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
+                      placeholder="عنوان المسابقة"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>العنوان (إنجليزي)</Label>
+                    <Input
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="Competition Title"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>الوصف (عربي)</Label>
+                    <Textarea
+                      value={formData.description_ar}
+                      onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                      placeholder="وصف المسابقة"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الوصف (إنجليزي)</Label>
+                    <Textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      placeholder="Competition Description"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>رابط الصورة</Label>
+                  <Input
+                    value={formData.image_url}
+                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>الجائزة (عربي)</Label>
+                    <Input
+                      value={formData.prize_description_ar}
+                      onChange={(e) => setFormData({ ...formData, prize_description_ar: e.target.value })}
+                      placeholder="وصف الجائزة"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>الجائزة (إنجليزي)</Label>
+                    <Input
+                      value={formData.prize_description}
+                      onChange={(e) => setFormData({ ...formData, prize_description: e.target.value })}
+                      placeholder="Prize Description"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>قيمة الجائزة (اختياري)</Label>
+                    <Input
+                      type="number"
+                      value={formData.prize_value}
+                      onChange={(e) => setFormData({ ...formData, prize_value: e.target.value })}
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>سعر التذكرة</Label>
+                    <Input
+                      type="number"
+                      value={formData.ticket_price}
+                      onChange={(e) => setFormData({ ...formData, ticket_price: e.target.value })}
+                      placeholder="0 للمجانية"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>نوع المسابقة</Label>
+                  <Select
+                    value={formData.competition_type}
+                    onValueChange={(value: CompetitionType) => setFormData({ ...formData, competition_type: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ticket_count">عند وصول المشاركين لعدد معين</SelectItem>
+                      <SelectItem value="all_tickets_sold">عند بيع جميع التذاكر</SelectItem>
+                      <SelectItem value="timed">مسابقة بوقت محدد</SelectItem>
+                      <SelectItem value="free">مسابقة مجانية</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {(formData.competition_type === 'ticket_count' || formData.competition_type === 'all_tickets_sold') && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>الحد الأقصى للتذاكر</Label>
+                      <Input
+                        type="number"
+                        value={formData.max_tickets}
+                        onChange={(e) => setFormData({ ...formData, max_tickets: e.target.value })}
+                        placeholder="عدد التذاكر المتاحة"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>العدد المستهدف للمشاركين</Label>
+                      <Input
+                        type="number"
+                        value={formData.target_participants}
+                        onChange={(e) => setFormData({ ...formData, target_participants: e.target.value })}
+                        placeholder="العدد المطلوب للسحب"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {formData.competition_type === 'timed' && (
+                  <div className="space-y-2">
+                    <Label>تاريخ انتهاء المسابقة</Label>
+                    <Input
+                      type="datetime-local"
+                      value={formData.end_date}
+                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                    />
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <Label>الحالة</Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(value: CompetitionStatus) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="draft">مسودة</SelectItem>
+                      <SelectItem value="active">نشطة</SelectItem>
+                      <SelectItem value="cancelled">ملغاة</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button 
+                  onClick={() => createMutation.mutate(formData)}
+                  disabled={createMutation.isPending || !formData.title_ar || !formData.prize_description_ar}
+                  className="w-full"
+                >
+                  {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                  {editingCompetition ? 'تحديث' : 'إنشاء'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : competitions?.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <Trophy className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">لا توجد مسابقات حتى الآن</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {competitions?.map((comp) => (
+              <Card key={comp.id} className="overflow-hidden">
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    {comp.image_url && (
+                      <img 
+                        src={comp.image_url} 
+                        alt={comp.title_ar}
+                        className="w-24 h-24 object-cover rounded-lg"
+                      />
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="text-lg font-semibold">{comp.title_ar}</h3>
+                        <Badge className={statusColors[comp.status]}>
+                          {statusLabels[comp.status]}
+                        </Badge>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground mb-3">{comp.description_ar}</p>
+                      
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                          <Gift className="h-4 w-4 text-primary" />
+                          <span>{comp.prize_description_ar}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Ticket className="h-4 w-4 text-primary" />
+                          <span>{comp.ticket_price === 0 ? 'مجانية' : `${comp.ticket_price} ${comp.currency}`}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-4 w-4 text-primary" />
+                          <span>{ticketCounts?.[comp.id] || 0} مشارك</span>
+                          {comp.max_tickets && <span className="text-muted-foreground">/ {comp.max_tickets}</span>}
+                        </div>
+                        {comp.end_date && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4 text-primary" />
+                            <span>ينتهي: {format(new Date(comp.end_date), 'dd MMM yyyy', { locale: ar })}</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {competitionTypeLabels[comp.competition_type]}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(comp)}>
+                        تعديل
+                      </Button>
+                      {comp.status === 'active' && (ticketCounts?.[comp.id] || 0) > 0 && (
+                        <Button 
+                          size="sm" 
+                          className="gap-1"
+                          onClick={() => drawWinnerMutation.mutate(comp.id)}
+                          disabled={drawWinnerMutation.isPending}
+                        >
+                          <Crown className="h-4 w-4" />
+                          سحب الفائز
+                        </Button>
+                      )}
+                      {comp.status === 'completed' && comp.winner_user_id && (
+                        <Badge variant="outline" className="justify-center">
+                          <Crown className="h-3 w-3 ml-1" />
+                          تم السحب
+                        </Badge>
+                      )}
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => deleteMutation.mutate(comp.id)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
