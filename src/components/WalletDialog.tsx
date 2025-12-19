@@ -537,6 +537,9 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
                             {transaction.type === 'points_conversion' && 'تحويل من النقاط'}
                             {transaction.type === 'order_payment' && 'دفع طلب'}
                             {transaction.type === 'admin_deduction' && 'خصم إداري'}
+                            {transaction.type === 'purchase' && 'شراء تذاكر'}
+                            {transaction.type === 'competition_ticket' && 'شراء تذكرة مسابقة'}
+                            {transaction.type === 'admin_addition' && 'إضافة إدارية'}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {new Date(transaction.created_at).toLocaleDateString('ar-IQ')}
@@ -560,9 +563,9 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
                             </p>
                           )}
                         </div>
-                        <div className={`text-lg font-bold ${transaction.type === 'withdrawal' || transaction.type === 'order_payment' || transaction.type === 'admin_deduction' ? 'text-red-600' : 'text-green-600'}`}>
-                          {transaction.type === 'withdrawal' || transaction.type === 'order_payment' || transaction.type === 'admin_deduction' ? '-' : '+'}
-                          {transaction.amount?.toLocaleString()}
+                        <div className={`text-lg font-bold ${transaction.type === 'withdrawal' || transaction.type === 'order_payment' || transaction.type === 'admin_deduction' || transaction.type === 'purchase' || transaction.type === 'competition_ticket' || transaction.amount < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                          {transaction.type === 'withdrawal' || transaction.type === 'order_payment' || transaction.type === 'admin_deduction' || transaction.type === 'purchase' || transaction.type === 'competition_ticket' || transaction.amount < 0 ? '-' : '+'}
+                          {Math.abs(transaction.amount)?.toLocaleString()}
                         </div>
                       </div>
                     ))}
