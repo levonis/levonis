@@ -10,11 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X } from "lucide-react";
+import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import CelebrationEffect from "@/components/CelebrationEffect";
+import CompetitionParticipantsDialog from "@/components/CompetitionParticipantsDialog";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free';
 type CompetitionStatus = 'draft' | 'active' | 'completed' | 'cancelled';
@@ -71,6 +72,8 @@ export default function AdminCompetitions() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   const [winnerInfo, setWinnerInfo] = useState<{ name: string; ticket: string } | null>(null);
+  const [participantsDialogOpen, setParticipantsDialogOpen] = useState(false);
+  const [selectedCompetitionForParticipants, setSelectedCompetitionForParticipants] = useState<Competition | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -637,6 +640,18 @@ export default function AdminCompetitions() {
                       <Button variant="outline" size="sm" onClick={() => handleEdit(comp)}>
                         تعديل
                       </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="gap-1"
+                        onClick={() => {
+                          setSelectedCompetitionForParticipants(comp);
+                          setParticipantsDialogOpen(true);
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                        المشاركين
+                      </Button>
                       {comp.status === 'active' && (ticketCounts?.[comp.id] || 0) > 0 && (
                         <Button 
                           size="sm" 
@@ -680,6 +695,15 @@ export default function AdminCompetitions() {
           setWinnerInfo(null);
         }}
       />
+
+      {selectedCompetitionForParticipants && (
+        <CompetitionParticipantsDialog
+          open={participantsDialogOpen}
+          onOpenChange={setParticipantsDialogOpen}
+          competitionId={selectedCompetitionForParticipants.id}
+          competitionTitle={selectedCompetitionForParticipants.title_ar}
+        />
+      )}
     </div>
   );
 }
