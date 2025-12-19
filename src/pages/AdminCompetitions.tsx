@@ -84,7 +84,11 @@ export default function AdminCompetitions() {
     ticket_price: '0',
     max_tickets: '',
     target_participants: '',
+    start_date: '',
     end_date: '',
+    draw_date: '',
+    max_tickets_per_user: '',
+    terms_conditions: '',
     competition_type: 'ticket_count' as CompetitionType,
     status: 'draft' as CompetitionStatus
   });
@@ -237,7 +241,11 @@ export default function AdminCompetitions() {
       ticket_price: '0',
       max_tickets: '',
       target_participants: '',
+      start_date: '',
       end_date: '',
+      draw_date: '',
+      max_tickets_per_user: '',
+      terms_conditions: '',
       competition_type: 'ticket_count',
       status: 'draft'
     });
@@ -258,7 +266,11 @@ export default function AdminCompetitions() {
       ticket_price: comp.ticket_price.toString(),
       max_tickets: comp.max_tickets?.toString() || '',
       target_participants: comp.target_participants?.toString() || '',
+      start_date: comp.start_date ? comp.start_date.slice(0, 16) : '',
       end_date: comp.end_date ? comp.end_date.slice(0, 16) : '',
+      draw_date: comp.draw_date ? comp.draw_date.slice(0, 16) : '',
+      max_tickets_per_user: '',
+      terms_conditions: '',
       competition_type: comp.competition_type,
       status: comp.status
     });
@@ -292,12 +304,12 @@ export default function AdminCompetitions() {
                 إنشاء مسابقة
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editingCompetition ? 'تعديل المسابقة' : 'إنشاء مسابقة جديدة'}</DialogTitle>
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto fixed-dialog">
+              <DialogHeader className="sticky top-0 bg-background z-10 pb-4 border-b">
+                <DialogTitle className="text-xl">{editingCompetition ? 'تعديل المسابقة' : 'إنشاء مسابقة جديدة'}</DialogTitle>
               </DialogHeader>
               
-              <div className="grid gap-4 py-4">
+              <div className="grid gap-6 py-6">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>العنوان (عربي)</Label>
@@ -418,83 +430,143 @@ export default function AdminCompetitions() {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>نوع المسابقة</Label>
-                  <Select
-                    value={formData.competition_type}
-                    onValueChange={(value: CompetitionType) => setFormData({ ...formData, competition_type: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="ticket_count">عند وصول المشاركين لعدد معين</SelectItem>
-                      <SelectItem value="all_tickets_sold">عند بيع جميع التذاكر</SelectItem>
-                      <SelectItem value="timed">مسابقة بوقت محدد</SelectItem>
-                      <SelectItem value="free">مسابقة مجانية</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* قسم التواريخ */}
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    التواريخ والمواعيد
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>تاريخ البداية</Label>
+                      <Input
+                        type="datetime-local"
+                        value={formData.start_date}
+                        onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تاريخ الانتهاء</Label>
+                      <Input
+                        type="datetime-local"
+                        value={formData.end_date}
+                        onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>تاريخ السحب</Label>
+                      <Input
+                        type="datetime-local"
+                        value={formData.draw_date}
+                        onChange={(e) => setFormData({ ...formData, draw_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* قسم نوع المسابقة والحالة */}
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Trophy className="h-4 w-4" />
+                    نوع المسابقة والإعدادات
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>نوع المسابقة</Label>
+                      <Select
+                        value={formData.competition_type}
+                        onValueChange={(value: CompetitionType) => setFormData({ ...formData, competition_type: value })}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="z-[100] bg-background border shadow-lg">
+                          <SelectItem value="ticket_count">عند وصول المشاركين لعدد معين</SelectItem>
+                          <SelectItem value="all_tickets_sold">عند بيع جميع التذاكر</SelectItem>
+                          <SelectItem value="timed">مسابقة بوقت محدد</SelectItem>
+                          <SelectItem value="free">مسابقة مجانية</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>حالة المسابقة</Label>
+                      <Select
+                        value={formData.status}
+                        onValueChange={(value: CompetitionStatus) => setFormData({ ...formData, status: value })}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="z-[100] bg-background border shadow-lg">
+                          <SelectItem value="draft">مسودة</SelectItem>
+                          <SelectItem value="active">نشطة</SelectItem>
+                          <SelectItem value="completed">مكتملة</SelectItem>
+                          <SelectItem value="cancelled">ملغاة</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </div>
 
                 {(formData.competition_type === 'ticket_count' || formData.competition_type === 'all_tickets_sold') && (
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>الحد الأقصى للتذاكر</Label>
-                      <Input
-                        type="number"
-                        value={formData.max_tickets}
-                        onChange={(e) => setFormData({ ...formData, max_tickets: e.target.value })}
-                        placeholder="عدد التذاكر المتاحة"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>العدد المستهدف للمشاركين</Label>
-                      <Input
-                        type="number"
-                        value={formData.target_participants}
-                        onChange={(e) => setFormData({ ...formData, target_participants: e.target.value })}
-                        placeholder="العدد المطلوب للسحب"
-                      />
+                  <div className="border rounded-lg p-4 bg-muted/30">
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                      <Ticket className="h-4 w-4" />
+                      إعدادات التذاكر
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>الحد الأقصى للتذاكر</Label>
+                        <Input
+                          type="number"
+                          value={formData.max_tickets}
+                          onChange={(e) => setFormData({ ...formData, max_tickets: e.target.value })}
+                          placeholder="عدد التذاكر المتاحة"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>العدد المستهدف للمشاركين</Label>
+                        <Input
+                          type="number"
+                          value={formData.target_participants}
+                          onChange={(e) => setFormData({ ...formData, target_participants: e.target.value })}
+                          placeholder="العدد المطلوب للسحب"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>الحد الأقصى لكل مستخدم</Label>
+                        <Input
+                          type="number"
+                          value={formData.max_tickets_per_user}
+                          onChange={(e) => setFormData({ ...formData, max_tickets_per_user: e.target.value })}
+                          placeholder="0 = بلا حد"
+                        />
+                      </div>
                     </div>
                   </div>
                 )}
 
-                {formData.competition_type === 'timed' && (
-                  <div className="space-y-2">
-                    <Label>تاريخ انتهاء المسابقة</Label>
-                    <Input
-                      type="datetime-local"
-                      value={formData.end_date}
-                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                    />
-                  </div>
-                )}
-
+                {/* الشروط والأحكام */}
                 <div className="space-y-2">
-                  <Label>الحالة</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: CompetitionStatus) => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">مسودة</SelectItem>
-                      <SelectItem value="active">نشطة</SelectItem>
-                      <SelectItem value="cancelled">ملغاة</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label>الشروط والأحكام (اختياري)</Label>
+                  <Textarea
+                    value={formData.terms_conditions}
+                    onChange={(e) => setFormData({ ...formData, terms_conditions: e.target.value })}
+                    placeholder="أدخل شروط وأحكام المسابقة..."
+                    rows={3}
+                  />
                 </div>
 
-                <Button 
-                  onClick={() => createMutation.mutate(formData)}
-                  disabled={createMutation.isPending || !formData.title_ar || !formData.prize_description_ar}
-                  className="w-full"
-                >
-                  {createMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-                  {editingCompetition ? 'تحديث' : 'إنشاء'}
-                </Button>
+                <div className="sticky bottom-0 bg-background pt-4 border-t mt-4">
+                  <Button 
+                    onClick={() => createMutation.mutate(formData)}
+                    disabled={createMutation.isPending || !formData.title_ar || !formData.prize_description_ar}
+                    className="w-full h-12 text-lg"
+                  >
+                    {createMutation.isPending && <Loader2 className="h-5 w-5 animate-spin ml-2" />}
+                    {editingCompetition ? 'تحديث المسابقة' : 'إنشاء المسابقة'}
+                  </Button>
+                </div>
               </div>
             </DialogContent>
           </Dialog>

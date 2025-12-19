@@ -279,3 +279,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Fixed dialog for admin forms */
+.fixed-dialog {
+  position: fixed !important;
+  overflow-y: auto;
+}
+
+.fixed-dialog [data-radix-select-content] {
+  position: fixed !important;
+  z-index: 100 !important;
+}
+
+/* Ensure select content doesn't move with scroll */
+[data-radix-popper-content-wrapper] {
+  position: fixed !important;
+  z-index: 100 !important;
+}
