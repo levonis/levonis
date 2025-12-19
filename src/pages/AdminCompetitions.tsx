@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye, RotateCcw, ImagePlus } from "lucide-react";
+import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye, RotateCcw, ImagePlus, Settings, Save } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -126,6 +126,52 @@ export default function AdminCompetitions() {
         counts[ticket.competition_id] = (counts[ticket.competition_id] || 0) + 1;
       });
       return counts;
+    }
+  });
+
+  const { data: ticketSettings, refetch: refetchTicketSettings } = useQuery({
+    queryKey: ['ticket-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('default_settings')
+        .select('*')
+        .eq('setting_key', 'ticket_price')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      return data?.setting_value as { price: number } || { price: 1000 };
+    }
+  });
+
+  const [ticketPriceInput, setTicketPriceInput] = useState<string>('');
+
+  const updateTicketPriceMutation = useMutation({
+    mutationFn: async (newPrice: number) => {
+      const { data: existing } = await supabase
+        .from('default_settings')
+        .select('id')
+        .eq('setting_key', 'ticket_price')
+        .single();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('default_settings')
+          .update({ setting_value: { price: newPrice } })
+          .eq('setting_key', 'ticket_price');
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('default_settings')
+          .insert({ setting_key: 'ticket_price', setting_value: { price: newPrice } });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      refetchTicketSettings();
+      toast.success('تم تحديث سعر التذكرة بنجاح');
+    },
+    onError: (error) => {
+      toast.error('خطأ في التحديث: ' + error.message);
     }
   });
 
@@ -681,6 +727,52 @@ export default function AdminCompetitions() {
             </DialogContent>
           </Dialog>
         </div>
+
+        {/* Ticket Price Settings */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Settings className="h-5 w-5 text-primary" />
+              إعدادات التذاكر
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4">
+              <div className="flex-1 max-w-xs">
+                <Label className="text-sm text-muted-foreground mb-1 block">سعر التذكرة الواحدة (دينار عراقي)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min={0}
+                    placeholder={ticketSettings?.price?.toString() || '1000'}
+                    defaultValue={ticketSettings?.price}
+                    onChange={(e) => setTicketPriceInput(e.target.value)}
+                    className="w-40"
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      const price = parseInt(ticketPriceInput) || ticketSettings?.price || 1000;
+                      updateTicketPriceMutation.mutate(price);
+                    }}
+                    disabled={updateTicketPriceMutation.isPending}
+                    className="gap-1"
+                  >
+                    {updateTicketPriceMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    حفظ
+                  </Button>
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                السعر الحالي: <span className="font-bold text-primary">{ticketSettings?.price?.toLocaleString() || 1000} دينار</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {isLoading ? (
           <div className="flex justify-center py-12">
