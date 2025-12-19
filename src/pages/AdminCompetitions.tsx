@@ -94,6 +94,7 @@ export default function AdminCompetitions() {
     draw_date: '',
     max_tickets_per_user: '',
     terms_conditions: '',
+    required_tickets: '1',
     competition_type: 'ticket_count' as CompetitionType,
     status: 'draft' as CompetitionStatus
   });
@@ -145,7 +146,8 @@ export default function AdminCompetitions() {
         target_participants: data.target_participants ? parseInt(data.target_participants) : null,
         end_date: data.end_date || null,
         competition_type: data.competition_type,
-        status: data.status
+        status: data.status,
+        required_tickets: parseInt(data.required_tickets) || 1
       };
 
       if (editingCompetition) {
@@ -316,6 +318,7 @@ export default function AdminCompetitions() {
       draw_date: '',
       max_tickets_per_user: '',
       terms_conditions: '',
+      required_tickets: '1',
       competition_type: 'ticket_count',
       status: 'draft'
     });
@@ -342,6 +345,7 @@ export default function AdminCompetitions() {
       draw_date: comp.draw_date ? comp.draw_date.slice(0, 16) : '',
       max_tickets_per_user: '',
       terms_conditions: '',
+      required_tickets: (comp as any).required_tickets?.toString() || '1',
       competition_type: comp.competition_type,
       status: comp.status
     });
@@ -504,7 +508,7 @@ export default function AdminCompetitions() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="space-y-2">
                     <Label>قيمة الجائزة (اختياري)</Label>
                     <Input
@@ -521,6 +525,16 @@ export default function AdminCompetitions() {
                       value={formData.ticket_price}
                       onChange={(e) => setFormData({ ...formData, ticket_price: e.target.value })}
                       placeholder="0 للمجانية"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>التذاكر المطلوبة للدخول</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={formData.required_tickets}
+                      onChange={(e) => setFormData({ ...formData, required_tickets: e.target.value })}
+                      placeholder="1"
                     />
                   </div>
                 </div>

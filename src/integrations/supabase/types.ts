@@ -262,6 +262,7 @@ export type Database = {
           prize_description: string
           prize_description_ar: string
           prize_value: number | null
+          required_tickets: number
           start_date: string
           status: Database["public"]["Enums"]["competition_status"]
           target_participants: number | null
@@ -287,6 +288,7 @@ export type Database = {
           prize_description: string
           prize_description_ar: string
           prize_value?: number | null
+          required_tickets?: number
           start_date?: string
           status?: Database["public"]["Enums"]["competition_status"]
           target_participants?: number | null
@@ -312,6 +314,7 @@ export type Database = {
           prize_description?: string
           prize_description_ar?: string
           prize_value?: number | null
+          required_tickets?: number
           start_date?: string
           status?: Database["public"]["Enums"]["competition_status"]
           target_participants?: number | null
@@ -1570,6 +1573,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_tickets: {
+        Row: {
+          created_at: string
+          id: string
+          ticket_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ticket_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ticket_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_wallets: {
         Row: {
           balance: number
@@ -1665,6 +1692,10 @@ export type Database = {
       }
       delete_old_notifications: { Args: never; Returns: undefined }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
+      enter_competition_with_tickets: {
+        Args: { comp_id: string }
+        Returns: Json
+      }
       generate_order_number: { Args: never; Returns: string }
       generate_referral_code:
         | { Args: never; Returns: string }
@@ -1685,6 +1716,10 @@ export type Database = {
       purchase_competition_ticket:
         | { Args: { comp_id: string }; Returns: Json }
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }
+      purchase_tickets: {
+        Args: { price_per_ticket: number; ticket_quantity: number }
+        Returns: Json
+      }
       send_general_notification: {
         Args: { _message: string; _title: string; _type?: string }
         Returns: undefined
