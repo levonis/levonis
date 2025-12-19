@@ -1,4 +1,4 @@
-// App component - main application entry point
+// App component - main application entry point - v2
 import { Suspense, lazy, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
