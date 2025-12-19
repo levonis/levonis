@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,24 +8,25 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trophy, Ticket, Users, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History, ChevronLeft, ChevronRight, Images, ChevronDown, Calendar, ShoppingCart, ArrowRight, Info, Eye } from "lucide-react";
+import { Trophy, Ticket, Users, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History, ChevronLeft, ChevronRight, Images, Calendar, ShoppingCart, ArrowRight, Info, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { format, addHours } from "date-fns";
 import { ar } from "date-fns/locale";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import CountdownTimer from "@/components/CountdownTimer";
+import CelebrationEffect from "@/components/CelebrationEffect";
+import CompetitionCard from "@/components/CompetitionCard";
+import OptimizedImage from "@/components/OptimizedImage";
 
-// Helper function to format date in Baghdad timezone (UTC+3)
 const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy - hh:mm a') => {
   const date = new Date(dateString);
-  // Baghdad is UTC+3
   const baghdadDate = addHours(date, 3);
   return format(baghdadDate, formatStr, { locale: ar });
 };
-import CountdownTimer from "@/components/CountdownTimer";
-import CelebrationEffect from "@/components/CelebrationEffect";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free';
 
@@ -58,12 +59,9 @@ export default function Competitions() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showWinCelebration, setShowWinCelebration] = useState(false);
-  const [winningTicket, setWinningTicket] = useState<string | null>(null);
-  const [imageIndexes, setImageIndexes] = useState<Record<string, number>>({});
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryCompetition, setGalleryCompetition] = useState<Competition | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
-  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
   const [ticketPurchaseQuantity, setTicketPurchaseQuantity] = useState(1);
   const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
   const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
@@ -84,7 +82,8 @@ export default function Competitions() {
       
       if (error) throw error;
       return data as Competition[];
-    }
+    },
+    staleTime: 30000, // Cache for 30 seconds
   });
 
   const { data: ticketCounts } = useQuery({
@@ -101,7 +100,8 @@ export default function Competitions() {
         counts[ticket.competition_id] = (counts[ticket.competition_id] || 0) + 1;
       });
       return counts;
-    }
+    },
+    staleTime: 30000,
   });
 
   const { data: myTickets } = useQuery({
@@ -127,7 +127,8 @@ export default function Competitions() {
       });
       return tickets;
     },
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 30000,
   });
 
   const { data: wallet } = useQuery({
@@ -143,7 +144,8 @@ export default function Competitions() {
       if (error && error.code !== 'PGRST116') throw error;
       return data;
     },
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 30000,
   });
 
   const { data: userTicketBalance } = useQuery({
@@ -159,7 +161,8 @@ export default function Competitions() {
       if (error && error.code !== 'PGRST116') throw error;
       return data?.ticket_count || 0;
     },
-    enabled: !!user
+    enabled: !!user,
+    staleTime: 30000,
   });
 
   const { data: ticketSettings } = useQuery({
@@ -173,7 +176,8 @@ export default function Competitions() {
       
       if (error && error.code !== 'PGRST116') return { price: 1000 };
       return data?.setting_value as { price: number } || { price: 1000 };
-    }
+    },
+    staleTime: 60000,
   });
 
   const purchaseTicketsMutation = useMutation({
@@ -223,43 +227,20 @@ export default function Competitions() {
     }
   });
 
-  const getProgress = (comp: Competition) => {
+  const getAllImages = useCallback((comp: Competition): string[] => {
+    if (comp.images?.length) return comp.images;
+    if (comp.image_url) return [comp.image_url];
+    return [];
+  }, []);
+
+  const getProgress = useCallback((comp: Competition) => {
     const count = ticketCounts?.[comp.id] || 0;
-    if (comp.max_tickets) {
-      return (count / comp.max_tickets) * 100;
-    }
-    if (comp.target_participants) {
-      return (count / comp.target_participants) * 100;
-    }
+    if (comp.max_tickets) return (count / comp.max_tickets) * 100;
+    if (comp.target_participants) return (count / comp.target_participants) * 100;
     return 0;
-  };
+  }, [ticketCounts]);
 
-  const getAllImages = (comp: Competition): string[] => {
-    const images: string[] = [];
-    if (comp.images && comp.images.length > 0) {
-      images.push(...comp.images);
-    } else if (comp.image_url) {
-      images.push(comp.image_url);
-    }
-    return images;
-  };
-
-  const getCurrentImageIndex = (compId: string) => {
-    return imageIndexes[compId] || 0;
-  };
-
-  const navigateImage = (compId: string, images: string[], direction: 'next' | 'prev') => {
-    const current = getCurrentImageIndex(compId);
-    let newIndex: number;
-    if (direction === 'next') {
-      newIndex = (current + 1) % images.length;
-    } else {
-      newIndex = (current - 1 + images.length) % images.length;
-    }
-    setImageIndexes(prev => ({ ...prev, [compId]: newIndex }));
-  };
-
-  // Auto-slide for details dialog images
+  // Auto-slide for details dialog - only when dialog is open
   useEffect(() => {
     if (!showDetailsDialog || !selectedCompetitionForDetails) return;
     
@@ -268,24 +249,37 @@ export default function Competitions() {
     
     const interval = setInterval(() => {
       setDetailsSlideIndex(prev => (prev + 1) % compImages.length);
-    }, 3000); // Change image every 3 seconds
+    }, 4000);
     
     return () => clearInterval(interval);
-  }, [showDetailsDialog, selectedCompetitionForDetails]);
+  }, [showDetailsDialog, selectedCompetitionForDetails, getAllImages]);
 
-  const openGallery = (comp: Competition, startIndex: number = 0) => {
-    setGalleryCompetition(comp);
-    setGalleryIndex(startIndex);
-    setGalleryOpen(true);
-  };
+  const handleOpenDetails = useCallback((comp: Competition) => {
+    setSelectedCompetitionForDetails(comp);
+    setDetailsSlideIndex(0);
+    setShowDetailsDialog(true);
+  }, []);
 
-  const toggleDescription = (compId: string) => {
-    setExpandedDescriptions(prev => ({ ...prev, [compId]: !prev[compId] }));
-  };
+  const handleEnterCompetition = useCallback((comp: Competition) => {
+    setSelectedCompetitionForEntry(comp);
+    setShowEnterConfirm(true);
+  }, []);
 
   const ticketPrice = ticketSettings?.price || 1000;
   const totalTicketCost = ticketPurchaseQuantity * ticketPrice;
   const canBuyTickets = wallet && wallet.balance >= totalTicketCost;
+
+  // Memoize gallery images
+  const galleryImages = useMemo(() => {
+    if (!galleryCompetition) return [];
+    return getAllImages(galleryCompetition);
+  }, [galleryCompetition, getAllImages]);
+
+  // Memoize details images
+  const detailsImages = useMemo(() => {
+    if (!selectedCompetitionForDetails) return [];
+    return getAllImages(selectedCompetitionForDetails);
+  }, [selectedCompetitionForDetails, getAllImages]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col" dir="rtl">
@@ -340,6 +334,7 @@ export default function Competitions() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
       {/* Fixed Ticket Purchase Bar */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
         <div className="container mx-auto px-4 py-3">
@@ -459,237 +454,19 @@ export default function Competitions() {
           </Card>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {competitions?.map((comp) => {
-              const ticketCount = ticketCounts?.[comp.id] || 0;
-              const myTicketList = myTickets?.[comp.id] || [];
-              const hasTicket = myTicketList.length > 0;
-              const isWinner = myTicketList.some(t => t.is_winner);
-              const isSoldOut = comp.max_tickets ? ticketCount >= comp.max_tickets : false;
-              const isEnded = comp.status === 'completed' || (comp.end_date && new Date(comp.end_date) < new Date());
-
-              const compImages = getAllImages(comp);
-              const currentImageIndex = getCurrentImageIndex(comp.id);
-              const isDescriptionExpanded = expandedDescriptions[comp.id];
-              const prizeText = comp.prize_description_ar;
-              const shouldTruncate = prizeText.length > 40;
-              const requiredTickets = comp.required_tickets || 1;
-              const canEnter = (userTicketBalance || 0) >= requiredTickets;
-
-              return (
-                <Card 
-                  key={comp.id} 
-                  className="overflow-hidden hover:shadow-md transition-all cursor-pointer"
-                  onClick={() => {
-                    setSelectedCompetitionForDetails(comp);
-                    setShowDetailsDialog(true);
-                  }}
-                >
-                  {compImages.length > 0 && (
-                    <div className="relative h-36 md:h-40 overflow-hidden group">
-                      {/* Image with smooth transition */}
-                      <div className="relative w-full h-full">
-                        {compImages.map((img, idx) => (
-                          <img 
-                            key={idx}
-                            src={img} 
-                            alt={`${comp.title_ar} - ${idx + 1}`}
-                            className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-in-out ${
-                              idx === currentImageIndex 
-                                ? 'opacity-100 scale-100' 
-                                : 'opacity-0 scale-105'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      
-                      {/* Gradient overlay for better text visibility */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
-                      
-                      {compImages.length > 1 && (
-                        <>
-                          {/* Navigation buttons with better styling */}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-all duration-300 h-8 w-8 rounded-full shadow-lg"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigateImage(comp.id, compImages, 'prev');
-                            }}
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-all duration-300 h-8 w-8 rounded-full shadow-lg"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigateImage(comp.id, compImages, 'next');
-                            }}
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                          
-                          {/* Improved dots indicator */}
-                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
-                            {compImages.map((_, idx) => (
-                              <button
-                                key={idx}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setImageIndexes(prev => ({ ...prev, [comp.id]: idx }));
-                                }}
-                                className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                                  idx === currentImageIndex 
-                                    ? 'bg-white w-4' 
-                                    : 'bg-white/50 hover:bg-white/70'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          
-                          {/* Image counter badge */}
-                          <Badge className="absolute top-2 left-2 bg-black/40 backdrop-blur-sm text-white gap-1 text-xs px-2 py-1 border-0">
-                            <Images className="h-3 w-3" />
-                            {currentImageIndex + 1}/{compImages.length}
-                          </Badge>
-                        </>
-                      )}
-                      
-                      {/* Required Tickets Badge - improved styling */}
-                      <Badge className="absolute top-2 right-2 text-xs px-2 py-1 bg-primary/90 backdrop-blur-sm text-primary-foreground border-0 shadow-md">
-                        <Ticket className="h-3 w-3 ml-1" />
-                        {requiredTickets} تذكرة
-                      </Badge>
-                      
-                      {/* Completed overlay */}
-                      {comp.status === 'completed' && !isWinner && (
-                        <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px] flex items-center justify-center">
-                          <Badge variant="secondary" className="text-base px-4 py-2 shadow-lg">انتهت</Badge>
-                        </div>
-                      )}
-                      
-                      {/* Winner overlay with animation */}
-                      {isWinner && (
-                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/90 to-amber-600/90 flex items-center justify-center">
-                          <div className="flex flex-col items-center animate-pulse">
-                            <Crown className="h-8 w-8 text-white drop-shadow-lg" />
-                            <span className="text-white text-xs font-bold mt-1">فائز!</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  <CardContent className="p-3 space-y-2">
-                    <h3 className="font-bold text-sm line-clamp-1">{comp.title_ar}</h3>
-                    
-                    {/* Prize Description - Enhanced Display */}
-                    <div className="bg-gradient-to-l from-primary/10 to-transparent rounded-md p-2 border-r-2 border-primary/50">
-                      <div className="flex items-start gap-1.5">
-                        <Gift className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-primary" />
-                        <div className="flex-1 min-w-0">
-                          <span className={`text-xs font-medium text-foreground leading-relaxed ${shouldTruncate && !isDescriptionExpanded ? 'line-clamp-2' : ''}`}>
-                            {prizeText}
-                          </span>
-                          {comp.prize_value && (
-                            <p className="text-xs font-bold text-primary mt-0.5">
-                              {comp.prize_value.toLocaleString()} {comp.currency}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      {shouldTruncate && (
-                        <Button 
-                          variant="link" 
-                          className="h-auto p-0 text-xs text-primary mt-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleDescription(comp.id);
-                          }}
-                        >
-                          {isDescriptionExpanded ? 'عرض أقل' : 'المزيد'}
-                          <ChevronDown className={`h-3 w-3 mr-1 transition-transform ${isDescriptionExpanded ? 'rotate-180' : ''}`} />
-                        </Button>
-                      )}
-                    </div>
-
-                    {/* End Date / Countdown */}
-                    {comp.status === 'active' && comp.competition_type === 'timed' && comp.end_date && (
-                      <div className="text-xs">
-                        <CountdownTimer endDate={comp.end_date} />
-                      </div>
-                    )}
-                    
-                    {comp.status === 'active' && comp.end_date && comp.competition_type !== 'timed' && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>ينتهي: {formatBaghdadTime(comp.end_date, 'dd MMM yyyy')}</span>
-                      </div>
-                    )}
-                    
-                    {/* Participants Count - Always Show */}
-                    <div className="space-y-1">
-                      {(comp.max_tickets || comp.target_participants) ? (
-                        <>
-                          <Progress value={getProgress(comp)} className="h-1.5" />
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span className="flex items-center gap-0.5">
-                              <Users className="h-3 w-3" />
-                              {ticketCount} مشترك
-                            </span>
-                            <span>/ {comp.max_tickets || comp.target_participants}</span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Users className="h-3 w-3" />
-                          <span>{ticketCount} مشترك</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* My Tickets */}
-                    {hasTicket && (
-                      <div className="text-xs text-primary font-medium">
-                        تذاكري: {myTicketList.map(t => t.ticket_number).join(', ')}
-                      </div>
-                    )}
-                    
-                    {/* Enter Competition Button */}
-                    {comp.status === 'active' && !isSoldOut && !isEnded && (
-                      <Button
-                        size="sm"
-                        className="w-full gap-1 text-xs"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (!user) {
-                            toast.error('يجب تسجيل الدخول أولاً');
-                            navigate('/auth');
-                            return;
-                          }
-                          setSelectedCompetitionForEntry(comp);
-                          setShowEnterConfirm(true);
-                        }}
-                        disabled={enterCompetitionMutation.isPending || !canEnter}
-                      >
-                        {enterCompetitionMutation.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Ticket className="h-3 w-3" />
-                        )}
-                        {canEnter ? `دخول (${requiredTickets} تذكرة)` : `تحتاج ${requiredTickets} تذكرة`}
-                      </Button>
-                    )}
-                    
-                    {isSoldOut && comp.status === 'active' && (
-                      <Badge variant="secondary" className="w-full justify-center text-xs">نفذت التذاكر</Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {competitions?.map((comp) => (
+              <CompetitionCard
+                key={comp.id}
+                competition={comp}
+                ticketCount={ticketCounts?.[comp.id] || 0}
+                myTicketList={myTickets?.[comp.id] || []}
+                userTicketBalance={userTicketBalance || 0}
+                onOpenDetails={handleOpenDetails}
+                onEnterCompetition={handleEnterCompetition}
+                isEntering={enterCompetitionMutation.isPending}
+                isAuthenticated={!!user}
+              />
+            ))}
           </div>
         )}
       </main>
@@ -698,48 +475,49 @@ export default function Competitions() {
 
       {/* Gallery Dialog */}
       <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
-        <DialogContent className="max-w-4xl p-0 overflow-hidden">
-          {galleryCompetition && (() => {
-            const images = getAllImages(galleryCompetition);
-            return (
-              <div className="relative">
-                <img
-                  src={images[galleryIndex]}
-                  alt={galleryCompetition.title_ar}
-                  className="w-full max-h-[80vh] object-contain"
-                />
-                {images.length > 1 && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white"
-                      onClick={() => setGalleryIndex((galleryIndex - 1 + images.length) % images.length)}
-                    >
-                      <ChevronLeft className="h-6 w-6" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white"
-                      onClick={() => setGalleryIndex((galleryIndex + 1) % images.length)}
-                    >
-                      <ChevronRight className="h-6 w-6" />
-                    </Button>
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                      {images.map((_, idx) => (
-                        <button
-                          key={idx}
-                          className={`w-2.5 h-2.5 rounded-full ${idx === galleryIndex ? 'bg-white' : 'bg-white/50'}`}
-                          onClick={() => setGalleryIndex(idx)}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })()}
+        <DialogContent className="max-w-4xl p-0 overflow-hidden" aria-describedby={undefined}>
+          <VisuallyHidden>
+            <DialogTitle>معرض الصور</DialogTitle>
+          </VisuallyHidden>
+          {galleryCompetition && (
+            <div className="relative">
+              <img
+                src={galleryImages[galleryIndex]}
+                alt={galleryCompetition.title_ar}
+                className="w-full max-h-[80vh] object-contain"
+                loading="lazy"
+              />
+              {galleryImages.length > 1 && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white"
+                    onClick={() => setGalleryIndex((galleryIndex - 1 + galleryImages.length) % galleryImages.length)}
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white"
+                    onClick={() => setGalleryIndex((galleryIndex + 1) % galleryImages.length)}
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </Button>
+                  <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                    {galleryImages.map((_, idx) => (
+                      <button
+                        key={idx}
+                        className={`w-2.5 h-2.5 rounded-full transition-colors ${idx === galleryIndex ? 'bg-white' : 'bg-white/50'}`}
+                        onClick={() => setGalleryIndex(idx)}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -785,12 +563,17 @@ export default function Competitions() {
       {/* Competition Details Dialog */}
       <Dialog open={showDetailsDialog} onOpenChange={(open) => {
         setShowDetailsDialog(open);
-        if (!open) setDetailsSlideIndex(0);
+        if (!open) {
+          setDetailsSlideIndex(0);
+          setSelectedCompetitionForDetails(null);
+        }
       }}>
-        <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden" dir="rtl">
+        <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden" dir="rtl" aria-describedby={undefined}>
+          <VisuallyHidden>
+            <DialogTitle>{selectedCompetitionForDetails?.title_ar || 'تفاصيل المسابقة'}</DialogTitle>
+          </VisuallyHidden>
           {selectedCompetitionForDetails && (() => {
             const comp = selectedCompetitionForDetails;
-            const compImages = getAllImages(comp);
             const ticketCount = ticketCounts?.[comp.id] || 0;
             const myTicketList = myTickets?.[comp.id] || [];
             const hasTicket = myTicketList.length > 0;
@@ -802,134 +585,116 @@ export default function Competitions() {
 
             return (
               <>
-                {/* Header Image Slideshow - Enhanced Prize Display */}
-                {compImages.length > 0 && (
+                {/* Header Image Slideshow */}
+                {detailsImages.length > 0 && (
                   <div className="relative h-56 md:h-64 overflow-hidden bg-gradient-to-b from-background/5 to-background">
-                    {/* Background blur effect */}
+                    {/* Background blur */}
                     <div className="absolute inset-0 overflow-hidden">
                       <img 
-                        src={compImages[detailsSlideIndex % compImages.length]} 
+                        src={detailsImages[detailsSlideIndex % detailsImages.length]} 
                         alt=""
                         className="w-full h-full object-cover blur-2xl scale-110 opacity-40"
+                        loading="lazy"
                       />
                     </div>
                     
-                    {/* Main sliding images with Ken Burns effect */}
-                    {compImages.map((img, idx) => (
-                      <div
-                        key={idx}
-                        className={`absolute inset-0 flex items-center justify-center transition-all duration-700 ease-out ${
-                          idx === (detailsSlideIndex % compImages.length) 
-                            ? 'opacity-100 scale-100' 
-                            : 'opacity-0 scale-95'
-                        }`}
-                      >
-                        <img 
-                          src={img} 
-                          alt={`${comp.title_ar} - ${idx + 1}`}
-                          className="max-w-[90%] max-h-[90%] object-contain rounded-lg shadow-2xl"
-                          style={{
-                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-                          }}
-                        />
-                      </div>
-                    ))}
+                    {/* Main image */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <img 
+                        src={detailsImages[detailsSlideIndex % detailsImages.length]} 
+                        alt={comp.title_ar}
+                        className="max-w-[90%] max-h-[90%] object-contain rounded-lg shadow-2xl"
+                        loading="lazy"
+                      />
+                    </div>
                     
-                    {/* Gradient overlays for depth */}
+                    {/* Overlays */}
                     <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent pointer-events-none" />
                     <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-background/80 to-transparent pointer-events-none" />
                     
                     {isWinner && (
-                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/90 to-amber-600/90 flex items-center justify-center backdrop-blur-sm">
-                        <div className="text-center text-white animate-pulse">
-                          <Crown className="h-16 w-16 mx-auto mb-3 drop-shadow-lg" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/90 to-amber-600/90 flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <Crown className="h-16 w-16 mx-auto mb-3" />
                           <p className="font-bold text-xl">مبروك! أنت الفائز!</p>
                         </div>
                       </div>
                     )}
+                    
                     {comp.status === 'completed' && !isWinner && (
-                      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center">
-                        <Badge variant="secondary" className="text-lg px-6 py-3 shadow-xl">انتهت المسابقة</Badge>
+                      <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                        <Badge variant="secondary" className="text-lg px-6 py-3">انتهت المسابقة</Badge>
                       </div>
                     )}
                     
-                    {/* Close button with improved styling */}
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white z-10 backdrop-blur-sm rounded-full h-10 w-10 shadow-lg transition-all hover:scale-105"
+                      className="absolute top-3 right-3 bg-black/40 hover:bg-black/60 text-white z-10 rounded-full h-10 w-10"
                       onClick={() => setShowDetailsDialog(false)}
                     >
                       <ArrowRight className="h-5 w-5" />
                     </Button>
                     
-                    {/* Navigation arrows for multiple images */}
-                    {compImages.length > 1 && (
+                    {detailsImages.length > 1 && (
                       <>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white z-10 backdrop-blur-sm rounded-full h-10 w-10 shadow-lg transition-all hover:scale-105"
-                          onClick={() => setDetailsSlideIndex(prev => (prev - 1 + compImages.length) % compImages.length)}
+                          className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white z-10 rounded-full h-10 w-10"
+                          onClick={() => setDetailsSlideIndex(prev => (prev - 1 + detailsImages.length) % detailsImages.length)}
                         >
                           <ChevronLeft className="h-5 w-5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white z-10 backdrop-blur-sm rounded-full h-10 w-10 shadow-lg transition-all hover:scale-105"
-                          onClick={() => setDetailsSlideIndex(prev => (prev + 1) % compImages.length)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white z-10 rounded-full h-10 w-10"
+                          onClick={() => setDetailsSlideIndex(prev => (prev + 1) % detailsImages.length)}
                         >
                           <ChevronRight className="h-5 w-5" />
                         </Button>
+                        
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 bg-black/30 backdrop-blur-md px-3 py-2 rounded-full">
+                          {detailsImages.map((_, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => setDetailsSlideIndex(idx)}
+                              className={`rounded-full transition-all ${
+                                idx === (detailsSlideIndex % detailsImages.length) 
+                                  ? 'bg-white w-6 h-2' 
+                                  : 'bg-white/40 w-2 h-2'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        
+                        <Badge className="absolute top-3 left-3 bg-black/40 text-white gap-1 text-xs px-2.5 py-1 border-0">
+                          <Images className="h-3.5 w-3.5" />
+                          {(detailsSlideIndex % detailsImages.length) + 1}/{detailsImages.length}
+                        </Badge>
                       </>
                     )}
                     
-                    {/* Enhanced dot indicators */}
-                    {compImages.length > 1 && (
-                      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10 bg-black/30 backdrop-blur-md px-3 py-2 rounded-full">
-                        {compImages.map((_, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => setDetailsSlideIndex(idx)}
-                            className={`rounded-full transition-all duration-300 ${
-                              idx === (detailsSlideIndex % compImages.length) 
-                                ? 'bg-white w-6 h-2' 
-                                : 'bg-white/40 hover:bg-white/60 w-2 h-2'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                    )}
-                    
-                    {/* Gallery/Fullscreen Button */}
-                    {compImages.length > 0 && (
+                    {detailsImages.length > 0 && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="absolute bottom-4 left-3 bg-black/40 hover:bg-black/60 text-white gap-1.5 z-10 backdrop-blur-sm rounded-full shadow-lg transition-all hover:scale-105"
+                        className="absolute bottom-4 left-3 bg-black/40 hover:bg-black/60 text-white gap-1.5 z-10 rounded-full"
                         onClick={() => {
                           setGalleryCompetition(comp);
-                          setGalleryIndex(detailsSlideIndex % compImages.length);
+                          setGalleryIndex(detailsSlideIndex % detailsImages.length);
                           setGalleryOpen(true);
                         }}
                       >
                         <Eye className="h-4 w-4" />
-                        {compImages.length > 1 ? `عرض ${compImages.length} صور` : 'تكبير'}
+                        {detailsImages.length > 1 ? `عرض ${detailsImages.length} صور` : 'تكبير'}
                       </Button>
-                    )}
-                    
-                    {/* Image counter badge */}
-                    {compImages.length > 1 && (
-                      <Badge className="absolute top-3 left-3 bg-black/40 backdrop-blur-sm text-white gap-1 text-xs px-2.5 py-1 border-0 shadow-md">
-                        <Images className="h-3.5 w-3.5" />
-                        {(detailsSlideIndex % compImages.length) + 1}/{compImages.length}
-                      </Badge>
                     )}
                   </div>
                 )}
 
-                <ScrollArea className="max-h-[calc(90vh-12rem)]">
+                <ScrollArea className="max-h-[calc(90vh-16rem)]">
                   <div className="p-5 space-y-4">
                     {/* Title */}
                     <div>
@@ -941,7 +706,6 @@ export default function Competitions() {
 
                     {/* Prize - Enhanced Display */}
                     <div className="relative overflow-hidden rounded-xl border border-primary/20">
-                      {/* Decorative gradient background */}
                       <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent" />
                       <div className="absolute top-0 right-0 w-20 h-20 bg-primary/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
                       
@@ -958,13 +722,13 @@ export default function Competitions() {
                           )}
                         </div>
                         
-                        <div className="pr-2 border-r-3 border-primary/40">
+                        <div className="pr-2 border-r-2 border-primary/40">
                           <p className="text-foreground leading-relaxed">{comp.prize_description_ar}</p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Description - Show only if different from prize description */}
+                    {/* Description */}
                     {comp.description_ar && comp.description_ar !== comp.prize_description_ar && (
                       <div className="bg-secondary/30 rounded-lg p-4">
                         <h3 className="font-semibold mb-2 flex items-center gap-2 text-sm">
@@ -1024,7 +788,7 @@ export default function Competitions() {
                       )}
                     </div>
 
-                    {/* Countdown for timed competitions */}
+                    {/* Countdown */}
                     {comp.status === 'active' && comp.competition_type === 'timed' && comp.end_date && (
                       <div className="border rounded-lg p-3">
                         <p className="text-sm text-muted-foreground mb-2 text-center">الوقت المتبقي</p>
