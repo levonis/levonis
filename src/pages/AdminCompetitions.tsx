@@ -42,6 +42,7 @@ interface Competition {
   winner_user_id: string | null;
   currency: string;
   created_at: string;
+  required_tickets?: number;
 }
 
 const competitionTypeLabels: Record<CompetitionType, string> = {
@@ -921,6 +922,7 @@ export default function AdminCompetitions() {
           onOpenChange={setParticipantsDialogOpen}
           competitionId={selectedCompetitionForParticipants.id}
           competitionTitle={selectedCompetitionForParticipants.title_ar}
+          requiredTickets={selectedCompetitionForParticipants.required_tickets || 1}
         />
       )}
     </div>
