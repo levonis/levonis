@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye } from "lucide-react";
+import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye, RotateCcw, ImagePlus } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -27,6 +27,7 @@ interface Competition {
   description: string | null;
   description_ar: string | null;
   image_url: string | null;
+  images: string[] | null;
   prize_description: string;
   prize_description_ar: string;
   prize_value: number | null;
@@ -81,6 +82,7 @@ export default function AdminCompetitions() {
     description: '',
     description_ar: '',
     image_url: '',
+    images: [] as string[],
     prize_description: '',
     prize_description_ar: '',
     prize_value: '',
@@ -133,7 +135,8 @@ export default function AdminCompetitions() {
         title_ar: data.title_ar,
         description: data.description || null,
         description_ar: data.description_ar || null,
-        image_url: data.image_url || null,
+        image_url: data.images.length > 0 ? data.images[0] : (data.image_url || null),
+        images: data.images.length > 0 ? data.images : (data.image_url ? [data.image_url] : []),
         prize_description: data.prize_description,
         prize_description_ar: data.prize_description_ar,
         prize_value: data.prize_value ? parseFloat(data.prize_value) : null,
@@ -202,33 +205,96 @@ export default function AdminCompetitions() {
     }
   });
 
+  const reDrawMutation = useMutation({
+    mutationFn: async (competitionId: string) => {
+      // Reset competition status and winner
+      const { error: resetError } = await supabase
+        .from('competitions')
+        .update({ 
+          status: 'active',
+          winner_user_id: null,
+          winner_ticket_id: null
+        })
+        .eq('id', competitionId);
+      
+      if (resetError) throw resetError;
+
+      // Reset all tickets to not winner
+      const { error: ticketError } = await supabase
+        .from('competition_tickets')
+        .update({ is_winner: false })
+        .eq('competition_id', competitionId);
+      
+      if (ticketError) throw ticketError;
+
+      // Draw new winner
+      const { data, error } = await supabase.rpc('draw_competition_winner', {
+        comp_id: competitionId
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-competitions'] });
+      if (data.success) {
+        setWinnerInfo({ name: data.winner_name, ticket: data.winner_ticket_number });
+        setShowCelebration(true);
+        toast.success('تم إعادة السحب بنجاح');
+      } else {
+        toast.error(data.error);
+      }
+    },
+    onError: (error) => {
+      toast.error('خطأ في إعادة السحب: ' + error.message);
+    }
+  });
+
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setUploadingImage(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `prizes/${fileName}`;
+      const uploadedUrls: string[] = [];
+      
+      for (const file of Array.from(files)) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        const filePath = `prizes/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('competition-images')
-        .upload(filePath, file);
+        const { error: uploadError } = await supabase.storage
+          .from('competition-images')
+          .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+        if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('competition-images')
-        .getPublicUrl(filePath);
+        const { data: { publicUrl } } = supabase.storage
+          .from('competition-images')
+          .getPublicUrl(filePath);
 
-      setFormData({ ...formData, image_url: publicUrl });
-      toast.success('تم رفع الصورة بنجاح');
+        uploadedUrls.push(publicUrl);
+      }
+
+      setFormData({ 
+        ...formData, 
+        images: [...formData.images, ...uploadedUrls],
+        image_url: formData.images.length === 0 && uploadedUrls.length > 0 ? uploadedUrls[0] : formData.image_url
+      });
+      toast.success(`تم رفع ${uploadedUrls.length} صورة بنجاح`);
     } catch (error: any) {
-      toast.error('خطأ في رفع الصورة: ' + error.message);
+      toast.error('خطأ في رفع الصور: ' + error.message);
     } finally {
       setUploadingImage(false);
     }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = formData.images.filter((_, i) => i !== index);
+    setFormData({
+      ...formData,
+      images: newImages,
+      image_url: newImages.length > 0 ? newImages[0] : ''
+    });
   };
 
   const resetForm = () => {
@@ -238,6 +304,7 @@ export default function AdminCompetitions() {
       description: '',
       description_ar: '',
       image_url: '',
+      images: [],
       prize_description: '',
       prize_description_ar: '',
       prize_value: '',
@@ -263,6 +330,7 @@ export default function AdminCompetitions() {
       description: comp.description || '',
       description_ar: comp.description_ar || '',
       image_url: comp.image_url || '',
+      images: comp.images || (comp.image_url ? [comp.image_url] : []),
       prize_description: comp.prize_description,
       prize_description_ar: comp.prize_description_ar,
       prize_value: comp.prize_value?.toString() || '',
@@ -352,44 +420,68 @@ export default function AdminCompetitions() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>صورة الجائزة</Label>
+                  <Label className="flex items-center gap-2">
+                    <ImagePlus className="h-4 w-4" />
+                    صور المسابقة (يمكنك رفع عدة صور)
+                  </Label>
                   <div className="flex gap-2">
-                    <Input
-                      value={formData.image_url}
-                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                      placeholder="رابط الصورة أو ارفع صورة"
-                      className="flex-1"
-                    />
-                    <div className="relative">
+                    <div className="relative flex-1">
                       <input
                         type="file"
                         accept="image/*"
+                        multiple
                         onChange={handleImageUpload}
                         className="absolute inset-0 opacity-0 cursor-pointer"
                         disabled={uploadingImage}
                       />
-                      <Button type="button" variant="outline" disabled={uploadingImage}>
-                        {uploadingImage ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      <Button type="button" variant="outline" className="w-full gap-2" disabled={uploadingImage}>
+                        {uploadingImage ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            جاري الرفع...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4" />
+                            اختر صور للرفع
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
-                  {formData.image_url && (
-                    <div className="relative w-32 h-32 mt-2">
-                      <img
-                        src={formData.image_url}
-                        alt="معاينة"
-                        className="w-full h-full object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute -top-2 -right-2 h-6 w-6"
-                        onClick={() => setFormData({ ...formData, image_url: '' })}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
+                  
+                  {formData.images.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {formData.images.map((url, index) => (
+                        <div key={index} className="relative w-24 h-24 group">
+                          <img
+                            src={url}
+                            alt={`صورة ${index + 1}`}
+                            className="w-full h-full object-cover rounded-lg border"
+                          />
+                          {index === 0 && (
+                            <span className="absolute bottom-0 left-0 right-0 bg-primary/80 text-primary-foreground text-xs text-center py-0.5 rounded-b-lg">
+                              الرئيسية
+                            </span>
+                          )}
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(index)}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
+                  )}
+                  
+                  {formData.images.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      لم يتم رفع أي صور بعد. الصورة الأولى ستكون الصورة الرئيسية.
+                    </p>
                   )}
                 </div>
 
@@ -665,10 +757,30 @@ export default function AdminCompetitions() {
                         </Button>
                       )}
                       {comp.status === 'completed' && comp.winner_user_id && (
-                        <Badge variant="outline" className="justify-center">
-                          <Crown className="h-3 w-3 ml-1" />
-                          تم السحب
-                        </Badge>
+                        <>
+                          <Badge variant="outline" className="justify-center">
+                            <Crown className="h-3 w-3 ml-1" />
+                            تم السحب
+                          </Badge>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                            onClick={() => {
+                              if (window.confirm('هل أنت متأكد من إعادة السحب؟ سيتم إلغاء الفائز الحالي واختيار فائز جديد.')) {
+                                reDrawMutation.mutate(comp.id);
+                              }
+                            }}
+                            disabled={reDrawMutation.isPending}
+                          >
+                            {reDrawMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <RotateCcw className="h-4 w-4" />
+                            )}
+                            إعادة السحب
+                          </Button>
+                        </>
                       )}
                       <Button 
                         variant="destructive" 
