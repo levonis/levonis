@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye, RotateCcw, ImagePlus, Settings, Save } from "lucide-react";
 import { toast } from "sonner";
-import { format, addHours, parseISO } from "date-fns";
+import { format, addHours } from "date-fns";
 import { ar } from "date-fns/locale";
 
 // Helper function to format date in Baghdad timezone (UTC+3)
@@ -843,17 +843,28 @@ export default function AdminCompetitions() {
                         </div>
                         <div className="flex items-center gap-1">
                           <Ticket className="h-4 w-4 text-primary" />
-                          <span>{comp.ticket_price === 0 ? 'مجانية' : `${comp.ticket_price} ${comp.currency}`}</span>
+                          <span>{comp.required_tickets || 1} تذكرة للدخول</span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4 text-primary" />
                           <span>{ticketCounts?.[comp.id] || 0} مشارك</span>
-                          {comp.max_tickets && <span className="text-muted-foreground">/ {comp.max_tickets}</span>}
+                          {(comp.max_tickets || comp.target_participants) && (
+                            <span className="text-muted-foreground">/ {comp.max_tickets || comp.target_participants}</span>
+                          )}
+                          {!comp.max_tickets && !comp.target_participants && (
+                            <span className="text-muted-foreground">(بدون حد)</span>
+                          )}
                         </div>
                         {comp.end_date && (
                           <div className="flex items-center gap-1">
                             <Calendar className="h-4 w-4 text-primary" />
-                            <span>ينتهي: {format(new Date(comp.end_date), 'dd MMM yyyy', { locale: ar })}</span>
+                            <span>ينتهي: {formatBaghdadTime(comp.end_date, 'dd MMM yyyy - hh:mm a')}</span>
+                          </div>
+                        )}
+                        {comp.draw_date && (
+                          <div className="flex items-center gap-1">
+                            <Trophy className="h-4 w-4 text-yellow-500" />
+                            <span>السحب: {formatBaghdadTime(comp.draw_date, 'dd MMM yyyy - hh:mm a')}</span>
                           </div>
                         )}
                       </div>
