@@ -307,12 +307,12 @@ export default function AdminCompetitions() {
                 إنشاء مسابقة
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto fixed-dialog">
-              <DialogHeader className="sticky top-0 bg-background z-10 pb-4 border-b">
+            <DialogContent className="max-w-3xl h-[85vh] flex flex-col" onPointerDownOutside={(e) => e.preventDefault()}>
+              <DialogHeader className="flex-shrink-0 pb-4 border-b">
                 <DialogTitle className="text-xl">{editingCompetition ? 'تعديل المسابقة' : 'إنشاء مسابقة جديدة'}</DialogTitle>
               </DialogHeader>
               
-              <div className="grid gap-6 py-6">
+              <div className="flex-1 overflow-y-auto grid gap-6 py-6 px-1">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>العنوان (عربي)</Label>
@@ -560,16 +560,17 @@ export default function AdminCompetitions() {
                   />
                 </div>
 
-                <div className="sticky bottom-0 bg-background pt-4 border-t mt-4">
-                  <Button 
-                    onClick={() => createMutation.mutate(formData)}
-                    disabled={createMutation.isPending || !formData.title_ar || !formData.prize_description_ar}
-                    className="w-full h-12 text-lg"
-                  >
-                    {createMutation.isPending && <Loader2 className="h-5 w-5 animate-spin ml-2" />}
-                    {editingCompetition ? 'تحديث المسابقة' : 'إنشاء المسابقة'}
-                  </Button>
-                </div>
+              </div>
+
+              <div className="flex-shrink-0 pt-4 border-t bg-background">
+                <Button 
+                  onClick={() => createMutation.mutate(formData)}
+                  disabled={createMutation.isPending || !formData.title_ar || !formData.prize_description_ar}
+                  className="w-full h-12 text-lg"
+                >
+                  {createMutation.isPending && <Loader2 className="h-5 w-5 animate-spin ml-2" />}
+                  {editingCompetition ? 'تحديث المسابقة' : 'إنشاء المسابقة'}
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
