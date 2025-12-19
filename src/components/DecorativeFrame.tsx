@@ -30,7 +30,7 @@ const DecorativeFrame = memo(() => {
     <div 
       className="fixed inset-0 pointer-events-none z-0 opacity-10"
       style={{
-        backgroundImage: 'url(/images/decorative-frame-levonis.png)',
+        backgroundImage: 'url(/images/decorative-frame-new.webp)',
         backgroundSize: '100% 100%',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
