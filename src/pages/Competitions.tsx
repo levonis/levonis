@@ -5,15 +5,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Trophy, Ticket, Users, Calendar, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History, ChevronLeft, ChevronRight, Images } from "lucide-react";
+import { Trophy, Ticket, Users, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History, ChevronLeft, ChevronRight, Images, ChevronDown, ShoppingCart, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import CountdownTimer from "@/components/CountdownTimer";
 import CelebrationEffect from "@/components/CelebrationEffect";
@@ -43,20 +42,10 @@ interface Competition {
   currency: string;
 }
 
-const competitionTypeLabels: Record<CompetitionType, string> = {
-  ticket_count: 'السحب عند اكتمال العدد',
-  all_tickets_sold: 'السحب عند بيع جميع التذاكر',
-  timed: 'مسابقة محددة بوقت',
-  free: 'مسابقة مجانية'
-};
-
 export default function Competitions() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [ticketQuantity, setTicketQuantity] = useState(1);
   const [showWinCelebration, setShowWinCelebration] = useState(false);
   const [winningTicket, setWinningTicket] = useState<string | null>(null);
   const [imageIndexes, setImageIndexes] = useState<Record<string, number>>({});
@@ -64,6 +53,8 @@ export default function Competitions() {
   const [galleryCompetition, setGalleryCompetition] = useState<Competition | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [cardQuantities, setCardQuantities] = useState<Record<string, number>>({});
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Record<string, boolean>>({});
+  const [selectedCompetitionId, setSelectedCompetitionId] = useState<string | null>(null);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -157,24 +148,11 @@ export default function Competitions() {
       } else {
         toast.error(data.error);
       }
-      setConfirmDialogOpen(false);
-      setTicketQuantity(1);
     },
     onError: (error) => {
       toast.error('حدث خطأ: ' + error.message);
     }
   });
-
-  const handlePurchase = (competition: Competition) => {
-    if (!user) {
-      toast.error('يجب تسجيل الدخول أولاً');
-      navigate('/auth');
-      return;
-    }
-    setSelectedCompetition(competition);
-    setTicketQuantity(cardQuantities[competition.id] || 1);
-    setConfirmDialogOpen(true);
-  };
 
   const handleDirectPurchase = (competition: Competition) => {
     if (!user) {
@@ -201,11 +179,6 @@ export default function Competitions() {
     return Math.min(100, comp.max_tickets - currentCount);
   };
 
-  const getTotalCost = () => {
-    if (!selectedCompetition) return 0;
-    return selectedCompetition.ticket_price * ticketQuantity;
-  };
-
   const getProgress = (comp: Competition) => {
     const count = ticketCounts?.[comp.id] || 0;
     if (comp.max_tickets) {
@@ -215,14 +188,6 @@ export default function Competitions() {
       return (count / comp.target_participants) * 100;
     }
     return 0;
-  };
-
-  const getTimeRemaining = (endDate: string) => {
-    const end = new Date(endDate);
-    if (end < new Date()) {
-      return 'انتهى الوقت';
-    }
-    return formatDistanceToNow(end, { locale: ar, addSuffix: true });
   };
 
   const getAllImages = (comp: Competition): string[] => {
@@ -256,31 +221,112 @@ export default function Competitions() {
     setGalleryOpen(true);
   };
 
+  const toggleDescription = (compId: string) => {
+    setExpandedDescriptions(prev => ({ ...prev, [compId]: !prev[compId] }));
+  };
+
+  const activeCompetitions = competitions?.filter(c => c.status === 'active') || [];
+
   return (
     <div className="min-h-screen bg-background flex flex-col" dir="rtl">
-      
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold flex items-center justify-center gap-3 mb-2">
-            <Trophy className="h-8 w-8 text-primary" />
+      {/* Fixed Ticket Purchase Bar */}
+      {selectedCompetitionId && (() => {
+        const comp = competitions?.find(c => c.id === selectedCompetitionId);
+        if (!comp || comp.status !== 'active') return null;
+        const isSoldOut = comp.max_tickets ? (ticketCounts?.[comp.id] || 0) >= comp.max_tickets : false;
+        if (isSoldOut) return null;
+
+        return (
+          <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
+            <div className="container mx-auto px-4 py-3">
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <Ticket className="h-5 w-5 text-primary" />
+                  <span className="font-medium text-sm truncate max-w-[200px]">{comp.title_ar}</span>
+                  <Badge variant="secondary" className="text-xs">
+                    {comp.ticket_price === 0 ? 'مجانية' : `${comp.ticket_price} ${comp.currency}/تذكرة`}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setCardQuantity(comp.id, getCardQuantity(comp.id) - 1, getMaxAvailableTickets(comp))}
+                      disabled={getCardQuantity(comp.id) <= 1}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min={1}
+                      max={getMaxAvailableTickets(comp)}
+                      value={getCardQuantity(comp.id)}
+                      onChange={(e) => setCardQuantity(comp.id, parseInt(e.target.value) || 1, getMaxAvailableTickets(comp))}
+                      className="w-12 h-7 text-center text-sm px-1"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setCardQuantity(comp.id, getCardQuantity(comp.id) + 1, getMaxAvailableTickets(comp))}
+                      disabled={getCardQuantity(comp.id) >= getMaxAvailableTickets(comp)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  
+                  {comp.ticket_price > 0 && (
+                    <span className="text-sm font-bold text-primary min-w-[80px] text-center">
+                      {(comp.ticket_price * getCardQuantity(comp.id)).toLocaleString()} {comp.currency}
+                    </span>
+                  )}
+                  
+                  <Button 
+                    size="sm"
+                    className="gap-1"
+                    onClick={() => handleDirectPurchase(comp)}
+                    disabled={purchaseMutation.isPending || (comp.ticket_price > 0 && (!wallet || wallet.balance < comp.ticket_price * getCardQuantity(comp.id)))}
+                  >
+                    {purchaseMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ShoppingCart className="h-4 w-4" />
+                    )}
+                    شراء
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      <main className="flex-1 container mx-auto px-4 py-6">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold flex items-center justify-center gap-2 mb-1">
+            <Trophy className="h-6 w-6 text-primary" />
             المسابقات والسحوبات
           </h1>
-          <p className="text-muted-foreground">اشترك في المسابقات واربح جوائز قيمة!</p>
+          <p className="text-sm text-muted-foreground">اشترك في المسابقات واربح جوائز قيمة!</p>
           
-          <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
+          <div className="flex items-center justify-center gap-3 mt-3 flex-wrap">
             {user && wallet && (
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full text-sm">
                 <Wallet className="h-4 w-4 text-primary" />
-                <span className="font-medium">رصيد المحفظة: {wallet.balance} دينار عراقي</span>
+                <span className="font-medium">{wallet.balance.toLocaleString()} دينار</span>
               </div>
             )}
             <Button
               variant="outline"
+              size="sm"
               onClick={() => navigate('/competitions/history')}
-              className="gap-2"
+              className="gap-1"
             >
               <History className="h-4 w-4" />
-              سجل المسابقات السابقة
+              السجل
             </Button>
           </div>
         </div>
@@ -290,15 +336,14 @@ export default function Competitions() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : competitions?.length === 0 ? (
-          <Card className="text-center py-12 max-w-md mx-auto">
-            <CardContent>
-              <Trophy className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+          <Card className="text-center py-8 max-w-sm mx-auto">
+            <CardContent className="pt-6">
+              <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground">لا توجد مسابقات نشطة حالياً</p>
-              <p className="text-sm text-muted-foreground mt-2">تابعنا لمعرفة المسابقات القادمة!</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {competitions?.map((comp) => {
               const ticketCount = ticketCounts?.[comp.id] || 0;
               const myTicketList = myTickets?.[comp.id] || [];
@@ -306,83 +351,95 @@ export default function Competitions() {
               const isWinner = myTicketList.some(t => t.is_winner);
               const isSoldOut = comp.max_tickets ? ticketCount >= comp.max_tickets : false;
               const isEnded = comp.status === 'completed' || (comp.end_date && new Date(comp.end_date) < new Date());
+              const isSelected = selectedCompetitionId === comp.id;
 
               const compImages = getAllImages(comp);
               const currentImageIndex = getCurrentImageIndex(comp.id);
+              const isDescriptionExpanded = expandedDescriptions[comp.id];
+              const prizeText = comp.prize_description_ar;
+              const shouldTruncate = prizeText.length > 40;
 
               return (
-                <Card key={comp.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <Card 
+                  key={comp.id} 
+                  className={`overflow-hidden hover:shadow-md transition-all cursor-pointer ${isSelected ? 'ring-2 ring-primary' : ''}`}
+                  onClick={() => {
+                    if (comp.status === 'active' && !isSoldOut && !isEnded) {
+                      setSelectedCompetitionId(isSelected ? null : comp.id);
+                    }
+                  }}
+                >
                   {compImages.length > 0 && (
-                    <div className="relative h-48 overflow-hidden group">
+                    <div className="relative h-28 overflow-hidden group">
                       <img 
                         src={compImages[currentImageIndex]} 
                         alt={comp.title_ar}
-                        className="w-full h-full object-cover cursor-pointer transition-transform hover:scale-105"
-                        onClick={() => openGallery(comp, currentImageIndex)}
+                        className="w-full h-full object-cover"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openGallery(comp, currentImageIndex);
+                        }}
                       />
                       
-                      {/* Image Navigation */}
                       {compImages.length > 1 && (
                         <>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                            className="absolute left-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigateImage(comp.id, compImages, 'prev');
                             }}
                           >
-                            <ChevronLeft className="h-4 w-4" />
+                            <ChevronLeft className="h-3 w-3" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigateImage(comp.id, compImages, 'next');
                             }}
                           >
-                            <ChevronRight className="h-4 w-4" />
+                            <ChevronRight className="h-3 w-3" />
                           </Button>
                           
-                          {/* Image Indicators */}
-                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
                             {compImages.map((_, idx) => (
-                              <button
+                              <span
                                 key={idx}
-                                className={`w-2 h-2 rounded-full transition-colors ${
-                                  idx === currentImageIndex ? 'bg-white' : 'bg-white/50'
-                                }`}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setImageIndexes(prev => ({ ...prev, [comp.id]: idx }));
-                                }}
+                                className={`w-1.5 h-1.5 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-white/50'}`}
                               />
                             ))}
                           </div>
                           
-                          {/* Image Count Badge */}
-                          <Badge className="absolute top-2 left-2 bg-black/50 text-white gap-1">
-                            <Images className="h-3 w-3" />
+                          <Badge className="absolute top-1 left-1 bg-black/50 text-white gap-0.5 text-xs px-1.5 py-0.5">
+                            <Images className="h-2.5 w-2.5" />
                             {compImages.length}
                           </Badge>
                         </>
                       )}
                       
+                      {/* Price Badge */}
+                      <Badge className="absolute top-1 right-1 text-xs px-1.5 py-0.5" variant={comp.ticket_price === 0 ? "secondary" : "default"}>
+                        {comp.ticket_price === 0 ? 'مجانية' : `${comp.ticket_price}`}
+                      </Badge>
+                      
                       {comp.status === 'completed' && !isWinner && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
-                          <Badge className="bg-primary text-lg py-2 px-4">
-                            <Crown className="h-5 w-5 ml-2" />
+                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                          <Badge className="bg-primary text-xs py-1 px-2">
+                            <Crown className="h-3 w-3 ml-1" />
                             تم السحب
                           </Badge>
                         </div>
                       )}
                       {isWinner && (
                         <div 
-                          className="absolute inset-0 bg-primary/80 flex items-center justify-center cursor-pointer"
-                          onClick={() => {
+                          className="absolute inset-0 bg-primary/80 flex items-center justify-center"
+                          onClick={(e) => {
+                            e.stopPropagation();
                             const winTicket = myTicketList.find(t => t.is_winner);
                             if (winTicket) {
                               setWinningTicket(winTicket.ticket_number);
@@ -391,157 +448,136 @@ export default function Competitions() {
                           }}
                         >
                           <div className="text-center text-white">
-                            <Crown className="h-12 w-12 mx-auto mb-2 animate-bounce" />
-                            <span className="text-xl font-bold">مبروك! لقد فزت! 🎉</span>
-                            <p className="text-sm mt-2 opacity-80">اضغط للاحتفال</p>
+                            <Crown className="h-8 w-8 mx-auto mb-1 animate-bounce" />
+                            <span className="text-sm font-bold">مبروك! 🎉</span>
                           </div>
                         </div>
                       )}
                     </div>
                   )}
                   
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{comp.title_ar}</CardTitle>
-                      <Badge variant={comp.ticket_price === 0 ? "secondary" : "default"}>
-                        {comp.ticket_price === 0 ? 'مجانية' : `${comp.ticket_price} ${comp.currency}`}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    {comp.description_ar && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{comp.description_ar}</p>
-                    )}
+                  <CardContent className="p-2 space-y-1.5">
+                    <h3 className="font-semibold text-sm line-clamp-1">{comp.title_ar}</h3>
                     
-                    <div className="flex items-center gap-2 text-primary font-medium">
-                      <Gift className="h-5 w-5" />
-                      <span>{comp.prize_description_ar}</span>
-                    </div>
-
-                    {comp.prize_value && (
-                      <div className="text-sm text-muted-foreground">
-                        قيمة الجائزة: {comp.prize_value.toLocaleString()} {comp.currency}
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          {ticketCount} مشارك
+                    {/* Prize Description with Show More */}
+                    <div className="text-xs">
+                      <div className="flex items-start gap-1 text-primary">
+                        <Gift className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                        <span className={!isDescriptionExpanded && shouldTruncate ? 'line-clamp-1' : ''}>
+                          {prizeText}
                         </span>
-                        {(comp.max_tickets || comp.target_participants) && (
-                          <span className="text-muted-foreground">
-                            / {comp.max_tickets || comp.target_participants}
-                          </span>
-                        )}
                       </div>
-                      {(comp.max_tickets || comp.target_participants) && (
-                        <Progress value={getProgress(comp)} className="h-2" />
+                      {shouldTruncate && (
+                        <button
+                          className="text-muted-foreground hover:text-primary text-[10px] flex items-center gap-0.5 mt-0.5"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleDescription(comp.id);
+                          }}
+                        >
+                          {isDescriptionExpanded ? 'أقل' : 'المزيد'}
+                          <ChevronDown className={`h-2.5 w-2.5 transition-transform ${isDescriptionExpanded ? 'rotate-180' : ''}`} />
+                        </button>
                       )}
                     </div>
 
-                    {comp.end_date && comp.status !== 'completed' && comp.competition_type === 'timed' && (
-                      <div className="bg-orange-500/10 rounded-lg p-3 border border-orange-500/20">
-                        <CountdownTimer endDate={comp.end_date} />
+                    {comp.prize_value && (
+                      <p className="text-[10px] text-muted-foreground">
+                        القيمة: {comp.prize_value.toLocaleString()} {comp.currency}
+                      </p>
+                    )}
+
+                    {/* Countdown or End Date */}
+                    {comp.end_date && comp.status !== 'completed' && (
+                      <div className="bg-orange-500/10 rounded p-1.5 border border-orange-500/20">
+                        {comp.competition_type === 'timed' ? (
+                          <div className="scale-75 origin-right">
+                            <CountdownTimer endDate={comp.end_date} />
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 text-[10px] text-orange-600">
+                            <Calendar className="h-3 w-3" />
+                            <span>ينتهي: {format(new Date(comp.end_date), 'dd MMM yyyy', { locale: ar })}</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
-                    <p className="text-xs text-muted-foreground">
-                      {competitionTypeLabels[comp.competition_type]}
-                    </p>
+                    {/* Progress */}
+                    <div className="space-y-0.5">
+                      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-0.5">
+                          <Users className="h-3 w-3" />
+                          {ticketCount}
+                        </span>
+                        {(comp.max_tickets || comp.target_participants) && (
+                          <span>/ {comp.max_tickets || comp.target_participants}</span>
+                        )}
+                      </div>
+                      {(comp.max_tickets || comp.target_participants) && (
+                        <Progress value={getProgress(comp)} className="h-1" />
+                      )}
+                    </div>
 
+                    {/* My Tickets */}
                     {hasTicket && (
-                      <div className="bg-primary/10 rounded-lg p-3">
-                        <p className="text-sm font-medium mb-1">تذاكرك:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {myTicketList.map((ticket, idx) => (
+                      <div className="bg-primary/10 rounded p-1.5">
+                        <div className="flex flex-wrap gap-1">
+                          {myTicketList.slice(0, 2).map((ticket, idx) => (
                             <Badge 
                               key={idx} 
                               variant={ticket.is_winner ? "default" : "outline"}
-                              className={ticket.is_winner ? "bg-yellow-500" : ""}
+                              className={`text-[9px] px-1 py-0 ${ticket.is_winner ? "bg-yellow-500" : ""}`}
                             >
-                              <Ticket className="h-3 w-3 ml-1" />
-                              {ticket.ticket_number}
-                              {ticket.is_winner && <Crown className="h-3 w-3 mr-1" />}
+                              <Ticket className="h-2 w-2 ml-0.5" />
+                              {ticket.ticket_number.slice(-4)}
                             </Badge>
                           ))}
+                          {myTicketList.length > 2 && (
+                            <Badge variant="outline" className="text-[9px] px-1 py-0">
+                              +{myTicketList.length - 2}
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     )}
 
+                    {/* Quick Purchase Button */}
                     {comp.status === 'active' && !isEnded && !isSoldOut && (
-                      <div className="space-y-3 pt-2 border-t">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium">عدد التذاكر:</span>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setCardQuantity(comp.id, getCardQuantity(comp.id) - 1, getMaxAvailableTickets(comp))}
-                              disabled={getCardQuantity(comp.id) <= 1}
-                            >
-                              <Minus className="h-3 w-3" />
-                            </Button>
-                            <Input
-                              type="number"
-                              min={1}
-                              max={getMaxAvailableTickets(comp)}
-                              value={getCardQuantity(comp.id)}
-                              onChange={(e) => setCardQuantity(comp.id, parseInt(e.target.value) || 1, getMaxAvailableTickets(comp))}
-                              className="w-14 h-8 text-center text-sm"
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setCardQuantity(comp.id, getCardQuantity(comp.id) + 1, getMaxAvailableTickets(comp))}
-                              disabled={getCardQuantity(comp.id) >= getMaxAvailableTickets(comp)}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </div>
-                        
-                        {comp.ticket_price > 0 && (
-                          <div className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded">
-                            <span>الإجمالي:</span>
-                            <span className="font-bold text-primary">
-                              {(comp.ticket_price * getCardQuantity(comp.id)).toLocaleString()} {comp.currency}
-                            </span>
-                          </div>
-                        )}
-                        
-                        <Button 
-                          className="w-full gap-2"
-                          onClick={() => handleDirectPurchase(comp)}
-                          disabled={purchaseMutation.isPending || (comp.ticket_price > 0 && (!wallet || wallet.balance < comp.ticket_price * getCardQuantity(comp.id)))}
-                        >
-                          {purchaseMutation.isPending ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Ticket className="h-4 w-4" />
-                          )}
-                          {comp.ticket_price === 0 
-                            ? `اشترك مجاناً (${getCardQuantity(comp.id)} تذكرة)` 
-                            : `شراء ${getCardQuantity(comp.id)} تذكرة`
+                      <Button 
+                        size="sm"
+                        variant={isSelected ? "default" : "outline"}
+                        className="w-full h-7 text-xs gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isSelected) {
+                            handleDirectPurchase(comp);
+                          } else {
+                            setSelectedCompetitionId(comp.id);
                           }
-                        </Button>
-                        
-                        {comp.ticket_price > 0 && wallet && wallet.balance < comp.ticket_price * getCardQuantity(comp.id) && (
-                          <p className="text-xs text-destructive text-center">رصيد غير كافٍ</p>
+                        }}
+                        disabled={purchaseMutation.isPending}
+                      >
+                        {purchaseMutation.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : isSelected ? (
+                          <>
+                            <ShoppingCart className="h-3 w-3" />
+                            شراء {getCardQuantity(comp.id)} تذكرة
+                          </>
+                        ) : (
+                          <>
+                            <Ticket className="h-3 w-3" />
+                            اختيار
+                          </>
                         )}
-                      </div>
+                      </Button>
                     )}
 
                     {isSoldOut && comp.status !== 'completed' && (
-                      <Button className="w-full" disabled>
+                      <Badge variant="secondary" className="w-full justify-center text-[10px]">
                         نفذت التذاكر
-                      </Button>
+                      </Badge>
                     )}
                   </CardContent>
                 </Card>
@@ -550,129 +586,6 @@ export default function Competitions() {
           </div>
         )}
       </main>
-
-      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>شراء تذاكر المسابقة</DialogTitle>
-            <DialogDescription>
-              {selectedCompetition && (
-                <div className="space-y-4 mt-4">
-                  <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <p className="font-medium text-foreground">{selectedCompetition.title_ar}</p>
-                    <p className="text-sm flex items-center gap-2">
-                      <Gift className="h-4 w-4" />
-                      {selectedCompetition.prize_description_ar}
-                    </p>
-                    <p className="text-base font-bold text-primary">
-                      سعر التذكرة: {selectedCompetition.ticket_price === 0 
-                        ? 'مجانية' 
-                        : `${selectedCompetition.ticket_price} ${selectedCompetition.currency}`
-                      }
-                    </p>
-                  </div>
-
-                  {/* Quantity Selector */}
-                  <div className="space-y-2">
-                    <Label>عدد التذاكر</Label>
-                    <div className="flex items-center gap-3">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
-                        disabled={ticketQuantity <= 1}
-                      >
-                        <Minus className="h-4 w-4" />
-                      </Button>
-                      <Input
-                        type="number"
-                        min={1}
-                        max={getMaxAvailableTickets(selectedCompetition)}
-                        value={ticketQuantity}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value) || 1;
-                          setTicketQuantity(Math.min(Math.max(1, val), getMaxAvailableTickets(selectedCompetition)));
-                        }}
-                        className="w-20 text-center"
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        onClick={() => setTicketQuantity(Math.min(ticketQuantity + 1, getMaxAvailableTickets(selectedCompetition)))}
-                        disabled={ticketQuantity >= getMaxAvailableTickets(selectedCompetition)}
-                      >
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {selectedCompetition.max_tickets && (
-                      <p className="text-xs text-muted-foreground">
-                        المتاح: {getMaxAvailableTickets(selectedCompetition)} تذكرة
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Total Cost */}
-                  {selectedCompetition.ticket_price > 0 && (
-                    <div className="bg-primary/10 p-3 rounded-lg">
-                      <div className="flex items-center justify-between font-bold">
-                        <span>الإجمالي:</span>
-                        <span className="text-primary text-lg">
-                          {getTotalCost()} {selectedCompetition.currency}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {selectedCompetition.ticket_price > 0 && wallet && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span>رصيد المحفظة:</span>
-                      <span className={wallet.balance >= getTotalCost() ? 'text-green-500' : 'text-red-500'}>
-                        {wallet.balance} {selectedCompetition.currency}
-                      </span>
-                    </div>
-                  )}
-
-                  {selectedCompetition.ticket_price > 0 && (!wallet || wallet.balance < getTotalCost()) && (
-                    <p className="text-red-500 text-sm">
-                      رصيد المحفظة غير كافٍ. يرجى شحن المحفظة أولاً.
-                    </p>
-                  )}
-                </div>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="flex gap-3 mt-4">
-            <Button 
-              variant="outline" 
-              className="flex-1"
-              onClick={() => {
-                setConfirmDialogOpen(false);
-                setTicketQuantity(1);
-              }}
-            >
-              إلغاء
-            </Button>
-            <Button 
-              className="flex-1 gap-2"
-              onClick={() => selectedCompetition && purchaseMutation.mutate({ 
-                competitionId: selectedCompetition.id, 
-                quantity: ticketQuantity 
-              })}
-              disabled={
-                purchaseMutation.isPending || 
-                (selectedCompetition?.ticket_price || 0) > 0 && (!wallet || wallet.balance < getTotalCost())
-              }
-            >
-              {purchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-              <Ticket className="h-4 w-4" />
-              شراء {ticketQuantity} تذكرة
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       {/* Gallery Dialog */}
       <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
@@ -719,7 +632,6 @@ export default function Competitions() {
                   </span>
                 </div>
                 
-                {/* Thumbnails */}
                 {galleryImages.length > 1 && (
                   <div className="flex gap-2 justify-center p-4 bg-black/80 overflow-x-auto">
                     {galleryImages.map((img, idx) => (
