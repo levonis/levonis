@@ -362,7 +362,7 @@ export default function CompetitionParticipantsDialog({
           </div>
 
           {/* Table */}
-          <ScrollArea className="flex-1 border rounded-lg">
+          <ScrollArea className="flex-1 border rounded-lg h-[400px]">
             <Table>
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
@@ -398,13 +398,23 @@ export default function CompetitionParticipantsDialog({
                     return (
                       <TableRow key={participant.id} className={participant.is_winner ? 'bg-primary/10' : ''}>
                         <TableCell>{index + 1}</TableCell>
-                        <TableCell className="font-mono text-sm">
-                          {participant.ticket_number}
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-mono text-sm font-semibold text-primary">
+                              {participant.ticket_number}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              ID: {participant.id.slice(0, 8)}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
                             <span className="font-medium">
-                              {participant.profile?.full_name || participant.profile?.username || 'مجهول'}
+                              {participant.profile?.full_name || 'بدون اسم'}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              @{participant.profile?.username || 'مجهول'}
                             </span>
                             <span className="text-xs text-muted-foreground flex items-center gap-1">
                               <Mail className="h-3 w-3" />
