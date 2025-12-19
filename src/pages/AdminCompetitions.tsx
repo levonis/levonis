@@ -126,7 +126,7 @@ export default function AdminCompetitions() {
     status: 'draft' as CompetitionStatus
   });
 
-  const { data: competitions, isLoading } = useQuery({
+  const { data: competitions, isLoading, refetch: refetchCompetitions } = useQuery({
     queryKey: ['admin-competitions'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -136,7 +136,8 @@ export default function AdminCompetitions() {
       
       if (error) throw error;
       return data as Competition[];
-    }
+    },
+    staleTime: 0
   });
 
   const { data: ticketCounts } = useQuery({
@@ -237,8 +238,9 @@ export default function AdminCompetitions() {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-competitions'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['admin-competitions'] });
+      await refetchCompetitions();
       toast.success(editingCompetition ? 'تم تحديث المسابقة' : 'تم إنشاء المسابقة');
       setIsDialogOpen(false);
       resetForm();
