@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -71,6 +71,7 @@ export default function Competitions() {
   const [selectedCompetitionForEntry, setSelectedCompetitionForEntry] = useState<Competition | null>(null);
   const [selectedCompetitionForDetails, setSelectedCompetitionForDetails] = useState<Competition | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [detailsSlideIndex, setDetailsSlideIndex] = useState(0);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -257,6 +258,20 @@ export default function Competitions() {
     }
     setImageIndexes(prev => ({ ...prev, [compId]: newIndex }));
   };
+
+  // Auto-slide for details dialog images
+  useEffect(() => {
+    if (!showDetailsDialog || !selectedCompetitionForDetails) return;
+    
+    const compImages = getAllImages(selectedCompetitionForDetails);
+    if (compImages.length <= 1) return;
+    
+    const interval = setInterval(() => {
+      setDetailsSlideIndex(prev => (prev + 1) % compImages.length);
+    }, 3000); // Change image every 3 seconds
+    
+    return () => clearInterval(interval);
+  }, [showDetailsDialog, selectedCompetitionForDetails]);
 
   const openGallery = (comp: Competition, startIndex: number = 0) => {
     setGalleryCompetition(comp);
@@ -725,7 +740,10 @@ export default function Competitions() {
       </AlertDialog>
 
       {/* Competition Details Dialog */}
-      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+      <Dialog open={showDetailsDialog} onOpenChange={(open) => {
+        setShowDetailsDialog(open);
+        if (!open) setDetailsSlideIndex(0);
+      }}>
         <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden" dir="rtl">
           {selectedCompetitionForDetails && (() => {
             const comp = selectedCompetitionForDetails;
@@ -741,14 +759,20 @@ export default function Competitions() {
 
             return (
               <>
-                {/* Header Image */}
+                {/* Header Image Slideshow */}
                 {compImages.length > 0 && (
                   <div className="relative h-48 overflow-hidden">
-                    <img 
-                      src={compImages[0]} 
-                      alt={comp.title_ar}
-                      className="w-full h-full object-cover"
-                    />
+                    {/* Auto-sliding images */}
+                    {compImages.map((img, idx) => (
+                      <img 
+                        key={idx}
+                        src={img} 
+                        alt={`${comp.title_ar} - ${idx + 1}`}
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${
+                          idx === (detailsSlideIndex % compImages.length) ? 'opacity-100' : 'opacity-0'
+                        }`}
+                      />
+                    ))}
                     {isWinner && (
                       <div className="absolute inset-0 bg-yellow-500/80 flex items-center justify-center">
                         <div className="text-center text-white">
@@ -765,18 +789,35 @@ export default function Competitions() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
+                      className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white z-10"
                       onClick={() => setShowDetailsDialog(false)}
                     >
                       <ArrowRight className="h-5 w-5" />
                     </Button>
+                    
+                    {/* Dot Indicators */}
+                    {compImages.length > 1 && (
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+                        {compImages.map((_, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => setDetailsSlideIndex(idx)}
+                            className={`w-2 h-2 rounded-full transition-all ${
+                              idx === (detailsSlideIndex % compImages.length) 
+                                ? 'bg-white w-4' 
+                                : 'bg-white/50 hover:bg-white/70'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
                     
                     {/* Gallery Button */}
                     {compImages.length > 1 && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="absolute bottom-2 left-2 bg-black/50 hover:bg-black/70 text-white gap-1"
+                        className="absolute bottom-2 left-2 bg-black/50 hover:bg-black/70 text-white gap-1 z-10"
                         onClick={() => {
                           setGalleryCompetition(comp);
                           setGalleryIndex(0);

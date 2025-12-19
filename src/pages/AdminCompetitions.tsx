@@ -682,40 +682,49 @@ export default function AdminCompetitions() {
                   </div>
                 </div>
 
+                {/* إعدادات عدد المشاركين - تظهر لجميع أنواع المسابقات */}
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    إعدادات المشاركين
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>الحد الأقصى للمشاركين</Label>
+                      <Input
+                        type="number"
+                        value={formData.target_participants}
+                        onChange={(e) => setFormData({ ...formData, target_participants: e.target.value })}
+                        placeholder="اتركه فارغاً = بدون حد"
+                      />
+                      <p className="text-xs text-muted-foreground">اتركه فارغاً لعدم تحديد حد أقصى</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>الحد الأقصى لكل مستخدم</Label>
+                      <Input
+                        type="number"
+                        value={formData.max_tickets_per_user}
+                        onChange={(e) => setFormData({ ...formData, max_tickets_per_user: e.target.value })}
+                        placeholder="0 = بلا حد"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {(formData.competition_type === 'ticket_count' || formData.competition_type === 'all_tickets_sold') && (
                   <div className="border rounded-lg p-4 bg-muted/30">
                     <h3 className="font-semibold mb-4 flex items-center gap-2">
                       <Ticket className="h-4 w-4" />
                       إعدادات التذاكر
                     </h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>الحد الأقصى للتذاكر</Label>
-                        <Input
-                          type="number"
-                          value={formData.max_tickets}
-                          onChange={(e) => setFormData({ ...formData, max_tickets: e.target.value })}
-                          placeholder="عدد التذاكر المتاحة"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>العدد المستهدف للمشاركين</Label>
-                        <Input
-                          type="number"
-                          value={formData.target_participants}
-                          onChange={(e) => setFormData({ ...formData, target_participants: e.target.value })}
-                          placeholder="العدد المطلوب للسحب"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>الحد الأقصى لكل مستخدم</Label>
-                        <Input
-                          type="number"
-                          value={formData.max_tickets_per_user}
-                          onChange={(e) => setFormData({ ...formData, max_tickets_per_user: e.target.value })}
-                          placeholder="0 = بلا حد"
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label>الحد الأقصى للتذاكر</Label>
+                      <Input
+                        type="number"
+                        value={formData.max_tickets}
+                        onChange={(e) => setFormData({ ...formData, max_tickets: e.target.value })}
+                        placeholder="عدد التذاكر المتاحة"
+                      />
                     </div>
                   </div>
                 )}
