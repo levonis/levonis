@@ -485,69 +485,98 @@ export default function Competitions() {
                   }}
                 >
                   {compImages.length > 0 && (
-                    <div className="relative h-28 overflow-hidden group">
-                      <img 
-                        src={compImages[currentImageIndex]} 
-                        alt={comp.title_ar}
-                        className="w-full h-full object-cover cursor-pointer"
-                      />
+                    <div className="relative h-36 md:h-40 overflow-hidden group">
+                      {/* Image with smooth transition */}
+                      <div className="relative w-full h-full">
+                        {compImages.map((img, idx) => (
+                          <img 
+                            key={idx}
+                            src={img} 
+                            alt={`${comp.title_ar} - ${idx + 1}`}
+                            className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ease-in-out ${
+                              idx === currentImageIndex 
+                                ? 'opacity-100 scale-100' 
+                                : 'opacity-0 scale-105'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      
+                      {/* Gradient overlay for better text visibility */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
                       
                       {compImages.length > 1 && (
                         <>
+                          {/* Navigation buttons with better styling */}
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute left-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-all duration-300 h-8 w-8 rounded-full shadow-lg"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigateImage(comp.id, compImages, 'prev');
                             }}
                           >
-                            <ChevronLeft className="h-3 w-3" />
+                            <ChevronLeft className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="absolute right-1 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 backdrop-blur-sm text-white opacity-0 group-hover:opacity-100 transition-all duration-300 h-8 w-8 rounded-full shadow-lg"
                             onClick={(e) => {
                               e.stopPropagation();
                               navigateImage(comp.id, compImages, 'next');
                             }}
                           >
-                            <ChevronRight className="h-3 w-3" />
+                            <ChevronRight className="h-4 w-4" />
                           </Button>
                           
-                          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-0.5">
+                          {/* Improved dots indicator */}
+                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
                             {compImages.map((_, idx) => (
-                              <span
+                              <button
                                 key={idx}
-                                className={`w-1.5 h-1.5 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-white/50'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setImageIndexes(prev => ({ ...prev, [comp.id]: idx }));
+                                }}
+                                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                                  idx === currentImageIndex 
+                                    ? 'bg-white w-4' 
+                                    : 'bg-white/50 hover:bg-white/70'
+                                }`}
                               />
                             ))}
                           </div>
                           
-                          <Badge className="absolute top-1 left-1 bg-black/50 text-white gap-0.5 text-xs px-1.5 py-0.5">
-                            <Images className="h-2.5 w-2.5" />
-                            {compImages.length}
+                          {/* Image counter badge */}
+                          <Badge className="absolute top-2 left-2 bg-black/40 backdrop-blur-sm text-white gap-1 text-xs px-2 py-1 border-0">
+                            <Images className="h-3 w-3" />
+                            {currentImageIndex + 1}/{compImages.length}
                           </Badge>
                         </>
                       )}
                       
-                      {/* Required Tickets Badge */}
-                      <Badge className="absolute top-1 right-1 text-xs px-1.5 py-0.5" variant="secondary">
-                        <Ticket className="h-2.5 w-2.5 ml-1" />
+                      {/* Required Tickets Badge - improved styling */}
+                      <Badge className="absolute top-2 right-2 text-xs px-2 py-1 bg-primary/90 backdrop-blur-sm text-primary-foreground border-0 shadow-md">
+                        <Ticket className="h-3 w-3 ml-1" />
                         {requiredTickets} تذكرة
                       </Badge>
                       
+                      {/* Completed overlay */}
                       {comp.status === 'completed' && !isWinner && (
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                          <Badge variant="secondary" className="text-sm">انتهت</Badge>
+                        <div className="absolute inset-0 bg-black/70 backdrop-blur-[2px] flex items-center justify-center">
+                          <Badge variant="secondary" className="text-base px-4 py-2 shadow-lg">انتهت</Badge>
                         </div>
                       )}
                       
+                      {/* Winner overlay with animation */}
                       {isWinner && (
-                        <div className="absolute inset-0 bg-yellow-500/80 flex items-center justify-center">
-                          <Crown className="h-6 w-6 text-white" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/90 to-amber-600/90 flex items-center justify-center">
+                          <div className="flex flex-col items-center animate-pulse">
+                            <Crown className="h-8 w-8 text-white drop-shadow-lg" />
+                            <span className="text-white text-xs font-bold mt-1">فائز!</span>
+                          </div>
                         </div>
                       )}
                     </div>
