@@ -140,10 +140,11 @@ const TopBar = memo(() => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <img 
-              src="/images/logo-levonis.png" 
+              src="/images/logo-levonis.webp" 
               alt="LEVONIS Logo" 
               className="h-10 w-auto object-contain bg-transparent"
               loading="eager"
+              fetchPriority="high"
               width="50"
               height="40"
               style={{ mixBlendMode: 'normal' }}
