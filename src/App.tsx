@@ -49,6 +49,7 @@ const AdminBrokenImages = lazy(() => import("./pages/AdminBrokenImages"));
 const MyPoints = lazy(() => import("./pages/MyPoints"));
 const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
 const Competitions = lazy(() => import("./pages/Competitions"));
+const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
 const AdminCompetitions = lazy(() => import("./pages/AdminCompetitions"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -105,6 +106,7 @@ function AppContent() {
             <Route path="/admin/competitions" element={<AdminCompetitions />} />
             <Route path="/my-points" element={<MyPoints />} />
             <Route path="/competitions" element={<Competitions />} />
+            <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
