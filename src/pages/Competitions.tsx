@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trophy, Ticket, Users, Calendar, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus } from "lucide-react";
+import { Trophy, Ticket, Users, Calendar, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -213,12 +213,22 @@ export default function Competitions() {
           </h1>
           <p className="text-muted-foreground">اشترك في المسابقات واربح جوائز قيمة!</p>
           
-          {user && wallet && (
-            <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-primary/10 rounded-full">
-              <Wallet className="h-4 w-4 text-primary" />
-              <span className="font-medium">رصيد المحفظة: {wallet.balance} دينار عراقي</span>
-            </div>
-          )}
+          <div className="flex items-center justify-center gap-4 mt-4 flex-wrap">
+            {user && wallet && (
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full">
+                <Wallet className="h-4 w-4 text-primary" />
+                <span className="font-medium">رصيد المحفظة: {wallet.balance} دينار عراقي</span>
+              </div>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => navigate('/competitions/history')}
+              className="gap-2"
+            >
+              <History className="h-4 w-4" />
+              سجل المسابقات السابقة
+            </Button>
+          </div>
         </div>
 
         {isLoading ? (

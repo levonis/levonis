@@ -48,9 +48,10 @@ const AnnouncementBar = memo(() => {
     const recalc = () => {
       const cw = containerRef.current?.offsetWidth || 0;
       const uw = unitRef.current?.scrollWidth || 0;
-      if (cw && uw) {
-        const needed = Math.ceil(cw / uw) + 2;
-        setRepeats(Math.max(needed, 6));
+      if (cw && uw && uw > 0) {
+        // Calculate minimum repeats needed to fill container twice for seamless loop
+        const needed = Math.ceil((cw * 2) / uw) + 1;
+        setRepeats(Math.max(needed, 3));
       }
     };
 
@@ -102,7 +103,7 @@ const AnnouncementBar = memo(() => {
 
         <div className="flex-1 overflow-hidden relative" ref={containerRef}>
           {alwaysMove ? (
-            <div className="relative h-full flex items-center">
+            <div className="relative h-full flex items-center overflow-hidden">
               <div
                 key={currentIndex}
                 className="flex whitespace-nowrap will-change-transform"
@@ -110,35 +111,43 @@ const AnnouncementBar = memo(() => {
                   animation: direction === 'left' 
                     ? `marquee-scroll ${speed}s linear infinite` 
                     : `marquee-scroll-reverse ${speed}s linear infinite`,
-                  gap: `${gap * 4}px`,
                 }}
               >
-                {/* Duplicate content twice for seamless infinite scroll */}
-                {Array.from({ length: 2 }).map((_, groupIndex) => (
-                  <div
-                    key={groupIndex}
-                    className="flex items-center"
-                    style={{ gap: `${gap * 4}px`, paddingRight: `${gap * 4}px` }}
-                    ref={groupIndex === 0 ? unitRef : null}
-                  >
-                    {Array.from({ length: repeats }).map((_, i) => (
-                      <React.Fragment key={`${groupIndex}-${i}`}>
-                        <span>{announcement.message_ar}</span>
-                        <span className="opacity-60">•</span>
-                      </React.Fragment>
-                    ))}
-                  </div>
-                ))}
+                {/* Single group of repeated messages */}
+                <div
+                  className="flex items-center shrink-0"
+                  style={{ gap: `${gap * 4}px` }}
+                  ref={unitRef}
+                >
+                  {Array.from({ length: repeats }).map((_, i) => (
+                    <React.Fragment key={i}>
+                      <span className="shrink-0">{announcement.message_ar}</span>
+                      <span className="opacity-60 shrink-0">•</span>
+                    </React.Fragment>
+                  ))}
+                </div>
+                {/* Duplicate for seamless loop */}
+                <div
+                  className="flex items-center shrink-0"
+                  style={{ gap: `${gap * 4}px`, marginRight: `${gap * 4}px` }}
+                >
+                  {Array.from({ length: repeats }).map((_, i) => (
+                    <React.Fragment key={`dup-${i}`}>
+                      <span className="shrink-0">{announcement.message_ar}</span>
+                      <span className="opacity-60 shrink-0">•</span>
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
               {/* Fade effect on edges */}
               <div 
-                className="absolute inset-y-0 right-0 w-24 pointer-events-none z-10"
+                className="absolute inset-y-0 right-0 w-16 pointer-events-none z-10"
                 style={{
                   background: `linear-gradient(to left, ${bgColor}, transparent)`
                 }}
               />
               <div 
-                className="absolute inset-y-0 left-0 w-24 pointer-events-none z-10"
+                className="absolute inset-y-0 left-0 w-16 pointer-events-none z-10"
                 style={{
                   background: `linear-gradient(to right, ${bgColor}, transparent)`
                 }}
