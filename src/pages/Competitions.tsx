@@ -770,6 +770,23 @@ export default function Competitions() {
                     >
                       <ArrowRight className="h-5 w-5" />
                     </Button>
+                    
+                    {/* Gallery Button */}
+                    {compImages.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="absolute bottom-2 left-2 bg-black/50 hover:bg-black/70 text-white gap-1"
+                        onClick={() => {
+                          setGalleryCompetition(comp);
+                          setGalleryIndex(0);
+                          setGalleryOpen(true);
+                        }}
+                      >
+                        <Images className="h-4 w-4" />
+                        {compImages.length} صور
+                      </Button>
+                    )}
                   </div>
                 )}
 
