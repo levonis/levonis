@@ -10,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { Trophy, Ticket, Users, Calendar, Gift, Loader2, Clock, Crown, Wallet } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Trophy, Ticket, Users, Calendar, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -52,6 +54,7 @@ export default function Competitions() {
   const queryClient = useQueryClient();
   const [selectedCompetition, setSelectedCompetition] = useState<Competition | null>(null);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [ticketQuantity, setTicketQuantity] = useState(1);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -127,9 +130,10 @@ export default function Competitions() {
   });
 
   const purchaseMutation = useMutation({
-    mutationFn: async (competitionId: string) => {
+    mutationFn: async ({ competitionId, quantity }: { competitionId: string; quantity: number }) => {
       const { data, error } = await supabase.rpc('purchase_competition_ticket', {
-        comp_id: competitionId
+        comp_id: competitionId,
+        quantity: quantity
       });
       if (error) throw error;
       return data;
@@ -140,11 +144,12 @@ export default function Competitions() {
       queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
       
       if (data.success) {
-        toast.success(`🎟️ تم شراء التذكرة! رقم التذكرة: ${data.ticket_number}`);
+        toast.success(`🎟️ تم شراء ${data.quantity} تذكرة بنجاح!`);
       } else {
         toast.error(data.error);
       }
       setConfirmDialogOpen(false);
+      setTicketQuantity(1);
     },
     onError: (error) => {
       toast.error('حدث خطأ: ' + error.message);
@@ -158,7 +163,19 @@ export default function Competitions() {
       return;
     }
     setSelectedCompetition(competition);
+    setTicketQuantity(1);
     setConfirmDialogOpen(true);
+  };
+
+  const getMaxAvailableTickets = (comp: Competition) => {
+    if (!comp.max_tickets) return 100;
+    const currentCount = ticketCounts?.[comp.id] || 0;
+    return Math.min(100, comp.max_tickets - currentCount);
+  };
+
+  const getTotalCost = () => {
+    if (!selectedCompetition) return 0;
+    return selectedCompetition.ticket_price * ticketQuantity;
   };
 
   const getProgress = (comp: Competition) => {
@@ -348,34 +365,87 @@ export default function Competitions() {
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>تأكيد شراء التذكرة</DialogTitle>
+            <DialogTitle>شراء تذاكر المسابقة</DialogTitle>
             <DialogDescription>
               {selectedCompetition && (
                 <div className="space-y-4 mt-4">
                   <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <p className="font-medium">{selectedCompetition.title_ar}</p>
+                    <p className="font-medium text-foreground">{selectedCompetition.title_ar}</p>
                     <p className="text-sm flex items-center gap-2">
                       <Gift className="h-4 w-4" />
                       {selectedCompetition.prize_description_ar}
                     </p>
-                    <p className="text-lg font-bold text-primary">
-                      {selectedCompetition.ticket_price === 0 
+                    <p className="text-base font-bold text-primary">
+                      سعر التذكرة: {selectedCompetition.ticket_price === 0 
                         ? 'مجانية' 
                         : `${selectedCompetition.ticket_price} ${selectedCompetition.currency}`
                       }
                     </p>
                   </div>
 
+                  {/* Quantity Selector */}
+                  <div className="space-y-2">
+                    <Label>عدد التذاكر</Label>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))}
+                        disabled={ticketQuantity <= 1}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                      <Input
+                        type="number"
+                        min={1}
+                        max={getMaxAvailableTickets(selectedCompetition)}
+                        value={ticketQuantity}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 1;
+                          setTicketQuantity(Math.min(Math.max(1, val), getMaxAvailableTickets(selectedCompetition)));
+                        }}
+                        className="w-20 text-center"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => setTicketQuantity(Math.min(ticketQuantity + 1, getMaxAvailableTickets(selectedCompetition)))}
+                        disabled={ticketQuantity >= getMaxAvailableTickets(selectedCompetition)}
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {selectedCompetition.max_tickets && (
+                      <p className="text-xs text-muted-foreground">
+                        المتاح: {getMaxAvailableTickets(selectedCompetition)} تذكرة
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Total Cost */}
+                  {selectedCompetition.ticket_price > 0 && (
+                    <div className="bg-primary/10 p-3 rounded-lg">
+                      <div className="flex items-center justify-between font-bold">
+                        <span>الإجمالي:</span>
+                        <span className="text-primary text-lg">
+                          {getTotalCost()} {selectedCompetition.currency}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {selectedCompetition.ticket_price > 0 && wallet && (
                     <div className="flex items-center justify-between text-sm">
                       <span>رصيد المحفظة:</span>
-                      <span className={wallet.balance >= selectedCompetition.ticket_price ? 'text-green-500' : 'text-red-500'}>
+                      <span className={wallet.balance >= getTotalCost() ? 'text-green-500' : 'text-red-500'}>
                         {wallet.balance} {selectedCompetition.currency}
                       </span>
                     </div>
                   )}
 
-                  {selectedCompetition.ticket_price > 0 && (!wallet || wallet.balance < selectedCompetition.ticket_price) && (
+                  {selectedCompetition.ticket_price > 0 && (!wallet || wallet.balance < getTotalCost()) && (
                     <p className="text-red-500 text-sm">
                       رصيد المحفظة غير كافٍ. يرجى شحن المحفظة أولاً.
                     </p>
@@ -389,21 +459,27 @@ export default function Competitions() {
             <Button 
               variant="outline" 
               className="flex-1"
-              onClick={() => setConfirmDialogOpen(false)}
+              onClick={() => {
+                setConfirmDialogOpen(false);
+                setTicketQuantity(1);
+              }}
             >
               إلغاء
             </Button>
             <Button 
               className="flex-1 gap-2"
-              onClick={() => selectedCompetition && purchaseMutation.mutate(selectedCompetition.id)}
+              onClick={() => selectedCompetition && purchaseMutation.mutate({ 
+                competitionId: selectedCompetition.id, 
+                quantity: ticketQuantity 
+              })}
               disabled={
                 purchaseMutation.isPending || 
-                (selectedCompetition?.ticket_price || 0) > 0 && (!wallet || wallet.balance < (selectedCompetition?.ticket_price || 0))
+                (selectedCompetition?.ticket_price || 0) > 0 && (!wallet || wallet.balance < getTotalCost())
               }
             >
               {purchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
               <Ticket className="h-4 w-4" />
-              تأكيد
+              شراء {ticketQuantity} تذكرة
             </Button>
           </div>
         </DialogContent>

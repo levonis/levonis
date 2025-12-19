@@ -1679,7 +1679,9 @@ export type Database = {
         }
         Returns: boolean
       }
-      purchase_competition_ticket: { Args: { comp_id: string }; Returns: Json }
+      purchase_competition_ticket:
+        | { Args: { comp_id: string }; Returns: Json }
+        | { Args: { comp_id: string; quantity?: number }; Returns: Json }
       send_general_notification: {
         Args: { _message: string; _title: string; _type?: string }
         Returns: undefined
