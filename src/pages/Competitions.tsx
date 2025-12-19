@@ -63,6 +63,7 @@ export default function Competitions() {
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [galleryCompetition, setGalleryCompetition] = useState<Competition | null>(null);
   const [galleryIndex, setGalleryIndex] = useState(0);
+  const [cardQuantities, setCardQuantities] = useState<Record<string, number>>({});
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -171,8 +172,27 @@ export default function Competitions() {
       return;
     }
     setSelectedCompetition(competition);
-    setTicketQuantity(1);
+    setTicketQuantity(cardQuantities[competition.id] || 1);
     setConfirmDialogOpen(true);
+  };
+
+  const handleDirectPurchase = (competition: Competition) => {
+    if (!user) {
+      toast.error('يجب تسجيل الدخول أولاً');
+      navigate('/auth');
+      return;
+    }
+    const quantity = cardQuantities[competition.id] || 1;
+    purchaseMutation.mutate({ competitionId: competition.id, quantity });
+  };
+
+  const getCardQuantity = (compId: string) => cardQuantities[compId] || 1;
+
+  const setCardQuantity = (compId: string, quantity: number, max: number) => {
+    setCardQuantities(prev => ({
+      ...prev,
+      [compId]: Math.max(1, Math.min(quantity, max))
+    }));
   };
 
   const getMaxAvailableTickets = (comp: Competition) => {
@@ -452,13 +472,70 @@ export default function Competitions() {
                     )}
 
                     {comp.status === 'active' && !isEnded && !isSoldOut && (
-                      <Button 
-                        className="w-full gap-2"
-                        onClick={() => handlePurchase(comp)}
-                      >
-                        <Ticket className="h-4 w-4" />
-                        {comp.ticket_price === 0 ? 'اشترك مجاناً' : 'شراء تذكرة'}
-                      </Button>
+                      <div className="space-y-3 pt-2 border-t">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">عدد التذاكر:</span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setCardQuantity(comp.id, getCardQuantity(comp.id) - 1, getMaxAvailableTickets(comp))}
+                              disabled={getCardQuantity(comp.id) <= 1}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min={1}
+                              max={getMaxAvailableTickets(comp)}
+                              value={getCardQuantity(comp.id)}
+                              onChange={(e) => setCardQuantity(comp.id, parseInt(e.target.value) || 1, getMaxAvailableTickets(comp))}
+                              className="w-14 h-8 text-center text-sm"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setCardQuantity(comp.id, getCardQuantity(comp.id) + 1, getMaxAvailableTickets(comp))}
+                              disabled={getCardQuantity(comp.id) >= getMaxAvailableTickets(comp)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                        
+                        {comp.ticket_price > 0 && (
+                          <div className="flex items-center justify-between text-sm bg-muted/50 p-2 rounded">
+                            <span>الإجمالي:</span>
+                            <span className="font-bold text-primary">
+                              {(comp.ticket_price * getCardQuantity(comp.id)).toLocaleString()} {comp.currency}
+                            </span>
+                          </div>
+                        )}
+                        
+                        <Button 
+                          className="w-full gap-2"
+                          onClick={() => handleDirectPurchase(comp)}
+                          disabled={purchaseMutation.isPending || (comp.ticket_price > 0 && (!wallet || wallet.balance < comp.ticket_price * getCardQuantity(comp.id)))}
+                        >
+                          {purchaseMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Ticket className="h-4 w-4" />
+                          )}
+                          {comp.ticket_price === 0 
+                            ? `اشترك مجاناً (${getCardQuantity(comp.id)} تذكرة)` 
+                            : `شراء ${getCardQuantity(comp.id)} تذكرة`
+                          }
+                        </Button>
+                        
+                        {comp.ticket_price > 0 && wallet && wallet.balance < comp.ticket_price * getCardQuantity(comp.id) && (
+                          <p className="text-xs text-destructive text-center">رصيد غير كافٍ</p>
+                        )}
+                      </div>
                     )}
 
                     {isSoldOut && comp.status !== 'completed' && (
