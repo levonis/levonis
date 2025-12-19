@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trophy, Ticket, Users, Calendar, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History } from "lucide-react";
+import { Trophy, Ticket, Users, Calendar, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History, ChevronLeft, ChevronRight, Images } from "lucide-react";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -27,6 +27,7 @@ interface Competition {
   description: string | null;
   description_ar: string | null;
   image_url: string | null;
+  images: string[] | null;
   prize_description: string;
   prize_description_ar: string;
   prize_value: number | null;
@@ -58,6 +59,10 @@ export default function Competitions() {
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [showWinCelebration, setShowWinCelebration] = useState(false);
   const [winningTicket, setWinningTicket] = useState<string | null>(null);
+  const [imageIndexes, setImageIndexes] = useState<Record<string, number>>({});
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryCompetition, setGalleryCompetition] = useState<Competition | null>(null);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -200,6 +205,37 @@ export default function Competitions() {
     return formatDistanceToNow(end, { locale: ar, addSuffix: true });
   };
 
+  const getAllImages = (comp: Competition): string[] => {
+    const images: string[] = [];
+    if (comp.images && comp.images.length > 0) {
+      images.push(...comp.images);
+    } else if (comp.image_url) {
+      images.push(comp.image_url);
+    }
+    return images;
+  };
+
+  const getCurrentImageIndex = (compId: string) => {
+    return imageIndexes[compId] || 0;
+  };
+
+  const navigateImage = (compId: string, images: string[], direction: 'next' | 'prev') => {
+    const current = getCurrentImageIndex(compId);
+    let newIndex: number;
+    if (direction === 'next') {
+      newIndex = (current + 1) % images.length;
+    } else {
+      newIndex = (current - 1 + images.length) % images.length;
+    }
+    setImageIndexes(prev => ({ ...prev, [compId]: newIndex }));
+  };
+
+  const openGallery = (comp: Competition, startIndex: number = 0) => {
+    setGalleryCompetition(comp);
+    setGalleryIndex(startIndex);
+    setGalleryOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col" dir="rtl">
       
@@ -251,17 +287,72 @@ export default function Competitions() {
               const isSoldOut = comp.max_tickets ? ticketCount >= comp.max_tickets : false;
               const isEnded = comp.status === 'completed' || (comp.end_date && new Date(comp.end_date) < new Date());
 
+              const compImages = getAllImages(comp);
+              const currentImageIndex = getCurrentImageIndex(comp.id);
+
               return (
                 <Card key={comp.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  {comp.image_url && (
-                    <div className="relative h-48 overflow-hidden">
+                  {compImages.length > 0 && (
+                    <div className="relative h-48 overflow-hidden group">
                       <img 
-                        src={comp.image_url} 
+                        src={compImages[currentImageIndex]} 
                         alt={comp.title_ar}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover cursor-pointer transition-transform hover:scale-105"
+                        onClick={() => openGallery(comp, currentImageIndex)}
                       />
-                      {comp.status === 'completed' && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                      
+                      {/* Image Navigation */}
+                      {compImages.length > 1 && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigateImage(comp.id, compImages, 'prev');
+                            }}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigateImage(comp.id, compImages, 'next');
+                            }}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                          
+                          {/* Image Indicators */}
+                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                            {compImages.map((_, idx) => (
+                              <button
+                                key={idx}
+                                className={`w-2 h-2 rounded-full transition-colors ${
+                                  idx === currentImageIndex ? 'bg-white' : 'bg-white/50'
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setImageIndexes(prev => ({ ...prev, [comp.id]: idx }));
+                                }}
+                              />
+                            ))}
+                          </div>
+                          
+                          {/* Image Count Badge */}
+                          <Badge className="absolute top-2 left-2 bg-black/50 text-white gap-1">
+                            <Images className="h-3 w-3" />
+                            {compImages.length}
+                          </Badge>
+                        </>
+                      )}
+                      
+                      {comp.status === 'completed' && !isWinner && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center pointer-events-none">
                           <Badge className="bg-primary text-lg py-2 px-4">
                             <Crown className="h-5 w-5 ml-2" />
                             تم السحب
@@ -503,6 +594,73 @@ export default function Competitions() {
               شراء {ticketQuantity} تذكرة
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Gallery Dialog */}
+      <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+        <DialogContent className="max-w-4xl p-0 bg-black/95">
+          <DialogHeader className="sr-only">
+            <DialogTitle>معرض الصور</DialogTitle>
+          </DialogHeader>
+          {galleryCompetition && (() => {
+            const galleryImages = getAllImages(galleryCompetition);
+            return (
+              <div className="relative">
+                <div className="aspect-video flex items-center justify-center">
+                  <img
+                    src={galleryImages[galleryIndex]}
+                    alt={`${galleryCompetition.title_ar} - صورة ${galleryIndex + 1}`}
+                    className="max-h-[70vh] max-w-full object-contain"
+                  />
+                </div>
+                
+                {galleryImages.length > 1 && (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white h-12 w-12"
+                      onClick={() => setGalleryIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)}
+                    >
+                      <ChevronLeft className="h-6 w-6" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white h-12 w-12"
+                      onClick={() => setGalleryIndex((prev) => (prev + 1) % galleryImages.length)}
+                    >
+                      <ChevronRight className="h-6 w-6" />
+                    </Button>
+                  </>
+                )}
+                
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-4">
+                  <span className="text-white bg-black/50 px-3 py-1 rounded-full text-sm">
+                    {galleryIndex + 1} / {galleryImages.length}
+                  </span>
+                </div>
+                
+                {/* Thumbnails */}
+                {galleryImages.length > 1 && (
+                  <div className="flex gap-2 justify-center p-4 bg-black/80 overflow-x-auto">
+                    {galleryImages.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setGalleryIndex(idx)}
+                        className={`flex-shrink-0 w-16 h-16 rounded overflow-hidden border-2 transition-colors ${
+                          idx === galleryIndex ? 'border-primary' : 'border-transparent'
+                        }`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
