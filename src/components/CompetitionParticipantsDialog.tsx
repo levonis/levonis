@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Download, Search, AlertTriangle, Users, Ticket, Phone, Mail, Shield, UserCheck } from "lucide-react";
+import { Download, Search, AlertTriangle, Users, Ticket, Phone, Mail, Shield, UserCheck, Trash2, Loader2, Undo2 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { toast } from "sonner";
@@ -41,15 +42,20 @@ interface CompetitionParticipantsDialogProps {
   onOpenChange: (open: boolean) => void;
   competitionId: string;
   competitionTitle: string;
+  requiredTickets?: number;
 }
 
 export default function CompetitionParticipantsDialog({
   open,
   onOpenChange,
   competitionId,
-  competitionTitle
+  competitionTitle,
+  requiredTickets = 1
 }: CompetitionParticipantsDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [cancelTicketDialogOpen, setCancelTicketDialogOpen] = useState(false);
+  const [selectedTicketToCancel, setSelectedTicketToCancel] = useState<Participant | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: participants, isLoading } = useQuery({
     queryKey: ['competition-participants', competitionId],
@@ -208,9 +214,89 @@ export default function CompetitionParticipantsDialog({
     toast.success('تم تصدير القائمة بنجاح');
   };
 
+  // Mutation to cancel/refund ticket
+  const cancelTicketMutation = useMutation({
+    mutationFn: async (ticket: Participant) => {
+      // Delete the competition ticket
+      const { error: deleteError } = await supabase
+        .from('competition_tickets')
+        .delete()
+        .eq('id', ticket.id);
+      
+      if (deleteError) throw deleteError;
+
+      // Return the ticket(s) to the user
+      const { error: ticketError } = await supabase
+        .from('user_tickets')
+        .upsert({
+          user_id: ticket.user_id,
+          ticket_count: requiredTickets
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (ticketError) {
+        // If upsert fails, try update
+        const { error: updateError } = await supabase
+          .rpc('purchase_tickets', {
+            ticket_quantity: -requiredTickets, // Negative to add back
+            price_per_ticket: 0
+          });
+        
+        // Alternative: directly update
+        const { data: existingTickets } = await supabase
+          .from('user_tickets')
+          .select('ticket_count')
+          .eq('user_id', ticket.user_id)
+          .single();
+
+        if (existingTickets) {
+          await supabase
+            .from('user_tickets')
+            .update({ 
+              ticket_count: existingTickets.ticket_count + requiredTickets,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', ticket.user_id);
+        } else {
+          await supabase
+            .from('user_tickets')
+            .insert({
+              user_id: ticket.user_id,
+              ticket_count: requiredTickets
+            });
+        }
+      }
+
+      // Create notification for user
+      await supabase
+        .from('notifications')
+        .insert({
+          user_id: ticket.user_id,
+          title: 'تم إلغاء تذكرة المسابقة',
+          message: `تم إلغاء تذكرتك رقم ${ticket.ticket_number} في المسابقة وإرجاع ${requiredTickets} تذكرة إلى رصيدك`,
+          type: 'info'
+        });
+
+      return ticket;
+    },
+    onSuccess: (ticket) => {
+      queryClient.invalidateQueries({ queryKey: ['competition-participants', competitionId] });
+      queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
+      toast.success(`تم إلغاء التذكرة ${ticket.ticket_number} وإرجاع ${requiredTickets} تذكرة للمستخدم`);
+      setCancelTicketDialogOpen(false);
+      setSelectedTicketToCancel(null);
+    },
+    onError: (error) => {
+      console.error('Error canceling ticket:', error);
+      toast.error('حدث خطأ في إلغاء التذكرة');
+    }
+  });
+
   const uniqueUsers = new Set(participants?.map(p => p.user_id) || []).size;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -287,18 +373,19 @@ export default function CompetitionParticipantsDialog({
                   <TableHead className="text-right">المحافظة</TableHead>
                   <TableHead className="text-right">تاريخ الشراء</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-right">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={8} className="text-center py-8">
                       جاري التحميل...
                     </TableCell>
                   </TableRow>
                 ) : filteredParticipants?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                       لا توجد نتائج
                     </TableCell>
                   </TableRow>
@@ -352,6 +439,21 @@ export default function CompetitionParticipantsDialog({
                             <Badge className="bg-green-500">فائز 🎉</Badge>
                           )}
                         </TableCell>
+                        <TableCell>
+                          {!participant.is_winner && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                setSelectedTicketToCancel(participant);
+                                setCancelTicketDialogOpen(true);
+                              }}
+                            >
+                              <Undo2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     );
                   })
@@ -362,5 +464,54 @@ export default function CompetitionParticipantsDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Cancel Ticket Confirmation Dialog */}
+    <AlertDialog open={cancelTicketDialogOpen} onOpenChange={setCancelTicketDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Undo2 className="h-5 w-5" />
+              تأكيد إلغاء التذكرة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              {selectedTicketToCancel && (
+                <>
+                  هل أنت متأكد من إلغاء التذكرة رقم <span className="font-bold text-foreground">{selectedTicketToCancel.ticket_number}</span>؟
+                  <br />
+                  <span className="text-muted-foreground text-sm">
+                    المستخدم: <span className="font-medium">{selectedTicketToCancel.profile?.full_name || selectedTicketToCancel.profile?.username}</span>
+                  </span>
+                  <br />
+                  <span className="text-green-600 text-sm">
+                    سيتم إرجاع {requiredTickets} تذكرة إلى رصيد المستخدم.
+                  </span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedTicketToCancel) {
+                  cancelTicketMutation.mutate(selectedTicketToCancel);
+                }
+              }}
+              className="bg-destructive hover:bg-destructive/90 gap-1"
+              disabled={cancelTicketMutation.isPending}
+            >
+              {cancelTicketMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Undo2 className="h-4 w-4" />
+              )}
+              تأكيد الإلغاء
+            </AlertDialogAction>
+            <AlertDialogCancel onClick={() => setSelectedTicketToCancel(null)}>
+              رجوع
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

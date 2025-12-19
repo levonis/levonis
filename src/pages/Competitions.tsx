@@ -58,6 +58,8 @@ export default function Competitions() {
   const [ticketPurchaseQuantity, setTicketPurchaseQuantity] = useState(1);
   const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
   const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
+  const [showEnterConfirm, setShowEnterConfirm] = useState(false);
+  const [selectedCompetitionForEntry, setSelectedCompetitionForEntry] = useState<Competition | null>(null);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -591,7 +593,8 @@ export default function Competitions() {
                             navigate('/auth');
                             return;
                           }
-                          enterCompetitionMutation.mutate(comp.id);
+                          setSelectedCompetitionForEntry(comp);
+                          setShowEnterConfirm(true);
                         }}
                         disabled={enterCompetitionMutation.isPending || !canEnter}
                       >
@@ -663,6 +666,45 @@ export default function Competitions() {
           })()}
         </DialogContent>
       </Dialog>
+
+      {/* Enter Competition Confirmation Dialog */}
+      <AlertDialog open={showEnterConfirm} onOpenChange={setShowEnterConfirm}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Ticket className="h-5 w-5 text-primary" />
+              تأكيد الدخول في المسابقة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              {selectedCompetitionForEntry && (
+                <>
+                  هل تريد الدخول في مسابقة <span className="font-bold text-foreground">{selectedCompetitionForEntry.title_ar}</span>؟
+                  <br />
+                  <span className="text-muted-foreground text-sm">
+                    سيتم خصم <span className="font-bold text-foreground">{selectedCompetitionForEntry.required_tickets || 1} تذكرة</span> من رصيدك.
+                  </span>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedCompetitionForEntry) {
+                  enterCompetitionMutation.mutate(selectedCompetitionForEntry.id);
+                }
+                setShowEnterConfirm(false);
+                setSelectedCompetitionForEntry(null);
+              }}
+              className="gap-1"
+            >
+              <Ticket className="h-4 w-4" />
+              تأكيد الدخول
+            </AlertDialogAction>
+            <AlertDialogCancel onClick={() => setSelectedCompetitionForEntry(null)}>إلغاء</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <CelebrationEffect 
         isActive={showWinCelebration} 
