@@ -9,6 +9,7 @@ interface NotificationPayload {
   type: 'new_competition' | 'ending_soon' | 'draw_happening' | 'competition_ended' | 'winner_announcement';
   competition_id: string;
   winner_user_id?: string;
+  winner_user_ids?: string[];
   winner_ticket_number?: string;
 }
 
@@ -178,8 +179,9 @@ Deno.serve(async (req) => {
 
         const uniqueUserIds = [...new Set(tickets?.map(t => t.user_id) || [])];
         
-        // Exclude the winner
-        const nonWinnerIds = uniqueUserIds.filter(id => id !== payload.winner_user_id);
+        // Exclude all winners (support multiple winners)
+        const winnerIds = payload.winner_user_ids || (payload.winner_user_id ? [payload.winner_user_id] : []);
+        const nonWinnerIds = uniqueUserIds.filter(id => !winnerIds.includes(id));
 
         const { data: users } = await supabase
           .from("profiles")
