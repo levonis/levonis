@@ -174,9 +174,9 @@ const Cart = () => {
 
     setCouponLoading(true);
     try {
-      // Use secure RPC function to validate coupon without exposing all codes
+      // Use secure RPC function with rate limiting to validate coupon
       const { data: result, error } = await supabase
-        .rpc('validate_coupon', { coupon_code: couponCode.toUpperCase().trim() });
+        .rpc('validate_coupon_with_rate_limit', { coupon_code: couponCode.toUpperCase().trim() });
 
       if (error) {
         toast({
@@ -187,11 +187,11 @@ const Cart = () => {
         return;
       }
 
-      const couponResult = result as { valid: boolean; error?: string; id?: string; code?: string; discount_type?: string; discount_value?: number; min_purchase_amount?: number };
+      const couponResult = result as { valid: boolean; error?: string; id?: string; code?: string; discount_type?: string; discount_value?: number; min_purchase_amount?: number; rate_limited?: boolean };
 
       if (!couponResult.valid) {
         toast({
-          title: "كوبون غير صالح",
+          title: couponResult.rate_limited ? "تم تجاوز الحد المسموح" : "كوبون غير صالح",
           description: couponResult.error || "الكوبون غير صحيح",
           variant: "destructive",
         });
