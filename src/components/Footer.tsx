@@ -1,4 +1,4 @@
-import logoNew from '@/assets/logo-new.webp';
+import logoNew from '@/assets/new-logo.png';
 
 const Footer = () => {
   return (
