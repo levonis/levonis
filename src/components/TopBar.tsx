@@ -1,4 +1,5 @@
 import { memo, useState, useEffect, useCallback } from 'react';
+import logoOptimized from '@/assets/logo-optimized.webp';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy } from 'lucide-react';
@@ -140,7 +141,7 @@ const TopBar = memo(() => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
             <img 
-              src="/images/logo-levonis.webp" 
+              src={logoOptimized} 
               alt="LEVONIS Logo" 
               className="h-10 w-auto object-contain bg-transparent"
               loading="eager"
