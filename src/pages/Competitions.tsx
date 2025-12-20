@@ -165,7 +165,7 @@ export default function Competitions() {
     staleTime: 30000,
   });
 
-  const { data: ticketSettings } = useQuery({
+  const { data: ticketSettings, isLoading: isLoadingSettings } = useQuery({
     queryKey: ['ticket-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -174,17 +174,18 @@ export default function Competitions() {
         .eq('setting_key', 'ticket_price')
         .single();
       
-      if (error && error.code !== 'PGRST116') return { price: 1000 };
-      return data?.setting_value as { price: number } || { price: 1000 };
+      if (error && error.code !== 'PGRST116') return { price: 250 };
+      return data?.setting_value as { price: number } || { price: 250 };
     },
     staleTime: 60000,
   });
 
   const purchaseTicketsMutation = useMutation({
     mutationFn: async (quantity: number) => {
+      const priceToUse = ticketSettings?.price ?? 250;
       const { data, error } = await supabase.rpc('purchase_tickets', {
         ticket_quantity: quantity,
-        price_per_ticket: ticketSettings?.price || 1000
+        price_per_ticket: priceToUse
       });
       if (error) throw error;
       return data;
@@ -265,7 +266,7 @@ export default function Competitions() {
     setShowEnterConfirm(true);
   }, []);
 
-  const ticketPrice = ticketSettings?.price || 1000;
+  const ticketPrice = ticketSettings?.price ?? 250;
   const totalTicketCost = ticketPurchaseQuantity * ticketPrice;
   const canBuyTickets = wallet && wallet.balance >= totalTicketCost;
 

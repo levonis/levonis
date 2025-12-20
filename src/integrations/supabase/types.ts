@@ -271,7 +271,10 @@ export type Database = {
           title_ar: string
           updated_at: string
           winner_ticket_id: string | null
+          winner_ticket_ids: string[] | null
           winner_user_id: string | null
+          winner_user_ids: string[] | null
+          winners_count: number
         }
         Insert: {
           competition_type?: Database["public"]["Enums"]["competition_type"]
@@ -297,7 +300,10 @@ export type Database = {
           title_ar: string
           updated_at?: string
           winner_ticket_id?: string | null
+          winner_ticket_ids?: string[] | null
           winner_user_id?: string | null
+          winner_user_ids?: string[] | null
+          winners_count?: number
         }
         Update: {
           competition_type?: Database["public"]["Enums"]["competition_type"]
@@ -323,7 +329,10 @@ export type Database = {
           title_ar?: string
           updated_at?: string
           winner_ticket_id?: string | null
+          winner_ticket_ids?: string[] | null
           winner_user_id?: string | null
+          winner_user_ids?: string[] | null
+          winners_count?: number
         }
         Relationships: []
       }
@@ -1720,6 +1729,7 @@ export type Database = {
       }
       delete_old_notifications: { Args: never; Returns: undefined }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
+      draw_multiple_winners: { Args: { comp_id: string }; Returns: Json }
       enter_competition_with_tickets: {
         Args: { comp_id: string }
         Returns: Json

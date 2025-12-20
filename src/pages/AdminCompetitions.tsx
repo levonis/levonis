@@ -122,6 +122,7 @@ export default function AdminCompetitions() {
     max_tickets_per_user: '',
     terms_conditions: '',
     required_tickets: '1',
+    winners_count: '1',
     competition_type: 'ticket_count' as CompetitionType,
     status: 'draft' as CompetitionStatus
   });
@@ -167,7 +168,7 @@ export default function AdminCompetitions() {
         .single();
       
       if (error && error.code !== 'PGRST116') throw error;
-      return data?.setting_value as { price: number } || { price: 1000 };
+      return data?.setting_value as { price: number } || { price: 250 };
     }
   });
 
@@ -222,7 +223,8 @@ export default function AdminCompetitions() {
         draw_date: data.draw_date ? baghdadToUTC(data.draw_date) : null,
         competition_type: data.competition_type,
         status: data.status,
-        required_tickets: parseInt(data.required_tickets) || 1
+        required_tickets: parseInt(data.required_tickets) || 1,
+        winners_count: parseInt(data.winners_count) || 1
       };
 
       if (editingCompetition) {
@@ -395,6 +397,7 @@ export default function AdminCompetitions() {
       max_tickets_per_user: '',
       terms_conditions: '',
       required_tickets: '1',
+      winners_count: '1',
       competition_type: 'ticket_count',
       status: 'draft'
     });
@@ -422,6 +425,7 @@ export default function AdminCompetitions() {
       max_tickets_per_user: '',
       terms_conditions: '',
       required_tickets: (comp as any).required_tickets?.toString() || '1',
+      winners_count: (comp as any).winners_count?.toString() || '1',
       competition_type: comp.competition_type,
       status: comp.status
     });
@@ -603,6 +607,23 @@ export default function AdminCompetitions() {
                       onChange={(e) => setFormData({ ...formData, required_tickets: e.target.value })}
                       placeholder="1"
                     />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Crown className="h-4 w-4 text-primary" />
+                      عدد الفائزين
+                    </Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      value={formData.winners_count}
+                      onChange={(e) => setFormData({ ...formData, winners_count: e.target.value })}
+                      placeholder="1"
+                    />
+                    <p className="text-xs text-muted-foreground">يمكن تحديد أكثر من فائز للجائزة نفسها</p>
                   </div>
                 </div>
 
