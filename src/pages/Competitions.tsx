@@ -50,6 +50,9 @@ interface Competition {
   competition_type: CompetitionType;
   status: 'active' | 'completed';
   winner_user_id: string | null;
+  winner_user_ids: string[] | null;
+  winner_ticket_ids: string[] | null;
+  winners_count: number;
   currency: string;
   required_tickets: number;
 }
@@ -178,6 +181,59 @@ export default function Competitions() {
       return data?.setting_value as { price: number } || { price: 250 };
     },
     staleTime: 60000,
+  });
+
+  // Fetch winners info for completed competitions
+  const { data: winnersInfo } = useQuery({
+    queryKey: ['competition-winners'],
+    queryFn: async () => {
+      // Get all winning tickets with user profiles
+      const { data, error } = await supabase
+        .from('competition_tickets')
+        .select(`
+          id,
+          competition_id,
+          ticket_number,
+          user_id
+        `)
+        .eq('is_winner', true);
+      
+      if (error) throw error;
+      
+      // Get unique user IDs
+      const userIds = [...new Set(data?.map(t => t.user_id) || [])];
+      
+      // Fetch profiles for those users
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .in('id', userIds);
+      
+      if (profilesError) throw profilesError;
+      
+      // Create lookup map
+      const profilesMap: Record<string, { username: string; full_name: string | null }> = {};
+      profiles?.forEach(p => {
+        profilesMap[p.id] = { username: p.username, full_name: p.full_name };
+      });
+      
+      // Group by competition
+      const winnersMap: Record<string, { user_id: string; ticket_number: string; username: string; full_name: string | null }[]> = {};
+      data?.forEach(ticket => {
+        if (!winnersMap[ticket.competition_id]) {
+          winnersMap[ticket.competition_id] = [];
+        }
+        winnersMap[ticket.competition_id].push({
+          user_id: ticket.user_id,
+          ticket_number: ticket.ticket_number,
+          username: profilesMap[ticket.user_id]?.username || 'مستخدم',
+          full_name: profilesMap[ticket.user_id]?.full_name || null
+        });
+      });
+      
+      return winnersMap;
+    },
+    staleTime: 30000,
   });
 
   const purchaseTicketsMutation = useMutation({
@@ -466,6 +522,7 @@ export default function Competitions() {
                 onEnterCompetition={handleEnterCompetition}
                 isEntering={enterCompetitionMutation.isPending}
                 isAuthenticated={!!user}
+                winners={winnersInfo?.[comp.id] || []}
               />
             ))}
           </div>
@@ -794,6 +851,56 @@ export default function Competitions() {
                       <div className="border rounded-lg p-3">
                         <p className="text-sm text-muted-foreground mb-2 text-center">الوقت المتبقي</p>
                         <CountdownTimer endDate={comp.end_date} />
+                      </div>
+                    )}
+
+                    {/* Winners List for completed competitions */}
+                    {comp.status === 'completed' && winnersInfo?.[comp.id] && winnersInfo[comp.id].length > 0 && (
+                      <div className="bg-gradient-to-br from-yellow-500/10 via-amber-500/10 to-orange-500/10 border border-yellow-500/30 rounded-xl p-4 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <div className="p-2 rounded-full bg-yellow-500/20">
+                            <Crown className="h-5 w-5 text-yellow-600" />
+                          </div>
+                          <span className="font-bold text-lg">
+                            {winnersInfo[comp.id].length > 1 ? 'الفائزون' : 'الفائز'}
+                          </span>
+                          <Badge variant="secondary" className="mr-auto bg-yellow-500/20 text-yellow-700 border-0">
+                            {winnersInfo[comp.id].length} {winnersInfo[comp.id].length > 1 ? 'فائزين' : 'فائز'}
+                          </Badge>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {winnersInfo[comp.id].map((winner, idx) => (
+                            <div 
+                              key={idx}
+                              className={`flex items-center gap-3 p-3 rounded-lg ${
+                                winner.user_id === user?.id 
+                                  ? 'bg-yellow-500/30 border border-yellow-500/50 shadow-lg' 
+                                  : 'bg-background/50'
+                              }`}
+                            >
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                                winner.user_id === user?.id 
+                                  ? 'bg-yellow-500 text-white' 
+                                  : 'bg-muted text-muted-foreground'
+                              }`}>
+                                {idx + 1}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold truncate flex items-center gap-1">
+                                  {winner.full_name || winner.username}
+                                  {winner.user_id === user?.id && (
+                                    <Badge className="bg-yellow-500 text-white text-xs">أنت!</Badge>
+                                  )}
+                                </p>
+                                <p className="text-xs text-muted-foreground">@{winner.username}</p>
+                              </div>
+                              <Badge variant="outline" className="text-xs font-mono">
+                                #{winner.ticket_number}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
 
