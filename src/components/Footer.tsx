@@ -1,4 +1,4 @@
-import logoOptimized from '@/assets/logo-optimized.webp';
+import logoNew from '@/assets/logo-new.png';
 
 const Footer = () => {
   return (
@@ -7,7 +7,7 @@ const Footer = () => {
         <div className="flex flex-col items-center justify-center gap-6">
           <div className="w-48 h-48 relative">
             <img 
-              src={logoOptimized}
+              src={logoNew}
               alt="LEVONIS Logo" 
               className="w-full h-full object-contain animate-fade-in bg-transparent"
               loading="lazy"
