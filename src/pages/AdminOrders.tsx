@@ -188,6 +188,88 @@ const AdminOrders = () => {
     }
   });
 
+  // إلغاء الطلب واسترجاع المبلغ للمحفظة
+  const cancelOrderWithRefundMutation = useMutation({
+    mutationFn: async (order: any) => {
+      const paidAmount = Number(order.customer_paid_amount) || Number(order.paid_amount) || 0;
+      
+      // تحديث حالة الطلب إلى ملغي
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({
+          status: 'cancelled',
+          payment_status: 'refunded',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', order.id);
+
+      if (updateError) throw updateError;
+
+      // إرجاع المبلغ للمحفظة إذا كان هناك مبلغ مدفوع
+      if (paidAmount > 0) {
+        // جلب رصيد المحفظة الحالي
+        const { data: wallet, error: walletFetchError } = await supabase
+          .from('user_wallets')
+          .select('balance')
+          .eq('user_id', order.user_id)
+          .maybeSingle();
+
+        if (walletFetchError) throw walletFetchError;
+
+        const currentBalance = wallet?.balance || 0;
+
+        // تحديث رصيد المحفظة (أو إنشاء محفظة جديدة)
+        const { error: walletError } = await supabase
+          .from('user_wallets')
+          .upsert({
+            user_id: order.user_id,
+            balance: currentBalance + paidAmount,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'user_id' });
+
+        if (walletError) throw walletError;
+
+        // تسجيل معاملة الاسترجاع
+        const { error: transactionError } = await supabase
+          .from('wallet_transactions')
+          .insert({
+            user_id: order.user_id,
+            type: 'refund',
+            amount: paidAmount,
+            status: 'completed',
+            admin_notes: `استرجاع مبلغ الطلب الملغي رقم ${order.order_number}`,
+          });
+
+        if (transactionError) throw transactionError;
+
+        // إرسال إشعار للمستخدم
+        await supabase
+          .from('notifications')
+          .insert({
+            user_id: order.user_id,
+            title: 'تم إلغاء طلبك واسترجاع المبلغ',
+            message: `تم إلغاء الطلب رقم ${order.order_number} واسترجاع مبلغ ${paidAmount.toLocaleString()} دينار عراقي إلى محفظتك`,
+            type: 'info',
+            related_id: order.id
+          });
+      }
+
+      return { paidAmount };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+      if (data.paidAmount > 0) {
+        toast.success(`تم إلغاء الطلب واسترجاع ${data.paidAmount.toLocaleString()} د.ع للمحفظة`);
+      } else {
+        toast.success('تم إلغاء الطلب بنجاح');
+      }
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ أثناء إلغاء الطلب');
+      console.error(error);
+    }
+  });
+
   const handleCreateOrder = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -398,11 +480,11 @@ const AdminOrders = () => {
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string }> = {
       pending: { variant: 'outline', label: 'قيد الانتظار' },
-      confirmed: { variant: 'secondary', label: 'مؤكد' },
-      processing: { variant: 'default', label: 'قيد التجهيز' },
-      arrived_warehouse: { variant: 'default', label: 'وصل المخزن' },
+      confirmed: { variant: 'secondary', label: 'تم تأكيد الطلب' },
+      processing: { variant: 'default', label: 'تم الشراء' },
+      arrived_warehouse: { variant: 'default', label: 'وصل إلى المخزن' },
       shipped: { variant: 'default', label: 'تم الشحن' },
-      arrived_iraq: { variant: 'default', label: 'وصل العراق' },
+      arrived_iraq: { variant: 'default', label: 'وصل إلى العراق' },
       delivered: { variant: 'secondary', label: 'تم التوصيل' },
       cancelled: { variant: 'destructive', label: 'ملغي' },
     };
@@ -717,6 +799,45 @@ const AdminOrders = () => {
                             <Package className="h-4 w-4 ml-2" />
                             عرض التفاصيل
                           </Button>
+                          
+                          {/* زر إلغاء الطلب مع استرجاع المبلغ */}
+                          {order.status !== 'cancelled' && order.status !== 'delivered' && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  <X className="h-4 w-4 ml-1" />
+                                  إلغاء
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>تأكيد إلغاء الطلب</AlertDialogTitle>
+                                  <AlertDialogDescription className="space-y-2">
+                                    <p>هل تريد إلغاء الطلب رقم <strong>{order.order_number}</strong>؟</p>
+                                    {(Number(order.customer_paid_amount) > 0 || Number(order.paid_amount) > 0) && (
+                                      <p className="text-green-600 font-bold">
+                                        سيتم استرجاع مبلغ {formatPrice(Number(order.customer_paid_amount) || Number(order.paid_amount))} دينار عراقي إلى محفظة العميل
+                                      </p>
+                                    )}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="flex-row-reverse gap-2">
+                                  <AlertDialogAction 
+                                    onClick={() => cancelOrderWithRefundMutation.mutate(order)}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    تأكيد الإلغاء
+                                  </AlertDialogAction>
+                                  <AlertDialogCancel>تراجع</AlertDialogCancel>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                          
                           <Dialog open={dialogOpen && editingOrder?.id === order.id} onOpenChange={(open) => {
                             setDialogOpen(open);
                             if (!open) {
@@ -787,12 +908,11 @@ const AdminOrders = () => {
                                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                   >
                                     <option value="pending">قيد الانتظار</option>
-                                    <option value="purchased">تم الشراء</option>
-                                    <option value="confirmed">مؤكد</option>
-                                    <option value="processing">قيد التجهيز</option>
-                                    <option value="arrived_warehouse">وصل المخزن</option>
+                                    <option value="confirmed">تم تأكيد الطلب</option>
+                                    <option value="processing">تم الشراء</option>
+                                    <option value="arrived_warehouse">وصل إلى المخزن</option>
                                     <option value="shipped">تم الشحن</option>
-                                    <option value="arrived_iraq">وصل العراق</option>
+                                    <option value="arrived_iraq">وصل إلى العراق</option>
                                     <option value="delivered">تم التوصيل</option>
                                     <option value="cancelled">ملغي</option>
                                   </select>
