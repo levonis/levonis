@@ -45,9 +45,11 @@ const MyOrders = () => {
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string }> = {
       pending: { variant: 'outline', label: 'قيد الانتظار' },
-      confirmed: { variant: 'secondary', label: 'مؤكد' },
-      processing: { variant: 'default', label: 'قيد التجهيز' },
+      confirmed: { variant: 'secondary', label: 'تم تأكيد الطلب' },
+      processing: { variant: 'default', label: 'تم الشراء' },
+      arrived_warehouse: { variant: 'default', label: 'وصل إلى المخزن' },
       shipped: { variant: 'default', label: 'تم الشحن' },
+      arrived_iraq: { variant: 'default', label: 'وصل إلى العراق' },
       delivered: { variant: 'secondary', label: 'تم التوصيل' },
       cancelled: { variant: 'destructive', label: 'ملغي' },
     };

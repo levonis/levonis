@@ -236,11 +236,11 @@ const OrderDetail = () => {
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string, color: string }> = {
       pending: { variant: 'outline', label: 'قيد الانتظار', color: 'text-amber-500' },
-      confirmed: { variant: 'secondary', label: 'مؤكد', color: 'text-blue-500' },
-      processing: { variant: 'default', label: 'قيد التجهيز', color: 'text-purple-500' },
-      arrived_warehouse: { variant: 'default', label: 'وصل المخزن', color: 'text-indigo-500' },
+      confirmed: { variant: 'secondary', label: 'تم تأكيد الطلب', color: 'text-blue-500' },
+      processing: { variant: 'default', label: 'تم الشراء', color: 'text-purple-500' },
+      arrived_warehouse: { variant: 'default', label: 'وصل إلى المخزن', color: 'text-indigo-500' },
       shipped: { variant: 'default', label: 'تم الشحن', color: 'text-cyan-500' },
-      arrived_iraq: { variant: 'default', label: 'وصل العراق', color: 'text-teal-500' },
+      arrived_iraq: { variant: 'default', label: 'وصل إلى العراق', color: 'text-teal-500' },
       delivered: { variant: 'secondary', label: 'تم التوصيل', color: 'text-green-500' },
       cancelled: { variant: 'destructive', label: 'ملغي', color: 'text-red-500' },
     };
