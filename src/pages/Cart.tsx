@@ -14,6 +14,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
@@ -26,6 +27,7 @@ const Cart = () => {
   const [useWalletBalance, setUseWalletBalance] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'quarter'>('full');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
   // التحقق من وجود منتجات طلب مسبق
   const hasPreOrderItems = items.some((item: any) => 
@@ -239,8 +241,37 @@ const Cart = () => {
     });
   };
 
+  // حساب المبلغ المطلوب دفعه الآن
+  const requiredPaymentNow = preOrderPaymentAmount + deliveryFee;
+  const walletBalance = wallet?.balance || 0;
+  const hasEnoughBalance = walletBalance >= requiredPaymentNow;
+
+  const handleCheckoutClick = () => {
+    if (!user) {
+      toast({
+        title: "يجب تسجيل الدخول",
+        description: "الرجاء تسجيل الدخول أولاً لإتمام الطلب",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!hasEnoughBalance) {
+      toast({
+        title: "رصيد المحفظة غير كافٍ",
+        description: `رصيدك الحالي: ${formatPrice(walletBalance)} د.ع - المطلوب: ${formatPrice(requiredPaymentNow)} د.ع`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowConfirmDialog(true);
+  };
+
   const handleCheckout = async () => {
     if (isCheckingOut) return; // Prevent double-click
+    
+    setShowConfirmDialog(false);
     
     if (!user) {
       toast({
@@ -371,12 +402,15 @@ const Cart = () => {
       }
 
       // إذا تم استخدام المحفظة، خصم المبلغ وتسجيل المعاملة
-      if (useWalletBalance && walletDeduction > 0 && wallet) {
+      // الدفع إجباري من المحفظة
+      if (wallet) {
+        const amountToDeduct = requiredPaymentNow;
+        
         // خصم المبلغ من المحفظة
         const { error: walletUpdateError } = await supabase
           .from('user_wallets')
           .update({
-            balance: wallet.balance - walletDeduction,
+            balance: wallet.balance - amountToDeduct,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id);
@@ -384,22 +418,32 @@ const Cart = () => {
         if (walletUpdateError) {
           console.error('Error updating wallet:', walletUpdateError);
           toast({
-            title: "تحذير",
-            description: "تم إنشاء الطلب ولكن حدث خطأ في خصم المبلغ من المحفظة",
+            title: "خطأ",
+            description: "حدث خطأ في خصم المبلغ من المحفظة",
             variant: "destructive",
           });
-        } else {
-          // تسجيل معاملة المحفظة
-          await supabase
-            .from('wallet_transactions')
-            .insert({
-              user_id: user.id,
-              type: 'order_payment',
-              amount: walletDeduction,
-              status: 'completed',
-              admin_notes: `دفع طلب رقم ${order.order_number}`,
-            });
+          return;
         }
+        
+        // تسجيل معاملة المحفظة
+        await supabase
+          .from('wallet_transactions')
+          .insert({
+            user_id: user.id,
+            type: 'order_payment',
+            amount: -amountToDeduct,
+            status: 'completed',
+            admin_notes: `دفع طلب رقم ${order.order_number}`,
+          });
+        
+        // تحديث الطلب بالمبلغ المدفوع من المحفظة
+        await supabase
+          .from('orders')
+          .update({
+            customer_paid_amount: amountToDeduct,
+            payment_status: isPreOrderWithPartialPayment ? 'partial' : 'paid',
+          })
+          .eq('id', order.id);
       }
 
       // Fetch custom request data directly if needed
@@ -1030,41 +1074,32 @@ const Cart = () => {
                     </div>
                   )}
                   
-                  {/* خيار الدفع من المحفظة */}
-                  {wallet && wallet.balance > 0 && (
-                    <div className="py-3 px-4 rounded-lg bg-primary/5 border border-primary/20">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <Checkbox
-                            id="useWallet"
-                            checked={useWalletBalance}
-                            onCheckedChange={(checked) => setUseWalletBalance(checked as boolean)}
-                          />
-                          <Label htmlFor="useWallet" className="cursor-pointer flex items-center gap-2">
-                            <Wallet className="h-4 w-4" />
-                            الدفع من المحفظة
-                          </Label>
-                        </div>
+                  {/* رصيد المحفظة المطلوب */}
+                  <div className={`py-3 px-4 rounded-lg border ${hasEnoughBalance ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'}`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Wallet className={`h-5 w-5 ${hasEnoughBalance ? 'text-green-600' : 'text-red-600'}`} />
+                      <span className={`font-bold ${hasEnoughBalance ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                        الدفع من المحفظة (إلزامي)
+                      </span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">رصيد المحفظة:</span>
+                        <span className={`font-bold ${hasEnoughBalance ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatPrice(walletBalance)} د.ع
+                        </span>
                       </div>
-                      <div className="text-xs text-muted-foreground flex justify-between">
-                        <span>رصيد المحفظة:</span>
-                        <span className="font-bold text-primary">{formatPrice(wallet.balance)} د.ع</span>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">المطلوب دفعه:</span>
+                        <span className="font-bold text-foreground">{formatPrice(requiredPaymentNow)} د.ع</span>
                       </div>
-                      {useWalletBalance && walletDeduction > 0 && (
-                        <div className="text-xs text-green-600 mt-2 flex justify-between">
-                          <span>سيتم الخصم:</span>
-                          <span className="font-bold">-{formatPrice(walletDeduction)} د.ع</span>
+                      {!hasEnoughBalance && (
+                        <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+                          ⚠️ يجب شحن المحفظة بمبلغ {formatPrice(requiredPaymentNow - walletBalance)} د.ع إضافي
                         </div>
                       )}
                     </div>
-                  )}
-                  
-                  {walletDeduction > 0 && useWalletBalance && (
-                    <div className="flex justify-between text-green-600">
-                      <span>خصم المحفظة</span>
-                      <span className="font-bold">-{formatPrice(walletDeduction)} دينار عراقي</span>
-                    </div>
-                  )}
+                  </div>
                   
                   <div className="border-t border-border/40 pt-3 mt-3">
                     {hasPreOrderItems && preOrderPaymentOption === 'quarter' && (
@@ -1102,20 +1137,36 @@ const Cart = () => {
                 </div>
 
                 <Button 
-                  className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 mb-3"
+                  className={`w-full mb-3 ${hasEnoughBalance ? 'bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
                   size="lg"
-                  onClick={handleCheckout}
-                  disabled={isCheckingOut}
+                  onClick={handleCheckoutClick}
+                  disabled={isCheckingOut || !hasEnoughBalance}
                 >
                   {isCheckingOut ? (
                     <>
                       <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                       جاري إتمام الطلب...
                     </>
+                  ) : !hasEnoughBalance ? (
+                    <>
+                      <Wallet className="ml-2 h-4 w-4" />
+                      رصيد غير كافٍ
+                    </>
                   ) : (
                     'إتمام الطلب'
                   )}
                 </Button>
+                
+                {!hasEnoughBalance && (
+                  <Button 
+                    className="w-full mb-3 bg-green-600 hover:bg-green-700 text-white"
+                    size="lg"
+                    onClick={() => navigate('/my-points')}
+                  >
+                    <Wallet className="ml-2 h-4 w-4" />
+                    شحن المحفظة
+                  </Button>
+                )}
 
                 <Link to="/products">
                   <Button 
@@ -1131,6 +1182,35 @@ const Cart = () => {
           </div>
         )}
       </main>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد إتمام الطلب</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>سيتم خصم <span className="font-bold text-primary">{formatPrice(requiredPaymentNow)} دينار عراقي</span> من رصيد محفظتك.</p>
+              <p className="text-sm text-muted-foreground">
+                الرصيد الحالي: {formatPrice(walletBalance)} د.ع → الرصيد بعد الخصم: {formatPrice(walletBalance - requiredPaymentNow)} د.ع
+              </p>
+              {hasPreOrderItems && preOrderPaymentOption === 'quarter' && remainingAmount > 0 && (
+                <p className="text-orange-600 text-sm">
+                  ⚠️ المتبقي عند الاستلام: {formatPrice(remainingAmount)} دينار عراقي
+                </p>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction 
+              onClick={handleCheckout}
+              className="bg-primary hover:bg-primary/90"
+            >
+              تأكيد الطلب
+            </AlertDialogAction>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
