@@ -18,6 +18,13 @@ const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy'
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free';
 
+interface Winner {
+  user_id: string;
+  ticket_number: string;
+  username: string;
+  full_name: string | null;
+}
+
 interface Competition {
   id: string;
   title: string;
@@ -38,6 +45,8 @@ interface Competition {
   competition_type: CompetitionType;
   status: 'active' | 'completed';
   winner_user_id: string | null;
+  winner_user_ids: string[] | null;
+  winners_count: number;
   currency: string;
   required_tickets: number;
 }
@@ -51,6 +60,7 @@ interface CompetitionCardProps {
   onEnterCompetition: (comp: Competition) => void;
   isEntering: boolean;
   isAuthenticated: boolean;
+  winners?: Winner[];
 }
 
 const CompetitionCard = memo(({
@@ -62,6 +72,7 @@ const CompetitionCard = memo(({
   onEnterCompetition,
   isEntering,
   isAuthenticated,
+  winners = [],
 }: CompetitionCardProps) => {
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -254,6 +265,36 @@ const CompetitionCard = memo(({
             </div>
           )}
         </div>
+        
+        {/* Winners Display for completed competitions */}
+        {comp.status === 'completed' && winners.length > 0 && (
+          <div className="bg-gradient-to-l from-yellow-500/10 to-transparent rounded-md p-2 border-r-2 border-yellow-500/50">
+            <div className="flex items-start gap-1.5">
+              <Crown className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-yellow-600" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {winners.length > 1 ? 'الفائزون:' : 'الفائز:'}
+                </span>
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {winners.slice(0, 3).map((winner, idx) => (
+                    <Badge 
+                      key={idx} 
+                      variant="secondary" 
+                      className="text-xs bg-yellow-500/20 text-yellow-700 border-0"
+                    >
+                      {winner.full_name || winner.username}
+                    </Badge>
+                  ))}
+                  {winners.length > 3 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{winners.length - 3}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
         
         {hasTicket && (
           <div className="text-xs text-primary font-medium">
