@@ -394,6 +394,33 @@ export type Database = {
           },
         ]
       }
+      coupon_validation_attempts: {
+        Row: {
+          attempted_code: string
+          created_at: string | null
+          id: string
+          ip_identifier: string | null
+          success: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          attempted_code: string
+          created_at?: string | null
+          id?: string
+          ip_identifier?: string | null
+          success?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          attempted_code?: string
+          created_at?: string | null
+          id?: string
+          ip_identifier?: string | null
+          success?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           active: boolean
@@ -1674,6 +1701,7 @@ export type Database = {
         Args: { username_to_check: string }
         Returns: boolean
       }
+      cleanup_old_coupon_attempts: { Args: never; Returns: undefined }
       complete_daily_task: { Args: { task_key_param: string }; Returns: Json }
       convert_points_to_wallet: {
         Args: { points_amount: number }
@@ -1725,6 +1753,10 @@ export type Database = {
         Returns: undefined
       }
       validate_coupon: { Args: { coupon_code: string }; Returns: Json }
+      validate_coupon_with_rate_limit: {
+        Args: { coupon_code: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "manager" | "worker"
