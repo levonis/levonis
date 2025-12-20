@@ -432,33 +432,79 @@ export default function AdminCompetitions() {
     setIsDialogOpen(true);
   };
 
+  // Calculate statistics
+  const totalParticipants = Object.values(ticketCounts || {}).reduce((sum, count) => sum + count, 0);
+  const activeCompetitions = competitions?.filter(c => c.status === 'active').length || 0;
+  const completedCompetitions = competitions?.filter(c => c.status === 'completed').length || 0;
+  const totalWinners = competitions?.filter(c => c.status === 'completed' && c.winner_user_id).length || 0;
+
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <Trophy className="h-6 w-6 text-primary" />
-                إدارة المسابقات
-              </h1>
-              <p className="text-muted-foreground">إنشاء وإدارة المسابقات والسحوبات</p>
+    <>
+      <div className="min-h-screen bg-background" dir="rtl">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
+                <ArrowRight className="h-5 w-5" />
+              </Button>
+              <div>
+                <h1 className="text-2xl font-bold flex items-center gap-2">
+                  <Trophy className="h-6 w-6 text-primary" />
+                  إدارة المسابقات
+                </h1>
+                <p className="text-muted-foreground">إنشاء وإدارة المسابقات والسحوبات</p>
+              </div>
             </div>
+
+            <Button className="gap-2" onClick={() => setIsDialogOpen(true)}>
+              <Plus className="h-4 w-4" />
+              إنشاء مسابقة
+            </Button>
+          </div>
+
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardContent className="p-4 text-center">
+                <Trophy className="h-6 w-6 mx-auto mb-1 text-primary" />
+                <p className="text-xl font-bold">{competitions?.length || 0}</p>
+                <p className="text-xs text-muted-foreground">إجمالي المسابقات</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5">
+              <CardContent className="p-4 text-center">
+                <Play className="h-6 w-6 mx-auto mb-1 text-green-600" />
+                <p className="text-xl font-bold">{activeCompetitions}</p>
+                <p className="text-xs text-muted-foreground">مسابقات نشطة</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+              <CardContent className="p-4 text-center">
+                <Users className="h-6 w-6 mx-auto mb-1 text-blue-600" />
+                <p className="text-xl font-bold">{totalParticipants}</p>
+                <p className="text-xs text-muted-foreground">إجمالي المشاركات</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5">
+              <CardContent className="p-4 text-center">
+                <Crown className="h-6 w-6 mx-auto mb-1 text-yellow-600" />
+                <p className="text-xl font-bold">{totalWinners}</p>
+                <p className="text-xs text-muted-foreground">فائزين</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5">
+              <CardContent className="p-4 text-center">
+                <Ticket className="h-6 w-6 mx-auto mb-1 text-purple-600" />
+                <p className="text-xl font-bold">{ticketSettings?.price || 250}</p>
+                <p className="text-xs text-muted-foreground">سعر التذكرة</p>
+              </CardContent>
+            </Card>
           </div>
 
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                إنشاء مسابقة
-              </Button>
-            </DialogTrigger>
+              setIsDialogOpen(open);
+              if (!open) resetForm();
+            }}>
             <DialogContent className="max-w-3xl h-[85vh] flex flex-col" onPointerDownOutside={(e) => e.preventDefault()}>
               <DialogHeader className="flex-shrink-0 pb-4 border-b">
                 <DialogTitle className="text-xl">{editingCompetition ? 'تعديل المسابقة' : 'إنشاء مسابقة جديدة'}</DialogTitle>
@@ -978,6 +1024,7 @@ export default function AdminCompetitions() {
           requiredTickets={selectedCompetitionForParticipants.required_tickets || 1}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 }
