@@ -1,21 +1,20 @@
+import logoOptimized from '@/assets/logo-optimized.webp';
+
 const Footer = () => {
   return (
     <footer className="w-full py-12 bg-card/50 border-t border-border/30 mt-16">
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center justify-center gap-6">
           <div className="w-48 h-48 relative">
-            <picture>
-              <source srcSet="/images/logo-levonis.webp" type="image/webp" />
-              <img 
-                src="/images/logo-levonis.png"
-                alt="LEVONIS Logo" 
-                className="w-full h-full object-contain animate-fade-in bg-transparent"
-                loading="lazy"
-                width="192"
-                height="192"
-                style={{ mixBlendMode: 'normal' }}
-              />
-            </picture>
+            <img 
+              src={logoOptimized}
+              alt="LEVONIS Logo" 
+              className="w-full h-full object-contain animate-fade-in bg-transparent"
+              loading="lazy"
+              width="192"
+              height="192"
+              style={{ mixBlendMode: 'normal' }}
+            />
           </div>
           
           <div className="flex items-center justify-center gap-4">
