@@ -89,21 +89,33 @@ export default function Competitions() {
     staleTime: 30000, // Cache for 30 seconds
   });
 
+  // Fetch ticket counts - available for all users (no auth required)
   const { data: ticketCounts } = useQuery({
     queryKey: ['competition-ticket-counts'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('competition_tickets')
-        .select('competition_id');
-      
-      if (error) throw error;
+      // Use count aggregation for better performance and RLS compatibility
+      const competitionIds = competitions?.map(c => c.id) || [];
+      if (competitionIds.length === 0) return {};
       
       const counts: Record<string, number> = {};
-      data?.forEach(ticket => {
-        counts[ticket.competition_id] = (counts[ticket.competition_id] || 0) + 1;
-      });
+      
+      // Fetch count for each competition
+      await Promise.all(
+        competitionIds.map(async (compId) => {
+          const { count, error } = await supabase
+            .from('competition_tickets')
+            .select('*', { count: 'exact', head: true })
+            .eq('competition_id', compId);
+          
+          if (!error && count !== null) {
+            counts[compId] = count;
+          }
+        })
+      );
+      
       return counts;
     },
+    enabled: !!competitions && competitions.length > 0,
     staleTime: 30000,
   });
 

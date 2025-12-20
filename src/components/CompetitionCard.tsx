@@ -198,19 +198,19 @@ const CompetitionCard = memo(({
         </div>
       )}
       
-      <CardContent className="p-3 space-y-2">
-        <h3 className="font-bold text-sm line-clamp-1">{comp.title_ar}</h3>
+      <CardContent className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+        <h3 className="font-bold text-xs sm:text-sm line-clamp-1">{comp.title_ar}</h3>
         
         {/* Prize Description */}
-        <div className="bg-gradient-to-l from-primary/10 to-transparent rounded-md p-2 border-r-2 border-primary/50">
-          <div className="flex items-start gap-1.5">
-            <Gift className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-primary" />
+        <div className="bg-gradient-to-l from-primary/10 to-transparent rounded-md p-1.5 sm:p-2 border-r-2 border-primary/50">
+          <div className="flex items-start gap-1 sm:gap-1.5">
+            <Gift className="h-3 w-3 sm:h-3.5 sm:w-3.5 mt-0.5 flex-shrink-0 text-primary" />
             <div className="flex-1 min-w-0">
-              <span className={`text-xs font-medium text-foreground leading-relaxed ${shouldTruncate && !isDescriptionExpanded ? 'line-clamp-2' : ''}`}>
+              <span className={`text-[10px] sm:text-xs font-medium text-foreground leading-relaxed ${shouldTruncate && !isDescriptionExpanded ? 'line-clamp-2' : ''}`}>
                 {prizeText}
               </span>
               {comp.prize_value && (
-                <p className="text-xs font-bold text-primary mt-0.5">
+                <p className="text-[10px] sm:text-xs font-bold text-primary mt-0.5">
                   {comp.prize_value.toLocaleString()} {comp.currency}
                 </p>
               )}
@@ -219,48 +219,48 @@ const CompetitionCard = memo(({
           {shouldTruncate && (
             <Button 
               variant="link" 
-              className="h-auto p-0 text-xs text-primary mt-1"
+              className="h-auto p-0 text-[10px] sm:text-xs text-primary mt-0.5 sm:mt-1"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsDescriptionExpanded(!isDescriptionExpanded);
               }}
             >
               {isDescriptionExpanded ? 'عرض أقل' : 'المزيد'}
-              <ChevronDown className={`h-3 w-3 mr-1 transition-transform ${isDescriptionExpanded ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1 transition-transform ${isDescriptionExpanded ? 'rotate-180' : ''}`} />
             </Button>
           )}
         </div>
 
         {/* Countdown for timed competitions */}
         {comp.status === 'active' && comp.competition_type === 'timed' && comp.end_date && (
-          <div className="text-xs">
+          <div className="text-[10px] sm:text-xs overflow-x-auto">
             <CountdownTimer endDate={comp.end_date} />
           </div>
         )}
         
         {comp.status === 'active' && comp.end_date && comp.competition_type !== 'timed' && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" />
+          <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+            <Calendar className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
             <span>ينتهي: {formatBaghdadTime(comp.end_date)}</span>
           </div>
         )}
         
         {/* Participants */}
-        <div className="space-y-1">
+        <div className="space-y-0.5 sm:space-y-1">
           {(comp.max_tickets || comp.target_participants) ? (
             <>
-              <Progress value={getProgress()} className="h-1.5" />
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <Progress value={getProgress()} className="h-1 sm:h-1.5" />
+              <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground">
                 <span className="flex items-center gap-0.5">
-                  <Users className="h-3 w-3" />
+                  <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
                   {ticketCount} مشترك
                 </span>
                 <span>/ {comp.max_tickets || comp.target_participants}</span>
               </div>
             </>
           ) : (
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Users className="h-3 w-3" />
+            <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+              <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
               <span>{ticketCount} مشترك</span>
             </div>
           )}
