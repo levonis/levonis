@@ -1741,6 +1741,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      notify_draw_happening: { Args: { comp_id: string }; Returns: undefined }
       purchase_competition_ticket:
         | { Args: { comp_id: string }; Returns: Json }
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }

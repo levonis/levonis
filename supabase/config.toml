@@ -14,3 +14,15 @@ verify_jwt = false
 
 [functions.auto-draw-competitions]
 verify_jwt = false
+
+[functions.notify-competition-telegram]
+verify_jwt = false
+
+[functions.notify-competition-ending]
+verify_jwt = false
+
+[functions.extract-product-info]
+verify_jwt = false
+
+[functions.retry-extract-colors]
+verify_jwt = false

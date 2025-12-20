@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,7 +5,26 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req) => {
+async function sendTelegramMessage(botToken: string, chatId: string, message: string): Promise<boolean> {
+  try {
+    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: "HTML",
+      }),
+    });
+    const result = await response.json();
+    return result.ok;
+  } catch (error) {
+    console.error(`Failed to send telegram to ${chatId}:`, error);
+    return false;
+  }
+}
+
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -14,6 +32,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get all active timed competitions ending in the next 24 hours
@@ -24,7 +44,7 @@ serve(async (req) => {
 
     const { data: endingCompetitions, error: compError } = await supabase
       .from("competitions")
-      .select("id, title_ar, end_date")
+      .select("id, title_ar, prize_description_ar, end_date")
       .eq("status", "active")
       .eq("competition_type", "timed")
       .gte("end_date", now.toISOString())
@@ -40,6 +60,7 @@ serve(async (req) => {
     }
 
     let totalNotifications = 0;
+    let totalTelegramSent = 0;
 
     for (const comp of endingCompetitions) {
       // Get all participants for this competition
@@ -56,15 +77,21 @@ serve(async (req) => {
       // Get unique user IDs
       const uniqueUserIds = [...new Set(tickets?.map(t => t.user_id) || [])];
 
+      // Get users with their telegram_chat_id
+      const { data: users } = await supabase
+        .from("profiles")
+        .select("id, telegram_chat_id")
+        .in("id", uniqueUserIds);
+
       // Send notification to each participant
-      for (const userId of uniqueUserIds) {
+      for (const user of users || []) {
         // Check if notification already sent today for this competition
         const today = new Date().toISOString().split('T')[0];
         
         const { data: existingNotif } = await supabase
           .from("notifications")
           .select("id")
-          .eq("user_id", userId)
+          .eq("user_id", user.id)
           .eq("related_id", comp.id)
           .eq("type", "warning")
           .gte("created_at", today)
@@ -74,10 +101,11 @@ serve(async (req) => {
           continue; // Already notified today
         }
 
+        // Create in-app notification
         const { error: notifError } = await supabase
           .from("notifications")
           .insert({
-            user_id: userId,
+            user_id: user.id,
             title: "⏰ المسابقة تنتهي قريباً!",
             message: `المسابقة "${comp.title_ar}" ستنتهي خلال 24 ساعة. لا تفوت فرصتك!`,
             type: "warning",
@@ -88,20 +116,34 @@ serve(async (req) => {
         if (!notifError) {
           totalNotifications++;
         }
+
+        // Send Telegram notification if user has telegram_chat_id
+        if (TELEGRAM_BOT_TOKEN && user.telegram_chat_id) {
+          const telegramMessage = `⏰ <b>المسابقة تنتهي قريباً!</b>\n\n` +
+            `📌 ${comp.title_ar}\n` +
+            `🎁 الجائزة: ${comp.prize_description_ar}\n\n` +
+            `⚠️ المسابقة ستنتهي خلال 24 ساعة!\n` +
+            `لا تفوت فرصتك للفوز! 🍀\n\n` +
+            `🛍️ LEVONIS`;
+
+          const success = await sendTelegramMessage(TELEGRAM_BOT_TOKEN, user.telegram_chat_id, telegramMessage);
+          if (success) totalTelegramSent++;
+        }
       }
     }
 
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Sent ${totalNotifications} notifications for ${endingCompetitions.length} competitions` 
+        message: `Sent ${totalNotifications} in-app notifications and ${totalTelegramSent} telegram notifications for ${endingCompetitions.length} competitions` 
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Error in notify-competition-ending:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -38,6 +38,19 @@ Deno.serve(async (req) => {
     for (const competition of endedCompetitions || []) {
       console.log(`Drawing winner for competition: ${competition.id} - ${competition.title_ar}`)
 
+      // Send "draw happening" notification to participants before drawing
+      try {
+        await supabase.functions.invoke('notify-competition-telegram', {
+          body: {
+            type: 'draw_happening',
+            competition_id: competition.id
+          }
+        })
+        console.log('Sent draw happening notifications')
+      } catch (telegramError) {
+        console.error('Failed to send draw happening notifications:', telegramError)
+      }
+
       // Check if competition has participants
       const { data: tickets, error: ticketsError } = await supabase
         .from('competition_tickets')
@@ -148,6 +161,35 @@ Deno.serve(async (req) => {
             type: 'info',
             related_id: competition.id
           })
+      }
+
+      // Send Telegram notifications for competition ended (non-winners)
+      try {
+        await supabase.functions.invoke('notify-competition-telegram', {
+          body: {
+            type: 'competition_ended',
+            competition_id: competition.id,
+            winner_user_id: winnerTicket.user_id
+          }
+        })
+        console.log('Sent competition ended telegram notifications')
+      } catch (telegramError) {
+        console.error('Failed to send competition ended telegram notifications:', telegramError)
+      }
+
+      // Send special winner announcement via Telegram
+      try {
+        await supabase.functions.invoke('notify-competition-telegram', {
+          body: {
+            type: 'winner_announcement',
+            competition_id: competition.id,
+            winner_user_id: winnerTicket.user_id,
+            winner_ticket_number: winnerTicket.ticket_number
+          }
+        })
+        console.log('Sent winner announcement telegram notification')
+      } catch (telegramError) {
+        console.error('Failed to send winner telegram notification:', telegramError)
       }
 
       console.log(`Successfully drew winner for ${competition.id}: ${winnerTicket.ticket_number}`)
