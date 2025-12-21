@@ -16,7 +16,37 @@ const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy'
   return format(baghdadDate, formatStr, { locale: ar });
 };
 
-type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free';
+type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize';
+
+const competitionTypeIcons: Record<CompetitionType, string> = {
+  ticket_count: '🎯',
+  all_tickets_sold: '🎫',
+  timed: '⏰',
+  free: '🆓',
+  instant_winner: '⚡',
+  everyone_wins: '🎁',
+  escalating_price: '📈',
+  mystery_box: '📦',
+  hidden_winner: '🎯',
+  team_battle: '⚔️',
+  flash_sale: '🔥',
+  growing_prize: '📊'
+};
+
+const competitionTypeColors: Record<CompetitionType, string> = {
+  ticket_count: 'bg-blue-500',
+  all_tickets_sold: 'bg-green-500',
+  timed: 'bg-purple-500',
+  free: 'bg-gray-500',
+  instant_winner: 'from-yellow-500 to-amber-500',
+  everyone_wins: 'from-pink-500 to-rose-500',
+  escalating_price: 'from-orange-500 to-red-500',
+  mystery_box: 'from-indigo-500 to-purple-500',
+  hidden_winner: 'from-red-500 to-rose-600',
+  team_battle: 'from-cyan-500 to-blue-500',
+  flash_sale: 'from-rose-500 to-pink-500',
+  growing_prize: 'from-emerald-500 to-green-500'
+};
 
 interface Winner {
   user_id: string;
@@ -49,6 +79,12 @@ interface Competition {
   winners_count: number;
   currency: string;
   required_tickets: number;
+  // New fields
+  is_flash?: boolean;
+  flash_badge_text?: string;
+  theme_color?: string;
+  remaining_prizes?: number;
+  instant_reveal?: boolean;
 }
 
 interface CompetitionCardProps {
@@ -62,6 +98,10 @@ interface CompetitionCardProps {
   isAuthenticated: boolean;
   winners?: Winner[];
 }
+
+const isInstantType = (type: CompetitionType) => {
+  return ['instant_winner', 'everyone_wins', 'mystery_box', 'hidden_winner'].includes(type);
+};
 
 const CompetitionCard = memo(({
   competition: comp,

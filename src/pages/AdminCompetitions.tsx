@@ -43,8 +43,24 @@ const utcToBaghdadLocal = (utcDateString: string | null): string => {
 import CelebrationEffect from "@/components/CelebrationEffect";
 import CompetitionParticipantsDialog from "@/components/CompetitionParticipantsDialog";
 
-type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free';
+type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize';
 type CompetitionStatus = 'draft' | 'active' | 'completed' | 'cancelled';
+
+interface PrizeTier {
+  id: string;
+  name_ar: string;
+  probability: number;
+  quantity: number;
+  remaining: number;
+  image_url?: string;
+  value?: number;
+}
+
+interface PriceTier {
+  min_sold: number;
+  max_sold: number;
+  price: number;
+}
 
 interface Competition {
   id: string;
@@ -75,7 +91,45 @@ const competitionTypeLabels: Record<CompetitionType, string> = {
   ticket_count: 'عند وصول المشاركين لعدد معين',
   all_tickets_sold: 'عند بيع جميع التذاكر',
   timed: 'مسابقة بوقت محدد',
-  free: 'مسابقة مجانية'
+  free: 'مسابقة مجانية',
+  instant_winner: '⚡ فائز فوري',
+  everyone_wins: '🎁 الكل رابح',
+  escalating_price: '📈 السعر المتصاعد',
+  mystery_box: '📦 اختر صندوقك',
+  hidden_winner: '🎯 الرابح المخفي',
+  team_battle: '⚔️ فريق ضد فريق',
+  flash_sale: '🔥 مسابقة سريعة',
+  growing_prize: '📊 الجائزة المتحولة'
+};
+
+const competitionTypeDescriptions: Record<CompetitionType, string> = {
+  ticket_count: 'يتم السحب عند وصول عدد معين من المشاركين',
+  all_tickets_sold: 'يتم السحب عند بيع جميع التذاكر المتاحة',
+  timed: 'يتم السحب تلقائياً عند انتهاء الوقت',
+  free: 'مسابقة مجانية بدون تذاكر',
+  instant_winner: 'يعرف المشترك نتيجته فوراً عند الشراء',
+  everyone_wins: 'كل مشارك يفوز بجائزة (صغيرة أو كبيرة)',
+  escalating_price: 'السعر يرتفع كلما قل عدد التذاكر',
+  mystery_box: 'صناديق غامضة بجوائز مختلفة',
+  hidden_winner: 'تذكرة واحدة رابحة مخفية',
+  team_battle: 'الفريق الأكثر مبيعاً يفوز بجائزة إضافية',
+  flash_sale: 'مسابقة سريعة بتصميم مميز',
+  growing_prize: 'الجائزة تكبر مع مرور الوقت'
+};
+
+const competitionTypeColors: Record<CompetitionType, string> = {
+  ticket_count: 'bg-blue-500',
+  all_tickets_sold: 'bg-green-500',
+  timed: 'bg-purple-500',
+  free: 'bg-gray-500',
+  instant_winner: 'bg-yellow-500',
+  everyone_wins: 'bg-pink-500',
+  escalating_price: 'bg-orange-500',
+  mystery_box: 'bg-indigo-500',
+  hidden_winner: 'bg-red-500',
+  team_battle: 'bg-cyan-500',
+  flash_sale: 'bg-rose-500',
+  growing_prize: 'bg-emerald-500'
 };
 
 const statusLabels: Record<CompetitionStatus, string> = {
@@ -124,7 +178,15 @@ export default function AdminCompetitions() {
     required_tickets: '1',
     winners_count: '1',
     competition_type: 'ticket_count' as CompetitionType,
-    status: 'draft' as CompetitionStatus
+    status: 'draft' as CompetitionStatus,
+    // New fields for advanced competition types
+    prize_tiers: [] as PrizeTier[],
+    price_tiers: [] as PriceTier[],
+    is_flash: false,
+    flash_badge_text: '',
+    theme_color: '#d4af37',
+    remaining_prizes: '',
+    instant_reveal: false
   });
 
   const { data: competitions, isLoading, refetch: refetchCompetitions } = useQuery({
@@ -399,7 +461,14 @@ export default function AdminCompetitions() {
       required_tickets: '1',
       winners_count: '1',
       competition_type: 'ticket_count',
-      status: 'draft'
+      status: 'draft',
+      prize_tiers: [],
+      price_tiers: [],
+      is_flash: false,
+      flash_badge_text: '',
+      theme_color: '#d4af37',
+      remaining_prizes: '',
+      instant_reveal: false
     });
     setEditingCompetition(null);
   };
@@ -427,7 +496,14 @@ export default function AdminCompetitions() {
       required_tickets: (comp as any).required_tickets?.toString() || '1',
       winners_count: (comp as any).winners_count?.toString() || '1',
       competition_type: comp.competition_type,
-      status: comp.status
+      status: comp.status,
+      prize_tiers: (comp as any).prize_tiers || [],
+      price_tiers: (comp as any).price_tiers || [],
+      is_flash: (comp as any).is_flash || false,
+      flash_badge_text: (comp as any).flash_badge_text || '',
+      theme_color: (comp as any).theme_color || '#d4af37',
+      remaining_prizes: (comp as any).remaining_prizes?.toString() || '',
+      instant_reveal: (comp as any).instant_reveal || false
     });
     setIsDialogOpen(true);
   };
@@ -723,13 +799,31 @@ export default function AdminCompetitions() {
                         <SelectTrigger className="bg-background">
                           <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="z-[100] bg-background border shadow-lg">
-                          <SelectItem value="ticket_count">عند وصول المشاركين لعدد معين</SelectItem>
-                          <SelectItem value="all_tickets_sold">عند بيع جميع التذاكر</SelectItem>
-                          <SelectItem value="timed">مسابقة بوقت محدد</SelectItem>
-                          <SelectItem value="free">مسابقة مجانية</SelectItem>
+                        <SelectContent className="z-[100] bg-background border shadow-lg max-h-[300px]">
+                          <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-b">المسابقات التقليدية</div>
+                          <SelectItem value="ticket_count">🎯 عند وصول المشاركين لعدد معين</SelectItem>
+                          <SelectItem value="all_tickets_sold">🎫 عند بيع جميع التذاكر</SelectItem>
+                          <SelectItem value="timed">⏰ مسابقة بوقت محدد</SelectItem>
+                          <SelectItem value="free">🆓 مسابقة مجانية</SelectItem>
+                          
+                          <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-b border-t mt-1">مسابقات الفوز الفوري</div>
+                          <SelectItem value="instant_winner">⚡ فائز فوري</SelectItem>
+                          <SelectItem value="everyone_wins">🎁 الكل رابح</SelectItem>
+                          <SelectItem value="mystery_box">📦 اختر صندوقك</SelectItem>
+                          <SelectItem value="hidden_winner">🎯 الرابح المخفي</SelectItem>
+                          
+                          <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-b border-t mt-1">مسابقات خاصة</div>
+                          <SelectItem value="escalating_price">📈 السعر المتصاعد</SelectItem>
+                          <SelectItem value="flash_sale">🔥 مسابقة سريعة</SelectItem>
+                          <SelectItem value="team_battle">⚔️ فريق ضد فريق</SelectItem>
+                          <SelectItem value="growing_prize">📊 الجائزة المتحولة</SelectItem>
                         </SelectContent>
                       </Select>
+                      {formData.competition_type && (
+                        <p className="text-xs text-muted-foreground">
+                          {competitionTypeDescriptions[formData.competition_type]}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label>حالة المسابقة</Label>
@@ -749,6 +843,121 @@ export default function AdminCompetitions() {
                       </Select>
                     </div>
                   </div>
+
+                  {/* إعدادات خاصة بنوع المسابقة */}
+                  {(formData.competition_type === 'instant_winner' || formData.competition_type === 'everyone_wins' || formData.competition_type === 'mystery_box') && (
+                    <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
+                        <Gift className="h-4 w-4" />
+                        إعدادات الجوائز المتدرجة
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        يمكنك إضافة مستويات جوائز مختلفة مع نسب احتمالية لكل مستوى
+                      </p>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            placeholder="عدد الجوائز الإجمالي"
+                            value={formData.remaining_prizes}
+                            onChange={(e) => setFormData({ ...formData, remaining_prizes: e.target.value })}
+                            className="flex-1"
+                          />
+                          <Badge variant="secondary" className="whitespace-nowrap">جائزة متبقية</Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id="instant_reveal"
+                            checked={formData.instant_reveal}
+                            onChange={(e) => setFormData({ ...formData, instant_reveal: e.target.checked })}
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor="instant_reveal" className="text-sm">كشف النتيجة فوراً عند الشراء</Label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.competition_type === 'flash_sale' && (
+                    <div className="mt-4 p-3 bg-rose-500/5 rounded-lg border border-rose-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-rose-600">
+                        🔥 إعدادات المسابقة السريعة
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">نص البادج</Label>
+                          <Input
+                            placeholder="عرض محدود!"
+                            value={formData.flash_badge_text}
+                            onChange={(e) => setFormData({ ...formData, flash_badge_text: e.target.value })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">لون السمة</Label>
+                          <Input
+                            type="color"
+                            value={formData.theme_color}
+                            onChange={(e) => setFormData({ ...formData, theme_color: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-2">
+                        <input
+                          type="checkbox"
+                          id="is_flash"
+                          checked={formData.is_flash}
+                          onChange={(e) => setFormData({ ...formData, is_flash: e.target.checked })}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="is_flash" className="text-sm">تفعيل التصميم المميز</Label>
+                      </div>
+                    </div>
+                  )}
+
+                  {formData.competition_type === 'escalating_price' && (
+                    <div className="mt-4 p-3 bg-orange-500/5 rounded-lg border border-orange-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-orange-600">
+                        📈 السعر المتصاعد
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        السعر يبدأ منخفضاً ويرتفع تلقائياً كلما قل عدد التذاكر المتبقية
+                      </p>
+                    </div>
+                  )}
+
+                  {formData.competition_type === 'hidden_winner' && (
+                    <div className="mt-4 p-3 bg-red-500/5 rounded-lg border border-red-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-red-600">
+                        🎯 الرابح المخفي
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        تذكرة واحدة محددة مسبقاً هي الفائزة - من يشتريها يفوز فوراً!
+                      </p>
+                    </div>
+                  )}
+
+                  {formData.competition_type === 'team_battle' && (
+                    <div className="mt-4 p-3 bg-cyan-500/5 rounded-lg border border-cyan-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-cyan-600">
+                        ⚔️ فريق ضد فريق
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        المشترين يُقسمون لفريقين - الفريق الذي يبيع أكثر يفوز بجائزة إضافية
+                      </p>
+                    </div>
+                  )}
+
+                  {formData.competition_type === 'growing_prize' && (
+                    <div className="mt-4 p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-emerald-600">
+                        📊 الجائزة المتحولة
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        الجائزة تكبر مع مرور الوقت إذا لم تُباع التذاكر بسرعة
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* إعدادات عدد المشاركين - تظهر لجميع أنواع المسابقات */}

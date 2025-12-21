@@ -28,7 +28,7 @@ const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy 
   return format(baghdadDate, formatStr, { locale: ar });
 };
 
-type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free';
+type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize';
 
 interface Competition {
   id: string;
