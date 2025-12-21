@@ -1024,7 +1024,6 @@ export default function AdminCompetitions() {
           requiredTickets={selectedCompetitionForParticipants.required_tickets || 1}
         />
       )}
-      </div>
     </>
   );
 }
