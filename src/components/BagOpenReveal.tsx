@@ -110,49 +110,72 @@ export default function BagOpenReveal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent 
-        className="max-w-md p-0 overflow-hidden border-0 bg-gradient-to-br from-amber-600 via-orange-600 to-red-600"
+        className="max-w-md p-0 overflow-hidden border-0"
         onPointerDownOutside={(e) => e.preventDefault()}
+        style={{
+          background: 'radial-gradient(ellipse at top, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)'
+        }}
       >
         <VisuallyHidden>
           <DialogTitle>فتح الأكياس</DialogTitle>
         </VisuallyHidden>
         
+        {/* Animated background stars */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(50)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute rounded-full bg-white"
+              style={{
+                width: Math.random() * 3 + 1 + 'px',
+                height: Math.random() * 3 + 1 + 'px',
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                opacity: Math.random() * 0.7 + 0.3,
+                animation: `twinkle ${2 + Math.random() * 3}s ease-in-out infinite`,
+                animationDelay: `${Math.random() * 2}s`
+              }}
+            />
+          ))}
+        </div>
+        
         {/* Top bar with skip and close */}
-        <div className="absolute top-2 right-2 left-2 z-10 flex justify-between items-center">
+        <div className="absolute top-3 right-3 left-3 z-20 flex justify-between items-center">
           {allowSkip && !skipped && stage !== 'all_done' && stage !== 'prize' && (
             <Button 
-              variant="ghost" 
+              variant="outline" 
               size="sm"
-              className="text-white/80 hover:text-white hover:bg-white/20 gap-1"
+              className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white gap-2 backdrop-blur-sm"
               onClick={skipToEnd}
             >
               <SkipForward className="h-4 w-4" />
-              تخطي
+              تخطي الكل
             </Button>
           )}
           <div className="flex-1" />
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white/80 hover:text-white hover:bg-white/20"
+            className="text-white/80 hover:text-white hover:bg-white/20 rounded-full"
             onClick={onClose}
           >
             <X className="h-5 w-5" />
           </Button>
         </div>
 
-        <div className="relative min-h-[500px] flex flex-col items-center justify-center p-6 text-white text-center overflow-hidden">
-          {/* Background particles */}
+        <div className="relative min-h-[520px] flex flex-col items-center justify-center p-6 text-white text-center overflow-hidden">
+          {/* Floating golden particles */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            {[...Array(30)].map((_, i) => (
+            {[...Array(20)].map((_, i) => (
               <div
                 key={i}
-                className="absolute w-1 h-1 bg-white/20 rounded-full animate-pulse"
+                className="absolute w-2 h-2 rounded-full"
                 style={{
+                  background: `radial-gradient(circle, rgba(255,215,0,0.8) 0%, rgba(255,165,0,0.4) 100%)`,
                   left: `${Math.random() * 100}%`,
                   top: `${Math.random() * 100}%`,
-                  animationDelay: `${Math.random() * 3}s`,
-                  animationDuration: `${2 + Math.random() * 2}s`
+                  animation: `float-up ${4 + Math.random() * 4}s ease-in-out infinite`,
+                  animationDelay: `${Math.random() * 3}s`
                 }}
               />
             ))}
@@ -160,23 +183,26 @@ export default function BagOpenReveal({
 
           {/* Progress indicator */}
           {!skipped && stage !== 'all_done' && stage !== 'prize' && (
-            <div className="absolute top-14 left-1/2 -translate-x-1/2 flex items-center gap-2">
-              <span className="text-sm font-medium">كيس {currentBagIndex + 1} من {totalBags}</span>
-              <div className="flex gap-1">
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3">
+              <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-sm px-4 py-1">
+                كيس {currentBagIndex + 1} من {totalBags}
+              </Badge>
+              <div className="flex gap-1.5">
                 {results.map((_, idx) => (
                   <div 
                     key={idx} 
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      idx < currentBagIndex ? 'bg-green-400' : 
-                      idx === currentBagIndex ? 'bg-yellow-300 scale-125' : 
-                      'bg-white/30'
+                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                      idx < currentBagIndex 
+                        ? 'bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-500/50' 
+                        : idx === currentBagIndex 
+                          ? 'bg-gradient-to-br from-yellow-400 to-amber-500 scale-125 shadow-lg shadow-amber-500/50 animate-pulse' 
+                          : 'bg-white/20 border border-white/30'
                     }`} 
                   />
                 ))}
               </div>
             </div>
           )}
-
           {/* Bag animation stages */}
           {(stage === 'bag_closed' || stage === 'bag_opening' || stage === 'bag_opened' || stage === 'letter_revealed') && !skipped && (
             <div className="space-y-6">
@@ -314,22 +340,34 @@ export default function BagOpenReveal({
                 
                 <p className="text-sm mt-4 opacity-80">تقدمك في الكلمة:</p>
                 <div className="flex justify-center gap-2 flex-wrap">
-                  {targetWord.split('').map((letter, idx) => {
+                  {[...new Set(targetWord.split(''))].map((letter, idx) => {
                     const hasLetter = uniqueCollected.includes(letter);
+                    const count = uniqueCollected.filter(l => l === letter).length;
+                    const isNewlyRevealed = revealedLetters.some(r => r.letter === letter);
                     return (
                       <div
                         key={idx}
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${
+                        className={`relative w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all ${
                           hasLetter 
-                            ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg' 
-                            : 'bg-white/20 text-white/40'
+                            ? isNewlyRevealed
+                              ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg ring-2 ring-yellow-300' 
+                              : 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg' 
+                            : 'bg-white/10 text-white/30 border border-white/20'
                         }`}
                       >
                         {hasLetter ? letter : '?'}
+                        {count > 1 && (
+                          <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full text-xs flex items-center justify-center">
+                            {count}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
                 </div>
+                <p className="text-sm opacity-70 mt-2">
+                  {[...new Set(targetWord.split(''))].filter(l => uniqueCollected.includes(l)).length} / {[...new Set(targetWord.split(''))].length} حروف فريدة
+                </p>
               </div>
               
               <Button 
@@ -400,18 +438,18 @@ export default function BagOpenReveal({
         <style>{`
           @keyframes shake {
             0%, 100% { transform: translateX(0) rotate(0deg); }
-            10% { transform: translateX(-5px) rotate(-2deg); }
-            20% { transform: translateX(5px) rotate(2deg); }
-            30% { transform: translateX(-5px) rotate(-2deg); }
-            40% { transform: translateX(5px) rotate(2deg); }
-            50% { transform: translateX(-5px) rotate(-2deg); }
-            60% { transform: translateX(5px) rotate(2deg); }
-            70% { transform: translateX(-5px) rotate(-2deg); }
-            80% { transform: translateX(5px) rotate(2deg); }
-            90% { transform: translateX(-3px) rotate(-1deg); }
+            10% { transform: translateX(-8px) rotate(-3deg); }
+            20% { transform: translateX(8px) rotate(3deg); }
+            30% { transform: translateX(-8px) rotate(-3deg); }
+            40% { transform: translateX(8px) rotate(3deg); }
+            50% { transform: translateX(-6px) rotate(-2deg); }
+            60% { transform: translateX(6px) rotate(2deg); }
+            70% { transform: translateX(-4px) rotate(-1deg); }
+            80% { transform: translateX(4px) rotate(1deg); }
+            90% { transform: translateX(-2px) rotate(-0.5deg); }
           }
           .animate-shake {
-            animation: shake 0.8s ease-in-out;
+            animation: shake 1s ease-in-out;
           }
           @keyframes sparkle-burst {
             0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
@@ -420,19 +458,37 @@ export default function BagOpenReveal({
           }
           @keyframes pop-in {
             0% { transform: scale(0) rotate(-45deg); opacity: 0; }
-            60% { transform: scale(1.2) rotate(5deg); }
+            60% { transform: scale(1.3) rotate(5deg); }
             100% { transform: scale(1) rotate(0deg); opacity: 1; }
           }
           .animate-pop-in {
-            animation: pop-in 0.5s ease-out forwards;
+            animation: pop-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
           }
           @keyframes confetti-fall {
-            0% { transform: translateY(-100%) rotate(0deg); }
-            100% { transform: translateY(100vh) rotate(720deg); }
+            0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
           }
           @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
+          }
+          @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.5); }
+          }
+          @keyframes float-up {
+            0%, 100% { 
+              transform: translateY(0) translateX(0);
+              opacity: 0.6;
+            }
+            50% { 
+              transform: translateY(-30px) translateX(10px);
+              opacity: 1;
+            }
+          }
+          @keyframes bag-glow {
+            0%, 100% { box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.3); }
+            50% { box-shadow: 0 0 40px 15px rgba(255, 215, 0, 0.6); }
           }
         `}</style>
       </DialogContent>
