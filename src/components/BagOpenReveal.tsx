@@ -224,25 +224,60 @@ export default function BagOpenReveal({
             ))}
           </div>
 
-          {/* Progress indicator */}
-          {!skipped && stage !== 'all_done' && stage !== 'prize' && (
+          {/* Progress indicator for multiple bags */}
+          {!skipped && !isSingleBag && stage !== 'all_done' && stage !== 'prize' && (
             <div className="absolute top-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 pointer-events-none">
               <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-sm px-4 py-1">
                 كيس {currentBagIndex + 1} من {totalBags}
               </Badge>
-              <div className="flex gap-1.5">
-                {results.map((_, idx) => (
-                  <div
-                    key={idx}
-                    className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      idx < currentBagIndex
-                        ? 'bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-500/50'
-                        : idx === currentBagIndex
-                          ? 'bg-gradient-to-br from-yellow-400 to-amber-500 scale-125 shadow-lg shadow-amber-500/50 animate-pulse'
-                          : 'bg-white/20 border border-white/30'
-                    }`}
-                  />
-                ))}
+              {/* Mini bags grid showing all bags */}
+              <div className="flex gap-2 flex-wrap justify-center max-w-[200px]">
+                {results.map((result, idx) => {
+                  const isOpened = idx < currentBagIndex;
+                  const isCurrent = idx === currentBagIndex;
+                  const isPending = idx > currentBagIndex;
+                  
+                  return (
+                    <div
+                      key={idx}
+                      className={`relative transition-all duration-300 ${
+                        isCurrent ? 'scale-125 z-10' : ''
+                      }`}
+                    >
+                      {/* Mini bag */}
+                      <div
+                        className={`w-8 h-10 rounded-lg relative overflow-hidden transition-all duration-300 ${
+                          isOpened 
+                            ? result.letter 
+                              ? 'bg-gradient-to-b from-yellow-300 to-amber-500' 
+                              : 'bg-gradient-to-b from-gray-400 to-gray-500'
+                            : isCurrent 
+                              ? 'bg-gradient-to-b from-amber-200 to-amber-500 ring-2 ring-yellow-300 shadow-lg shadow-yellow-500/50' 
+                              : 'bg-gradient-to-b from-amber-200/50 to-amber-500/50 opacity-60'
+                        }`}
+                      >
+                        {/* Bag tie */}
+                        <div className={`absolute top-0 left-0 right-0 h-2 transition-all duration-300 ${
+                          isOpened ? 'opacity-0 -translate-y-2' : 'bg-gradient-to-r from-red-500 to-rose-500'
+                        }`} />
+                        
+                        {/* Content shown when opened */}
+                        {isOpened && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="text-xs font-bold text-white">
+                              {result.isTicketReward ? '🎫' : result.letter || '✗'}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {/* Pulse animation for current bag */}
+                        {isCurrent && (
+                          <div className="absolute inset-0 bg-white/30 animate-pulse" />
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -322,10 +357,7 @@ export default function BagOpenReveal({
                     <div 
                       className={`transition-all duration-700 ${
                         stage === 'letter_rising' ? 'translate-y-8 scale-90 opacity-80' : 'translate-y-0 scale-100 opacity-100'
-                      }`}
-                      style={{
-                        animation: stage === 'letter_revealed' || stage === 'can_proceed' ? 'letter-float 2s ease-in-out infinite' : undefined
-                      }}
+                      } ${stage === 'letter_revealed' || stage === 'can_proceed' ? 'animate-letter-glow' : ''}`}
                     >
                       <div
                         className={`${isSingleBag ? 'w-28 h-28' : 'w-24 h-24'} rounded-2xl flex items-center justify-center shadow-2xl ${
@@ -592,6 +624,13 @@ export default function BagOpenReveal({
           }
           .animate-letter-rise {
             animation: letter-rise 0.55s ease-out forwards;
+          }
+          @keyframes letter-glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.2); }
+          }
+          .animate-letter-glow {
+            animation: letter-glow 1.5s ease-in-out infinite;
           }
           @keyframes confetti-fall {
             0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
