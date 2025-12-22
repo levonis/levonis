@@ -216,10 +216,12 @@ export type Database = {
           competition_id: string
           id: string
           is_winner: boolean
+          letter_awarded: string | null
           prize_tier_id: string | null
           prize_won: Json | null
           purchased_at: string
           revealed_at: string | null
+          team: string | null
           ticket_number: string
           user_id: string
         }
@@ -227,10 +229,12 @@ export type Database = {
           competition_id: string
           id?: string
           is_winner?: boolean
+          letter_awarded?: string | null
           prize_tier_id?: string | null
           prize_won?: Json | null
           purchased_at?: string
           revealed_at?: string | null
+          team?: string | null
           ticket_number: string
           user_id: string
         }
@@ -238,10 +242,12 @@ export type Database = {
           competition_id?: string
           id?: string
           is_winner?: boolean
+          letter_awarded?: string | null
           prize_tier_id?: string | null
           prize_won?: Json | null
           purchased_at?: string
           revealed_at?: string | null
+          team?: string | null
           ticket_number?: string
           user_id?: string
         }
@@ -267,11 +273,13 @@ export type Database = {
           flash_badge_text: string | null
           growing_prize_config: Json | null
           hidden_winner_ticket_id: string | null
+          hidden_winner_trigger_ticket: number | null
           id: string
           image_url: string | null
           images: string[] | null
           instant_reveal: boolean | null
           is_flash: boolean | null
+          letters_config: Json | null
           max_tickets: number | null
           mystery_boxes: Json | null
           price_tiers: Json | null
@@ -284,12 +292,15 @@ export type Database = {
           start_date: string
           status: Database["public"]["Enums"]["competition_status"]
           target_participants: number | null
+          team_a_count: number | null
+          team_b_count: number | null
           team_config: Json | null
           theme_color: string | null
           ticket_price: number
           title: string
           title_ar: string
           updated_at: string
+          win_probability: number | null
           winner_ticket_id: string | null
           winner_ticket_ids: string[] | null
           winner_user_id: string | null
@@ -307,11 +318,13 @@ export type Database = {
           flash_badge_text?: string | null
           growing_prize_config?: Json | null
           hidden_winner_ticket_id?: string | null
+          hidden_winner_trigger_ticket?: number | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           instant_reveal?: boolean | null
           is_flash?: boolean | null
+          letters_config?: Json | null
           max_tickets?: number | null
           mystery_boxes?: Json | null
           price_tiers?: Json | null
@@ -324,12 +337,15 @@ export type Database = {
           start_date?: string
           status?: Database["public"]["Enums"]["competition_status"]
           target_participants?: number | null
+          team_a_count?: number | null
+          team_b_count?: number | null
           team_config?: Json | null
           theme_color?: string | null
           ticket_price?: number
           title: string
           title_ar: string
           updated_at?: string
+          win_probability?: number | null
           winner_ticket_id?: string | null
           winner_ticket_ids?: string[] | null
           winner_user_id?: string | null
@@ -347,11 +363,13 @@ export type Database = {
           flash_badge_text?: string | null
           growing_prize_config?: Json | null
           hidden_winner_ticket_id?: string | null
+          hidden_winner_trigger_ticket?: number | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           instant_reveal?: boolean | null
           is_flash?: boolean | null
+          letters_config?: Json | null
           max_tickets?: number | null
           mystery_boxes?: Json | null
           price_tiers?: Json | null
@@ -364,12 +382,15 @@ export type Database = {
           start_date?: string
           status?: Database["public"]["Enums"]["competition_status"]
           target_participants?: number | null
+          team_a_count?: number | null
+          team_b_count?: number | null
           team_config?: Json | null
           theme_color?: string | null
           ticket_price?: number
           title?: string
           title_ar?: string
           updated_at?: string
+          win_probability?: number | null
           winner_ticket_id?: string | null
           winner_ticket_ids?: string[] | null
           winner_user_id?: string | null
@@ -1540,6 +1561,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_collected_letters: {
+        Row: {
+          collected_at: string | null
+          competition_id: string
+          id: string
+          letter: string
+          ticket_id: string | null
+          user_id: string
+        }
+        Insert: {
+          collected_at?: string | null
+          competition_id: string
+          id?: string
+          letter: string
+          ticket_id?: string | null
+          user_id: string
+        }
+        Update: {
+          collected_at?: string | null
+          competition_id?: string
+          id?: string
+          letter?: string
+          ticket_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_collected_letters_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_collected_letters_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "competition_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_points: {
         Row: {
           available_points: number
@@ -1827,6 +1890,7 @@ export type Database = {
         | "team_battle"
         | "flash_sale"
         | "growing_prize"
+        | "collect_letters"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1969,6 +2033,7 @@ export const Constants = {
         "team_battle",
         "flash_sale",
         "growing_prize",
+        "collect_letters",
       ],
     },
   },

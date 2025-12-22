@@ -43,7 +43,7 @@ const utcToBaghdadLocal = (utcDateString: string | null): string => {
 import CelebrationEffect from "@/components/CelebrationEffect";
 import CompetitionParticipantsDialog from "@/components/CompetitionParticipantsDialog";
 
-type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize';
+type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 type CompetitionStatus = 'draft' | 'active' | 'completed' | 'cancelled';
 
 interface PrizeTier {
@@ -60,6 +60,24 @@ interface PriceTier {
   min_sold: number;
   max_sold: number;
   price: number;
+}
+
+interface LetterConfig {
+  letter: string;
+  probability: number;
+}
+
+interface PrizeWord {
+  word: string;
+  prize_name: string;
+  prize_value: number;
+}
+
+interface GrowingPrizeConfig {
+  base_prize: number;
+  increment_per_interval: number;
+  interval_minutes: number;
+  decrease_mode?: boolean;
 }
 
 interface Competition {
@@ -99,7 +117,8 @@ const competitionTypeLabels: Record<CompetitionType, string> = {
   hidden_winner: '🎯 الرابح المخفي',
   team_battle: '⚔️ فريق ضد فريق',
   flash_sale: '🔥 مسابقة سريعة',
-  growing_prize: '📊 الجائزة المتحولة'
+  growing_prize: '📊 الجائزة المتحولة',
+  collect_letters: '🔤 اجمع أحرف واربح'
 };
 
 const competitionTypeDescriptions: Record<CompetitionType, string> = {
@@ -107,14 +126,15 @@ const competitionTypeDescriptions: Record<CompetitionType, string> = {
   all_tickets_sold: 'يتم السحب عند بيع جميع التذاكر المتاحة',
   timed: 'يتم السحب تلقائياً عند انتهاء الوقت',
   free: 'مسابقة مجانية بدون تذاكر',
-  instant_winner: 'يعرف المشترك نتيجته فوراً عند الشراء',
-  everyone_wins: 'كل مشارك يفوز بجائزة (صغيرة أو كبيرة)',
-  escalating_price: 'السعر يرتفع كلما قل عدد التذاكر',
-  mystery_box: 'صناديق غامضة بجوائز مختلفة',
-  hidden_winner: 'تذكرة واحدة رابحة مخفية',
-  team_battle: 'الفريق الأكثر مبيعاً يفوز بجائزة إضافية',
-  flash_sale: 'مسابقة سريعة بتصميم مميز',
-  growing_prize: 'الجائزة تكبر مع مرور الوقت'
+  instant_winner: 'يعرف المشترك نتيجته فوراً عند الشراء مع نسبة احتمال محددة',
+  everyone_wins: 'كل مشارك يفوز بجائزة حسب مستويات الجوائز والاحتمالات',
+  escalating_price: 'السعر يرتفع تلقائياً كلما قل عدد التذاكر المتبقية',
+  mystery_box: 'صناديق غامضة بجوائز مختلفة مع نسب احتمالات',
+  hidden_winner: 'تذكرة واحدة رابحة مخفية تظهر عند رقم معين',
+  team_battle: 'المستخدمون يُقسمون عشوائياً لفريقين ويتنافسون',
+  flash_sale: 'مسابقة سريعة بتصميم مميز وعروض محدودة',
+  growing_prize: 'الجائزة تكبر أو تقل مع مرور الوقت',
+  collect_letters: 'اجمع أحرف معينة لتفوز بجوائز'
 };
 
 const competitionTypeColors: Record<CompetitionType, string> = {
@@ -129,7 +149,8 @@ const competitionTypeColors: Record<CompetitionType, string> = {
   hidden_winner: 'bg-red-500',
   team_battle: 'bg-cyan-500',
   flash_sale: 'bg-rose-500',
-  growing_prize: 'bg-emerald-500'
+  growing_prize: 'bg-emerald-500',
+  collect_letters: 'bg-violet-500'
 };
 
 const statusLabels: Record<CompetitionStatus, string> = {
@@ -179,14 +200,25 @@ export default function AdminCompetitions() {
     winners_count: '1',
     competition_type: 'ticket_count' as CompetitionType,
     status: 'draft' as CompetitionStatus,
-    // New fields for advanced competition types
+    // Fields for advanced competition types
     prize_tiers: [] as PrizeTier[],
     price_tiers: [] as PriceTier[],
     is_flash: false,
     flash_badge_text: '',
     theme_color: '#d4af37',
     remaining_prizes: '',
-    instant_reveal: false
+    instant_reveal: false,
+    // New fields
+    win_probability: '',
+    hidden_winner_trigger_ticket: '',
+    letters_config: [] as LetterConfig[],
+    prize_words: [] as PrizeWord[],
+    growing_prize_config: {
+      base_prize: 0,
+      increment_per_interval: 0,
+      interval_minutes: 60,
+      decrease_mode: false
+    } as GrowingPrizeConfig
   });
 
   const { data: competitions, isLoading, refetch: refetchCompetitions } = useQuery({
@@ -468,13 +500,24 @@ export default function AdminCompetitions() {
       flash_badge_text: '',
       theme_color: '#d4af37',
       remaining_prizes: '',
-      instant_reveal: false
+      instant_reveal: false,
+      win_probability: '',
+      hidden_winner_trigger_ticket: '',
+      letters_config: [],
+      prize_words: [],
+      growing_prize_config: {
+        base_prize: 0,
+        increment_per_interval: 0,
+        interval_minutes: 60,
+        decrease_mode: false
+      }
     });
     setEditingCompetition(null);
   };
 
   const handleEdit = (comp: Competition) => {
     setEditingCompetition(comp);
+    const compAny = comp as any;
     setFormData({
       title: comp.title,
       title_ar: comp.title_ar,
@@ -493,17 +536,27 @@ export default function AdminCompetitions() {
       draw_date: utcToBaghdadLocal(comp.draw_date),
       max_tickets_per_user: '',
       terms_conditions: '',
-      required_tickets: (comp as any).required_tickets?.toString() || '1',
-      winners_count: (comp as any).winners_count?.toString() || '1',
+      required_tickets: compAny.required_tickets?.toString() || '1',
+      winners_count: compAny.winners_count?.toString() || '1',
       competition_type: comp.competition_type,
       status: comp.status,
-      prize_tiers: (comp as any).prize_tiers || [],
-      price_tiers: (comp as any).price_tiers || [],
-      is_flash: (comp as any).is_flash || false,
-      flash_badge_text: (comp as any).flash_badge_text || '',
-      theme_color: (comp as any).theme_color || '#d4af37',
-      remaining_prizes: (comp as any).remaining_prizes?.toString() || '',
-      instant_reveal: (comp as any).instant_reveal || false
+      prize_tiers: compAny.prize_tiers || [],
+      price_tiers: compAny.price_tiers || [],
+      is_flash: compAny.is_flash || false,
+      flash_badge_text: compAny.flash_badge_text || '',
+      theme_color: compAny.theme_color || '#d4af37',
+      remaining_prizes: compAny.remaining_prizes?.toString() || '',
+      instant_reveal: compAny.instant_reveal || false,
+      win_probability: compAny.win_probability?.toString() || '',
+      hidden_winner_trigger_ticket: compAny.hidden_winner_trigger_ticket?.toString() || '',
+      letters_config: compAny.letters_config?.letters || [],
+      prize_words: compAny.letters_config?.prize_words || [],
+      growing_prize_config: compAny.growing_prize_config || {
+        base_prize: 0,
+        increment_per_interval: 0,
+        interval_minutes: 60,
+        decrease_mode: false
+      }
     });
     setIsDialogOpen(true);
   };
@@ -845,64 +898,412 @@ export default function AdminCompetitions() {
                   </div>
 
                   {/* إعدادات خاصة بنوع المسابقة */}
-                  {(formData.competition_type === 'instant_winner' || formData.competition_type === 'everyone_wins' || formData.competition_type === 'mystery_box') && (
-                    <div className="mt-4 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
-                        <Gift className="h-4 w-4" />
-                        إعدادات الجوائز المتدرجة
+                  
+                  {/* الفائز الفوري */}
+                  {formData.competition_type === 'instant_winner' && (
+                    <div className="mt-4 p-4 bg-yellow-500/5 rounded-lg border border-yellow-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-yellow-600">
+                        ⚡ إعدادات الفائز الفوري
                       </h4>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        يمكنك إضافة مستويات جوائز مختلفة مع نسب احتمالية لكل مستوى
-                      </p>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">نسبة احتمال الفوز (%)</Label>
                           <Input
                             type="number"
-                            placeholder="عدد الجوائز الإجمالي"
+                            min="0"
+                            max="100"
+                            placeholder="مثال: 10"
+                            value={formData.win_probability}
+                            onChange={(e) => setFormData({ ...formData, win_probability: e.target.value })}
+                          />
+                          <p className="text-xs text-muted-foreground">النسبة المئوية لاحتمال الفوز عند كل شراء</p>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">عدد الجوائز الإجمالي</Label>
+                          <Input
+                            type="number"
+                            placeholder="بدون حد"
                             value={formData.remaining_prizes}
                             onChange={(e) => setFormData({ ...formData, remaining_prizes: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 mt-3">
+                        <input
+                          type="checkbox"
+                          id="instant_reveal"
+                          checked={formData.instant_reveal}
+                          onChange={(e) => setFormData({ ...formData, instant_reveal: e.target.checked })}
+                          className="h-4 w-4"
+                        />
+                        <Label htmlFor="instant_reveal" className="text-sm">كشف النتيجة فوراً مع أنيميشن</Label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* الكل رابح */}
+                  {formData.competition_type === 'everyone_wins' && (
+                    <div className="mt-4 p-4 bg-pink-500/5 rounded-lg border border-pink-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-pink-600">
+                        🎁 إعدادات الكل رابح - مستويات الجوائز
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        حدد مستويات الجوائز مع نسب الاحتمالات (يجب أن يكون المجموع 100%)
+                      </p>
+                      
+                      {formData.prize_tiers.map((tier, index) => (
+                        <div key={tier.id} className="flex items-center gap-2 mb-2 p-2 bg-background rounded border">
+                          <Input
+                            placeholder="اسم الجائزة"
+                            value={tier.name_ar}
+                            onChange={(e) => {
+                              const newTiers = [...formData.prize_tiers];
+                              newTiers[index].name_ar = e.target.value;
+                              setFormData({ ...formData, prize_tiers: newTiers });
+                            }}
                             className="flex-1"
                           />
-                          <Badge variant="secondary" className="whitespace-nowrap">جائزة متبقية</Badge>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id="instant_reveal"
-                            checked={formData.instant_reveal}
-                            onChange={(e) => setFormData({ ...formData, instant_reveal: e.target.checked })}
-                            className="h-4 w-4"
+                          <Input
+                            type="number"
+                            placeholder="الاحتمال %"
+                            value={tier.probability}
+                            onChange={(e) => {
+                              const newTiers = [...formData.prize_tiers];
+                              newTiers[index].probability = parseFloat(e.target.value) || 0;
+                              setFormData({ ...formData, prize_tiers: newTiers });
+                            }}
+                            className="w-24"
                           />
-                          <Label htmlFor="instant_reveal" className="text-sm">كشف النتيجة فوراً عند الشراء</Label>
+                          <Input
+                            type="number"
+                            placeholder="الكمية"
+                            value={tier.quantity}
+                            onChange={(e) => {
+                              const newTiers = [...formData.prize_tiers];
+                              newTiers[index].quantity = parseInt(e.target.value) || 0;
+                              newTiers[index].remaining = parseInt(e.target.value) || 0;
+                              setFormData({ ...formData, prize_tiers: newTiers });
+                            }}
+                            className="w-24"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                prize_tiers: formData.prize_tiers.filter((_, i) => i !== index)
+                              });
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            prize_tiers: [...formData.prize_tiers, {
+                              id: crypto.randomUUID(),
+                              name_ar: '',
+                              probability: 0,
+                              quantity: 0,
+                              remaining: 0
+                            }]
+                          });
+                        }}
+                      >
+                        <Plus className="h-4 w-4 ml-1" />
+                        إضافة مستوى جائزة
+                      </Button>
+                      
+                      <div className="mt-3 text-xs">
+                        مجموع الاحتمالات: 
+                        <span className={`font-bold mr-1 ${formData.prize_tiers.reduce((sum, t) => sum + t.probability, 0) === 100 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formData.prize_tiers.reduce((sum, t) => sum + t.probability, 0)}%
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* اختر صندوقك */}
+                  {formData.competition_type === 'mystery_box' && (
+                    <div className="mt-4 p-4 bg-indigo-500/5 rounded-lg border border-indigo-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-indigo-600">
+                        📦 إعدادات الصناديق الغامضة
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        أضف صناديق مختلفة بجوائز مختلفة - يتم خلطها عشوائياً للمشتري
+                      </p>
+                      
+                      {formData.prize_tiers.map((tier, index) => (
+                        <div key={tier.id} className="flex items-center gap-2 mb-2 p-2 bg-background rounded border">
+                          <div className="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center text-white font-bold">
+                            {index + 1}
+                          </div>
+                          <Input
+                            placeholder="محتوى الصندوق"
+                            value={tier.name_ar}
+                            onChange={(e) => {
+                              const newTiers = [...formData.prize_tiers];
+                              newTiers[index].name_ar = e.target.value;
+                              setFormData({ ...formData, prize_tiers: newTiers });
+                            }}
+                            className="flex-1"
+                          />
+                          <Input
+                            type="number"
+                            placeholder="القيمة"
+                            value={tier.value || ''}
+                            onChange={(e) => {
+                              const newTiers = [...formData.prize_tiers];
+                              newTiers[index].value = parseFloat(e.target.value) || 0;
+                              setFormData({ ...formData, prize_tiers: newTiers });
+                            }}
+                            className="w-24"
+                          />
+                          <Input
+                            type="number"
+                            placeholder="الاحتمال %"
+                            value={tier.probability}
+                            onChange={(e) => {
+                              const newTiers = [...formData.prize_tiers];
+                              newTiers[index].probability = parseFloat(e.target.value) || 0;
+                              setFormData({ ...formData, prize_tiers: newTiers });
+                            }}
+                            className="w-24"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                prize_tiers: formData.prize_tiers.filter((_, i) => i !== index)
+                              });
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            prize_tiers: [...formData.prize_tiers, {
+                              id: crypto.randomUUID(),
+                              name_ar: '',
+                              probability: 0,
+                              quantity: 1,
+                              remaining: 1,
+                              value: 0
+                            }]
+                          });
+                        }}
+                      >
+                        <Plus className="h-4 w-4 ml-1" />
+                        إضافة صندوق
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* الرابح المخفي */}
+                  {formData.competition_type === 'hidden_winner' && (
+                    <div className="mt-4 p-4 bg-red-500/5 rounded-lg border border-red-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-red-600">
+                        🎯 إعدادات الرابح المخفي
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">رقم التذكرة الفائزة</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder="مثال: 50"
+                            value={formData.hidden_winner_trigger_ticket}
+                            onChange={(e) => setFormData({ ...formData, hidden_winner_trigger_ticket: e.target.value })}
+                          />
+                          <p className="text-xs text-muted-foreground">التذكرة رقم X ستكون الفائزة</p>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">أو نسبة ظهور الفائز (%)</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            placeholder="اختياري"
+                            value={formData.win_probability}
+                            onChange={(e) => setFormData({ ...formData, win_probability: e.target.value })}
+                          />
+                          <p className="text-xs text-muted-foreground">احتمال ظهور التذكرة الفائزة</p>
                         </div>
                       </div>
                     </div>
                   )}
 
+                  {/* فريق ضد فريق */}
+                  {formData.competition_type === 'team_battle' && (
+                    <div className="mt-4 p-4 bg-cyan-500/5 rounded-lg border border-cyan-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-cyan-600">
+                        ⚔️ إعدادات فريق ضد فريق
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        المستخدمون يُوزعون عشوائياً على الفريقين (أزرق وأحمر)
+                      </p>
+                      <div className="grid grid-cols-2 gap-4 mt-3">
+                        <div className="p-3 bg-blue-500/10 rounded-lg text-center">
+                          <div className="text-2xl mb-1">🔵</div>
+                          <p className="font-semibold text-blue-600">الفريق الأزرق</p>
+                          <p className="text-xs text-muted-foreground">يتم توزيع المستخدمين تلقائياً</p>
+                        </div>
+                        <div className="p-3 bg-red-500/10 rounded-lg text-center">
+                          <div className="text-2xl mb-1">🔴</div>
+                          <p className="font-semibold text-red-600">الفريق الأحمر</p>
+                          <p className="text-xs text-muted-foreground">يتم توزيع المستخدمين تلقائياً</p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3 text-center">
+                        الفريق الذي يشتري تذاكر أكثر يفوز بجائزة إضافية لجميع أعضائه
+                      </p>
+                    </div>
+                  )}
+
+                  {/* السعر المتصاعد */}
+                  {formData.competition_type === 'escalating_price' && (
+                    <div className="mt-4 p-4 bg-orange-500/5 rounded-lg border border-orange-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-orange-600">
+                        📈 إعدادات السعر المتصاعد
+                      </h4>
+                      <p className="text-xs text-muted-foreground mb-3">
+                        حدد مستويات الأسعار بناءً على عدد التذاكر المُباعة
+                      </p>
+                      
+                      {formData.price_tiers.map((tier, index) => (
+                        <div key={index} className="flex items-center gap-2 mb-2 p-2 bg-background rounded border">
+                          <span className="text-xs whitespace-nowrap">من</span>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            value={tier.min_sold}
+                            onChange={(e) => {
+                              const newTiers = [...formData.price_tiers];
+                              newTiers[index].min_sold = parseInt(e.target.value) || 0;
+                              setFormData({ ...formData, price_tiers: newTiers });
+                            }}
+                            className="w-20"
+                          />
+                          <span className="text-xs whitespace-nowrap">إلى</span>
+                          <Input
+                            type="number"
+                            placeholder="∞"
+                            value={tier.max_sold}
+                            onChange={(e) => {
+                              const newTiers = [...formData.price_tiers];
+                              newTiers[index].max_sold = parseInt(e.target.value) || 0;
+                              setFormData({ ...formData, price_tiers: newTiers });
+                            }}
+                            className="w-20"
+                          />
+                          <span className="text-xs whitespace-nowrap">السعر:</span>
+                          <Input
+                            type="number"
+                            placeholder="السعر"
+                            value={tier.price}
+                            onChange={(e) => {
+                              const newTiers = [...formData.price_tiers];
+                              newTiers[index].price = parseInt(e.target.value) || 0;
+                              setFormData({ ...formData, price_tiers: newTiers });
+                            }}
+                            className="w-28"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                price_tiers: formData.price_tiers.filter((_, i) => i !== index)
+                              });
+                            }}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => {
+                          const lastMax = formData.price_tiers.length > 0 
+                            ? formData.price_tiers[formData.price_tiers.length - 1].max_sold + 1 
+                            : 0;
+                          setFormData({
+                            ...formData,
+                            price_tiers: [...formData.price_tiers, {
+                              min_sold: lastMax,
+                              max_sold: lastMax + 49,
+                              price: 1000
+                            }]
+                          });
+                        }}
+                      >
+                        <Plus className="h-4 w-4 ml-1" />
+                        إضافة مستوى سعر
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* المسابقة السريعة */}
                   {formData.competition_type === 'flash_sale' && (
-                    <div className="mt-4 p-3 bg-rose-500/5 rounded-lg border border-rose-500/20">
+                    <div className="mt-4 p-4 bg-rose-500/5 rounded-lg border border-rose-500/20">
                       <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-rose-600">
                         🔥 إعدادات المسابقة السريعة
                       </h4>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1">
-                          <Label className="text-xs">نص البادج</Label>
+                          <Label className="text-xs">نص البادج المميز</Label>
                           <Input
-                            placeholder="عرض محدود!"
+                            placeholder="عرض محدود! ⏰"
                             value={formData.flash_badge_text}
                             onChange={(e) => setFormData({ ...formData, flash_badge_text: e.target.value })}
                           />
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs">لون السمة</Label>
-                          <Input
-                            type="color"
-                            value={formData.theme_color}
-                            onChange={(e) => setFormData({ ...formData, theme_color: e.target.value })}
-                          />
+                          <div className="flex gap-2">
+                            <Input
+                              type="color"
+                              value={formData.theme_color}
+                              onChange={(e) => setFormData({ ...formData, theme_color: e.target.value })}
+                              className="w-14 h-9 p-1"
+                            />
+                            <Input
+                              value={formData.theme_color}
+                              onChange={(e) => setFormData({ ...formData, theme_color: e.target.value })}
+                              className="flex-1"
+                            />
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex items-center gap-2 mt-3">
                         <input
                           type="checkbox"
                           id="is_flash"
@@ -910,52 +1311,214 @@ export default function AdminCompetitions() {
                           onChange={(e) => setFormData({ ...formData, is_flash: e.target.checked })}
                           className="h-4 w-4"
                         />
-                        <Label htmlFor="is_flash" className="text-sm">تفعيل التصميم المميز</Label>
+                        <Label htmlFor="is_flash" className="text-sm">تفعيل التصميم المميز مع تأثيرات بصرية</Label>
                       </div>
                     </div>
                   )}
 
-                  {formData.competition_type === 'escalating_price' && (
-                    <div className="mt-4 p-3 bg-orange-500/5 rounded-lg border border-orange-500/20">
-                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-orange-600">
-                        📈 السعر المتصاعد
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        السعر يبدأ منخفضاً ويرتفع تلقائياً كلما قل عدد التذاكر المتبقية
-                      </p>
-                    </div>
-                  )}
-
-                  {formData.competition_type === 'hidden_winner' && (
-                    <div className="mt-4 p-3 bg-red-500/5 rounded-lg border border-red-500/20">
-                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-red-600">
-                        🎯 الرابح المخفي
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        تذكرة واحدة محددة مسبقاً هي الفائزة - من يشتريها يفوز فوراً!
-                      </p>
-                    </div>
-                  )}
-
-                  {formData.competition_type === 'team_battle' && (
-                    <div className="mt-4 p-3 bg-cyan-500/5 rounded-lg border border-cyan-500/20">
-                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-cyan-600">
-                        ⚔️ فريق ضد فريق
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        المشترين يُقسمون لفريقين - الفريق الذي يبيع أكثر يفوز بجائزة إضافية
-                      </p>
-                    </div>
-                  )}
-
+                  {/* الجائزة المتحولة */}
                   {formData.competition_type === 'growing_prize' && (
-                    <div className="mt-4 p-3 bg-emerald-500/5 rounded-lg border border-emerald-500/20">
+                    <div className="mt-4 p-4 bg-emerald-500/5 rounded-lg border border-emerald-500/20">
                       <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-emerald-600">
-                        📊 الجائزة المتحولة
+                        📊 إعدادات الجائزة المتحولة
                       </h4>
-                      <p className="text-xs text-muted-foreground">
-                        الجائزة تكبر مع مرور الوقت إذا لم تُباع التذاكر بسرعة
-                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">قيمة الجائزة الأساسية</Label>
+                          <Input
+                            type="number"
+                            placeholder="مثال: 100000"
+                            value={formData.growing_prize_config.base_prize}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              growing_prize_config: {
+                                ...formData.growing_prize_config,
+                                base_prize: parseInt(e.target.value) || 0
+                              }
+                            })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">الزيادة/النقصان لكل فترة</Label>
+                          <Input
+                            type="number"
+                            placeholder="مثال: 5000"
+                            value={formData.growing_prize_config.increment_per_interval}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              growing_prize_config: {
+                                ...formData.growing_prize_config,
+                                increment_per_interval: parseInt(e.target.value) || 0
+                              }
+                            })}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">الفترة الزمنية (بالدقائق)</Label>
+                          <Input
+                            type="number"
+                            placeholder="مثال: 60"
+                            value={formData.growing_prize_config.interval_minutes}
+                            onChange={(e) => setFormData({
+                              ...formData,
+                              growing_prize_config: {
+                                ...formData.growing_prize_config,
+                                interval_minutes: parseInt(e.target.value) || 60
+                              }
+                            })}
+                          />
+                        </div>
+                        <div className="space-y-1 flex items-end">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="decrease_mode"
+                              checked={formData.growing_prize_config.decrease_mode}
+                              onChange={(e) => setFormData({
+                                ...formData,
+                                growing_prize_config: {
+                                  ...formData.growing_prize_config,
+                                  decrease_mode: e.target.checked
+                                }
+                              })}
+                              className="h-4 w-4"
+                            />
+                            <Label htmlFor="decrease_mode" className="text-sm">وضع النقصان (الجائزة تقل)</Label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* جمع الأحرف */}
+                  {formData.competition_type === 'collect_letters' && (
+                    <div className="mt-4 p-4 bg-violet-500/5 rounded-lg border border-violet-500/20">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-violet-600">
+                        🔤 إعدادات جمع الأحرف
+                      </h4>
+                      
+                      <div className="mb-4">
+                        <Label className="text-xs mb-2 block">الأحرف المتاحة واحتمالاتها</Label>
+                        {formData.letters_config.map((letter, index) => (
+                          <div key={index} className="flex items-center gap-2 mb-2">
+                            <Input
+                              placeholder="الحرف"
+                              value={letter.letter}
+                              maxLength={1}
+                              onChange={(e) => {
+                                const newLetters = [...formData.letters_config];
+                                newLetters[index].letter = e.target.value.toUpperCase();
+                                setFormData({ ...formData, letters_config: newLetters });
+                              }}
+                              className="w-16 text-center text-xl font-bold"
+                            />
+                            <Input
+                              type="number"
+                              placeholder="الاحتمال %"
+                              value={letter.probability}
+                              onChange={(e) => {
+                                const newLetters = [...formData.letters_config];
+                                newLetters[index].probability = parseFloat(e.target.value) || 0;
+                                setFormData({ ...formData, letters_config: newLetters });
+                              }}
+                              className="w-24"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  letters_config: formData.letters_config.filter((_, i) => i !== index)
+                                });
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              letters_config: [...formData.letters_config, { letter: '', probability: 10 }]
+                            });
+                          }}
+                        >
+                          <Plus className="h-4 w-4 ml-1" />
+                          إضافة حرف
+                        </Button>
+                      </div>
+                      
+                      <div className="border-t pt-3 mt-3">
+                        <Label className="text-xs mb-2 block">الكلمات الفائزة والجوائز</Label>
+                        {formData.prize_words.map((word, index) => (
+                          <div key={index} className="flex items-center gap-2 mb-2 p-2 bg-background rounded border">
+                            <Input
+                              placeholder="الكلمة (مثال: LEVO)"
+                              value={word.word}
+                              onChange={(e) => {
+                                const newWords = [...formData.prize_words];
+                                newWords[index].word = e.target.value.toUpperCase();
+                                setFormData({ ...formData, prize_words: newWords });
+                              }}
+                              className="flex-1"
+                            />
+                            <Input
+                              placeholder="اسم الجائزة"
+                              value={word.prize_name}
+                              onChange={(e) => {
+                                const newWords = [...formData.prize_words];
+                                newWords[index].prize_name = e.target.value;
+                                setFormData({ ...formData, prize_words: newWords });
+                              }}
+                              className="flex-1"
+                            />
+                            <Input
+                              type="number"
+                              placeholder="القيمة"
+                              value={word.prize_value}
+                              onChange={(e) => {
+                                const newWords = [...formData.prize_words];
+                                newWords[index].prize_value = parseFloat(e.target.value) || 0;
+                                setFormData({ ...formData, prize_words: newWords });
+                              }}
+                              className="w-28"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  prize_words: formData.prize_words.filter((_, i) => i !== index)
+                                });
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              prize_words: [...formData.prize_words, { word: '', prize_name: '', prize_value: 0 }]
+                            });
+                          }}
+                        >
+                          <Plus className="h-4 w-4 ml-1" />
+                          إضافة كلمة فائزة
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
