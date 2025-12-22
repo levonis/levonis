@@ -43,6 +43,8 @@ const utcToBaghdadLocal = (utcDateString: string | null): string => {
 import CelebrationEffect from "@/components/CelebrationEffect";
 import CompetitionParticipantsDialog from "@/components/CompetitionParticipantsDialog";
 import PrizeProductsSelector from "@/components/PrizeProductsSelector";
+import ProductSearchSelect from "@/components/ProductSearchSelect";
+import UserTicketsManager from "@/components/UserTicketsManager";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 type CompetitionStatus = 'draft' | 'active' | 'completed' | 'cancelled';
@@ -180,6 +182,7 @@ export default function AdminCompetitions() {
   const [winnerInfo, setWinnerInfo] = useState<{ name: string; ticket: string } | null>(null);
   const [participantsDialogOpen, setParticipantsDialogOpen] = useState(false);
   const [selectedCompetitionForParticipants, setSelectedCompetitionForParticipants] = useState<Competition | null>(null);
+  const [ticketsManagerOpen, setTicketsManagerOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -688,6 +691,10 @@ export default function AdminCompetitions() {
             </div>
 
             <div className="flex gap-2">
+              <Button variant="outline" className="gap-2" onClick={() => setTicketsManagerOpen(true)}>
+                <Ticket className="h-4 w-4" />
+                إدارة التذاكر
+              </Button>
               <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/ticket-bundles')}>
                 <Gift className="h-4 w-4" />
                 عروض التذاكر
@@ -1563,46 +1570,38 @@ export default function AdminCompetitions() {
                       </h4>
                       
                       <div className="mb-4">
-                        <Label className="text-xs mb-2 block">الأحرف المتاحة واحتمالاتها</Label>
-                        {formData.letters_config.map((letter, index) => (
-                          <div key={index} className="flex items-center gap-2 mb-2">
-                            <Input
-                              placeholder="الحرف"
-                              value={letter.letter}
-                              maxLength={1}
-                              onChange={(e) => {
-                                const newLetters = [...formData.letters_config];
-                                newLetters[index].letter = e.target.value.toUpperCase();
-                                setFormData({ ...formData, letters_config: newLetters });
-                              }}
-                              className="w-16 text-center text-xl font-bold"
-                            />
-                            <Input
-                              type="number"
-                              placeholder="الاحتمال %"
-                              value={letter.probability}
-                              onChange={(e) => {
-                                const newLetters = [...formData.letters_config];
-                                newLetters[index].probability = parseFloat(e.target.value) || 0;
-                                setFormData({ ...formData, letters_config: newLetters });
-                              }}
-                              className="w-24"
-                            />
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setFormData({
-                                  ...formData,
-                                  letters_config: formData.letters_config.filter((_, i) => i !== index)
-                                });
-                              }}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
+                        <Label className="text-xs mb-2 block">الأحرف المتاحة</Label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {formData.letters_config.map((letter, index) => (
+                            <div key={index} className="flex items-center gap-1 p-2 bg-background rounded border">
+                              <Input
+                                placeholder="حرف"
+                                value={letter.letter}
+                                maxLength={1}
+                                onChange={(e) => {
+                                  const newLetters = [...formData.letters_config];
+                                  newLetters[index].letter = e.target.value.toUpperCase();
+                                  setFormData({ ...formData, letters_config: newLetters });
+                                }}
+                                className="w-12 text-center text-lg font-bold"
+                              />
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    letters_config: formData.letters_config.filter((_, i) => i !== index)
+                                  });
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
                         <Button
                           type="button"
                           variant="outline"
@@ -1610,7 +1609,7 @@ export default function AdminCompetitions() {
                           onClick={() => {
                             setFormData({
                               ...formData,
-                              letters_config: [...formData.letters_config, { letter: '', probability: 10 }]
+                              letters_config: [...formData.letters_config, { letter: '', probability: 100 }]
                             });
                           }}
                         >
@@ -1657,7 +1656,7 @@ export default function AdminCompetitions() {
                                 newWords[index].prize_name = e.target.value;
                                 setFormData({ ...formData, prize_words: newWords });
                               }}
-                              className="flex-1 min-w-[120px]"
+                              className="flex-1 min-w-[100px]"
                             />
                             <Input
                               type="number"
@@ -1668,7 +1667,7 @@ export default function AdminCompetitions() {
                                 newWords[index].prize_value = parseFloat(e.target.value) || 0;
                                 setFormData({ ...formData, prize_words: newWords });
                               }}
-                              className="w-24"
+                              className="w-20"
                             />
                             <Input
                               type="number"
@@ -1679,28 +1678,20 @@ export default function AdminCompetitions() {
                                 newWords[index].stock = parseInt(e.target.value) || 0;
                                 setFormData({ ...formData, prize_words: newWords });
                               }}
-                              className="w-20"
+                              className="w-16"
                             />
-                            <Select
-                              value={word.product_id || 'none'}
-                              onValueChange={(value) => {
-                                const newWords = [...formData.prize_words];
-                                newWords[index].product_id = value === 'none' ? '' : value;
-                                setFormData({ ...formData, prize_words: newWords });
-                              }}
-                            >
-                              <SelectTrigger className="w-32 bg-background">
-                                <SelectValue placeholder="منتج..." />
-                              </SelectTrigger>
-                              <SelectContent className="z-[100] bg-background border shadow-lg max-h-[200px]">
-                                <SelectItem value="none">بدون</SelectItem>
-                                {products?.map((product) => (
-                                  <SelectItem key={product.id} value={product.id}>
-                                    {product.name_ar}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <div className="w-40">
+                              <ProductSearchSelect
+                                products={products || []}
+                                value={word.product_id || ''}
+                                onChange={(value) => {
+                                  const newWords = [...formData.prize_words];
+                                  newWords[index].product_id = value;
+                                  setFormData({ ...formData, prize_words: newWords });
+                                }}
+                                placeholder="بحث منتج..."
+                              />
+                            </div>
                             <Button
                               type="button"
                               variant="ghost"
@@ -2011,6 +2002,11 @@ export default function AdminCompetitions() {
           requiredTickets={selectedCompetitionForParticipants.required_tickets || 1}
         />
       )}
+
+      <UserTicketsManager
+        open={ticketsManagerOpen}
+        onOpenChange={setTicketsManagerOpen}
+      />
     </>
   );
 }

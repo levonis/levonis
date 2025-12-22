@@ -225,47 +225,34 @@ export default function CompetitionParticipantsDialog({
       
       if (deleteError) throw deleteError;
 
-      // Return the ticket(s) to the user
-      const { error: ticketError } = await supabase
+      // Return the ticket(s) to the user - check if record exists first
+      const { data: existingTickets } = await supabase
         .from('user_tickets')
-        .upsert({
-          user_id: ticket.user_id,
-          ticket_count: requiredTickets
-        }, {
-          onConflict: 'user_id'
-        });
+        .select('ticket_count')
+        .eq('user_id', ticket.user_id)
+        .maybeSingle();
 
-      if (ticketError) {
-        // If upsert fails, try update
+      if (existingTickets) {
+        // Update existing record by adding the tickets
         const { error: updateError } = await supabase
-          .rpc('purchase_tickets', {
-            ticket_quantity: -requiredTickets, // Negative to add back
-            price_per_ticket: 0
+          .from('user_tickets')
+          .update({ 
+            ticket_count: existingTickets.ticket_count + requiredTickets,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', ticket.user_id);
+        
+        if (updateError) throw updateError;
+      } else {
+        // Insert new record
+        const { error: insertError } = await supabase
+          .from('user_tickets')
+          .insert({
+            user_id: ticket.user_id,
+            ticket_count: requiredTickets
           });
         
-        // Alternative: directly update
-        const { data: existingTickets } = await supabase
-          .from('user_tickets')
-          .select('ticket_count')
-          .eq('user_id', ticket.user_id)
-          .single();
-
-        if (existingTickets) {
-          await supabase
-            .from('user_tickets')
-            .update({ 
-              ticket_count: existingTickets.ticket_count + requiredTickets,
-              updated_at: new Date().toISOString()
-            })
-            .eq('user_id', ticket.user_id);
-        } else {
-          await supabase
-            .from('user_tickets')
-            .insert({
-              user_id: ticket.user_id,
-              ticket_count: requiredTickets
-            });
-        }
+        if (insertError) throw insertError;
       }
 
       // Create notification for user
