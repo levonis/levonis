@@ -201,20 +201,34 @@ export default function ScratchCardReveal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent 
-        className="max-w-sm p-0 overflow-hidden border-0 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600"
+        className="max-w-sm p-0 overflow-hidden border-0"
         onPointerDownOutside={(e) => e.preventDefault()}
+        style={{
+          background: 'radial-gradient(ellipse at top, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%)'
+        }}
       >
         <VisuallyHidden>
           <DialogTitle>مسح التذكرة</DialogTitle>
         </VisuallyHidden>
         
+        {/* Animated shimmer background */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%)',
+              animation: 'shimmer 3s infinite linear'
+            }}
+          />
+        </div>
+        
         {/* Top bar */}
-        <div className="absolute top-2 right-2 left-2 z-10 flex justify-between items-center">
+        <div className="absolute top-3 right-3 left-3 z-20 flex justify-between items-center">
           {allowSkip && !isRevealed && !showPrize && (
             <Button 
-              variant="ghost" 
+              variant="outline" 
               size="sm"
-              className="text-white/80 hover:text-white hover:bg-white/20 gap-1"
+              className="bg-white/10 border-white/30 text-white hover:bg-white/20 hover:text-white gap-2 backdrop-blur-sm"
               onClick={skipToEnd}
             >
               <SkipForward className="h-4 w-4" />
@@ -225,13 +239,12 @@ export default function ScratchCardReveal({
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-white/80 hover:text-white hover:bg-white/20"
+            className="text-white/80 hover:text-white hover:bg-white/20 rounded-full"
             onClick={onClose}
           >
             <X className="h-5 w-5" />
           </Button>
         </div>
-
         <div className="relative min-h-[500px] flex flex-col items-center justify-center p-6 text-white text-center overflow-hidden">
           {/* Background particles */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -359,31 +372,37 @@ export default function ScratchCardReveal({
               </div>
               
               {/* Progress toward word */}
-              {isRevealed && (
+              {isRevealed && targetWord && (
                 <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 space-y-3 animate-fade-in mt-4">
                   <p className="text-sm opacity-80">تقدمك في الكلمة:</p>
                   <div className="flex justify-center gap-2 flex-wrap">
-                    {targetWord.split('').map((letter, idx) => {
+                    {[...new Set(targetWord.split(''))].map((letter, idx) => {
                       const hasLetter = allCollected.includes(letter);
                       const isNew = letter === awardedLetter && !collectedLetters.includes(letter);
+                      const count = allCollected.filter(l => l === letter).length;
                       return (
                         <div
                           key={idx}
-                          className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold transition-all ${
+                          className={`relative w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all ${
                             hasLetter 
                               ? isNew
-                                ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg scale-110 ring-2 ring-yellow-300' 
+                                ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg scale-110 ring-2 ring-yellow-300 animate-bounce' 
                                 : 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg' 
-                              : 'bg-white/20 text-white/40'
+                              : 'bg-white/10 text-white/30 border border-white/20'
                           }`}
                         >
                           {hasLetter ? letter : '?'}
+                          {count > 1 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full text-xs flex items-center justify-center">
+                              {count}
+                            </span>
+                          )}
                         </div>
                       );
                     })}
                   </div>
                   <p className="text-sm opacity-70">
-                    {allCollected.length} / {targetWord.length} حروف
+                    {[...new Set(targetWord.split(''))].filter(l => allCollected.includes(l)).length} / {[...new Set(targetWord.split(''))].length} حروف فريدة
                   </p>
                 </div>
               )}
@@ -440,6 +459,10 @@ export default function ScratchCardReveal({
           @keyframes spin {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
+          }
+          @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%); }
+            100% { transform: translateX(100%) translateY(100%); }
           }
         `}</style>
       </DialogContent>
