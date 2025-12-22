@@ -114,7 +114,7 @@ export default function CollectedLettersDisplay({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Main Word Display - Letters with counts */}
-        <div className="flex items-center justify-center gap-2 flex-wrap">
+        <div className="flex items-center justify-center gap-2 flex-wrap flex-row-reverse">
           {mainWord.split('').filter((v, i, a) => a.indexOf(v) === i).map((letter, index) => {
             const count = letterCounts[letter] || 0;
             const hasLetter = count > 0;
