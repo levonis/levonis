@@ -342,7 +342,8 @@ export default function ScratchCardReveal({
                     ref={canvasRef}
                     width={256}
                     height={192}
-                    className="absolute inset-0 w-full h-full cursor-crosshair touch-none"
+                    className="absolute inset-0 w-full h-full cursor-crosshair touch-none z-10"
+                    style={{ touchAction: 'none' }}
                     onPointerDown={handlePointerDown}
                     onPointerMove={handlePointerMove}
                     onPointerUp={handlePointerUp}
