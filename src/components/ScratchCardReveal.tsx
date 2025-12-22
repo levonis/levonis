@@ -167,26 +167,21 @@ export default function ScratchCardReveal({
     }
   }, [isRevealed, calculateScratchPercentage, isBetterLuck, wonPrize]);
 
-  const handleMouseDown = () => setIsScratching(true);
-  const handleMouseUp = () => setIsScratching(false);
-  const handleMouseLeave = () => setIsScratching(false);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (isScratching) scratch(e);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+  const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.preventDefault();
+    (e.currentTarget as HTMLCanvasElement).setPointerCapture(e.pointerId);
     setIsScratching(true);
-    scratch(e);
+    // Scratch immediately on first touch/click
+    scratch(e as unknown as React.MouseEvent<HTMLCanvasElement>);
   };
 
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (isScratching) scratch(e);
+    if (isScratching) scratch(e as unknown as React.MouseEvent<HTMLCanvasElement>);
   };
 
-  const handleTouchEnd = () => setIsScratching(false);
+  const handlePointerUp = () => setIsScratching(false);
+  const handlePointerCancel = () => setIsScratching(false);
 
   const skipToEnd = () => {
     setIsRevealed(true);
@@ -348,13 +343,11 @@ export default function ScratchCardReveal({
                     width={256}
                     height={192}
                     className="absolute inset-0 w-full h-full cursor-crosshair touch-none"
-                    onMouseDown={handleMouseDown}
-                    onMouseUp={handleMouseUp}
-                    onMouseLeave={handleMouseLeave}
-                    onMouseMove={handleMouseMove}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
+                    onPointerDown={handlePointerDown}
+                    onPointerMove={handlePointerMove}
+                    onPointerUp={handlePointerUp}
+                    onPointerCancel={handlePointerCancel}
+                    onPointerLeave={handlePointerUp}
                   />
                 )}
                 
@@ -401,9 +394,8 @@ export default function ScratchCardReveal({
                       );
                     })}
                   </div>
-                  <p className="text-sm opacity-70">
-                    {[...new Set(targetWord.split(''))].filter(l => allCollected.includes(l)).length} / {[...new Set(targetWord.split(''))].length} حروف فريدة
-                  </p>
+                  
+
                 </div>
               )}
               

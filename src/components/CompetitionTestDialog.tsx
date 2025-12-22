@@ -131,17 +131,36 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
     const randomVal = Math.random() * 100;
     let cumulative = 0;
     const typedLetterProbs = letterProbs as Record<string, number>;
-    
-    for (let i = 0; i < letters.length; i++) {
-      const letter = letters[i];
-      const prob = typedLetterProbs[letter] || (100 / letters.length);
-      cumulative += prob;
+
+    // Only include letters with probability > 0. If all are 0/missing, fallback to equal weights.
+    const entries = letters
+      .map((letter) => {
+        const prob = typedLetterProbs[letter] ?? undefined;
+        return { letter, prob };
+      });
+
+    const hasAnyExplicit = entries.some((e) => typeof e.prob === 'number');
+    const usable = entries.filter((e) => {
+      if (!hasAnyExplicit) return true;
+      return (e.prob ?? 0) > 0;
+    });
+
+    if (usable.length === 0) {
+      return { letter: null, isBetterLuck: true };
+    }
+
+    const fallbackProb = 100 / usable.length;
+
+    for (let i = 0; i < usable.length; i++) {
+      const { letter, prob } = usable[i];
+      const weight = hasAnyExplicit ? (prob ?? 0) : fallbackProb;
+      cumulative += weight;
       if (randomVal <= cumulative) {
         return { letter, isBetterLuck: false };
       }
     }
-    
-    return { letter: letters[0] || '', isBetterLuck: false };
+
+    return { letter: usable[0]?.letter || '', isBetterLuck: false };
   };
 
   const runTest = () => {
