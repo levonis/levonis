@@ -121,63 +121,59 @@ export default function ScratchCardReveal({
     return (transparentPixels / totalPixels) * 100;
   }, []);
 
-  const scratch = useCallback((e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
-    if (isRevealed) return;
+  const scratchAt = useCallback(
+    (clientX: number, clientY: number) => {
+      if (isRevealed) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+      const canvas = canvasRef.current;
+      if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    let x: number, y: number;
+      const rect = canvas.getBoundingClientRect();
+      let x = clientX - rect.left;
+      let y = clientY - rect.top;
 
-    if ('touches' in e) {
-      x = e.touches[0].clientX - rect.left;
-      y = e.touches[0].clientY - rect.top;
-    } else {
-      x = e.clientX - rect.left;
-      y = e.clientY - rect.top;
-    }
+      // Scale coordinates
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      x *= scaleX;
+      y *= scaleY;
 
-    // Scale coordinates
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    x *= scaleX;
-    y *= scaleY;
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.beginPath();
+      ctx.arc(x, y, 30, 0, Math.PI * 2);
+      ctx.fill();
 
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.beginPath();
-    ctx.arc(x, y, 30, 0, Math.PI * 2);
-    ctx.fill();
+      const percentage = calculateScratchPercentage();
+      setScratchPercentage(percentage);
 
-    const percentage = calculateScratchPercentage();
-    setScratchPercentage(percentage);
+      if (percentage >= SCRATCH_THRESHOLD && !isRevealed) {
+        setIsRevealed(true);
+        if (!isBetterLuck) {
+          setShowConfetti(true);
+        }
 
-    if (percentage >= SCRATCH_THRESHOLD && !isRevealed) {
-      setIsRevealed(true);
-      if (!isBetterLuck) {
-        setShowConfetti(true);
+        if (wonPrize) {
+          setTimeout(() => setShowPrize(true), 1500);
+        }
       }
-      
-      if (wonPrize) {
-        setTimeout(() => setShowPrize(true), 1500);
-      }
-    }
-  }, [isRevealed, calculateScratchPercentage, isBetterLuck, wonPrize]);
+    },
+    [isRevealed, calculateScratchPercentage, isBetterLuck, wonPrize]
+  );
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.preventDefault();
     (e.currentTarget as HTMLCanvasElement).setPointerCapture(e.pointerId);
     setIsScratching(true);
-    // Scratch immediately on first touch/click
-    scratch(e as unknown as React.MouseEvent<HTMLCanvasElement>);
+    scratchAt(e.clientX, e.clientY);
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (isScratching) scratch(e as unknown as React.MouseEvent<HTMLCanvasElement>);
+    if (!isScratching) return;
+    scratchAt(e.clientX, e.clientY);
   };
 
   const handlePointerUp = () => setIsScratching(false);
@@ -365,7 +361,7 @@ export default function ScratchCardReveal({
                 )}
               </div>
               
-              {/* Progress toward word */}
+              {/* Progress */}
               {isRevealed && targetWord && (
                 <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 space-y-3 animate-fade-in mt-4">
                   <p className="text-sm opacity-80">تقدمك في الكلمة:</p>
@@ -373,15 +369,15 @@ export default function ScratchCardReveal({
                     {[...new Set(targetWord.split(''))].map((letter, idx) => {
                       const hasLetter = allCollected.includes(letter);
                       const isNew = letter === awardedLetter && !collectedLetters.includes(letter);
-                      const count = allCollected.filter(l => l === letter).length;
+                      const count = allCollected.filter((l) => l === letter).length;
                       return (
                         <div
                           key={idx}
                           className={`relative w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all ${
-                            hasLetter 
+                            hasLetter
                               ? isNew
-                                ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg scale-110 ring-2 ring-yellow-300 animate-bounce' 
-                                : 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg' 
+                                ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg scale-110 ring-2 ring-yellow-300 animate-bounce'
+                                : 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg'
                               : 'bg-white/10 text-white/30 border border-white/20'
                           }`}
                         >
@@ -395,8 +391,32 @@ export default function ScratchCardReveal({
                       );
                     })}
                   </div>
-                  
 
+                  <div className="pt-2 border-t border-white/15">
+                    <p className="text-sm opacity-80 mb-2">كل الأحرف التي جمعتها:</p>
+                    <div className="flex justify-center gap-1.5 flex-wrap">
+                      {Object.entries(
+                        allCollected.reduce<Record<string, number>>((acc, l) => {
+                          acc[l] = (acc[l] ?? 0) + 1;
+                          return acc;
+                        }, {})
+                      )
+                        .sort(([a], [b]) => a.localeCompare(b, 'ar'))
+                        .map(([letter, count]) => (
+                          <Badge
+                            key={letter}
+                            variant="secondary"
+                            className="bg-white/10 text-white border border-white/20"
+                          >
+                            <span className="font-bold">{letter}</span>
+                            <span className="text-xs opacity-80">&nbsp;×{count}</span>
+                          </Badge>
+                        ))}
+                      {allCollected.length === 0 && (
+                        <span className="text-sm opacity-70">لا توجد أحرف بعد</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
               

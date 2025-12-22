@@ -174,7 +174,16 @@ export default function BagOpenReveal({
           </Button>
         </div>
 
-        <div className="relative min-h-[520px] flex flex-col items-center justify-center p-6 text-white text-center overflow-hidden">
+        <div
+          className={`relative min-h-[520px] flex flex-col items-center justify-center p-6 text-white text-center overflow-hidden ${
+            !skipped && (stage === 'bag_closed' || stage === 'letter_revealed') ? 'cursor-pointer' : ''
+          }`}
+          onClick={() => {
+            if (skipped) return;
+            if (stage === 'bag_closed') return startOpening();
+            if (stage === 'letter_revealed') return proceedToNextBag();
+          }}
+        >
           {/* Floating golden particles */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
             {[...Array(20)].map((_, i) => (
@@ -194,46 +203,47 @@ export default function BagOpenReveal({
 
           {/* Progress indicator */}
           {!skipped && stage !== 'all_done' && stage !== 'prize' && (
-            <div className="absolute top-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3">
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 pointer-events-none">
               <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-sm px-4 py-1">
                 كيس {currentBagIndex + 1} من {totalBags}
               </Badge>
               <div className="flex gap-1.5">
                 {results.map((_, idx) => (
-                  <div 
-                    key={idx} 
+                  <div
+                    key={idx}
                     className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                      idx < currentBagIndex 
-                        ? 'bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-500/50' 
-                        : idx === currentBagIndex 
-                          ? 'bg-gradient-to-br from-yellow-400 to-amber-500 scale-125 shadow-lg shadow-amber-500/50 animate-pulse' 
+                      idx < currentBagIndex
+                        ? 'bg-gradient-to-br from-green-400 to-emerald-500 shadow-lg shadow-green-500/50'
+                        : idx === currentBagIndex
+                          ? 'bg-gradient-to-br from-yellow-400 to-amber-500 scale-125 shadow-lg shadow-amber-500/50 animate-pulse'
                           : 'bg-white/20 border border-white/30'
-                    }`} 
+                    }`}
                   />
                 ))}
               </div>
             </div>
           )}
+
           {/* Bag animation stages */}
           {(stage === 'bag_closed' || stage === 'bag_opening' || stage === 'bag_opened' || stage === 'letter_revealed') && !skipped && (
-            <div className="space-y-6 pointer-events-none">
+            <div className="space-y-6">
               {/* Bag visual */}
-              <div className="relative">
+              <div className="relative pointer-events-none">
                 {/* Glow effect */}
-                <div 
+                <div
                   className={`absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 blur-3xl rounded-full transition-all duration-500 ${
                     stage === 'bag_opening' || stage === 'bag_opened' ? 'opacity-60 scale-150' : 'opacity-30'
                   }`}
                 />
-                
+
                 {/* Bag container */}
-                <div 
+                <div
                   className={`relative transition-all duration-700 ${
                     stage === 'bag_opening' ? 'animate-shake' : ''
                   } ${stage === 'bag_opened' ? 'scale-110' : ''}`}
                 >
                   {/* Bag shape */}
-                  <div 
+                  <div
                     className={`w-32 h-44 mx-auto relative transition-all duration-500 ${
                       stage === 'bag_opened' || stage === 'letter_revealed' ? 'opacity-50 scale-95' : ''
                     }`}
@@ -244,7 +254,7 @@ export default function BagOpenReveal({
                       <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-20 h-10 rounded-t-full border-[6px] border-amber-200/80" />
 
                       {/* Bag mouth/tie */}
-                      <div 
+                      <div
                         className={`absolute top-0 left-0 right-0 h-10 bg-gradient-to-r from-red-500 via-rose-500 to-red-600 rounded-t-[28px] transition-all duration-500 ${
                           stage === 'bag_opened' || stage === 'letter_revealed' ? 'opacity-0 -translate-y-4' : ''
                         }`}
@@ -261,7 +271,7 @@ export default function BagOpenReveal({
                       <div className="absolute bottom-10 left-10 right-10 h-px bg-amber-900/10" />
                     </div>
                   </div>
-                  
+
                   {/* Sparkles when opening */}
                   {(stage === 'bag_opening' || stage === 'bag_opened') && (
                     <>
@@ -285,72 +295,48 @@ export default function BagOpenReveal({
                 {/* Letter reveal (rises from inside the bag) */}
                 {stage === 'letter_revealed' && currentResult && (
                   <div className="absolute inset-0 flex items-end justify-center pb-10 pointer-events-none">
-                    <div
-                      className={`transition-all duration-500 ${
-                        currentResult.letter ? 'animate-letter-rise' : 'animate-letter-rise'
-                      }`}
-                    >
-                      <div 
+                    <div className="transition-all duration-500 animate-letter-rise">
+                      <div
                         className={`w-24 h-24 rounded-2xl flex items-center justify-center shadow-2xl ${
-                          currentResult.letter 
-                            ? 'bg-gradient-to-br from-yellow-400 via-amber-500 to-amber-600' 
+                          currentResult.letter
+                            ? 'bg-gradient-to-br from-yellow-400 via-amber-500 to-amber-600'
                             : 'bg-gradient-to-br from-gray-400 to-gray-500'
                         }`}
                         style={{
-                          boxShadow: currentResult.letter 
-                            ? '0 0 40px 15px rgba(255, 215, 0, 0.35)' 
+                          boxShadow: currentResult.letter
+                            ? '0 0 40px 15px rgba(255, 215, 0, 0.35)'
                             : '0 0 20px 5px rgba(128, 128, 128, 0.25)'
                         }}
                       >
-                        <span className="text-5xl font-bold text-white">
-                          {currentResult.letter || '😔'}
-                        </span>
+                        <span className="text-5xl font-bold text-white">{currentResult.letter || '😔'}</span>
                       </div>
                     </div>
                   </div>
                 )}
               </div>
-              
+
               {/* Text */}
-              <div className="flex flex-col items-center justify-center gap-3">
+              <div className="flex flex-col items-center justify-center gap-3 pointer-events-none">
                 {stage === 'bag_closed' && (
                   <>
-                    <h2 className="text-xl font-bold">اضغط زر فتح الكيس</h2>
-                    <Button
-                      onClick={startOpening}
-                      className="bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm pointer-events-auto"
-                      variant="outline"
-                    >
-                      افتح الكيس
-                    </Button>
+                    <h2 className="text-xl font-bold">اضغط أي مكان لفتح الكيس</h2>
+                    <p className="text-sm opacity-80">(نقرة واحدة)</p>
                   </>
                 )}
-                {stage === 'bag_opening' && (
-                  <h2 className="text-xl font-bold animate-pulse">🎁 يتم الفتح...</h2>
-                )}
-                {stage === 'bag_opened' && (
-                  <h2 className="text-xl font-bold">✨ لحظة...</h2>
-                )}
+                {stage === 'bag_opening' && <h2 className="text-xl font-bold animate-pulse">🎁 يتم الفتح...</h2>}
+                {stage === 'bag_opened' && <h2 className="text-xl font-bold">✨ لحظة...</h2>}
                 {stage === 'letter_revealed' && currentResult?.letter && (
-                  <div className="animate-scale-in space-y-3">
-                    <h2 className="text-2xl font-bold">حصلت على الحرف <span className="text-yellow-300 text-3xl">{currentResult.letter}</span>!</h2>
-                    <Button
-                      onClick={proceedToNextBag}
-                      className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8 pointer-events-auto"
-                    >
-                      {currentBagIndex < totalBags - 1 ? 'التالي' : 'عرض النتيجة'}
-                    </Button>
+                  <div className="animate-scale-in space-y-2">
+                    <h2 className="text-2xl font-bold">
+                      حصلت على الحرف <span className="text-yellow-300 text-3xl">{currentResult.letter}</span>!
+                    </h2>
+                    <p className="text-sm opacity-80">اضغط أي مكان {currentBagIndex < totalBags - 1 ? 'للكيس التالي' : 'لعرض النتيجة'}</p>
                   </div>
                 )}
                 {stage === 'letter_revealed' && !currentResult?.letter && (
-                  <div className="animate-scale-in space-y-3">
+                  <div className="animate-scale-in space-y-2">
                     <h2 className="text-xl font-bold">حظ أوفر! 😔</h2>
-                    <Button
-                      onClick={proceedToNextBag}
-                      className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8 pointer-events-auto"
-                    >
-                      {currentBagIndex < totalBags - 1 ? 'التالي' : 'عرض النتيجة'}
-                    </Button>
+                    <p className="text-sm opacity-80">اضغط أي مكان {currentBagIndex < totalBags - 1 ? 'للكيس التالي' : 'لعرض النتيجة'}</p>
                   </div>
                 )}
               </div>
@@ -363,9 +349,9 @@ export default function BagOpenReveal({
               <div className="relative">
                 <ShoppingBag className="h-20 w-20 mx-auto text-yellow-300" />
               </div>
-              
+
               <h2 className="text-2xl font-bold">تم فتح جميع الأكياس! 🎉</h2>
-              
+
               {/* Summary of letters */}
               <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 space-y-3">
                 <p className="text-sm opacity-80">ملخص ما حصلت عليه:</p>
@@ -407,15 +393,15 @@ export default function BagOpenReveal({
                   {[...new Set(targetWord.split(''))].map((letter, idx) => {
                     const hasLetter = uniqueCollected.includes(letter);
                     const count = letterCounts[letter] ?? 0;
-                    const isNewlyRevealed = revealedLetters.some(r => r.letter === letter);
+                    const isNewlyRevealed = revealedLetters.some((r) => r.letter === letter);
                     return (
                       <div
                         key={idx}
                         className={`relative w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all ${
-                          hasLetter 
+                          hasLetter
                             ? isNewlyRevealed
-                              ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg ring-2 ring-yellow-300' 
-                              : 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg' 
+                              ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg ring-2 ring-yellow-300'
+                              : 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg'
                             : 'bg-white/10 text-white/30 border border-white/20'
                         }`}
                       >
@@ -429,16 +415,18 @@ export default function BagOpenReveal({
                     );
                   })}
                 </div>
+
+                <p className="text-sm opacity-70 mt-2">
+                  {uniqueCollected.filter((l) => targetWord.includes(l)).length} / {[...new Set(targetWord.split(''))].length} حروف مختلفة
+                </p>
               </div>
-              
-              <Button 
-                onClick={onClose}
-                className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8"
-              >
-                حسناً
+
+              <Button onClick={onClose} className="bg-white text-gray-900 hover:bg-white/90 font-bold px-10">
+                إغلاق
               </Button>
             </div>
           )}
+
 
           {/* Prize won */}
           {stage === 'prize' && wonPrize && (
