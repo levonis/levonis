@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye, RotateCcw, ImagePlus, Settings, Save } from "lucide-react";
+import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye, RotateCcw, ImagePlus, Settings, Save, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { format, addHours } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -71,6 +71,8 @@ interface PrizeWord {
   word: string;
   prize_name: string;
   prize_value: number;
+  stock?: number;
+  product_id?: string;
 }
 
 interface GrowingPrizeConfig {
@@ -219,7 +221,25 @@ export default function AdminCompetitions() {
       increment_per_interval: 0,
       interval_minutes: 60,
       decrease_mode: false
-    } as GrowingPrizeConfig
+    } as GrowingPrizeConfig,
+    // New options
+    hide_participants: false,
+    unlimited_winners: false,
+    is_featured: false,
+    prize_product_id: '' as string
+  });
+
+  // Fetch products for prize selection
+  const { data: products } = useQuery({
+    queryKey: ['products-for-prizes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, name_ar, image_url, price')
+        .order('name_ar');
+      if (error) throw error;
+      return data;
+    }
   });
 
   const { data: competitions, isLoading, refetch: refetchCompetitions } = useQuery({
@@ -309,10 +329,12 @@ export default function AdminCompetitions() {
           return acc;
         }, {} as Record<string, number>),
         better_luck_probability: parseFloat(data.better_luck_probability) || 0,
-        prizes: data.prize_words.map(pw => ({
+        prize_words: data.prize_words.map(pw => ({
           word: pw.word,
           prize_name_ar: pw.prize_name,
-          prize_value: pw.prize_value
+          prize_value: pw.prize_value,
+          stock: pw.stock || 999,
+          product_id: pw.product_id || null
         }))
       } : null;
 
@@ -334,7 +356,12 @@ export default function AdminCompetitions() {
         competition_type: data.competition_type,
         status: data.status,
         required_tickets: parseInt(data.required_tickets) || 1,
-        winners_count: parseInt(data.winners_count) || 1
+        winners_count: data.unlimited_winners ? 9999 : (parseInt(data.winners_count) || 1),
+        // New fields
+        hide_participants: data.hide_participants,
+        unlimited_winners: data.unlimited_winners,
+        is_featured: data.is_featured,
+        prize_product_id: data.prize_product_id || null
       };
 
       // Add type-specific fields
@@ -565,7 +592,11 @@ export default function AdminCompetitions() {
         increment_per_interval: 0,
         interval_minutes: 60,
         decrease_mode: false
-      }
+      },
+      hide_participants: false,
+      unlimited_winners: false,
+      is_featured: false,
+      prize_product_id: ''
     });
     setEditingCompetition(null);
   };
@@ -606,17 +637,23 @@ export default function AdminCompetitions() {
       hidden_winner_trigger_ticket: compAny.hidden_winner_trigger_ticket?.toString() || '',
       letters_config: compAny.letters_config?.letters || [],
       better_luck_probability: compAny.letters_config?.better_luck_probability?.toString() || '0',
-      prize_words: compAny.letters_config?.prizes?.map((p: any) => ({
+      prize_words: compAny.letters_config?.prize_words?.map((p: any) => ({
         word: p.word || '',
         prize_name: p.prize_name_ar || '',
-        prize_value: p.prize_value || 0
+        prize_value: p.prize_value || 0,
+        stock: p.stock || 0,
+        product_id: p.product_id || ''
       })) || [],
       growing_prize_config: compAny.growing_prize_config || {
         base_prize: 0,
         increment_per_interval: 0,
         interval_minutes: 60,
         decrease_mode: false
-      }
+      },
+      hide_participants: compAny.hide_participants || false,
+      unlimited_winners: compAny.unlimited_winners || false,
+      is_featured: compAny.is_featured || false,
+      prize_product_id: compAny.prize_product_id || ''
     });
     setIsDialogOpen(true);
   };
@@ -863,8 +900,72 @@ export default function AdminCompetitions() {
                       value={formData.winners_count}
                       onChange={(e) => setFormData({ ...formData, winners_count: e.target.value })}
                       placeholder="1"
+                      disabled={formData.unlimited_winners}
                     />
-                    <p className="text-xs text-muted-foreground">يمكن تحديد أكثر من فائز للجائزة نفسها</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="checkbox"
+                        id="unlimited_winners"
+                        checked={formData.unlimited_winners}
+                        onChange={(e) => setFormData({ ...formData, unlimited_winners: e.target.checked })}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="unlimited_winners" className="text-xs">فائزين بلا حدود</Label>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label>اختر منتج كجائزة (اختياري)</Label>
+                    <Select
+                      value={formData.prize_product_id}
+                      onValueChange={(value) => setFormData({ ...formData, prize_product_id: value })}
+                    >
+                      <SelectTrigger className="bg-background">
+                        <SelectValue placeholder="اختر منتج..." />
+                      </SelectTrigger>
+                      <SelectContent className="z-[100] bg-background border shadow-lg max-h-[200px]">
+                        <SelectItem value="">بدون منتج</SelectItem>
+                        {products?.map((product) => (
+                          <SelectItem key={product.id} value={product.id}>
+                            {product.name_ar}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">يمكنك ربط الجائزة بمنتج موجود</p>
+                  </div>
+                </div>
+
+                {/* خيارات إضافية */}
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Settings className="h-4 w-4" />
+                    خيارات العرض
+                  </h3>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="hide_participants"
+                        checked={formData.hide_participants}
+                        onChange={(e) => setFormData({ ...formData, hide_participants: e.target.checked })}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="hide_participants" className="text-sm">إخفاء عدد المشاركين</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="is_featured"
+                        checked={formData.is_featured}
+                        onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                        className="h-4 w-4"
+                      />
+                      <Label htmlFor="is_featured" className="text-sm flex items-center gap-1">
+                        <Sparkles className="h-3 w-3 text-yellow-500" />
+                        مسابقة مميزة
+                      </Label>
+                    </div>
                   </div>
                 </div>
 
@@ -1538,18 +1639,18 @@ export default function AdminCompetitions() {
                       </div>
                       
                       <div className="border-t pt-3 mt-3">
-                        <Label className="text-xs mb-2 block">الكلمات الفائزة والجوائز</Label>
+                        <Label className="text-xs mb-2 block">الكلمات الفائزة والجوائز (مع المخزون)</Label>
                         {formData.prize_words.map((word, index) => (
-                          <div key={index} className="flex items-center gap-2 mb-2 p-2 bg-background rounded border">
+                          <div key={index} className="flex flex-wrap items-center gap-2 mb-2 p-2 bg-background rounded border">
                             <Input
-                              placeholder="الكلمة (مثال: LEVO)"
+                              placeholder="الكلمة (مثال: LEVONIS)"
                               value={word.word}
                               onChange={(e) => {
                                 const newWords = [...formData.prize_words];
                                 newWords[index].word = e.target.value.toUpperCase();
                                 setFormData({ ...formData, prize_words: newWords });
                               }}
-                              className="flex-1"
+                              className="w-32"
                             />
                             <Input
                               placeholder="اسم الجائزة"
@@ -1559,7 +1660,7 @@ export default function AdminCompetitions() {
                                 newWords[index].prize_name = e.target.value;
                                 setFormData({ ...formData, prize_words: newWords });
                               }}
-                              className="flex-1"
+                              className="flex-1 min-w-[120px]"
                             />
                             <Input
                               type="number"
@@ -1570,8 +1671,39 @@ export default function AdminCompetitions() {
                                 newWords[index].prize_value = parseFloat(e.target.value) || 0;
                                 setFormData({ ...formData, prize_words: newWords });
                               }}
-                              className="w-28"
+                              className="w-24"
                             />
+                            <Input
+                              type="number"
+                              placeholder="المخزون"
+                              value={word.stock || ''}
+                              onChange={(e) => {
+                                const newWords = [...formData.prize_words];
+                                newWords[index].stock = parseInt(e.target.value) || 0;
+                                setFormData({ ...formData, prize_words: newWords });
+                              }}
+                              className="w-20"
+                            />
+                            <Select
+                              value={word.product_id || ''}
+                              onValueChange={(value) => {
+                                const newWords = [...formData.prize_words];
+                                newWords[index].product_id = value;
+                                setFormData({ ...formData, prize_words: newWords });
+                              }}
+                            >
+                              <SelectTrigger className="w-32 bg-background">
+                                <SelectValue placeholder="منتج..." />
+                              </SelectTrigger>
+                              <SelectContent className="z-[100] bg-background border shadow-lg max-h-[200px]">
+                                <SelectItem value="">بدون</SelectItem>
+                                {products?.map((product) => (
+                                  <SelectItem key={product.id} value={product.id}>
+                                    {product.name_ar}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <Button
                               type="button"
                               variant="ghost"
@@ -1594,13 +1726,16 @@ export default function AdminCompetitions() {
                           onClick={() => {
                             setFormData({
                               ...formData,
-                              prize_words: [...formData.prize_words, { word: '', prize_name: '', prize_value: 0 }]
+                              prize_words: [...formData.prize_words, { word: '', prize_name: '', prize_value: 0, stock: 999, product_id: '' }]
                             });
                           }}
                         >
                           <Plus className="h-4 w-4 ml-1" />
                           إضافة كلمة فائزة
                         </Button>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          يمكن للمستخدم استبدال الأحرف المجمعة بجوائز عند تكوين الكلمة
+                        </p>
                       </div>
                     </div>
                   )}
