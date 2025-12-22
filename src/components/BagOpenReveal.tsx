@@ -216,7 +216,7 @@ export default function BagOpenReveal({
           )}
           {/* Bag animation stages */}
           {(stage === 'bag_closed' || stage === 'bag_opening' || stage === 'bag_opened' || stage === 'letter_revealed') && !skipped && (
-            <div className="space-y-6">
+            <div className="space-y-6 pointer-events-none">
               {/* Bag visual */}
               <div className="relative">
                 {/* Glow effect */}
@@ -282,28 +282,30 @@ export default function BagOpenReveal({
                   )}
                 </div>
 
-                {/* Letter reveal */}
+                {/* Letter reveal (rises from inside the bag) */}
                 {stage === 'letter_revealed' && currentResult && (
-                  <div 
-                    className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ${
-                      currentResult.letter ? 'animate-pop-in' : ''
-                    }`}
-                  >
-                    <div 
-                      className={`w-24 h-24 rounded-2xl flex items-center justify-center shadow-2xl ${
-                        currentResult.letter 
-                          ? 'bg-gradient-to-br from-yellow-400 via-amber-500 to-amber-600' 
-                          : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                  <div className="absolute inset-0 flex items-end justify-center pb-10 pointer-events-none">
+                    <div
+                      className={`transition-all duration-500 ${
+                        currentResult.letter ? 'animate-letter-rise' : 'animate-letter-rise'
                       }`}
-                      style={{
-                        boxShadow: currentResult.letter 
-                          ? '0 0 40px 15px rgba(255, 215, 0, 0.4)' 
-                          : '0 0 20px 5px rgba(128, 128, 128, 0.3)'
-                      }}
                     >
-                      <span className="text-5xl font-bold text-white">
-                        {currentResult.letter || '😔'}
-                      </span>
+                      <div 
+                        className={`w-24 h-24 rounded-2xl flex items-center justify-center shadow-2xl ${
+                          currentResult.letter 
+                            ? 'bg-gradient-to-br from-yellow-400 via-amber-500 to-amber-600' 
+                            : 'bg-gradient-to-br from-gray-400 to-gray-500'
+                        }`}
+                        style={{
+                          boxShadow: currentResult.letter 
+                            ? '0 0 40px 15px rgba(255, 215, 0, 0.35)' 
+                            : '0 0 20px 5px rgba(128, 128, 128, 0.25)'
+                        }}
+                      >
+                        <span className="text-5xl font-bold text-white">
+                          {currentResult.letter || '😔'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -313,10 +315,10 @@ export default function BagOpenReveal({
               <div className="flex flex-col items-center justify-center gap-3">
                 {stage === 'bag_closed' && (
                   <>
-                    <h2 className="text-xl font-bold">اضغط لفتح الكيس</h2>
+                    <h2 className="text-xl font-bold">اضغط زر فتح الكيس</h2>
                     <Button
                       onClick={startOpening}
-                      className="bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
+                      className="bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm pointer-events-auto"
                       variant="outline"
                     >
                       افتح الكيس
@@ -334,7 +336,7 @@ export default function BagOpenReveal({
                     <h2 className="text-2xl font-bold">حصلت على الحرف <span className="text-yellow-300 text-3xl">{currentResult.letter}</span>!</h2>
                     <Button
                       onClick={proceedToNextBag}
-                      className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8"
+                      className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8 pointer-events-auto"
                     >
                       {currentBagIndex < totalBags - 1 ? 'التالي' : 'عرض النتيجة'}
                     </Button>
@@ -345,7 +347,7 @@ export default function BagOpenReveal({
                     <h2 className="text-xl font-bold">حظ أوفر! 😔</h2>
                     <Button
                       onClick={proceedToNextBag}
-                      className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8"
+                      className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8 pointer-events-auto"
                     >
                       {currentBagIndex < totalBags - 1 ? 'التالي' : 'عرض النتيجة'}
                     </Button>
@@ -522,6 +524,14 @@ export default function BagOpenReveal({
           }
           .animate-pop-in {
             animation: pop-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+          }
+          @keyframes letter-rise {
+            0% { transform: translateY(24px) scale(0.9); opacity: 0; }
+            60% { transform: translateY(-6px) scale(1.05); opacity: 1; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+          }
+          .animate-letter-rise {
+            animation: letter-rise 0.55s ease-out forwards;
           }
           @keyframes confetti-fall {
             0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }

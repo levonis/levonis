@@ -347,7 +347,11 @@ export default function AdminCompetitions() {
           prize_value: pw.prize_value,
           stock: pw.stock || 999,
           product_id: pw.product_id || null
-        }))
+        })),
+        // Animation settings (persisted)
+        animation_type: data.animation_type || 'bags',
+        max_bags_per_purchase: data.max_bags_per_purchase || 10,
+        allow_skip_animation: data.allow_skip_animation !== false,
       } : null;
 
       const payload: Record<string, any> = {

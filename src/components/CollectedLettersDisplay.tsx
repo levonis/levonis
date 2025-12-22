@@ -140,18 +140,28 @@ export default function CollectedLettersDisplay({
           })}
         </div>
         
-        {/* Collected Letters Summary */}
+        {/* Collected Letters Summary (only letters in the target word) */}
         <div className="space-y-2">
-          <p className="text-sm text-muted-foreground">الأحرف المجمعة:</p>
+          <p className="text-sm text-muted-foreground">الأحرف المجمعة (للكلمة فقط):</p>
           <div className="flex flex-wrap gap-1">
-            {Object.entries(letterCounts).map(([letter, count]) => (
-              <Badge key={letter} variant="secondary" className="gap-1">
-                <span className="font-bold">{letter}</span>
-                <span className="text-xs opacity-70">×{count}</span>
-              </Badge>
-            ))}
-            {Object.keys(letterCounts).length === 0 && (
-              <span className="text-sm text-muted-foreground">لم تجمع أي أحرف بعد</span>
+            {mainWord
+              .split('')
+              .filter((v, i, a) => a.indexOf(v) === i)
+              .map((letter) => {
+                const count = letterCounts[letter] || 0;
+                if (count === 0) return null;
+                return (
+                  <Badge key={letter} variant="secondary" className="gap-1">
+                    <span className="font-bold">{letter}</span>
+                    <span className="text-xs opacity-70">×{count}</span>
+                  </Badge>
+                );
+              })}
+            {mainWord
+              .split('')
+              .filter((v, i, a) => a.indexOf(v) === i)
+              .every((l) => (letterCounts[l] || 0) === 0) && (
+              <span className="text-sm text-muted-foreground">لم تجمع أي حرف بعد</span>
             )}
           </div>
         </div>
