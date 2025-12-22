@@ -1677,13 +1677,13 @@ export default function AdminCompetitions() {
                               <div className="flex items-center gap-0.5 flex-1">
                                 <Input
                                   type="number"
-                                  min="1"
+                                  min="0"
                                   max="100"
                                   placeholder="%"
                                   value={letter.probability}
                                   onChange={(e) => {
                                     const newLetters = [...formData.letters_config];
-                                    newLetters[index].probability = Math.max(1, Math.min(100, parseInt(e.target.value) || 100));
+                                    newLetters[index].probability = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
                                     setFormData({ ...formData, letters_config: newLetters });
                                   }}
                                   className="w-12 text-center text-xs p-1"
