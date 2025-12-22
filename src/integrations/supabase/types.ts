@@ -274,10 +274,12 @@ export type Database = {
           growing_prize_config: Json | null
           hidden_winner_ticket_id: string | null
           hidden_winner_trigger_ticket: number | null
+          hide_participants: boolean | null
           id: string
           image_url: string | null
           images: string[] | null
           instant_reveal: boolean | null
+          is_featured: boolean | null
           is_flash: boolean | null
           letters_config: Json | null
           max_tickets: number | null
@@ -285,6 +287,7 @@ export type Database = {
           price_tiers: Json | null
           prize_description: string
           prize_description_ar: string
+          prize_product_id: string | null
           prize_tiers: Json | null
           prize_value: number | null
           remaining_prizes: number | null
@@ -299,6 +302,7 @@ export type Database = {
           ticket_price: number
           title: string
           title_ar: string
+          unlimited_winners: boolean | null
           updated_at: string
           win_probability: number | null
           winner_ticket_id: string | null
@@ -319,10 +323,12 @@ export type Database = {
           growing_prize_config?: Json | null
           hidden_winner_ticket_id?: string | null
           hidden_winner_trigger_ticket?: number | null
+          hide_participants?: boolean | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           instant_reveal?: boolean | null
+          is_featured?: boolean | null
           is_flash?: boolean | null
           letters_config?: Json | null
           max_tickets?: number | null
@@ -330,6 +336,7 @@ export type Database = {
           price_tiers?: Json | null
           prize_description: string
           prize_description_ar: string
+          prize_product_id?: string | null
           prize_tiers?: Json | null
           prize_value?: number | null
           remaining_prizes?: number | null
@@ -344,6 +351,7 @@ export type Database = {
           ticket_price?: number
           title: string
           title_ar: string
+          unlimited_winners?: boolean | null
           updated_at?: string
           win_probability?: number | null
           winner_ticket_id?: string | null
@@ -364,10 +372,12 @@ export type Database = {
           growing_prize_config?: Json | null
           hidden_winner_ticket_id?: string | null
           hidden_winner_trigger_ticket?: number | null
+          hide_participants?: boolean | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           instant_reveal?: boolean | null
+          is_featured?: boolean | null
           is_flash?: boolean | null
           letters_config?: Json | null
           max_tickets?: number | null
@@ -375,6 +385,7 @@ export type Database = {
           price_tiers?: Json | null
           prize_description?: string
           prize_description_ar?: string
+          prize_product_id?: string | null
           prize_tiers?: Json | null
           prize_value?: number | null
           remaining_prizes?: number | null
@@ -389,6 +400,7 @@ export type Database = {
           ticket_price?: number
           title?: string
           title_ar?: string
+          unlimited_winners?: boolean | null
           updated_at?: string
           win_probability?: number | null
           winner_ticket_id?: string | null
@@ -397,7 +409,15 @@ export type Database = {
           winner_user_ids?: string[] | null
           winners_count?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "competitions_prize_product_id_fkey"
+            columns: ["prize_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       conversations: {
         Row: {
@@ -802,6 +822,60 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      letter_prize_redemptions: {
+        Row: {
+          competition_id: string
+          created_at: string
+          id: string
+          letters_used: Json
+          prize_name_ar: string
+          prize_value: number
+          product_id: string | null
+          redeemed_at: string
+          redeemed_word: string
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string
+          id?: string
+          letters_used?: Json
+          prize_name_ar: string
+          prize_value?: number
+          product_id?: string | null
+          redeemed_at?: string
+          redeemed_word: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string
+          id?: string
+          letters_used?: Json
+          prize_name_ar?: string
+          prize_value?: number
+          product_id?: string | null
+          redeemed_at?: string
+          redeemed_word?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "letter_prize_redemptions_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letter_prize_redemptions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       loyalty_levels: {
         Row: {
@@ -1886,6 +1960,10 @@ export type Database = {
           price_per_ticket: number
           ticket_quantity: number
         }
+        Returns: Json
+      }
+      redeem_letters_prize: {
+        Args: { p_competition_id: string; p_word: string }
         Returns: Json
       }
       send_general_notification: {
