@@ -79,26 +79,13 @@ interface Competition {
 }
 
 // Ticket bundle offers configuration
-const getTicketBundles = (competitionType?: CompetitionType) => {
-  const baseBundles = [
-    { quantity: 10, bonusTickets: 0, price: 2500, label: 'عادي' },
-    { quantity: 20, bonusTickets: 2, price: 5000, label: 'مميز' },
-    { quantity: 36, bonusTickets: 4, price: 9000, label: 'العرض الذهبي', highlight: true },
-    { quantity: 50, bonusTickets: 10, price: 12500, label: 'باقة VIP' },
-  ];
-  
-  // Special bundles for collect_letters
-  if (competitionType === 'collect_letters') {
-    return [
-      { quantity: 10, bonusTickets: 1, price: 2500, label: 'مبتدئ', competitionType: 'collect_letters' },
-      { quantity: 20, bonusTickets: 3, price: 5000, label: 'متوسط', competitionType: 'collect_letters' },
-      { quantity: 36, bonusTickets: 4, price: 9000, label: 'جامع الأحرف', highlight: true, competitionType: 'collect_letters' },
-      { quantity: 50, bonusTickets: 8, price: 12500, label: 'الماستر', competitionType: 'collect_letters' },
-    ];
-  }
-  
-  return baseBundles;
-};
+// Default bundles fallback
+const defaultBundles = [
+  { quantity: 10, bonusTickets: 0, price: 2500, label: 'عادي' },
+  { quantity: 20, bonusTickets: 2, price: 5000, label: 'مميز' },
+  { quantity: 36, bonusTickets: 4, price: 9000, label: 'العرض الذهبي', highlight: true },
+  { quantity: 50, bonusTickets: 10, price: 12500, label: 'باقة VIP' },
+];
 
 export default function Competitions() {
   const navigate = useNavigate();
@@ -241,6 +228,35 @@ export default function Competitions() {
       
       if (error && error.code !== 'PGRST116') return { price: 250 };
       return data?.setting_value as { price: number } || { price: 250 };
+    },
+    staleTime: 60000,
+  });
+
+  // Fetch ticket bundles from database
+  const { data: ticketBundles } = useQuery({
+    queryKey: ['ticket-bundles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('default_settings')
+        .select('setting_value')
+        .eq('setting_key', 'ticket_bundles')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') return defaultBundles;
+      
+      const savedBundles = data?.setting_value as any[];
+      if (!savedBundles || savedBundles.length === 0) return defaultBundles;
+      
+      // Transform from DB format to component format
+      return savedBundles
+        .filter(b => b.active !== false)
+        .map(b => ({
+          quantity: b.quantity,
+          bonusTickets: b.bonus_tickets || 0,
+          price: b.price,
+          label: b.label,
+          highlight: b.highlight || false,
+        }));
     },
     staleTime: 60000,
   });
@@ -1292,7 +1308,7 @@ export default function Competitions() {
           </DialogDescription>
           
           <TicketBundleOffer
-            bundles={getTicketBundles()}
+            bundles={ticketBundles || defaultBundles}
             onSelectBundle={(bundle) => {
               if (wallet && wallet.balance >= bundle.price) {
                 purchaseBundleMutation.mutate(bundle);
