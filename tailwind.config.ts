@@ -87,10 +87,26 @@ export default {
             height: "0",
           },
         },
+        "pulse-slow": {
+          "0%, 100%": {
+            opacity: "1",
+            boxShadow: "0 0 20px hsl(var(--primary) / 0.4)",
+          },
+          "50%": {
+            opacity: "0.95",
+            boxShadow: "0 0 30px hsl(var(--primary) / 0.6)",
+          },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "pulse-slow": "pulse-slow 2s ease-in-out infinite",
+        shimmer: "shimmer 2s linear infinite",
       },
     },
   },
