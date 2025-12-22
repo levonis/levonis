@@ -288,6 +288,7 @@ export type Database = {
           prize_description: string
           prize_description_ar: string
           prize_product_id: string | null
+          prize_products: Json | null
           prize_tiers: Json | null
           prize_value: number | null
           remaining_prizes: number | null
@@ -337,6 +338,7 @@ export type Database = {
           prize_description: string
           prize_description_ar: string
           prize_product_id?: string | null
+          prize_products?: Json | null
           prize_tiers?: Json | null
           prize_value?: number | null
           remaining_prizes?: number | null
@@ -386,6 +388,7 @@ export type Database = {
           prize_description?: string
           prize_description_ar?: string
           prize_product_id?: string | null
+          prize_products?: Json | null
           prize_tiers?: Json | null
           prize_value?: number | null
           remaining_prizes?: number | null

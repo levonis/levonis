@@ -110,6 +110,9 @@ interface Competition {
   team_b_count?: number;
   price_tiers?: any;
   growing_prize_config?: any;
+  hide_participants?: boolean;
+  is_featured?: boolean;
+  prize_products?: { product_id: string; quantity: number }[];
 }
 
 interface CompetitionCardProps {
@@ -211,9 +214,20 @@ const CompetitionCard = memo(({
 
   return (
     <Card 
-      className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+      className={`overflow-hidden hover:shadow-md transition-all cursor-pointer ${
+        comp.is_featured 
+          ? 'ring-2 ring-primary/50 shadow-lg shadow-primary/20 animate-pulse-slow relative' 
+          : ''
+      }`}
       onClick={() => onOpenDetails(comp)}
     >
+      {/* Featured badge */}
+      {comp.is_featured && (
+        <div className="absolute top-0 left-0 z-20 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-br-lg flex items-center gap-1">
+          <Sparkles className="h-3 w-3" />
+          مميزة
+        </div>
+      )}
       {compImages.length > 0 && (
         <div className="relative h-36 md:h-40 overflow-hidden group">
           {/* Only render current image for performance */}
@@ -389,26 +403,28 @@ const CompetitionCard = memo(({
           </div>
         )}
         
-        {/* Participants */}
-        <div className="space-y-0.5 sm:space-y-1">
-          {(comp.max_tickets || comp.target_participants) ? (
-            <>
-              <Progress value={getProgress()} className="h-1 sm:h-1.5" />
-              <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground">
-                <span className="flex items-center gap-0.5">
-                  <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-                  {ticketCount} مشترك
-                </span>
-                <span>/ {comp.max_tickets || comp.target_participants}</span>
+        {/* Participants - can be hidden */}
+        {!comp.hide_participants && (
+          <div className="space-y-0.5 sm:space-y-1">
+            {(comp.max_tickets || comp.target_participants) ? (
+              <>
+                <Progress value={getProgress()} className="h-1 sm:h-1.5" />
+                <div className="flex justify-between text-[10px] sm:text-xs text-muted-foreground">
+                  <span className="flex items-center gap-0.5">
+                    <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                    {ticketCount} مشترك
+                  </span>
+                  <span>/ {comp.max_tickets || comp.target_participants}</span>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                <span>{ticketCount} مشترك</span>
               </div>
-            </>
-          ) : (
-            <div className="flex items-center gap-1 text-[10px] sm:text-xs text-muted-foreground">
-              <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
-              <span>{ticketCount} مشترك</span>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
         
         {/* Winners Display for completed competitions */}
         {comp.status === 'completed' && winners.length > 0 && (

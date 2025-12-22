@@ -76,6 +76,9 @@ interface Competition {
   team_b_count?: number;
   price_tiers?: any;
   growing_prize_config?: any;
+  hide_participants?: boolean;
+  is_featured?: boolean;
+  prize_products?: any;
 }
 
 // Ticket bundle offers configuration

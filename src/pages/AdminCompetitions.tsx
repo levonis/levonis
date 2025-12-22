@@ -42,6 +42,7 @@ const utcToBaghdadLocal = (utcDateString: string | null): string => {
 };
 import CelebrationEffect from "@/components/CelebrationEffect";
 import CompetitionParticipantsDialog from "@/components/CompetitionParticipantsDialog";
+import PrizeProductsSelector from "@/components/PrizeProductsSelector";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 type CompetitionStatus = 'draft' | 'active' | 'completed' | 'cancelled';
@@ -226,7 +227,8 @@ export default function AdminCompetitions() {
     hide_participants: false,
     unlimited_winners: false,
     is_featured: false,
-    prize_product_id: '' as string
+    prize_product_id: '' as string,
+    prize_products: [] as { product_id: string; quantity: number }[]
   });
 
   // Fetch products for prize selection
@@ -361,7 +363,8 @@ export default function AdminCompetitions() {
         hide_participants: data.hide_participants,
         unlimited_winners: data.unlimited_winners,
         is_featured: data.is_featured,
-        prize_product_id: data.prize_product_id || null
+        prize_product_id: data.prize_product_id || null,
+        prize_products: data.prize_products.length > 0 ? data.prize_products : []
       };
 
       // Add type-specific fields
@@ -596,7 +599,8 @@ export default function AdminCompetitions() {
       hide_participants: false,
       unlimited_winners: false,
       is_featured: false,
-      prize_product_id: ''
+      prize_product_id: '',
+      prize_products: []
     });
     setEditingCompetition(null);
   };
@@ -653,7 +657,8 @@ export default function AdminCompetitions() {
       hide_participants: compAny.hide_participants || false,
       unlimited_winners: compAny.unlimited_winners || false,
       is_featured: compAny.is_featured || false,
-      prize_product_id: compAny.prize_product_id || ''
+      prize_product_id: compAny.prize_product_id || '',
+      prize_products: compAny.prize_products || []
     });
     setIsDialogOpen(true);
   };
@@ -915,24 +920,16 @@ export default function AdminCompetitions() {
                   </div>
                   
                   <div className="space-y-2">
-                    <Label>اختر منتج كجائزة (اختياري)</Label>
-                    <Select
-                      value={formData.prize_product_id || "none"}
-                      onValueChange={(value) => setFormData({ ...formData, prize_product_id: value === "none" ? "" : value })}
-                    >
-                      <SelectTrigger className="bg-background">
-                        <SelectValue placeholder="اختر منتج..." />
-                      </SelectTrigger>
-                      <SelectContent className="z-[100] bg-background border shadow-lg max-h-[200px]">
-                        <SelectItem value="none">بدون منتج</SelectItem>
-                        {products?.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            {product.name_ar}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-muted-foreground">يمكنك ربط الجائزة بمنتج موجود</p>
+                    <Label className="flex items-center gap-2">
+                      <Gift className="h-4 w-4" />
+                      منتجات الجائزة (يمكن إضافة أكثر من منتج)
+                    </Label>
+                    <PrizeProductsSelector
+                      products={products || []}
+                      selectedProducts={formData.prize_products}
+                      onChange={(products) => setFormData({ ...formData, prize_products: products })}
+                    />
+                    <p className="text-xs text-muted-foreground">ابحث عن المنتجات وأضفها كجوائز مع تحديد الكمية</p>
                   </div>
                 </div>
 
