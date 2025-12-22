@@ -83,11 +83,12 @@ export default function CollectedLettersDisplay({
       
       if (error) throw error;
       
-      if (data?.success) {
-        toast.success(`مبروك! حصلت على ${data.prize_name}`);
+      const result = data as { success?: boolean; prize_name?: string; error?: string } | null;
+      if (result?.success) {
+        toast.success(`مبروك! حصلت على ${result.prize_name}`);
         onRedeemSuccess?.();
       } else {
-        toast.error(data?.error || 'حدث خطأ');
+        toast.error(result?.error || 'حدث خطأ');
       }
     } catch (err: any) {
       toast.error(err.message || 'حدث خطأ');
