@@ -115,8 +115,8 @@ export default function Competitions() {
   const [showLetterReveal, setShowLetterReveal] = useState(false);
   const [showScratchReveal, setShowScratchReveal] = useState(false);
   const [showBagReveal, setShowBagReveal] = useState(false);
-  const [letterRevealData, setLetterRevealData] = useState<{ letter: string; collected: string[]; config: any; prize: any } | null>(null);
-  const [bagRevealResults, setBagRevealResults] = useState<{ letter: string | null; isNew: boolean }[]>([]);
+  const [letterRevealData, setLetterRevealData] = useState<{ letter: string | null; collected: string[]; config: any; prize: any; isTicketReward?: boolean; ticketsAwarded?: number } | null>(null);
+  const [bagRevealResults, setBagRevealResults] = useState<{ letter: string | null; isNew: boolean; isTicketReward?: boolean; ticketsAwarded?: number }[]>([]);
   const [showBundleOffers, setShowBundleOffers] = useState(false);
   
   // State for multiple bag purchase
@@ -463,23 +463,47 @@ export default function Competitions() {
         if (dataArray.length === 1) {
           // Single entry - use single reveal animation
           const data = dataArray[0];
-          setLetterRevealData({
-            letter: data.is_better_luck ? null : data.letter_awarded,
-            collected: data.collected_letters || [],
-            config: selectedCompetitionForEntry?.letters_config || {},
-            prize: wonPrize
-          });
           
-          if (animationType === 'scratch') {
-            setShowScratchReveal(true);
+          // Check if it's a ticket reward
+          if (data.is_ticket_reward) {
+            // For ticket rewards, show letter reveal with ticket info
+            setLetterRevealData({
+              letter: null,
+              collected: data.collected_letters || [],
+              config: selectedCompetitionForEntry?.letters_config || {},
+              prize: wonPrize,
+              isTicketReward: true,
+              ticketsAwarded: data.tickets_awarded || 1
+            });
+            
+            if (animationType === 'scratch') {
+              setShowScratchReveal(true);
+            } else {
+              setShowLetterReveal(true);
+            }
           } else {
-            setShowLetterReveal(true);
+            setLetterRevealData({
+              letter: data.is_better_luck ? null : data.letter_awarded,
+              collected: data.collected_letters || [],
+              config: selectedCompetitionForEntry?.letters_config || {},
+              prize: wonPrize,
+              isTicketReward: false,
+              ticketsAwarded: 0
+            });
+            
+            if (animationType === 'scratch') {
+              setShowScratchReveal(true);
+            } else {
+              setShowLetterReveal(true);
+            }
           }
         } else {
           // Multiple entries - use bag reveal animation
           const bagResults = dataArray.map(data => ({
-            letter: data.is_better_luck ? null : data.letter_awarded,
-            isNew: !data.collected_letters?.includes(data.letter_awarded)
+            letter: data.is_better_luck ? null : (data.is_ticket_reward ? null : data.letter_awarded),
+            isNew: !data.collected_letters?.includes(data.letter_awarded),
+            isTicketReward: data.is_ticket_reward || false,
+            ticketsAwarded: data.tickets_awarded || 0
           }));
           
           setBagRevealResults(bagResults);
@@ -1518,6 +1542,8 @@ export default function Competitions() {
           lettersConfig={letterRevealData.config}
           wonPrize={letterRevealData.prize}
           allowSkip={letterRevealData.config?.allow_skip_animation !== false}
+          isTicketReward={letterRevealData.isTicketReward}
+          ticketsAwarded={letterRevealData.ticketsAwarded}
         />
       )}
 
@@ -1533,6 +1559,8 @@ export default function Competitions() {
           collectedLetters={letterRevealData.collected}
           lettersConfig={letterRevealData.config}
           wonPrize={letterRevealData.prize}
+          isTicketReward={letterRevealData.isTicketReward}
+          ticketsAwarded={letterRevealData.ticketsAwarded}
         />
       )}
 

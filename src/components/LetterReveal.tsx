@@ -14,10 +14,12 @@ interface LettersConfig {
 interface LetterRevealProps {
   isOpen: boolean;
   onClose: () => void;
-  awardedLetter: string | null; // null means "better luck"
+  awardedLetter: string | null; // null means "better luck" or ticket reward
   collectedLetters: string[];
   lettersConfig: LettersConfig;
   wonPrize: { word: string; prize_name_ar: string; prize_value?: number } | null;
+  isTicketReward?: boolean;
+  ticketsAwarded?: number;
 }
 
 export default function LetterReveal({
@@ -26,14 +28,16 @@ export default function LetterReveal({
   awardedLetter,
   collectedLetters,
   lettersConfig,
-  wonPrize
+  wonPrize,
+  isTicketReward = false,
+  ticketsAwarded = 0
 }: LetterRevealProps) {
-  const [stage, setStage] = useState<'revealing' | 'revealed' | 'better_luck' | 'prize'>('revealing');
+  const [stage, setStage] = useState<'revealing' | 'revealed' | 'better_luck' | 'ticket_reward' | 'prize'>('revealing');
   const [showConfetti, setShowConfetti] = useState(false);
   const [letterVisible, setLetterVisible] = useState(false);
   const [glowIntensity, setGlowIntensity] = useState(0);
 
-  const isBetterLuck = awardedLetter === null;
+  const isBetterLuck = awardedLetter === null && !isTicketReward;
 
   useEffect(() => {
     if (isOpen) {
@@ -54,7 +58,10 @@ export default function LetterReveal({
       }, 50);
 
       const timer1 = setTimeout(() => {
-        if (isBetterLuck) {
+        if (isTicketReward) {
+          setStage('ticket_reward');
+          setShowConfetti(true);
+        } else if (isBetterLuck) {
           setStage('better_luck');
         } else {
           setStage('revealed');
@@ -73,7 +80,7 @@ export default function LetterReveal({
         clearInterval(glowInterval);
       };
     }
-  }, [isOpen, wonPrize, isBetterLuck]);
+  }, [isOpen, wonPrize, isBetterLuck, isTicketReward]);
 
   const targetWord = lettersConfig.target_word || '';
   const allCollected = awardedLetter ? [...collectedLetters, awardedLetter] : collectedLetters;
@@ -260,6 +267,78 @@ export default function LetterReveal({
                 className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8"
               >
                 حاول مرة أخرى
+              </Button>
+            </div>
+          )}
+
+          {stage === 'ticket_reward' && (
+            <div className="space-y-6 animate-scale-in">
+              <div className="relative">
+                {/* Epic glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-teal-500 to-cyan-400 blur-3xl rounded-full animate-pulse" />
+                
+                {/* Floating sparkles */}
+                {[...Array(12)].map((_, i) => (
+                  <Sparkles
+                    key={i}
+                    className="absolute h-5 w-5 text-cyan-300"
+                    style={{
+                      left: `${50 + 50 * Math.cos(i * Math.PI / 6)}%`,
+                      top: `${50 + 50 * Math.sin(i * Math.PI / 6)}%`,
+                      transform: 'translate(-50%, -50%)',
+                      animation: `float ${2 + Math.random()}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.1}s`
+                    }}
+                  />
+                ))}
+                
+                {/* Ticket box */}
+                <div 
+                  className="relative w-36 h-36 mx-auto bg-gradient-to-br from-cyan-400 via-teal-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-2xl"
+                  style={{
+                    boxShadow: '0 0 60px 20px rgba(6, 182, 212, 0.4), 0 20px 40px -10px rgba(0, 0, 0, 0.3)'
+                  }}
+                >
+                  <span className="text-7xl">🎫</span>
+                </div>
+              </div>
+              
+              <div>
+                <h2 className="text-3xl font-bold mb-2">🎉 مبروك!</h2>
+                <p className="text-xl opacity-90">
+                  ربحت <span className="font-bold text-cyan-300 text-3xl">{ticketsAwarded}</span> تذكرة إضافية!
+                </p>
+              </div>
+              
+              {/* Current progress */}
+              {targetWord && (
+                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 space-y-3">
+                  <p className="text-sm opacity-80">تقدمك الحالي في الكلمة:</p>
+                  <div className="flex justify-center gap-2 flex-wrap">
+                    {targetWord.split('').map((letter, idx) => {
+                      const hasLetter = collectedLetters.includes(letter);
+                      return (
+                        <div
+                          key={idx}
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl font-bold transition-all ${
+                            hasLetter 
+                              ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg' 
+                              : 'bg-white/20 text-white/40'
+                          }`}
+                        >
+                          {hasLetter ? letter : '?'}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              <Button 
+                onClick={onClose}
+                className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8"
+              >
+                رائع! 🎫
               </Button>
             </div>
           )}

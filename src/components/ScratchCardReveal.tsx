@@ -14,11 +14,13 @@ interface LettersConfig {
 interface ScratchCardRevealProps {
   isOpen: boolean;
   onClose: () => void;
-  awardedLetter: string | null; // null means "better luck"
+  awardedLetter: string | null; // null means "better luck" or ticket reward
   collectedLetters: string[];
   lettersConfig: LettersConfig;
   wonPrize: { word: string; prize_name_ar: string; prize_value?: number } | null;
   allowSkip?: boolean;
+  isTicketReward?: boolean;
+  ticketsAwarded?: number;
 }
 
 export default function ScratchCardReveal({
@@ -28,7 +30,9 @@ export default function ScratchCardReveal({
   collectedLetters,
   lettersConfig,
   wonPrize,
-  allowSkip = true
+  allowSkip = true,
+  isTicketReward = false,
+  ticketsAwarded = 0
 }: ScratchCardRevealProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isScratching, setIsScratching] = useState(false);
@@ -38,7 +42,7 @@ export default function ScratchCardReveal({
   const [showPrize, setShowPrize] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  const isBetterLuck = awardedLetter === null;
+  const isBetterLuck = awardedLetter === null && !isTicketReward;
   const targetWord = lettersConfig.target_word || '';
   const allCollected = awardedLetter ? [...collectedLetters, awardedLetter] : collectedLetters;
 
@@ -315,7 +319,11 @@ export default function ScratchCardReveal({
             <div className="space-y-4 w-full">
               <h2 className="text-xl font-bold mb-2">
                 {isRevealed 
-                  ? isBetterLuck ? 'حظ أوفر! 😔' : '🎉 مبروك!' 
+                  ? isBetterLuck 
+                    ? 'حظ أوفر! 😔' 
+                    : isTicketReward 
+                      ? '🎫 ربحت تذاكر!' 
+                      : '🎉 مبروك!' 
                   : '🎫 امسح التذكرة لكشف الحرف'}
               </h2>
               
@@ -337,7 +345,9 @@ export default function ScratchCardReveal({
                   className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ${
                     isBetterLuck 
                       ? 'bg-gradient-to-br from-slate-500 via-slate-600 to-slate-700' 
-                      : 'bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500'
+                      : isTicketReward
+                        ? 'bg-gradient-to-br from-cyan-400 via-teal-500 to-cyan-600'
+                        : 'bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500'
                   }`}
                 >
                   {/* Decorative pattern */}
@@ -355,6 +365,15 @@ export default function ScratchCardReveal({
                         <div className="text-center">
                           <span className="text-7xl">😔</span>
                           <p className="text-white text-base mt-3 font-medium">لم تحصل على حرف</p>
+                        </div>
+                      ) : isTicketReward ? (
+                        <div className="text-center">
+                          <span className="text-7xl">🎫</span>
+                          <div className="flex items-center justify-center gap-2 mt-3">
+                            <Sparkles className="h-5 w-5 text-cyan-100 animate-pulse" />
+                            <span className="text-white text-xl font-bold">+{ticketsAwarded} تذكرة</span>
+                            <Sparkles className="h-5 w-5 text-cyan-100 animate-pulse" />
+                          </div>
                         </div>
                       ) : (
                         <div className="text-center">
@@ -390,7 +409,9 @@ export default function ScratchCardReveal({
                     <div 
                       className="absolute inset-0 animate-pulse"
                       style={{
-                        boxShadow: '0 0 60px 20px rgba(255,215,0,0.4) inset'
+                        boxShadow: isTicketReward 
+                          ? '0 0 60px 20px rgba(6,182,212,0.4) inset'
+                          : '0 0 60px 20px rgba(255,215,0,0.4) inset'
                       }}
                     />
                   )}
