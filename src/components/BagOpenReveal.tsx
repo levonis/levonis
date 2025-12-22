@@ -106,6 +106,10 @@ export default function BagOpenReveal({
   // Get all collected letters including newly revealed ones
   const allCollected = [...collectedLetters, ...revealedLetters.filter(r => r.letter).map(r => r.letter!)];
   const uniqueCollected = [...new Set(allCollected)];
+  const letterCounts = allCollected.reduce<Record<string, number>>((acc, l) => {
+    acc[l] = (acc[l] ?? 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -342,7 +346,7 @@ export default function BagOpenReveal({
                 <div className="flex justify-center gap-2 flex-wrap">
                   {[...new Set(targetWord.split(''))].map((letter, idx) => {
                     const hasLetter = uniqueCollected.includes(letter);
-                    const count = uniqueCollected.filter(l => l === letter).length;
+                    const count = letterCounts[letter] ?? 0;
                     const isNewlyRevealed = revealedLetters.some(r => r.letter === letter);
                     return (
                       <div
@@ -365,9 +369,6 @@ export default function BagOpenReveal({
                     );
                   })}
                 </div>
-                <p className="text-sm opacity-70 mt-2">
-                  {[...new Set(targetWord.split(''))].filter(l => uniqueCollected.includes(l)).length} / {[...new Set(targetWord.split(''))].length} حروف فريدة
-                </p>
               </div>
               
               <Button 
