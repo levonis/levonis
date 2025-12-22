@@ -876,6 +876,7 @@ export default function AdminCompetitions() {
                           <SelectItem value="flash_sale">🔥 مسابقة سريعة</SelectItem>
                           <SelectItem value="team_battle">⚔️ فريق ضد فريق</SelectItem>
                           <SelectItem value="growing_prize">📊 الجائزة المتحولة</SelectItem>
+                          <SelectItem value="collect_letters">🔤 اجمع أحرف واربح</SelectItem>
                         </SelectContent>
                       </Select>
                       {formData.competition_type && (
