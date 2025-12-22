@@ -232,8 +232,9 @@ export default function AdminCompetitions() {
     is_featured: false,
     prize_product_id: '' as string,
     prize_products: [] as { product_id: string; quantity: number }[],
-    // Bag animation settings
-    bags_per_reveal: 1 as number,
+    // Animation settings
+    animation_type: 'bags' as 'bags' | 'scratch',
+    max_bags_per_purchase: 10 as number,
     allow_skip_animation: true as boolean
   });
 
@@ -607,7 +608,8 @@ export default function AdminCompetitions() {
       is_featured: false,
       prize_product_id: '',
       prize_products: [],
-      bags_per_reveal: 1,
+      animation_type: 'bags',
+      max_bags_per_purchase: 10,
       allow_skip_animation: true
     });
     setEditingCompetition(null);
@@ -682,7 +684,8 @@ export default function AdminCompetitions() {
       is_featured: compAny.is_featured || false,
       prize_product_id: compAny.prize_product_id || '',
       prize_products: compAny.prize_products || [],
-      bags_per_reveal: compAny.letters_config?.bags_per_reveal || 1,
+      animation_type: compAny.letters_config?.animation_type || 'bags',
+      max_bags_per_purchase: compAny.letters_config?.max_bags_per_purchase || 10,
       allow_skip_animation: compAny.letters_config?.allow_skip_animation !== false
     });
     setIsDialogOpen(true);
@@ -1594,49 +1597,60 @@ export default function AdminCompetitions() {
                       {/* Animation settings */}
                       <div className="mb-4 p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
                         <Label className="text-xs font-semibold mb-3 block flex items-center gap-2">
-                          🎬 إعدادات الأنيميشن
+                          🎬 نوع الأنيميشن
                         </Label>
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="space-y-2">
-                            <Label className="text-xs">عدد الأكياس المفتوحة دفعة واحدة</Label>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                type="button"
-                                variant={formData.bags_per_reveal === 1 ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setFormData({ ...formData, bags_per_reveal: 1 })}
-                                className="flex-1"
-                              >
-                                كيس واحد
-                              </Button>
-                              <Button
-                                type="button"
-                                variant={formData.bags_per_reveal === 10 ? "default" : "outline"}
-                                size="sm"
-                                onClick={() => setFormData({ ...formData, bags_per_reveal: 10 })}
-                                className="flex-1"
-                              >
-                                10 أكياس
-                              </Button>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {formData.bags_per_reveal === 10 ? 'سيتم فتح 10 أكياس بالتتابع مع إمكانية التخطي' : 'فتح كيس واحد في كل مرة'}
-                            </p>
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant={formData.animation_type === 'bags' ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setFormData({ ...formData, animation_type: 'bags' })}
+                              className="flex-1 gap-2"
+                            >
+                              📦 فتح أكياس
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={formData.animation_type === 'scratch' ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setFormData({ ...formData, animation_type: 'scratch' })}
+                              className="flex-1 gap-2"
+                            >
+                              🎫 مسح التذكرة
+                            </Button>
                           </div>
-                          <div className="space-y-2">
-                            <Label className="text-xs">السماح بتخطي الأنيميشن</Label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="checkbox"
-                                id="allow_skip_animation"
-                                checked={formData.allow_skip_animation !== false}
-                                onChange={(e) => setFormData({ ...formData, allow_skip_animation: e.target.checked })}
-                                className="h-4 w-4"
+                          <p className="text-xs text-muted-foreground">
+                            {formData.animation_type === 'scratch' 
+                              ? 'المستخدم يمسح التذكرة لرؤية الحرف' 
+                              : 'المستخدم يفتح كيس ويختار العدد (1 أو أكثر)'}
+                          </p>
+                          
+                          {formData.animation_type === 'bags' && (
+                            <div className="p-2 bg-background rounded border">
+                              <Label className="text-xs mb-2 block">أقصى عدد أكياس يمكن للزبون فتحها دفعة واحدة</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="50"
+                                value={formData.max_bags_per_purchase}
+                                onChange={(e) => setFormData({ ...formData, max_bags_per_purchase: parseInt(e.target.value) || 10 })}
+                                className="w-24"
                               />
-                              <Label htmlFor="allow_skip_animation" className="text-xs cursor-pointer">
-                                تمكين زر التخطي للمستخدم
-                              </Label>
                             </div>
+                          )}
+                          
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="allow_skip_animation"
+                              checked={formData.allow_skip_animation !== false}
+                              onChange={(e) => setFormData({ ...formData, allow_skip_animation: e.target.checked })}
+                              className="h-4 w-4"
+                            />
+                            <Label htmlFor="allow_skip_animation" className="text-xs cursor-pointer">
+                              السماح للزبون بتخطي الأنيميشن
+                            </Label>
                           </div>
                         </div>
                       </div>
