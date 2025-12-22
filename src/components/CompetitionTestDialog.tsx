@@ -63,6 +63,62 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
   // Test results log
   const [testResults, setTestResults] = useState<SimulatedResult[]>([]);
 
+  // Show next result in queue (for scratch card one-by-one)
+  const showNextScratchResult = useCallback(() => {
+    if (!competition || currentResultIndex >= simulatedResults.length) {
+      return;
+    }
+    
+    const result = simulatedResults[currentResultIndex];
+    const newCollected = result.letter && !result.isBetterLuck
+      ? [...collectedLettersInSession, result.letter]
+      : collectedLettersInSession;
+    
+    setCollectedLettersInSession(newCollected);
+    
+    setLetterRevealData({
+      letter: result.isBetterLuck ? null : (result.letter || null),
+      collected: collectedLettersInSession,
+      config: competition?.letters_config || {},
+      prize: null
+    });
+    
+    setShowScratchReveal(true);
+  }, [currentResultIndex, simulatedResults, collectedLettersInSession, competition]);
+
+  // Handle scratch reveal close - go to next or finish
+  const handleScratchClose = useCallback(() => {
+    setShowScratchReveal(false);
+    
+    const nextIndex = currentResultIndex + 1;
+    if (nextIndex < simulatedResults.length && competition) {
+      setCurrentResultIndex(nextIndex);
+      // Show next after a short delay
+      setTimeout(() => {
+        const result = simulatedResults[nextIndex];
+        const newCollected = result.letter && !result.isBetterLuck
+          ? [...collectedLettersInSession, result.letter]
+          : collectedLettersInSession;
+        
+        setCollectedLettersInSession(newCollected);
+        
+        setLetterRevealData({
+          letter: result.isBetterLuck ? null : (result.letter || null),
+          collected: newCollected,
+          config: competition?.letters_config || {},
+          prize: null
+        });
+        
+        setShowScratchReveal(true);
+      }, 300);
+    }
+  }, [currentResultIndex, simulatedResults, collectedLettersInSession, competition]);
+
+  // Handle letter reveal close (for bags animation type single)
+  const handleLetterClose = useCallback(() => {
+    setShowLetterReveal(false);
+  }, []);
+
   if (!competition) return null;
 
   const animationType = competition.letters_config?.animation_type || 'bags';
@@ -177,62 +233,6 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
     return { index: 0, type: 'collect_letters', letter: usable[0]?.letter || '', isBetterLuck: false };
   };
 
-  // Show next result in queue (for scratch card one-by-one)
-  const showNextScratchResult = useCallback(() => {
-    if (currentResultIndex >= simulatedResults.length) {
-      // All done
-      return;
-    }
-    
-    const result = simulatedResults[currentResultIndex];
-    const newCollected = result.letter && !result.isBetterLuck
-      ? [...collectedLettersInSession, result.letter]
-      : collectedLettersInSession;
-    
-    setCollectedLettersInSession(newCollected);
-    
-    setLetterRevealData({
-      letter: result.isBetterLuck ? null : (result.letter || null),
-      collected: collectedLettersInSession,
-      config: competition?.letters_config || {},
-      prize: null
-    });
-    
-    setShowScratchReveal(true);
-  }, [currentResultIndex, simulatedResults, collectedLettersInSession, competition]);
-
-  // Handle scratch reveal close - go to next or finish
-  const handleScratchClose = useCallback(() => {
-    setShowScratchReveal(false);
-    
-    const nextIndex = currentResultIndex + 1;
-    if (nextIndex < simulatedResults.length) {
-      setCurrentResultIndex(nextIndex);
-      // Show next after a short delay
-      setTimeout(() => {
-        const result = simulatedResults[nextIndex];
-        const newCollected = result.letter && !result.isBetterLuck
-          ? [...collectedLettersInSession, result.letter]
-          : collectedLettersInSession;
-        
-        setCollectedLettersInSession(newCollected);
-        
-        setLetterRevealData({
-          letter: result.isBetterLuck ? null : (result.letter || null),
-          collected: newCollected,
-          config: competition?.letters_config || {},
-          prize: null
-        });
-        
-        setShowScratchReveal(true);
-      }, 300);
-    }
-  }, [currentResultIndex, simulatedResults, collectedLettersInSession, competition]);
-
-  // Handle letter reveal close (for bags animation type single)
-  const handleLetterClose = useCallback(() => {
-    setShowLetterReveal(false);
-  }, []);
 
   const runTest = () => {
     setIsRunning(true);
