@@ -308,12 +308,19 @@ const Notifications = () => {
                         const text = `${notification.title ?? ''} ${notification.message ?? ''}`;
                         const isWallet = text.includes('محفظة') || text.includes('تعبئة') || text.includes('سحب');
                         const isCustom = text.includes('المخصص');
+                        const isCompetition = text.includes('مسابقة') || text.includes('تذكرة');
+                        const isChat = text.includes('رسالة') || text.includes('محادثة');
+                        const isOrder = text.includes('طلب') || text.includes('توصيل') || text.includes('شحن');
                         
                         if (isWallet) {
                           navigate('/admin/wallet');
                         } else if (isCustom) {
                           navigate('/my-requests');
-                        } else if (notification.related_id) {
+                        } else if (isCompetition) {
+                          navigate('/competitions');
+                        } else if (isChat) {
+                          navigate('/notifications');
+                        } else if (isOrder && notification.related_id) {
                           navigate(`/order/${notification.related_id}`);
                         }
                       }}
