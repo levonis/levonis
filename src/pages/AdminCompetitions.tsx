@@ -71,6 +71,13 @@ interface LetterConfig {
   probability: number;
 }
 
+interface TicketReward {
+  id: string;
+  name: string;
+  tickets: number;
+  probability: number;
+}
+
 interface PrizeWord {
   word: string;
   prize_name: string;
@@ -238,7 +245,9 @@ export default function AdminCompetitions() {
     // Animation settings
     animation_type: 'bags' as 'bags' | 'scratch',
     max_bags_per_purchase: 10 as number,
-    allow_skip_animation: true as boolean
+    allow_skip_animation: true as boolean,
+    // Ticket rewards
+    ticket_rewards: [] as TicketReward[]
   });
 
   // Fetch products for prize selection
@@ -293,25 +302,30 @@ export default function AdminCompetitions() {
       
       const { data, error } = await supabase
         .from('competition_tickets')
-        .select('letter_awarded')
+        .select('letter_awarded, prize_won')
         .eq('competition_id', editingCompetition.id);
       
       if (error) throw error;
       
       const stats: Record<string, number> = {};
       let betterLuckCount = 0;
+      let ticketRewardCount = 0;
       let totalCount = 0;
       
       data?.forEach(ticket => {
         totalCount++;
-        if (ticket.letter_awarded === null) {
+        // Check if it's a ticket reward
+        const prizeWon = ticket.prize_won as any;
+        if (prizeWon && prizeWon.type === 'ticket_reward') {
+          ticketRewardCount++;
+        } else if (ticket.letter_awarded === null) {
           betterLuckCount++;
         } else {
           stats[ticket.letter_awarded] = (stats[ticket.letter_awarded] || 0) + 1;
         }
       });
       
-      return { letterCounts: stats, betterLuckCount, totalCount };
+      return { letterCounts: stats, betterLuckCount, ticketRewardCount, totalCount };
     },
     enabled: !!editingCompetition?.id && (editingCompetition as any).competition_type === 'collect_letters'
   });
@@ -383,6 +397,13 @@ export default function AdminCompetitions() {
         animation_type: data.animation_type || 'bags',
         max_bags_per_purchase: data.max_bags_per_purchase || 10,
         allow_skip_animation: data.allow_skip_animation !== false,
+        // Ticket rewards
+        ticket_rewards: data.ticket_rewards.map(tr => ({
+          id: tr.id,
+          name: tr.name,
+          tickets: tr.tickets,
+          probability: tr.probability
+        }))
       } : null;
 
       const payload: Record<string, any> = {
@@ -648,7 +669,8 @@ export default function AdminCompetitions() {
       prize_products: [],
       animation_type: 'bags',
       max_bags_per_purchase: 10,
-      allow_skip_animation: true
+      allow_skip_animation: true,
+      ticket_rewards: []
     });
     setEditingCompetition(null);
   };
@@ -755,7 +777,13 @@ export default function AdminCompetitions() {
       prize_products: compAny.prize_products || [],
       animation_type: compAny.letters_config?.animation_type || 'bags',
       max_bags_per_purchase: compAny.letters_config?.max_bags_per_purchase || 10,
-      allow_skip_animation: compAny.letters_config?.allow_skip_animation !== false
+      allow_skip_animation: compAny.letters_config?.allow_skip_animation !== false,
+      ticket_rewards: (compAny.letters_config?.ticket_rewards || []).map((tr: any, idx: number) => ({
+        id: tr.id || `tr_${idx}`,
+        name: tr.name || '',
+        tickets: tr.tickets || 1,
+        probability: tr.probability || 0
+      }))
     });
     setIsDialogOpen(true);
   };
@@ -1797,7 +1825,8 @@ export default function AdminCompetitions() {
                         {(() => {
                           const totalLetterProb = formData.letters_config.reduce((sum, l) => sum + (l.probability || 0), 0);
                           const betterLuck = parseFloat(formData.better_luck_probability) || 0;
-                          const grandTotal = totalLetterProb + betterLuck;
+                          const ticketRewardsProb = formData.ticket_rewards.reduce((sum, r) => sum + (r.probability || 0), 0);
+                          const grandTotal = totalLetterProb + betterLuck + ticketRewardsProb;
                           const isOver = grandTotal > 100;
                           const remainder = 100 - grandTotal;
                           
@@ -1811,6 +1840,12 @@ export default function AdminCompetitions() {
                                 <span>نسبة حظ أوفر:</span>
                                 <span className="font-bold">{betterLuck.toFixed(2)}%</span>
                               </div>
+                              {ticketRewardsProb > 0 && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span>نسبة مكافآت التذاكر:</span>
+                                  <span className="font-bold text-cyan-600">{ticketRewardsProb.toFixed(2)}%</span>
+                                </div>
+                              )}
                               <div className={`flex items-center justify-between text-sm font-bold border-t mt-2 pt-2 ${isOver ? 'text-red-500' : ''}`}>
                                 <span>المجموع الكلي:</span>
                                 <span>{grandTotal.toFixed(2)}%</span>
@@ -1835,9 +1870,10 @@ export default function AdminCompetitions() {
                             <h5 className="text-xs font-semibold mb-2 flex items-center gap-2 text-emerald-600">
                               📊 إحصائيات التوزيع الفعلي
                             </h5>
-                            <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="grid grid-cols-3 gap-2 text-xs">
                               <div>إجمالي المحاولات: <span className="font-bold">{letterStats.totalCount}</span></div>
                               <div>حظ أوفر: <span className="font-bold">{letterStats.betterLuckCount}</span> ({(letterStats.betterLuckCount / letterStats.totalCount * 100).toFixed(1)}%)</div>
+                              <div>تذاكر: <span className="font-bold text-cyan-600">{letterStats.ticketRewardCount}</span> ({(letterStats.ticketRewardCount / letterStats.totalCount * 100).toFixed(1)}%)</div>
                             </div>
                             <div className="mt-2 flex flex-wrap gap-1">
                               {Object.entries(letterStats.letterCounts)
@@ -1925,6 +1961,120 @@ export default function AdminCompetitions() {
                         <p className="text-xs text-muted-foreground mt-1">
                           مثال: 20 = 20% من المحاولات لا تحصل على حرف
                         </p>
+                      </div>
+                      
+                      {/* Ticket rewards */}
+                      <div className="mb-4 p-3 bg-cyan-500/10 rounded-lg border border-cyan-500/20">
+                        <Label className="text-xs font-semibold mb-3 block flex items-center gap-2">
+                          🎫 مكافآت التذاكر الإضافية
+                        </Label>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          أضف احتمالية ربح تذاكر إضافية بدلاً من الأحرف
+                        </p>
+                        
+                        <div className="space-y-2 mb-3">
+                          {formData.ticket_rewards.map((reward, index) => (
+                            <div key={reward.id} className="flex items-center gap-2 p-2 bg-background rounded-lg border shadow-sm">
+                              <Input
+                                placeholder="الاسم (مثال: أعد المحاولة)"
+                                value={reward.name}
+                                onChange={(e) => {
+                                  const newRewards = [...formData.ticket_rewards];
+                                  newRewards[index].name = e.target.value;
+                                  setFormData({ ...formData, ticket_rewards: newRewards });
+                                }}
+                                className="flex-1 text-sm"
+                              />
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max="100"
+                                  placeholder="تذاكر"
+                                  value={reward.tickets}
+                                  onChange={(e) => {
+                                    const newRewards = [...formData.ticket_rewards];
+                                    newRewards[index].tickets = parseInt(e.target.value) || 1;
+                                    setFormData({ ...formData, ticket_rewards: newRewards });
+                                  }}
+                                  className="w-16 text-center text-sm"
+                                />
+                                <span className="text-xs text-muted-foreground">تذكرة</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.001"
+                                  placeholder="%"
+                                  value={reward.probability}
+                                  onChange={(e) => {
+                                    const newRewards = [...formData.ticket_rewards];
+                                    newRewards[index].probability = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+                                    setFormData({ ...formData, ticket_rewards: newRewards });
+                                  }}
+                                  className="w-16 text-center text-sm"
+                                />
+                                <span className="text-xs text-muted-foreground">%</span>
+                              </div>
+                              {/* Show actual rate if stats available */}
+                              {letterStats && letterStats.totalCount > 0 && (
+                                <span className="text-xs text-muted-foreground">
+                                  (فعلي: <span className="font-bold text-cyan-500">
+                                    {(letterStats.ticketRewardCount / letterStats.totalCount * 100).toFixed(1)}%
+                                  </span>)
+                                </span>
+                              )}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    ticket_rewards: formData.ticket_rewards.filter((_, i) => i !== index)
+                                  });
+                                }}
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              ticket_rewards: [...formData.ticket_rewards, {
+                                id: `tr_${Date.now()}`,
+                                name: 'أعد المحاولة',
+                                tickets: 1,
+                                probability: 5
+                              }]
+                            });
+                          }}
+                        >
+                          <Plus className="h-4 w-4 ml-1" />
+                          إضافة مكافأة تذاكر
+                        </Button>
+                        
+                        {/* Total ticket rewards probability */}
+                        {formData.ticket_rewards.length > 0 && (
+                          <div className="mt-3 p-2 bg-cyan-500/10 rounded border border-cyan-500/30">
+                            <div className="flex items-center justify-between text-xs">
+                              <span>مجموع نسب مكافآت التذاكر:</span>
+                              <span className="font-bold">
+                                {formData.ticket_rewards.reduce((sum, r) => sum + (r.probability || 0), 0).toFixed(2)}%
+                              </span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                       
                       {/* Prize words */}
