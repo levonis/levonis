@@ -285,6 +285,37 @@ export default function AdminCompetitions() {
     }
   });
 
+  // Fetch letter distribution statistics for collect_letters competitions
+  const { data: letterStats } = useQuery({
+    queryKey: ['letter-distribution-stats', editingCompetition?.id],
+    queryFn: async () => {
+      if (!editingCompetition?.id) return null;
+      
+      const { data, error } = await supabase
+        .from('competition_tickets')
+        .select('letter_awarded')
+        .eq('competition_id', editingCompetition.id);
+      
+      if (error) throw error;
+      
+      const stats: Record<string, number> = {};
+      let betterLuckCount = 0;
+      let totalCount = 0;
+      
+      data?.forEach(ticket => {
+        totalCount++;
+        if (ticket.letter_awarded === null) {
+          betterLuckCount++;
+        } else {
+          stats[ticket.letter_awarded] = (stats[ticket.letter_awarded] || 0) + 1;
+        }
+      });
+      
+      return { letterCounts: stats, betterLuckCount, totalCount };
+    },
+    enabled: !!editingCompetition?.id && (editingCompetition as any).competition_type === 'collect_letters'
+  });
+
   const { data: ticketSettings, refetch: refetchTicketSettings } = useQuery({
     queryKey: ['ticket-settings'],
     queryFn: async () => {
@@ -1730,6 +1761,20 @@ export default function AdminCompetitions() {
                                 />
                                 <span className="text-xs text-muted-foreground">%</span>
                               </div>
+                              {/* Show actual distribution if stats available */}
+                              {letterStats && letterStats.totalCount > 0 && letter.letter && (
+                                <div className="text-xs text-center min-w-[60px]">
+                                  <span className="text-muted-foreground">فعلي: </span>
+                                  <span className={`font-bold ${
+                                    Math.abs(((letterStats.letterCounts[letter.letter] || 0) / letterStats.totalCount * 100) - letter.probability) > 10
+                                      ? 'text-orange-500'
+                                      : 'text-green-500'
+                                  }`}>
+                                    {((letterStats.letterCounts[letter.letter] || 0) / letterStats.totalCount * 100).toFixed(1)}%
+                                  </span>
+                                  <span className="text-muted-foreground block">({letterStats.letterCounts[letter.letter] || 0})</span>
+                                </div>
+                              )}
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -1747,6 +1792,65 @@ export default function AdminCompetitions() {
                             </div>
                           ))}
                         </div>
+                        
+                        {/* Total probability warning */}
+                        {(() => {
+                          const totalLetterProb = formData.letters_config.reduce((sum, l) => sum + (l.probability || 0), 0);
+                          const betterLuck = parseFloat(formData.better_luck_probability) || 0;
+                          const grandTotal = totalLetterProb + betterLuck;
+                          const isOver = grandTotal > 100;
+                          const remainder = 100 - grandTotal;
+                          
+                          return (
+                            <div className={`p-3 rounded-lg border mb-3 ${isOver ? 'bg-red-500/10 border-red-500/30' : 'bg-blue-500/10 border-blue-500/30'}`}>
+                              <div className="flex items-center justify-between text-sm">
+                                <span>مجموع نسب الأحرف:</span>
+                                <span className="font-bold">{totalLetterProb.toFixed(2)}%</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span>نسبة حظ أوفر:</span>
+                                <span className="font-bold">{betterLuck.toFixed(2)}%</span>
+                              </div>
+                              <div className={`flex items-center justify-between text-sm font-bold border-t mt-2 pt-2 ${isOver ? 'text-red-500' : ''}`}>
+                                <span>المجموع الكلي:</span>
+                                <span>{grandTotal.toFixed(2)}%</span>
+                              </div>
+                              {isOver && (
+                                <p className="text-xs text-red-500 mt-2">
+                                  ⚠️ المجموع يتجاوز 100%! يجب تقليل النسب.
+                                </p>
+                              )}
+                              {!isOver && remainder > 0 && (
+                                <p className="text-xs text-blue-500 mt-2">
+                                  💡 الباقي ({remainder.toFixed(2)}%) سيُضاف تلقائياً إلى "حظ أوفر"
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()}
+                        
+                        {/* Stats summary if available */}
+                        {letterStats && letterStats.totalCount > 0 && (
+                          <div className="p-3 bg-emerald-500/10 rounded-lg border border-emerald-500/30 mb-3">
+                            <h5 className="text-xs font-semibold mb-2 flex items-center gap-2 text-emerald-600">
+                              📊 إحصائيات التوزيع الفعلي
+                            </h5>
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div>إجمالي المحاولات: <span className="font-bold">{letterStats.totalCount}</span></div>
+                              <div>حظ أوفر: <span className="font-bold">{letterStats.betterLuckCount}</span> ({(letterStats.betterLuckCount / letterStats.totalCount * 100).toFixed(1)}%)</div>
+                            </div>
+                            <div className="mt-2 flex flex-wrap gap-1">
+                              {Object.entries(letterStats.letterCounts)
+                                .sort(([a], [b]) => a.localeCompare(b, 'ar'))
+                                .map(([letter, count]) => (
+                                  <Badge key={letter} variant="secondary" className="text-xs">
+                                    {letter}: {count} ({(count / letterStats.totalCount * 100).toFixed(1)}%)
+                                  </Badge>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="flex items-center gap-2">
                           <Button
                             type="button"
@@ -1805,6 +1909,18 @@ export default function AdminCompetitions() {
                             className="w-24"
                           />
                           <span className="text-sm">%</span>
+                          {/* Show actual better luck rate */}
+                          {letterStats && letterStats.totalCount > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              (فعلي: <span className={`font-bold ${
+                                Math.abs((letterStats.betterLuckCount / letterStats.totalCount * 100) - (parseFloat(formData.better_luck_probability) || 0)) > 10
+                                  ? 'text-orange-500'
+                                  : 'text-green-500'
+                              }`}>
+                                {(letterStats.betterLuckCount / letterStats.totalCount * 100).toFixed(1)}%
+                              </span>)
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
                           مثال: 20 = 20% من المحاولات لا تحصل على حرف
