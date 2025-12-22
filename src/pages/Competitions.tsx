@@ -23,6 +23,8 @@ import CompetitionCard from "@/components/CompetitionCard";
 import OptimizedImage from "@/components/OptimizedImage";
 import InstantWinReveal from "@/components/InstantWinReveal";
 import LetterReveal from "@/components/LetterReveal";
+import ScratchCardReveal from "@/components/ScratchCardReveal";
+import BagOpenReveal from "@/components/BagOpenReveal";
 import TicketBundleOffer from "@/components/TicketBundleOffer";
 import TeamBattleDisplay from "@/components/TeamBattleDisplay";
 import CollectedLettersDisplay from "@/components/CollectedLettersDisplay";
@@ -111,8 +113,15 @@ export default function Competitions() {
   const [showInstantReveal, setShowInstantReveal] = useState(false);
   const [instantRevealResult, setInstantRevealResult] = useState<{ isWinner: boolean; prize: any } | null>(null);
   const [showLetterReveal, setShowLetterReveal] = useState(false);
+  const [showScratchReveal, setShowScratchReveal] = useState(false);
+  const [showBagReveal, setShowBagReveal] = useState(false);
   const [letterRevealData, setLetterRevealData] = useState<{ letter: string; collected: string[]; config: any; prize: any } | null>(null);
+  const [bagRevealResults, setBagRevealResults] = useState<{ letter: string | null; isNew: boolean }[]>([]);
   const [showBundleOffers, setShowBundleOffers] = useState(false);
+  
+  // State for multiple bag purchase
+  const [showBagPurchaseDialog, setShowBagPurchaseDialog] = useState(false);
+  const [bagPurchaseQuantity, setBagPurchaseQuantity] = useState(1);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -424,35 +433,73 @@ export default function Competitions() {
 
   // Collect letters competition mutation
   const enterCollectLettersMutation = useMutation({
-    mutationFn: async (competitionId: string) => {
-      const { data, error } = await supabase.rpc('enter_collect_letters_competition', {
-        comp_id: competitionId
-      });
-      if (error) throw error;
-      return data;
+    mutationFn: async ({ competitionId, quantity }: { competitionId: string; quantity: number }) => {
+      // Enter multiple times
+      const results = [];
+      for (let i = 0; i < quantity; i++) {
+        const { data, error } = await supabase.rpc('enter_collect_letters_competition', {
+          comp_id: competitionId
+        });
+        if (error) throw error;
+        results.push(data);
+      }
+      return results;
     },
-    onSuccess: (data: any) => {
-      if (data.success) {
+    onSuccess: (dataArray: any[]) => {
+      const lastData = dataArray[dataArray.length - 1];
+      if (lastData.success) {
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
         queryClient.invalidateQueries({ queryKey: ['my-competition-tickets'] });
         queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
         queryClient.invalidateQueries({ queryKey: ['my-collected-letters'] });
         
-        const wonPrize = data.won_prizes && data.won_prizes.length > 0 ? data.won_prizes[0] : null;
-        setLetterRevealData({
-          letter: data.is_better_luck ? null : data.letter_awarded,
-          collected: data.collected_letters || [],
-          config: selectedCompetitionForEntry?.letters_config || {},
-          prize: wonPrize
-        });
-        setShowLetterReveal(true);
+        // Get animation type from competition config
+        const animationType = selectedCompetitionForEntry?.letters_config?.animation_type || 'bags';
+        const allowSkip = selectedCompetitionForEntry?.letters_config?.allow_skip_animation !== false;
+        
+        // Check if any prize was won
+        const wonPrize = dataArray.find(d => d.won_prizes && d.won_prizes.length > 0)?.won_prizes?.[0] || null;
+        
+        if (dataArray.length === 1) {
+          // Single entry - use single reveal animation
+          const data = dataArray[0];
+          setLetterRevealData({
+            letter: data.is_better_luck ? null : data.letter_awarded,
+            collected: data.collected_letters || [],
+            config: selectedCompetitionForEntry?.letters_config || {},
+            prize: wonPrize
+          });
+          
+          if (animationType === 'scratch') {
+            setShowScratchReveal(true);
+          } else {
+            setShowLetterReveal(true);
+          }
+        } else {
+          // Multiple entries - use bag reveal animation
+          const bagResults = dataArray.map(data => ({
+            letter: data.is_better_luck ? null : data.letter_awarded,
+            isNew: !data.collected_letters?.includes(data.letter_awarded)
+          }));
+          
+          setBagRevealResults(bagResults);
+          setLetterRevealData({
+            letter: null,
+            collected: lastData.collected_letters || [],
+            config: selectedCompetitionForEntry?.letters_config || {},
+            prize: wonPrize
+          });
+          setShowBagReveal(true);
+        }
         
         if (wonPrize) {
           setShowWinCelebration(true);
         }
       } else {
-        toast.error(data.error);
+        toast.error(lastData.error);
       }
+      setShowBagPurchaseDialog(false);
+      setBagPurchaseQuantity(1);
     },
     onError: (error) => {
       toast.error('حدث خطأ: ' + error.message);
@@ -535,7 +582,7 @@ export default function Competitions() {
   });
 
   // Handle competition entry based on type
-  const handleCompetitionEntry = useCallback((comp: Competition) => {
+  const handleCompetitionEntry = useCallback((comp: Competition, quantity: number = 1) => {
     if (!comp) return;
     
     switch (comp.competition_type) {
@@ -543,7 +590,7 @@ export default function Competitions() {
         enterInstantWinMutation.mutate(comp.id);
         break;
       case 'collect_letters':
-        enterCollectLettersMutation.mutate(comp.id);
+        enterCollectLettersMutation.mutate({ competitionId: comp.id, quantity });
         break;
       case 'mystery_box':
         enterMysteryBoxMutation.mutate(comp.id);
@@ -966,30 +1013,95 @@ export default function Competitions() {
       </Dialog>
 
       {/* Enter Competition Confirmation Dialog */}
-      <AlertDialog open={showEnterConfirm} onOpenChange={setShowEnterConfirm}>
+      <AlertDialog open={showEnterConfirm} onOpenChange={(open) => {
+        setShowEnterConfirm(open);
+        if (!open) {
+          setBagPurchaseQuantity(1);
+        }
+      }}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Ticket className="h-5 w-5 text-primary" />
-              تأكيد الدخول في المسابقة
+              {selectedCompetitionForEntry?.competition_type === 'collect_letters' ? 'اجمع أحرف واربح!' : 'تأكيد الدخول في المسابقة'}
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-right">
-              {selectedCompetitionForEntry && (
-                <>
-                  هل تريد الدخول في مسابقة <span className="font-bold text-foreground">{selectedCompetitionForEntry.title_ar}</span>؟
-                  <br />
-                  <span className="text-muted-foreground text-sm">
-                    سيتم خصم <span className="font-bold text-foreground">{selectedCompetitionForEntry.required_tickets || 1} تذكرة</span> من رصيدك.
-                  </span>
-                </>
-              )}
+            <AlertDialogDescription className="text-right" asChild>
+              <div>
+                {selectedCompetitionForEntry && (
+                  <>
+                    <p className="mb-3">
+                      هل تريد الدخول في مسابقة <span className="font-bold text-foreground">{selectedCompetitionForEntry.title_ar}</span>؟
+                    </p>
+                    
+                    {/* Bag quantity selector for collect_letters with bags animation */}
+                    {selectedCompetitionForEntry.competition_type === 'collect_letters' && 
+                     selectedCompetitionForEntry.letters_config?.animation_type !== 'scratch' && (
+                      <div className="mt-4 p-4 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-red-500/10 rounded-xl border border-amber-500/20">
+                        <p className="font-semibold mb-3 flex items-center gap-2">
+                          <Package className="h-5 w-5 text-amber-600" />
+                          كم كيس تريد فتحه؟
+                        </p>
+                        <div className="flex items-center justify-center gap-3">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setBagPurchaseQuantity(q => Math.max(1, q - 1))}
+                            disabled={bagPurchaseQuantity <= 1}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <Input
+                            type="number"
+                            min={1}
+                            max={selectedCompetitionForEntry.letters_config?.max_bags_per_purchase || 10}
+                            value={bagPurchaseQuantity}
+                            onChange={(e) => setBagPurchaseQuantity(Math.max(1, Math.min(
+                              selectedCompetitionForEntry.letters_config?.max_bags_per_purchase || 10,
+                              parseInt(e.target.value) || 1
+                            )))}
+                            className="w-20 h-10 text-center text-lg font-bold"
+                          />
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setBagPurchaseQuantity(q => Math.min(
+                              selectedCompetitionForEntry.letters_config?.max_bags_per_purchase || 10,
+                              q + 1
+                            ))}
+                            disabled={bagPurchaseQuantity >= (selectedCompetitionForEntry.letters_config?.max_bags_per_purchase || 10)}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-center mt-3 text-sm text-muted-foreground">
+                          سيتم خصم <span className="font-bold text-foreground">{bagPurchaseQuantity * (selectedCompetitionForEntry.required_tickets || 1)} تذكرة</span>
+                        </p>
+                        <p className="text-center text-xs text-muted-foreground mt-1">
+                          الحد الأقصى: {selectedCompetitionForEntry.letters_config?.max_bags_per_purchase || 10} أكياس
+                        </p>
+                      </div>
+                    )}
+                    
+                    {/* Standard message for other types or scratch animation */}
+                    {(selectedCompetitionForEntry.competition_type !== 'collect_letters' || 
+                      selectedCompetitionForEntry.letters_config?.animation_type === 'scratch') && (
+                      <p className="text-muted-foreground text-sm">
+                        سيتم خصم <span className="font-bold text-foreground">{selectedCompetitionForEntry.required_tickets || 1} تذكرة</span> من رصيدك.
+                      </p>
+                    )}
+                  </>
+                )}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
             <AlertDialogAction
               onClick={() => {
                 if (selectedCompetitionForEntry) {
-                  handleCompetitionEntry(selectedCompetitionForEntry);
+                  const quantity = selectedCompetitionForEntry.competition_type === 'collect_letters' && 
+                    selectedCompetitionForEntry.letters_config?.animation_type !== 'scratch' 
+                    ? bagPurchaseQuantity : 1;
+                  handleCompetitionEntry(selectedCompetitionForEntry, quantity);
                 }
                 setShowEnterConfirm(false);
                 setSelectedCompetitionForEntry(null);
@@ -1000,11 +1112,22 @@ export default function Competitions() {
               {(enterCompetitionMutation.isPending || enterInstantWinMutation.isPending || enterCollectLettersMutation.isPending || enterMysteryBoxMutation.isPending || enterEveryoneWinsMutation.isPending) ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <Ticket className="h-4 w-4" />
+                selectedCompetitionForEntry?.competition_type === 'collect_letters' && 
+                selectedCompetitionForEntry?.letters_config?.animation_type !== 'scratch' ? (
+                  <Package className="h-4 w-4" />
+                ) : (
+                  <Ticket className="h-4 w-4" />
+                )
               )}
-              تأكيد الدخول
+              {selectedCompetitionForEntry?.competition_type === 'collect_letters' && 
+               selectedCompetitionForEntry?.letters_config?.animation_type !== 'scratch' 
+                ? `افتح ${bagPurchaseQuantity} كيس` 
+                : 'تأكيد الدخول'}
             </AlertDialogAction>
-            <AlertDialogCancel onClick={() => setSelectedCompetitionForEntry(null)}>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => {
+              setSelectedCompetitionForEntry(null);
+              setBagPurchaseQuantity(1);
+            }}>إلغاء</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1382,7 +1505,23 @@ export default function Competitions() {
         isWinner={instantRevealResult?.isWinner || false}
       />
 
-      {/* Letter Reveal Dialog */}
+      {/* Letter Reveal Dialog (Single - for scratch animation) */}
+      {letterRevealData && (
+        <ScratchCardReveal
+          isOpen={showScratchReveal}
+          onClose={() => {
+            setShowScratchReveal(false);
+            setLetterRevealData(null);
+          }}
+          awardedLetter={letterRevealData.letter}
+          collectedLetters={letterRevealData.collected}
+          lettersConfig={letterRevealData.config}
+          wonPrize={letterRevealData.prize}
+          allowSkip={letterRevealData.config?.allow_skip_animation !== false}
+        />
+      )}
+
+      {/* Letter Reveal Dialog (Single - for bags animation) */}
       {letterRevealData && (
         <LetterReveal
           isOpen={showLetterReveal}
@@ -1394,6 +1533,23 @@ export default function Competitions() {
           collectedLetters={letterRevealData.collected}
           lettersConfig={letterRevealData.config}
           wonPrize={letterRevealData.prize}
+        />
+      )}
+
+      {/* Bag Open Reveal Dialog (Multiple bags) */}
+      {letterRevealData && (
+        <BagOpenReveal
+          isOpen={showBagReveal}
+          onClose={() => {
+            setShowBagReveal(false);
+            setLetterRevealData(null);
+            setBagRevealResults([]);
+          }}
+          results={bagRevealResults}
+          collectedLetters={letterRevealData.collected}
+          lettersConfig={letterRevealData.config}
+          wonPrize={letterRevealData.prize}
+          allowSkip={letterRevealData.config?.allow_skip_animation !== false}
         />
       )}
 
