@@ -315,7 +315,7 @@ export default function Competitions() {
   });
 
   // Fetch user's collected letters for collect_letters competitions
-  const { data: collectedLettersData } = useQuery({
+  const { data: collectedLettersData, refetch: refetchCollectedLetters } = useQuery({
     queryKey: ['my-collected-letters', user?.id],
     queryFn: async () => {
       if (!user) return {};
@@ -1120,7 +1120,9 @@ export default function Competitions() {
                     {comp.competition_type === 'collect_letters' && user && collectedLettersData?.[comp.id] && (
                       <CollectedLettersDisplay
                         collectedLetters={collectedLettersData[comp.id] || []}
-                        lettersConfig={comp.letters_config || { target_word: '', prizes: [] }}
+                        lettersConfig={comp.letters_config || { target_word: '', prize_words: [] }}
+                        competitionId={comp.id}
+                        onRedeemSuccess={() => refetchCollectedLetters()}
                       />
                     )}
 
