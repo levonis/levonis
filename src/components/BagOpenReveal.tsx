@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, Sparkles, Star, Gift, X, SkipForward } from "lucide-react";
+import { ShoppingBag, Sparkles, Star, Gift, X, SkipForward } from "lucide-react";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface LettersConfig {
@@ -67,32 +67,28 @@ export default function BagOpenReveal({
     }
   }, [currentBagIndex, totalBags, wonPrize]);
 
+  const startOpening = useCallback(() => {
+    if (skipped) return;
+    if (stage !== 'bag_closed') return;
+    setStage('bag_opening');
+  }, [skipped, stage]);
+
   useEffect(() => {
     if (!isOpen || skipped) return;
-    
-    if (stage === 'bag_closed') {
-      const timer = setTimeout(() => setStage('bag_opening'), 800);
-      return () => clearTimeout(timer);
-    }
-    
+
     if (stage === 'bag_opening') {
-      const timer = setTimeout(() => setStage('bag_opened'), 1200);
+      const timer = setTimeout(() => setStage('bag_opened'), 900);
       return () => clearTimeout(timer);
     }
-    
+
     if (stage === 'bag_opened') {
       const timer = setTimeout(() => {
         setStage('letter_revealed');
         setRevealedLetters(prev => [...prev, currentResult]);
-      }, 600);
+      }, 500);
       return () => clearTimeout(timer);
     }
-    
-    if (stage === 'letter_revealed') {
-      const timer = setTimeout(proceedToNextBag, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, stage, skipped, currentResult, proceedToNextBag]);
+  }, [isOpen, stage, skipped, currentResult]);
 
   useEffect(() => {
     if (isOpen) {
@@ -110,6 +106,17 @@ export default function BagOpenReveal({
     acc[l] = (acc[l] ?? 0) + 1;
     return acc;
   }, {});
+
+  const MAX_REVEALED_SHOWN = 24;
+  const shownRevealed = revealedLetters.slice(0, MAX_REVEALED_SHOWN);
+  const hiddenRevealedCount = Math.max(0, revealedLetters.length - MAX_REVEALED_SHOWN);
+
+  const revealedLetterCounts = revealedLetters.reduce<Record<string, number>>((acc, r) => {
+    if (!r.letter) return acc;
+    acc[r.letter] = (acc[r.letter] ?? 0) + 1;
+    return acc;
+  }, {});
+  const revealedBetterLuckCount = revealedLetters.filter(r => !r.letter).length;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -227,22 +234,31 @@ export default function BagOpenReveal({
                 >
                   {/* Bag shape */}
                   <div 
-                    className={`w-32 h-40 mx-auto relative transition-all duration-500 ${
+                    className={`w-32 h-44 mx-auto relative transition-all duration-500 ${
                       stage === 'bag_opened' || stage === 'letter_revealed' ? 'opacity-50 scale-95' : ''
                     }`}
                   >
                     {/* Bag body */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-amber-300 via-amber-400 to-amber-600 rounded-b-3xl rounded-t-lg shadow-2xl">
-                      {/* Bag tie/ribbon */}
+                    <div className="absolute inset-0 bg-gradient-to-b from-amber-200 via-amber-400 to-amber-700 rounded-[28px] shadow-2xl">
+                      {/* Bag handle */}
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-20 h-10 rounded-t-full border-[6px] border-amber-200/80" />
+
+                      {/* Bag mouth/tie */}
                       <div 
-                        className={`absolute -top-2 left-1/2 -translate-x-1/2 w-16 h-6 bg-red-500 rounded-full transition-all duration-500 ${
+                        className={`absolute top-0 left-0 right-0 h-10 bg-gradient-to-r from-red-500 via-rose-500 to-red-600 rounded-t-[28px] transition-all duration-500 ${
                           stage === 'bag_opened' || stage === 'letter_revealed' ? 'opacity-0 -translate-y-4' : ''
                         }`}
                       />
-                      {/* Bag shine */}
-                      <div className="absolute top-4 left-4 w-4 h-12 bg-white/30 rounded-full rotate-12" />
-                      {/* Package icon */}
-                      <Package className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-12 w-12 text-amber-800/50" />
+
+                      {/* Shine */}
+                      <div className="absolute top-10 left-4 w-4 h-16 bg-white/25 rounded-full rotate-12" />
+
+                      {/* Icon */}
+                      <ShoppingBag className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-12 w-12 text-amber-900/40" />
+
+                      {/* Stitch lines */}
+                      <div className="absolute bottom-6 left-6 right-6 h-px bg-amber-900/15" />
+                      <div className="absolute bottom-10 left-10 right-10 h-px bg-amber-900/10" />
                     </div>
                   </div>
                   
@@ -294,21 +310,45 @@ export default function BagOpenReveal({
               </div>
               
               {/* Text */}
-              <div className="h-16 flex items-center justify-center">
+              <div className="flex flex-col items-center justify-center gap-3">
                 {stage === 'bag_closed' && (
-                  <h2 className="text-xl font-bold">جاري فتح الكيس...</h2>
+                  <>
+                    <h2 className="text-xl font-bold">اضغط لفتح الكيس</h2>
+                    <Button
+                      onClick={startOpening}
+                      className="bg-white/10 border border-white/20 text-white hover:bg-white/20 hover:text-white backdrop-blur-sm"
+                      variant="outline"
+                    >
+                      افتح الكيس
+                    </Button>
+                  </>
                 )}
                 {stage === 'bag_opening' && (
                   <h2 className="text-xl font-bold animate-pulse">🎁 يتم الفتح...</h2>
                 )}
+                {stage === 'bag_opened' && (
+                  <h2 className="text-xl font-bold">✨ لحظة...</h2>
+                )}
                 {stage === 'letter_revealed' && currentResult?.letter && (
-                  <div className="animate-scale-in">
+                  <div className="animate-scale-in space-y-3">
                     <h2 className="text-2xl font-bold">حصلت على الحرف <span className="text-yellow-300 text-3xl">{currentResult.letter}</span>!</h2>
+                    <Button
+                      onClick={proceedToNextBag}
+                      className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8"
+                    >
+                      {currentBagIndex < totalBags - 1 ? 'التالي' : 'عرض النتيجة'}
+                    </Button>
                   </div>
                 )}
                 {stage === 'letter_revealed' && !currentResult?.letter && (
-                  <div className="animate-scale-in">
+                  <div className="animate-scale-in space-y-3">
                     <h2 className="text-xl font-bold">حظ أوفر! 😔</h2>
+                    <Button
+                      onClick={proceedToNextBag}
+                      className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8"
+                    >
+                      {currentBagIndex < totalBags - 1 ? 'التالي' : 'عرض النتيجة'}
+                    </Button>
                   </div>
                 )}
               </div>
@@ -319,29 +359,47 @@ export default function BagOpenReveal({
           {stage === 'all_done' && (
             <div className="space-y-6 animate-scale-in">
               <div className="relative">
-                <Package className="h-20 w-20 mx-auto text-yellow-300" />
+                <ShoppingBag className="h-20 w-20 mx-auto text-yellow-300" />
               </div>
               
               <h2 className="text-2xl font-bold">تم فتح جميع الأكياس! 🎉</h2>
               
               {/* Summary of letters */}
               <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 space-y-3">
-                <p className="text-sm opacity-80">الأحرف المكتسبة:</p>
+                <p className="text-sm opacity-80">ملخص ما حصلت عليه:</p>
+
                 <div className="flex justify-center gap-2 flex-wrap">
-                  {revealedLetters.map((result, idx) => (
-                    <div
-                      key={idx}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold ${
-                        result.letter 
-                          ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg' 
-                          : 'bg-gray-500/50 text-white/50'
-                      }`}
-                    >
-                      {result.letter || '✗'}
-                    </div>
-                  ))}
+                  {Object.keys(revealedLetterCounts).length === 0 && revealedBetterLuckCount === 0 ? (
+                    <span className="text-sm opacity-70">لا توجد نتائج</span>
+                  ) : (
+                    <>
+                      {Object.entries(revealedLetterCounts).map(([letter, count]) => (
+                        <div
+                          key={letter}
+                          className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg flex items-center justify-center font-bold text-xl relative"
+                        >
+                          {letter}
+                          {count > 1 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-600 rounded-full text-xs flex items-center justify-center">
+                              {count}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                      {revealedBetterLuckCount > 0 && (
+                        <div className="w-12 h-12 rounded-xl bg-gray-500/50 text-white/80 flex items-center justify-center font-bold text-lg">
+                          ✗
+                          <span className="sr-only">حظ أوفر</span>
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-                
+
+                {hiddenRevealedCount > 0 && (
+                  <p className="text-xs opacity-70">تم إخفاء {hiddenRevealedCount} نتيجة لتجنب تعليق الشاشة</p>
+                )}
+
                 <p className="text-sm mt-4 opacity-80">تقدمك في الكلمة:</p>
                 <div className="flex justify-center gap-2 flex-wrap">
                   {[...new Set(targetWord.split(''))].map((letter, idx) => {
