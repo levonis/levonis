@@ -365,7 +365,7 @@ export default function ScratchCardReveal({
               {isRevealed && targetWord && (
                 <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 space-y-3 animate-fade-in mt-4">
                   <p className="text-sm opacity-80">تقدمك في الكلمة:</p>
-                  <div className="flex justify-center gap-2 flex-wrap">
+                  <div className="flex justify-center gap-2 flex-wrap flex-row-reverse">
                     {[...new Set(targetWord.split(''))].map((letter, idx) => {
                       const hasLetter = allCollected.includes(letter);
                       const isNew = letter === awardedLetter && !collectedLetters.includes(letter);
