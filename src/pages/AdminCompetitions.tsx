@@ -45,6 +45,7 @@ import CompetitionParticipantsDialog from "@/components/CompetitionParticipantsD
 import PrizeProductsSelector from "@/components/PrizeProductsSelector";
 import ProductSearchSelect from "@/components/ProductSearchSelect";
 import UserTicketsManager from "@/components/UserTicketsManager";
+import CompetitionTestDialog from "@/components/CompetitionTestDialog";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 type CompetitionStatus = 'draft' | 'active' | 'completed' | 'cancelled';
@@ -183,6 +184,8 @@ export default function AdminCompetitions() {
   const [participantsDialogOpen, setParticipantsDialogOpen] = useState(false);
   const [selectedCompetitionForParticipants, setSelectedCompetitionForParticipants] = useState<Competition | null>(null);
   const [ticketsManagerOpen, setTicketsManagerOpen] = useState(false);
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [selectedCompetitionForTest, setSelectedCompetitionForTest] = useState<Competition | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -2074,6 +2077,20 @@ export default function AdminCompetitions() {
                       <Button variant="outline" size="sm" onClick={() => handleEdit(comp)}>
                         تعديل
                       </Button>
+                      {['instant_winner', 'everyone_wins', 'mystery_box', 'collect_letters'].includes(comp.competition_type) && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-1 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+                          onClick={() => {
+                            setSelectedCompetitionForTest(comp);
+                            setTestDialogOpen(true);
+                          }}
+                        >
+                          <Play className="h-4 w-4" />
+                          اختبار
+                        </Button>
+                      )}
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -2163,6 +2180,12 @@ export default function AdminCompetitions() {
       <UserTicketsManager
         open={ticketsManagerOpen}
         onOpenChange={setTicketsManagerOpen}
+      />
+
+      <CompetitionTestDialog
+        open={testDialogOpen}
+        onOpenChange={setTestDialogOpen}
+        competition={selectedCompetitionForTest}
       />
     </>
   );
