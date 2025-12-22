@@ -626,18 +626,49 @@ export default function AdminCompetitions() {
     setEditingCompetition(comp);
     const compAny = comp as any;
     
-    // Parse letters_config properly from letter_probabilities object
+    // Parse letters_config properly from letter_probabilities object (keep a stable order)
     let lettersConfigArray: LetterConfig[] = [];
+
+    const getOrderedLetters = (): string[] => {
+      const fromPrizeWords = (compAny.letters_config?.prize_words || [])
+        .map((p: any) => p?.word || '')
+        .join('')
+        .split('')
+        .filter((ch: string, idx: number, arr: string[]) => ch && arr.indexOf(ch) === idx);
+
+      if (fromPrizeWords.length > 0) return fromPrizeWords;
+
+      const target = (compAny.letters_config?.target_word || '')
+        .split('')
+        .filter((ch: string, idx: number, arr: string[]) => ch && arr.indexOf(ch) === idx);
+
+      return target;
+    };
+
+    const orderedLetters = getOrderedLetters();
+
     if (compAny.letters_config?.letter_probabilities) {
-      const letterProbs = compAny.letters_config.letter_probabilities;
-      lettersConfigArray = Object.entries(letterProbs).map(([letter, probability]) => ({
-        letter,
-        probability: typeof probability === 'number' ? probability : 100
-      }));
-    } else if (compAny.letters_config?.target_word) {
-      // Fallback: extract unique letters from target_word
-      const uniqueLetters = [...new Set(compAny.letters_config.target_word.split(''))].filter(Boolean);
-      lettersConfigArray = uniqueLetters.map((letter: string) => ({ letter, probability: 100 }));
+      const letterProbs = compAny.letters_config.letter_probabilities as Record<string, number>;
+
+      const ordered = orderedLetters
+        .filter((l) => l in letterProbs)
+        .map((letter) => ({
+          letter,
+          probability: typeof letterProbs[letter] === 'number' ? letterProbs[letter] : 100,
+        }));
+
+      // Append any extra letters not present in the word, sorted alphabetically for consistency
+      const extras = Object.keys(letterProbs)
+        .filter((l) => !orderedLetters.includes(l))
+        .sort((a, b) => a.localeCompare(b, 'ar'))
+        .map((letter) => ({
+          letter,
+          probability: typeof letterProbs[letter] === 'number' ? letterProbs[letter] : 100,
+        }));
+
+      lettersConfigArray = [...ordered, ...extras];
+    } else if (orderedLetters.length > 0) {
+      lettersConfigArray = orderedLetters.map((letter: string) => ({ letter, probability: 100 }));
     }
     
     setFormData({
@@ -1686,14 +1717,16 @@ export default function AdminCompetitions() {
                                   type="number"
                                   min="0"
                                   max="100"
+                                  step="0.001"
                                   placeholder="%"
                                   value={letter.probability}
                                   onChange={(e) => {
                                     const newLetters = [...formData.letters_config];
-                                    newLetters[index].probability = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                                    const next = Math.max(0, Math.min(100, parseFloat(e.target.value) || 0));
+                                    newLetters[index].probability = next;
                                     setFormData({ ...formData, letters_config: newLetters });
                                   }}
-                                  className="w-12 text-center text-xs p-1"
+                                  className="w-16 text-center text-xs p-1"
                                 />
                                 <span className="text-xs text-muted-foreground">%</span>
                               </div>
@@ -1765,6 +1798,7 @@ export default function AdminCompetitions() {
                             type="number"
                             min="0"
                             max="100"
+                            step="0.001"
                             placeholder="0"
                             value={formData.better_luck_probability}
                             onChange={(e) => setFormData({ ...formData, better_luck_probability: e.target.value })}
