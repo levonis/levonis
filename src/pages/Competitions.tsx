@@ -666,8 +666,104 @@ export default function Competitions() {
 
       {/* Fixed Ticket Purchase Bar */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3">
+          {/* Mobile Layout */}
+          <div className="flex flex-col gap-2 sm:hidden">
+            {/* Row 1: Balance info */}
+            <div className="flex items-center justify-center gap-2">
+              {user && (
+                <div className="inline-flex items-center gap-1 px-2 py-1 bg-secondary/50 rounded-full text-xs">
+                  <Ticket className="h-3 w-3 text-primary" />
+                  <span className="font-medium">{userTicketBalance || 0}</span>
+                </div>
+              )}
+              {user && wallet && (
+                <div className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 rounded-full text-xs">
+                  <Wallet className="h-3 w-3 text-primary" />
+                  <span className="font-medium">{wallet.balance.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+            
+            {/* Row 2: Purchase controls */}
+            <div className="flex items-center justify-center gap-1.5">
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setTicketPurchaseQuantity(q => Math.max(1, q - 1))}
+                  disabled={ticketPurchaseQuantity <= 1}
+                >
+                  <Minus className="h-2.5 w-2.5" />
+                </Button>
+                <Input
+                  type="number"
+                  min={1}
+                  value={ticketPurchaseQuantity}
+                  onChange={(e) => setTicketPurchaseQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="w-10 h-6 text-center text-xs px-0.5"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-6 w-6"
+                  onClick={() => setTicketPurchaseQuantity(q => q + 1)}
+                >
+                  <Plus className="h-2.5 w-2.5" />
+                </Button>
+              </div>
+              
+              <span className="text-xs font-bold text-primary whitespace-nowrap">
+                {totalTicketCost.toLocaleString()}
+              </span>
+              
+              <Button 
+                size="sm"
+                className="gap-0.5 h-6 px-2 text-xs"
+                onClick={() => {
+                  if (!user) {
+                    toast.error('يجب تسجيل الدخول أولاً');
+                    navigate('/auth');
+                    return;
+                  }
+                  if (!canBuyTickets) {
+                    setShowInsufficientBalance(true);
+                    return;
+                  }
+                  setShowPurchaseConfirm(true);
+                }}
+                disabled={purchaseTicketsMutation.isPending}
+              >
+                {purchaseTicketsMutation.isPending ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <ShoppingCart className="h-3 w-3" />
+                )}
+                شراء
+              </Button>
+              
+              <Button 
+                variant="outline"
+                size="sm"
+                className="gap-0.5 h-6 px-2 text-xs"
+                onClick={() => {
+                  if (!user) {
+                    toast.error('يجب تسجيل الدخول أولاً');
+                    navigate('/auth');
+                    return;
+                  }
+                  setShowBundleOffers(true);
+                }}
+              >
+                <Sparkles className="h-3 w-3" />
+                عروض
+              </Button>
+            </div>
+          </div>
+
+          {/* Desktop Layout */}
+          <div className="hidden sm:flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Ticket className="h-5 w-5 text-primary" />
