@@ -917,14 +917,14 @@ export default function AdminCompetitions() {
                   <div className="space-y-2">
                     <Label>اختر منتج كجائزة (اختياري)</Label>
                     <Select
-                      value={formData.prize_product_id}
-                      onValueChange={(value) => setFormData({ ...formData, prize_product_id: value })}
+                      value={formData.prize_product_id || "none"}
+                      onValueChange={(value) => setFormData({ ...formData, prize_product_id: value === "none" ? "" : value })}
                     >
                       <SelectTrigger className="bg-background">
                         <SelectValue placeholder="اختر منتج..." />
                       </SelectTrigger>
                       <SelectContent className="z-[100] bg-background border shadow-lg max-h-[200px]">
-                        <SelectItem value="">بدون منتج</SelectItem>
+                        <SelectItem value="none">بدون منتج</SelectItem>
                         {products?.map((product) => (
                           <SelectItem key={product.id} value={product.id}>
                             {product.name_ar}
@@ -1685,10 +1685,10 @@ export default function AdminCompetitions() {
                               className="w-20"
                             />
                             <Select
-                              value={word.product_id || ''}
+                              value={word.product_id || 'none'}
                               onValueChange={(value) => {
                                 const newWords = [...formData.prize_words];
-                                newWords[index].product_id = value;
+                                newWords[index].product_id = value === 'none' ? '' : value;
                                 setFormData({ ...formData, prize_words: newWords });
                               }}
                             >
@@ -1696,7 +1696,7 @@ export default function AdminCompetitions() {
                                 <SelectValue placeholder="منتج..." />
                               </SelectTrigger>
                               <SelectContent className="z-[100] bg-background border shadow-lg max-h-[200px]">
-                                <SelectItem value="">بدون</SelectItem>
+                                <SelectItem value="none">بدون</SelectItem>
                                 {products?.map((product) => (
                                   <SelectItem key={product.id} value={product.id}>
                                     {product.name_ar}
