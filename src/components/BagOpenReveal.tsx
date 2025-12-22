@@ -36,7 +36,8 @@ export default function BagOpenReveal({
   allowSkip = true
 }: BagOpenRevealProps) {
   const [currentBagIndex, setCurrentBagIndex] = useState(0);
-  const [stage, setStage] = useState<'bag_closed' | 'bag_opening' | 'bag_opened' | 'letter_revealed' | 'all_done' | 'prize'>('bag_closed');
+  // Stages: bag_closed -> bag_opening -> bag_opened -> click_to_reveal -> letter_revealed (wait 1s) -> can_proceed
+  const [stage, setStage] = useState<'bag_closed' | 'bag_opening' | 'bag_opened' | 'click_to_reveal' | 'letter_revealed' | 'can_proceed' | 'all_done' | 'prize'>('bag_closed');
   const [skipped, setSkipped] = useState(false);
   const [revealedLetters, setRevealedLetters] = useState<BagResult[]>([]);
 
@@ -67,28 +68,50 @@ export default function BagOpenReveal({
     }
   }, [currentBagIndex, totalBags, wonPrize]);
 
-  const startOpening = useCallback(() => {
+  const handleClick = useCallback(() => {
     if (skipped) return;
-    if (stage !== 'bag_closed') return;
-    setStage('bag_opening');
-  }, [skipped, stage]);
+    
+    switch (stage) {
+      case 'bag_closed':
+        // Click 1: Start opening animation
+        setStage('bag_opening');
+        break;
+      case 'click_to_reveal':
+        // Click 2: Reveal the letter
+        setStage('letter_revealed');
+        setRevealedLetters(prev => [...prev, currentResult]);
+        break;
+      case 'can_proceed':
+        // Click 3: Go to next bag
+        proceedToNextBag();
+        break;
+      default:
+        // Other stages don't respond to clicks
+        break;
+    }
+  }, [skipped, stage, currentResult, proceedToNextBag]);
 
   useEffect(() => {
     if (!isOpen || skipped) return;
 
     if (stage === 'bag_opening') {
+      // After shake animation, bag opens
       const timer = setTimeout(() => setStage('bag_opened'), 900);
       return () => clearTimeout(timer);
     }
 
     if (stage === 'bag_opened') {
-      const timer = setTimeout(() => {
-        setStage('letter_revealed');
-        setRevealedLetters(prev => [...prev, currentResult]);
-      }, 500);
+      // Brief pause then wait for click to reveal
+      const timer = setTimeout(() => setStage('click_to_reveal'), 400);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, stage, skipped, currentResult]);
+
+    if (stage === 'letter_revealed') {
+      // Wait 1 second before allowing next click
+      const timer = setTimeout(() => setStage('can_proceed'), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, stage, skipped]);
 
   useEffect(() => {
     if (isOpen) {
@@ -176,13 +199,9 @@ export default function BagOpenReveal({
 
         <div
           className={`relative min-h-[520px] flex flex-col items-center justify-center p-6 text-white text-center overflow-hidden ${
-            !skipped && (stage === 'bag_closed' || stage === 'letter_revealed') ? 'cursor-pointer' : ''
+            !skipped && (stage === 'bag_closed' || stage === 'click_to_reveal' || stage === 'can_proceed') ? 'cursor-pointer' : ''
           }`}
-          onClick={() => {
-            if (skipped) return;
-            if (stage === 'bag_closed') return startOpening();
-            if (stage === 'letter_revealed') return proceedToNextBag();
-          }}
+          onClick={handleClick}
         >
           {/* Floating golden particles */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -225,14 +244,14 @@ export default function BagOpenReveal({
           )}
 
           {/* Bag animation stages */}
-          {(stage === 'bag_closed' || stage === 'bag_opening' || stage === 'bag_opened' || stage === 'letter_revealed') && !skipped && (
+          {(stage === 'bag_closed' || stage === 'bag_opening' || stage === 'bag_opened' || stage === 'click_to_reveal' || stage === 'letter_revealed' || stage === 'can_proceed') && !skipped && (
             <div className="space-y-6">
               {/* Bag visual */}
               <div className="relative pointer-events-none">
                 {/* Glow effect */}
                 <div
                   className={`absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 blur-3xl rounded-full transition-all duration-500 ${
-                    stage === 'bag_opening' || stage === 'bag_opened' ? 'opacity-60 scale-150' : 'opacity-30'
+                    stage === 'bag_opening' || stage === 'bag_opened' || stage === 'click_to_reveal' ? 'opacity-60 scale-150' : 'opacity-30'
                   }`}
                 />
 
@@ -240,12 +259,12 @@ export default function BagOpenReveal({
                 <div
                   className={`relative transition-all duration-700 ${
                     stage === 'bag_opening' ? 'animate-shake' : ''
-                  } ${stage === 'bag_opened' ? 'scale-110' : ''}`}
+                  } ${stage === 'bag_opened' || stage === 'click_to_reveal' ? 'scale-110' : ''}`}
                 >
                   {/* Bag shape */}
                   <div
                     className={`w-32 h-44 mx-auto relative transition-all duration-500 ${
-                      stage === 'bag_opened' || stage === 'letter_revealed' ? 'opacity-50 scale-95' : ''
+                      stage === 'click_to_reveal' || stage === 'letter_revealed' || stage === 'can_proceed' ? 'opacity-50 scale-95' : ''
                     }`}
                   >
                     {/* Bag body */}
@@ -256,7 +275,7 @@ export default function BagOpenReveal({
                       {/* Bag mouth/tie */}
                       <div
                         className={`absolute top-0 left-0 right-0 h-10 bg-gradient-to-r from-red-500 via-rose-500 to-red-600 rounded-t-[28px] transition-all duration-500 ${
-                          stage === 'bag_opened' || stage === 'letter_revealed' ? 'opacity-0 -translate-y-4' : ''
+                          stage === 'click_to_reveal' || stage === 'letter_revealed' || stage === 'can_proceed' ? 'opacity-0 -translate-y-4' : ''
                         }`}
                       />
 
@@ -273,7 +292,7 @@ export default function BagOpenReveal({
                   </div>
 
                   {/* Sparkles when opening */}
-                  {(stage === 'bag_opening' || stage === 'bag_opened') && (
+                  {(stage === 'bag_opening' || stage === 'bag_opened' || stage === 'click_to_reveal') && (
                     <>
                       {[...Array(12)].map((_, i) => (
                         <Sparkles
@@ -293,7 +312,7 @@ export default function BagOpenReveal({
                 </div>
 
                 {/* Letter reveal (rises from inside the bag) */}
-                {stage === 'letter_revealed' && currentResult && (
+                {(stage === 'letter_revealed' || stage === 'can_proceed') && currentResult && (
                   <div className="absolute inset-0 flex items-end justify-center pb-10 pointer-events-none">
                     <div className="transition-all duration-500 animate-letter-rise">
                       <div
@@ -319,24 +338,44 @@ export default function BagOpenReveal({
               <div className="flex flex-col items-center justify-center gap-3 pointer-events-none">
                 {stage === 'bag_closed' && (
                   <>
-                    <h2 className="text-xl font-bold">اضغط أي مكان لفتح الكيس</h2>
-                    <p className="text-sm opacity-80">(نقرة واحدة)</p>
+                    <h2 className="text-xl font-bold">اضغط لفتح الكيس</h2>
+                    <p className="text-sm opacity-80">(ضغطة أولى)</p>
                   </>
                 )}
                 {stage === 'bag_opening' && <h2 className="text-xl font-bold animate-pulse">🎁 يتم الفتح...</h2>}
                 {stage === 'bag_opened' && <h2 className="text-xl font-bold">✨ لحظة...</h2>}
+                {stage === 'click_to_reveal' && (
+                  <>
+                    <h2 className="text-xl font-bold">اضغط لكشف الحرف</h2>
+                    <p className="text-sm opacity-80">(ضغطة ثانية)</p>
+                  </>
+                )}
                 {stage === 'letter_revealed' && currentResult?.letter && (
                   <div className="animate-scale-in space-y-2">
                     <h2 className="text-2xl font-bold">
                       حصلت على الحرف <span className="text-yellow-300 text-3xl">{currentResult.letter}</span>!
                     </h2>
-                    <p className="text-sm opacity-80">اضغط أي مكان {currentBagIndex < totalBags - 1 ? 'للكيس التالي' : 'لعرض النتيجة'}</p>
+                    <p className="text-sm opacity-60 animate-pulse">انتظر...</p>
                   </div>
                 )}
                 {stage === 'letter_revealed' && !currentResult?.letter && (
                   <div className="animate-scale-in space-y-2">
                     <h2 className="text-xl font-bold">حظ أوفر! 😔</h2>
-                    <p className="text-sm opacity-80">اضغط أي مكان {currentBagIndex < totalBags - 1 ? 'للكيس التالي' : 'لعرض النتيجة'}</p>
+                    <p className="text-sm opacity-60 animate-pulse">انتظر...</p>
+                  </div>
+                )}
+                {stage === 'can_proceed' && currentResult?.letter && (
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold">
+                      حصلت على الحرف <span className="text-yellow-300 text-3xl">{currentResult.letter}</span>!
+                    </h2>
+                    <p className="text-sm opacity-80">اضغط {currentBagIndex < totalBags - 1 ? 'للكيس التالي' : 'لعرض النتيجة'}</p>
+                  </div>
+                )}
+                {stage === 'can_proceed' && !currentResult?.letter && (
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-bold">حظ أوفر! 😔</h2>
+                    <p className="text-sm opacity-80">اضغط {currentBagIndex < totalBags - 1 ? 'للكيس التالي' : 'لعرض النتيجة'}</p>
                   </div>
                 )}
               </div>
@@ -361,7 +400,10 @@ export default function BagOpenReveal({
                     <span className="text-sm opacity-70">لا توجد نتائج</span>
                   ) : (
                     <>
-                      {Object.entries(revealedLetterCounts).map(([letter, count]) => (
+                      {/* Sort letters alphabetically */}
+                      {Object.entries(revealedLetterCounts)
+                        .sort(([a], [b]) => a.localeCompare(b, 'ar'))
+                        .map(([letter, count]) => (
                         <div
                           key={letter}
                           className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg flex items-center justify-center font-bold text-xl relative"
@@ -375,9 +417,11 @@ export default function BagOpenReveal({
                         </div>
                       ))}
                       {revealedBetterLuckCount > 0 && (
-                        <div className="w-12 h-12 rounded-xl bg-gray-500/50 text-white/80 flex items-center justify-center font-bold text-lg">
+                        <div className="w-12 h-12 rounded-xl bg-gray-500/50 text-white/80 flex items-center justify-center font-bold text-lg relative">
                           ✗
-                          <span className="sr-only">حظ أوفر</span>
+                          <span className="absolute -top-1 -right-1 w-5 h-5 bg-gray-600 rounded-full text-xs flex items-center justify-center">
+                            {revealedBetterLuckCount}
+                          </span>
                         </div>
                       )}
                     </>
