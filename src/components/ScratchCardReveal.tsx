@@ -33,6 +33,7 @@ export default function ScratchCardReveal({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isScratching, setIsScratching] = useState(false);
   const [scratchPercentage, setScratchPercentage] = useState(0);
+  const [isReadyToReveal, setIsReadyToReveal] = useState(false); // Scratched enough but not revealed yet
   const [isRevealed, setIsRevealed] = useState(false);
   const [showPrize, setShowPrize] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -41,7 +42,7 @@ export default function ScratchCardReveal({
   const targetWord = lettersConfig.target_word || '';
   const allCollected = awardedLetter ? [...collectedLetters, awardedLetter] : collectedLetters;
 
-  const SCRATCH_THRESHOLD = 45; // 45% scratched to reveal
+  const SCRATCH_THRESHOLD = 40; // 40% scratched to be ready to reveal
 
   const initCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -50,24 +51,32 @@ export default function ScratchCardReveal({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Create scratch overlay gradient
+    // Create premium golden scratch overlay
     const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, '#6366f1');
-    gradient.addColorStop(0.5, '#8b5cf6');
-    gradient.addColorStop(1, '#a855f7');
+    gradient.addColorStop(0, '#d4a574');
+    gradient.addColorStop(0.3, '#c9a86c');
+    gradient.addColorStop(0.5, '#b8956b');
+    gradient.addColorStop(0.7, '#a38560');
+    gradient.addColorStop(1, '#8b7355');
     
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Add ticket pattern
-    ctx.globalAlpha = 0.3;
-    ctx.fillStyle = '#ffffff';
-    
-    // Draw decorative circles
-    for (let i = 0; i < 20; i++) {
+    // Add metallic scratch texture
+    ctx.globalAlpha = 0.15;
+    for (let i = 0; i < 300; i++) {
       const x = Math.random() * canvas.width;
       const y = Math.random() * canvas.height;
-      const radius = Math.random() * 15 + 5;
+      ctx.fillStyle = Math.random() > 0.5 ? '#ffffff' : '#000000';
+      ctx.fillRect(x, y, Math.random() * 3, 1);
+    }
+    
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 15; i++) {
+      const x = Math.random() * canvas.width;
+      const y = Math.random() * canvas.height;
+      const radius = Math.random() * 20 + 10;
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
       ctx.fill();
@@ -75,22 +84,26 @@ export default function ScratchCardReveal({
     
     ctx.globalAlpha = 1;
     
-    // Draw "امسح هنا" text
-    ctx.font = 'bold 24px Cairo, Arial';
+    // Draw "امسح هنا" text with shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 2;
+    ctx.font = 'bold 22px Cairo, Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-    ctx.fillText('امسح هنا', canvas.width / 2, canvas.height / 2 - 15);
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    ctx.fillText('امسح هنا', canvas.width / 2, canvas.height / 2 - 12);
     
-    // Draw finger icon indicator
-    ctx.font = '36px Arial';
-    ctx.fillText('👆', canvas.width / 2, canvas.height / 2 + 25);
+    ctx.shadowBlur = 0;
+    ctx.font = '32px Arial';
+    ctx.fillText('👆', canvas.width / 2, canvas.height / 2 + 22);
   }, []);
 
   useEffect(() => {
     if (isOpen) {
       setIsScratching(false);
       setScratchPercentage(0);
+      setIsReadyToReveal(false);
       setIsRevealed(false);
       setShowPrize(false);
       setShowConfetti(false);
@@ -143,25 +156,32 @@ export default function ScratchCardReveal({
 
       ctx.globalCompositeOperation = "destination-out";
       ctx.beginPath();
-      ctx.arc(x, y, 30, 0, Math.PI * 2);
+      ctx.arc(x, y, 28, 0, Math.PI * 2);
       ctx.fill();
 
       const percentage = calculateScratchPercentage();
       setScratchPercentage(percentage);
 
-      if (percentage >= SCRATCH_THRESHOLD && !isRevealed) {
-        setIsRevealed(true);
-        if (!isBetterLuck) {
-          setShowConfetti(true);
-        }
-
-        if (wonPrize) {
-          setTimeout(() => setShowPrize(true), 1500);
-        }
+      // Mark as ready but don't reveal yet - wait for finger lift
+      if (percentage >= SCRATCH_THRESHOLD && !isReadyToReveal) {
+        setIsReadyToReveal(true);
       }
     },
-    [isRevealed, calculateScratchPercentage, isBetterLuck, wonPrize]
+    [isRevealed, isReadyToReveal, calculateScratchPercentage]
   );
+
+  // Reveal only when user lifts finger AND has scratched enough
+  const doReveal = useCallback(() => {
+    if (isReadyToReveal && !isRevealed) {
+      setIsRevealed(true);
+      if (!isBetterLuck) {
+        setShowConfetti(true);
+      }
+      if (wonPrize) {
+        setTimeout(() => setShowPrize(true), 1500);
+      }
+    }
+  }, [isReadyToReveal, isRevealed, isBetterLuck, wonPrize]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.preventDefault();
@@ -176,7 +196,10 @@ export default function ScratchCardReveal({
     scratchAt(e.clientX, e.clientY);
   };
 
-  const handlePointerUp = () => setIsScratching(false);
+  const handlePointerUp = () => {
+    setIsScratching(false);
+    doReveal(); // Only reveal when finger is lifted
+  };
   const handlePointerCancel = () => setIsScratching(false);
 
   const skipToEnd = () => {
@@ -192,23 +215,32 @@ export default function ScratchCardReveal({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent 
-        className="max-w-sm p-0 overflow-hidden border-0"
+        className="max-w-sm p-0 overflow-hidden border-0 shadow-2xl"
         onPointerDownOutside={(e) => e.preventDefault()}
         style={{
-          background: 'radial-gradient(ellipse at top, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%)'
+          background: 'linear-gradient(145deg, #0c0c1d 0%, #1a1a3e 40%, #0f0f2d 100%)'
         }}
       >
         <VisuallyHidden>
           <DialogTitle>مسح التذكرة</DialogTitle>
         </VisuallyHidden>
         
+        {/* Decorative border glow */}
+        <div 
+          className="absolute inset-0 pointer-events-none rounded-lg"
+          style={{
+            background: 'linear-gradient(135deg, rgba(212,165,116,0.3) 0%, transparent 50%, rgba(212,165,116,0.2) 100%)',
+            padding: '1px'
+          }}
+        />
+        
         {/* Animated shimmer background */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div 
             className="absolute inset-0"
             style={{
-              background: 'linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.05) 50%, transparent 100%)',
-              animation: 'shimmer 3s infinite linear'
+              background: 'linear-gradient(135deg, transparent 0%, rgba(212,165,116,0.08) 50%, transparent 100%)',
+              animation: 'shimmer 4s infinite linear'
             }}
           />
         </div>
@@ -287,48 +319,80 @@ export default function ScratchCardReveal({
                   : '🎫 امسح التذكرة لكشف الحرف'}
               </h2>
               
-              {/* Scratch card area */}
-              <div className="relative mx-auto w-64 h-48 rounded-2xl overflow-hidden shadow-2xl">
+              {/* Scratch card area - Premium ticket design */}
+              <div 
+                className="relative mx-auto w-72 h-52 rounded-xl overflow-hidden"
+                style={{
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(212,165,116,0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
+                }}
+              >
+                {/* Ticket notches */}
+                <div className="absolute top-0 left-0 w-4 h-4 bg-[#0c0c1d] rounded-br-full" />
+                <div className="absolute top-0 right-0 w-4 h-4 bg-[#0c0c1d] rounded-bl-full" />
+                <div className="absolute bottom-0 left-0 w-4 h-4 bg-[#0c0c1d] rounded-tr-full" />
+                <div className="absolute bottom-0 right-0 w-4 h-4 bg-[#0c0c1d] rounded-tl-full" />
+                
                 {/* Background with letter/result */}
                 <div 
-                  className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${
+                  className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ${
                     isBetterLuck 
-                      ? 'bg-gradient-to-br from-gray-400 to-gray-600' 
-                      : 'bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600'
+                      ? 'bg-gradient-to-br from-slate-500 via-slate-600 to-slate-700' 
+                      : 'bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-500'
                   }`}
-                  style={{
-                    boxShadow: !isBetterLuck && isRevealed 
-                      ? '0 0 40px 15px rgba(255, 215, 0, 0.3) inset' 
-                      : undefined
-                  }}
                 >
+                  {/* Decorative pattern */}
+                  <div 
+                    className="absolute inset-0 opacity-10"
+                    style={{
+                      backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)',
+                      backgroundSize: '16px 16px'
+                    }}
+                  />
+                  
                   {isRevealed ? (
-                    <div className="animate-scale-in">
+                    <div className="animate-scale-in relative z-10">
                       {isBetterLuck ? (
                         <div className="text-center">
-                          <span className="text-6xl">😔</span>
-                          <p className="text-white text-sm mt-2">لم تحصل على حرف</p>
+                          <span className="text-7xl">😔</span>
+                          <p className="text-white text-base mt-3 font-medium">لم تحصل على حرف</p>
                         </div>
                       ) : (
                         <div className="text-center">
-                          <span 
-                            className="text-7xl font-bold text-white drop-shadow-lg"
+                          <div 
+                            className="relative inline-block"
                             style={{
-                              textShadow: '0 4px 20px rgba(0, 0, 0, 0.3), 0 0 40px rgba(255, 255, 255, 0.5)'
+                              filter: 'drop-shadow(0 4px 20px rgba(0,0,0,0.3))'
                             }}
                           >
-                            {awardedLetter}
-                          </span>
-                          <div className="flex items-center justify-center gap-1 mt-2">
-                            <Sparkles className="h-4 w-4 text-yellow-200" />
-                            <span className="text-white/90 text-sm">حرف جديد!</span>
-                            <Sparkles className="h-4 w-4 text-yellow-200" />
+                            <span 
+                              className="text-8xl font-bold text-white block"
+                              style={{
+                                textShadow: '0 0 60px rgba(255,255,255,0.8), 0 4px 8px rgba(0,0,0,0.3)'
+                              }}
+                            >
+                              {awardedLetter}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-center gap-2 mt-3">
+                            <Sparkles className="h-5 w-5 text-yellow-100 animate-pulse" />
+                            <span className="text-white text-base font-medium">حرف جديد!</span>
+                            <Sparkles className="h-5 w-5 text-yellow-100 animate-pulse" />
                           </div>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="text-6xl">❓</div>
+                    <div className="text-7xl opacity-50">❓</div>
+                  )}
+                  
+                  {/* Glow effect when revealed */}
+                  {isRevealed && !isBetterLuck && (
+                    <div 
+                      className="absolute inset-0 animate-pulse"
+                      style={{
+                        boxShadow: '0 0 60px 20px rgba(255,215,0,0.4) inset'
+                      }}
+                    />
                   )}
                 </div>
                 
@@ -336,8 +400,8 @@ export default function ScratchCardReveal({
                 {!isRevealed && (
                   <canvas
                     ref={canvasRef}
-                    width={256}
-                    height={192}
+                    width={288}
+                    height={208}
                     className="absolute inset-0 w-full h-full cursor-crosshair touch-none z-10"
                     style={{ touchAction: 'none' }}
                     onPointerDown={handlePointerDown}
@@ -350,13 +414,18 @@ export default function ScratchCardReveal({
                 
                 {/* Scratch progress indicator */}
                 {!isRevealed && scratchPercentage > 5 && (
-                  <div className="absolute bottom-2 left-2 right-2">
-                    <div className="h-1 bg-white/30 rounded-full overflow-hidden">
+                  <div className="absolute bottom-3 left-4 right-4 z-20">
+                    <div className="h-1.5 bg-black/30 rounded-full overflow-hidden backdrop-blur-sm">
                       <div 
-                        className="h-full bg-yellow-400 rounded-full transition-all duration-200"
+                        className={`h-full rounded-full transition-all duration-200 ${
+                          isReadyToReveal ? 'bg-green-400' : 'bg-amber-400'
+                        }`}
                         style={{ width: `${Math.min(scratchPercentage * (100 / SCRATCH_THRESHOLD), 100)}%` }}
                       />
                     </div>
+                    {isReadyToReveal && !isRevealed && (
+                      <p className="text-center text-xs text-green-300 mt-1 animate-pulse">ارفع إصبعك لكشف الحرف!</p>
+                    )}
                   </div>
                 )}
               </div>

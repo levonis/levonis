@@ -36,12 +36,14 @@ export default function BagOpenReveal({
   allowSkip = true
 }: BagOpenRevealProps) {
   const [currentBagIndex, setCurrentBagIndex] = useState(0);
-  // Simplified stages: bag_closed -> bag_opening -> letter_revealed (wait 1s) -> can_proceed
-  const [stage, setStage] = useState<'bag_closed' | 'bag_opening' | 'letter_revealed' | 'can_proceed' | 'all_done' | 'prize'>('bag_closed');
+  // For single bag: bag_closed -> bag_opening -> letter_rising -> letter_revealed -> can_proceed
+  // For multiple: same flow
+  const [stage, setStage] = useState<'bag_closed' | 'bag_opening' | 'letter_rising' | 'letter_revealed' | 'can_proceed' | 'all_done' | 'prize'>('bag_closed');
   const [skipped, setSkipped] = useState(false);
   const [revealedLetters, setRevealedLetters] = useState<BagResult[]>([]);
 
   const totalBags = results.length;
+  const isSingleBag = totalBags === 1;
   const currentResult = results[currentBagIndex];
   const targetWord = lettersConfig.target_word || '';
 
@@ -90,11 +92,19 @@ export default function BagOpenReveal({
     if (!isOpen || skipped) return;
 
     if (stage === 'bag_opening') {
-      // After shake animation, reveal letter immediately
+      // After shake animation, start letter rising
+      const timer = setTimeout(() => {
+        setStage('letter_rising');
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+
+    if (stage === 'letter_rising') {
+      // Letter rises, then reveal fully
       const timer = setTimeout(() => {
         setStage('letter_revealed');
         setRevealedLetters(prev => [...prev, currentResult]);
-      }, 900);
+      }, 600);
       return () => clearTimeout(timer);
     }
 
@@ -236,14 +246,15 @@ export default function BagOpenReveal({
           )}
 
           {/* Bag animation stages */}
-          {(stage === 'bag_closed' || stage === 'bag_opening' || stage === 'letter_revealed' || stage === 'can_proceed') && !skipped && (
+          {(stage === 'bag_closed' || stage === 'bag_opening' || stage === 'letter_rising' || stage === 'letter_revealed' || stage === 'can_proceed') && !skipped && (
             <div className="space-y-6">
               {/* Bag visual */}
               <div className="relative pointer-events-none">
                 {/* Glow effect */}
                 <div
                   className={`absolute inset-0 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-400 blur-3xl rounded-full transition-all duration-500 ${
-                    stage === 'bag_opening' ? 'opacity-60 scale-150' : 'opacity-30'
+                    stage === 'bag_opening' || stage === 'letter_rising' ? 'opacity-70 scale-150' : 
+                    stage === 'letter_revealed' || stage === 'can_proceed' ? 'opacity-40 scale-125' : 'opacity-30'
                   }`}
                 />
 
@@ -255,8 +266,8 @@ export default function BagOpenReveal({
                 >
                   {/* Bag shape */}
                   <div
-                    className={`w-32 h-44 mx-auto relative transition-all duration-500 ${
-                      stage === 'letter_revealed' || stage === 'can_proceed' ? 'opacity-50 scale-95' : ''
+                    className={`${isSingleBag ? 'w-36 h-48' : 'w-32 h-44'} mx-auto relative transition-all duration-500 ${
+                      stage === 'letter_rising' || stage === 'letter_revealed' || stage === 'can_proceed' ? 'opacity-40 scale-90 translate-y-4' : ''
                     }`}
                   >
                     {/* Bag body */}
@@ -267,7 +278,7 @@ export default function BagOpenReveal({
                       {/* Bag mouth/tie */}
                       <div
                         className={`absolute top-0 left-0 right-0 h-10 bg-gradient-to-r from-red-500 via-rose-500 to-red-600 rounded-t-[28px] transition-all duration-500 ${
-                          stage === 'letter_revealed' || stage === 'can_proceed' ? 'opacity-0 -translate-y-4' : ''
+                          stage === 'letter_rising' || stage === 'letter_revealed' || stage === 'can_proceed' ? 'opacity-0 -translate-y-6 scale-110' : ''
                         }`}
                       />
 
@@ -284,18 +295,18 @@ export default function BagOpenReveal({
                   </div>
 
                   {/* Sparkles when opening */}
-                  {stage === 'bag_opening' && (
+                  {(stage === 'bag_opening' || stage === 'letter_rising') && (
                     <>
-                      {[...Array(12)].map((_, i) => (
+                      {[...Array(16)].map((_, i) => (
                         <Sparkles
                           key={i}
                           className="absolute h-5 w-5 text-yellow-300"
                           style={{
-                            left: `${50 + 60 * Math.cos(i * Math.PI / 6)}%`,
-                            top: `${50 + 60 * Math.sin(i * Math.PI / 6)}%`,
+                            left: `${50 + 70 * Math.cos(i * Math.PI / 8)}%`,
+                            top: `${50 + 70 * Math.sin(i * Math.PI / 8)}%`,
                             transform: 'translate(-50%, -50%)',
-                            animation: `sparkle-burst 1s ease-out forwards`,
-                            animationDelay: `${i * 0.05}s`
+                            animation: `sparkle-burst 1.2s ease-out forwards`,
+                            animationDelay: `${i * 0.04}s`
                           }}
                         />
                       ))}
@@ -304,22 +315,31 @@ export default function BagOpenReveal({
                 </div>
 
                 {/* Letter reveal (rises from inside the bag) */}
-                {(stage === 'letter_revealed' || stage === 'can_proceed') && currentResult && (
-                  <div className="absolute inset-0 flex items-end justify-center pb-10 pointer-events-none">
-                    <div className="transition-all duration-500 animate-letter-rise">
+                {(stage === 'letter_rising' || stage === 'letter_revealed' || stage === 'can_proceed') && currentResult && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div 
+                      className={`transition-all duration-700 ${
+                        stage === 'letter_rising' ? 'translate-y-8 scale-90 opacity-80' : 'translate-y-0 scale-100 opacity-100'
+                      }`}
+                      style={{
+                        animation: stage === 'letter_revealed' || stage === 'can_proceed' ? 'letter-float 2s ease-in-out infinite' : undefined
+                      }}
+                    >
                       <div
-                        className={`w-24 h-24 rounded-2xl flex items-center justify-center shadow-2xl ${
+                        className={`${isSingleBag ? 'w-28 h-28' : 'w-24 h-24'} rounded-2xl flex items-center justify-center shadow-2xl ${
                           currentResult.letter
-                            ? 'bg-gradient-to-br from-yellow-400 via-amber-500 to-amber-600'
+                            ? 'bg-gradient-to-br from-yellow-300 via-amber-400 to-amber-600'
                             : 'bg-gradient-to-br from-gray-400 to-gray-500'
                         }`}
                         style={{
                           boxShadow: currentResult.letter
-                            ? '0 0 40px 15px rgba(255, 215, 0, 0.35)'
-                            : '0 0 20px 5px rgba(128, 128, 128, 0.25)'
+                            ? '0 0 50px 20px rgba(255, 215, 0, 0.4), 0 10px 30px rgba(0,0,0,0.3)'
+                            : '0 0 25px 8px rgba(128, 128, 128, 0.25), 0 10px 30px rgba(0,0,0,0.3)'
                         }}
                       >
-                        <span className="text-5xl font-bold text-white">{currentResult.letter || '😔'}</span>
+                        <span className={`${isSingleBag ? 'text-6xl' : 'text-5xl'} font-bold text-white`}>
+                          {currentResult.letter || '😔'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -330,15 +350,16 @@ export default function BagOpenReveal({
               <div className="flex flex-col items-center justify-center gap-3 pointer-events-none">
                 {stage === 'bag_closed' && (
                   <>
-                    <h2 className="text-xl font-bold">اضغط لفتح الكيس</h2>
+                    <h2 className={`${isSingleBag ? 'text-2xl' : 'text-xl'} font-bold`}>اضغط لفتح الكيس</h2>
                     <p className="text-sm opacity-80">(ضغطة أولى)</p>
                   </>
                 )}
                 {stage === 'bag_opening' && <h2 className="text-xl font-bold animate-pulse">🎁 يتم الفتح...</h2>}
+                {stage === 'letter_rising' && <h2 className="text-xl font-bold animate-pulse">✨ الحرف يظهر...</h2>}
                 {stage === 'letter_revealed' && currentResult?.letter && (
                   <div className="animate-scale-in space-y-2">
-                    <h2 className="text-2xl font-bold">
-                      حصلت على الحرف <span className="text-yellow-300 text-3xl">{currentResult.letter}</span>!
+                    <h2 className={`${isSingleBag ? 'text-3xl' : 'text-2xl'} font-bold`}>
+                      حصلت على الحرف <span className="text-yellow-300 text-4xl">{currentResult.letter}</span>!
                     </h2>
                     <p className="text-sm opacity-60 animate-pulse">انتظر...</p>
                   </div>
@@ -351,8 +372,8 @@ export default function BagOpenReveal({
                 )}
                 {stage === 'can_proceed' && currentResult?.letter && (
                   <div className="space-y-2">
-                    <h2 className="text-2xl font-bold">
-                      حصلت على الحرف <span className="text-yellow-300 text-3xl">{currentResult.letter}</span>!
+                    <h2 className={`${isSingleBag ? 'text-3xl' : 'text-2xl'} font-bold`}>
+                      حصلت على الحرف <span className="text-yellow-300 text-4xl">{currentResult.letter}</span>!
                     </h2>
                     <p className="text-sm opacity-80">اضغط {currentBagIndex < totalBags - 1 ? 'للكيس التالي' : 'لعرض النتيجة'}</p>
                   </div>
