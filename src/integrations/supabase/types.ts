@@ -1835,7 +1835,23 @@ export type Database = {
       delete_old_notifications: { Args: never; Returns: undefined }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
       draw_multiple_winners: { Args: { comp_id: string }; Returns: Json }
+      enter_collect_letters_competition: {
+        Args: { comp_id: string }
+        Returns: Json
+      }
       enter_competition_with_tickets: {
+        Args: { comp_id: string }
+        Returns: Json
+      }
+      enter_everyone_wins_competition: {
+        Args: { comp_id: string }
+        Returns: Json
+      }
+      enter_instant_win_competition: {
+        Args: { comp_id: string }
+        Returns: Json
+      }
+      enter_mystery_box_competition: {
         Args: { comp_id: string }
         Returns: Json
       }
@@ -1862,6 +1878,14 @@ export type Database = {
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }
       purchase_tickets: {
         Args: { price_per_ticket: number; ticket_quantity: number }
+        Returns: Json
+      }
+      purchase_tickets_with_bonus: {
+        Args: {
+          bonus_tickets: number
+          price_per_ticket: number
+          ticket_quantity: number
+        }
         Returns: Json
       }
       send_general_notification: {

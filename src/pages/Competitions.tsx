@@ -322,6 +322,149 @@ export default function Competitions() {
     }
   });
 
+  // Bundle purchase mutation
+  const purchaseBundleMutation = useMutation({
+    mutationFn: async (bundle: { quantity: number; bonusTickets: number; price: number }) => {
+      const pricePerTicket = bundle.price / bundle.quantity;
+      const { data, error } = await supabase.rpc('purchase_tickets_with_bonus', {
+        ticket_quantity: bundle.quantity,
+        bonus_tickets: bundle.bonusTickets,
+        price_per_ticket: pricePerTicket
+      });
+      if (error) throw error;
+      return { ...(data as Record<string, any>), bundle };
+    },
+    onSuccess: (data: any) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
+        queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+        toast.success(`🎉 تم شراء ${data.purchased} تذكرة + ${data.bonus} هدية!`);
+        setShowBundleOffers(false);
+      } else {
+        toast.error(data.error);
+      }
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ: ' + error.message);
+    }
+  });
+
+  // Instant win competition mutation
+  const enterInstantWinMutation = useMutation({
+    mutationFn: async (competitionId: string) => {
+      const { data, error } = await supabase.rpc('enter_instant_win_competition', {
+        comp_id: competitionId
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
+        queryClient.invalidateQueries({ queryKey: ['my-competition-tickets'] });
+        queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
+        setInstantRevealResult({ isWinner: data.is_winner, prize: data.prize });
+        setShowInstantReveal(true);
+        if (data.is_winner) {
+          setShowWinCelebration(true);
+        }
+      } else {
+        toast.error(data.error);
+      }
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ: ' + error.message);
+    }
+  });
+
+  // Collect letters competition mutation
+  const enterCollectLettersMutation = useMutation({
+    mutationFn: async (competitionId: string) => {
+      const { data, error } = await supabase.rpc('enter_collect_letters_competition', {
+        comp_id: competitionId
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
+        queryClient.invalidateQueries({ queryKey: ['my-competition-tickets'] });
+        queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
+        
+        const wonPrize = data.won_prizes && data.won_prizes.length > 0 ? data.won_prizes[0] : null;
+        setLetterRevealData({
+          letter: data.letter_awarded,
+          collected: data.collected_letters || [],
+          config: selectedCompetitionForEntry?.letters_config || {},
+          prize: wonPrize
+        });
+        setShowLetterReveal(true);
+        
+        if (wonPrize) {
+          setShowWinCelebration(true);
+        }
+      } else {
+        toast.error(data.error);
+      }
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ: ' + error.message);
+    }
+  });
+
+  // Mystery box mutation
+  const enterMysteryBoxMutation = useMutation({
+    mutationFn: async (competitionId: string) => {
+      const { data, error } = await supabase.rpc('enter_mystery_box_competition', {
+        comp_id: competitionId
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
+        queryClient.invalidateQueries({ queryKey: ['my-competition-tickets'] });
+        queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
+        setInstantRevealResult({ isWinner: true, prize: data.prize });
+        setShowInstantReveal(true);
+        setShowWinCelebration(true);
+      } else {
+        toast.error(data.error);
+      }
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ: ' + error.message);
+    }
+  });
+
+  // Everyone wins mutation
+  const enterEveryoneWinsMutation = useMutation({
+    mutationFn: async (competitionId: string) => {
+      const { data, error } = await supabase.rpc('enter_everyone_wins_competition', {
+        comp_id: competitionId
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
+        queryClient.invalidateQueries({ queryKey: ['my-competition-tickets'] });
+        queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
+        setInstantRevealResult({ isWinner: true, prize: data.prize });
+        setShowInstantReveal(true);
+        setShowWinCelebration(true);
+      } else {
+        toast.error(data.error);
+      }
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ: ' + error.message);
+    }
+  });
+
   const enterCompetitionMutation = useMutation({
     mutationFn: async (competitionId: string) => {
       const { data, error } = await supabase.rpc('enter_competition_with_tickets', {
@@ -344,6 +487,28 @@ export default function Competitions() {
       toast.error('حدث خطأ: ' + error.message);
     }
   });
+
+  // Handle competition entry based on type
+  const handleCompetitionEntry = useCallback((comp: Competition) => {
+    if (!comp) return;
+    
+    switch (comp.competition_type) {
+      case 'instant_winner':
+        enterInstantWinMutation.mutate(comp.id);
+        break;
+      case 'collect_letters':
+        enterCollectLettersMutation.mutate(comp.id);
+        break;
+      case 'mystery_box':
+        enterMysteryBoxMutation.mutate(comp.id);
+        break;
+      case 'everyone_wins':
+        enterEveryoneWinsMutation.mutate(comp.id);
+        break;
+      default:
+        enterCompetitionMutation.mutate(comp.id);
+    }
+  }, [enterInstantWinMutation, enterCollectLettersMutation, enterMysteryBoxMutation, enterEveryoneWinsMutation, enterCompetitionMutation]);
 
   const getAllImages = useCallback((comp: Competition): string[] => {
     if (comp.images?.length) return comp.images;
@@ -518,6 +683,24 @@ export default function Competitions() {
                 )}
                 شراء
               </Button>
+              
+              {/* Bundle Offers Button */}
+              <Button 
+                variant="outline"
+                size="sm"
+                className="gap-1"
+                onClick={() => {
+                  if (!user) {
+                    toast.error('يجب تسجيل الدخول أولاً');
+                    navigate('/auth');
+                    return;
+                  }
+                  setShowBundleOffers(true);
+                }}
+              >
+                <Sparkles className="h-4 w-4" />
+                عروض
+              </Button>
             </div>
 
             <div className="flex items-center gap-3">
@@ -664,14 +847,19 @@ export default function Competitions() {
             <AlertDialogAction
               onClick={() => {
                 if (selectedCompetitionForEntry) {
-                  enterCompetitionMutation.mutate(selectedCompetitionForEntry.id);
+                  handleCompetitionEntry(selectedCompetitionForEntry);
                 }
                 setShowEnterConfirm(false);
                 setSelectedCompetitionForEntry(null);
               }}
               className="gap-1"
+              disabled={enterCompetitionMutation.isPending || enterInstantWinMutation.isPending || enterCollectLettersMutation.isPending || enterMysteryBoxMutation.isPending || enterEveryoneWinsMutation.isPending}
             >
-              <Ticket className="h-4 w-4" />
+              {(enterCompetitionMutation.isPending || enterInstantWinMutation.isPending || enterCollectLettersMutation.isPending || enterMysteryBoxMutation.isPending || enterEveryoneWinsMutation.isPending) ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Ticket className="h-4 w-4" />
+              )}
               تأكيد الدخول
             </AlertDialogAction>
             <AlertDialogCancel onClick={() => setSelectedCompetitionForEntry(null)}>إلغاء</AlertDialogCancel>
@@ -1029,6 +1217,59 @@ export default function Competitions() {
         isActive={showWinCelebration} 
         onComplete={() => setShowWinCelebration(false)}
       />
+
+      {/* Instant Win Reveal Dialog */}
+      <InstantWinReveal
+        isOpen={showInstantReveal}
+        onClose={() => {
+          setShowInstantReveal(false);
+          setInstantRevealResult(null);
+        }}
+        prize={instantRevealResult?.prize}
+        competitionType={selectedCompetitionForEntry?.competition_type as 'instant_winner' | 'everyone_wins' | 'mystery_box' || 'instant_winner'}
+        isWinner={instantRevealResult?.isWinner || false}
+      />
+
+      {/* Letter Reveal Dialog */}
+      {letterRevealData && (
+        <LetterReveal
+          isOpen={showLetterReveal}
+          onClose={() => {
+            setShowLetterReveal(false);
+            setLetterRevealData(null);
+          }}
+          awardedLetter={letterRevealData.letter}
+          collectedLetters={letterRevealData.collected}
+          lettersConfig={letterRevealData.config}
+          wonPrize={letterRevealData.prize}
+        />
+      )}
+
+      {/* Bundle Offers Dialog */}
+      <Dialog open={showBundleOffers} onOpenChange={setShowBundleOffers}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogTitle className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            عروض التذاكر الخاصة
+          </DialogTitle>
+          <DialogDescription>
+            اشترِ المزيد واحصل على تذاكر هدية!
+          </DialogDescription>
+          
+          <TicketBundleOffer
+            bundles={getTicketBundles()}
+            onSelectBundle={(bundle) => {
+              if (wallet && wallet.balance >= bundle.price) {
+                purchaseBundleMutation.mutate(bundle);
+              } else {
+                toast.error('رصيد المحفظة غير كافٍ');
+              }
+            }}
+            walletBalance={wallet?.balance || 0}
+            isLoading={purchaseBundleMutation.isPending}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
