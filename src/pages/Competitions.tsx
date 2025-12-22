@@ -437,7 +437,7 @@ export default function Competitions() {
         
         const wonPrize = data.won_prizes && data.won_prizes.length > 0 ? data.won_prizes[0] : null;
         setLetterRevealData({
-          letter: data.letter_awarded,
+          letter: data.is_better_luck ? null : data.letter_awarded,
           collected: data.collected_letters || [],
           config: selectedCompetitionForEntry?.letters_config || {},
           prize: wonPrize
