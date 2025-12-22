@@ -231,7 +231,10 @@ export default function AdminCompetitions() {
     unlimited_winners: false,
     is_featured: false,
     prize_product_id: '' as string,
-    prize_products: [] as { product_id: string; quantity: number }[]
+    prize_products: [] as { product_id: string; quantity: number }[],
+    // Bag animation settings
+    bags_per_reveal: 1 as number,
+    allow_skip_animation: true as boolean
   });
 
   // Fetch products for prize selection
@@ -603,7 +606,9 @@ export default function AdminCompetitions() {
       unlimited_winners: false,
       is_featured: false,
       prize_product_id: '',
-      prize_products: []
+      prize_products: [],
+      bags_per_reveal: 1,
+      allow_skip_animation: true
     });
     setEditingCompetition(null);
   };
@@ -676,7 +681,9 @@ export default function AdminCompetitions() {
       unlimited_winners: compAny.unlimited_winners || false,
       is_featured: compAny.is_featured || false,
       prize_product_id: compAny.prize_product_id || '',
-      prize_products: compAny.prize_products || []
+      prize_products: compAny.prize_products || [],
+      bags_per_reveal: compAny.letters_config?.bags_per_reveal || 1,
+      allow_skip_animation: compAny.letters_config?.allow_skip_animation !== false
     });
     setIsDialogOpen(true);
   };
@@ -1580,15 +1587,68 @@ export default function AdminCompetitions() {
                   {/* جمع الأحرف */}
                   {formData.competition_type === 'collect_letters' && (
                     <div className="mt-4 p-4 bg-violet-500/5 rounded-lg border border-violet-500/20">
-                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-violet-600">
+                      <h4 className="text-sm font-semibold mb-4 flex items-center gap-2 text-violet-600">
                         🔤 إعدادات جمع الأحرف
                       </h4>
                       
-                      <div className="mb-4">
-                        <Label className="text-xs mb-2 block">الأحرف المتاحة ونسبة ظهورها</Label>
-                        <div className="flex flex-wrap gap-2 mb-2">
+                      {/* Animation settings */}
+                      <div className="mb-4 p-3 bg-purple-500/10 rounded-lg border border-purple-500/20">
+                        <Label className="text-xs font-semibold mb-3 block flex items-center gap-2">
+                          🎬 إعدادات الأنيميشن
+                        </Label>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label className="text-xs">عدد الأكياس المفتوحة دفعة واحدة</Label>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant={formData.bags_per_reveal === 1 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setFormData({ ...formData, bags_per_reveal: 1 })}
+                                className="flex-1"
+                              >
+                                كيس واحد
+                              </Button>
+                              <Button
+                                type="button"
+                                variant={formData.bags_per_reveal === 10 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setFormData({ ...formData, bags_per_reveal: 10 })}
+                                className="flex-1"
+                              >
+                                10 أكياس
+                              </Button>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              {formData.bags_per_reveal === 10 ? 'سيتم فتح 10 أكياس بالتتابع مع إمكانية التخطي' : 'فتح كيس واحد في كل مرة'}
+                            </p>
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">السماح بتخطي الأنيميشن</Label>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                id="allow_skip_animation"
+                                checked={formData.allow_skip_animation !== false}
+                                onChange={(e) => setFormData({ ...formData, allow_skip_animation: e.target.checked })}
+                                className="h-4 w-4"
+                              />
+                              <Label htmlFor="allow_skip_animation" className="text-xs cursor-pointer">
+                                تمكين زر التخطي للمستخدم
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Letters configuration */}
+                      <div className="mb-4 p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                        <Label className="text-xs font-semibold mb-3 block flex items-center gap-2">
+                          ✨ الأحرف ونسبة ظهورها
+                        </Label>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-3">
                           {formData.letters_config.map((letter, index) => (
-                            <div key={index} className="flex items-center gap-1 p-2 bg-background rounded border">
+                            <div key={index} className="flex items-center gap-1 p-2 bg-background rounded-lg border shadow-sm">
                               <Input
                                 placeholder="حرف"
                                 value={letter.letter}
@@ -1598,9 +1658,9 @@ export default function AdminCompetitions() {
                                   newLetters[index].letter = e.target.value.toUpperCase();
                                   setFormData({ ...formData, letters_config: newLetters });
                                 }}
-                                className="w-12 text-center text-lg font-bold"
+                                className="w-10 text-center text-lg font-bold p-1"
                               />
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-0.5 flex-1">
                                 <Input
                                   type="number"
                                   min="1"
@@ -1612,7 +1672,7 @@ export default function AdminCompetitions() {
                                     newLetters[index].probability = Math.max(1, Math.min(100, parseInt(e.target.value) || 100));
                                     setFormData({ ...formData, letters_config: newLetters });
                                   }}
-                                  className="w-14 text-center text-xs"
+                                  className="w-12 text-center text-xs p-1"
                                 />
                                 <span className="text-xs text-muted-foreground">%</span>
                               </div>
@@ -1620,7 +1680,7 @@ export default function AdminCompetitions() {
                                 type="button"
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6"
+                                className="h-6 w-6 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                                 onClick={() => {
                                   setFormData({
                                     ...formData,
@@ -1633,26 +1693,53 @@ export default function AdminCompetitions() {
                             </div>
                           ))}
                         </div>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          النسبة تحدد احتمالية ظهور كل حرف (نسب أعلى = ظهور أكثر)
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setFormData({
+                                ...formData,
+                                letters_config: [...formData.letters_config, { letter: '', probability: 100 }]
+                              });
+                            }}
+                          >
+                            <Plus className="h-4 w-4 ml-1" />
+                            إضافة حرف
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              // Extract unique letters from all prize words
+                              const allLetters = formData.prize_words
+                                .map(w => w.word)
+                                .join('')
+                                .split('')
+                                .filter((letter, idx, arr) => letter && arr.indexOf(letter) === idx);
+                              
+                              if (allLetters.length > 0) {
+                                setFormData({
+                                  ...formData,
+                                  letters_config: allLetters.map(letter => ({ letter: letter.toUpperCase(), probability: 100 }))
+                                });
+                              }
+                            }}
+                          >
+                            استيراد من الكلمات
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          نسب أعلى = ظهور أكثر للحرف (مثال: حرف بنسبة 50% يظهر نصف المرات التي يظهر فيها حرف بنسبة 100%)
                         </p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setFormData({
-                              ...formData,
-                              letters_config: [...formData.letters_config, { letter: '', probability: 100 }]
-                            });
-                          }}
-                        >
-                          <Plus className="h-4 w-4 ml-1" />
-                          إضافة حرف
-                        </Button>
-                        
-                        <div className="mt-3 p-3 bg-gray-500/10 rounded-lg">
-                          <Label className="text-xs mb-2 block">احتمال "حظ أوفر" (لا يحصل على حرف) %</Label>
+                      </div>
+                      
+                      {/* Better luck probability */}
+                      <div className="mb-4 p-3 bg-gray-500/10 rounded-lg border">
+                        <Label className="text-xs font-semibold mb-2 block">احتمال "حظ أوفر" (لا يحصل على حرف)</Label>
+                        <div className="flex items-center gap-2">
                           <Input
                             type="number"
                             min="0"
@@ -1660,91 +1747,113 @@ export default function AdminCompetitions() {
                             placeholder="0"
                             value={formData.better_luck_probability}
                             onChange={(e) => setFormData({ ...formData, better_luck_probability: e.target.value })}
-                            className="w-32"
+                            className="w-24"
                           />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            النسبة المئوية لعدم الحصول على حرف (مثال: 20 = 20% حظ أوفر)
-                          </p>
+                          <span className="text-sm">%</span>
                         </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          مثال: 20 = 20% من المحاولات لا تحصل على حرف
+                        </p>
                       </div>
                       
-                      <div className="border-t pt-3 mt-3">
-                        <Label className="text-xs mb-2 block">الكلمات الفائزة والجوائز (مع المخزون)</Label>
-                        {formData.prize_words.map((word, index) => (
-                          <div key={index} className="flex flex-wrap items-center gap-2 mb-2 p-2 bg-background rounded border">
-                            <Input
-                              placeholder="الكلمة (مثال: LEVONIS)"
-                              value={word.word}
-                              onChange={(e) => {
-                                const newWords = [...formData.prize_words];
-                                newWords[index].word = e.target.value.toUpperCase();
-                                setFormData({ ...formData, prize_words: newWords });
-                              }}
-                              className="w-32"
-                            />
-                            <Input
-                              placeholder="اسم الجائزة"
-                              value={word.prize_name}
-                              onChange={(e) => {
-                                const newWords = [...formData.prize_words];
-                                newWords[index].prize_name = e.target.value;
-                                setFormData({ ...formData, prize_words: newWords });
-                              }}
-                              className="flex-1 min-w-[100px]"
-                            />
-                            <Input
-                              type="number"
-                              placeholder="القيمة"
-                              value={word.prize_value}
-                              onChange={(e) => {
-                                const newWords = [...formData.prize_words];
-                                newWords[index].prize_value = parseFloat(e.target.value) || 0;
-                                setFormData({ ...formData, prize_words: newWords });
-                              }}
-                              className="w-20"
-                            />
-                            <Input
-                              type="number"
-                              placeholder="المخزون"
-                              value={word.stock || ''}
-                              onChange={(e) => {
-                                const newWords = [...formData.prize_words];
-                                newWords[index].stock = parseInt(e.target.value) || 0;
-                                setFormData({ ...formData, prize_words: newWords });
-                              }}
-                              className="w-16"
-                            />
-                            <div className="w-40">
-                              <ProductSearchSelect
-                                products={products || []}
-                                value={word.product_id || ''}
-                                onChange={(value) => {
-                                  const newWords = [...formData.prize_words];
-                                  newWords[index].product_id = value;
-                                  setFormData({ ...formData, prize_words: newWords });
-                                }}
-                                placeholder="بحث منتج..."
-                              />
+                      {/* Prize words */}
+                      <div className="border-t pt-4 mt-4">
+                        <Label className="text-xs font-semibold mb-3 block flex items-center gap-2">
+                          🏆 الكلمات الفائزة والجوائز
+                        </Label>
+                        <div className="space-y-2">
+                          {formData.prize_words.map((word, index) => (
+                            <div key={index} className="p-3 bg-background rounded-lg border shadow-sm">
+                              <div className="grid grid-cols-12 gap-2 items-center">
+                                <div className="col-span-3">
+                                  <Label className="text-xs text-muted-foreground mb-1 block">الكلمة</Label>
+                                  <Input
+                                    placeholder="LEVONIS"
+                                    value={word.word}
+                                    onChange={(e) => {
+                                      const newWords = [...formData.prize_words];
+                                      newWords[index].word = e.target.value.toUpperCase();
+                                      setFormData({ ...formData, prize_words: newWords });
+                                    }}
+                                    className="font-bold"
+                                  />
+                                </div>
+                                <div className="col-span-3">
+                                  <Label className="text-xs text-muted-foreground mb-1 block">اسم الجائزة</Label>
+                                  <Input
+                                    placeholder="جائزة نقدية"
+                                    value={word.prize_name}
+                                    onChange={(e) => {
+                                      const newWords = [...formData.prize_words];
+                                      newWords[index].prize_name = e.target.value;
+                                      setFormData({ ...formData, prize_words: newWords });
+                                    }}
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <Label className="text-xs text-muted-foreground mb-1 block">القيمة</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="1000000"
+                                    value={word.prize_value}
+                                    onChange={(e) => {
+                                      const newWords = [...formData.prize_words];
+                                      newWords[index].prize_value = parseFloat(e.target.value) || 0;
+                                      setFormData({ ...formData, prize_words: newWords });
+                                    }}
+                                  />
+                                </div>
+                                <div className="col-span-1">
+                                  <Label className="text-xs text-muted-foreground mb-1 block">المخزون</Label>
+                                  <Input
+                                    type="number"
+                                    placeholder="999"
+                                    value={word.stock || ''}
+                                    onChange={(e) => {
+                                      const newWords = [...formData.prize_words];
+                                      newWords[index].stock = parseInt(e.target.value) || 0;
+                                      setFormData({ ...formData, prize_words: newWords });
+                                    }}
+                                  />
+                                </div>
+                                <div className="col-span-2">
+                                  <Label className="text-xs text-muted-foreground mb-1 block">منتج (اختياري)</Label>
+                                  <ProductSearchSelect
+                                    products={products || []}
+                                    value={word.product_id || ''}
+                                    onChange={(value) => {
+                                      const newWords = [...formData.prize_words];
+                                      newWords[index].product_id = value;
+                                      setFormData({ ...formData, prize_words: newWords });
+                                    }}
+                                    placeholder="بحث..."
+                                  />
+                                </div>
+                                <div className="col-span-1 flex items-end justify-center pb-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                    onClick={() => {
+                                      setFormData({
+                                        ...formData,
+                                        prize_words: formData.prize_words.filter((_, i) => i !== index)
+                                      });
+                                    }}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
                             </div>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setFormData({
-                                  ...formData,
-                                  prize_words: formData.prize_words.filter((_, i) => i !== index)
-                                });
-                              }}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
+                          className="mt-3"
                           onClick={() => {
                             setFormData({
                               ...formData,
