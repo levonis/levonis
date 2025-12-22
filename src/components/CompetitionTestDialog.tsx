@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Play, Sparkles, Gift, Ticket, RotateCcw } from "lucide-react";
+import { Loader2, Play, Sparkles, Gift, RotateCcw, Ticket } from "lucide-react";
 import InstantWinReveal from "./InstantWinReveal";
 import LetterReveal from "./LetterReveal";
 import ScratchCardReveal from "./ScratchCardReveal";
@@ -26,6 +26,15 @@ interface Competition {
   prize_value?: number;
 }
 
+interface SimulatedResult {
+  index: number;
+  type: string;
+  letter?: string;
+  isBetterLuck?: boolean;
+  isWinner?: boolean;
+  prize?: any;
+}
+
 interface CompetitionTestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -35,6 +44,11 @@ interface CompetitionTestDialogProps {
 export default function CompetitionTestDialog({ open, onOpenChange, competition }: CompetitionTestDialogProps) {
   const [isRunning, setIsRunning] = useState(false);
   const [testQuantity, setTestQuantity] = useState(1);
+  
+  // Simulation queue for collect_letters
+  const [simulatedResults, setSimulatedResults] = useState<SimulatedResult[]>([]);
+  const [currentResultIndex, setCurrentResultIndex] = useState(0);
+  const [collectedLettersInSession, setCollectedLettersInSession] = useState<string[]>([]);
   
   // Animation states
   const [showInstantReveal, setShowInstantReveal] = useState(false);
@@ -47,19 +61,20 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
   const [showCelebration, setShowCelebration] = useState(false);
   
   // Test results log
-  const [testResults, setTestResults] = useState<any[]>([]);
+  const [testResults, setTestResults] = useState<SimulatedResult[]>([]);
 
   if (!competition) return null;
 
-  // Simulate instant win logic locally (no DB calls)
-  const simulateInstantWin = () => {
+  const animationType = competition.letters_config?.animation_type || 'bags';
+
+  // Simulate instant win logic locally
+  const simulateInstantWin = (): SimulatedResult => {
     const winProbability = competition.win_probability || 10;
     const randomVal = Math.random() * 100;
     const isWinner = randomVal <= winProbability;
     
     let prize = null;
     if (isWinner && competition.prize_tiers && competition.prize_tiers.length > 0) {
-      // Random selection from prize tiers
       const randomIndex = Math.floor(Math.random() * competition.prize_tiers.length);
       prize = competition.prize_tiers[randomIndex];
     } else if (isWinner) {
@@ -69,14 +84,14 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
       };
     }
     
-    return { isWinner, prize };
+    return { index: 0, type: 'instant_winner', isWinner, prize };
   };
 
   // Simulate mystery box logic
-  const simulateMysteryBox = () => {
+  const simulateMysteryBox = (): SimulatedResult => {
     const boxes = competition.mystery_boxes || [];
     if (boxes.length === 0) {
-      return { prize: { name_ar: "لا توجد صناديق", probability: 100 } };
+      return { index: 0, type: 'mystery_box', prize: { name_ar: "لا توجد صناديق", probability: 100 } };
     }
     
     const randomVal = Math.random() * 100;
@@ -85,18 +100,18 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
     for (const box of boxes) {
       cumulative += box.probability || 10;
       if (randomVal <= cumulative) {
-        return { prize: box };
+        return { index: 0, type: 'mystery_box', prize: box };
       }
     }
     
-    return { prize: boxes[0] };
+    return { index: 0, type: 'mystery_box', prize: boxes[0] };
   };
 
   // Simulate everyone wins logic
-  const simulateEveryoneWins = () => {
+  const simulateEveryoneWins = (): SimulatedResult => {
     const tiers = competition.prize_tiers || [];
     if (tiers.length === 0) {
-      return { prize: { name_ar: "لا توجد جوائز", probability: 100 } };
+      return { index: 0, type: 'everyone_wins', prize: { name_ar: "لا توجد جوائز", probability: 100 } };
     }
     
     const randomVal = Math.random() * 100;
@@ -105,15 +120,15 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
     for (const tier of tiers) {
       cumulative += tier.probability || 10;
       if (randomVal <= cumulative) {
-        return { prize: tier };
+        return { index: 0, type: 'everyone_wins', prize: tier };
       }
     }
     
-    return { prize: tiers[0] };
+    return { index: 0, type: 'everyone_wins', prize: tiers[0] };
   };
 
   // Simulate collect letters logic
-  const simulateCollectLetters = () => {
+  const simulateCollectLetters = (): SimulatedResult => {
     const config = competition.letters_config || {};
     const targetWord = config.target_word || "فوز";
     const betterLuckProb = config.better_luck_probability || 0;
@@ -121,7 +136,7 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
     
     // Check if better luck
     if (Math.random() * 100 < betterLuckProb) {
-      return { letter: null, isBetterLuck: true };
+      return { index: 0, type: 'collect_letters', letter: undefined, isBetterLuck: true };
     }
     
     // Get unique letters from target word
@@ -132,12 +147,11 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
     let cumulative = 0;
     const typedLetterProbs = letterProbs as Record<string, number>;
 
-    // Only include letters with probability > 0. If all are 0/missing, fallback to equal weights.
-    const entries = letters
-      .map((letter) => {
-        const prob = typedLetterProbs[letter] ?? undefined;
-        return { letter, prob };
-      });
+    // Only include letters with probability > 0
+    const entries = letters.map((letter) => {
+      const prob = typedLetterProbs[letter] ?? undefined;
+      return { letter, prob };
+    });
 
     const hasAnyExplicit = entries.some((e) => typeof e.prob === 'number');
     const usable = entries.filter((e) => {
@@ -146,7 +160,7 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
     });
 
     if (usable.length === 0) {
-      return { letter: null, isBetterLuck: true };
+      return { index: 0, type: 'collect_letters', letter: undefined, isBetterLuck: true };
     }
 
     const fallbackProb = 100 / usable.length;
@@ -156,44 +170,102 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
       const weight = hasAnyExplicit ? (prob ?? 0) : fallbackProb;
       cumulative += weight;
       if (randomVal <= cumulative) {
-        return { letter, isBetterLuck: false };
+        return { index: 0, type: 'collect_letters', letter, isBetterLuck: false };
       }
     }
 
-    return { letter: usable[0]?.letter || '', isBetterLuck: false };
+    return { index: 0, type: 'collect_letters', letter: usable[0]?.letter || '', isBetterLuck: false };
   };
+
+  // Show next result in queue (for scratch card one-by-one)
+  const showNextScratchResult = useCallback(() => {
+    if (currentResultIndex >= simulatedResults.length) {
+      // All done
+      return;
+    }
+    
+    const result = simulatedResults[currentResultIndex];
+    const newCollected = result.letter && !result.isBetterLuck
+      ? [...collectedLettersInSession, result.letter]
+      : collectedLettersInSession;
+    
+    setCollectedLettersInSession(newCollected);
+    
+    setLetterRevealData({
+      letter: result.isBetterLuck ? null : (result.letter || null),
+      collected: collectedLettersInSession,
+      config: competition?.letters_config || {},
+      prize: null
+    });
+    
+    setShowScratchReveal(true);
+  }, [currentResultIndex, simulatedResults, collectedLettersInSession, competition]);
+
+  // Handle scratch reveal close - go to next or finish
+  const handleScratchClose = useCallback(() => {
+    setShowScratchReveal(false);
+    
+    const nextIndex = currentResultIndex + 1;
+    if (nextIndex < simulatedResults.length) {
+      setCurrentResultIndex(nextIndex);
+      // Show next after a short delay
+      setTimeout(() => {
+        const result = simulatedResults[nextIndex];
+        const newCollected = result.letter && !result.isBetterLuck
+          ? [...collectedLettersInSession, result.letter]
+          : collectedLettersInSession;
+        
+        setCollectedLettersInSession(newCollected);
+        
+        setLetterRevealData({
+          letter: result.isBetterLuck ? null : (result.letter || null),
+          collected: newCollected,
+          config: competition?.letters_config || {},
+          prize: null
+        });
+        
+        setShowScratchReveal(true);
+      }, 300);
+    }
+  }, [currentResultIndex, simulatedResults, collectedLettersInSession, competition]);
+
+  // Handle letter reveal close (for bags animation type single)
+  const handleLetterClose = useCallback(() => {
+    setShowLetterReveal(false);
+  }, []);
 
   const runTest = () => {
     setIsRunning(true);
-    const results: any[] = [];
+    const results: SimulatedResult[] = [];
+    
+    // Reset session state
+    setSimulatedResults([]);
+    setCurrentResultIndex(0);
+    setCollectedLettersInSession([]);
     
     setTimeout(() => {
       for (let i = 0; i < testQuantity; i++) {
-        let result: any = { index: i + 1 };
+        let result: SimulatedResult;
         
         switch (competition.competition_type) {
           case 'instant_winner':
-            const instantResult = simulateInstantWin();
-            result = { ...result, ...instantResult, type: 'instant_winner' };
+            result = { ...simulateInstantWin(), index: i + 1 };
             break;
             
           case 'mystery_box':
-            const mysteryResult = simulateMysteryBox();
-            result = { ...result, ...mysteryResult, type: 'mystery_box' };
+            result = { ...simulateMysteryBox(), index: i + 1 };
             break;
             
           case 'everyone_wins':
-            const everyoneResult = simulateEveryoneWins();
-            result = { ...result, ...everyoneResult, type: 'everyone_wins' };
+            result = { ...simulateEveryoneWins(), index: i + 1 };
             break;
             
           case 'collect_letters':
-            const lettersResult = simulateCollectLetters();
-            result = { ...result, ...lettersResult, type: 'collect_letters' };
+            result = { ...simulateCollectLetters(), index: i + 1 };
             break;
             
           default:
-            result = { ...result, message: 'نوع المسابقة لا يدعم الاختبار', type: competition.competition_type };
+            result = { index: i + 1, type: competition.competition_type };
         }
         
         results.push(result);
@@ -201,12 +273,12 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
       
       setTestResults(prev => [...results, ...prev]);
       
-      // Show animation for the first result
+      // Show animation
       if (results.length > 0) {
         const firstResult = results[0];
         
         if (firstResult.type === 'instant_winner') {
-          setInstantRevealResult({ isWinner: firstResult.isWinner, prize: firstResult.prize });
+          setInstantRevealResult({ isWinner: firstResult.isWinner || false, prize: firstResult.prize });
           setShowInstantReveal(true);
           if (firstResult.isWinner) setShowCelebration(true);
         } else if (firstResult.type === 'mystery_box' || firstResult.type === 'everyone_wins') {
@@ -214,35 +286,45 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
           setShowInstantReveal(true);
           setShowCelebration(true);
         } else if (firstResult.type === 'collect_letters') {
-          const animationType = competition.letters_config?.animation_type || 'bags';
-          
-          if (testQuantity === 1) {
+          if (animationType === 'scratch') {
+            // For scratch: show one by one
+            setSimulatedResults(results);
+            setCurrentResultIndex(0);
+            setCollectedLettersInSession([]);
+            
+            // Start with first result
             setLetterRevealData({
-              letter: firstResult.isBetterLuck ? null : firstResult.letter,
+              letter: firstResult.isBetterLuck ? null : (firstResult.letter || null),
               collected: [],
               config: competition.letters_config || {},
               prize: null
             });
-            
-            if (animationType === 'scratch') {
-              setShowScratchReveal(true);
-            } else {
-              setShowLetterReveal(true);
-            }
+            setShowScratchReveal(true);
           } else {
-            const bagResults = results.map(r => ({
-              letter: r.isBetterLuck ? null : r.letter,
-              isNew: true
-            }));
-            
-            setBagRevealResults(bagResults);
-            setLetterRevealData({
-              letter: null,
-              collected: [],
-              config: competition.letters_config || {},
-              prize: null
-            });
-            setShowBagReveal(true);
+            // For bags animation
+            if (testQuantity === 1) {
+              setLetterRevealData({
+                letter: firstResult.isBetterLuck ? null : (firstResult.letter || null),
+                collected: [],
+                config: competition.letters_config || {},
+                prize: null
+              });
+              setShowLetterReveal(true);
+            } else {
+              const bagResults = results.map(r => ({
+                letter: r.isBetterLuck ? null : (r.letter || null),
+                isNew: true
+              }));
+              
+              setBagRevealResults(bagResults);
+              setLetterRevealData({
+                letter: null,
+                collected: [],
+                config: competition.letters_config || {},
+                prize: null
+              });
+              setShowBagReveal(true);
+            }
           }
         }
       }
@@ -253,9 +335,10 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
 
   const clearResults = () => {
     setTestResults([]);
+    setCollectedLettersInSession([]);
   };
 
-  const getResultBadge = (result: any) => {
+  const getResultBadge = (result: SimulatedResult) => {
     if (result.type === 'instant_winner') {
       return result.isWinner ? (
         <Badge className="bg-green-500">فائز 🎉</Badge>
@@ -294,7 +377,13 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
               <p className="font-semibold">{competition.title_ar}</p>
               <p className="text-sm text-muted-foreground">
                 {competition.competition_type === 'instant_winner' && `نسبة الفوز: ${competition.win_probability || 10}%`}
-                {competition.competition_type === 'collect_letters' && `الكلمة المستهدفة: ${competition.letters_config?.target_word || 'فوز'}`}
+                {competition.competition_type === 'collect_letters' && (
+                  <>
+                    الكلمة: {competition.letters_config?.target_word || 'فوز'}
+                    {' | '}
+                    الأنميشن: {animationType === 'scratch' ? '🎫 مسح تذكرة' : '🛍️ فتح كيس'}
+                  </>
+                )}
                 {competition.competition_type === 'mystery_box' && `عدد الصناديق: ${competition.mystery_boxes?.length || 0}`}
                 {competition.competition_type === 'everyone_wins' && `عدد مستويات الجوائز: ${competition.prize_tiers?.length || 0}`}
               </p>
@@ -325,6 +414,28 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
                   </div>
                 </div>
 
+                {/* Collected letters in current session */}
+                {competition.competition_type === 'collect_letters' && collectedLettersInSession.length > 0 && (
+                  <div className="p-3 bg-violet-500/10 rounded-lg">
+                    <p className="text-sm font-medium mb-2 flex items-center gap-1">
+                      <Ticket className="h-4 w-4" />
+                      الأحرف المجمعة في هذه الجلسة:
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(
+                        collectedLettersInSession.reduce<Record<string, number>>((acc, l) => {
+                          acc[l] = (acc[l] ?? 0) + 1;
+                          return acc;
+                        }, {})
+                      ).map(([letter, count]) => (
+                        <Badge key={letter} className="bg-violet-500">
+                          {letter} {count > 1 && `×${count}`}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {testResults.length > 0 && (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -334,7 +445,7 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
                         مسح
                       </Button>
                     </div>
-                    <ScrollArea className="h-64 border rounded-lg p-2">
+                    <ScrollArea className="h-48 border rounded-lg p-2">
                       <div className="space-y-2">
                         {testResults.map((result, idx) => (
                           <div key={idx} className="flex items-center justify-between p-2 bg-muted/30 rounded text-sm">
@@ -357,7 +468,7 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
                         )}
                         {competition.competition_type === 'collect_letters' && (
                           <>
-                            <p>حظاً أوفر: {testResults.filter(r => r.isBetterLuck).length}</p>
+                            <p>حظاً أوفر: {testResults.filter(r => r.isBetterLuck).length} ({((testResults.filter(r => r.isBetterLuck).length / testResults.length) * 100).toFixed(1)}%)</p>
                             <p>توزيع الأحرف:</p>
                             <div className="flex flex-wrap gap-1 mt-1">
                               {[...new Set(testResults.filter(r => r.letter).map(r => r.letter))].map(letter => (
@@ -407,7 +518,7 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
 
       <LetterReveal
         isOpen={showLetterReveal}
-        onClose={() => setShowLetterReveal(false)}
+        onClose={handleLetterClose}
         awardedLetter={letterRevealData?.letter || null}
         collectedLetters={letterRevealData?.collected || []}
         lettersConfig={letterRevealData?.config || { target_word: '', prizes: [] }}
@@ -416,9 +527,9 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
 
       <ScratchCardReveal
         isOpen={showScratchReveal}
-        onClose={() => setShowScratchReveal(false)}
+        onClose={handleScratchClose}
         awardedLetter={letterRevealData?.letter || null}
-        collectedLetters={letterRevealData?.collected || []}
+        collectedLetters={collectedLettersInSession}
         lettersConfig={letterRevealData?.config || { target_word: '', prizes: [] }}
         wonPrize={letterRevealData?.prize}
       />
