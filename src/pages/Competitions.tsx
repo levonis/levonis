@@ -1306,19 +1306,23 @@ export default function Competitions() {
           <DialogDescription>
             اشترِ المزيد واحصل على تذاكر هدية!
           </DialogDescription>
-          
-          <TicketBundleOffer
-            bundles={ticketBundles || defaultBundles}
-            onSelectBundle={(bundle) => {
-              if (wallet && wallet.balance >= bundle.price) {
-                purchaseBundleMutation.mutate(bundle);
-              } else {
-                toast.error('رصيد المحفظة غير كافٍ');
-              }
-            }}
-            walletBalance={wallet?.balance || 0}
-            isLoading={purchaseBundleMutation.isPending}
-          />
+
+          <ScrollArea className="max-h-[70vh]">
+            <div className="pb-4">
+              <TicketBundleOffer
+                bundles={ticketBundles || defaultBundles}
+                onSelectBundle={(bundle) => {
+                  if (wallet && wallet.balance >= bundle.price) {
+                    purchaseBundleMutation.mutate(bundle);
+                  } else {
+                    toast.error('رصيد المحفظة غير كافٍ');
+                  }
+                }}
+                walletBalance={wallet?.balance || 0}
+                isLoading={purchaseBundleMutation.isPending}
+              />
+            </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>
