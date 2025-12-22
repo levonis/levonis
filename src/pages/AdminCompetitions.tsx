@@ -585,10 +585,16 @@ export default function AdminCompetitions() {
               </div>
             </div>
 
-            <Button className="gap-2" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4" />
-              إنشاء مسابقة
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/ticket-bundles')}>
+                <Gift className="h-4 w-4" />
+                عروض التذاكر
+              </Button>
+              <Button className="gap-2" onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-4 w-4" />
+                إنشاء مسابقة
+              </Button>
+            </div>
           </div>
 
           {/* Statistics Cards */}

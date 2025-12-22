@@ -51,6 +51,7 @@ const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
 const Competitions = lazy(() => import("./pages/Competitions"));
 const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
 const AdminCompetitions = lazy(() => import("./pages/AdminCompetitions"));
+const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -104,6 +105,7 @@ function AppContent() {
             <Route path="/admin/partial-payment-settings" element={<AdminPartialPaymentSettings />} />
             <Route path="/admin/broken-images" element={<AdminBrokenImages />} />
             <Route path="/admin/competitions" element={<AdminCompetitions />} />
+            <Route path="/admin/ticket-bundles" element={<AdminTicketBundles />} />
             <Route path="/my-points" element={<MyPoints />} />
             <Route path="/competitions" element={<Competitions />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />

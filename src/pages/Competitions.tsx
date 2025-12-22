@@ -25,6 +25,7 @@ import InstantWinReveal from "@/components/InstantWinReveal";
 import LetterReveal from "@/components/LetterReveal";
 import TicketBundleOffer from "@/components/TicketBundleOffer";
 import TeamBattleDisplay from "@/components/TeamBattleDisplay";
+import CollectedLettersDisplay from "@/components/CollectedLettersDisplay";
 
 const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy - hh:mm a') => {
   const date = new Date(dateString);
@@ -297,6 +298,31 @@ export default function Competitions() {
     staleTime: 30000,
   });
 
+  // Fetch user's collected letters for collect_letters competitions
+  const { data: collectedLettersData } = useQuery({
+    queryKey: ['my-collected-letters', user?.id],
+    queryFn: async () => {
+      if (!user) return {};
+      const { data, error } = await supabase
+        .from('user_collected_letters')
+        .select('competition_id, letter')
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      const letters: Record<string, string[]> = {};
+      data?.forEach(item => {
+        if (!letters[item.competition_id]) {
+          letters[item.competition_id] = [];
+        }
+        letters[item.competition_id].push(item.letter);
+      });
+      return letters;
+    },
+    enabled: !!user,
+    staleTime: 30000,
+  });
+
   const purchaseTicketsMutation = useMutation({
     mutationFn: async (quantity: number) => {
       const priceToUse = ticketSettings?.price ?? 250;
@@ -391,6 +417,7 @@ export default function Competitions() {
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
         queryClient.invalidateQueries({ queryKey: ['my-competition-tickets'] });
         queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
+        queryClient.invalidateQueries({ queryKey: ['my-collected-letters'] });
         
         const wonPrize = data.won_prizes && data.won_prizes.length > 0 ? data.won_prizes[0] : null;
         setLetterRevealData({
@@ -1071,6 +1098,14 @@ export default function Competitions() {
                         </div>
                         <Progress value={getProgress(comp)} className="h-2" />
                       </div>
+                    )}
+
+                    {/* Collected Letters Display for collect_letters competitions */}
+                    {comp.competition_type === 'collect_letters' && user && collectedLettersData?.[comp.id] && (
+                      <CollectedLettersDisplay
+                        collectedLetters={collectedLettersData[comp.id] || []}
+                        lettersConfig={comp.letters_config || { target_word: '', prizes: [] }}
+                      />
                     )}
 
                     {/* Dates */}
