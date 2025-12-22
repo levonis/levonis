@@ -212,6 +212,7 @@ export default function AdminCompetitions() {
     win_probability: '',
     hidden_winner_trigger_ticket: '',
     letters_config: [] as LetterConfig[],
+    better_luck_probability: '0',
     prize_words: [] as PrizeWord[],
     growing_prize_config: {
       base_prize: 0,
@@ -300,7 +301,22 @@ export default function AdminCompetitions() {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const payload = {
+      // Build letters_config for collect_letters type
+      const lettersConfig = data.competition_type === 'collect_letters' ? {
+        target_word: data.prize_words.map(p => p.word).join('').split('').filter((v, i, a) => a.indexOf(v) === i).join(''),
+        letter_probabilities: data.letters_config.reduce((acc, l) => {
+          if (l.letter) acc[l.letter] = l.probability;
+          return acc;
+        }, {} as Record<string, number>),
+        better_luck_probability: parseFloat(data.better_luck_probability) || 0,
+        prizes: data.prize_words.map(pw => ({
+          word: pw.word,
+          prize_name_ar: pw.prize_name,
+          prize_value: pw.prize_value
+        }))
+      } : null;
+
+      const payload: Record<string, any> = {
         title: data.title,
         title_ar: data.title_ar,
         description: data.description || null,
@@ -321,16 +337,54 @@ export default function AdminCompetitions() {
         winners_count: parseInt(data.winners_count) || 1
       };
 
+      // Add type-specific fields
+      if (data.competition_type === 'mystery_box' || data.competition_type === 'instant_winner' || data.competition_type === 'everyone_wins') {
+        payload.prize_tiers = data.prize_tiers;
+        // For mystery_box, prize_tiers are stored in mystery_boxes field
+        if (data.competition_type === 'mystery_box') {
+          payload.mystery_boxes = data.prize_tiers;
+        }
+      }
+
+      if (data.competition_type === 'escalating_price') {
+        payload.price_tiers = data.price_tiers;
+      }
+
+      if (data.competition_type === 'flash_sale') {
+        payload.is_flash = data.is_flash;
+        payload.flash_badge_text = data.flash_badge_text;
+        payload.theme_color = data.theme_color;
+      }
+
+      if (data.competition_type === 'growing_prize') {
+        payload.growing_prize_config = data.growing_prize_config;
+      }
+
+      if (data.competition_type === 'collect_letters') {
+        payload.letters_config = lettersConfig;
+      }
+
+      if (data.competition_type === 'hidden_winner') {
+        payload.hidden_winner_trigger_ticket = data.hidden_winner_trigger_ticket ? parseInt(data.hidden_winner_trigger_ticket) : null;
+        payload.win_probability = data.win_probability ? parseFloat(data.win_probability) : null;
+      }
+
+      if (data.competition_type === 'instant_winner') {
+        payload.instant_reveal = data.instant_reveal;
+        payload.remaining_prizes = data.remaining_prizes ? parseInt(data.remaining_prizes) : null;
+        payload.win_probability = data.win_probability ? parseFloat(data.win_probability) : null;
+      }
+
       if (editingCompetition) {
         const { error } = await supabase
           .from('competitions')
-          .update(payload)
+          .update(payload as any)
           .eq('id', editingCompetition.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
           .from('competitions')
-          .insert(payload);
+          .insert(payload as any);
         if (error) throw error;
       }
     },
@@ -504,6 +558,7 @@ export default function AdminCompetitions() {
       win_probability: '',
       hidden_winner_trigger_ticket: '',
       letters_config: [],
+      better_luck_probability: '0',
       prize_words: [],
       growing_prize_config: {
         base_prize: 0,
@@ -550,7 +605,12 @@ export default function AdminCompetitions() {
       win_probability: compAny.win_probability?.toString() || '',
       hidden_winner_trigger_ticket: compAny.hidden_winner_trigger_ticket?.toString() || '',
       letters_config: compAny.letters_config?.letters || [],
-      prize_words: compAny.letters_config?.prize_words || [],
+      better_luck_probability: compAny.letters_config?.better_luck_probability?.toString() || '0',
+      prize_words: compAny.letters_config?.prizes?.map((p: any) => ({
+        word: p.word || '',
+        prize_name: p.prize_name_ar || '',
+        prize_value: p.prize_value || 0
+      })) || [],
       growing_prize_config: compAny.growing_prize_config || {
         base_prize: 0,
         increment_per_interval: 0,
@@ -1459,6 +1519,22 @@ export default function AdminCompetitions() {
                           <Plus className="h-4 w-4 ml-1" />
                           إضافة حرف
                         </Button>
+                        
+                        <div className="mt-3 p-3 bg-gray-500/10 rounded-lg">
+                          <Label className="text-xs mb-2 block">احتمال "حظ أوفر" (لا يحصل على حرف) %</Label>
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            placeholder="0"
+                            value={formData.better_luck_probability}
+                            onChange={(e) => setFormData({ ...formData, better_luck_probability: e.target.value })}
+                            className="w-32"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            النسبة المئوية لعدم الحصول على حرف (مثال: 20 = 20% حظ أوفر)
+                          </p>
+                        </div>
                       </div>
                       
                       <div className="border-t pt-3 mt-3">

@@ -14,7 +14,7 @@ interface LettersConfig {
 interface LetterRevealProps {
   isOpen: boolean;
   onClose: () => void;
-  awardedLetter: string;
+  awardedLetter: string | null; // null means "better luck"
   collectedLetters: string[];
   lettersConfig: LettersConfig;
   wonPrize: { word: string; prize_name_ar: string; prize_value?: number } | null;
@@ -28,27 +28,33 @@ export default function LetterReveal({
   lettersConfig,
   wonPrize
 }: LetterRevealProps) {
-  const [stage, setStage] = useState<'revealing' | 'revealed' | 'prize'>('revealing');
+  const [stage, setStage] = useState<'revealing' | 'revealed' | 'better_luck' | 'prize'>('revealing');
   const [showConfetti, setShowConfetti] = useState(false);
+
+  const isBetterLuck = awardedLetter === null;
 
   useEffect(() => {
     if (isOpen) {
       setStage('revealing');
       const timer1 = setTimeout(() => {
-        setStage('revealed');
-        if (wonPrize) {
-          setTimeout(() => {
-            setStage('prize');
-            setShowConfetti(true);
-          }, 1500);
+        if (isBetterLuck) {
+          setStage('better_luck');
+        } else {
+          setStage('revealed');
+          if (wonPrize) {
+            setTimeout(() => {
+              setStage('prize');
+              setShowConfetti(true);
+            }, 1500);
+          }
         }
       }, 1500);
       return () => clearTimeout(timer1);
     }
-  }, [isOpen, wonPrize]);
+  }, [isOpen, wonPrize, isBetterLuck]);
 
   const targetWord = lettersConfig.target_word || '';
-  const allCollected = [...collectedLetters, awardedLetter];
+  const allCollected = awardedLetter ? [...collectedLetters, awardedLetter] : collectedLetters;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -106,6 +112,54 @@ export default function LetterReveal({
                 <span className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                 <span className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '0.4s' }} />
               </div>
+            </div>
+          )}
+
+          {stage === 'better_luck' && (
+            <div className="space-y-6 animate-scale-in">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gray-500/30 blur-3xl rounded-full" />
+                <div className="relative w-32 h-32 mx-auto bg-gradient-to-br from-gray-400 to-gray-500 rounded-2xl flex items-center justify-center shadow-2xl">
+                  <span className="text-5xl">😔</span>
+                </div>
+              </div>
+              
+              <div>
+                <h2 className="text-2xl font-bold mb-2">حظ أوفر!</h2>
+                <p className="text-lg opacity-90">لم تحصل على حرف هذه المرة</p>
+                <p className="text-sm opacity-70 mt-2">حاول مرة أخرى!</p>
+              </div>
+              
+              {/* Show current progress */}
+              {targetWord && (
+                <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 space-y-3">
+                  <p className="text-sm opacity-80">تقدمك الحالي:</p>
+                  <div className="flex justify-center gap-2 flex-wrap">
+                    {targetWord.split('').map((letter, idx) => {
+                      const hasLetter = collectedLetters.includes(letter);
+                      return (
+                        <div
+                          key={idx}
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl font-bold transition-all ${
+                            hasLetter 
+                              ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg' 
+                              : 'bg-white/20 text-white/40'
+                          }`}
+                        >
+                          {hasLetter ? letter : '?'}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              
+              <Button 
+                onClick={onClose}
+                className="bg-white text-gray-900 hover:bg-white/90 font-bold px-8"
+              >
+                حاول مرة أخرى
+              </Button>
             </div>
           )}
 
