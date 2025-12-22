@@ -1660,7 +1660,7 @@ export default function AdminCompetitions() {
                         <Label className="text-xs font-semibold mb-3 block flex items-center gap-2">
                           ✨ الأحرف ونسبة ظهورها
                         </Label>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 mb-3">
+                        <div className="flex flex-col gap-2 mb-3">
                           {formData.letters_config.map((letter, index) => (
                             <div key={index} className="flex items-center gap-1 p-2 bg-background rounded-lg border shadow-sm">
                               <Input
