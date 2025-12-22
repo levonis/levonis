@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/compone
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trophy, Ticket, Users, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History, ChevronLeft, ChevronRight, Images, Calendar, ShoppingCart, ArrowRight, Info, Eye } from "lucide-react";
+import { Trophy, Ticket, Users, Gift, Loader2, Clock, Crown, Wallet, Plus, Minus, History, ChevronLeft, ChevronRight, Images, Calendar, ShoppingCart, ArrowRight, Info, Eye, Sparkles, Zap, Package, Swords } from "lucide-react";
 import { toast } from "sonner";
 import { format, addHours } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -21,6 +21,10 @@ import CountdownTimer from "@/components/CountdownTimer";
 import CelebrationEffect from "@/components/CelebrationEffect";
 import CompetitionCard from "@/components/CompetitionCard";
 import OptimizedImage from "@/components/OptimizedImage";
+import InstantWinReveal from "@/components/InstantWinReveal";
+import LetterReveal from "@/components/LetterReveal";
+import TicketBundleOffer from "@/components/TicketBundleOffer";
+import TeamBattleDisplay from "@/components/TeamBattleDisplay";
 
 const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy - hh:mm a') => {
   const date = new Date(dateString);
@@ -28,7 +32,7 @@ const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy 
   return format(baghdadDate, formatStr, { locale: ar });
 };
 
-type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize';
+type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 
 interface Competition {
   id: string;
@@ -55,7 +59,45 @@ interface Competition {
   winners_count: number;
   currency: string;
   required_tickets: number;
+  // New fields
+  is_flash?: boolean;
+  flash_badge_text?: string;
+  theme_color?: string;
+  remaining_prizes?: number;
+  instant_reveal?: boolean;
+  win_probability?: number;
+  letters_config?: any;
+  prize_tiers?: any;
+  mystery_boxes?: any;
+  hidden_winner_trigger_ticket?: number;
+  team_config?: any;
+  team_a_count?: number;
+  team_b_count?: number;
+  price_tiers?: any;
+  growing_prize_config?: any;
 }
+
+// Ticket bundle offers configuration
+const getTicketBundles = (competitionType?: CompetitionType) => {
+  const baseBundles = [
+    { quantity: 10, bonusTickets: 0, price: 2500, label: 'عادي' },
+    { quantity: 20, bonusTickets: 2, price: 5000, label: 'مميز' },
+    { quantity: 36, bonusTickets: 4, price: 9000, label: 'العرض الذهبي', highlight: true },
+    { quantity: 50, bonusTickets: 10, price: 12500, label: 'باقة VIP' },
+  ];
+  
+  // Special bundles for collect_letters
+  if (competitionType === 'collect_letters') {
+    return [
+      { quantity: 10, bonusTickets: 1, price: 2500, label: 'مبتدئ', competitionType: 'collect_letters' },
+      { quantity: 20, bonusTickets: 3, price: 5000, label: 'متوسط', competitionType: 'collect_letters' },
+      { quantity: 36, bonusTickets: 4, price: 9000, label: 'جامع الأحرف', highlight: true, competitionType: 'collect_letters' },
+      { quantity: 50, bonusTickets: 8, price: 12500, label: 'الماستر', competitionType: 'collect_letters' },
+    ];
+  }
+  
+  return baseBundles;
+};
 
 export default function Competitions() {
   const navigate = useNavigate();
@@ -73,6 +115,13 @@ export default function Competitions() {
   const [selectedCompetitionForDetails, setSelectedCompetitionForDetails] = useState<Competition | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [detailsSlideIndex, setDetailsSlideIndex] = useState(0);
+  
+  // New states for instant reveal and bundles
+  const [showInstantReveal, setShowInstantReveal] = useState(false);
+  const [instantRevealResult, setInstantRevealResult] = useState<{ isWinner: boolean; prize: any } | null>(null);
+  const [showLetterReveal, setShowLetterReveal] = useState(false);
+  const [letterRevealData, setLetterRevealData] = useState<{ letter: string; collected: string[]; config: any; prize: any } | null>(null);
+  const [showBundleOffers, setShowBundleOffers] = useState(false);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],

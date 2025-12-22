@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Gift, Ticket, Users, Crown, Calendar, ChevronLeft, ChevronRight, Images, ChevronDown, Loader2 } from "lucide-react";
+import { Gift, Ticket, Users, Crown, Calendar, ChevronLeft, ChevronRight, Images, ChevronDown, Loader2, Zap, Sparkles, Package, Target, Swords, TrendingUp, Timer } from "lucide-react";
 import CountdownTimer from "@/components/CountdownTimer";
 import OptimizedImage from "@/components/OptimizedImage";
 import { format, addHours } from "date-fns";
@@ -16,7 +16,7 @@ const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy'
   return format(baghdadDate, formatStr, { locale: ar });
 };
 
-type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize';
+type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 
 const competitionTypeIcons: Record<CompetitionType, string> = {
   ticket_count: '🎯',
@@ -30,7 +30,24 @@ const competitionTypeIcons: Record<CompetitionType, string> = {
   hidden_winner: '🎯',
   team_battle: '⚔️',
   flash_sale: '🔥',
-  growing_prize: '📊'
+  growing_prize: '📊',
+  collect_letters: '🔤'
+};
+
+const competitionTypeLabels: Record<CompetitionType, string> = {
+  ticket_count: 'سحب عادي',
+  all_tickets_sold: 'حتى نفاذ التذاكر',
+  timed: 'محدد بوقت',
+  free: 'مجاني',
+  instant_winner: 'نتيجة فورية',
+  everyone_wins: 'الكل رابح',
+  escalating_price: 'سعر متصاعد',
+  mystery_box: 'صندوق غامض',
+  hidden_winner: 'رابح مخفي',
+  team_battle: 'فريق ضد فريق',
+  flash_sale: 'عرض سريع',
+  growing_prize: 'جائزة متحولة',
+  collect_letters: 'جمع الأحرف'
 };
 
 const competitionTypeColors: Record<CompetitionType, string> = {
@@ -45,7 +62,8 @@ const competitionTypeColors: Record<CompetitionType, string> = {
   hidden_winner: 'from-red-500 to-rose-600',
   team_battle: 'from-cyan-500 to-blue-500',
   flash_sale: 'from-rose-500 to-pink-500',
-  growing_prize: 'from-emerald-500 to-green-500'
+  growing_prize: 'from-emerald-500 to-green-500',
+  collect_letters: 'from-violet-500 to-purple-500'
 };
 
 interface Winner {
@@ -85,6 +103,13 @@ interface Competition {
   theme_color?: string;
   remaining_prizes?: number;
   instant_reveal?: boolean;
+  win_probability?: number;
+  letters_config?: any;
+  team_config?: any;
+  team_a_count?: number;
+  team_b_count?: number;
+  price_tiers?: any;
+  growing_prize_config?: any;
 }
 
 interface CompetitionCardProps {
@@ -100,7 +125,39 @@ interface CompetitionCardProps {
 }
 
 const isInstantType = (type: CompetitionType) => {
-  return ['instant_winner', 'everyone_wins', 'mystery_box', 'hidden_winner'].includes(type);
+  return ['instant_winner', 'everyone_wins', 'mystery_box', 'hidden_winner', 'collect_letters'].includes(type);
+};
+
+const getCompetitionTypeBadge = (comp: Competition) => {
+  const type = comp.competition_type;
+  const icon = competitionTypeIcons[type] || '🎫';
+  const label = competitionTypeLabels[type] || 'مسابقة';
+  const colorClass = competitionTypeColors[type] || 'bg-primary';
+  
+  // Special styling for flash sales
+  if (type === 'flash_sale' || comp.is_flash) {
+    return (
+      <Badge className={`bg-gradient-to-r ${colorClass} text-white border-0 text-xs px-2 py-0.5 gap-1 animate-pulse`}>
+        <Zap className="h-3 w-3" />
+        {comp.flash_badge_text || label}
+      </Badge>
+    );
+  }
+  
+  // Gradient types
+  if (colorClass.includes('from-')) {
+    return (
+      <Badge className={`bg-gradient-to-r ${colorClass} text-white border-0 text-xs px-2 py-0.5`}>
+        {icon} {label}
+      </Badge>
+    );
+  }
+  
+  return (
+    <Badge className={`${colorClass} text-white border-0 text-xs px-2 py-0.5`}>
+      {icon} {label}
+    </Badge>
+  );
 };
 
 const CompetitionCard = memo(({
@@ -239,7 +296,54 @@ const CompetitionCard = memo(({
       )}
       
       <CardContent className="p-2 sm:p-3 space-y-1.5 sm:space-y-2">
-        <h3 className="font-bold text-xs sm:text-sm line-clamp-1">{comp.title_ar}</h3>
+        {/* Competition Type Badge */}
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-bold text-xs sm:text-sm line-clamp-1 flex-1">{comp.title_ar}</h3>
+          {getCompetitionTypeBadge(comp)}
+        </div>
+        
+        {/* Special indicators for new types */}
+        {comp.competition_type === 'instant_winner' && comp.win_probability && (
+          <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-500/10 px-2 py-1 rounded-md">
+            <Zap className="h-3 w-3" />
+            <span>نسبة الفوز: {comp.win_probability}%</span>
+          </div>
+        )}
+        
+        {comp.competition_type === 'collect_letters' && comp.letters_config && (
+          <div className="flex items-center gap-1 text-xs text-violet-600 bg-violet-500/10 px-2 py-1 rounded-md">
+            <Sparkles className="h-3 w-3" />
+            <span>أجمع الأحرف: {(comp.letters_config as any).target_word}</span>
+          </div>
+        )}
+        
+        {comp.competition_type === 'team_battle' && (
+          <div className="flex items-center gap-1 text-xs text-cyan-600 bg-cyan-500/10 px-2 py-1 rounded-md">
+            <Swords className="h-3 w-3" />
+            <span>🔵 {comp.team_a_count || 0} - {comp.team_b_count || 0} 🔴</span>
+          </div>
+        )}
+        
+        {comp.competition_type === 'escalating_price' && comp.price_tiers && (
+          <div className="flex items-center gap-1 text-xs text-orange-600 bg-orange-500/10 px-2 py-1 rounded-md">
+            <TrendingUp className="h-3 w-3" />
+            <span>السعر الحالي: {comp.ticket_price.toLocaleString()} دينار</span>
+          </div>
+        )}
+        
+        {comp.competition_type === 'mystery_box' && (
+          <div className="flex items-center gap-1 text-xs text-purple-600 bg-purple-500/10 px-2 py-1 rounded-md">
+            <Package className="h-3 w-3" />
+            <span>افتح صندوقك واكتشف جائزتك!</span>
+          </div>
+        )}
+        
+        {(comp.competition_type === 'flash_sale' || comp.is_flash) && comp.end_date && (
+          <div className="flex items-center gap-1 text-xs text-rose-600 bg-rose-500/10 px-2 py-1 rounded-md animate-pulse">
+            <Timer className="h-3 w-3" />
+            <span>عرض محدود!</span>
+          </div>
+        )}
         
         {/* Prize Description */}
         <div className="bg-gradient-to-l from-primary/10 to-transparent rounded-md p-1.5 sm:p-2 border-r-2 border-primary/50">
