@@ -611,6 +611,21 @@ export default function AdminCompetitions() {
   const handleEdit = (comp: Competition) => {
     setEditingCompetition(comp);
     const compAny = comp as any;
+    
+    // Parse letters_config properly from letter_probabilities object
+    let lettersConfigArray: LetterConfig[] = [];
+    if (compAny.letters_config?.letter_probabilities) {
+      const letterProbs = compAny.letters_config.letter_probabilities;
+      lettersConfigArray = Object.entries(letterProbs).map(([letter, probability]) => ({
+        letter,
+        probability: typeof probability === 'number' ? probability : 100
+      }));
+    } else if (compAny.letters_config?.target_word) {
+      // Fallback: extract unique letters from target_word
+      const uniqueLetters = [...new Set(compAny.letters_config.target_word.split(''))].filter(Boolean);
+      lettersConfigArray = uniqueLetters.map((letter: string) => ({ letter, probability: 100 }));
+    }
+    
     setFormData({
       title: comp.title,
       title_ar: comp.title_ar,
@@ -642,7 +657,7 @@ export default function AdminCompetitions() {
       instant_reveal: compAny.instant_reveal || false,
       win_probability: compAny.win_probability?.toString() || '',
       hidden_winner_trigger_ticket: compAny.hidden_winner_trigger_ticket?.toString() || '',
-      letters_config: compAny.letters_config?.letters || [],
+      letters_config: lettersConfigArray,
       better_luck_probability: compAny.letters_config?.better_luck_probability?.toString() || '0',
       prize_words: compAny.letters_config?.prize_words?.map((p: any) => ({
         word: p.word || '',
@@ -1570,7 +1585,7 @@ export default function AdminCompetitions() {
                       </h4>
                       
                       <div className="mb-4">
-                        <Label className="text-xs mb-2 block">الأحرف المتاحة</Label>
+                        <Label className="text-xs mb-2 block">الأحرف المتاحة ونسبة ظهورها</Label>
                         <div className="flex flex-wrap gap-2 mb-2">
                           {formData.letters_config.map((letter, index) => (
                             <div key={index} className="flex items-center gap-1 p-2 bg-background rounded border">
@@ -1585,6 +1600,22 @@ export default function AdminCompetitions() {
                                 }}
                                 className="w-12 text-center text-lg font-bold"
                               />
+                              <div className="flex items-center gap-1">
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  max="100"
+                                  placeholder="%"
+                                  value={letter.probability}
+                                  onChange={(e) => {
+                                    const newLetters = [...formData.letters_config];
+                                    newLetters[index].probability = Math.max(1, Math.min(100, parseInt(e.target.value) || 100));
+                                    setFormData({ ...formData, letters_config: newLetters });
+                                  }}
+                                  className="w-14 text-center text-xs"
+                                />
+                                <span className="text-xs text-muted-foreground">%</span>
+                              </div>
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -1602,6 +1633,9 @@ export default function AdminCompetitions() {
                             </div>
                           ))}
                         </div>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          النسبة تحدد احتمالية ظهور كل حرف (نسب أعلى = ظهور أكثر)
+                        </p>
                         <Button
                           type="button"
                           variant="outline"
