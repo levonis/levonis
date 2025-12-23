@@ -45,7 +45,6 @@ export default function BagOpenReveal({
   const [revealedLetters, setRevealedLetters] = useState<BagResult[]>([]);
 
   const totalBags = results.length;
-  const isSingleBag = totalBags === 1;
   const currentResult = results[currentBagIndex];
   const targetWord = lettersConfig.target_word || '';
 
@@ -139,11 +138,13 @@ export default function BagOpenReveal({
   const hiddenRevealedCount = Math.max(0, revealedLetters.length - MAX_REVEALED_SHOWN);
 
   const revealedLetterCounts = revealedLetters.reduce<Record<string, number>>((acc, r) => {
-    if (!r.letter) return acc;
+    if (!r.letter || r.isTicketReward) return acc;
     acc[r.letter] = (acc[r.letter] ?? 0) + 1;
     return acc;
   }, {});
-  const revealedBetterLuckCount = revealedLetters.filter(r => !r.letter).length;
+  const revealedBetterLuckCount = revealedLetters.filter(r => !r.letter && !r.isTicketReward).length;
+  const revealedTicketRewardsCount = revealedLetters.filter(r => r.isTicketReward).length;
+  const totalTicketsWon = revealedLetters.filter(r => r.isTicketReward).reduce((sum, r) => sum + (r.ticketsAwarded || 0), 0);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -225,7 +226,7 @@ export default function BagOpenReveal({
           </div>
 
           {/* Progress indicator for multiple bags */}
-          {!skipped && !isSingleBag && stage !== 'all_done' && stage !== 'prize' && (
+          {!skipped && totalBags > 1 && stage !== 'all_done' && stage !== 'prize' && (
             <div className="absolute top-16 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 pointer-events-none">
               <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white border-0 text-sm px-4 py-1">
                 كيس {currentBagIndex + 1} من {totalBags}
@@ -303,7 +304,7 @@ export default function BagOpenReveal({
                 >
                   {/* Bag shape */}
                   <div
-                    className={`${isSingleBag ? 'w-36 h-48' : 'w-32 h-44'} mx-auto relative transition-all duration-500 ${
+                    className={`w-32 h-44 mx-auto relative transition-all duration-500 ${
                       stage === 'letter_rising' || stage === 'letter_revealed' || stage === 'can_proceed' ? 'opacity-40 scale-90 translate-y-4' : ''
                     }`}
                   >
@@ -360,7 +361,7 @@ export default function BagOpenReveal({
                       } ${stage === 'letter_revealed' || stage === 'can_proceed' ? 'animate-letter-glow' : ''}`}
                     >
                       <div
-                        className={`${isSingleBag ? 'w-28 h-28' : 'w-24 h-24'} rounded-2xl flex items-center justify-center shadow-2xl ${
+                        className={`w-24 h-24 rounded-2xl flex items-center justify-center shadow-2xl ${
                           currentResult.isTicketReward
                             ? 'bg-gradient-to-br from-cyan-300 via-cyan-400 to-cyan-600'
                             : currentResult.letter
@@ -375,7 +376,7 @@ export default function BagOpenReveal({
                               : '0 0 25px 8px rgba(128, 128, 128, 0.25), 0 10px 30px rgba(0,0,0,0.3)'
                         }}
                       >
-                        <span className={`${isSingleBag ? 'text-6xl' : 'text-5xl'} font-bold text-white`}>
+                        <span className="text-5xl font-bold text-white">
                           {currentResult.isTicketReward ? '🎫' : currentResult.letter || '😔'}
                         </span>
                       </div>
@@ -388,7 +389,7 @@ export default function BagOpenReveal({
               <div className="flex flex-col items-center justify-center gap-3 pointer-events-none">
                 {stage === 'bag_closed' && (
                   <>
-                    <h2 className={`${isSingleBag ? 'text-2xl' : 'text-xl'} font-bold`}>اضغط لفتح الكيس</h2>
+                    <h2 className="text-xl font-bold">اضغط لفتح الكيس</h2>
                     <p className="text-sm opacity-80">(ضغطة أولى)</p>
                   </>
                 )}
@@ -396,7 +397,7 @@ export default function BagOpenReveal({
                 {stage === 'letter_rising' && <h2 className="text-xl font-bold animate-pulse">✨ الحرف يظهر...</h2>}
                 {stage === 'letter_revealed' && currentResult?.isTicketReward && (
                   <div className="animate-scale-in space-y-2">
-                    <h2 className={`${isSingleBag ? 'text-3xl' : 'text-2xl'} font-bold`}>
+                    <h2 className="text-2xl font-bold">
                       ربحت <span className="text-cyan-300 text-4xl">{currentResult.ticketsAwarded || 1}</span> تذكرة! 🎫
                     </h2>
                     <p className="text-sm opacity-60 animate-pulse">انتظر...</p>
@@ -404,7 +405,7 @@ export default function BagOpenReveal({
                 )}
                 {stage === 'letter_revealed' && currentResult?.letter && !currentResult?.isTicketReward && (
                   <div className="animate-scale-in space-y-2">
-                    <h2 className={`${isSingleBag ? 'text-3xl' : 'text-2xl'} font-bold`}>
+                    <h2 className="text-2xl font-bold">
                       حصلت على الحرف <span className="text-yellow-300 text-4xl">{currentResult.letter}</span>!
                     </h2>
                     <p className="text-sm opacity-60 animate-pulse">انتظر...</p>
@@ -418,7 +419,7 @@ export default function BagOpenReveal({
                 )}
                 {stage === 'can_proceed' && currentResult?.isTicketReward && (
                   <div className="space-y-2">
-                    <h2 className={`${isSingleBag ? 'text-3xl' : 'text-2xl'} font-bold`}>
+                    <h2 className="text-2xl font-bold">
                       ربحت <span className="text-cyan-300 text-4xl">{currentResult.ticketsAwarded || 1}</span> تذكرة! 🎫
                     </h2>
                     <p className="text-sm opacity-80">اضغط {currentBagIndex < totalBags - 1 ? 'للكيس التالي' : 'لعرض النتيجة'}</p>
@@ -426,7 +427,7 @@ export default function BagOpenReveal({
                 )}
                 {stage === 'can_proceed' && currentResult?.letter && !currentResult?.isTicketReward && (
                   <div className="space-y-2">
-                    <h2 className={`${isSingleBag ? 'text-3xl' : 'text-2xl'} font-bold`}>
+                    <h2 className="text-2xl font-bold">
                       حصلت على الحرف <span className="text-yellow-300 text-4xl">{currentResult.letter}</span>!
                     </h2>
                     <p className="text-sm opacity-80">اضغط {currentBagIndex < totalBags - 1 ? 'للكيس التالي' : 'لعرض النتيجة'}</p>
@@ -456,10 +457,17 @@ export default function BagOpenReveal({
                 <p className="text-sm opacity-80">ملخص ما حصلت عليه:</p>
 
                 <div className="flex justify-center gap-2 flex-wrap">
-                  {Object.keys(revealedLetterCounts).length === 0 && revealedBetterLuckCount === 0 ? (
+                  {Object.keys(revealedLetterCounts).length === 0 && revealedBetterLuckCount === 0 && totalTicketsWon === 0 ? (
                     <span className="text-sm opacity-70">لا توجد نتائج</span>
                   ) : (
                     <>
+                      {/* Ticket rewards */}
+                      {totalTicketsWon > 0 && (
+                        <div className="w-auto px-4 h-12 rounded-xl bg-gradient-to-br from-cyan-400 to-cyan-600 text-white shadow-lg flex items-center justify-center font-bold text-lg gap-2">
+                          <span>🎫</span>
+                          <span>{totalTicketsWon} تذكرة</span>
+                        </div>
+                      )}
                       {/* Sort letters alphabetically */}
                       {Object.entries(revealedLetterCounts)
                         .sort(([a], [b]) => a.localeCompare(b, 'ar'))

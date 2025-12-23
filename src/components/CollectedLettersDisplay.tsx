@@ -83,9 +83,15 @@ export default function CollectedLettersDisplay({
       
       if (error) throw error;
       
-      const result = data as { success?: boolean; prize_name?: string; error?: string } | null;
+      const result = data as { success?: boolean; prize_name?: string; coupon_code?: string; error?: string } | null;
       if (result?.success) {
-        toast.success(`مبروك! حصلت على ${result.prize_name}`);
+        toast.success(
+          <div className="space-y-1">
+            <p>مبروك! حصلت على {result.prize_name}</p>
+            <p className="font-bold text-lg">كود الخصم: {result.coupon_code}</p>
+          </div>,
+          { duration: 10000 }
+        );
         onRedeemSuccess?.();
       } else {
         toast.error(result?.error || 'حدث خطأ');
@@ -113,31 +119,47 @@ export default function CollectedLettersDisplay({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Main Word Display - Letters with counts */}
+        {/* Main Word Display - Show all letters with collected ones highlighted */}
         <div className="flex items-center justify-center gap-2 flex-wrap flex-row-reverse">
-          {mainWord.split('').filter((v, i, a) => a.indexOf(v) === i).map((letter, index) => {
+          {mainWord.split('').map((letter, index) => {
             const count = letterCounts[letter] || 0;
             const hasLetter = count > 0;
+            // Count how many of this letter we need up to this position
+            const sameLettersBefore = mainWord.slice(0, index + 1).split('').filter(l => l === letter).length;
+            const letterAvailable = count >= sameLettersBefore;
+            
             return (
               <div key={index} className="flex flex-col items-center">
                 <div
                   className={`
                     w-12 h-12 rounded-lg flex items-center justify-center text-xl font-bold
                     transition-all duration-300 border-2
-                    ${hasLetter 
+                    ${letterAvailable 
                       ? 'bg-primary text-primary-foreground border-primary shadow-lg' 
-                      : 'bg-muted/30 text-muted-foreground/40 border-muted-foreground/20'
+                      : 'bg-muted/20 text-muted-foreground/30 border-dashed border-muted-foreground/20'
                     }
                   `}
                 >
+                  {/* Always show the letter, just with different styling */}
                   {letter}
                 </div>
-                <span className={`text-xs mt-1 font-medium ${hasLetter ? 'text-primary' : 'text-muted-foreground'}`}>
-                  ×{count}
-                </span>
+                {letterAvailable && (
+                  <span className="text-xs mt-1 font-medium text-primary">✓</span>
+                )}
               </div>
             );
           })}
+        </div>
+        
+        {/* Word completion status */}
+        <div className="text-center">
+          {wordStatus[0]?.canRedeem ? (
+            <Badge className="bg-green-500 text-white">الكلمة مكتملة! يمكنك الاستبدال</Badge>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              اجمع كل الأحرف لتكوين الكلمة والفوز بالجائزة
+            </p>
+          )}
         </div>
         
         {/* Collected Letters Summary (all letters collected) */}
