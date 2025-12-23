@@ -798,71 +798,71 @@ export default function AdminCompetitions() {
     <>
       <div className="min-h-screen bg-background" dir="rtl">
         <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-2 sm:gap-4">
               <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
                 <ArrowRight className="h-5 w-5" />
               </Button>
               <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                  <Trophy className="h-6 w-6 text-primary" />
+                <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
+                  <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                   إدارة المسابقات
                 </h1>
-                <p className="text-muted-foreground">إنشاء وإدارة المسابقات والسحوبات</p>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">إنشاء وإدارة المسابقات والسحوبات</p>
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" className="gap-2" onClick={() => setTicketsManagerOpen(true)}>
-                <Ticket className="h-4 w-4" />
-                إدارة التذاكر
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <Button variant="outline" size="sm" className="gap-1 text-xs sm:text-sm flex-1 sm:flex-none" onClick={() => setTicketsManagerOpen(true)}>
+                <Ticket className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">إدارة</span> التذاكر
               </Button>
-              <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/ticket-bundles')}>
-                <Gift className="h-4 w-4" />
-                عروض التذاكر
+              <Button variant="outline" size="sm" className="gap-1 text-xs sm:text-sm flex-1 sm:flex-none" onClick={() => navigate('/admin/ticket-bundles')}>
+                <Gift className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">عروض</span> العروض
               </Button>
-              <Button className="gap-2" onClick={() => setIsDialogOpen(true)}>
-                <Plus className="h-4 w-4" />
-                إنشاء مسابقة
+              <Button size="sm" className="gap-1 text-xs sm:text-sm flex-1 sm:flex-none" onClick={() => setIsDialogOpen(true)}>
+                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">إنشاء</span> مسابقة
               </Button>
             </div>
           </div>
 
           {/* Statistics Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 mb-6">
             <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
-              <CardContent className="p-4 text-center">
-                <Trophy className="h-6 w-6 mx-auto mb-1 text-primary" />
-                <p className="text-xl font-bold">{competitions?.length || 0}</p>
-                <p className="text-xs text-muted-foreground">إجمالي المسابقات</p>
+              <CardContent className="p-2 sm:p-4 text-center">
+                <Trophy className="h-4 w-4 sm:h-6 sm:w-6 mx-auto mb-1 text-primary" />
+                <p className="text-sm sm:text-xl font-bold">{competitions?.length || 0}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">المسابقات</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5">
-              <CardContent className="p-4 text-center">
-                <Play className="h-6 w-6 mx-auto mb-1 text-green-600" />
-                <p className="text-xl font-bold">{activeCompetitions}</p>
-                <p className="text-xs text-muted-foreground">مسابقات نشطة</p>
+              <CardContent className="p-2 sm:p-4 text-center">
+                <Play className="h-4 w-4 sm:h-6 sm:w-6 mx-auto mb-1 text-green-600" />
+                <p className="text-sm sm:text-xl font-bold">{activeCompetitions}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">نشطة</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5">
-              <CardContent className="p-4 text-center">
-                <Users className="h-6 w-6 mx-auto mb-1 text-blue-600" />
-                <p className="text-xl font-bold">{totalParticipants}</p>
-                <p className="text-xs text-muted-foreground">إجمالي المشاركات</p>
+              <CardContent className="p-2 sm:p-4 text-center">
+                <Users className="h-4 w-4 sm:h-6 sm:w-6 mx-auto mb-1 text-blue-600" />
+                <p className="text-sm sm:text-xl font-bold">{totalParticipants}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">مشاركات</p>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5">
-              <CardContent className="p-4 text-center">
-                <Crown className="h-6 w-6 mx-auto mb-1 text-yellow-600" />
-                <p className="text-xl font-bold">{totalWinners}</p>
-                <p className="text-xs text-muted-foreground">فائزين</p>
+            <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 hidden sm:block">
+              <CardContent className="p-2 sm:p-4 text-center">
+                <Crown className="h-4 w-4 sm:h-6 sm:w-6 mx-auto mb-1 text-yellow-600" />
+                <p className="text-sm sm:text-xl font-bold">{totalWinners}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">فائزين</p>
               </CardContent>
             </Card>
-            <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5">
-              <CardContent className="p-4 text-center">
-                <Ticket className="h-6 w-6 mx-auto mb-1 text-purple-600" />
-                <p className="text-xl font-bold">{ticketSettings?.price || 250}</p>
-                <p className="text-xs text-muted-foreground">سعر التذكرة</p>
+            <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 hidden sm:block">
+              <CardContent className="p-2 sm:p-4 text-center">
+                <Ticket className="h-4 w-4 sm:h-6 sm:w-6 mx-auto mb-1 text-purple-600" />
+                <p className="text-sm sm:text-xl font-bold">{ticketSettings?.price || 250}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">سعر التذكرة</p>
               </CardContent>
             </Card>
           </div>
@@ -2317,140 +2317,126 @@ export default function AdminCompetitions() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4">
+          <div className="grid gap-3 sm:gap-4">
             {competitions?.map((comp) => (
               <Card key={comp.id} className="overflow-hidden">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
+                <CardContent className="p-3 sm:p-6">
+                  <div className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4">
                     {comp.image_url && (
                       <img 
                         src={comp.image_url} 
                         alt={comp.title_ar}
-                        className="w-24 h-24 object-cover rounded-lg"
+                        className="w-full sm:w-24 h-32 sm:h-24 object-cover rounded-lg"
                       />
                     )}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="text-lg font-semibold">{comp.title_ar}</h3>
-                        <Badge className={statusColors[comp.status]}>
+                    <div className="flex-1 w-full">
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <h3 className="text-sm sm:text-lg font-semibold">{comp.title_ar}</h3>
+                        <Badge className={`${statusColors[comp.status]} text-xs`}>
                           {statusLabels[comp.status]}
                         </Badge>
                       </div>
                       
-                      <p className="text-sm text-muted-foreground mb-3">{comp.description_ar}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3 line-clamp-2">{comp.description_ar}</p>
                       
-                      <div className="flex flex-wrap gap-4 text-sm">
+                      <div className="flex flex-wrap gap-2 sm:gap-4 text-xs sm:text-sm">
                         <div className="flex items-center gap-1">
-                          <Gift className="h-4 w-4 text-primary" />
-                          <span>{comp.prize_description_ar}</span>
+                          <Gift className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                          <span className="truncate max-w-[120px] sm:max-w-none">{comp.prize_description_ar}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Ticket className="h-4 w-4 text-primary" />
-                          <span>{comp.required_tickets || 1} تذكرة للدخول</span>
+                          <Ticket className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                          <span>{comp.required_tickets || 1} تذكرة</span>
                         </div>
                         <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4 text-primary" />
-                          <span>{ticketCounts?.[comp.id] || 0} مشارك</span>
+                          <Users className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                          <span>{ticketCounts?.[comp.id] || 0}</span>
                           {(comp.max_tickets || comp.target_participants) && (
                             <span className="text-muted-foreground">/ {comp.max_tickets || comp.target_participants}</span>
                           )}
-                          {!comp.max_tickets && !comp.target_participants && (
-                            <span className="text-muted-foreground">(بدون حد)</span>
-                          )}
                         </div>
-                        {comp.end_date && (
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-4 w-4 text-primary" />
-                            <span>ينتهي: {formatBaghdadTime(comp.end_date, 'dd MMM yyyy - hh:mm a')}</span>
-                          </div>
-                        )}
-                        {comp.draw_date && (
-                          <div className="flex items-center gap-1">
-                            <Trophy className="h-4 w-4 text-yellow-500" />
-                            <span>السحب: {formatBaghdadTime(comp.draw_date, 'dd MMM yyyy - hh:mm a')}</span>
-                          </div>
-                        )}
                       </div>
                       
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {competitionTypeLabels[comp.competition_type]}
-                      </p>
+                      <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-2">
+                        {comp.end_date && (
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            <span className="hidden sm:inline">ينتهي:</span> {formatBaghdadTime(comp.end_date, 'dd/MM HH:mm')}
+                          </div>
+                        )}
+                        <span className="hidden sm:inline">{competitionTypeLabels[comp.competition_type]}</span>
+                      </div>
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(comp)}>
+                    <div className="flex flex-row sm:flex-col flex-wrap gap-1 sm:gap-2 w-full sm:w-auto">
+                      <Button variant="outline" size="sm" className="text-xs flex-1 sm:flex-none" onClick={() => handleEdit(comp)}>
                         تعديل
                       </Button>
                       {['instant_winner', 'everyone_wins', 'mystery_box', 'collect_letters'].includes(comp.competition_type) && (
                         <Button 
                           variant="outline" 
                           size="sm" 
-                          className="gap-1 text-violet-600 hover:text-violet-700 hover:bg-violet-50"
+                          className="gap-1 text-violet-600 hover:text-violet-700 hover:bg-violet-50 text-xs flex-1 sm:flex-none"
                           onClick={() => {
                             setSelectedCompetitionForTest(comp);
                             setTestDialogOpen(true);
                           }}
                         >
-                          <Play className="h-4 w-4" />
-                          اختبار
+                          <Play className="h-3 w-3" />
+                          <span className="hidden sm:inline">اختبار</span>
                         </Button>
                       )}
                       <Button 
                         variant="outline" 
                         size="sm" 
-                        className="gap-1"
+                        className="gap-1 text-xs flex-1 sm:flex-none"
                         onClick={() => {
                           setSelectedCompetitionForParticipants(comp);
                           setParticipantsDialogOpen(true);
                         }}
                       >
-                        <Eye className="h-4 w-4" />
+                        <Eye className="h-3 w-3" />
                         المشاركين
                       </Button>
                       {comp.status === 'active' && (ticketCounts?.[comp.id] || 0) > 0 && (
                         <Button 
                           size="sm" 
-                          className="gap-1"
+                          className="gap-1 text-xs flex-1 sm:flex-none"
                           onClick={() => drawWinnerMutation.mutate(comp.id)}
                           disabled={drawWinnerMutation.isPending}
                         >
-                          <Crown className="h-4 w-4" />
-                          سحب الفائز
+                          <Crown className="h-3 w-3" />
+                          <span className="hidden sm:inline">سحب</span> الفائز
                         </Button>
                       )}
                       {comp.status === 'completed' && comp.winner_user_id && (
-                        <>
-                          <Badge variant="outline" className="justify-center">
-                            <Crown className="h-3 w-3 ml-1" />
-                            تم السحب
-                          </Badge>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                            onClick={() => {
-                              if (window.confirm('هل أنت متأكد من إعادة السحب؟ سيتم إلغاء الفائز الحالي واختيار فائز جديد.')) {
-                                reDrawMutation.mutate(comp.id);
-                              }
-                            }}
-                            disabled={reDrawMutation.isPending}
-                          >
-                            {reDrawMutation.isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <RotateCcw className="h-4 w-4" />
-                            )}
-                            إعادة السحب
-                          </Button>
-                        </>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50 text-xs flex-1 sm:flex-none"
+                          onClick={() => {
+                            if (window.confirm('هل أنت متأكد من إعادة السحب؟')) {
+                              reDrawMutation.mutate(comp.id);
+                            }
+                          }}
+                          disabled={reDrawMutation.isPending}
+                        >
+                          {reDrawMutation.isPending ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <RotateCcw className="h-3 w-3" />
+                          )}
+                          <span className="hidden sm:inline">إعادة</span>
+                        </Button>
                       )}
                       <Button 
                         variant="destructive" 
                         size="sm"
+                        className="flex-1 sm:flex-none"
                         onClick={() => deleteMutation.mutate(comp.id)}
                         disabled={deleteMutation.isPending}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
