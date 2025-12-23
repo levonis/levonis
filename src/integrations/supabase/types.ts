@@ -826,6 +826,73 @@ export type Database = {
         }
         Relationships: []
       }
+      letter_prize_coupons: {
+        Row: {
+          competition_id: string
+          coupon_code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_used: boolean
+          prize_name_ar: string
+          prize_value: number
+          product_id: string | null
+          redemption_id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          coupon_code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          prize_name_ar: string
+          prize_value?: number
+          product_id?: string | null
+          redemption_id: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          coupon_code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          prize_name_ar?: string
+          prize_value?: number
+          product_id?: string | null
+          redemption_id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "letter_prize_coupons_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letter_prize_coupons_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "letter_prize_coupons_redemption_id_fkey"
+            columns: ["redemption_id"]
+            isOneToOne: false
+            referencedRelation: "letter_prize_redemptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       letter_prize_redemptions: {
         Row: {
           competition_id: string

@@ -1452,8 +1452,8 @@ export default function Competitions() {
                       </div>
                     )}
 
-                    {/* My Tickets */}
-                    {hasTicket && (
+                    {/* My Tickets - Only show for draw-type competitions */}
+                    {hasTicket && !['instant_winner', 'collect_letters', 'everyone_wins', 'mystery_box'].includes(comp.competition_type) && (
                       <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
                         <p className="font-semibold mb-2 flex items-center gap-2">
                           <Ticket className="h-4 w-4" />
@@ -1471,6 +1471,16 @@ export default function Competitions() {
                             </Badge>
                           ))}
                         </div>
+                      </div>
+                    )}
+                    
+                    {/* My Entries count for instant/letter competitions */}
+                    {hasTicket && ['instant_winner', 'collect_letters', 'everyone_wins', 'mystery_box'].includes(comp.competition_type) && (
+                      <div className="bg-primary/10 border border-primary/20 rounded-lg p-3">
+                        <p className="font-semibold flex items-center gap-2">
+                          <Ticket className="h-4 w-4" />
+                          عدد مشاركاتي: {myTicketList.length}
+                        </p>
                       </div>
                     )}
 
