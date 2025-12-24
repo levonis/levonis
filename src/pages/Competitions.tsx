@@ -1351,8 +1351,8 @@ export default function Competitions() {
                       </div>
                     </div>
 
-                    {/* Progress */}
-                    {(comp.max_tickets || comp.target_participants) && (
+                    {/* Progress - only show when participants are not hidden */}
+                    {!comp.hide_participants && (comp.max_tickets || comp.target_participants) && (
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span>التقدم</span>

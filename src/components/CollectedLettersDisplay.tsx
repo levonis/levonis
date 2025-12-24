@@ -83,7 +83,18 @@ export default function CollectedLettersDisplay({
       
       if (error) throw error;
       
-      const result = data as { success?: boolean; prize_name?: string; coupon_code?: string; error?: string } | null;
+      const result = data as { 
+        success?: boolean; 
+        prize_name?: string; 
+        coupon_code?: string; 
+        error?: string;
+        send_telegram?: boolean;
+        user_name?: string;
+        user_phone?: string;
+        user_governorate?: string;
+        competition_title?: string;
+      } | null;
+      
       if (result?.success) {
         toast.success(
           <div className="space-y-1">
@@ -92,6 +103,41 @@ export default function CollectedLettersDisplay({
           </div>,
           { duration: 10000 }
         );
+        
+        // Send telegram notifications
+        if (result.send_telegram) {
+          // Get current user for telegram notification
+          const { data: userData } = await supabase.auth.getUser();
+          
+          // Send notification to user via telegram
+          if (userData?.user?.id) {
+            try {
+              await supabase.functions.invoke('send-user-telegram-notification', {
+                body: {
+                  user_id: userData.user.id,
+                  title: '🎉 مبروك! ربحت جائزة',
+                  message: `أكملت كلمة "${word}" في مسابقة "${result.competition_title}"!\n\n🎁 الجائزة: ${result.prize_name}\n🎟️ كود الخصم: ${result.coupon_code}\n\n⏰ صالح لمدة 30 يوم`,
+                  notification_type: 'success'
+                }
+              });
+            } catch (e) {
+              console.log('Failed to send user telegram notification:', e);
+            }
+          }
+          
+          // Send notification to admin via telegram
+          try {
+            await supabase.functions.invoke('send-telegram-notification', {
+              body: {
+                message: `🏆 *فائز جديد في مسابقة الأحرف*\n\n👤 الفائز: ${result.user_name}\n📱 الهاتف: ${result.user_phone}\n📍 المحافظة: ${result.user_governorate}\n\n🏅 المسابقة: ${result.competition_title}\n🔤 الكلمة: "${word}"\n🎁 الجائزة: ${result.prize_name}\n🎟️ كود الخصم: \`${result.coupon_code}\``,
+                parse_mode: 'Markdown'
+              }
+            });
+          } catch (e) {
+            console.log('Failed to send admin telegram notification:', e);
+          }
+        }
+        
         onRedeemSuccess?.();
       } else {
         toast.error(result?.error || 'حدث خطأ');
@@ -107,8 +153,19 @@ export default function CollectedLettersDisplay({
     return null;
   }
 
-  // Get main display word (first prize word or target_word)
-  const mainWord = lettersConfig.prize_words[0]?.word || lettersConfig.target_word || '';
+  // Get the longest prize word to display (usually the main target)
+  const mainWord = useMemo(() => {
+    const words = lettersConfig?.prize_words || [];
+    if (words.length === 0) return lettersConfig.target_word || '';
+    // Find the longest word (usually the main word)
+    const longestWord = words.reduce((prev, curr) => 
+      (curr.word?.length || 0) > (prev.word?.length || 0) ? curr : prev
+    , words[0]);
+    return longestWord?.word || lettersConfig.target_word || '';
+  }, [lettersConfig]);
+
+  // Check if the word is Arabic (contains Arabic characters)
+  const isArabic = useMemo(() => /[\u0600-\u06FF]/.test(mainWord), [mainWord]);
 
   return (
     <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
@@ -119,8 +176,8 @@ export default function CollectedLettersDisplay({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Main Word Display - Show all letters with collected ones highlighted (RTL for Arabic) */}
-        <div className="flex items-center justify-center gap-2 flex-wrap" dir="rtl">
+        {/* Main Word Display - Show all letters with collected ones highlighted */}
+        <div className={`flex items-center justify-center gap-2 flex-wrap ${isArabic ? '' : 'flex-row-reverse'}`} dir="rtl">
           {mainWord.split('').map((letter, index) => {
             const count = letterCounts[letter] || 0;
             // Count how many of this letter we need up to this position (from start)
