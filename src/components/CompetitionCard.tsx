@@ -325,9 +325,16 @@ const CompetitionCard = memo(({
         )}
         
         {comp.competition_type === 'collect_letters' && comp.letters_config && (
-          <div className="flex items-center gap-1 text-xs text-violet-600 bg-violet-500/10 px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1 text-xs text-violet-600 bg-violet-500/10 px-2 py-1 rounded-md" dir="rtl">
             <Sparkles className="h-3 w-3" />
-            <span>أجمع الأحرف: {(comp.letters_config as any).target_word}</span>
+            <span>أجمع الأحرف: {(() => {
+              const words = (comp.letters_config as any)?.prize_words || [];
+              if (words.length === 0) return (comp.letters_config as any).target_word || '';
+              const longest = words.reduce((prev: any, curr: any) => 
+                (curr.word?.length || 0) > (prev.word?.length || 0) ? curr : prev
+              , words[0]);
+              return longest?.word || (comp.letters_config as any).target_word || '';
+            })()}</span>
           </div>
         )}
         
