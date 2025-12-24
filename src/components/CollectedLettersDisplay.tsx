@@ -16,6 +16,7 @@ interface PrizeWord {
 
 interface LettersConfig {
   target_word: string;
+  display_word?: string; // Custom display order for the word
   prize_words?: PrizeWord[];
   letter_probabilities?: Record<string, number>;
 }
@@ -153,8 +154,13 @@ export default function CollectedLettersDisplay({
     return null;
   }
 
-  // Get the longest prize word to display (usually the main target)
+  // Get the word to display - prioritize display_word, then longest prize word
   const mainWord = useMemo(() => {
+    // First check for custom display word
+    if (lettersConfig?.display_word) {
+      return lettersConfig.display_word;
+    }
+    
     const words = lettersConfig?.prize_words || [];
     if (words.length === 0) return lettersConfig.target_word || '';
     // Find the longest word (usually the main word)

@@ -230,6 +230,7 @@ export default function AdminCompetitions() {
     letters_config: [] as LetterConfig[],
     better_luck_probability: '0',
     prize_words: [] as PrizeWord[],
+    display_word: '', // Custom display order for the word
     growing_prize_config: {
       base_prize: 0,
       increment_per_interval: 0,
@@ -381,6 +382,7 @@ export default function AdminCompetitions() {
       // Build letters_config for collect_letters type
       const lettersConfig = data.competition_type === 'collect_letters' ? {
         target_word: data.prize_words.map(p => p.word).join('').split('').filter((v, i, a) => a.indexOf(v) === i).join(''),
+        display_word: data.display_word || '', // Custom display order for the word
         letter_probabilities: data.letters_config.reduce((acc, l) => {
           if (l.letter) acc[l.letter] = l.probability;
           return acc;
@@ -656,6 +658,7 @@ export default function AdminCompetitions() {
       letters_config: [],
       better_luck_probability: '0',
       prize_words: [],
+      display_word: '',
       growing_prize_config: {
         base_prize: 0,
         increment_per_interval: 0,
@@ -764,6 +767,7 @@ export default function AdminCompetitions() {
         stock: p.stock || 0,
         product_id: p.product_id || ''
       })) || [],
+      display_word: compAny.letters_config?.display_word || '',
       growing_prize_config: compAny.growing_prize_config || {
         base_prize: 0,
         increment_per_interval: 0,
@@ -2188,6 +2192,32 @@ export default function AdminCompetitions() {
                         <p className="text-xs text-muted-foreground mt-2">
                           يمكن للمستخدم استبدال الأحرف المجمعة بجوائز عند تكوين الكلمة
                         </p>
+                        
+                        {/* Custom display word order */}
+                        <div className="mt-4 p-3 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                          <Label className="text-xs font-semibold mb-2 block flex items-center gap-2">
+                            📝 ترتيب عرض الكلمة للزبون (اختياري)
+                          </Label>
+                          <Input
+                            placeholder="اتركه فارغاً لاستخدام أطول كلمة تلقائياً"
+                            value={formData.display_word}
+                            onChange={(e) => setFormData({ ...formData, display_word: e.target.value.toUpperCase() })}
+                            className="font-bold text-lg tracking-widest"
+                            dir="ltr"
+                          />
+                          <p className="text-xs text-muted-foreground mt-2">
+                            اكتب الكلمة بالترتيب الذي تريد عرضه للزبون. مثال: LEVONIS
+                          </p>
+                          {formData.display_word && (
+                            <div className="mt-2 flex gap-1 flex-wrap">
+                              {formData.display_word.split('').map((letter, idx) => (
+                                <span key={idx} className="w-8 h-8 flex items-center justify-center bg-primary text-primary-foreground rounded font-bold">
+                                  {letter}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
