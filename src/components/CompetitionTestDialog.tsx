@@ -301,30 +301,20 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
             });
             setShowScratchReveal(true);
           } else {
-            // For bags animation
-            if (testQuantity === 1) {
-              setLetterRevealData({
-                letter: firstResult.isBetterLuck ? null : (firstResult.letter || null),
-                collected: [],
-                config: competition.letters_config || {},
-                prize: null
-              });
-              setShowLetterReveal(true);
-            } else {
-              const bagResults = results.map(r => ({
-                letter: r.isBetterLuck ? null : (r.letter || null),
-                isNew: true
-              }));
-              
-              setBagRevealResults(bagResults);
-              setLetterRevealData({
-                letter: null,
-                collected: [],
-                config: competition.letters_config || {},
-                prize: null
-              });
-              setShowBagReveal(true);
-            }
+            // For bags animation - always use BagOpenReveal
+            const bagResults = results.map(r => ({
+              letter: r.isBetterLuck ? null : (r.letter || null),
+              isNew: true
+            }));
+            
+            setBagRevealResults(bagResults);
+            setLetterRevealData({
+              letter: null,
+              collected: [],
+              config: competition.letters_config || {},
+              prize: null
+            });
+            setShowBagReveal(true);
           }
         }
       }
