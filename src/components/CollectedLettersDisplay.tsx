@@ -119,12 +119,11 @@ export default function CollectedLettersDisplay({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Main Word Display - Show all letters with collected ones highlighted */}
-        <div className="flex items-center justify-center gap-2 flex-wrap flex-row-reverse">
+        {/* Main Word Display - Show all letters with collected ones highlighted (RTL for Arabic) */}
+        <div className="flex items-center justify-center gap-2 flex-wrap" dir="rtl">
           {mainWord.split('').map((letter, index) => {
             const count = letterCounts[letter] || 0;
-            const hasLetter = count > 0;
-            // Count how many of this letter we need up to this position
+            // Count how many of this letter we need up to this position (from start)
             const sameLettersBefore = mainWord.slice(0, index + 1).split('').filter(l => l === letter).length;
             const letterAvailable = count >= sameLettersBefore;
             
@@ -140,7 +139,6 @@ export default function CollectedLettersDisplay({
                     }
                   `}
                 >
-                  {/* Always show the letter, just with different styling */}
                   {letter}
                 </div>
                 {letterAvailable && (
