@@ -1336,12 +1336,14 @@ export default function Competitions() {
                     )}
 
                     {/* Stats */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-secondary/50 rounded-lg p-3 text-center">
-                        <Users className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-                        <p className="text-lg font-bold">{ticketCount}</p>
-                        <p className="text-xs text-muted-foreground">مشترك</p>
-                      </div>
+                    <div className={`grid ${comp.hide_participants ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
+                      {!comp.hide_participants && (
+                        <div className="bg-secondary/50 rounded-lg p-3 text-center">
+                          <Users className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
+                          <p className="text-lg font-bold">{ticketCount}</p>
+                          <p className="text-xs text-muted-foreground">مشترك</p>
+                        </div>
+                      )}
                       <div className="bg-secondary/50 rounded-lg p-3 text-center">
                         <Ticket className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
                         <p className="text-lg font-bold">{requiredTickets}</p>

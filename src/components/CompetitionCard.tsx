@@ -456,9 +456,16 @@ const CompetitionCard = memo(({
           </div>
         )}
         
-        {hasTicket && (
+        {/* Only show ticket numbers for draw-type competitions */}
+        {hasTicket && !['instant_winner', 'collect_letters', 'everyone_wins', 'mystery_box'].includes(comp.competition_type) && (
           <div className="text-xs text-primary font-medium">
             تذاكري: {myTicketList.map(t => t.ticket_number).join(', ')}
+          </div>
+        )}
+        {/* Show entry count for instant-type competitions */}
+        {hasTicket && ['instant_winner', 'collect_letters', 'everyone_wins', 'mystery_box'].includes(comp.competition_type) && (
+          <div className="text-xs text-primary font-medium">
+            مشاركاتي: {myTicketList.length}
           </div>
         )}
         
