@@ -434,93 +434,48 @@ export default function Competitions() {
   // Collect letters competition mutation
   const enterCollectLettersMutation = useMutation({
     mutationFn: async ({ competitionId, quantity }: { competitionId: string; quantity: number }) => {
-      // Enter multiple times
-      const results = [];
-      for (let i = 0; i < quantity; i++) {
-        const { data, error } = await supabase.rpc('enter_collect_letters_competition', {
-          comp_id: competitionId
-        });
-        if (error) throw error;
-        results.push(data);
-      }
-      return results;
+      // Single RPC call with quantity parameter
+      const { data, error } = await supabase.rpc('enter_collect_letters_competition', {
+        comp_id: competitionId,
+        quantity: quantity
+      });
+      if (error) throw error;
+      return data;
     },
-    onSuccess: (dataArray: any[]) => {
-      const lastData = dataArray[dataArray.length - 1];
-      if (lastData.success) {
+    onSuccess: (data: any) => {
+      if (data.success) {
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
         queryClient.invalidateQueries({ queryKey: ['my-competition-tickets'] });
         queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
         queryClient.invalidateQueries({ queryKey: ['my-collected-letters'] });
         
-        // Get animation type from competition config
-        const animationType = selectedCompetitionForEntry?.letters_config?.animation_type || 'bags';
-        const allowSkip = selectedCompetitionForEntry?.letters_config?.allow_skip_animation !== false;
-        
         // Check if any prize was won
-        const wonPrize = dataArray.find(d => d.won_prizes && d.won_prizes.length > 0)?.won_prizes?.[0] || null;
+        const wonPrize = data.won_prizes && data.won_prizes.length > 0 ? data.won_prizes[0] : null;
         
-        if (dataArray.length === 1) {
-          // Single entry - use single reveal animation
-          const data = dataArray[0];
-          
-          // Check if it's a ticket reward
-          if (data.is_ticket_reward) {
-            // For ticket rewards, show letter reveal with ticket info
-            setLetterRevealData({
-              letter: null,
-              collected: data.collected_letters || [],
-              config: selectedCompetitionForEntry?.letters_config || {},
-              prize: wonPrize,
-              isTicketReward: true,
-              ticketsAwarded: data.tickets_awarded || 1
-            });
-            
-            if (animationType === 'scratch') {
-              setShowScratchReveal(true);
-            } else {
-              setShowLetterReveal(true);
-            }
-          } else {
-            setLetterRevealData({
-              letter: data.is_better_luck ? null : data.letter_awarded,
-              collected: data.collected_letters || [],
-              config: selectedCompetitionForEntry?.letters_config || {},
-              prize: wonPrize,
-              isTicketReward: false,
-              ticketsAwarded: 0
-            });
-            
-            if (animationType === 'scratch') {
-              setShowScratchReveal(true);
-            } else {
-              setShowLetterReveal(true);
-            }
-          }
-        } else {
-          // Multiple entries - use bag reveal animation
-          const bagResults = dataArray.map(data => ({
-            letter: data.is_better_luck ? null : (data.is_ticket_reward ? null : data.letter_awarded),
-            isNew: !data.collected_letters?.includes(data.letter_awarded),
-            isTicketReward: data.is_ticket_reward || false,
-            ticketsAwarded: data.tickets_awarded || 0
-          }));
-          
-          setBagRevealResults(bagResults);
-          setLetterRevealData({
-            letter: null,
-            collected: lastData.collected_letters || [],
-            config: selectedCompetitionForEntry?.letters_config || {},
-            prize: wonPrize
-          });
-          setShowBagReveal(true);
-        }
+        // Build results array from the new format
+        const resultsArray = data.results || [];
+        const bagResults = resultsArray.map((result: any) => ({
+          letter: result.is_better_luck ? null : (result.is_ticket_reward ? null : result.letter_awarded),
+          isNew: !data.collected_letters?.includes(result.letter_awarded),
+          isTicketReward: result.is_ticket_reward || false,
+          ticketsAwarded: result.tickets_awarded || 0
+        }));
+        
+        // Always use BagOpenReveal for consistency
+        setBagRevealResults(bagResults);
+        setLetterRevealData({
+          letter: null,
+          collected: data.collected_letters || [],
+          config: selectedCompetitionForEntry?.letters_config || {},
+          prize: wonPrize
+        });
+        setShowBagReveal(true);
         
         if (wonPrize) {
           setShowWinCelebration(true);
         }
       } else {
-        toast.error(lastData.error);
+        toast.error(data.error);
       }
       setShowBagPurchaseDialog(false);
       setBagPurchaseQuantity(1);
