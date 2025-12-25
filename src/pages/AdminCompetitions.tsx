@@ -46,6 +46,7 @@ import PrizeProductsSelector from "@/components/PrizeProductsSelector";
 import ProductSearchSelect from "@/components/ProductSearchSelect";
 import UserTicketsManager from "@/components/UserTicketsManager";
 import CompetitionTestDialog from "@/components/CompetitionTestDialog";
+import AdminLettersPrizeManager from "@/components/AdminLettersPrizeManager";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 type CompetitionStatus = 'draft' | 'active' | 'completed' | 'cancelled';
@@ -193,6 +194,8 @@ export default function AdminCompetitions() {
   const [ticketsManagerOpen, setTicketsManagerOpen] = useState(false);
   const [testDialogOpen, setTestDialogOpen] = useState(false);
   const [selectedCompetitionForTest, setSelectedCompetitionForTest] = useState<Competition | null>(null);
+  const [lettersPrizeManagerOpen, setLettersPrizeManagerOpen] = useState(false);
+  const [selectedCompetitionForLetters, setSelectedCompetitionForLetters] = useState<Competition | null>(null);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -2416,6 +2419,20 @@ export default function AdminCompetitions() {
                           <span className="hidden sm:inline">اختبار</span>
                         </Button>
                       )}
+                      {comp.competition_type === 'collect_letters' && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="gap-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50 text-xs flex-1 sm:flex-none"
+                          onClick={() => {
+                            setSelectedCompetitionForLetters(comp);
+                            setLettersPrizeManagerOpen(true);
+                          }}
+                        >
+                          <Gift className="h-3 w-3" />
+                          <span className="hidden sm:inline">القسائم</span>
+                        </Button>
+                      )}
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -2507,6 +2524,15 @@ export default function AdminCompetitions() {
         onOpenChange={setTestDialogOpen}
         competition={selectedCompetitionForTest}
       />
+
+      {selectedCompetitionForLetters && (
+        <AdminLettersPrizeManager
+          open={lettersPrizeManagerOpen}
+          onOpenChange={setLettersPrizeManagerOpen}
+          competitionId={selectedCompetitionForLetters.id}
+          competitionTitle={selectedCompetitionForLetters.title_ar}
+        />
+      )}
     </>
   );
 }
