@@ -501,28 +501,29 @@ export default function BagOpenReveal({
                 )}
 
                 <p className="text-sm mt-4 opacity-80">تقدمك في الكلمة:</p>
-                <div className="flex justify-center gap-2 flex-wrap flex-row-reverse">
-                  {[...new Set(targetWord.split(''))].map((letter, idx) => {
-                    const hasLetter = uniqueCollected.includes(letter);
+                <div className="flex justify-center gap-1 overflow-x-auto pb-2" dir="rtl">
+                  {targetWord.split('').map((letter, idx) => {
                     const count = letterCounts[letter] ?? 0;
+                    // Count how many of this letter we need up to this position
+                    const sameLettersBefore = targetWord.slice(0, idx + 1).split('').filter(l => l === letter).length;
+                    const hasLetter = count >= sameLettersBefore;
                     const isNewlyRevealed = revealedLetters.some((r) => r.letter === letter);
                     return (
-                      <div
-                        key={idx}
-                        className={`relative w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold transition-all ${
-                          hasLetter
-                            ? isNewlyRevealed
-                              ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg ring-2 ring-yellow-300'
-                              : 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg'
-                            : 'bg-white/10 text-white/30 border border-white/20'
-                        }`}
-                      >
-                        {hasLetter ? letter : '?'}
-                        {count > 1 && (
-                          <span className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full text-xs flex items-center justify-center">
-                            {count}
-                          </span>
-                        )}
+                      <div key={idx} className="flex flex-col items-center flex-shrink-0">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold transition-all ${
+                            hasLetter
+                              ? isNewlyRevealed
+                                ? 'bg-gradient-to-br from-yellow-400 to-amber-500 text-white shadow-lg ring-2 ring-yellow-300'
+                                : 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-lg'
+                              : 'bg-white/10 text-white/30 border border-white/20'
+                          }`}
+                        >
+                          {letter}
+                        </div>
+                        <span className={`text-xs mt-1 ${hasLetter ? 'text-yellow-300' : 'text-white/40'}`}>
+                          {count > 0 ? count : '-'}
+                        </span>
                       </div>
                     );
                   })}

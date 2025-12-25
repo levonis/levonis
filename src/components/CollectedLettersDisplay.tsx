@@ -182,8 +182,8 @@ export default function CollectedLettersDisplay({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Main Word Display - Show all letters with collected ones highlighted */}
-        <div className={`flex items-center justify-center gap-2 flex-wrap ${isArabic ? '' : 'flex-row-reverse'}`} dir="rtl">
+        {/* Main Word Display - Show all letters in one line with count below */}
+        <div className="flex items-start justify-center gap-1 overflow-x-auto pb-2" dir="rtl">
           {mainWord.split('').map((letter, index) => {
             const count = letterCounts[letter] || 0;
             // Count how many of this letter we need up to this position (from start)
@@ -191,10 +191,10 @@ export default function CollectedLettersDisplay({
             const letterAvailable = count >= sameLettersBefore;
             
             return (
-              <div key={index} className="flex flex-col items-center">
+              <div key={index} className="flex flex-col items-center flex-shrink-0">
                 <div
                   className={`
-                    w-12 h-12 rounded-lg flex items-center justify-center text-xl font-bold
+                    w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center text-lg sm:text-xl font-bold
                     transition-all duration-300 border-2
                     ${letterAvailable 
                       ? 'bg-primary text-primary-foreground border-primary shadow-lg' 
@@ -204,9 +204,9 @@ export default function CollectedLettersDisplay({
                 >
                   {letter}
                 </div>
-                {letterAvailable && (
-                  <span className="text-xs mt-1 font-medium text-primary">✓</span>
-                )}
+                <span className={`text-xs mt-1 font-medium ${letterAvailable ? 'text-primary' : 'text-muted-foreground/50'}`}>
+                  {count > 0 ? count : '-'}
+                </span>
               </div>
             );
           })}

@@ -1979,10 +1979,9 @@ export type Database = {
       delete_old_notifications: { Args: never; Returns: undefined }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }
       draw_multiple_winners: { Args: { comp_id: string }; Returns: Json }
-      enter_collect_letters_competition: {
-        Args: { comp_id: string }
-        Returns: Json
-      }
+      enter_collect_letters_competition:
+        | { Args: { comp_id: string }; Returns: Json }
+        | { Args: { comp_id: string; quantity?: number }; Returns: Json }
       enter_competition_with_tickets: {
         Args: { comp_id: string }
         Returns: Json
