@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Plus, Trash2, Loader2, Save, Ticket, Gift, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowRight, Plus, Trash2, Loader2, Save, Ticket, Gift, Sparkles, TrendingUp, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 
 interface TicketBundle {
@@ -30,6 +30,7 @@ export default function AdminTicketBundles() {
   
   const [bundles, setBundles] = useState<TicketBundle[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   // Fetch existing bundles from settings
   const { isLoading } = useQuery({
@@ -111,6 +112,30 @@ export default function AdminTicketBundles() {
     setHasChanges(true);
   };
 
+  const moveBundle = (fromIndex: number, toIndex: number) => {
+    if (toIndex < 0 || toIndex >= bundles.length) return;
+    const newBundles = [...bundles];
+    const [removed] = newBundles.splice(fromIndex, 1);
+    newBundles.splice(toIndex, 0, removed);
+    setBundles(newBundles);
+    setHasChanges(true);
+  };
+
+  const handleDragStart = (index: number) => {
+    setDraggedIndex(index);
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    if (draggedIndex === null || draggedIndex === index) return;
+    moveBundle(draggedIndex, index);
+    setDraggedIndex(index);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   const calculateSavings = (bundle: TicketBundle) => {
     const ticketPrice = 250; // Base price per ticket
     const regularCost = bundle.quantity * ticketPrice;
@@ -147,7 +172,7 @@ export default function AdminTicketBundles() {
               <Ticket className="h-6 w-6 text-primary" />
               إدارة عروض التذاكر
             </h1>
-            <p className="text-sm text-muted-foreground">تحديد باقات التذاكر والأسعار والهدايا</p>
+            <p className="text-sm text-muted-foreground">تحديد باقات التذاكر والأسعار والهدايا - اسحب لتغيير الترتيب</p>
           </div>
           
           <Button
@@ -166,13 +191,17 @@ export default function AdminTicketBundles() {
 
         {/* Bundles Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {bundles.map((bundle) => {
+          {bundles.map((bundle, index) => {
             const { savings, savingsPercent, totalTickets, effectivePrice } = calculateSavings(bundle);
             
             return (
               <Card 
                 key={bundle.id} 
-                className={`relative ${bundle.highlight ? 'border-primary ring-2 ring-primary/20' : ''} ${!bundle.active ? 'opacity-60' : ''}`}
+                draggable
+                onDragStart={() => handleDragStart(index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragEnd={handleDragEnd}
+                className={`relative cursor-move transition-all ${bundle.highlight ? 'border-primary ring-2 ring-primary/20' : ''} ${!bundle.active ? 'opacity-60' : ''} ${draggedIndex === index ? 'opacity-50 scale-95' : ''}`}
               >
                 {bundle.highlight && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -185,22 +214,44 @@ export default function AdminTicketBundles() {
                 
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1">
-                      <Input
-                        value={bundle.label}
-                        onChange={(e) => updateBundle(bundle.id, 'label', e.target.value)}
-                        className="font-bold text-lg h-8 w-40"
-                      />
+                    <div className="flex items-center gap-2">
+                      <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                      <Badge variant="secondary" className="text-xs">#{index + 1}</Badge>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => removeBundle(bundle.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => moveBundle(index, index - 1)}
+                        disabled={index === 0}
+                      >
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => moveBundle(index, index + 1)}
+                        disabled={index === bundles.length - 1}
+                      >
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-destructive"
+                        onClick={() => removeBundle(bundle.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
+                  <Input
+                    value={bundle.label}
+                    onChange={(e) => updateBundle(bundle.id, 'label', e.target.value)}
+                    className="font-bold text-lg h-8 w-full mt-2"
+                  />
                 </CardHeader>
                 
                 <CardContent className="space-y-4">
