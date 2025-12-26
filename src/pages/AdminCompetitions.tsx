@@ -440,10 +440,38 @@ export default function AdminCompetitions() {
 
       // Add type-specific fields
       if (data.competition_type === 'mystery_box' || data.competition_type === 'instant_winner' || data.competition_type === 'everyone_wins') {
-        payload.prize_tiers = data.prize_tiers;
+        // Include ticket rewards in prize_tiers for these competition types
+        const prizeTiersWithTicketRewards = [
+          ...data.prize_tiers,
+          ...data.ticket_rewards.map(tr => ({
+            id: tr.id,
+            name_ar: tr.name,
+            probability: tr.probability,
+            quantity: 9999,
+            remaining: 9999,
+            is_ticket_reward: true,
+            tickets_amount: tr.tickets
+          }))
+        ];
+        payload.prize_tiers = prizeTiersWithTicketRewards;
         // For mystery_box, prize_tiers are stored in mystery_boxes field
         if (data.competition_type === 'mystery_box') {
-          payload.mystery_boxes = data.prize_tiers;
+          payload.mystery_boxes = prizeTiersWithTicketRewards;
+        }
+      }
+
+      // For other competition types, store ticket_rewards in prize_tiers as well
+      if (['ticket_count', 'all_tickets_sold', 'timed', 'free', 'flash_sale', 'growing_prize', 'team_battle', 'hidden_winner'].includes(data.competition_type)) {
+        if (data.ticket_rewards.length > 0) {
+          payload.prize_tiers = data.ticket_rewards.map(tr => ({
+            id: tr.id,
+            name_ar: tr.name,
+            probability: tr.probability,
+            quantity: 9999,
+            remaining: 9999,
+            is_ticket_reward: true,
+            tickets_amount: tr.tickets
+          }));
         }
       }
 
@@ -752,7 +780,7 @@ export default function AdminCompetitions() {
       winners_count: compAny.winners_count?.toString() || '1',
       competition_type: comp.competition_type,
       status: comp.status,
-      prize_tiers: compAny.prize_tiers || [],
+      prize_tiers: (compAny.prize_tiers || []).filter((t: any) => !t.is_ticket_reward),
       price_tiers: compAny.price_tiers || [],
       is_flash: compAny.is_flash || false,
       flash_badge_text: compAny.flash_badge_text || '',
@@ -785,12 +813,22 @@ export default function AdminCompetitions() {
       animation_type: compAny.letters_config?.animation_type || 'bags',
       max_bags_per_purchase: compAny.letters_config?.max_bags_per_purchase || 10,
       allow_skip_animation: compAny.letters_config?.allow_skip_animation !== false,
-      ticket_rewards: (compAny.letters_config?.ticket_rewards || []).map((tr: any, idx: number) => ({
-        id: tr.id || `tr_${idx}`,
-        name: tr.name || '',
-        tickets: tr.tickets || 1,
-        probability: tr.probability || 0
-      }))
+      // Extract ticket_rewards from letters_config (for collect_letters) or prize_tiers (for others)
+      ticket_rewards: comp.competition_type === 'collect_letters' 
+        ? (compAny.letters_config?.ticket_rewards || []).map((tr: any, idx: number) => ({
+            id: tr.id || `tr_${idx}`,
+            name: tr.name || '',
+            tickets: tr.tickets || 1,
+            probability: tr.probability || 0
+          }))
+        : (compAny.prize_tiers || [])
+            .filter((t: any) => t.is_ticket_reward)
+            .map((t: any, idx: number) => ({
+              id: t.id || `tr_${idx}`,
+              name: t.name_ar || '',
+              tickets: t.tickets_amount || 1,
+              probability: t.probability || 0
+            }))
     });
     setIsDialogOpen(true);
   };
@@ -2265,6 +2303,97 @@ export default function AdminCompetitions() {
                   </div>
                 </div>
 
+                {/* جوائز التذاكر - لجميع أنواع المسابقات */}
+                <div className="border rounded-lg p-4 bg-gradient-to-br from-violet-500/5 to-purple-500/10 border-violet-500/20">
+                  <h3 className="font-semibold mb-4 flex items-center gap-2">
+                    <Ticket className="h-4 w-4 text-violet-600" />
+                    جوائز التذاكر (اختياري)
+                  </h3>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    يمكنك إضافة تذاكر كجائزة إضافية يفوز بها المشترك عند الشراء
+                  </p>
+                  
+                  {formData.ticket_rewards.map((reward, index) => (
+                    <div key={reward.id} className="flex items-center gap-2 mb-2 p-2 bg-background rounded border">
+                      <Input
+                        placeholder="اسم الجائزة (مثال: 5 تذاكر مجانية)"
+                        value={reward.name}
+                        onChange={(e) => {
+                          const newRewards = [...formData.ticket_rewards];
+                          newRewards[index].name = e.target.value;
+                          setFormData({ ...formData, ticket_rewards: newRewards });
+                        }}
+                        className="flex-1"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="التذاكر"
+                        value={reward.tickets}
+                        onChange={(e) => {
+                          const newRewards = [...formData.ticket_rewards];
+                          newRewards[index].tickets = parseInt(e.target.value) || 0;
+                          setFormData({ ...formData, ticket_rewards: newRewards });
+                        }}
+                        className="w-20"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="الاحتمال %"
+                        value={reward.probability}
+                        onChange={(e) => {
+                          const newRewards = [...formData.ticket_rewards];
+                          newRewards[index].probability = parseFloat(e.target.value) || 0;
+                          setFormData({ ...formData, ticket_rewards: newRewards });
+                        }}
+                        className="w-24"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            ticket_rewards: formData.ticket_rewards.filter((_, i) => i !== index)
+                          });
+                        }}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        ticket_rewards: [...formData.ticket_rewards, {
+                          id: crypto.randomUUID(),
+                          name: '',
+                          tickets: 1,
+                          probability: 5
+                        }]
+                      });
+                    }}
+                  >
+                    <Plus className="h-4 w-4 ml-1" />
+                    إضافة جائزة تذاكر
+                  </Button>
+                  
+                  {formData.ticket_rewards.length > 0 && (
+                    <div className="mt-3 text-xs text-muted-foreground">
+                      مجموع احتمالات جوائز التذاكر: 
+                      <span className="font-bold mr-1 text-violet-600">
+                        {formData.ticket_rewards.reduce((sum, t) => sum + t.probability, 0)}%
+                      </span>
+                    </div>
+                  )}
+                </div>
+
                 {/* الشروط والأحكام */}
                 <div className="space-y-2">
                   <Label>الشروط والأحكام (اختياري)</Label>
@@ -2511,6 +2640,7 @@ export default function AdminCompetitions() {
           competitionId={selectedCompetitionForParticipants.id}
           competitionTitle={selectedCompetitionForParticipants.title_ar}
           requiredTickets={selectedCompetitionForParticipants.required_tickets || 1}
+          ticketPrice={ticketSettings?.price || 250}
         />
       )}
 
