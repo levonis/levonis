@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -136,7 +136,7 @@ export default function AdminWallet() {
         .from('wallet_transactions')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(500);
       
       if (error) throw error;
       
@@ -160,6 +160,80 @@ export default function AdminWallet() {
     },
     enabled: isAdmin,
   });
+
+  // جلب جميع أرصدة الزبائن مع المحافظ
+  const { data: customerWallets, isLoading: loadingWallets } = useQuery({
+    queryKey: ['admin-customer-wallets'],
+    queryFn: async () => {
+      const { data: wallets, error } = await supabase
+        .from('user_wallets')
+        .select('*')
+        .gt('balance', 0)
+        .order('balance', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (!wallets || wallets.length === 0) {
+        return [];
+      }
+      
+      // جلب بيانات المستخدمين
+      const userIds = wallets.map(w => w.user_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, phone_number, email')
+        .in('id', userIds);
+      
+      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      return wallets.map(w => ({
+        ...w,
+        profile: profilesMap.get(w.user_id) || null,
+      }));
+    },
+    enabled: isAdmin,
+  });
+
+  // حالات البحث والفلترة
+  const [walletSearchQuery, setWalletSearchQuery] = useState('');
+  const [selectedCustomerForHistory, setSelectedCustomerForHistory] = useState<any>(null);
+  const [showCustomerHistoryDialog, setShowCustomerHistoryDialog] = useState(false);
+
+  // جلب سجل معاملات زبون محدد
+  const { data: customerTransactionHistory } = useQuery({
+    queryKey: ['customer-transaction-history', selectedCustomerForHistory?.user_id],
+    queryFn: async () => {
+      if (!selectedCustomerForHistory?.user_id) return [];
+      
+      const { data, error } = await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('user_id', selectedCustomerForHistory.user_id)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!selectedCustomerForHistory?.user_id,
+  });
+
+  // فلترة أرصدة الزبائن
+  const filteredCustomerWallets = useMemo(() => {
+    if (!customerWallets) return [];
+    if (!walletSearchQuery) return customerWallets;
+    
+    const search = walletSearchQuery.toLowerCase();
+    return customerWallets.filter((w: any) => 
+      w.profile?.full_name?.toLowerCase().includes(search) ||
+      w.profile?.username?.toLowerCase().includes(search) ||
+      w.profile?.phone_number?.includes(search) ||
+      w.profile?.email?.toLowerCase().includes(search)
+    );
+  }, [customerWallets, walletSearchQuery]);
+
+  // حساب إجمالي الأرصدة
+  const totalWalletBalance = useMemo(() => {
+    return customerWallets?.reduce((sum: number, w: any) => sum + (w.balance || 0), 0) || 0;
+  }, [customerWallets]);
 
   // تحديث حالة المعاملة
   const updateTransactionStatus = useMutation({
@@ -717,6 +791,165 @@ export default function AdminWallet() {
           )}
         </CardContent>
       </Card>
+
+      {/* أرصدة الزبائن */}
+      <Card className="mt-6">
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              أرصدة الزبائن ({customerWallets?.length || 0})
+            </CardTitle>
+            <div className="flex items-center gap-4">
+              <div className="text-sm">
+                إجمالي الأرصدة: <span className="font-bold text-primary">{formatPrice(totalWalletBalance)}</span>
+              </div>
+              <div className="relative w-64">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="بحث عن زبون..."
+                  value={walletSearchQuery}
+                  onChange={(e) => setWalletSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loadingWallets ? (
+            <p className="text-center py-8 text-muted-foreground">جاري التحميل...</p>
+          ) : filteredCustomerWallets && filteredCustomerWallets.length > 0 ? (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>الزبون</TableHead>
+                    <TableHead>الهاتف</TableHead>
+                    <TableHead>البريد</TableHead>
+                    <TableHead>الرصيد</TableHead>
+                    <TableHead>آخر تحديث</TableHead>
+                    <TableHead>الإجراءات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredCustomerWallets.map((wallet: any, index: number) => (
+                    <TableRow key={wallet.id}>
+                      <TableCell className="text-muted-foreground">{index + 1}</TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{wallet.profile?.full_name || 'غير معروف'}</p>
+                          <p className="text-sm text-muted-foreground">@{wallet.profile?.username}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {wallet.profile?.phone_number || '-'}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {wallet.profile?.email || '-'}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-bold text-primary text-lg">
+                          {formatPrice(wallet.balance)}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(wallet.updated_at).toLocaleString('ar-IQ')}
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedCustomerForHistory(wallet);
+                            setShowCustomerHistoryDialog(true);
+                          }}
+                          className="gap-1"
+                        >
+                          <Search className="h-3 w-3" />
+                          السجل
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <p className="text-center py-8 text-muted-foreground">
+              لا يوجد زبائن لديهم رصيد
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialog سجل معاملات الزبون */}
+      <Dialog open={showCustomerHistoryDialog} onOpenChange={(open) => {
+        setShowCustomerHistoryDialog(open);
+        if (!open) setSelectedCustomerForHistory(null);
+      }}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wallet className="h-5 w-5" />
+              سجل معاملات: {selectedCustomerForHistory?.profile?.full_name || 'غير معروف'}
+            </DialogTitle>
+            <DialogDescription>
+              الرصيد الحالي: <span className="font-bold text-primary">{formatPrice(selectedCustomerForHistory?.balance || 0)}</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            {customerTransactionHistory && customerTransactionHistory.length > 0 ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>التاريخ</TableHead>
+                    <TableHead>النوع</TableHead>
+                    <TableHead>المبلغ</TableHead>
+                    <TableHead>الحالة</TableHead>
+                    <TableHead>طريقة الدفع</TableHead>
+                    <TableHead>ملاحظات</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {customerTransactionHistory.map((tx: any) => (
+                    <TableRow key={tx.id}>
+                      <TableCell className="text-sm">
+                        {new Date(tx.created_at).toLocaleString('ar-IQ')}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{getTypeLabel(tx.type)}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`font-bold ${
+                          tx.type === 'withdrawal' || tx.type === 'order_payment' || tx.type === 'admin_deduction' 
+                            ? 'text-red-600' : 'text-green-600'
+                        }`}>
+                          {tx.type === 'withdrawal' || tx.type === 'order_payment' || tx.type === 'admin_deduction' ? '-' : '+'}
+                          {formatPrice(Math.abs(tx.amount))}
+                        </span>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(tx.status)}</TableCell>
+                      <TableCell className="text-sm">
+                        {getPaymentMethodLabel(tx.payment_method)}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground max-w-xs">
+                        {tx.admin_notes || '-'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <p className="text-center py-8 text-muted-foreground">
+                لا توجد معاملات لهذا الزبون
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog إضافة رصيد لمستخدم */}
       <Dialog open={showAddFundsDialog} onOpenChange={(open) => {

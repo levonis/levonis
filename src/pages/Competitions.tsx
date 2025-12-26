@@ -361,11 +361,28 @@ export default function Competitions() {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
         queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
         toast.success(`تم شراء ${ticketPurchaseQuantity} تذكرة بنجاح!`);
+        
+        // Send Telegram notification for ticket purchase
+        try {
+          const priceToUse = ticketSettings?.price ?? 250;
+          const totalPaid = ticketPurchaseQuantity * priceToUse;
+          await supabase.functions.invoke('send-telegram-notification', {
+            body: {
+              message: `🎫 <b>شراء تذاكر جديد</b>\n\n` +
+                `👤 المستخدم: ${user?.email || 'غير معروف'}\n` +
+                `🎟️ عدد التذاكر: ${ticketPurchaseQuantity}\n` +
+                `💰 المبلغ: ${totalPaid.toLocaleString()} د.ع`,
+            },
+          });
+        } catch (e) {
+          console.error('Error sending telegram notification:', e);
+        }
+        
         setTicketPurchaseQuantity(1);
       } else {
         toast.error(data.error);
@@ -388,11 +405,26 @@ export default function Competitions() {
       if (error) throw error;
       return { ...(data as Record<string, any>), bundle };
     },
-    onSuccess: (data: any) => {
+    onSuccess: async (data: any) => {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
         queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
         toast.success(`🎉 تم شراء ${data.purchased} تذكرة + ${data.bonus} هدية!`);
+        
+        // Send Telegram notification for bundle purchase
+        try {
+          await supabase.functions.invoke('send-telegram-notification', {
+            body: {
+              message: `🎁 <b>شراء باقة تذاكر</b>\n\n` +
+                `👤 المستخدم: ${user?.email || 'غير معروف'}\n` +
+                `🎟️ التذاكر: ${data.purchased} + ${data.bonus} هدية\n` +
+                `💰 المبلغ: ${(data.bundle?.price || 0).toLocaleString()} د.ع`,
+            },
+          });
+        } catch (e) {
+          console.error('Error sending telegram notification:', e);
+        }
+        
         setShowBundleOffers(false);
       } else {
         toast.error(data.error);
