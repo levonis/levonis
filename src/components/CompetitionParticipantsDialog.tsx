@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Download, Search, AlertTriangle, Users, Ticket, Phone, Mail, Shield, UserCheck, Loader2, Undo2, ChevronDown, ChevronUp, FileText } from "lucide-react";
+import { Download, Search, AlertTriangle, Users, Ticket, Phone, Mail, Shield, UserCheck, Loader2, Undo2, ChevronDown, ChevronUp, FileText, DollarSign, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { toast } from "sonner";
@@ -63,6 +63,7 @@ interface CompetitionParticipantsDialogProps {
   competitionId: string;
   competitionTitle: string;
   requiredTickets?: number;
+  ticketPrice?: number;
 }
 
 export default function CompetitionParticipantsDialog({
@@ -70,7 +71,8 @@ export default function CompetitionParticipantsDialog({
   onOpenChange,
   competitionId,
   competitionTitle,
-  requiredTickets = 1
+  requiredTickets = 1,
+  ticketPrice = 1
 }: CompetitionParticipantsDialogProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [cancelTicketDialogOpen, setCancelTicketDialogOpen] = useState(false);
@@ -347,6 +349,52 @@ export default function CompetitionParticipantsDialog({
     toast.success('تم تصدير تقرير الأحرف بنجاح');
   };
 
+  const exportFinancialReport = () => {
+    if (!participants || participants.length === 0) {
+      toast.error('لا توجد بيانات للتصدير');
+      return;
+    }
+
+    const exportData = groupedUsers.map((user, index) => ({
+      '#': index + 1,
+      'اسم المستخدم': user.profile?.username || '-',
+      'الاسم الكامل': user.profile?.full_name || '-',
+      'البريد الإلكتروني': user.profile?.email || '-',
+      'رقم الهاتف': user.profile?.phone_number || '-',
+      'المحافظة': user.profile?.governorate || '-',
+      'عدد التذاكر': user.ticketCount,
+      'المبلغ المنفق': user.ticketCount * requiredTickets * ticketPrice,
+      'حساب جديد': user.isNewAccount ? 'نعم' : 'لا',
+      'فائز': user.tickets.some(t => t.is_winner) ? 'نعم' : 'لا'
+    }));
+
+    // Add summary row
+    exportData.push({
+      '#': '',
+      'اسم المستخدم': 'الإجمالي',
+      'الاسم الكامل': '',
+      'البريد الإلكتروني': '',
+      'رقم الهاتف': '',
+      'المحافظة': '',
+      'عدد التذاكر': participants.length,
+      'المبلغ المنفق': participants.length * requiredTickets * ticketPrice,
+      'حساب جديد': '',
+      'فائز': ''
+    } as any);
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'التقرير المالي');
+
+    const maxWidths = Object.keys(exportData[0] || {}).map(key => ({
+      wch: Math.max(key.length, ...exportData.map(row => String((row as any)[key]).length)) + 2
+    }));
+    worksheet['!cols'] = maxWidths;
+
+    XLSX.writeFile(workbook, `تقرير-مالي-${competitionTitle}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    toast.success('تم تصدير التقرير المالي بنجاح');
+  };
+
   // Mutation to cancel/refund multiple tickets
   const cancelTicketsMutation = useMutation({
     mutationFn: async (tickets: Participant[]) => {
@@ -478,9 +526,10 @@ export default function CompetitionParticipantsDialog({
             </div>
           )}
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-            <TabsList className="w-full grid grid-cols-2">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <TabsList className="w-full grid grid-cols-3 flex-shrink-0">
               <TabsTrigger value="participants" className="text-xs sm:text-sm">المشاركين</TabsTrigger>
+              <TabsTrigger value="report" className="text-xs sm:text-sm">التقرير المالي</TabsTrigger>
               <TabsTrigger value="letters" className="text-xs sm:text-sm">تقرير الأحرف</TabsTrigger>
             </TabsList>
 
@@ -617,8 +666,94 @@ export default function CompetitionParticipantsDialog({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="letters" className="flex-1 flex flex-col min-h-0 mt-3 space-y-3">
-              <div className="flex justify-end">
+            {/* Financial Report Tab */}
+            <TabsContent value="report" className="flex-1 flex flex-col min-h-0 mt-3 space-y-3 overflow-hidden">
+              <div className="flex justify-end flex-shrink-0">
+                <Button onClick={exportFinancialReport} size="sm" className="gap-1 text-xs">
+                  <Download className="h-3 w-3" />
+                  تصدير التقرير المالي
+                </Button>
+              </div>
+
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 flex-shrink-0">
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="text-xs text-muted-foreground">إجمالي التذاكر</div>
+                  <div className="text-lg font-bold text-primary">{participants?.length || 0}</div>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="text-xs text-muted-foreground">المشاركين</div>
+                  <div className="text-lg font-bold text-primary">{groupedUsers.length}</div>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="text-xs text-muted-foreground">إجمالي الإنفاق</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {((participants?.length || 0) * requiredTickets * ticketPrice).toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="text-xs text-muted-foreground">متوسط الإنفاق</div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {groupedUsers.length > 0 
+                      ? Math.round(((participants?.length || 0) * requiredTickets * ticketPrice) / groupedUsers.length).toLocaleString()
+                      : 0}
+                  </div>
+                </div>
+              </div>
+
+              <ScrollArea className="flex-1 min-h-0">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      <TableHead className="text-right text-xs">#</TableHead>
+                      <TableHead className="text-right text-xs">المستخدم</TableHead>
+                      <TableHead className="text-right text-xs">التذاكر</TableHead>
+                      <TableHead className="text-right text-xs">الإنفاق</TableHead>
+                      <TableHead className="text-right text-xs">الحالة</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {groupedUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground text-xs">
+                          لا توجد بيانات
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      groupedUsers.map((user, index) => (
+                        <TableRow key={user.user_id}>
+                          <TableCell className="text-xs">{index + 1}</TableCell>
+                          <TableCell>
+                            <div className="text-xs">
+                              <div className="font-medium">{user.profile?.full_name || user.profile?.username || 'مجهول'}</div>
+                              {user.profile?.phone_number && (
+                                <div className="text-muted-foreground">{user.profile.phone_number}</div>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs font-bold">{user.ticketCount}</TableCell>
+                          <TableCell className="text-xs font-bold text-green-600">
+                            {(user.ticketCount * requiredTickets * ticketPrice).toLocaleString()}
+                          </TableCell>
+                          <TableCell>
+                            {user.tickets.some(t => t.is_winner) ? (
+                              <Badge className="bg-green-500 text-[10px]">فائز</Badge>
+                            ) : user.isNewAccount ? (
+                              <Badge variant="outline" className="text-[10px] text-orange-600">جديد</Badge>
+                            ) : (
+                              <Badge variant="secondary" className="text-[10px]">مشارك</Badge>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="letters" className="flex-1 flex flex-col min-h-0 mt-3 space-y-3 overflow-hidden">
+              <div className="flex justify-end flex-shrink-0">
                 <Button onClick={exportLettersReport} size="sm" className="gap-1 text-xs">
                   <Download className="h-3 w-3" />
                   تصدير التقرير
