@@ -286,15 +286,28 @@ export default function AdminCompetitions() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('competition_tickets')
-        .select('competition_id');
+        .select('competition_id, user_id');
       
       if (error) throw error;
       
-      const counts: Record<string, number> = {};
+      const ticketCounts: Record<string, number> = {};
+      const participantCounts: Record<string, Set<string>> = {};
+      
       data?.forEach(ticket => {
-        counts[ticket.competition_id] = (counts[ticket.competition_id] || 0) + 1;
+        ticketCounts[ticket.competition_id] = (ticketCounts[ticket.competition_id] || 0) + 1;
+        if (!participantCounts[ticket.competition_id]) {
+          participantCounts[ticket.competition_id] = new Set();
+        }
+        participantCounts[ticket.competition_id].add(ticket.user_id);
       });
-      return counts;
+      
+      // Convert Sets to counts
+      const uniqueParticipants: Record<string, number> = {};
+      Object.keys(participantCounts).forEach(compId => {
+        uniqueParticipants[compId] = participantCounts[compId].size;
+      });
+      
+      return { tickets: ticketCounts, participants: uniqueParticipants };
     }
   });
 
@@ -834,7 +847,8 @@ export default function AdminCompetitions() {
   };
 
   // Calculate statistics
-  const totalParticipants = Object.values(ticketCounts || {}).reduce((sum, count) => sum + count, 0);
+  const totalTickets = Object.values(ticketCounts?.tickets || {}).reduce((sum, count) => sum + count, 0);
+  const totalUniqueParticipants = Object.values(ticketCounts?.participants || {}).reduce((sum, count) => sum + count, 0);
   const activeCompetitions = competitions?.filter(c => c.status === 'active').length || 0;
   const completedCompetitions = competitions?.filter(c => c.status === 'completed').length || 0;
   const totalWinners = competitions?.filter(c => c.status === 'completed' && c.winner_user_id).length || 0;
@@ -892,8 +906,8 @@ export default function AdminCompetitions() {
             <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5">
               <CardContent className="p-2 sm:p-4 text-center">
                 <Users className="h-4 w-4 sm:h-6 sm:w-6 mx-auto mb-1 text-blue-600" />
-                <p className="text-sm sm:text-xl font-bold">{totalParticipants}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">مشاركات</p>
+                <p className="text-sm sm:text-xl font-bold">{totalUniqueParticipants}</p>
+                <p className="text-[10px] sm:text-xs text-muted-foreground">مشارك</p>
               </CardContent>
             </Card>
             <Card className="bg-gradient-to-br from-yellow-500/10 to-yellow-500/5 hidden sm:block">
@@ -2510,13 +2524,20 @@ export default function AdminCompetitions() {
                           <Ticket className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                           <span>{comp.required_tickets || 1} تذكرة</span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <button 
+                          className="flex items-center gap-1 hover:text-primary cursor-pointer transition-colors"
+                          onClick={() => {
+                            setSelectedCompetitionForParticipants(comp);
+                            setParticipantsDialogOpen(true);
+                          }}
+                        >
                           <Users className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                          <span>{ticketCounts?.[comp.id] || 0}</span>
+                          <span>{ticketCounts?.participants?.[comp.id] || 0} مشارك</span>
+                          <span className="text-muted-foreground">({ticketCounts?.tickets?.[comp.id] || 0} تذكرة)</span>
                           {(comp.max_tickets || comp.target_participants) && (
                             <span className="text-muted-foreground">/ {comp.max_tickets || comp.target_participants}</span>
                           )}
-                        </div>
+                        </button>
                       </div>
                       
                       <div className="flex flex-wrap gap-2 text-xs text-muted-foreground mt-2">
