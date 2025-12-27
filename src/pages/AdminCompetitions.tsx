@@ -59,6 +59,10 @@ interface PrizeTier {
   remaining: number;
   image_url?: string;
   value?: number;
+  is_better_luck?: boolean;
+  is_ticket_reward?: boolean;
+  tickets_reward?: number;
+  product_id?: string;
 }
 
 interface PriceTier {
@@ -1393,8 +1397,57 @@ export default function AdminCompetitions() {
                         📦 إعدادات الصناديق الغامضة
                       </h4>
                       <p className="text-xs text-muted-foreground mb-3">
-                        أضف صناديق مختلفة بجوائز مختلفة - يتم خلطها عشوائياً للمشتري مع عرض أماكن الجوائز ثم الخلط
+                        أضف صناديق مختلفة بجوائز مختلفة - يتم عرض الجوائز ثم إغلاق الصناديق وخلطها ثم يختار المشارك
                       </p>
+                      
+                      {/* Quick add buttons */}
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-xs text-gray-600"
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              prize_tiers: [...formData.prize_tiers, {
+                                id: crypto.randomUUID(),
+                                name_ar: 'حظ أوفر 🍀',
+                                probability: 20,
+                                quantity: 1,
+                                remaining: 1,
+                                value: 0,
+                                is_better_luck: true
+                              }]
+                            });
+                          }}
+                        >
+                          🍀 إضافة صندوق "حظ أوفر"
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-xs text-cyan-600"
+                          onClick={() => {
+                            setFormData({
+                              ...formData,
+                              prize_tiers: [...formData.prize_tiers, {
+                                id: crypto.randomUUID(),
+                                name_ar: 'تذكرة مجانية 🎫',
+                                probability: 10,
+                                quantity: 1,
+                                remaining: 1,
+                                value: 0,
+                                tickets_reward: 1,
+                                is_ticket_reward: true
+                              }]
+                            });
+                          }}
+                        >
+                          🎫 إضافة صندوق تذاكر
+                        </Button>
+                      </div>
                       
                       {formData.prize_tiers.map((tier, index) => (
                         <div key={tier.id} className="mb-3 p-3 bg-background rounded-lg border space-y-2">
@@ -1440,6 +1493,7 @@ export default function AdminCompetitions() {
                                   newTiers[index].value = parseFloat(e.target.value) || 0;
                                   setFormData({ ...formData, prize_tiers: newTiers });
                                 }}
+                                disabled={(tier as any).is_better_luck}
                               />
                             </div>
                             <div className="space-y-1">
@@ -1458,6 +1512,24 @@ export default function AdminCompetitions() {
                               />
                             </div>
                           </div>
+                          
+                          {/* عدد التذاكر للجوائز من نوع التذاكر */}
+                          {(tier as any).is_ticket_reward && (
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">عدد التذاكر المكافأة</Label>
+                              <Input
+                                type="number"
+                                placeholder="1"
+                                min="1"
+                                value={(tier as any).tickets_reward || 1}
+                                onChange={(e) => {
+                                  const newTiers = [...formData.prize_tiers];
+                                  (newTiers[index] as any).tickets_reward = parseInt(e.target.value) || 1;
+                                  setFormData({ ...formData, prize_tiers: newTiers });
+                                }}
+                              />
+                            </div>
+                          )}
                           
                           {/* اختيار منتج كجائزة */}
                           <div className="space-y-1">

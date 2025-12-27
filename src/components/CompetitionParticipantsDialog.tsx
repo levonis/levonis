@@ -475,17 +475,17 @@ export default function CompetitionParticipantsDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="p-4 sm:p-6 pb-0 flex-shrink-0">
+      <DialogContent className="max-w-5xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden">
+        <DialogHeader className="p-4 sm:p-6 pb-2 flex-shrink-0 border-b">
           <DialogTitle className="flex items-center gap-2 text-sm sm:text-base">
             <Users className="h-4 w-4 sm:h-5 sm:w-5" />
             <span className="truncate">المشاركين: {competitionTitle}</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-3 flex-1 p-4 sm:p-6 pt-3 overflow-hidden">
+        <div className="flex flex-col gap-3 flex-1 p-4 sm:p-6 pt-3 overflow-hidden" style={{ minHeight: 0 }}>
           {/* Stats */}
-          <div className="flex flex-wrap gap-2 sm:gap-4">
+          <div className="flex flex-wrap gap-2 sm:gap-4 flex-shrink-0">
             <Badge variant="outline" className="text-xs sm:text-base px-2 sm:px-4 py-1 sm:py-2">
               <Ticket className="h-3 w-3 sm:h-4 sm:w-4 ml-1 sm:ml-2" />
               {participants?.length || 0} تذكرة
@@ -503,7 +503,7 @@ export default function CompetitionParticipantsDialog({
 
           {/* Fraud Alerts */}
           {fraudAlerts.length > 0 && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-2 sm:p-4 space-y-2">
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-2 sm:p-4 space-y-2 flex-shrink-0">
               <div className="flex items-center gap-2 text-destructive font-semibold text-xs sm:text-sm">
                 <Shield className="h-4 w-4 sm:h-5 sm:w-5" />
                 تنبيهات الأمان ({fraudAlerts.length})
@@ -526,16 +526,16 @@ export default function CompetitionParticipantsDialog({
             </div>
           )}
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0 overflow-hidden">
             <TabsList className="w-full grid grid-cols-3 flex-shrink-0">
               <TabsTrigger value="participants" className="text-xs sm:text-sm">المشاركين</TabsTrigger>
               <TabsTrigger value="report" className="text-xs sm:text-sm">التقرير المالي</TabsTrigger>
               <TabsTrigger value="letters" className="text-xs sm:text-sm">تقرير الأحرف</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="participants" className="flex-1 flex flex-col mt-3 space-y-3 overflow-hidden" style={{ minHeight: 0 }}>
+            <TabsContent value="participants" className="flex-1 flex flex-col mt-3 space-y-3 min-h-0 overflow-hidden">
               {/* Search and Actions */}
-              <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
                 <div className="relative flex-1">
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -560,7 +560,7 @@ export default function CompetitionParticipantsDialog({
               </div>
 
               {/* Grouped Users List */}
-              <ScrollArea className="flex-1" style={{ minHeight: 0, maxHeight: 'calc(90vh - 350px)' }}>
+              <ScrollArea className="flex-1 min-h-0">
                 <div className="p-2 space-y-2">
                   {isLoading ? (
                     <div className="text-center py-8 text-muted-foreground">جاري التحميل...</div>
@@ -667,7 +667,7 @@ export default function CompetitionParticipantsDialog({
             </TabsContent>
 
             {/* Financial Report Tab */}
-            <TabsContent value="report" className="flex-1 flex flex-col mt-3 space-y-3 overflow-hidden" style={{ minHeight: 0 }}>
+            <TabsContent value="report" className="flex-1 flex flex-col mt-3 space-y-3 min-h-0 overflow-hidden">
               <div className="flex justify-end flex-shrink-0">
                 <Button onClick={exportFinancialReport} size="sm" className="gap-1 text-xs">
                   <Download className="h-3 w-3" />
@@ -701,7 +701,7 @@ export default function CompetitionParticipantsDialog({
                 </div>
               </div>
 
-              <ScrollArea className="flex-1" style={{ minHeight: 0, maxHeight: 'calc(90vh - 350px)' }}>
+              <ScrollArea className="flex-1 min-h-0">
                 <Table>
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
@@ -752,7 +752,7 @@ export default function CompetitionParticipantsDialog({
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="letters" className="flex-1 flex flex-col mt-3 space-y-3 overflow-hidden" style={{ minHeight: 0 }}>
+            <TabsContent value="letters" className="flex-1 flex flex-col mt-3 space-y-3 min-h-0 overflow-hidden">
               <div className="flex justify-end flex-shrink-0">
                 <Button onClick={exportLettersReport} size="sm" className="gap-1 text-xs">
                   <Download className="h-3 w-3" />
@@ -760,7 +760,7 @@ export default function CompetitionParticipantsDialog({
                 </Button>
               </div>
 
-              <ScrollArea className="flex-1" style={{ minHeight: 0, maxHeight: 'calc(90vh - 300px)' }}>
+              <ScrollArea className="flex-1 min-h-0">
                 <Table>
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
