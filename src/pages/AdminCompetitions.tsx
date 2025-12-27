@@ -1393,59 +1393,111 @@ export default function AdminCompetitions() {
                         📦 إعدادات الصناديق الغامضة
                       </h4>
                       <p className="text-xs text-muted-foreground mb-3">
-                        أضف صناديق مختلفة بجوائز مختلفة - يتم خلطها عشوائياً للمشتري
+                        أضف صناديق مختلفة بجوائز مختلفة - يتم خلطها عشوائياً للمشتري مع عرض أماكن الجوائز ثم الخلط
                       </p>
                       
                       {formData.prize_tiers.map((tier, index) => (
-                        <div key={tier.id} className="flex items-center gap-2 mb-2 p-2 bg-background rounded border">
-                          <div className="w-8 h-8 bg-indigo-500 rounded flex items-center justify-center text-white font-bold">
-                            {index + 1}
+                        <div key={tier.id} className="mb-3 p-3 bg-background rounded-lg border space-y-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-indigo-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">
+                              {index + 1}
+                            </div>
+                            <Input
+                              placeholder="اسم الجائزة / محتوى الصندوق"
+                              value={tier.name_ar}
+                              onChange={(e) => {
+                                const newTiers = [...formData.prize_tiers];
+                                newTiers[index].name_ar = e.target.value;
+                                setFormData({ ...formData, prize_tiers: newTiers });
+                              }}
+                              className="flex-1"
+                            />
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="text-destructive hover:bg-destructive/10"
+                              onClick={() => {
+                                setFormData({
+                                  ...formData,
+                                  prize_tiers: formData.prize_tiers.filter((_, i) => i !== index)
+                                });
+                              }}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
                           </div>
-                          <Input
-                            placeholder="محتوى الصندوق"
-                            value={tier.name_ar}
-                            onChange={(e) => {
-                              const newTiers = [...formData.prize_tiers];
-                              newTiers[index].name_ar = e.target.value;
-                              setFormData({ ...formData, prize_tiers: newTiers });
-                            }}
-                            className="flex-1"
-                          />
-                          <Input
-                            type="number"
-                            placeholder="القيمة"
-                            value={tier.value || ''}
-                            onChange={(e) => {
-                              const newTiers = [...formData.prize_tiers];
-                              newTiers[index].value = parseFloat(e.target.value) || 0;
-                              setFormData({ ...formData, prize_tiers: newTiers });
-                            }}
-                            className="w-24"
-                          />
-                          <Input
-                            type="number"
-                            placeholder="الاحتمال %"
-                            value={tier.probability}
-                            onChange={(e) => {
-                              const newTiers = [...formData.prize_tiers];
-                              newTiers[index].probability = parseFloat(e.target.value) || 0;
-                              setFormData({ ...formData, prize_tiers: newTiers });
-                            }}
-                            className="w-24"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setFormData({
-                                ...formData,
-                                prize_tiers: formData.prize_tiers.filter((_, i) => i !== index)
-                              });
-                            }}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">القيمة (اختياري)</Label>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                value={tier.value || ''}
+                                onChange={(e) => {
+                                  const newTiers = [...formData.prize_tiers];
+                                  newTiers[index].value = parseFloat(e.target.value) || 0;
+                                  setFormData({ ...formData, prize_tiers: newTiers });
+                                }}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">الاحتمال %</Label>
+                              <Input
+                                type="number"
+                                placeholder="0"
+                                min="0"
+                                max="100"
+                                value={tier.probability}
+                                onChange={(e) => {
+                                  const newTiers = [...formData.prize_tiers];
+                                  newTiers[index].probability = parseFloat(e.target.value) || 0;
+                                  setFormData({ ...formData, prize_tiers: newTiers });
+                                }}
+                              />
+                            </div>
+                          </div>
+                          
+                          {/* اختيار منتج كجائزة */}
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">المنتج كجائزة (اختياري)</Label>
+                            <Select
+                              value={(tier as any).product_id || ''}
+                              onValueChange={(value) => {
+                                const newTiers = [...formData.prize_tiers];
+                                (newTiers[index] as any).product_id = value || null;
+                                // تعبئة الاسم والقيمة تلقائياً من المنتج
+                                if (value && products) {
+                                  const product = products.find(p => p.id === value);
+                                  if (product) {
+                                    newTiers[index].name_ar = newTiers[index].name_ar || product.name_ar;
+                                    newTiers[index].value = newTiers[index].value || product.price;
+                                    newTiers[index].image_url = product.image_url || '';
+                                  }
+                                }
+                                setFormData({ ...formData, prize_tiers: newTiers });
+                              }}
+                            >
+                              <SelectTrigger className="bg-background">
+                                <SelectValue placeholder="اختر منتج (اختياري)" />
+                              </SelectTrigger>
+                              <SelectContent className="z-[100] bg-background border shadow-lg max-h-[200px]">
+                                <SelectItem value="">بدون منتج</SelectItem>
+                                {products?.map(product => (
+                                  <SelectItem key={product.id} value={product.id}>
+                                    <div className="flex items-center gap-2">
+                                      {product.image_url && (
+                                        <img src={product.image_url} alt="" className="w-6 h-6 rounded object-cover" />
+                                      )}
+                                      <span>{product.name_ar}</span>
+                                      <span className="text-xs text-muted-foreground">({product.price})</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
                       ))}
                       
@@ -1471,6 +1523,45 @@ export default function AdminCompetitions() {
                         <Plus className="h-4 w-4 ml-1" />
                         إضافة صندوق
                       </Button>
+                      
+                      {/* شريط الاحتمالات */}
+                      {formData.prize_tiers.length > 0 && (
+                        <div className="mt-4 p-3 bg-muted/50 rounded-lg space-y-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-medium">توزيع الاحتمالات:</span>
+                            <span className={`font-bold ${formData.prize_tiers.reduce((sum, t) => sum + t.probability, 0) === 100 ? 'text-green-600' : 'text-red-600'}`}>
+                              المجموع: {formData.prize_tiers.reduce((sum, t) => sum + t.probability, 0)}%
+                            </span>
+                          </div>
+                          <div className="h-6 rounded-full overflow-hidden bg-muted flex">
+                            {formData.prize_tiers.map((tier, index) => {
+                              const colors = ['bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-rose-500', 'bg-orange-500', 'bg-amber-500', 'bg-emerald-500', 'bg-cyan-500'];
+                              return tier.probability > 0 ? (
+                                <div
+                                  key={tier.id}
+                                  className={`${colors[index % colors.length]} flex items-center justify-center text-[10px] text-white font-medium transition-all`}
+                                  style={{ width: `${tier.probability}%` }}
+                                  title={`${tier.name_ar || `صندوق ${index + 1}`}: ${tier.probability}%`}
+                                >
+                                  {tier.probability >= 10 && `${tier.probability}%`}
+                                </div>
+                              ) : null;
+                            })}
+                          </div>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            {formData.prize_tiers.map((tier, index) => {
+                              const colors = ['bg-indigo-500', 'bg-purple-500', 'bg-pink-500', 'bg-rose-500', 'bg-orange-500', 'bg-amber-500', 'bg-emerald-500', 'bg-cyan-500'];
+                              return (
+                                <div key={tier.id} className="flex items-center gap-1">
+                                  <div className={`w-3 h-3 rounded ${colors[index % colors.length]}`} />
+                                  <span>{tier.name_ar || `صندوق ${index + 1}`}</span>
+                                  <span className="text-muted-foreground">({tier.probability}%)</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
