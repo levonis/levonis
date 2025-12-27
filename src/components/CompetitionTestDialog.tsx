@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Play, Sparkles, Gift, RotateCcw, Ticket, Trophy, Eye, Zap, Target } from "lucide-react";
+import { Loader2, Play, Sparkles, Gift, RotateCcw, Ticket, Trophy, Eye, Zap, Target, Package } from "lucide-react";
 import InstantWinReveal from "./InstantWinReveal";
 import LetterReveal from "./LetterReveal";
 import ScratchCardReveal from "./ScratchCardReveal";
 import BagOpenReveal from "./BagOpenReveal";
+import MysteryBoxReveal from "./MysteryBoxReveal";
 import CelebrationEffect from "./CelebrationEffect";
 import { toast } from "sonner";
 
@@ -61,6 +62,8 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
   const [showLetterReveal, setShowLetterReveal] = useState(false);
   const [showScratchReveal, setShowScratchReveal] = useState(false);
   const [showBagReveal, setShowBagReveal] = useState(false);
+  const [showMysteryBoxReveal, setShowMysteryBoxReveal] = useState(false);
+  const [mysteryBoxWonPrize, setMysteryBoxWonPrize] = useState<any>(null);
   const [letterRevealData, setLetterRevealData] = useState<{ letter: string | null; collected: string[]; config: any; prize: any } | null>(null);
   const [bagRevealResults, setBagRevealResults] = useState<{ letter: string | null; isNew: boolean }[]>([]);
   const [showCelebration, setShowCelebration] = useState(false);
@@ -418,7 +421,23 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
           setInstantRevealResult({ isWinner: firstResult.isWinner || false, prize: firstResult.prize });
           setShowInstantReveal(true);
           if (firstResult.isWinner) setShowCelebration(true);
-        } else if (firstResult.type === 'mystery_box' || firstResult.type === 'everyone_wins') {
+        } else if (firstResult.type === 'mystery_box') {
+          // Use dedicated mystery box animation
+          const boxes = competition.prize_tiers || [];
+          const boxesData = boxes.map((b: any) => ({
+            id: b.id || crypto.randomUUID(),
+            name_ar: b.name_ar || 'جائزة',
+            probability: b.probability || 0,
+            value: b.value || 0,
+            image_url: b.image_url,
+            is_better_luck: b.is_better_luck,
+            is_ticket_reward: b.is_ticket_reward,
+            tickets_reward: b.tickets_reward
+          }));
+          setMysteryBoxWonPrize(firstResult.prize);
+          setShowMysteryBoxReveal(true);
+          if (!firstResult.prize?.is_better_luck) setShowCelebration(true);
+        } else if (firstResult.type === 'everyone_wins') {
           setInstantRevealResult({ isWinner: true, prize: firstResult.prize });
           setShowInstantReveal(true);
           setShowCelebration(true);
@@ -931,6 +950,25 @@ export default function CompetitionTestDialog({ open, onOpenChange, competition 
         collectedLetters={letterRevealData?.collected || []}
         lettersConfig={letterRevealData?.config || { target_word: '', prizes: [] }}
         wonPrize={letterRevealData?.prize}
+      />
+
+      <MysteryBoxReveal
+        isOpen={showMysteryBoxReveal}
+        onClose={() => setShowMysteryBoxReveal(false)}
+        boxes={(competition?.prize_tiers || []).map((b: any) => ({
+          id: b.id || crypto.randomUUID(),
+          name_ar: b.name_ar || (b.is_better_luck ? 'حظ أوفر 🍀' : b.is_ticket_reward ? `${b.tickets_reward || 1} تذكرة 🎫` : 'جائزة'),
+          probability: b.probability || 0,
+          value: b.value || 0,
+          image_url: b.image_url
+        }))}
+        wonPrize={mysteryBoxWonPrize ? {
+          id: mysteryBoxWonPrize.id || 'won',
+          name_ar: mysteryBoxWonPrize.name_ar || (mysteryBoxWonPrize.is_better_luck ? 'حظ أوفر 🍀' : mysteryBoxWonPrize.is_ticket_reward ? `${mysteryBoxWonPrize.tickets_reward || 1} تذكرة 🎫` : 'جائزة'),
+          probability: mysteryBoxWonPrize.probability || 0,
+          value: mysteryBoxWonPrize.value || 0,
+          image_url: mysteryBoxWonPrize.image_url
+        } : null}
       />
 
       <CelebrationEffect
