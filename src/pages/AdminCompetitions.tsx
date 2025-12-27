@@ -1463,12 +1463,12 @@ export default function AdminCompetitions() {
                           <div className="space-y-1">
                             <Label className="text-xs text-muted-foreground">المنتج كجائزة (اختياري)</Label>
                             <Select
-                              value={(tier as any).product_id || ''}
+                              value={(tier as any).product_id || 'none'}
                               onValueChange={(value) => {
                                 const newTiers = [...formData.prize_tiers];
-                                (newTiers[index] as any).product_id = value || null;
+                                (newTiers[index] as any).product_id = value === 'none' ? null : value;
                                 // تعبئة الاسم والقيمة تلقائياً من المنتج
-                                if (value && products) {
+                                if (value && value !== 'none' && products) {
                                   const product = products.find(p => p.id === value);
                                   if (product) {
                                     newTiers[index].name_ar = newTiers[index].name_ar || product.name_ar;
@@ -1483,7 +1483,7 @@ export default function AdminCompetitions() {
                                 <SelectValue placeholder="اختر منتج (اختياري)" />
                               </SelectTrigger>
                               <SelectContent className="z-[100] bg-background border shadow-lg max-h-[200px]">
-                                <SelectItem value="">بدون منتج</SelectItem>
+                                <SelectItem value="none">بدون منتج</SelectItem>
                                 {products?.map(product => (
                                   <SelectItem key={product.id} value={product.id}>
                                     <div className="flex items-center gap-2">
