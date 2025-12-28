@@ -363,29 +363,28 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Details Section */}
-          <div className="flex flex-col gap-6">
-            <div className="glass-effect rounded-2xl p-6 border border-border/50">
+          <div className="flex flex-col gap-4">
+            <div className="glass-effect rounded-xl p-5 border border-border/50">
               {/* Category Badge */}
               {product.categories && (
-                <Badge variant="outline" className="mb-4">
+                <Badge variant="outline" className="mb-3 text-xs">
                   {(product as any).categories.name_ar}
                 </Badge>
               )}
 
-              <h1 className="text-4xl font-black text-gradient-gold mb-4">
+              <h1 className="text-2xl md:text-3xl font-black text-gradient-gold mb-3">
                 {product.name_ar}
               </h1>
               
               {product.description_ar && (
-                <div className="text-muted-foreground text-lg mb-6 leading-relaxed">
-                  <p className={`${!showFullDescription && product.description_ar.length > 150 ? 'line-clamp-3' : ''}`}>
+                <div className="text-muted-foreground text-sm mb-4 leading-relaxed">
+                  <p className={`${!showFullDescription && product.description_ar.length > 150 ? 'line-clamp-2' : ''}`}>
                     {product.description_ar}
                   </p>
                   {product.description_ar.length > 150 && (
                     <button
                       onClick={() => setShowFullDescription(!showFullDescription)}
-                      className="text-primary hover:underline text-sm mt-2 font-medium"
+                      className="text-primary hover:underline text-xs mt-1 font-medium"
                     >
                       {showFullDescription ? 'عرض أقل' : 'عرض المزيد'}
                     </button>
@@ -393,193 +392,133 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Availability Types */}
-              {(product.has_in_stock || product.has_pre_order) && (
-                <div className="mb-6 p-4 border border-border/50 rounded-lg bg-card/30">
-                  <Label className="text-sm font-bold mb-2 block">خيارات التوفر</Label>
+              {/* Availability & Shipping - Compact Row */}
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                {product.has_in_stock && (
+                  <Badge variant="secondary" className="text-xs px-2 py-1">
+                    <Package className="h-3 w-3 ml-1" />
+                    متاح
+                  </Badge>
+                )}
+                {product.has_pre_order && (
+                  <Badge variant="secondary" className="text-xs px-2 py-1">
+                    <Truck className="h-3 w-3 ml-1" />
+                    طلب مسبق
+                  </Badge>
+                )}
+              </div>
+
+              {/* Pre-Order Custom Shipping Options - Compact */}
+              {product.has_pre_order && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
+                <div className="mb-4">
+                  <Label className="text-sm font-medium mb-2 block">نوع الشحن</Label>
                   <div className="flex flex-wrap gap-2">
-                    {product.has_in_stock && (
-                      <Badge variant="outline" className="px-3 py-1 text-sm">
-                        <Package className="h-4 w-4 ml-1" />
-                        متاح في المخزن
-                      </Badge>
+                    {product.pre_order_shipping_options.map((option: any, index: number) => (
+                      <button
+                        key={index}
+                        onClick={() => setSelectedShippingOption(index)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm ${
+                          selectedShippingOption === index
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <Truck className="h-4 w-4" />
+                        <span className="font-medium">{option.name_ar}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Pre-Order Shipping Options (Legacy) - Compact */}
+              {product.has_pre_order && (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0) && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
+                <div className="mb-4">
+                  <Label className="text-sm font-medium mb-2 block">نوع الشحن</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {product.pre_order_free_shipping_price && (
+                      <button
+                        onClick={() => setSelectedShippingOption(0)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm ${
+                          selectedShippingOption === 0
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <Truck className="h-4 w-4" />
+                        <span className="font-medium">بحري (45 يوم)</span>
+                      </button>
                     )}
-                    {product.has_pre_order && (
-                      <Badge variant="outline" className="px-3 py-1 text-sm">
-                        <Truck className="h-4 w-4 ml-1" />
-                        طلب مسبق
-                      </Badge>
+                    {product.pre_order_fast_shipping_price && (
+                      <button
+                        onClick={() => setSelectedShippingOption(1)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm ${
+                          selectedShippingOption === 1
+                            ? 'border-primary bg-primary/10 text-primary'
+                            : 'border-border hover:border-primary/50'
+                        }`}
+                      >
+                        <Zap className="h-4 w-4" />
+                        <span className="font-medium">جوي (15 يوم)</span>
+                      </button>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Pre-Order Custom Shipping Options */}
-              {product.has_pre_order && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
-                <div className="mb-6">
-                  <Label className="text-lg font-bold mb-3 block">خيارات الشحن للطلب المسبق</Label>
-                  <RadioGroup 
-                    value={selectedShippingOption !== null ? String(selectedShippingOption) : ''} 
-                    onValueChange={(value) => setSelectedShippingOption(value ? Number(value) : null)}
-                    className="space-y-3"
-                  >
-                    {product.pre_order_shipping_options.map((option: any, index: number) => {
+              {/* Product Options - Compact */}
+              {productOptions && productOptions.length > 0 && (
+                <div className="mb-4">
+                  <Label className="text-sm font-medium mb-2 block">الخيارات</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {productOptions.map((option: any) => {
+                      const isOptionAvailable = product.has_in_stock 
+                        ? (option.available_for_direct_sale ?? true)
+                        : product.has_pre_order 
+                          ? (option.available_for_pre_order ?? false)
+                          : false;
+                      const isOptionDisabled = !isOptionAvailable || !option.in_stock;
+                      
                       return (
-                        <div 
-                          key={index}
-                          className="flex items-center space-x-3 space-x-reverse p-4 border-2 border-border rounded-lg hover:border-primary/50 transition-colors bg-card/50"
+                        <button
+                          key={option.id}
+                          onClick={() => {
+                            if (isOptionDisabled) return;
+                            setSelectedOption(option.id);
+                            if (option.image_url) {
+                              setOptionImageUrl(option.image_url);
+                              setSelectedImage(0);
+                            } else {
+                              setOptionImageUrl(null);
+                            }
+                          }}
+                          disabled={isOptionDisabled}
+                          className={`px-3 py-2 rounded-lg border transition-all text-sm ${
+                            selectedOption === option.id
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border hover:border-primary/50'
+                          } ${isOptionDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                         >
-                          <RadioGroupItem value={String(index)} id={`shipping-${index}`} className="flex-shrink-0" />
-                          <Label
-                            htmlFor={`shipping-${index}`}
-                            className="flex-1 cursor-pointer"
-                          >
-                            <div className="flex items-center gap-3">
-                              <Truck className="h-5 w-5 text-primary" />
-                              <div>
-                                <div className="font-bold text-foreground">{option.name_ar}</div>
-                                {option.name !== option.name_ar && (
-                                  <div className="text-sm text-muted-foreground">{option.name}</div>
-                                )}
-                              </div>
-                            </div>
-                          </Label>
-                        </div>
+                          <span className="font-medium">{option.name_ar}</span>
+                          {isOptionDisabled && <span className="text-xs mr-1">(غير متوفر)</span>}
+                        </button>
                       );
                     })}
-                  </RadioGroup>
+                  </div>
                 </div>
               )}
 
-              {/* Pre-Order Shipping Options (Legacy - shown if no custom options) */}
-              {product.has_pre_order && (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0) && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
-                <div className="mb-6">
-                  <Label className="text-lg font-bold mb-3 block">خيارات الشحن للطلب المسبق</Label>
-                  <RadioGroup 
-                    value={selectedShippingOption !== null ? String(selectedShippingOption) : ''} 
-                    onValueChange={(value) => setSelectedShippingOption(value ? Number(value) : null)}
-                    className="space-y-3"
-                  >
-                    {product.pre_order_free_shipping_price && (
-                      <div className="flex items-center space-x-3 space-x-reverse p-4 border-2 border-border rounded-lg hover:border-primary/50 transition-colors bg-card/50">
-                        <RadioGroupItem value="0" id="shipping-free" className="flex-shrink-0" />
-                        <Label
-                          htmlFor="shipping-free"
-                          className="flex-1 cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Truck className="h-5 w-5 text-primary" />
-                            <div>
-                              <div className="font-bold text-foreground">شحن بحري مجاناً (45 يوماً)</div>
-                              <div className="text-sm text-muted-foreground">توصيل خلال 45 يوم عمل</div>
-                            </div>
-                          </div>
-                        </Label>
-                      </div>
-                    )}
-
-                    {product.pre_order_fast_shipping_price && (
-                      <div className="flex items-center space-x-3 space-x-reverse p-4 border-2 border-border rounded-lg hover:border-primary/50 transition-colors bg-card/50">
-                        <RadioGroupItem value="1" id="shipping-fast" className="flex-shrink-0" />
-                        <Label
-                          htmlFor="shipping-fast"
-                          className="flex-1 cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3">
-                            <Zap className="h-5 w-5 text-primary" />
-                            <div>
-                              <div className="font-bold text-foreground">شحن سريع جوي (15 يوماً)</div>
-                              <div className="text-sm text-muted-foreground">توصيل خلال 15 يوم عمل</div>
-                            </div>
-                          </div>
-                        </Label>
-                      </div>
-                    )}
-                  </RadioGroup>
-                </div>
-              )}
-
-              {/* Product Options */}
-              {productOptions && productOptions.length > 0 && (
-                <div className="border-t border-border/30 pt-6 mb-6">
-                  <Label className="text-lg font-bold text-foreground mb-4 block">الخيارات المتاحة</Label>
-                  <RadioGroup 
-                    value={selectedOption || ''} 
-                    onValueChange={(value) => {
-                      setSelectedOption(value);
-                      // البحث عن الخيار المحدد
-                      const option = productOptions.find((opt: any) => opt.id === value);
-                      if (option && option.image_url) {
-                        setOptionImageUrl(option.image_url);
-                        setSelectedImage(0);
-                      } else {
-                        setOptionImageUrl(null);
-                      }
-                    }}
-                  >
-                    <div className="space-y-3">
-                      {productOptions.map((option: any) => {
-                        // Check availability based on product type
-                        const isOptionAvailable = product.has_in_stock 
-                          ? (option.available_for_direct_sale ?? true)
-                          : product.has_pre_order 
-                            ? (option.available_for_pre_order ?? false)
-                            : false;
-                        
-                        const isOptionDisabled = !isOptionAvailable || !option.in_stock;
-                        
-                        return (
-                          <label
-                            key={option.id}
-                            htmlFor={`option-${option.id}`}
-                            className={`flex items-center justify-between p-4 rounded-lg border-2 transition-all ${
-                              isOptionDisabled ? 'cursor-not-allowed' : 'cursor-pointer'
-                            } ${
-                              selectedOption === option.id
-                                ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                                : 'border-border hover:border-primary/50 hover:bg-accent/5'
-                            } ${isOptionDisabled ? 'opacity-40 bg-muted/30' : ''}`}
-                          >
-                            <div className="flex items-center gap-3 flex-1">
-                              <RadioGroupItem 
-                                value={option.id} 
-                                id={`option-${option.id}`}
-                                disabled={isOptionDisabled}
-                                className="cursor-pointer"
-                              />
-                              <div className="flex-1 cursor-pointer">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-foreground">{option.name_ar}</span>
-                                  {isOptionDisabled && (
-                                    <Badge variant="destructive" className="text-xs">غير متوفر</Badge>
-                                  )}
-                                </div>
-                                {option.name !== option.name_ar && (
-                                  <span className="text-sm text-muted-foreground">{option.name}</span>
-                                )}
-                              </div>
-                            </div>
-                          </label>
-                        );
-                      })}
-                    </div>
-                  </RadioGroup>
-                </div>
-              )}
-
-              {/* Product Colors */}
+              {/* Product Colors - Compact */}
               {product.colors && Array.isArray(product.colors) && product.colors.length > 0 && (
-                <div className="border-t border-border/30 pt-6 mb-6">
-                  <Label className="text-sm font-bold text-foreground mb-3 block">الألوان المتاحة</Label>
+                <div className="mb-4">
+                  <Label className="text-sm font-medium mb-2 block">الألوان</Label>
                   <div className="flex flex-wrap gap-2">
                     {product.colors.map((color: any, index: number) => {
-                      // Check color availability based on product type and color settings
                       const isColorAvailableForProductType = product.has_in_stock 
                         ? (color.available_for_direct_sale ?? true)
                         : product.has_pre_order 
                           ? (color.available_for_pre_order ?? false)
                           : false;
-                      
                       const isColorInStock = color.in_stock !== false;
                       const isColorAvailable = isColorAvailableForProductType && isColorInStock;
                       
@@ -591,33 +530,25 @@ const ProductDetail = () => {
                             if (!isColorAvailable) return;
                             const newSelectedColor = selectedColor === color.name_ar ? null : color.name_ar;
                             setSelectedColor(newSelectedColor);
-                            // إذا كان للون صورة خاصة، استخدمها
                             if (newSelectedColor && color.image_url) {
                               setColorImageUrl(color.image_url);
-                              setSelectedImage(0); // اذهب للصورة الأولى
+                              setSelectedImage(0);
                             } else {
                               setColorImageUrl(null);
                             }
                           }}
                           disabled={!isColorAvailable}
-                          className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
+                          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all text-sm ${
                             selectedColor === color.name_ar
-                              ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                              ? 'border-primary bg-primary/10'
                               : 'border-border hover:border-primary/50'
-                          } ${!isColorAvailable ? 'opacity-40 bg-muted/30 cursor-not-allowed' : 'cursor-pointer'}`}
+                          } ${!isColorAvailable ? 'opacity-40 cursor-not-allowed' : ''}`}
                         >
                           <div
-                            className="w-5 h-5 rounded-full border-2 border-border shadow-sm"
+                            className="w-4 h-4 rounded-full border border-border"
                             style={{ backgroundColor: color.hex_code }}
                           />
-                          <div className="text-right">
-                            <div className="font-medium text-foreground text-sm flex items-center gap-2">
-                              {color.name_ar}
-                              {!isColorAvailable && (
-                                <Badge variant="destructive" className="text-xs">غير متوفر</Badge>
-                              )}
-                            </div>
-                          </div>
+                          <span className="font-medium text-xs">{color.name_ar}</span>
                         </button>
                       );
                     })}
@@ -625,25 +556,19 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Price Section */}
-              <div className="border-t border-border/30 pt-6 mb-6">
-                <div className="flex items-baseline gap-3 mb-2">
-                  <span className="text-5xl font-black text-primary">
+              {/* Price Section - Compact */}
+              <div className="border-t border-border/30 pt-4 mb-4">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-primary">
                     {formatPrice(finalPrice)}
                   </span>
-                  <span className="text-2xl text-muted-foreground">{currency}</span>
-                </div>
-                
-                {hasSale && finalOriginalPrice && (
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl line-through text-muted-foreground/60">
-                      {formatPrice(finalOriginalPrice)} {currency}
+                  <span className="text-lg text-muted-foreground">{currency}</span>
+                  {hasSale && finalOriginalPrice && (
+                    <span className="text-lg line-through text-muted-foreground/60 mr-2">
+                      {formatPrice(finalOriginalPrice)}
                     </span>
-                    <Badge variant="secondary" className="bg-primary/10 text-primary">
-                      وفر {formatPrice(finalOriginalPrice - finalPrice)} {currency}
-                    </Badge>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Quantity Selector */}

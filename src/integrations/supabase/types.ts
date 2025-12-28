@@ -569,6 +569,7 @@ export type Database = {
           product_link: string
           product_name: string
           quantity: number
+          shipping_from: string | null
           status: string
           suggested_price: number | null
           updated_at: string
@@ -584,6 +585,7 @@ export type Database = {
           product_link: string
           product_name: string
           quantity?: number
+          shipping_from?: string | null
           status?: string
           suggested_price?: number | null
           updated_at?: string
@@ -599,6 +601,7 @@ export type Database = {
           product_link?: string
           product_name?: string
           quantity?: number
+          shipping_from?: string | null
           status?: string
           suggested_price?: number | null
           updated_at?: string
@@ -1448,6 +1451,7 @@ export type Database = {
           availability_type: string
           category_id: string | null
           colors: Json | null
+          cost_price: number | null
           created_at: string | null
           currency: string | null
           description: string | null
@@ -1474,6 +1478,7 @@ export type Database = {
           availability_type?: string
           category_id?: string | null
           colors?: Json | null
+          cost_price?: number | null
           created_at?: string | null
           currency?: string | null
           description?: string | null
@@ -1500,6 +1505,7 @@ export type Database = {
           availability_type?: string
           category_id?: string | null
           colors?: Json | null
+          cost_price?: number | null
           created_at?: string | null
           currency?: string | null
           description?: string | null
