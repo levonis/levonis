@@ -1237,8 +1237,8 @@ const Admin = () => {
           <p className="text-muted-foreground">إدارة شاملة للمنتجات والأقسام والإعدادات</p>
         </div>
 
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
+        {/* Statistics Cards - Orders Focused */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
@@ -1251,26 +1251,8 @@ const Admin = () => {
           <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
-                <div className="text-4xl font-black text-primary">{stats?.featuredProducts || 0}</div>
-                <div className="text-sm text-muted-foreground">المنتجات المميزة</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
                 <div className="text-4xl font-black text-primary">{stats?.totalCategories || 0}</div>
                 <div className="text-sm text-muted-foreground">الأقسام</div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <div className="text-4xl font-black text-destructive">{stats?.outOfStock || 0}</div>
-                <div className="text-sm text-muted-foreground">غير متوفر</div>
               </div>
             </CardContent>
           </Card>
@@ -1297,7 +1279,27 @@ const Admin = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative">
+          <Card 
+            className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative cursor-pointer hover:bg-primary/5"
+            role="button"
+            aria-label="عرض جميع الطلبات"
+            onClick={() => navigate('/admin/orders')}
+          >
+            <CardContent className="pt-6">
+              <div className="text-center space-y-2">
+                <Package className="h-8 w-8 text-primary mx-auto mb-1" />
+                <div className="text-sm font-semibold text-foreground">جميع الطلبات</div>
+                <div className="text-xs text-muted-foreground">تعديل وإدارة</div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card 
+            className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative cursor-pointer hover:bg-primary/5"
+            role="button"
+            aria-label="عرض الطلبات الخاصة المعلقة"
+            onClick={() => setActiveTab('custom-requests')}
+          >
             <CardContent className="pt-6">
               <div className="text-center space-y-2">
                 <div className="text-4xl font-black text-orange-500">{pendingRequestsCount || 0}</div>

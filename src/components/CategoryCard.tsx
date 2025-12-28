@@ -21,9 +21,9 @@ const CategoryCard = ({
   return (
     <Link 
       to={`/category/${slug}`}
-      className="group block bg-card/50 rounded-2xl p-4 border border-border/40 hover:border-primary/60 transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 relative overflow-hidden"
+      className="group block bg-card/60 backdrop-blur-sm rounded-xl p-3 border border-border/30 hover:border-primary/50 transition-all duration-300 hover:scale-[1.03] relative overflow-hidden"
       style={{
-        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
         contain: 'layout paint',
       }}
     >
@@ -32,10 +32,10 @@ const CategoryCard = ({
       
       <div className="relative z-10">
         <div 
-          className="w-12 h-12 rounded-xl mb-3 flex items-center justify-center text-primary-foreground font-black text-sm mx-auto group-hover:scale-105 transition-transform duration-300"
+          className="w-10 h-10 rounded-lg mb-2 flex items-center justify-center text-primary-foreground font-medium text-lg mx-auto group-hover:scale-110 transition-transform duration-300"
           style={{ 
-            background: 'linear-gradient(135deg, hsl(44, 51%, 64%), hsl(36, 42%, 40%))',
-            boxShadow: '0 4px 12px hsl(var(--ring) / 0.25)'
+            background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))',
+            boxShadow: '0 2px 8px hsl(var(--primary) / 0.3)'
           }}
         >
           <span>{icon}</span>
