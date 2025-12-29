@@ -9,12 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   MessageSquare,
   Send,
@@ -25,9 +23,24 @@ import {
   Image as ImageIcon,
   Package,
   X,
+  Phone,
+  MoreVertical,
+  Check,
+  CheckCheck,
+  Mic,
+  Video,
+  Smile,
+  Paperclip,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface ListingConversationsProps {
   children?: React.ReactNode;
@@ -36,6 +49,12 @@ interface ListingConversationsProps {
   isAdmin?: boolean;
 }
 
+const formatMessageDate = (date: Date) => {
+  if (isToday(date)) return 'اليوم';
+  if (isYesterday(date)) return 'أمس';
+  return format(date, 'dd MMM yyyy', { locale: ar });
+};
+
 export const ListingConversations = ({ children, listingId, onClose, isAdmin: propIsAdmin }: ListingConversationsProps) => {
   const { user, isAdmin: authIsAdmin } = useAuth();
   const isAdmin = propIsAdmin || authIsAdmin;
@@ -43,9 +62,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const [open, setOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Auto open if listingId is provided
   useEffect(() => {
@@ -87,7 +107,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     queryFn: async () => {
       if (!conversations?.length) return {};
       const userIds = [...new Set(conversations.flatMap(c => [c.buyer_id, c.seller_id]))];
-      const { data } = await supabase.from('profiles').select('id, full_name, username').in('id', userIds);
+      const { data } = await supabase.from('profiles').select('id, full_name, username, avatar_url').in('id', userIds);
       return data?.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as Record<string, any>) || {};
     },
     enabled: !!conversations?.length,
@@ -107,24 +127,54 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       return data;
     },
     enabled: !!selectedConversation,
-    refetchInterval: 5000,
+    refetchInterval: 3000,
+  });
+
+  // Get last message for each conversation
+  const { data: lastMessages } = useQuery({
+    queryKey: ['last-messages', conversations?.map(c => c.id)],
+    queryFn: async () => {
+      if (!conversations?.length) return {};
+      const results: Record<string, any> = {};
+      for (const conv of conversations) {
+        const { data } = await supabase
+          .from('listing_messages')
+          .select('content, created_at, sender_id, image_url')
+          .eq('conversation_id', conv.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        if (data) results[conv.id] = data;
+      }
+      return results;
+    },
+    enabled: !!conversations?.length,
   });
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    setTimeout(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }, [messages, selectedConversation]);
+
+  // Focus input when conversation selected
+  useEffect(() => {
+    if (selectedConversation) {
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [selectedConversation]);
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (imageUrl?: string) => {
-      if (!user || !selectedConversation || (!messageInput.trim() && !imageUrl)) {
+    mutationFn: async (mediaUrl?: string) => {
+      if (!user || !selectedConversation || (!messageInput.trim() && !mediaUrl)) {
         throw new Error('لا يمكن إرسال رسالة فارغة');
       }
       
       const { error } = await supabase.from('listing_messages').insert({
         conversation_id: selectedConversation,
         sender_id: user.id,
-        content: messageInput.trim() || (imageUrl ? '📷 صورة' : ''),
-        image_url: imageUrl || null,
+        content: messageInput.trim() || (mediaUrl ? '📷 وسائط' : ''),
+        image_url: mediaUrl || null,
       });
       if (error) throw error;
       
@@ -136,6 +186,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       setMessageInput('');
       queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['last-messages'] });
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -155,22 +206,24 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     },
   });
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     
-    setUploadingImage(true);
+    setUploadingMedia(true);
     try {
-      const fileName = `chat/${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `chat/${user.id}/${Date.now()}.${fileExt}`;
       const { error } = await supabase.storage.from('listing-images').upload(fileName, file);
       if (error) throw error;
       
       const { data: { publicUrl } } = supabase.storage.from('listing-images').getPublicUrl(fileName);
       await sendMessageMutation.mutateAsync(publicUrl);
     } catch (error) {
-      toast.error('فشل رفع الصورة');
+      toast.error('فشل رفع الملف');
     } finally {
-      setUploadingImage(false);
+      setUploadingMedia(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -188,6 +241,16 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const selectedConv = conversations?.find(c => c.id === selectedConversation);
   const isBuyer = selectedConv?.buyer_id === user?.id;
   const isSeller = selectedConv?.seller_id === user?.id;
+  const otherUserId = selectedConv ? (selectedConv.buyer_id === user?.id ? selectedConv.seller_id : selectedConv.buyer_id) : null;
+  const otherUser = otherUserId ? profiles?.[otherUserId] : null;
+
+  // Group messages by date
+  const groupedMessages = messages?.reduce((groups: any, msg) => {
+    const date = formatMessageDate(new Date(msg.created_at));
+    if (!groups[date]) groups[date] = [];
+    groups[date].push(msg);
+    return groups;
+  }, {});
 
   return (
     <Dialog open={open} onOpenChange={(v) => v ? setOpen(true) : handleClose()}>
@@ -201,147 +264,365 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-4xl h-[85vh] p-0 flex flex-col">
-        <DialogHeader className="p-4 border-b flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-right flex items-center gap-2">
-              <MessageSquare className="w-5 h-5" />
-              {listingId ? 'محادثات المنتج' : 'محادثات المبيعات'}
-            </DialogTitle>
-            <Button variant="ghost" size="icon" onClick={handleClose}>
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-          <DialogDescription>التواصل مع المشترين والبائعين</DialogDescription>
-        </DialogHeader>
-
+      <DialogContent className="max-w-4xl h-[90vh] sm:h-[85vh] p-0 flex flex-col overflow-hidden">
         <div className="flex flex-1 min-h-0">
-          {/* Conversations List */}
-          <div className={`${selectedConversation ? 'hidden md:block' : ''} w-full md:w-1/3 border-l overflow-y-auto`}>
-            {loadingConversations ? (
-              <div className="p-4 space-y-3">
-                {[1, 2, 3].map(i => (
-                  <div key={i} className="bg-muted/50 rounded-lg p-3 animate-pulse h-16" />
-                ))}
+          {/* Conversations List - WhatsApp Style */}
+          <div className={cn(
+            "flex flex-col w-full md:w-80 lg:w-96 border-l bg-card",
+            selectedConversation ? 'hidden md:flex' : 'flex'
+          )}>
+            {/* Header */}
+            <div className="p-3 border-b bg-muted/30 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-primary" />
+                <h2 className="font-bold text-sm">{listingId ? 'محادثات المنتج' : 'المحادثات'}</h2>
               </div>
-            ) : conversations?.length === 0 ? (
-              <div className="p-8 text-center text-muted-foreground">
-                <MessageSquare className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                <p>لا توجد محادثات</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {conversations?.map(conv => {
-                  const otherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
-                  const otherUser = profiles?.[otherUserId];
-                  const role = conv.buyer_id === user?.id ? 'مشتري' : 'بائع';
-                  
-                  return (
-                    <button
-                      key={conv.id}
-                      onClick={() => setSelectedConversation(conv.id)}
-                      className={`w-full p-3 text-right hover:bg-muted/50 transition-colors ${
-                        selectedConversation === conv.id ? 'bg-muted' : ''
-                      }`}
-                    >
-                      <div className="flex gap-3">
-                        {(conv.user_listings as any)?.images?.[0] ? (
-                          <img src={(conv.user_listings as any).images[0]} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                        ) : (
-                          <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Package className="w-5 h-5 text-muted-foreground" />
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+
+            {/* Conversations List */}
+            <div className="flex-1 overflow-y-auto">
+              {loadingConversations ? (
+                <div className="p-4 space-y-3">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="flex gap-3 p-2">
+                      <div className="w-12 h-12 rounded-full bg-muted animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-24 bg-muted rounded animate-pulse" />
+                        <div className="h-3 w-32 bg-muted rounded animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : conversations?.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <div className="text-center text-muted-foreground">
+                    <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                    <p className="text-sm">لا توجد محادثات</p>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  {conversations?.map(conv => {
+                    const convOtherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
+                    const convOtherUser = profiles?.[convOtherUserId];
+                    const lastMsg = lastMessages?.[conv.id];
+                    const isActive = selectedConversation === conv.id;
+                    
+                    return (
+                      <button
+                        key={conv.id}
+                        onClick={() => setSelectedConversation(conv.id)}
+                        className={cn(
+                          "w-full p-3 flex gap-3 hover:bg-muted/50 transition-colors border-b border-border/50",
+                          isActive && "bg-muted"
+                        )}
+                      >
+                        {/* Avatar / Product Image */}
+                        <div className="relative flex-shrink-0">
+                          {(conv.user_listings as any)?.images?.[0] ? (
+                            <img 
+                              src={(conv.user_listings as any).images[0]} 
+                              alt="" 
+                              className="w-12 h-12 rounded-full object-cover ring-2 ring-border"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-border">
+                              <Package className="w-5 h-5 text-primary" />
+                            </div>
+                          )}
+                          {conv.status === 'disputed' && (
+                            <div className="absolute -bottom-1 -right-1 bg-destructive rounded-full p-0.5">
+                              <AlertTriangle className="w-3 h-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0 text-right">
+                          <div className="flex items-center justify-between gap-2 mb-0.5">
+                            <p className="font-medium text-sm truncate">
+                              {(conv.user_listings as any)?.title_ar || 'منتج'}
+                            </p>
+                            {lastMsg && (
+                              <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                                {format(new Date(lastMsg.created_at), 'HH:mm')}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {convOtherUser?.full_name || convOtherUser?.username || 'مستخدم'}
+                            {!isAdmin && (
+                              <span className="text-primary mr-1">
+                                • {conv.buyer_id === user?.id ? 'مشتري' : 'بائع'}
+                              </span>
+                            )}
+                          </p>
+                          {lastMsg && (
+                            <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1">
+                              {lastMsg.sender_id === user?.id && (
+                                <CheckCheck className="w-3 h-3 text-primary flex-shrink-0" />
+                              )}
+                              {lastMsg.image_url ? '📷 صورة' : lastMsg.content}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Badges */}
+                        {(conv.status === 'disputed' || conv.admin_joined) && (
+                          <div className="flex flex-col gap-1">
+                            {conv.admin_joined && (
+                              <ShieldCheck className="w-4 h-4 text-primary" />
+                            )}
                           </div>
                         )}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate text-sm">{(conv.user_listings as any)?.title_ar}</p>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {otherUser?.full_name || otherUser?.username || 'مستخدم'}
-                            {!isAdmin && <span className="text-primary mr-1">• {role}</span>}
-                          </p>
-                          <div className="flex items-center gap-1 mt-1">
-                            {conv.status === 'disputed' && <Badge variant="destructive" className="text-xs py-0">نزاع</Badge>}
-                            {conv.admin_joined && <Badge variant="secondary" className="text-xs py-0"><ShieldCheck className="w-3 h-3" /></Badge>}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Messages Area */}
-          <div className={`${!selectedConversation ? 'hidden md:flex' : 'flex'} flex-1 flex-col min-h-0`}>
+          {/* Messages Area - Telegram/WhatsApp Style */}
+          <div className={cn(
+            "flex-1 flex flex-col min-h-0 bg-[hsl(var(--muted)/0.3)]",
+            !selectedConversation ? 'hidden md:flex' : 'flex'
+          )}
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            }}
+          >
             {selectedConversation ? (
               <>
-                {/* Header */}
-                <div className="p-3 border-b bg-muted/30 flex items-center gap-3 flex-shrink-0">
-                  <button onClick={() => setSelectedConversation(null)} className="p-1 hover:bg-muted rounded md:hidden">
+                {/* Chat Header */}
+                <div className="p-2 sm:p-3 border-b bg-card flex items-center gap-2 sm:gap-3 flex-shrink-0 shadow-sm">
+                  <button 
+                    onClick={() => setSelectedConversation(null)} 
+                    className="p-1.5 hover:bg-muted rounded-full md:hidden"
+                  >
                     <ArrowRight className="w-5 h-5" />
                   </button>
+                  
+                  {/* Avatar */}
+                  <div className="relative flex-shrink-0">
+                    {(selectedConv?.user_listings as any)?.images?.[0] ? (
+                      <img 
+                        src={(selectedConv?.user_listings as any).images[0]} 
+                        alt="" 
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Package className="w-5 h-5 text-primary" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">{(selectedConv?.user_listings as any)?.title_ar}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {Number((selectedConv?.user_listings as any)?.price).toLocaleString()} {(selectedConv?.user_listings as any)?.currency}
+                    <p className="font-medium text-sm truncate">
+                      {otherUser?.full_name || otherUser?.username || 'مستخدم'}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {(selectedConv?.user_listings as any)?.title_ar}
+                      {' • '}
+                      {Number((selectedConv?.user_listings as any)?.price).toLocaleString()} دينار
                     </p>
                   </div>
-                  {(isBuyer || isSeller) && selectedConv?.status !== 'disputed' && (
-                    <Button variant="ghost" size="sm" className="text-xs text-destructive" onClick={() => requestAdminMutation.mutate()}>
-                      <AlertTriangle className="w-3 h-3 ml-1" />
-                      طلب تدخل الإدارة
-                    </Button>
-                  )}
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1">
+                    {selectedConv?.status === 'disputed' && (
+                      <Badge variant="destructive" className="text-xs">نزاع</Badge>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {(isBuyer || isSeller) && selectedConv?.status !== 'disputed' && (
+                          <DropdownMenuItem 
+                            className="text-destructive gap-2"
+                            onClick={() => requestAdminMutation.mutate()}
+                          >
+                            <AlertTriangle className="w-4 h-4" />
+                            طلب تدخل الإدارة
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </div>
 
                 {/* Messages */}
-                <ScrollArea className="flex-1 p-4">
+                <div className="flex-1 overflow-y-auto p-2 sm:p-4">
                   {loadingMessages ? (
-                    <div className="space-y-3">
-                      {[1, 2, 3].map(i => <div key={i} className={`flex ${i % 2 === 0 ? 'justify-end' : ''}`}><div className="bg-muted rounded-lg p-3 w-2/3 h-12 animate-pulse" /></div>)}
+                    <div className="flex items-center justify-center h-full">
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
                     </div>
                   ) : messages?.length === 0 ? (
-                    <p className="text-center text-muted-foreground text-sm py-8">ابدأ المحادثة</p>
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center bg-card/80 backdrop-blur-sm rounded-lg p-4 max-w-xs">
+                        <MessageSquare className="w-10 h-10 mx-auto mb-2 text-muted-foreground/50" />
+                        <p className="text-sm text-muted-foreground">ابدأ المحادثة</p>
+                      </div>
+                    </div>
                   ) : (
-                    <div className="space-y-3">
-                      {messages?.map(msg => {
-                        const isMe = msg.sender_id === user?.id;
-                        const sender = profiles?.[msg.sender_id];
-                        return (
-                          <div key={msg.id} className={`flex ${isMe ? 'justify-end' : ''}`}>
-                            <div className={`max-w-[80%] rounded-2xl p-3 ${isMe ? 'bg-primary text-primary-foreground rounded-br-sm' : 'bg-muted rounded-bl-sm'}`}>
-                              {!isMe && <p className="text-xs font-medium mb-1 opacity-70">{sender?.full_name || sender?.username}</p>}
-                              {msg.image_url && <img src={msg.image_url} alt="" className="rounded-lg max-w-full mb-2 max-h-48" />}
-                              {msg.content && msg.content !== '📷 صورة' && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
-                              <p className={`text-xs mt-1 ${isMe ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                                {format(new Date(msg.created_at), 'HH:mm', { locale: ar })}
-                              </p>
-                            </div>
+                    <div className="space-y-4">
+                      {Object.entries(groupedMessages || {}).map(([date, msgs]: [string, any]) => (
+                        <div key={date}>
+                          {/* Date separator */}
+                          <div className="flex justify-center my-4">
+                            <span className="bg-card/80 backdrop-blur-sm text-muted-foreground text-xs px-3 py-1 rounded-full shadow-sm">
+                              {date}
+                            </span>
                           </div>
-                        );
-                      })}
+                          
+                          {/* Messages */}
+                          <div className="space-y-1">
+                            {msgs.map((msg: any, idx: number) => {
+                              const isMe = msg.sender_id === user?.id;
+                              const sender = profiles?.[msg.sender_id];
+                              const showTail = idx === 0 || msgs[idx - 1]?.sender_id !== msg.sender_id;
+                              
+                              return (
+                                <div 
+                                  key={msg.id} 
+                                  className={cn(
+                                    "flex",
+                                    isMe ? "justify-start" : "justify-end"
+                                  )}
+                                >
+                                  <div 
+                                    className={cn(
+                                      "max-w-[85%] sm:max-w-[70%] rounded-2xl px-3 py-2 shadow-sm relative",
+                                      isMe 
+                                        ? "bg-primary text-primary-foreground rounded-tl-sm" 
+                                        : "bg-card rounded-tr-sm",
+                                      showTail && (isMe ? "rounded-tl-2xl" : "rounded-tr-2xl")
+                                    )}
+                                  >
+                                    {/* Sender name for group chats / admin */}
+                                    {!isMe && isAdmin && showTail && (
+                                      <p className="text-xs font-medium text-primary mb-1">
+                                        {sender?.full_name || sender?.username}
+                                      </p>
+                                    )}
+                                    
+                                    {/* Image */}
+                                    {msg.image_url && (
+                                      <div className="mb-1">
+                                        <img 
+                                          src={msg.image_url} 
+                                          alt="" 
+                                          className="rounded-lg max-w-full max-h-64 cursor-pointer hover:opacity-90 transition-opacity"
+                                          onClick={() => window.open(msg.image_url, '_blank')}
+                                        />
+                                      </div>
+                                    )}
+                                    
+                                    {/* Text */}
+                                    {msg.content && msg.content !== '📷 وسائط' && msg.content !== '📷 صورة' && (
+                                      <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
+                                        {msg.content}
+                                      </p>
+                                    )}
+                                    
+                                    {/* Time & Status */}
+                                    <div className={cn(
+                                      "flex items-center gap-1 mt-1",
+                                      isMe ? "justify-start" : "justify-end"
+                                    )}>
+                                      <span className={cn(
+                                        "text-[10px]",
+                                        isMe ? "text-primary-foreground/70" : "text-muted-foreground"
+                                      )}>
+                                        {format(new Date(msg.created_at), 'HH:mm')}
+                                      </span>
+                                      {isMe && (
+                                        <CheckCheck className={cn(
+                                          "w-3 h-3",
+                                          msg.is_read ? "text-blue-400" : "text-primary-foreground/50"
+                                        )} />
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
                       <div ref={messagesEndRef} />
                     </div>
                   )}
-                </ScrollArea>
+                </div>
 
-                {/* Input */}
-                <form onSubmit={handleSend} className="p-3 border-t flex gap-2 flex-shrink-0 bg-background">
-                  <input type="file" ref={fileInputRef} accept="image/*,video/*" onChange={handleImageUpload} className="hidden" />
-                  <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage}>
-                    {uploadingImage ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImageIcon className="w-4 h-4" />}
+                {/* Input Area - WhatsApp Style */}
+                <form onSubmit={handleSend} className="p-2 border-t bg-card flex items-end gap-2 flex-shrink-0">
+                  {/* Attachment */}
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    accept="image/*,video/*" 
+                    onChange={handleMediaUpload} 
+                    className="hidden" 
+                  />
+                  
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-10 w-10 rounded-full flex-shrink-0"
+                    onClick={() => fileInputRef.current?.click()} 
+                    disabled={uploadingMedia}
+                  >
+                    {uploadingMedia ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Paperclip className="w-5 h-5 text-muted-foreground" />
+                    )}
                   </Button>
-                  <Input value={messageInput} onChange={(e) => setMessageInput(e.target.value)} placeholder="اكتب رسالتك..." className="flex-1" />
-                  <Button type="submit" size="icon" disabled={sendMessageMutation.isPending || !messageInput.trim()}>
-                    {sendMessageMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+
+                  {/* Input */}
+                  <div className="flex-1 relative">
+                    <Input 
+                      ref={inputRef}
+                      value={messageInput} 
+                      onChange={(e) => setMessageInput(e.target.value)} 
+                      placeholder="اكتب رسالة..." 
+                      className="rounded-full pl-10 pr-4 py-5 bg-muted/50 border-0 focus-visible:ring-1"
+                    />
+                  </div>
+
+                  {/* Send */}
+                  <Button 
+                    type="submit" 
+                    size="icon" 
+                    className="h-10 w-10 rounded-full flex-shrink-0"
+                    disabled={sendMessageMutation.isPending || !messageInput.trim()}
+                  >
+                    {sendMessageMutation.isPending ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Send className="w-5 h-5" />
+                    )}
                   </Button>
                 </form>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
-                  <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>اختر محادثة للعرض</p>
+                  <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-card flex items-center justify-center">
+                    <MessageSquare className="w-12 h-12 text-muted-foreground/30" />
+                  </div>
+                  <h3 className="text-lg font-medium text-muted-foreground mb-1">المحادثات</h3>
+                  <p className="text-sm text-muted-foreground/70">اختر محادثة للبدء</p>
                 </div>
               </div>
             )}
