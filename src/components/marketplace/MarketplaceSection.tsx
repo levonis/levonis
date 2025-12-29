@@ -1,13 +1,13 @@
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { ListingCard } from './ListingCard';
 import { AddListingDialog } from './AddListingDialog';
 import { MyListings } from './MyListings';
 import { ListingConversations } from './ListingConversations';
-import { Store, Plus, Package, MessageSquare } from 'lucide-react';
+import { Store, Plus, Package, MessageSquare, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-
 export const MarketplaceSection = () => {
   const { user } = useAuth();
 
@@ -51,6 +51,9 @@ export const MarketplaceSection = () => {
     enabled: !!listings?.length,
   });
 
+  const totalListings = listings?.length || 0;
+  const showAllButton = totalListings > 8 || totalListings >= 30;
+
   return (
     <section className="container mx-auto px-4 py-10">
       {/* Header */}
@@ -59,9 +62,18 @@ export const MarketplaceSection = () => {
           <Store className="w-6 h-6 text-primary" />
           <h2 className="text-2xl font-black text-primary">سوق المستعمل</h2>
         </div>
-        <span className="text-sm text-muted-foreground">منتجات من أعضاء المجتمع</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">منتجات من أعضاء المجتمع</span>
+          {showAllButton && (
+            <Link to="/marketplace">
+              <Button variant="outline" size="sm" className="gap-2">
+                عرض الكل
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
-
       {/* Action Buttons */}
       {user && (
         <div className="flex flex-wrap gap-3 mb-6">
