@@ -211,20 +211,64 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
     setPurchaseReceiptUrl(null);
   };
 
+  const [showCropOption, setShowCropOption] = useState(false);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setImageToCrop(event.target?.result as string);
-      setEditingImageIndex(null);
-      setCropDialogOpen(true);
-    };
-    reader.readAsDataURL(file);
+    // Show crop option dialog
+    setPendingFile(file);
+    setShowCropOption(true);
     
     // Reset input
     e.target.value = '';
+  };
+
+  const handleCropChoice = (shouldCrop: boolean) => {
+    if (!pendingFile) return;
+    
+    if (shouldCrop) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImageToCrop(event.target?.result as string);
+        setEditingImageIndex(null);
+        setCropDialogOpen(true);
+      };
+      reader.readAsDataURL(pendingFile);
+    } else {
+      // Upload directly without cropping
+      handleDirectUpload(pendingFile);
+    }
+    
+    setShowCropOption(false);
+    setPendingFile(null);
+  };
+
+  const handleDirectUpload = async (file: File) => {
+    if (!user) return;
+    
+    setUploading(true);
+    try {
+      const fileName = `${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage
+        .from('listing-images')
+        .upload(fileName, file);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('listing-images')
+        .getPublicUrl(fileName);
+      
+      setImages(prev => [...prev, publicUrl]);
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('فشل رفع الصورة');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleEditImage = (index: number) => {
@@ -463,10 +507,15 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
               <div className="space-y-2">
                 <Label>السعر (دينار) *</Label>
                 <Input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
-                  placeholder="100000"
+                  type="text"
+                  value={formData.price ? Number(formData.price.replace(/,/g, '')).toLocaleString() : ''}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/,/g, '');
+                    if (/^\d*$/.test(rawValue)) {
+                      setFormData(prev => ({ ...prev, price: rawValue }));
+                    }
+                  }}
+                  placeholder="100,000"
                   required
                 />
               </div>
@@ -488,23 +537,25 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
               </div>
             </div>
 
-            {/* Usage Duration */}
-            <div className="space-y-2">
-              <Label>مدة الاستخدام</Label>
-              <Select
-                value={formData.usage_duration}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, usage_duration: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر مدة الاستخدام" />
-                </SelectTrigger>
-                <SelectContent>
-                  {usageDurationOptions.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            {/* Usage Duration - Only show if not new */}
+            {formData.condition !== 'new' && (
+              <div className="space-y-2">
+                <Label>مدة الاستخدام</Label>
+                <Select
+                  value={formData.usage_duration}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, usage_duration: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر مدة الاستخدام" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usageDurationOptions.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             {/* Shipping & Location */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -534,6 +585,24 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
               </div>
             </div>
 
+            {/* Terms & Conditions */}
+            <div className="bg-muted/50 border border-border rounded-lg p-3 text-xs text-muted-foreground space-y-2">
+              <p className="font-semibold text-foreground">شروط البيع:</p>
+              <ul className="list-disc list-inside space-y-1 mr-2">
+                <li>يجب أن يكون المنتج مملوكاً لك بشكل قانوني</li>
+                <li>يُمنع بيع المنتجات المقلدة أو المسروقة</li>
+                <li>يجب وصف حالة المنتج بدقة وصدق</li>
+                <li>الصور يجب أن تكون حقيقية للمنتج الفعلي</li>
+                <li>يحق للإدارة رفض أي منتج لا يتوافق مع الشروط</li>
+              </ul>
+              <p className="font-semibold text-foreground mt-2">شروط الشراء:</p>
+              <ul className="list-disc list-inside space-y-1 mr-2">
+                <li>التحقق من المنتج قبل إتمام الشراء</li>
+                <li>التواصل عبر المنصة فقط للحماية</li>
+                <li>الدفع عبر المحفظة أو عند الاستلام</li>
+              </ul>
+            </div>
+
             {/* Submit */}
             <div className="flex gap-3 pt-4">
               <Button
@@ -549,6 +618,33 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Crop Option Dialog */}
+      <Dialog open={showCropOption} onOpenChange={setShowCropOption}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-center">خيارات الصورة</DialogTitle>
+            <DialogDescription className="text-center">
+              هل تريد قص الصورة قبل الرفع؟
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 pt-4">
+            <Button 
+              onClick={() => handleCropChoice(true)} 
+              className="flex-1"
+              variant="outline"
+            >
+              قص الصورة
+            </Button>
+            <Button 
+              onClick={() => handleCropChoice(false)} 
+              className="flex-1"
+            >
+              رفع مباشرة
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 

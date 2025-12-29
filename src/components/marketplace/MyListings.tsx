@@ -16,10 +16,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Package, Eye, MessageSquare, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2, X } from 'lucide-react';
+import { Package, Eye, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import { ListingConversations } from './ListingConversations';
 
 interface MyListingsProps {
   children?: React.ReactNode;
@@ -58,8 +57,6 @@ export const MyListings = ({ children }: MyListingsProps) => {
     condition: 'used',
     location: '',
   });
-  const [conversationsListingId, setConversationsListingId] = useState<string | null>(null);
-
   const { data: listings, isLoading } = useQuery({
     queryKey: ['my-listings', user?.id],
     queryFn: async () => {
@@ -73,27 +70,6 @@ export const MyListings = ({ children }: MyListingsProps) => {
       return data;
     },
     enabled: !!user && open,
-  });
-
-  // Fetch conversations count for each listing
-  const { data: conversationCounts } = useQuery({
-    queryKey: ['listing-conversation-counts', user?.id],
-    queryFn: async () => {
-      if (!user || !listings?.length) return {};
-      
-      const { data, error } = await supabase
-        .from('listing_conversations')
-        .select('listing_id')
-        .in('listing_id', listings.map(l => l.id));
-      
-      if (error) throw error;
-      
-      return data?.reduce((acc, conv) => {
-        acc[conv.listing_id] = (acc[conv.listing_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>) || {};
-    },
-    enabled: !!user && !!listings?.length,
   });
 
   const updateListingMutation = useMutation({
@@ -178,8 +154,8 @@ export const MyListings = ({ children }: MyListingsProps) => {
             </Button>
           )}
         </DialogTrigger>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
+          <DialogHeader className="p-4 pb-0 sticky top-0 bg-background z-10 border-b">
             <DialogTitle className="text-right flex items-center gap-2">
               <Package className="w-5 h-5" />
               منتجاتي المعروضة
@@ -187,34 +163,28 @@ export const MyListings = ({ children }: MyListingsProps) => {
             <DialogDescription>إدارة منتجاتك في سوق المستعمل</DialogDescription>
           </DialogHeader>
 
-          {isLoading ? (
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-muted/50 rounded-lg p-4 animate-pulse">
-                  <div className="h-4 bg-muted rounded w-1/2 mb-2" />
-                  <div className="h-3 bg-muted rounded w-1/4" />
-                </div>
-              ))}
-            </div>
-          ) : listings?.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>لم تقم بإضافة أي منتجات بعد</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {listings?.map(listing => {
-                const status = statusConfig[listing.status] || statusConfig.pending;
-                const convCount = conversationCounts?.[listing.id] || 0;
-                
-                return (
-                  <div
-                    key={listing.id}
-                    className="bg-card border border-border rounded-lg p-4 hover:border-primary/30 transition-colors"
-                  >
-                    <div className="flex gap-4">
+          <div className="p-4">
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin" />
+              </div>
+            ) : listings?.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>لم تقم بإضافة أي منتجات بعد</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {listings?.map(listing => {
+                  const status = statusConfig[listing.status] || statusConfig.pending;
+                  
+                  return (
+                    <div
+                      key={listing.id}
+                      className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-md transition-all"
+                    >
                       {/* Image */}
-                      <div className="w-20 h-20 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                      <div className="relative aspect-square bg-muted">
                         {listing.images?.[0] ? (
                           <img
                             src={listing.images[0]}
@@ -223,90 +193,82 @@ export const MyListings = ({ children }: MyListingsProps) => {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-8 h-8 text-muted-foreground" />
+                            <Package className="w-12 h-12 text-muted-foreground" />
                           </div>
                         )}
+                        
+                        {/* Status Badge */}
+                        <Badge 
+                          variant={status.variant} 
+                          className="absolute top-2 right-2 flex items-center gap-1"
+                        >
+                          {status.icon}
+                          {status.label}
+                        </Badge>
                       </div>
 
                       {/* Details */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-semibold truncate">{listing.title_ar}</h3>
-                          <Badge variant={status.variant} className="flex items-center gap-1 flex-shrink-0">
-                            {status.icon}
-                            {status.label}
-                          </Badge>
-                        </div>
+                      <div className="p-3">
+                        <h3 className="font-semibold text-sm truncate mb-1">{listing.title_ar}</h3>
                         
-                        <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                          <span className="font-bold text-primary">
-                            {Number(listing.price).toLocaleString()} {listing.currency}
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-bold text-primary text-lg">
+                            {Number(listing.price).toLocaleString()}
                           </span>
-                          <span>•</span>
-                          <span>{conditionLabels[listing.condition]}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {conditionLabels[listing.condition]}
+                          </span>
                         </div>
 
-                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
                           <span className="flex items-center gap-1">
                             <Eye className="w-3 h-3" />
-                            {listing.views_count || 0} مشاهدة
+                            {listing.views_count || 0}
                           </span>
+                          <span>•</span>
                           <span>
-                            {format(new Date(listing.created_at), 'dd MMM yyyy', { locale: ar })}
+                            {format(new Date(listing.created_at), 'dd MMM', { locale: ar })}
                           </span>
                         </div>
 
                         {listing.admin_notes && listing.status === 'rejected' && (
-                          <p className="text-xs text-destructive mt-2 bg-destructive/10 rounded p-2">
-                            سبب الرفض: {listing.admin_notes}
+                          <p className="text-xs text-destructive bg-destructive/10 rounded p-2 mb-2">
+                            {listing.admin_notes}
                           </p>
                         )}
+
+                        {/* Actions */}
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="flex-1 text-xs h-8"
+                            onClick={() => handleEdit(listing)}
+                          >
+                            <Edit className="w-3 h-3 ml-1" />
+                            تعديل
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-destructive hover:text-destructive h-8 px-2"
+                            onClick={() => handleDelete(listing.id)}
+                            disabled={deleteListingMutation.isPending}
+                          >
+                            {deleteListingMutation.isPending ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-3 h-3" />
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-2 mt-3 pt-3 border-t border-border">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="gap-1 text-xs"
-                        onClick={() => handleEdit(listing)}
-                      >
-                        <Edit className="w-3 h-3" />
-                        تعديل
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="gap-1 text-xs"
-                        onClick={() => setConversationsListingId(listing.id)}
-                      >
-                        <MessageSquare className="w-3 h-3" />
-                        المحادثات
-                        {convCount > 0 && (
-                          <Badge variant="secondary" className="h-5 px-1.5 mr-1">{convCount}</Badge>
-                        )}
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="gap-1 text-xs text-destructive hover:text-destructive"
-                        onClick={() => handleDelete(listing.id)}
-                        disabled={deleteListingMutation.isPending}
-                      >
-                        {deleteListingMutation.isPending ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-3 h-3" />
-                        )}
-                        حذف
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
 
@@ -383,14 +345,6 @@ export const MyListings = ({ children }: MyListingsProps) => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Conversations for specific listing */}
-      {conversationsListingId && (
-        <ListingConversations 
-          listingId={conversationsListingId}
-          onClose={() => setConversationsListingId(null)}
-        />
-      )}
     </>
   );
 };
