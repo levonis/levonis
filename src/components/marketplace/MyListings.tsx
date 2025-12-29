@@ -16,9 +16,31 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Package, Eye, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+import { Package, Eye, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2, Tag } from 'lucide-react';
+
+// Format relative time in Arabic
+const formatRelativeTime = (dateString: string): string => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+
+  if (diffSeconds < 60) {
+    return `قبل ${diffSeconds} ثانية`;
+  } else if (diffMinutes < 60) {
+    return `قبل ${diffMinutes} دقيقة`;
+  } else if (diffHours < 24) {
+    return `قبل ${diffHours} ساعة`;
+  } else if (diffDays < 7) {
+    return `قبل ${diffDays} يوم`;
+  } else {
+    return `قبل ${diffWeeks} أسبوع`;
+  }
+};
 
 interface MyListingsProps {
   children?: React.ReactNode;
@@ -143,6 +165,15 @@ export const MyListings = ({ children }: MyListingsProps) => {
     }
   };
 
+  const handleMarkAsSold = (id: string) => {
+    if (confirm('هل تريد تحديد هذا المنتج كـ "تم البيع"؟')) {
+      updateListingMutation.mutate({
+        id,
+        values: { status: 'sold' },
+      });
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -174,17 +205,17 @@ export const MyListings = ({ children }: MyListingsProps) => {
                 <p>لم تقم بإضافة أي منتجات بعد</p>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {listings?.map(listing => {
                   const status = statusConfig[listing.status] || statusConfig.pending;
                   
                   return (
                     <div
                       key={listing.id}
-                      className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-md transition-all"
+                      className="bg-card border border-border rounded-lg overflow-hidden hover:shadow-md transition-all"
                     >
-                      {/* Image - smaller aspect ratio */}
-                      <div className="relative aspect-[4/3] bg-muted">
+                      {/* Compact Image */}
+                      <div className="relative aspect-square bg-muted">
                         {listing.images?.[0] ? (
                           <img
                             src={listing.images[0]}
@@ -193,65 +224,75 @@ export const MyListings = ({ children }: MyListingsProps) => {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-8 h-8 text-muted-foreground" />
+                            <Package className="w-6 h-6 text-muted-foreground" />
                           </div>
                         )}
                         
                         {/* Status Badge */}
                         <Badge 
                           variant={status.variant} 
-                          className="absolute top-2 right-2 flex items-center gap-1 text-[10px] px-1.5 py-0.5"
+                          className="absolute top-1.5 right-1.5 flex items-center gap-0.5 text-[9px] px-1 py-0.5"
                         >
                           {status.icon}
                           {status.label}
                         </Badge>
                       </div>
 
-                      {/* Details */}
-                      <div className="p-3">
-                        <h3 className="font-semibold text-sm truncate mb-1">{listing.title_ar}</h3>
+                      {/* Compact Details */}
+                      <div className="p-2">
+                        <h3 className="font-medium text-xs truncate mb-1">{listing.title_ar}</h3>
                         
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-bold text-primary text-lg">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="font-bold text-primary text-sm">
                             {Number(listing.price).toLocaleString()}
                           </span>
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-[10px] text-muted-foreground">
                             {conditionLabels[listing.condition]}
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-                          <span className="flex items-center gap-1">
-                            <Eye className="w-3 h-3" />
-                            {listing.views_count || 0}
-                          </span>
+                        {/* Relative Time */}
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-2">
+                          <Clock className="w-3 h-3" />
+                          <span>{formatRelativeTime(listing.created_at)}</span>
                           <span>•</span>
-                          <span>
-                            {format(new Date(listing.created_at), 'dd MMM', { locale: ar })}
-                          </span>
+                          <Eye className="w-3 h-3" />
+                          <span>{listing.views_count || 0}</span>
                         </div>
 
                         {listing.admin_notes && listing.status === 'rejected' && (
-                          <p className="text-xs text-destructive bg-destructive/10 rounded p-2 mb-2">
+                          <p className="text-[10px] text-destructive bg-destructive/10 rounded p-1.5 mb-2 line-clamp-2">
                             {listing.admin_notes}
                           </p>
                         )}
 
-                        {/* Actions */}
-                        <div className="flex gap-2">
+                        {/* Compact Actions */}
+                        <div className="flex gap-1.5">
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="flex-1 text-xs h-8"
+                            className="flex-1 text-[10px] h-7 px-2"
                             onClick={() => handleEdit(listing)}
                           >
-                            <Edit className="w-3 h-3 ml-1" />
+                            <Edit className="w-3 h-3 ml-0.5" />
                             تعديل
                           </Button>
+                          {listing.status === 'approved' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="text-green-600 hover:text-green-600 h-7 px-2"
+                              onClick={() => handleMarkAsSold(listing.id)}
+                              disabled={updateListingMutation.isPending}
+                              title="تم البيع"
+                            >
+                              <Tag className="w-3 h-3" />
+                            </Button>
+                          )}
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="text-destructive hover:text-destructive h-8 px-2"
+                            className="text-destructive hover:text-destructive h-7 px-2"
                             onClick={() => handleDelete(listing.id)}
                             disabled={deleteListingMutation.isPending}
                           >

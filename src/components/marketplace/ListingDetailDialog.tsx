@@ -28,7 +28,22 @@ import {
   Clock,
   CheckCircle2,
   Receipt,
+  Calendar,
 } from 'lucide-react';
+
+// Format date in Arabic with time
+const formatArabicDateTime = (dateString: string): string => {
+  const date = new Date(dateString);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  let hours = date.getHours();
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  const period = hours >= 12 ? 'مساءً' : 'صباحاً';
+  hours = hours % 12 || 12;
+  
+  return `${year}-${month}-${day} ${hours}:${minutes} ${period}`;
+};
 
 interface Listing {
   id: string;
@@ -309,6 +324,14 @@ export const ListingDetailDialog = ({
                 {listing.categories?.name_ar && (
                   <div className="text-sm text-muted-foreground">
                     القسم: {listing.categories.name_ar}
+                  </div>
+                )}
+                {/* Date Added */}
+                {listing.created_at && (
+                  <div className="flex items-center gap-2 text-sm col-span-2">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">تاريخ الإضافة:</span>
+                    <span>{formatArabicDateTime(listing.created_at)}</span>
                   </div>
                 )}
               </div>
