@@ -56,6 +56,9 @@ export const MarketplaceSection = () => {
 
   return (
     <section className="container mx-auto px-4 py-10">
+      {/* Separator from other sections */}
+      <div className="border-t border-border mb-8" />
+
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -74,9 +77,10 @@ export const MarketplaceSection = () => {
           )}
         </div>
       </div>
-      {/* Action Buttons */}
+
+      {/* Action Buttons - Ordered: Add, My Products, Conversations */}
       {user && (
-        <div className="flex flex-wrap gap-3 mb-6">
+        <div className="flex flex-wrap gap-3 mb-4">
           <AddListingDialog>
             <Button size="sm" className="gap-2">
               <Plus className="w-4 h-4" />
@@ -99,6 +103,9 @@ export const MarketplaceSection = () => {
           </ListingConversations>
         </div>
       )}
+
+      {/* Light separator before products */}
+      <div className="border-t border-border/50 mb-6" />
 
       {/* Listings Grid */}
       {isLoading ? (

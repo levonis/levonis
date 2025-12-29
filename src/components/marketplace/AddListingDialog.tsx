@@ -63,7 +63,6 @@ const usageDurationOptions = [
 ];
 
 const shippingOptions = [
-  { value: 'through_site', label: 'عن طريق الوسيط (تضاف عمولة 5 آلاف)' },
   { value: 'direct', label: 'توصيل مباشر للمشتري' },
 ];
 

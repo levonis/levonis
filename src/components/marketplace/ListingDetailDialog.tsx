@@ -106,6 +106,7 @@ export const ListingDetailDialog = ({
   const [buyFormData, setBuyFormData] = useState({
     shipping_address: '',
     phone_number: '',
+    payment_method: '' as 'through_site' | 'direct' | '',
   });
 
   const images = listing.images?.length ? listing.images : ['/placeholder.svg'];
@@ -291,16 +292,21 @@ export const ListingDetailDialog = ({
         }
       }
       
+      // Calculate actual amount based on payment method
+      const isThroughSite = buyFormData.payment_method === 'through_site';
+      const finalAmount = isThroughSite ? Number(listing.price) + 5000 : Number(listing.price);
+      const finalPlatformFee = isThroughSite ? 5000 : 0;
+      
       const { data, error } = await supabase
         .from('listing_transactions')
         .insert({
           listing_id: listing.id,
           buyer_id: user.id,
           seller_id: listing.seller_id,
-          amount: listing.price,
-          platform_fee: platformFee,
-          seller_amount: Number(listing.price) - platformFee,
-          shipping_method: listing.shipping_method,
+          amount: finalAmount,
+          platform_fee: finalPlatformFee,
+          seller_amount: Number(listing.price),
+          shipping_method: buyFormData.payment_method || 'direct',
           shipping_address: buyFormData.shipping_address,
           phone_number: buyFormData.phone_number,
         })
@@ -463,20 +469,11 @@ export const ListingDetailDialog = ({
                 )}
                 <div className="flex items-center gap-1.5">
                   <Eye className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>{listing.views_count ?? 0} مشاهدة</span>
+                  <span>{listing.views_count ?? 0}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  {listing.shipping_method === 'through_site' ? (
-                    <>
-                      <Truck className="w-3.5 h-3.5 text-green-600" />
-                      <span className="text-xs">عن طريق الوسيط (+5 آلاف)</span>
-                    </>
-                  ) : (
-                    <>
-                      <Package className="w-3.5 h-3.5 text-blue-600" />
-                      <span>توصيل مباشر</span>
-                    </>
-                  )}
+                  <Package className="w-3.5 h-3.5 text-blue-600" />
+                  <span>توصيل مباشر</span>
                 </div>
                 {listing.categories?.name_ar && (
                   <div className="text-muted-foreground text-xs">
@@ -556,8 +553,70 @@ export const ListingDetailDialog = ({
                     <form onSubmit={handleBuy} className="space-y-3 bg-muted/50 rounded-lg p-3">
                       <h4 className="font-semibold text-sm flex items-center gap-2">
                         <Receipt className="w-4 h-4" />
-                        معلومات الشحن
+                        اختر طريقة الدفع
                       </h4>
+                      
+                      {/* Payment Method Selection */}
+                      <div className="space-y-2">
+                        <Label className="text-xs">طريقة الدفع *</Label>
+                        <div className="space-y-2">
+                          <label className="flex items-start gap-3 p-2.5 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              value="through_site"
+                              checked={buyFormData.payment_method === 'through_site'}
+                              onChange={() => setBuyFormData(prev => ({ ...prev, payment_method: 'through_site' }))}
+                              className="mt-1"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <Truck className="w-4 h-4 text-green-600" />
+                                <span className="font-medium text-sm">عن طريق الوسيط</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                تضاف رسوم 5,000 دينار على سعر المنتج. الموقع يضمن حقوقك.
+                              </p>
+                              <p className="text-xs font-medium text-primary mt-1">
+                                المجموع: {(Number(listing.price) + 5000).toLocaleString()} دينار
+                              </p>
+                            </div>
+                          </label>
+                          
+                          <label className="flex items-start gap-3 p-2.5 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                            <input
+                              type="radio"
+                              name="paymentMethod"
+                              value="direct"
+                              checked={buyFormData.payment_method === 'direct'}
+                              onChange={() => setBuyFormData(prev => ({ ...prev, payment_method: 'direct' }))}
+                              className="mt-1"
+                            />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <Package className="w-4 h-4 text-blue-600" />
+                                <span className="font-medium text-sm">الدفع للبائع مباشرة</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-1">
+                                السعر: {Number(listing.price).toLocaleString()} دينار (بدون رسوم إضافية)
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                        
+                        {/* Warning for direct payment */}
+                        {buyFormData.payment_method === 'direct' && (
+                          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5 text-xs">
+                            <p className="text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1.5">
+                              ⚠️ تنبيه مهم
+                            </p>
+                            <p className="text-amber-600 dark:text-amber-300 mt-1">
+                              عملية الشراء تكون على مسؤوليتك الشخصية. الموقع غير مسؤول عن أي مشاكل قد تحدث عند الدفع المباشر للبائع.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
                       <div className="space-y-1.5">
                         <Label className="text-xs">العنوان الكامل *</Label>
                         <Textarea
@@ -581,7 +640,11 @@ export const ListingDetailDialog = ({
                         />
                       </div>
                       <div className="flex gap-2">
-                        <Button type="submit" className="flex-1 h-9 text-sm" disabled={createTransactionMutation.isPending}>
+                        <Button 
+                          type="submit" 
+                          className="flex-1 h-9 text-sm" 
+                          disabled={createTransactionMutation.isPending || !buyFormData.payment_method}
+                        >
                           {createTransactionMutation.isPending ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
