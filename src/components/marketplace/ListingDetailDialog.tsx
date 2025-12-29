@@ -312,7 +312,7 @@ export const ListingDetailDialog = ({
                   {listing.shipping_method === 'through_site' ? (
                     <>
                       <Truck className="w-4 h-4 text-green-500" />
-                      <span>شحن عبر الموقع</span>
+                      <span>عن طريق الوسيط (عمولة 5 آلاف)</span>
                     </>
                   ) : (
                     <>

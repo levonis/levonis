@@ -1,8 +1,32 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Star, MapPin, Eye, MessageSquare, ShieldCheck } from 'lucide-react';
+import { Star, MapPin, Eye, MessageSquare, ShieldCheck, Clock } from 'lucide-react';
 import { ListingDetailDialog } from './ListingDetailDialog';
+
+// Format relative time in Arabic
+const formatRelativeTime = (dateString: string): string => {
+  const now = new Date();
+  const date = new Date(dateString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffSeconds = Math.floor(diffMs / 1000);
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+  const diffWeeks = Math.floor(diffDays / 7);
+
+  if (diffSeconds < 60) {
+    return `منذ ${diffSeconds} ثانية`;
+  } else if (diffMinutes < 60) {
+    return `منذ ${diffMinutes} دقيقة`;
+  } else if (diffHours < 24) {
+    return `منذ ${diffHours} ساعة`;
+  } else if (diffDays < 7) {
+    return `منذ ${diffDays} يوم`;
+  } else {
+    return `منذ ${diffWeeks} أسبوع`;
+  }
+};
 
 interface Listing {
   id: string;
@@ -16,6 +40,7 @@ interface Listing {
   seller_id: string;
   shipping_method: string;
   categories?: { name_ar: string } | null;
+  created_at?: string;
 }
 
 interface SellerProfile {
@@ -96,18 +121,26 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
             </div>
           )}
 
-          {/* Location & Views */}
+          {/* Location, Views & Time */}
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            {listing.location && (
+            <div className="flex items-center gap-2">
+              {listing.location && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {listing.location}
+                </span>
+              )}
               <span className="flex items-center gap-1">
-                <MapPin className="w-3 h-3" />
-                {listing.location}
+                <Eye className="w-3 h-3" />
+                {listing.views_count ?? 0}
+              </span>
+            </div>
+            {listing.created_at && (
+              <span className="flex items-center gap-1 text-[10px]">
+                <Clock className="w-3 h-3" />
+                {formatRelativeTime(listing.created_at)}
               </span>
             )}
-            <span className="flex items-center gap-1">
-              <Eye className="w-3 h-3" />
-              {listing.views_count ?? 0}
-            </span>
           </div>
         </div>
       </div>
