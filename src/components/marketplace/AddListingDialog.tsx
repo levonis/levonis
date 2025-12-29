@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Upload, X, Loader2, Receipt, Crop, RotateCcw } from 'lucide-react';
+import { Plus, Upload, X, Loader2, Receipt, RotateCcw } from 'lucide-react';
 
 interface AddListingDialogProps {
   children?: React.ReactNode;
@@ -372,8 +372,8 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
                     <>
-                      <Crop className="w-5 h-5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground mt-1">قص</span>
+                      <Upload className="w-5 h-5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground mt-1">رفع</span>
                     </>
                   )}
                   <input
@@ -426,24 +426,14 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
             </div>
 
             {/* Title */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>عنوان المنتج (عربي) *</Label>
-                <Input
-                  value={formData.title_ar}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title_ar: e.target.value }))}
-                  placeholder="مثال: طابعة Bambulab A1"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>عنوان المنتج (إنجليزي)</Label>
-                <Input
-                  value={formData.title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                  placeholder="Bambulab A1 Printer"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>عنوان المنتج *</Label>
+              <Input
+                value={formData.title_ar}
+                onChange={(e) => setFormData(prev => ({ ...prev, title_ar: e.target.value, title: e.target.value }))}
+                placeholder="مثال: طابعة Bambulab A1"
+                required
+              />
             </div>
 
             {/* Description */}

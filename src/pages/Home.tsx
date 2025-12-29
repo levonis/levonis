@@ -2,7 +2,6 @@ import { useMemo, lazy, Suspense } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import SearchBar from '@/components/SearchBar';
-import ProductCard from '@/components/ProductCard';
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
 import { Loader2 } from 'lucide-react';
@@ -38,21 +37,6 @@ const Home = () => {
     }
   });
 
-  const { data: products, isLoading: productsLoading } = useQuery({
-    queryKey: ['featured-products'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('featured', true)
-        .eq('in_stock', true)
-        .order('created_at', { ascending: false })
-        .limit(6);
-      
-      if (error) throw error;
-      return data;
-    }
-  });
 
   // تنظيم الأقسام حسب الأقسام الرئيسية - memoized
   const categoriesByMainSection = useMemo(() => {
@@ -175,46 +159,6 @@ const Home = () => {
                   </div>
                 );
               })}
-            </div>
-          )}
-        </section>
-
-        {/* Featured Products Section */}
-        <section id="products" className="container mx-auto px-4 py-10" style={{ minHeight: '400px', contain: 'layout' }}>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-black text-primary">منتجات مميزة</h2>
-            <span className="text-sm text-muted-foreground">أحدث العروض</span>
-          </div>
-          
-          {productsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4" style={{ minHeight: '350px' }}>
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-card rounded-xl p-3 border border-border/40 animate-pulse">
-                  <div className="aspect-square bg-muted rounded-lg mb-2" />
-                  <div className="h-4 bg-muted rounded mb-2" />
-                  <div className="h-3 bg-muted rounded w-3/4" />
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
-              {products?.map((product, index) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  nameAr={product.name_ar}
-                  description={product.description}
-                  descriptionAr={product.description_ar}
-                  price={Number(product.price)}
-                  originalPrice={product.original_price ? Number(product.original_price) : undefined}
-                  imageUrl={product.image_url || undefined}
-                  images={product.images || undefined}
-                  currency={product.currency || undefined}
-                  slug={product.slug}
-                  priority={index < 3}
-                />
-              ))}
             </div>
           )}
         </section>
