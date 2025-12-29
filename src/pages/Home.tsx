@@ -116,7 +116,7 @@ const Home = () => {
           </div>
           
           {categoriesLoading || mainSectionsLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4" style={{ minHeight: '400px' }}>
+            <div className="grid grid-cols-2 max-[420px]:grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4" style={{ minHeight: '400px' }}>
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="bg-card/50 rounded-2xl p-5 border border-border/40 animate-pulse">
                   <div className="w-16 h-16 bg-muted rounded-xl mb-4 mx-auto" />
@@ -142,7 +142,7 @@ const Home = () => {
                       <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full" />
                       <h3 className="text-xl font-black text-primary">{mainSection.name_ar}</h3>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-2 max-[420px]:grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                       {sectionCategories.map((category, index) => (
                         <div key={category.id} className={`stagger-${(index % 6) + 1}`}>
                           <CategoryCard
