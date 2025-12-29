@@ -272,7 +272,7 @@ const TopBar = memo(() => {
                     <Package className="ml-2 h-3.5 w-3.5" />
                     <span>طلباتي</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/user-info?tab=favorites')}>
+                  <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-3.5 w-3.5" />
                     <span>المفضلة</span>
                   </DropdownMenuItem>

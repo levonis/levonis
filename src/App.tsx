@@ -23,7 +23,7 @@ const Categories = lazy(() => import("./pages/Categories"));
 const CategoryDetail = lazy(() => import("./pages/CategoryDetail"));
 const Cart = lazy(() => import("./pages/Cart"));
 const UserInfo = lazy(() => import("./pages/UserInfo"));
-// Favorites is now integrated in UserInfo page
+const Favorites = lazy(() => import("./pages/Favorites"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const MyCustomRequests = lazy(() => import("./pages/MyCustomRequests"));
 const UserAddresses = lazy(() => import("./pages/UserAddresses"));
@@ -81,7 +81,7 @@ function AppContent() {
             <Route path="/category/:slug" element={<CategoryDetail />} />
             <Route path="/cart" element={<Cart />} />
             <Route path="/user-info" element={<UserInfo />} />
-            <Route path="/favorites" element={<UserInfo />} />
+            <Route path="/favorites" element={<Favorites />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/my-requests" element={<MyCustomRequests />} />
             <Route path="/addresses" element={<UserAddresses />} />
