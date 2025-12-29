@@ -168,7 +168,6 @@ export default function AdminWallet() {
       const { data: wallets, error } = await supabase
         .from('user_wallets')
         .select('*')
-        .gt('balance', 0)
         .order('balance', { ascending: false });
       
       if (error) throw error;
