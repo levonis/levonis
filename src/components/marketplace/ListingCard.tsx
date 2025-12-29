@@ -94,8 +94,8 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
 
         {/* Content */}
         <div className="p-2 sm:p-2.5 space-y-1 sm:space-y-1.5">
-          {/* Title */}
-          <h3 className="font-medium text-xs sm:text-sm line-clamp-1">
+          {/* Title - with no overlap */}
+          <h3 className="font-medium text-xs sm:text-sm line-clamp-1 leading-tight">
             {listing.title_ar}
           </h3>
 
@@ -112,28 +112,28 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
           </div>
 
           <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground pt-1 border-t border-border/50">
-            <div className="flex items-center gap-1 sm:gap-1.5">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               {listing.location && (
-                <span className="flex items-center gap-0.5 truncate max-w-[40px] sm:max-w-[60px]">
-                  <MapPin className="w-2 h-2 sm:w-2.5 sm:h-2.5 flex-shrink-0" />
-                  {listing.location}
+                <span className="flex items-center gap-0.5 truncate max-w-[50px] sm:max-w-[70px]">
+                  <MapPin className="w-2.5 h-2.5 sm:w-3 sm:h-3 flex-shrink-0" />
+                  <span className="truncate">{listing.location}</span>
                 </span>
               )}
-              <span className="flex items-center gap-0.5">
-                <Eye className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
-                {listing.views_count ?? 0}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-1.5">
               {sellerProfile && (
                 <span className="flex items-center gap-0.5">
-                  <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-yellow-500 text-yellow-500" />
+                  <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-yellow-500 text-yellow-500" />
                   {(sellerProfile.average_rating ?? 0).toFixed(1)}
                 </span>
               )}
+            </div>
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <span className="flex items-center gap-0.5">
+                <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                {listing.views_count ?? 0}
+              </span>
               {listing.created_at && (
                 <span className="flex items-center gap-0.5">
-                  <Clock className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
+                  <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                   {formatRelativeTime(listing.created_at)}
                 </span>
               )}

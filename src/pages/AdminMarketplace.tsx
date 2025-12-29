@@ -14,7 +14,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { ArrowRight, Store, CheckCircle, XCircle, Eye, Package, Settings, Loader2, Percent, DollarSign } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowRight, Store, CheckCircle, XCircle, Eye, Package, Settings, Loader2, Percent, MessageSquare, Trash2, Search, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
@@ -32,6 +33,16 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
   sold: { label: 'تم البيع', variant: 'outline' },
 };
 
+const transactionStatusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+  pending: { label: 'قيد الانتظار', variant: 'secondary' },
+  confirmed: { label: 'مؤكد', variant: 'default' },
+  shipped: { label: 'تم الشحن', variant: 'default' },
+  delivered: { label: 'تم التوصيل', variant: 'default' },
+  completed: { label: 'مكتمل', variant: 'default' },
+  cancelled: { label: 'ملغي', variant: 'destructive' },
+  disputed: { label: 'نزاع', variant: 'destructive' },
+};
+
 export default function AdminMarketplace() {
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -39,6 +50,8 @@ export default function AdminMarketplace() {
   const [selectedListing, setSelectedListing] = useState<any>(null);
   const [rejectionNotes, setRejectionNotes] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('pending');
+  const [conversationSearch, setConversationSearch] = useState('');
+  const [selectedConversation, setSelectedConversation] = useState<any>(null);
 
   // Fetch listings
   const { data: listings, isLoading: listingsLoading } = useQuery({
@@ -72,6 +85,105 @@ export default function AdminMarketplace() {
     enabled: isAdmin,
   });
 
+  // Fetch transactions
+  const { data: transactions, isLoading: transactionsLoading } = useQuery({
+    queryKey: ['admin-transactions'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('listing_transactions')
+        .select(`
+          *,
+          user_listings(title_ar, images)
+        `)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+
+      // Fetch buyer and seller profiles
+      if (data?.length) {
+        const userIds = [...new Set(data.flatMap(t => [t.buyer_id, t.seller_id]))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, username, phone_number')
+          .in('id', userIds);
+        const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        return data.map(t => ({
+          ...t,
+          buyer_profile: profilesMap.get(t.buyer_id),
+          seller_profile: profilesMap.get(t.seller_id),
+        }));
+      }
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  // Fetch conversations
+  const { data: conversations, isLoading: conversationsLoading } = useQuery({
+    queryKey: ['admin-conversations', conversationSearch],
+    queryFn: async () => {
+      let query = supabase
+        .from('listing_conversations')
+        .select(`
+          *,
+          user_listings(title_ar, images)
+        `)
+        .order('updated_at', { ascending: false });
+      
+      if (conversationSearch.trim()) {
+        query = query.ilike('conversation_code', `%${conversationSearch.trim()}%`);
+      }
+      
+      const { data, error } = await query;
+      if (error) throw error;
+
+      if (data?.length) {
+        const userIds = [...new Set(data.flatMap(c => [c.buyer_id, c.seller_id]))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, username')
+          .in('id', userIds);
+        const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        return data.map(c => ({
+          ...c,
+          buyer_profile: profilesMap.get(c.buyer_id),
+          seller_profile: profilesMap.get(c.seller_id),
+        }));
+      }
+      return data;
+    },
+    enabled: isAdmin,
+  });
+
+  // Fetch messages for selected conversation
+  const { data: conversationMessages } = useQuery({
+    queryKey: ['admin-conversation-messages', selectedConversation?.id],
+    queryFn: async () => {
+      if (!selectedConversation) return [];
+      const { data, error } = await supabase
+        .from('listing_messages')
+        .select('*')
+        .eq('conversation_id', selectedConversation.id)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+
+      // Fetch sender profiles
+      if (data?.length) {
+        const senderIds = [...new Set(data.map(m => m.sender_id))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, username')
+          .in('id', senderIds);
+        const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
+        return data.map(m => ({
+          ...m,
+          sender_profile: profilesMap.get(m.sender_id),
+        }));
+      }
+      return data;
+    },
+    enabled: !!selectedConversation,
+  });
+
   // Fetch fee settings
   const { data: feeSettings } = useQuery({
     queryKey: ['listing-fee-settings-admin'],
@@ -92,15 +204,17 @@ export default function AdminMarketplace() {
   const { data: stats } = useQuery({
     queryKey: ['marketplace-stats'],
     queryFn: async () => {
-      const [pending, approved, sold] = await Promise.all([
+      const [pending, approved, sold, disputed] = await Promise.all([
         supabase.from('user_listings').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
         supabase.from('user_listings').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
         supabase.from('user_listings').select('*', { count: 'exact', head: true }).eq('status', 'sold'),
+        supabase.from('listing_conversations').select('*', { count: 'exact', head: true }).eq('status', 'disputed'),
       ]);
       return {
         pending: pending.count || 0,
         approved: approved.count || 0,
         sold: sold.count || 0,
+        disputed: disputed.count || 0,
       };
     },
     enabled: isAdmin,
@@ -141,6 +255,56 @@ export default function AdminMarketplace() {
     },
   });
 
+  // Delete listing
+  const deleteMutation = useMutation({
+    mutationFn: async (listingId: string) => {
+      const { error } = await supabase
+        .from('user_listings')
+        .delete()
+        .eq('id', listingId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('تم حذف المنتج');
+      queryClient.invalidateQueries({ queryKey: ['admin-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['marketplace-stats'] });
+    },
+  });
+
+  // Update transaction status
+  const updateTransactionMutation = useMutation({
+    mutationFn: async ({ transactionId, status }: { transactionId: string; status: string }) => {
+      const updates: any = { status };
+      if (status === 'completed') {
+        updates.completed_at = new Date().toISOString();
+      }
+      const { error } = await supabase
+        .from('listing_transactions')
+        .update(updates)
+        .eq('id', transactionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('تم تحديث حالة الطلب');
+      queryClient.invalidateQueries({ queryKey: ['admin-transactions'] });
+    },
+  });
+
+  // Delete transaction
+  const deleteTransactionMutation = useMutation({
+    mutationFn: async (transactionId: string) => {
+      const { error } = await supabase
+        .from('listing_transactions')
+        .delete()
+        .eq('id', transactionId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('تم حذف الطلب');
+      queryClient.invalidateQueries({ queryKey: ['admin-transactions'] });
+    },
+  });
+
   // Update fee settings
   const updateFeeMutation = useMutation({
     mutationFn: async (values: any) => {
@@ -163,7 +327,7 @@ export default function AdminMarketplace() {
     },
   });
 
-  // Initialize fee form from settings - use useEffect to avoid infinite loops
+  // Initialize fee form from settings
   const [feeFormInitialized, setFeeFormInitialized] = useState(false);
   const [feeForm, setFeeForm] = useState({
     fee_type: 'percentage',
@@ -207,7 +371,7 @@ export default function AdminMarketplace() {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <Card className="cursor-pointer hover:border-primary/50" onClick={() => setStatusFilter('pending')}>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground">قيد المراجعة</CardTitle>
@@ -232,6 +396,14 @@ export default function AdminMarketplace() {
               <p className="text-3xl font-bold text-blue-500">{stats?.sold || 0}</p>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm text-muted-foreground">نزاعات</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-3xl font-bold text-red-500">{stats?.disputed || 0}</p>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="listings" className="space-y-6">
@@ -240,9 +412,17 @@ export default function AdminMarketplace() {
               <Package className="w-4 h-4" />
               المنتجات
             </TabsTrigger>
+            <TabsTrigger value="transactions" className="gap-2">
+              <Store className="w-4 h-4" />
+              الطلبات
+            </TabsTrigger>
+            <TabsTrigger value="conversations" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              المحادثات
+            </TabsTrigger>
             <TabsTrigger value="fees" className="gap-2">
               <Settings className="w-4 h-4" />
-              إعدادات الرسوم
+              الرسوم
             </TabsTrigger>
           </TabsList>
 
@@ -250,9 +430,9 @@ export default function AdminMarketplace() {
           <TabsContent value="listings">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <CardTitle>المنتجات المعروضة</CardTitle>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     {['all', 'pending', 'approved', 'rejected', 'sold'].map(status => (
                       <Button
                         key={status}
@@ -276,86 +456,296 @@ export default function AdminMarketplace() {
                     لا توجد منتجات
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>الصورة</TableHead>
-                        <TableHead>العنوان</TableHead>
-                        <TableHead>البائع</TableHead>
-                        <TableHead>السعر</TableHead>
-                        <TableHead>الحالة</TableHead>
-                        <TableHead>التاريخ</TableHead>
-                        <TableHead>إجراءات</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {listings?.map(listing => (
-                        <TableRow key={listing.id}>
-                          <TableCell>
-                            {listing.images?.[0] ? (
-                              <img src={listing.images[0]} alt="" className="w-12 h-12 object-cover rounded" />
-                            ) : (
-                              <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                                <Package className="w-5 h-5 text-muted-foreground" />
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{listing.title_ar}</p>
-                              <p className="text-xs text-muted-foreground">{conditionLabels[listing.condition]}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{(listing as any).seller_profile?.full_name || (listing as any).seller_profile?.username}</p>
-                              <p className="text-xs text-muted-foreground">{(listing as any).seller_profile?.phone_number}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="font-bold text-primary">{Number(listing.price).toLocaleString()}</span>
-                            <span className="text-xs text-muted-foreground mr-1">{listing.currency}</span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={statusConfig[listing.status]?.variant || 'secondary'}>
-                              {statusConfig[listing.status]?.label || listing.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm">{format(new Date(listing.created_at), 'dd MMM yyyy', { locale: ar })}</span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="ghost" onClick={() => setSelectedListing(listing)}>
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                              {listing.status === 'pending' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-green-500 hover:text-green-600"
-                                    onClick={() => approveMutation.mutate(listing.id)}
-                                    disabled={approveMutation.isPending}
-                                  >
-                                    <CheckCircle className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-red-500 hover:text-red-600"
-                                    onClick={() => setSelectedListing({ ...listing, showReject: true })}
-                                  >
-                                    <XCircle className="w-4 h-4" />
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>الصورة</TableHead>
+                          <TableHead>العنوان</TableHead>
+                          <TableHead>البائع</TableHead>
+                          <TableHead>السعر</TableHead>
+                          <TableHead>الحالة</TableHead>
+                          <TableHead>التاريخ</TableHead>
+                          <TableHead>إجراءات</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                      <TableBody>
+                        {listings?.map(listing => (
+                          <TableRow key={listing.id}>
+                            <TableCell>
+                              {listing.images?.[0] ? (
+                                <img src={listing.images[0]} alt="" className="w-12 h-12 object-cover rounded" />
+                              ) : (
+                                <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                                  <Package className="w-5 h-5 text-muted-foreground" />
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{listing.title_ar}</p>
+                                <p className="text-xs text-muted-foreground">{conditionLabels[listing.condition]}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <p className="font-medium">{(listing as any).seller_profile?.full_name || (listing as any).seller_profile?.username}</p>
+                                <p className="text-xs text-muted-foreground">{(listing as any).seller_profile?.phone_number}</p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-bold text-primary">{Number(listing.price).toLocaleString()}</span>
+                              <span className="text-xs text-muted-foreground mr-1">{listing.currency}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={statusConfig[listing.status]?.variant || 'secondary'}>
+                                {statusConfig[listing.status]?.label || listing.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm">{format(new Date(listing.created_at), 'dd MMM yyyy', { locale: ar })}</span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="ghost" onClick={() => setSelectedListing(listing)}>
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                                {listing.status === 'pending' && (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-green-500 hover:text-green-600"
+                                      onClick={() => approveMutation.mutate(listing.id)}
+                                      disabled={approveMutation.isPending}
+                                    >
+                                      <CheckCircle className="w-4 h-4" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="text-red-500 hover:text-red-600"
+                                      onClick={() => setSelectedListing({ ...listing, showReject: true })}
+                                    >
+                                      <XCircle className="w-4 h-4" />
+                                    </Button>
+                                  </>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => {
+                                    if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                                      deleteMutation.mutate(listing.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Transactions Tab */}
+          <TabsContent value="transactions">
+            <Card>
+              <CardHeader>
+                <CardTitle>طلبات الشراء</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {transactionsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                ) : transactions?.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    لا توجد طلبات
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>المنتج</TableHead>
+                          <TableHead>المشتري</TableHead>
+                          <TableHead>البائع</TableHead>
+                          <TableHead>المبلغ</TableHead>
+                          <TableHead>الحالة</TableHead>
+                          <TableHead>التاريخ</TableHead>
+                          <TableHead>إجراءات</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {transactions?.map(transaction => (
+                          <TableRow key={transaction.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {(transaction.user_listings as any)?.images?.[0] && (
+                                  <img src={(transaction.user_listings as any).images[0]} alt="" className="w-10 h-10 object-cover rounded" />
+                                )}
+                                <span className="text-sm">{(transaction.user_listings as any)?.title_ar || 'منتج'}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-sm">{(transaction as any).buyer_profile?.full_name || (transaction as any).buyer_profile?.username}</p>
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-sm">{(transaction as any).seller_profile?.full_name || (transaction as any).seller_profile?.username}</p>
+                            </TableCell>
+                            <TableCell>
+                              <span className="font-bold text-primary">{Number(transaction.amount).toLocaleString()}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant={transactionStatusConfig[transaction.status]?.variant || 'secondary'}>
+                                {transactionStatusConfig[transaction.status]?.label || transaction.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm">{format(new Date(transaction.created_at), 'dd MMM yyyy', { locale: ar })}</span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex gap-2 items-center">
+                                <Select
+                                  value={transaction.status}
+                                  onValueChange={(value) => updateTransactionMutation.mutate({ transactionId: transaction.id, status: value })}
+                                >
+                                  <SelectTrigger className="w-28 h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">قيد الانتظار</SelectItem>
+                                    <SelectItem value="confirmed">مؤكد</SelectItem>
+                                    <SelectItem value="shipped">تم الشحن</SelectItem>
+                                    <SelectItem value="delivered">تم التوصيل</SelectItem>
+                                    <SelectItem value="completed">مكتمل</SelectItem>
+                                    <SelectItem value="cancelled">ملغي</SelectItem>
+                                    <SelectItem value="disputed">نزاع</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  className="text-destructive hover:text-destructive"
+                                  onClick={() => {
+                                    if (confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
+                                      deleteTransactionMutation.mutate(transaction.id);
+                                    }
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Conversations Tab */}
+          <TabsContent value="conversations">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5" />
+                    المحادثات
+                  </CardTitle>
+                  <div className="relative w-64">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="البحث بكود المحادثة..."
+                      className="pr-9"
+                      value={conversationSearch}
+                      onChange={(e) => setConversationSearch(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {conversationsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                  </div>
+                ) : conversations?.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    لا توجد محادثات
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>الكود</TableHead>
+                          <TableHead>المنتج</TableHead>
+                          <TableHead>المشتري</TableHead>
+                          <TableHead>البائع</TableHead>
+                          <TableHead>الحالة</TableHead>
+                          <TableHead>آخر تحديث</TableHead>
+                          <TableHead>إجراءات</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {conversations?.map(conv => (
+                          <TableRow key={conv.id}>
+                            <TableCell>
+                              <Badge variant="outline" className="font-mono">
+                                {conv.conversation_code || 'N/A'}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {(conv.user_listings as any)?.images?.[0] && (
+                                  <img src={(conv.user_listings as any).images[0]} alt="" className="w-10 h-10 object-cover rounded" />
+                                )}
+                                <span className="text-sm">{(conv.user_listings as any)?.title_ar || 'منتج'}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-sm">{(conv as any).buyer_profile?.full_name || (conv as any).buyer_profile?.username}</p>
+                            </TableCell>
+                            <TableCell>
+                              <p className="text-sm">{(conv as any).seller_profile?.full_name || (conv as any).seller_profile?.username}</p>
+                            </TableCell>
+                            <TableCell>
+                              {conv.status === 'disputed' ? (
+                                <Badge variant="destructive" className="gap-1">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  نزاع
+                                </Badge>
+                              ) : conv.admin_joined ? (
+                                <Badge variant="default">الإدارة منضمة</Badge>
+                              ) : (
+                                <Badge variant="outline">{conv.status}</Badge>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm">{format(new Date(conv.updated_at), 'dd MMM HH:mm', { locale: ar })}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Button size="sm" variant="outline" onClick={() => setSelectedConversation(conv)}>
+                                <Eye className="w-4 h-4 ml-1" />
+                                عرض
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -483,12 +873,6 @@ export default function AdminMarketplace() {
                       {selectedListing.images?.map((img: string, idx: number) => (
                         <img key={idx} src={img} alt="" className="w-32 h-32 object-cover rounded-lg" />
                       ))}
-                      {selectedListing.purchase_receipt_url && (
-                        <div className="relative">
-                          <img src={selectedListing.purchase_receipt_url} alt="وصل الشراء" className="w-32 h-32 object-cover rounded-lg border-2 border-primary" />
-                          <Badge className="absolute top-1 right-1 text-xs">وصل الشراء</Badge>
-                        </div>
-                      )}
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -549,6 +933,80 @@ export default function AdminMarketplace() {
                     )}
                   </>
                 )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Conversation Messages Dialog */}
+        <Dialog open={!!selectedConversation} onOpenChange={() => setSelectedConversation(null)}>
+          <DialogContent className="max-w-2xl max-h-[90vh]">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                سجل المحادثة
+                {selectedConversation?.conversation_code && (
+                  <Badge variant="outline" className="font-mono mr-2">
+                    {selectedConversation.conversation_code}
+                  </Badge>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+
+            {selectedConversation && (
+              <div className="space-y-4">
+                {/* Product Info */}
+                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                  {(selectedConversation.user_listings as any)?.images?.[0] && (
+                    <img 
+                      src={(selectedConversation.user_listings as any).images[0]} 
+                      alt="" 
+                      className="w-12 h-12 object-cover rounded" 
+                    />
+                  )}
+                  <div>
+                    <p className="font-medium">{(selectedConversation.user_listings as any)?.title_ar}</p>
+                    <p className="text-sm text-muted-foreground">
+                      المشتري: {(selectedConversation as any).buyer_profile?.full_name || 'غير معروف'} • 
+                      البائع: {(selectedConversation as any).seller_profile?.full_name || 'غير معروف'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <div className="h-[400px] overflow-y-auto space-y-3 p-3 bg-muted/20 rounded-lg">
+                  {conversationMessages?.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-8">
+                      لا توجد رسائل
+                    </div>
+                  ) : (
+                    conversationMessages?.map((msg: any) => (
+                      <div
+                        key={msg.id}
+                        className={`flex flex-col ${msg.sender_id === selectedConversation.buyer_id ? 'items-end' : 'items-start'}`}
+                      >
+                        <div className="text-xs text-muted-foreground mb-1">
+                          {msg.sender_profile?.full_name || msg.sender_profile?.username}
+                        </div>
+                        <div
+                          className={`max-w-[80%] p-3 rounded-lg ${
+                            msg.sender_id === selectedConversation.buyer_id
+                              ? 'bg-primary text-primary-foreground'
+                              : 'bg-card border'
+                          }`}
+                        >
+                          {msg.image_url && (
+                            <img src={msg.image_url} alt="" className="max-w-[200px] rounded mb-2" />
+                          )}
+                          <p className="text-sm">{msg.content}</p>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground mt-1">
+                          {format(new Date(msg.created_at), 'HH:mm dd/MM', { locale: ar })}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </DialogContent>
