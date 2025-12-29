@@ -10,18 +10,18 @@ interface Listing {
   price: number;
   currency: string;
   condition: string;
-  images: string[];
+  images: string[] | null;
   location: string | null;
-  views_count: number;
+  views_count: number | null;
   seller_id: string;
   shipping_method: string;
   categories?: { name_ar: string } | null;
 }
 
 interface SellerProfile {
-  average_rating: number;
-  completed_orders: number;
-  is_verified: boolean;
+  average_rating: number | null;
+  completed_orders: number | null;
+  is_verified: boolean | null;
 }
 
 interface ListingCardProps {
@@ -89,10 +89,10 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
               )}
               <div className="flex items-center gap-1">
                 <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                <span>{sellerProfile.average_rating.toFixed(1)}</span>
+                <span>{(sellerProfile.average_rating ?? 0).toFixed(1)}</span>
               </div>
               <span>•</span>
-              <span>{sellerProfile.completed_orders} طلب مكتمل</span>
+              <span>{sellerProfile.completed_orders ?? 0} طلب مكتمل</span>
             </div>
           )}
 
@@ -106,7 +106,7 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
             )}
             <span className="flex items-center gap-1">
               <Eye className="w-3 h-3" />
-              {listing.views_count}
+              {listing.views_count ?? 0}
             </span>
           </div>
         </div>
