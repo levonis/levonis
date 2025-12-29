@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Package, Eye, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2, Tag } from 'lucide-react';
+import { Package, Eye, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2, Tag, X } from 'lucide-react';
 
 // Format relative time in Arabic (Baghdad timezone UTC+3)
 const formatRelativeTime = (dateString: string): string => {
@@ -191,13 +191,19 @@ export const MyListings = ({ children }: MyListingsProps) => {
           )}
         </DialogTrigger>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
+          {/* Close Button */}
+          <button
+            onClick={() => setOpen(false)}
+            className="absolute left-3 top-3 z-50 bg-background/90 backdrop-blur-sm rounded-full p-2 hover:bg-muted shadow-lg border border-border transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
           <DialogHeader className="p-4 pb-2 sticky top-0 bg-background z-10 border-b">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-right flex items-center gap-2">
-                <Package className="w-5 h-5" />
-                منتجاتي المعروضة
-              </DialogTitle>
-            </div>
+            <DialogTitle className="text-right flex items-center gap-2">
+              <Package className="w-5 h-5" />
+              منتجاتي المعروضة
+            </DialogTitle>
             <DialogDescription>إدارة منتجاتك في سوق المستعمل</DialogDescription>
           </DialogHeader>
 
@@ -258,12 +264,14 @@ export const MyListings = ({ children }: MyListingsProps) => {
                           </span>
                         </div>
 
-                        {/* Relative Time */}
+                        {/* Relative Time - Icon only for views */}
                         <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mb-2">
                           <Clock className="w-3 h-3" />
                           <span>{formatRelativeTime(listing.created_at)}</span>
                           <span>•</span>
-                          <Eye className="w-3 h-3" />
+                          <span title="المشاهدات">
+                            <Eye className="w-3 h-3 inline" />
+                          </span>
                           <span>{listing.views_count || 0}</span>
                         </div>
 
