@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,24 +23,35 @@ import {
   ShieldCheck,
   Loader2,
   Image as ImageIcon,
+  Package,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 interface ListingConversationsProps {
   children?: React.ReactNode;
+  listingId?: string;
+  onClose?: () => void;
 }
 
-export const ListingConversations = ({ children }: ListingConversationsProps) => {
+export const ListingConversations = ({ children, listingId, onClose }: ListingConversationsProps) => {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!listingId);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto open if listingId is provided
+  useEffect(() => {
+    if (listingId) {
+      setOpen(true);
+    }
+  }, [listingId]);
 
   // Fetch conversations
   const { data: conversations, isLoading: loadingConversations } = useQuery({
-    queryKey: ['listing-conversations', user?.id],
+    queryKey: ['listing-conversations', user?.id, listingId],
     queryFn: async () => {
       if (!user) return [];
       
@@ -51,7 +63,9 @@ export const ListingConversations = ({ children }: ListingConversationsProps) =>
         `)
         .order('updated_at', { ascending: false });
       
-      if (!isAdmin) {
+      if (listingId) {
+        query = query.eq('listing_id', listingId);
+      } else if (!isAdmin) {
         query = query.or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
       }
       
@@ -60,6 +74,28 @@ export const ListingConversations = ({ children }: ListingConversationsProps) =>
       return data;
     },
     enabled: !!user && open,
+  });
+
+  // Fetch buyer/seller profiles
+  const { data: profiles } = useQuery({
+    queryKey: ['conversation-profiles', conversations?.map(c => [c.buyer_id, c.seller_id]).flat()],
+    queryFn: async () => {
+      if (!conversations?.length) return {};
+      
+      const userIds = [...new Set(conversations.flatMap(c => [c.buyer_id, c.seller_id]))];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, username')
+        .in('id', userIds);
+      
+      if (error) throw error;
+      
+      return data?.reduce((acc, p) => {
+        acc[p.id] = p;
+        return acc;
+      }, {} as Record<string, typeof data[0]>) || {};
+    },
+    enabled: !!conversations?.length,
   });
 
   // Fetch messages for selected conversation
@@ -78,8 +114,13 @@ export const ListingConversations = ({ children }: ListingConversationsProps) =>
       return data;
     },
     enabled: !!selectedConversation,
-    refetchInterval: 5000, // Poll for new messages
+    refetchInterval: 5000,
   });
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // Send message mutation
   const sendMessageMutation = useMutation({
@@ -100,7 +141,6 @@ export const ListingConversations = ({ children }: ListingConversationsProps) =>
       
       if (error) throw error;
       
-      // Update conversation updated_at
       await supabase
         .from('listing_conversations')
         .update({ updated_at: new Date().toISOString() })
@@ -143,26 +183,35 @@ export const ListingConversations = ({ children }: ListingConversationsProps) =>
     }
   };
 
+  const handleClose = () => {
+    setOpen(false);
+    setSelectedConversation(null);
+    if (onClose) onClose();
+  };
+
   const selectedConv = conversations?.find(c => c.id === selectedConversation);
   const isBuyer = selectedConv?.buyer_id === user?.id;
   const isSeller = selectedConv?.seller_id === user?.id;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children || (
-          <Button variant="outline" size="sm" className="gap-2">
-            <MessageSquare className="w-4 h-4" />
-            المحادثات
-          </Button>
-        )}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={handleClose}>
+      {!listingId && (
+        <DialogTrigger asChild>
+          {children || (
+            <Button variant="outline" size="sm" className="gap-2">
+              <MessageSquare className="w-4 h-4" />
+              المحادثات
+            </Button>
+          )}
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-4xl h-[80vh] p-0 flex flex-col">
         <DialogHeader className="p-4 border-b">
           <DialogTitle className="text-right flex items-center gap-2">
             <MessageSquare className="w-5 h-5" />
-            محادثات المبيعات
+            {listingId ? 'محادثات المنتج' : 'محادثات المبيعات'}
           </DialogTitle>
+          <DialogDescription>التواصل مع المشترين والبائعين</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-1 min-h-0">
@@ -184,50 +233,59 @@ export const ListingConversations = ({ children }: ListingConversationsProps) =>
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {conversations?.map(conv => (
-                  <button
-                    key={conv.id}
-                    onClick={() => setSelectedConversation(conv.id)}
-                    className={`w-full p-3 text-right hover:bg-muted/50 transition-colors ${
-                      selectedConversation === conv.id ? 'bg-muted' : ''
-                    }`}
-                  >
-                    <div className="flex gap-3">
-                      {conv.user_listings?.images?.[0] ? (
-                        <img
-                          src={conv.user_listings.images[0]}
-                          alt=""
-                          className="w-12 h-12 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
-                          <ImageIcon className="w-5 h-5 text-muted-foreground" />
-                        </div>
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium truncate text-sm">
-                          {conv.user_listings?.title_ar}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {conv.buyer_id === user?.id ? 'أنت المشتري' : 'أنت البائع'}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {conv.status === 'disputed' && (
-                            <Badge variant="destructive" className="text-xs py-0">
-                              نزاع
-                            </Badge>
-                          )}
-                          {conv.admin_joined && (
-                            <Badge variant="secondary" className="text-xs py-0">
-                              <ShieldCheck className="w-3 h-3 ml-1" />
-                              الإدارة
-                            </Badge>
-                          )}
+                {conversations?.map(conv => {
+                  const otherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
+                  const otherUser = profiles?.[otherUserId];
+                  const isCurrentUser = conv.buyer_id === user?.id || conv.seller_id === user?.id;
+                  const role = conv.buyer_id === user?.id ? 'مشتري' : 'بائع';
+                  
+                  return (
+                    <button
+                      key={conv.id}
+                      onClick={() => setSelectedConversation(conv.id)}
+                      className={`w-full p-3 text-right hover:bg-muted/50 transition-colors ${
+                        selectedConversation === conv.id ? 'bg-muted' : ''
+                      }`}
+                    >
+                      <div className="flex gap-3">
+                        {(conv.user_listings as any)?.images?.[0] ? (
+                          <img
+                            src={(conv.user_listings as any).images[0]}
+                            alt=""
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center">
+                            <Package className="w-5 h-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate text-sm">
+                            {(conv.user_listings as any)?.title_ar}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {otherUser?.full_name || otherUser?.username || 'مستخدم'}
+                            <span className="mx-1">•</span>
+                            <span className="text-primary">{role}</span>
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {conv.status === 'disputed' && (
+                              <Badge variant="destructive" className="text-xs py-0">
+                                نزاع
+                              </Badge>
+                            )}
+                            {conv.admin_joined && (
+                              <Badge variant="secondary" className="text-xs py-0">
+                                <ShieldCheck className="w-3 h-3 ml-1" />
+                                الإدارة
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -245,9 +303,9 @@ export const ListingConversations = ({ children }: ListingConversationsProps) =>
                     <ArrowRight className="w-5 h-5" />
                   </button>
                   <div className="flex-1 text-center">
-                    <p className="font-medium text-sm">{selectedConv?.user_listings?.title_ar}</p>
+                    <p className="font-medium text-sm">{(selectedConv?.user_listings as any)?.title_ar}</p>
                     <p className="text-xs text-muted-foreground">
-                      {Number(selectedConv?.user_listings?.price).toLocaleString()} {selectedConv?.user_listings?.currency}
+                      {Number((selectedConv?.user_listings as any)?.price).toLocaleString()} {(selectedConv?.user_listings as any)?.currency}
                     </p>
                   </div>
                   {(isBuyer || isSeller) && selectedConv?.status !== 'disputed' && (
@@ -283,6 +341,8 @@ export const ListingConversations = ({ children }: ListingConversationsProps) =>
                     <div className="space-y-3">
                       {messages?.map(msg => {
                         const isMe = msg.sender_id === user?.id;
+                        const sender = profiles?.[msg.sender_id];
+                        
                         return (
                           <div
                             key={msg.id}
@@ -295,7 +355,12 @@ export const ListingConversations = ({ children }: ListingConversationsProps) =>
                                   : 'bg-muted'
                               }`}
                             >
-                              <p className="text-sm">{msg.content}</p>
+                              {!isMe && (
+                                <p className="text-xs font-medium mb-1 opacity-70">
+                                  {sender?.full_name || sender?.username}
+                                </p>
+                              )}
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                               {msg.image_url && (
                                 <img
                                   src={msg.image_url}
@@ -310,6 +375,7 @@ export const ListingConversations = ({ children }: ListingConversationsProps) =>
                           </div>
                         );
                       })}
+                      <div ref={messagesEndRef} />
                     </div>
                   )}
                 </ScrollArea>
