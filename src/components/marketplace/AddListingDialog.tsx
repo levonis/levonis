@@ -211,62 +211,73 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
     setPurchaseReceiptUrl(null);
   };
 
-  const [showCropOption, setShowCropOption] = useState(false);
-  const [pendingFile, setPendingFile] = useState<File | null>(null);
-
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-    
-    // Show crop option dialog
-    setPendingFile(file);
-    setShowCropOption(true);
+    if (!file || !user) return;
     
     // Reset input
     e.target.value = '';
-  };
-
-  const handleCropChoice = (shouldCrop: boolean) => {
-    if (!pendingFile) return;
-    
-    if (shouldCrop) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImageToCrop(event.target?.result as string);
-        setEditingImageIndex(null);
-        setCropDialogOpen(true);
-      };
-      reader.readAsDataURL(pendingFile);
-    } else {
-      // Upload directly without cropping
-      handleDirectUpload(pendingFile);
-    }
-    
-    setShowCropOption(false);
-    setPendingFile(null);
-  };
-
-  const handleDirectUpload = async (file: File) => {
-    if (!user) return;
     
     setUploading(true);
     try {
-      const fileName = `${user.id}/${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage
-        .from('listing-images')
-        .upload(fileName, file);
+      // Create canvas to crop image to square automatically
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
       
-      if (uploadError) throw uploadError;
+      img.onload = async () => {
+        URL.revokeObjectURL(objectUrl);
+        
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas context error');
+        
+        // Calculate square crop dimensions (center crop)
+        const size = Math.min(img.width, img.height);
+        const x = (img.width - size) / 2;
+        const y = (img.height - size) / 2;
+        
+        // Set canvas size (max 1024px for optimization)
+        const outputSize = Math.min(size, 1024);
+        canvas.width = outputSize;
+        canvas.height = outputSize;
+        
+        // Draw cropped square image
+        ctx.drawImage(img, x, y, size, size, 0, 0, outputSize, outputSize);
+        
+        // Convert to blob
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            toast.error('فشل معالجة الصورة');
+            setUploading(false);
+            return;
+          }
+          
+          const fileName = `${user.id}/${Date.now()}.jpg`;
+          const { error: uploadError } = await supabase.storage
+            .from('listing-images')
+            .upload(fileName, blob, { contentType: 'image/jpeg' });
+          
+          if (uploadError) throw uploadError;
+          
+          const { data: { publicUrl } } = supabase.storage
+            .from('listing-images')
+            .getPublicUrl(fileName);
+          
+          setImages(prev => [...prev, publicUrl]);
+          setUploading(false);
+        }, 'image/jpeg', 0.9);
+      };
       
-      const { data: { publicUrl } } = supabase.storage
-        .from('listing-images')
-        .getPublicUrl(fileName);
+      img.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        toast.error('فشل تحميل الصورة');
+        setUploading(false);
+      };
       
-      setImages(prev => [...prev, publicUrl]);
+      img.src = objectUrl;
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('فشل رفع الصورة');
-    } finally {
       setUploading(false);
     }
   };
@@ -413,10 +424,10 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
               </div>
             )}
 
-            {/* Images with Cropping */}
+            {/* Images - Auto Square Crop */}
             <div className="space-y-3">
-              <Label>صور المنتج (مربعة) *</Label>
-              <p className="text-xs text-muted-foreground">اسحب الصور لإعادة ترتيبها. الصورة الأولى ستظهر كصورة رئيسية.</p>
+              <Label>صور المنتج *</Label>
+              <p className="text-xs text-muted-foreground">يتم قص الصور تلقائياً بشكل مربع. اسحب لإعادة الترتيب.</p>
               
               <SortableImageList
                 images={images}
@@ -438,6 +449,7 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
                   onChange={handleImageSelect}
                   className="hidden"
                   disabled={uploading}
+                  readOnly
                 />
               </label>
             </div>
@@ -621,34 +633,7 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
         </DialogContent>
       </Dialog>
 
-      {/* Crop Option Dialog */}
-      <Dialog open={showCropOption} onOpenChange={setShowCropOption}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-center">خيارات الصورة</DialogTitle>
-            <DialogDescription className="text-center">
-              هل تريد قص الصورة قبل الرفع؟
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex gap-3 pt-4">
-            <Button 
-              onClick={() => handleCropChoice(true)} 
-              className="flex-1"
-              variant="outline"
-            >
-              قص الصورة
-            </Button>
-            <Button 
-              onClick={() => handleCropChoice(false)} 
-              className="flex-1"
-            >
-              رفع مباشرة
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Image Cropper */}
+      {/* Image Cropper for editing */}
       {imageToCrop && (
         <ImageCropper
           open={cropDialogOpen}
