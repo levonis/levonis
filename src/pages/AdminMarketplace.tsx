@@ -163,17 +163,20 @@ export default function AdminMarketplace() {
     },
   });
 
+  // Initialize fee form from settings - use useEffect to avoid infinite loops
+  const [feeFormInitialized, setFeeFormInitialized] = useState(false);
   const [feeForm, setFeeForm] = useState({
-    fee_type: feeSettings?.fee_type || 'percentage',
-    fee_value: feeSettings?.fee_value || 5,
-    min_fee: feeSettings?.min_fee || 0,
-    max_fee: feeSettings?.max_fee || null,
-    terms_ar: feeSettings?.terms_ar || 'يتم خصم رسوم المنصة من رصيد المحفظة عند إضافة المنتج',
-    is_active: feeSettings?.is_active ?? true,
+    fee_type: 'percentage',
+    fee_value: 5,
+    min_fee: 0,
+    max_fee: null as number | null,
+    terms_ar: 'يتم خصم رسوم المنصة من رصيد المحفظة عند إضافة المنتج',
+    is_active: true,
   });
 
-  // Update form when settings load
-  if (feeSettings && feeForm.fee_value !== feeSettings.fee_value) {
+  // Update form when settings load (only once)
+  if (feeSettings && !feeFormInitialized) {
+    setFeeFormInitialized(true);
     setFeeForm({
       fee_type: feeSettings.fee_type,
       fee_value: feeSettings.fee_value,
