@@ -58,13 +58,13 @@ interface ListingCardProps {
   sellerName?: string;
 }
 
-const conditionLabels: Record<string, { label: string; color: string }> = {
-  new: { label: 'جديد', color: 'bg-green-500 text-white' },
-  like_new: { label: 'شبه جديد', color: 'bg-emerald-500 text-white' },
-  excellent: { label: 'ممتاز', color: 'bg-blue-500 text-white' },
-  good: { label: 'جيد', color: 'bg-yellow-500 text-white' },
-  used: { label: 'مستعمل', color: 'bg-orange-500 text-white' },
-  for_parts: { label: 'للقطع', color: 'bg-red-500 text-white' },
+const conditionLabels: Record<string, { label: string; bgClass: string }> = {
+  new: { label: 'جديد', bgClass: 'bg-emerald-600' },
+  like_new: { label: 'شبه جديد', bgClass: 'bg-teal-600' },
+  excellent: { label: 'ممتاز', bgClass: 'bg-blue-600' },
+  good: { label: 'جيد', bgClass: 'bg-amber-600' },
+  used: { label: 'مستعمل', bgClass: 'bg-orange-600' },
+  for_parts: { label: 'للقطع', bgClass: 'bg-red-600' },
 };
 
 export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardProps) => {
@@ -99,7 +99,6 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
             {listing.title_ar}
           </h3>
 
-          {/* Price & Condition */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-baseline gap-1">
               <span className="font-bold text-primary text-base">
@@ -107,12 +106,11 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
               </span>
               <span className="text-[10px] text-muted-foreground">{listing.currency}</span>
             </div>
-            <Badge className={`${condition.color} border-0 text-[9px] px-1.5 py-0`}>
+            <Badge className={`${condition.bgClass} text-white border-0 text-[9px] px-1.5 py-0`}>
               {condition.label}
             </Badge>
           </div>
 
-          {/* Info Row */}
           <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/50">
             <div className="flex items-center gap-1.5">
               {listing.location && (

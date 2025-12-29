@@ -991,6 +991,35 @@ export type Database = {
           },
         ]
       }
+      listing_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_favorites_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_fees_settings: {
         Row: {
           created_at: string
@@ -1029,6 +1058,35 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      listing_likes: {
+        Row: {
+          created_at: string
+          id: string
+          listing_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          listing_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          listing_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_likes_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       listing_messages: {
         Row: {
@@ -2020,6 +2078,7 @@ export type Database = {
           expires_at: string | null
           id: string
           images: string[] | null
+          likes_count: number | null
           location: string | null
           price: number
           seller_id: string
@@ -2042,6 +2101,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           images?: string[] | null
+          likes_count?: number | null
           location?: string | null
           price: number
           seller_id: string
@@ -2064,6 +2124,7 @@ export type Database = {
           expires_at?: string | null
           id?: string
           images?: string[] | null
+          likes_count?: number | null
           location?: string | null
           price?: number
           seller_id?: string
