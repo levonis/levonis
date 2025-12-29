@@ -37,12 +37,12 @@ interface ListingConversationsProps {
 export const ListingConversations = ({ children, listingId, onClose }: ListingConversationsProps) => {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(!listingId);
+  const [open, setOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Auto open if listingId is provided
+  // Auto open if listingId is provided (called programmatically)
   useEffect(() => {
     if (listingId) {
       setOpen(true);
