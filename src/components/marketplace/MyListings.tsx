@@ -186,11 +186,13 @@ export const MyListings = ({ children }: MyListingsProps) => {
           )}
         </DialogTrigger>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
-          <DialogHeader className="p-4 pb-0 sticky top-0 bg-background z-10 border-b">
-            <DialogTitle className="text-right flex items-center gap-2">
-              <Package className="w-5 h-5" />
-              منتجاتي المعروضة
-            </DialogTitle>
+          <DialogHeader className="p-4 pb-2 sticky top-0 bg-background z-10 border-b">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-right flex items-center gap-2">
+                <Package className="w-5 h-5" />
+                منتجاتي المعروضة
+              </DialogTitle>
+            </div>
             <DialogDescription>إدارة منتجاتك في سوق المستعمل</DialogDescription>
           </DialogHeader>
 
