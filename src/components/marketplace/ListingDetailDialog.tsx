@@ -403,43 +403,42 @@ export const ListingDetailDialog = ({
             {/* Details */}
             <div className="lg:w-3/5 p-3 sm:p-4 space-y-3 sm:space-y-4">
               {/* Action Icons Row */}
-              <div className="flex items-center justify-end gap-0.5 sm:gap-1">
+              <div className="flex items-center justify-end gap-1 sm:gap-2">
+                {/* Share Button */}
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
-                  className="h-7 sm:h-8 px-1.5 sm:px-2 gap-0.5 sm:gap-1"
+                  className="h-7 sm:h-8 px-2 sm:px-2.5 gap-1"
                   onClick={handleShare}
                   title="مشاركة"
                 >
                   <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span className="text-[10px] sm:text-xs">مشاركة</span>
                 </Button>
-                {user && !isOwnListing && (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-7 sm:h-8 px-1.5 sm:px-2 gap-0.5 sm:gap-1 ${isLiked ? 'text-blue-500' : ''}`}
-                      onClick={() => toggleLikeMutation.mutate()}
-                      disabled={toggleLikeMutation.isPending}
-                      title="إعجاب"
-                    >
-                      <ThumbsUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLiked ? 'fill-current' : ''}`} />
-                      <span className="text-[10px] sm:text-xs">{likesCount || 0}</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-7 sm:h-8 px-1.5 sm:px-2 gap-0.5 sm:gap-1 ${isFavorite ? 'text-red-500' : ''}`}
-                      onClick={() => toggleFavoriteMutation.mutate()}
-                      disabled={toggleFavoriteMutation.isPending}
-                      title={isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
-                    >
-                      <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isFavorite ? 'fill-current' : ''}`} />
-                      <span className="text-[10px] sm:text-xs">حفظ</span>
-                    </Button>
-                  </>
-                )}
+                
+                {/* Like Button - Always visible */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`h-7 sm:h-8 px-2 sm:px-2.5 gap-1 ${isLiked ? 'text-blue-500 border-blue-500' : ''}`}
+                  onClick={() => user ? toggleLikeMutation.mutate() : toast.error('يجب تسجيل الدخول')}
+                  disabled={toggleLikeMutation.isPending}
+                  title="إعجاب"
+                >
+                  <ThumbsUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLiked ? 'fill-current' : ''}`} />
+                  <span className="text-[10px] sm:text-xs font-medium">{likesCount || 0}</span>
+                </Button>
+                
+                {/* Favorite Button - Always visible */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className={`h-7 sm:h-8 px-2 sm:px-2.5 gap-1 ${isFavorite ? 'text-red-500 border-red-500' : ''}`}
+                  onClick={() => user ? toggleFavoriteMutation.mutate() : toast.error('يجب تسجيل الدخول')}
+                  disabled={toggleFavoriteMutation.isPending}
+                  title={isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+                >
+                  <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isFavorite ? 'fill-current' : ''}`} />
+                </Button>
               </div>
 
               {/* Title & Condition */}
