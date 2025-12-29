@@ -60,18 +60,18 @@ export const MarketplaceSection = () => {
       <div className="border-t border-border mb-8" />
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <Store className="w-6 h-6 text-primary" />
-          <h2 className="text-2xl font-black text-primary">سوق المستعمل</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <div className="flex items-center gap-2">
+          <Store className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+          <h2 className="text-xl sm:text-2xl font-black text-primary">سوق المستعمل</h2>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-muted-foreground">منتجات من أعضاء المجتمع</span>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <span className="text-xs sm:text-sm text-muted-foreground">منتجات من أعضاء المجتمع</span>
           {showAllButton && (
             <Link to="/marketplace">
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm h-8">
                 عرض الكل
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3.5 h-3.5" />
               </Button>
             </Link>
           )}
@@ -80,32 +80,35 @@ export const MarketplaceSection = () => {
 
       {/* Action Buttons - Ordered: Add, My Products, Conversations */}
       {user && (
-        <div className="flex flex-wrap gap-3 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4">
           <AddListingDialog>
-            <Button size="sm" className="gap-2">
-              <Plus className="w-4 h-4" />
-              أضف منتج للبيع
+            <Button size="sm" className="gap-1.5 text-xs sm:text-sm h-8 px-2.5 sm:px-3">
+              <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">أضف منتج</span>
+              <span className="xs:hidden">إضافة</span>
             </Button>
           </AddListingDialog>
           
           <MyListings>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Package className="w-4 h-4" />
-              منتجاتي
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm h-8 px-2.5 sm:px-3">
+              <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">منتجاتي</span>
+              <span className="xs:hidden">منتجاتي</span>
             </Button>
           </MyListings>
           
           <ListingConversations>
-            <Button variant="outline" size="sm" className="gap-2">
-              <MessageSquare className="w-4 h-4" />
-              المحادثات
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm h-8 px-2.5 sm:px-3">
+              <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden xs:inline">المحادثات</span>
+              <span className="xs:hidden">محادثات</span>
             </Button>
           </ListingConversations>
         </div>
       )}
 
       {/* Light separator before products */}
-      <div className="border-t border-border/50 mb-6" />
+      <div className="border-t border-border/50 mb-4 sm:mb-6" />
 
       {/* Listings Grid */}
       {isLoading ? (
