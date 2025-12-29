@@ -954,6 +954,7 @@ export type Database = {
         Row: {
           admin_joined: boolean | null
           buyer_id: string
+          conversation_code: string | null
           created_at: string
           id: string
           listing_id: string
@@ -964,6 +965,7 @@ export type Database = {
         Insert: {
           admin_joined?: boolean | null
           buyer_id: string
+          conversation_code?: string | null
           created_at?: string
           id?: string
           listing_id: string
@@ -974,6 +976,7 @@ export type Database = {
         Update: {
           admin_joined?: boolean | null
           buyer_id?: string
+          conversation_code?: string | null
           created_at?: string
           id?: string
           listing_id?: string
@@ -2396,6 +2399,7 @@ export type Database = {
         Args: { comp_id: string }
         Returns: Json
       }
+      generate_conversation_code: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       generate_referral_code:
         | { Args: never; Returns: string }

@@ -196,12 +196,37 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       if (!selectedConversation) return;
       const { error } = await supabase
         .from('listing_conversations')
-        .update({ status: 'disputed', admin_joined: true })
+        .update({ status: 'disputed' })
         .eq('id', selectedConversation);
       if (error) throw error;
+
+      // Get conversation code for notification
+      const { data: conv } = await supabase
+        .from('listing_conversations')
+        .select('conversation_code')
+        .eq('id', selectedConversation)
+        .single();
+
+      // Create notification for admins
+      const { data: admins } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'admin');
+
+      if (admins?.length) {
+        await supabase.from('notifications').insert(
+          admins.map(admin => ({
+            user_id: admin.user_id,
+            title: 'طلب تدخل في محادثة السوق',
+            message: `تم طلب تدخل الإدارة في محادثة برمز: ${conv?.conversation_code || 'غير معروف'}`,
+            type: 'warning',
+            related_id: selectedConversation,
+          }))
+        );
+      }
     },
     onSuccess: () => {
-      toast.success('تم طلب تدخل الإدارة');
+      toast.success('تم طلب تدخل الإدارة - سيتم إعلام الإدارة');
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
     },
   });
@@ -340,9 +365,16 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         {/* Content */}
                         <div className="flex-1 min-w-0 text-right">
                           <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <div className="flex items-center gap-1">
                             <p className="font-medium text-sm truncate">
                               {(conv.user_listings as any)?.title_ar || 'منتج'}
                             </p>
+                            {(conv as any).conversation_code && (
+                              <Badge variant="outline" className="text-[8px] px-1 py-0 font-mono">
+                                {(conv as any).conversation_code}
+                              </Badge>
+                            )}
+                          </div>
                             {lastMsg && (
                               <span className="text-[10px] text-muted-foreground flex-shrink-0">
                                 {format(new Date(lastMsg.created_at), 'HH:mm')}
