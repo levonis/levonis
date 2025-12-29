@@ -110,6 +110,7 @@ function AppContent() {
             <Route path="/admin/ticket-bundles" element={<AdminTicketBundles />} />
             <Route path="/admin/marketplace" element={<AdminMarketplace />} />
             <Route path="/marketplace" element={<Marketplace />} />
+            <Route path="/marketplace/:listingId" element={<Marketplace />} />
             <Route path="/my-points" element={<MyPoints />} />
             <Route path="/competitions" element={<Competitions />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />

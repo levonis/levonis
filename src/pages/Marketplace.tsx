@@ -1,13 +1,14 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { ListingCard } from '@/components/marketplace/ListingCard';
+import { ListingDetailDialog } from '@/components/marketplace/ListingDetailDialog';
 import { AddListingDialog } from '@/components/marketplace/AddListingDialog';
 import { MyListings } from '@/components/marketplace/MyListings';
 import { ListingConversations } from '@/components/marketplace/ListingConversations';
-import { Store, Plus, Package, MessageSquare, Search, Filter, SlidersHorizontal, ArrowRight } from 'lucide-react';
+import { Store, Plus, Package, MessageSquare, Search, SlidersHorizontal, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -32,11 +33,13 @@ const sortOptions = [
 export default function Marketplace() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { listingId } = useParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [conditionFilter, setConditionFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
+  const [directListingOpen, setDirectListingOpen] = useState(false);
 
   // Fetch all approved listings
   const { data: listings, isLoading } = useQuery({
@@ -52,6 +55,30 @@ export default function Marketplace() {
       return data;
     },
   });
+
+  // Fetch single listing for direct link
+  const { data: directListing } = useQuery({
+    queryKey: ['direct-listing', listingId],
+    queryFn: async () => {
+      if (!listingId) return null;
+      const { data, error } = await supabase
+        .from('user_listings')
+        .select('*, categories(name_ar)')
+        .eq('id', listingId)
+        .single();
+      
+      if (error) return null;
+      return data;
+    },
+    enabled: !!listingId,
+  });
+
+  // Open dialog when direct listing is loaded
+  useEffect(() => {
+    if (directListing) {
+      setDirectListingOpen(true);
+    }
+  }, [directListing]);
 
   // Fetch seller profiles
   const { data: sellerProfiles } = useQuery({
@@ -286,6 +313,19 @@ export default function Marketplace() {
               />
             ))}
           </div>
+        )}
+
+        {/* Direct listing dialog */}
+        {directListing && (
+          <ListingDetailDialog
+            listing={directListing}
+            sellerProfile={sellerProfiles?.[directListing.seller_id]}
+            open={directListingOpen}
+            onOpenChange={(open) => {
+              setDirectListingOpen(open);
+              if (!open) navigate('/marketplace');
+            }}
+          />
         )}
       </div>
       <Footer />

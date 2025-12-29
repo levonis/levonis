@@ -31,8 +31,7 @@ import {
   Heart,
   ThumbsUp,
   Share2,
-  Copy,
-  Check,
+  X,
 } from 'lucide-react';
 
 // Format date in Arabic with time (Baghdad timezone UTC+3)
@@ -63,6 +62,7 @@ interface Listing {
   images: string[] | null;
   location: string | null;
   views_count: number | null;
+  likes_count?: number | null;
   seller_id: string;
   shipping_method: string;
   categories?: { name_ar: string } | null;
@@ -83,13 +83,13 @@ interface ListingDetailDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-const conditionLabels: Record<string, { label: string; color: string }> = {
-  new: { label: 'جديد', color: 'bg-green-500' },
-  like_new: { label: 'شبه جديد', color: 'bg-emerald-500' },
-  excellent: { label: 'ممتاز', color: 'bg-blue-500' },
-  good: { label: 'جيد', color: 'bg-yellow-500' },
-  used: { label: 'مستعمل', color: 'bg-orange-500' },
-  needs_repair: { label: 'يحتاج صيانة', color: 'bg-red-500' },
+const conditionLabels: Record<string, { label: string; bgClass: string }> = {
+  new: { label: 'جديد', bgClass: 'bg-emerald-600' },
+  like_new: { label: 'شبه جديد', bgClass: 'bg-teal-600' },
+  excellent: { label: 'ممتاز', bgClass: 'bg-blue-600' },
+  good: { label: 'جيد', bgClass: 'bg-amber-600' },
+  used: { label: 'مستعمل', bgClass: 'bg-orange-600' },
+  needs_repair: { label: 'يحتاج صيانة', bgClass: 'bg-red-600' },
 };
 
 export const ListingDetailDialog = ({
@@ -103,7 +103,6 @@ export const ListingDetailDialog = ({
   const queryClient = useQueryClient();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showBuyForm, setShowBuyForm] = useState(false);
-  const [copied, setCopied] = useState(false);
   const [buyFormData, setBuyFormData] = useState({
     shipping_address: '',
     phone_number: '',
@@ -117,14 +116,43 @@ export const ListingDetailDialog = ({
     queryFn: async () => {
       if (!user) return false;
       const { data } = await supabase
-        .from('favorites')
+        .from('listing_favorites')
         .select('id')
-        .eq('product_id', listing.id)
+        .eq('listing_id', listing.id)
         .eq('user_id', user.id)
         .maybeSingle();
       return !!data;
     },
     enabled: !!user && open,
+  });
+
+  // Check if user liked the listing
+  const { data: isLiked } = useQuery({
+    queryKey: ['listing-like', listing.id, user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from('listing_likes')
+        .select('id')
+        .eq('listing_id', listing.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user && open,
+  });
+
+  // Get likes count
+  const { data: likesCount } = useQuery({
+    queryKey: ['listing-likes-count', listing.id],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('listing_likes')
+        .select('id', { count: 'exact', head: true })
+        .eq('listing_id', listing.id);
+      return count || 0;
+    },
+    enabled: open,
   });
 
   const nextImage = () => {
@@ -141,15 +169,15 @@ export const ListingDetailDialog = ({
       
       if (isFavorite) {
         const { error } = await supabase
-          .from('favorites')
+          .from('listing_favorites')
           .delete()
-          .eq('product_id', listing.id)
+          .eq('listing_id', listing.id)
           .eq('user_id', user.id);
         if (error) throw error;
       } else {
         const { error } = await supabase
-          .from('favorites')
-          .insert({ product_id: listing.id, user_id: user.id });
+          .from('listing_favorites')
+          .insert({ listing_id: listing.id, user_id: user.id });
         if (error) throw error;
       }
     },
@@ -160,8 +188,34 @@ export const ListingDetailDialog = ({
     onError: () => toast.error('حدث خطأ'),
   });
 
+  const toggleLikeMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('يجب تسجيل الدخول');
+      
+      if (isLiked) {
+        const { error } = await supabase
+          .from('listing_likes')
+          .delete()
+          .eq('listing_id', listing.id)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('listing_likes')
+          .insert({ listing_id: listing.id, user_id: user.id });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['listing-like', listing.id] });
+      queryClient.invalidateQueries({ queryKey: ['listing-likes-count', listing.id] });
+      queryClient.invalidateQueries({ queryKey: ['approved-listings'] });
+    },
+    onError: () => toast.error('حدث خطأ'),
+  });
+
   const handleShare = async () => {
-    const url = `${window.location.origin}/marketplace?listing=${listing.id}`;
+    const url = `${window.location.origin}/marketplace/${listing.id}`;
     
     if (navigator.share) {
       try {
@@ -175,9 +229,7 @@ export const ListingDetailDialog = ({
       }
     } else {
       await navigator.clipboard.writeText(url);
-      setCopied(true);
       toast.success('تم نسخ الرابط');
-      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -282,9 +334,17 @@ export const ListingDetailDialog = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] p-0 overflow-hidden">
+        {/* Custom Close Button */}
+        <button
+          onClick={() => onOpenChange(false)}
+          className="absolute left-3 top-3 z-50 bg-background/90 backdrop-blur-sm rounded-full p-2 hover:bg-background shadow-lg border border-border transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
         <ScrollArea className="max-h-[90vh]">
           <div className="flex flex-col lg:flex-row">
-            {/* Image Gallery - Smaller on large screens */}
+            {/* Image Gallery */}
             <div className="lg:w-2/5 bg-black relative">
               <div className="aspect-square relative overflow-hidden flex items-center justify-center">
                 <img
@@ -310,7 +370,6 @@ export const ListingDetailDialog = ({
                   </>
                 )}
 
-                {/* Image counter */}
                 {images.length > 1 && (
                   <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-0.5 rounded-full">
                     {currentImageIndex + 1} / {images.length}
@@ -318,7 +377,6 @@ export const ListingDetailDialog = ({
                 )}
               </div>
               
-              {/* Thumbnails */}
               {images.length > 1 && (
                 <div className="flex gap-1.5 p-2 bg-muted/50 overflow-x-auto">
                   {images.map((img, idx) => (
@@ -339,27 +397,42 @@ export const ListingDetailDialog = ({
             {/* Details */}
             <div className="lg:w-3/5 p-4 space-y-4">
               {/* Action Icons Row */}
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center justify-end gap-1">
                 <Button
                   variant="ghost"
-                  size="icon"
-                  className="h-9 w-9"
+                  size="sm"
+                  className="h-8 px-2 gap-1"
                   onClick={handleShare}
                   title="مشاركة"
                 >
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                  <Share2 className="w-4 h-4" />
+                  <span className="text-xs">مشاركة</span>
                 </Button>
                 {user && !isOwnListing && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={`h-9 w-9 ${isFavorite ? 'text-red-500' : ''}`}
-                    onClick={() => toggleFavoriteMutation.mutate()}
-                    disabled={toggleFavoriteMutation.isPending}
-                    title={isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
-                  >
-                    <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
-                  </Button>
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-8 px-2 gap-1 ${isLiked ? 'text-blue-500' : ''}`}
+                      onClick={() => toggleLikeMutation.mutate()}
+                      disabled={toggleLikeMutation.isPending}
+                      title="إعجاب"
+                    >
+                      <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+                      <span className="text-xs">{likesCount || 0}</span>
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-8 px-2 gap-1 ${isFavorite ? 'text-red-500' : ''}`}
+                      onClick={() => toggleFavoriteMutation.mutate()}
+                      disabled={toggleFavoriteMutation.isPending}
+                      title={isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+                    >
+                      <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+                      <span className="text-xs">حفظ</span>
+                    </Button>
+                  </>
                 )}
               </div>
 
@@ -367,12 +440,11 @@ export const ListingDetailDialog = ({
               <div>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <h2 className="text-lg font-bold leading-tight">{listing.title_ar}</h2>
-                  <Badge className={`${condition.color} text-white flex-shrink-0 text-xs`}>
+                  <Badge className={`${condition.bgClass} text-white flex-shrink-0 text-xs border-0`}>
                     {condition.label}
                   </Badge>
                 </div>
                 
-                {/* Price */}
                 <div className="flex items-baseline gap-2">
                   <span className="text-2xl font-bold text-primary">
                     {Number(listing.price).toLocaleString()}
@@ -396,12 +468,12 @@ export const ListingDetailDialog = ({
                 <div className="flex items-center gap-1.5">
                   {listing.shipping_method === 'through_site' ? (
                     <>
-                      <Truck className="w-3.5 h-3.5 text-green-500" />
+                      <Truck className="w-3.5 h-3.5 text-green-600" />
                       <span className="text-xs">عن طريق الوسيط (+5 آلاف)</span>
                     </>
                   ) : (
                     <>
-                      <Package className="w-3.5 h-3.5 text-blue-500" />
+                      <Package className="w-3.5 h-3.5 text-blue-600" />
                       <span>توصيل مباشر</span>
                     </>
                   )}
@@ -420,7 +492,6 @@ export const ListingDetailDialog = ({
                 )}
               </div>
 
-              {/* Description */}
               {listing.description_ar && (
                 <div className="space-y-1.5">
                   <h4 className="font-semibold text-sm text-muted-foreground">الوصف</h4>
@@ -428,7 +499,6 @@ export const ListingDetailDialog = ({
                 </div>
               )}
 
-              {/* Seller Info */}
               {sellerProfile && (
                 <div className="bg-muted/50 rounded-lg p-3">
                   <div className="flex items-center gap-3">
@@ -439,7 +509,7 @@ export const ListingDetailDialog = ({
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">{sellerName || 'بائع'}</span>
                         {sellerProfile.is_verified && (
-                          <ShieldCheck className="w-4 h-4 text-green-500" />
+                          <ShieldCheck className="w-4 h-4 text-green-600" />
                         )}
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
@@ -457,7 +527,6 @@ export const ListingDetailDialog = ({
                 </div>
               )}
 
-              {/* Actions */}
               {!isOwnListing && user && (
                 <div className="space-y-3 pt-1">
                   {!showBuyForm ? (
