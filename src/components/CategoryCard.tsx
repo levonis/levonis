@@ -25,18 +25,18 @@ const CategoryCard = ({ name, nameAr, slug, icon, description, descriptionAr }: 
       <div className="relative z-10 flex flex-col items-center h-full">
         {/* Icon / Badge */}
         <div
-          className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg mb-2 flex items-center justify-center text-primary-foreground shrink-0 group-hover:scale-105 transition-transform duration-300 overflow-hidden"
+          className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl mb-2 flex items-center justify-center text-primary-foreground shrink-0 group-hover:scale-105 transition-transform duration-300 overflow-hidden"
           style={{
             background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))",
-            boxShadow: "0 4px 10px hsl(var(--primary) / 0.18)",
+            boxShadow: "0 6px 14px hsl(var(--primary) / 0.20)",
           }}
           aria-hidden="true"
         >
           <span
             className={
               isLongIcon
-                ? "text-[7px] sm:text-[8px] font-bold leading-tight text-center px-0.5 line-clamp-2 break-all"
-                : "text-sm sm:text-base leading-none"
+                ? "text-[9px] sm:text-[10px] font-bold leading-tight text-center px-0.5 line-clamp-2 break-all"
+                : "text-lg sm:text-xl leading-none"
             }
           >
             {iconText}
