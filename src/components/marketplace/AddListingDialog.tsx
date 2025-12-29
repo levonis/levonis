@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,17 +22,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Plus, Upload, X, Loader2, Receipt, RotateCcw } from 'lucide-react';
+import { Plus, Upload, Loader2, Receipt, ImagePlus } from 'lucide-react';
+import { ImageCropper } from './ImageCropper';
+import { SortableImageList } from './SortableImageList';
 
 interface AddListingDialogProps {
   children?: React.ReactNode;
+  editMode?: boolean;
+  editData?: {
+    id: string;
+    title_ar: string;
+    description_ar: string;
+    price: number;
+    condition: string;
+    shipping_method: string;
+    location: string;
+    images: string[];
+    usage_duration?: string;
+  };
+  onClose?: () => void;
 }
 
 const conditionOptions = [
-  { value: 'new', label: 'جديد' },
-  { value: 'like_new', label: 'شبه جديد' },
-  { value: 'good', label: 'جيد' },
-  { value: 'used', label: 'مستعمل' },
+  { value: 'new', label: 'جديد (لم يُستخدم)' },
+  { value: 'like_new', label: 'شبه جديد (استخدام خفيف جداً)' },
+  { value: 'excellent', label: 'ممتاز (بحالة ممتازة)' },
+  { value: 'good', label: 'جيد (آثار استخدام بسيطة)' },
+  { value: 'used', label: 'مستعمل (آثار استخدام واضحة)' },
+  { value: 'needs_repair', label: 'يحتاج صيانة' },
+];
+
+const usageDurationOptions = [
+  { value: 'less_than_month', label: 'أقل من شهر' },
+  { value: '1_3_months', label: '1-3 أشهر' },
+  { value: '3_6_months', label: '3-6 أشهر' },
+  { value: '6_12_months', label: '6-12 شهر' },
+  { value: '1_2_years', label: '1-2 سنة' },
+  { value: '2_3_years', label: '2-3 سنوات' },
+  { value: 'more_than_3_years', label: 'أكثر من 3 سنوات' },
 ];
 
 const shippingOptions = [
@@ -40,11 +67,11 @@ const shippingOptions = [
   { value: 'direct', label: 'توصيل مباشر للمشتري' },
 ];
 
-export const AddListingDialog = ({ children }: AddListingDialogProps) => {
+export const AddListingDialog = ({ children, editMode = false, editData, onClose }: AddListingDialogProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [images, setImages] = useState<string[]>([]);
+  const [open, setOpen] = useState(editMode);
+  const [images, setImages] = useState<string[]>(editData?.images || []);
   const [purchaseReceiptUrl, setPurchaseReceiptUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadingReceipt, setUploadingReceipt] = useState(false);
@@ -52,19 +79,16 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
   // Image cropping state
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
-  const [cropPosition, setCropPosition] = useState({ x: 0, y: 0 });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
   
   const [formData, setFormData] = useState({
-    title_ar: '',
-    title: '',
-    description_ar: '',
-    description: '',
-    price: '',
-    condition: 'used',
-    shipping_method: 'through_site',
-    location: '',
+    title_ar: editData?.title_ar || '',
+    description_ar: editData?.description_ar || '',
+    price: editData?.price ? String(editData.price) : '',
+    condition: editData?.condition || 'used',
+    shipping_method: editData?.shipping_method || 'through_site',
+    location: editData?.location || '',
+    usage_duration: editData?.usage_duration || '',
   });
 
   const { data: feeSettings } = useQuery({
@@ -100,8 +124,8 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
       
       const fee = calculateFee();
       
-      // Check wallet balance if fee is required
-      if (feeSettings?.is_active && fee > 0) {
+      // Check wallet balance if fee is required (only for new listings)
+      if (!editMode && feeSettings?.is_active && fee > 0) {
         if (!userWallet || userWallet.balance < fee) {
           throw new Error('رصيد المحفظة غير كافٍ لدفع رسوم الإضافة');
         }
@@ -122,110 +146,103 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
           status: 'completed',
         });
       }
-      
-      const { data, error } = await supabase
-        .from('user_listings')
-        .insert({
-          seller_id: user.id,
-          title_ar: formData.title_ar,
-          title: formData.title || formData.title_ar,
-          description_ar: formData.description_ar,
-          description: formData.description || formData.description_ar,
-          price: parseFloat(formData.price),
-          condition: formData.condition,
-          shipping_method: formData.shipping_method,
-          location: formData.location,
-          images,
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+
+      const listingData = {
+        title_ar: formData.title_ar,
+        title: formData.title_ar,
+        description_ar: formData.description_ar,
+        description: formData.description_ar,
+        price: parseFloat(formData.price),
+        condition: formData.condition,
+        shipping_method: formData.shipping_method,
+        location: formData.location,
+        images,
+        status: 'pending',
+      };
+
+      if (editMode && editData?.id) {
+        const { error } = await supabase
+          .from('user_listings')
+          .update(listingData)
+          .eq('id', editData.id)
+          .eq('seller_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('user_listings')
+          .insert({
+            ...listingData,
+            seller_id: user.id,
+          });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      toast.success('تم إرسال المنتج للمراجعة');
+      toast.success(editMode ? 'تم تحديث المنتج وسيراجع من قبل الإدارة' : 'تم إرسال المنتج للمراجعة');
       queryClient.invalidateQueries({ queryKey: ['my-listings'] });
       queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['approved-listings'] });
-      setOpen(false);
-      resetForm();
+      handleClose();
     },
     onError: (error: Error) => {
       toast.error(error.message);
     },
   });
 
+  const handleClose = () => {
+    setOpen(false);
+    if (onClose) onClose();
+    if (!editMode) {
+      resetForm();
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       title_ar: '',
-      title: '',
       description_ar: '',
-      description: '',
       price: '',
       condition: 'used',
       shipping_method: 'through_site',
       location: '',
+      usage_duration: '',
     });
     setImages([]);
     setPurchaseReceiptUrl(null);
   };
 
-  const processImageToCrop = (file: File) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setImageToCrop(e.target?.result as string);
-      setImageFile(file);
+    reader.onload = (event) => {
+      setImageToCrop(event.target?.result as string);
+      setEditingImageIndex(null);
       setCropDialogOpen(true);
     };
     reader.readAsDataURL(file);
+    
+    // Reset input
+    e.target.value = '';
   };
 
-  const handleCropConfirm = async () => {
-    if (!imageToCrop || !imageFile || !canvasRef.current || !user) return;
+  const handleEditImage = (index: number) => {
+    // Get the existing image and open cropper
+    setImageToCrop(images[index]);
+    setEditingImageIndex(index);
+    setCropDialogOpen(true);
+  };
+
+  const handleCropComplete = async (blob: Blob) => {
+    if (!user) return;
     
     setUploading(true);
-    
     try {
-      const img = new Image();
-      img.src = imageToCrop;
-      
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-      
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      
-      // Set canvas to square
-      const size = Math.min(img.width, img.height);
-      canvas.width = 800;
-      canvas.height = 800;
-      
-      // Draw cropped image
-      ctx.drawImage(
-        img,
-        cropPosition.x * (img.width - size),
-        cropPosition.y * (img.height - size),
-        size,
-        size,
-        0,
-        0,
-        800,
-        800
-      );
-      
-      // Convert to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((b) => resolve(b!), 'image/jpeg', 0.9);
-      });
-      
-      // Upload
       const fileName = `${user.id}/${Date.now()}.jpg`;
       const { error: uploadError } = await supabase.storage
         .from('listing-images')
-        .upload(fileName, blob);
+        .upload(fileName, blob, { contentType: 'image/jpeg' });
       
       if (uploadError) throw uploadError;
       
@@ -233,25 +250,24 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
         .from('listing-images')
         .getPublicUrl(fileName);
       
-      setImages(prev => [...prev, publicUrl]);
+      if (editingImageIndex !== null) {
+        // Replace existing image
+        const newImages = [...images];
+        newImages[editingImageIndex] = publicUrl;
+        setImages(newImages);
+      } else {
+        // Add new image
+        setImages(prev => [...prev, publicUrl]);
+      }
+      
       setCropDialogOpen(false);
       setImageToCrop(null);
-      setImageFile(null);
+      setEditingImageIndex(null);
     } catch (error) {
-      console.error('Crop error:', error);
-      toast.error('فشل معالجة الصورة');
+      console.error('Upload error:', error);
+      toast.error('فشل رفع الصورة');
     } finally {
       setUploading(false);
-    }
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || !user) return;
-    
-    // Process first file for cropping
-    if (files[0]) {
-      processImageToCrop(files[0]);
     }
   };
 
@@ -283,10 +299,6 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
     }
   };
 
-  const removeImage = (index: number) => {
-    setImages(prev => prev.filter((_, i) => i !== index));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title_ar || !formData.price) {
@@ -313,28 +325,34 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
   };
 
   const fee = calculateFee();
-  const hasEnoughBalance = !feeSettings?.is_active || fee === 0 || (userWallet?.balance || 0) >= fee;
+  const hasEnoughBalance = editMode || !feeSettings?.is_active || fee === 0 || (userWallet?.balance || 0) >= fee;
 
   return (
     <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          {children || (
-            <Button size="sm" className="gap-2">
-              <Plus className="w-4 h-4" />
-              أضف منتج للبيع
-            </Button>
-          )}
-        </DialogTrigger>
+      <Dialog open={open} onOpenChange={(v) => v ? setOpen(true) : handleClose()}>
+        {!editMode && (
+          <DialogTrigger asChild>
+            {children || (
+              <Button size="sm" className="gap-2">
+                <Plus className="w-4 h-4" />
+                أضف منتج للبيع
+              </Button>
+            )}
+          </DialogTrigger>
+        )}
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-right">إضافة منتج للبيع</DialogTitle>
-            <DialogDescription>أضف منتجك للبيع في سوق المستعمل</DialogDescription>
+            <DialogTitle className="text-right">
+              {editMode ? 'تعديل المنتج' : 'إضافة منتج للبيع'}
+            </DialogTitle>
+            <DialogDescription>
+              {editMode ? 'سيتم إعادة المنتج للمراجعة بعد التعديل' : 'أضف منتجك للبيع في سوق المستعمل'}
+            </DialogDescription>
           </DialogHeader>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Fee Notice */}
-            {feeSettings?.is_active && fee > 0 ? (
+            {!editMode && feeSettings?.is_active && fee > 0 ? (
               <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-sm">
                 <p className="text-primary font-medium">رسوم المنصة:</p>
                 <p className="text-muted-foreground">{feeSettings.terms_ar}</p>
@@ -345,46 +363,39 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
                   )}
                 </p>
               </div>
-            ) : (
+            ) : !editMode && (
               <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 text-sm">
                 <p className="text-green-600 font-medium">✓ الإضافة مجانية حالياً!</p>
               </div>
             )}
 
             {/* Images with Cropping */}
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label>صور المنتج (مربعة) *</Label>
-              <div className="flex flex-wrap gap-2">
-                {images.map((img, idx) => (
-                  <div key={idx} className="relative w-20 h-20">
-                    <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(idx)}
-                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
-                <label className="w-20 h-20 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors">
-                  {uploading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <Upload className="w-5 h-5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground mt-1">رفع</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                    disabled={uploading}
-                  />
-                </label>
-              </div>
+              <p className="text-xs text-muted-foreground">اسحب الصور لإعادة ترتيبها. الصورة الأولى ستظهر كصورة رئيسية.</p>
+              
+              <SortableImageList
+                images={images}
+                onImagesChange={setImages}
+                onEditImage={handleEditImage}
+                primaryIndex={0}
+              />
+              
+              <label className="inline-flex items-center gap-2 px-4 py-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors bg-muted/30">
+                {uploading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ImagePlus className="w-4 h-4 text-muted-foreground" />
+                )}
+                <span className="text-sm text-muted-foreground">إضافة صورة</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                  disabled={uploading}
+                />
+              </label>
             </div>
 
             {/* Purchase Receipt */}
@@ -394,18 +405,18 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
                 وصل الشراء (اختياري - لإثبات الملكية)
               </Label>
               {purchaseReceiptUrl ? (
-                <div className="relative w-24 h-24">
+                <div className="relative w-24 h-24 inline-block">
                   <img src={purchaseReceiptUrl} alt="وصل الشراء" className="w-full h-full object-cover rounded-lg border-2 border-primary" />
                   <button
                     type="button"
                     onClick={() => setPurchaseReceiptUrl(null)}
                     className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1"
                   >
-                    <X className="w-3 h-3" />
+                    ✕
                   </button>
                 </div>
               ) : (
-                <label className="w-24 h-24 border-2 border-dashed border-primary/50 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors bg-primary/5">
+                <label className="inline-flex w-24 h-24 border-2 border-dashed border-primary/50 rounded-lg flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors bg-primary/5">
                   {uploadingReceipt ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
@@ -430,7 +441,7 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
               <Label>عنوان المنتج *</Label>
               <Input
                 value={formData.title_ar}
-                onChange={(e) => setFormData(prev => ({ ...prev, title_ar: e.target.value, title: e.target.value }))}
+                onChange={(e) => setFormData(prev => ({ ...prev, title_ar: e.target.value }))}
                 placeholder="مثال: طابعة Bambulab A1"
                 required
               />
@@ -438,7 +449,7 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
 
             {/* Description */}
             <div className="space-y-2">
-              <Label>الوصف (عربي)</Label>
+              <Label>الوصف</Label>
               <Textarea
                 value={formData.description_ar}
                 onChange={(e) => setFormData(prev => ({ ...prev, description_ar: e.target.value }))}
@@ -477,6 +488,24 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
               </div>
             </div>
 
+            {/* Usage Duration */}
+            <div className="space-y-2">
+              <Label>مدة الاستخدام</Label>
+              <Select
+                value={formData.usage_duration}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, usage_duration: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر مدة الاستخدام" />
+                </SelectTrigger>
+                <SelectContent>
+                  {usageDurationOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Shipping & Location */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -500,110 +529,46 @@ export const AddListingDialog = ({ children }: AddListingDialogProps) => {
                 <Input
                   value={formData.location}
                   onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  placeholder="مثال: بغداد، الكرادة"
+                  placeholder="بغداد، الكرادة"
                 />
               </div>
             </div>
 
-            {/* Terms */}
-            <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
-              <p className="font-medium mb-1">شروط البيع:</p>
-              <ul className="list-disc list-inside space-y-1">
-                <li>سيتم مراجعة منتجك قبل نشره (خلال 24 ساعة)</li>
-                <li>يُفضّل إرفاق وصل الشراء لإثبات الملكية والأصالة</li>
-                <li>جميع المعاملات تتم عبر الموقع لضمان حقوق الطرفين</li>
-                <li>البائع مسؤول عن دقة المعلومات المقدمة</li>
-              </ul>
-            </div>
-
-            <div className="flex gap-3 justify-end">
-              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                إلغاء
-              </Button>
-              <Button 
-                type="submit" 
+            {/* Submit */}
+            <div className="flex gap-3 pt-4">
+              <Button
+                type="submit"
+                className="flex-1"
                 disabled={createListingMutation.isPending || !hasEnoughBalance}
               >
-                {createListingMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin ml-2" />
-                    جاري الإرسال...
-                  </>
-                ) : (
-                  'إرسال للمراجعة'
-                )}
+                {createListingMutation.isPending && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+                {editMode ? 'حفظ التعديلات' : 'إرسال للمراجعة'}
+              </Button>
+              <Button type="button" variant="outline" onClick={handleClose}>
+                إلغاء
               </Button>
             </div>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Crop Dialog */}
-      <Dialog open={cropDialogOpen} onOpenChange={setCropDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>قص الصورة</DialogTitle>
-            <DialogDescription>حرّك المنزلق لاختيار منطقة القص</DialogDescription>
-          </DialogHeader>
-          
-          {imageToCrop && (
-            <div className="space-y-4">
-              <div className="relative aspect-square overflow-hidden rounded-lg border">
-                <img
-                  src={imageToCrop}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                  style={{
-                    objectPosition: `${cropPosition.x * 100}% ${cropPosition.y * 100}%`,
-                  }}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>تحريك أفقي</Label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={cropPosition.x}
-                  onChange={(e) => setCropPosition(prev => ({ ...prev, x: parseFloat(e.target.value) }))}
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>تحريك عمودي</Label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={cropPosition.y}
-                  onChange={(e) => setCropPosition(prev => ({ ...prev, y: parseFloat(e.target.value) }))}
-                  className="w-full"
-                />
-              </div>
-              
-              <canvas ref={canvasRef} className="hidden" />
-              
-              <div className="flex gap-3">
-                <Button onClick={handleCropConfirm} disabled={uploading} className="flex-1">
-                  {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'تأكيد'}
-                </Button>
-                <Button variant="outline" onClick={() => {
-                  setCropDialogOpen(false);
-                  setImageToCrop(null);
-                  setCropPosition({ x: 0, y: 0 });
-                }}>
-                  <RotateCcw className="w-4 h-4 ml-2" />
-                  إلغاء
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Image Cropper */}
+      {imageToCrop && (
+        <ImageCropper
+          open={cropDialogOpen}
+          onOpenChange={(v) => {
+            if (!v) {
+              setCropDialogOpen(false);
+              setImageToCrop(null);
+              setEditingImageIndex(null);
+            }
+          }}
+          imageSrc={imageToCrop}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+          isUploading={uploading}
+        />
+      )}
     </>
   );
 };
