@@ -18,11 +18,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Package, Eye, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2, Tag } from 'lucide-react';
 
-// Format relative time in Arabic
+// Format relative time in Arabic (Baghdad timezone UTC+3)
 const formatRelativeTime = (dateString: string): string => {
+  // Get Baghdad time
+  const baghdadOffset = 3 * 60 * 60 * 1000; // UTC+3
   const now = new Date();
+  const nowBaghdad = new Date(now.getTime() + baghdadOffset + now.getTimezoneOffset() * 60 * 1000);
   const date = new Date(dateString);
-  const diffMs = now.getTime() - date.getTime();
+  const dateBaghdad = new Date(date.getTime() + baghdadOffset + date.getTimezoneOffset() * 60 * 1000);
+  
+  const diffMs = nowBaghdad.getTime() - dateBaghdad.getTime();
   const diffSeconds = Math.floor(diffMs / 1000);
   const diffMinutes = Math.floor(diffSeconds / 60);
   const diffHours = Math.floor(diffMinutes / 60);

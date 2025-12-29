@@ -31,14 +31,19 @@ import {
   Calendar,
 } from 'lucide-react';
 
-// Format date in Arabic with time
+// Format date in Arabic with time (Baghdad timezone UTC+3)
 const formatArabicDateTime = (dateString: string): string => {
   const date = new Date(dateString);
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
-  let hours = date.getHours();
-  const minutes = date.getMinutes().toString().padStart(2, '0');
+  // Convert to Baghdad time (UTC+3)
+  const baghdadOffset = 3 * 60; // minutes
+  const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
+  const baghdadDate = new Date(utc + (baghdadOffset * 60000));
+  
+  const day = baghdadDate.getDate().toString().padStart(2, '0');
+  const month = (baghdadDate.getMonth() + 1).toString().padStart(2, '0');
+  const year = baghdadDate.getFullYear();
+  let hours = baghdadDate.getHours();
+  const minutes = baghdadDate.getMinutes().toString().padStart(2, '0');
   const period = hours >= 12 ? 'مساءً' : 'صباحاً';
   hours = hours % 12 || 12;
   
@@ -228,45 +233,52 @@ export const ListingDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[95vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-4xl max-h-[95vh] p-0 overflow-hidden">
         <ScrollArea className="h-[95vh]">
           <div className="flex flex-col lg:flex-row">
             {/* Image Gallery */}
-            <div className="lg:w-1/2 bg-muted relative">
-              <div className="aspect-square relative overflow-hidden">
+            <div className="lg:w-1/2 bg-black relative">
+              <div className="aspect-square lg:aspect-auto lg:h-[500px] relative overflow-hidden flex items-center justify-center">
                 <img
                   src={images[currentImageIndex]}
                   alt={listing.title_ar}
-                  className="w-full h-full object-cover"
+                  className="max-w-full max-h-full object-contain"
                 />
                 
                 {images.length > 1 && (
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/90 rounded-full p-2 hover:bg-background transition-colors shadow-lg"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 rounded-full p-2.5 hover:bg-white transition-colors shadow-lg"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/90 rounded-full p-2 hover:bg-background transition-colors shadow-lg"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 rounded-full p-2.5 hover:bg-white transition-colors shadow-lg"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
                   </>
                 )}
+
+                {/* Image counter */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded-full">
+                    {currentImageIndex + 1} / {images.length}
+                  </div>
+                )}
               </div>
               
               {/* Thumbnails */}
               {images.length > 1 && (
-                <div className="flex gap-2 p-3 overflow-x-auto">
+                <div className="flex gap-2 p-3 bg-muted/50 overflow-x-auto">
                   {images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-colors ${
-                        idx === currentImageIndex ? 'border-primary' : 'border-transparent'
+                      className={`w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
+                        idx === currentImageIndex ? 'border-primary ring-2 ring-primary/30' : 'border-transparent opacity-70 hover:opacity-100'
                       }`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
