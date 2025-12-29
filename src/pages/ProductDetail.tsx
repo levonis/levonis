@@ -10,7 +10,7 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus, Star, Award, Check, CheckCircle, Zap, Sparkles, Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic } from 'lucide-react';
+import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus, Star, Award, Check, CheckCircle, Zap, Sparkles, Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState } from 'react';
 import { formatPrice } from '@/lib/utils';
@@ -311,28 +311,85 @@ const ProductDetail = () => {
                 </Tooltip>
               </TooltipProvider>
             )}
-            <div className="glass-effect rounded-2xl p-6 border border-border/50 card-premium">
+            <div className="glass-effect rounded-2xl p-4 sm:p-6 border border-border/50 card-premium">
               {productImages.length > 0 ? (
                 <div className="space-y-4">
-                  {/* Main Image */}
-                  <div className="relative aspect-square rounded-xl overflow-hidden bg-card/50">
-                    <img 
-                      src={productImages[selectedImage]} 
-                      alt={`${product.name_ar} - صورة ${selectedImage + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    {!product.in_stock && (
-                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                        <Badge variant="destructive" className="text-lg px-6 py-2">
-                          غير متوفر
-                        </Badge>
+                  {/* Main Image with Swipe Support */}
+                  {productImages.length > 1 ? (
+                    <Carousel 
+                      opts={{ 
+                        loop: true,
+                        direction: 'rtl',
+                        dragFree: false,
+                      }}
+                      className="w-full"
+                      setApi={(api) => {
+                        api?.on('select', () => {
+                          const index = api.selectedScrollSnap();
+                          setSelectedImage(index);
+                        });
+                      }}
+                    >
+                      <CarouselContent className="-ml-0">
+                        {productImages.map((img, idx) => (
+                          <CarouselItem key={idx} className="pl-0">
+                            <div className="relative aspect-square rounded-xl overflow-hidden bg-card/50">
+                              <img 
+                                src={img} 
+                                alt={`${product.name_ar} - صورة ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                                draggable={false}
+                              />
+                            </div>
+                          </CarouselItem>
+                        ))}
+                      </CarouselContent>
+                      <CarouselPrevious className="right-2 left-auto h-10 w-10 bg-background/80 hover:bg-background border-border/50" />
+                      <CarouselNext className="left-2 right-auto h-10 w-10 bg-background/80 hover:bg-background border-border/50" />
+                      
+                      {/* Image Counter */}
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-medium">
+                        {selectedImage + 1} / {productImages.length}
                       </div>
-                    )}
-                  </div>
+                    </Carousel>
+                  ) : (
+                    <div className="relative aspect-square rounded-xl overflow-hidden bg-card/50">
+                      <img 
+                        src={productImages[0]} 
+                        alt={product.name_ar}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
                   
-                  {/* Thumbnails */}
+                  {!product.in_stock && (
+                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-xl">
+                      <Badge variant="destructive" className="text-lg px-6 py-2">
+                        غير متوفر
+                      </Badge>
+                    </div>
+                  )}
+                  
+                  {/* Dot Indicators for Mobile */}
                   {productImages.length > 1 && (
-                    <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-2">
+                    <div className="flex justify-center gap-1.5">
+                      {productImages.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setSelectedImage(idx)}
+                          className={`w-2 h-2 rounded-full transition-all ${
+                            selectedImage === idx 
+                              ? 'bg-primary w-4' 
+                              : 'bg-border hover:bg-primary/50'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Thumbnails - Hidden on mobile, shown on larger screens */}
+                  {productImages.length > 1 && (
+                    <div className="hidden sm:grid grid-cols-4 sm:grid-cols-5 md:grid-cols-4 gap-2">
                       {productImages.map((img, idx) => (
                         <button
                           key={idx}
@@ -408,153 +465,239 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Pre-Order Custom Shipping Options - Compact */}
-              {product.has_pre_order && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
-                <div className="mb-4">
-                  <Label className="text-sm font-medium mb-2 block">نوع الشحن</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {product.pre_order_shipping_options.map((option: any, index: number) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedShippingOption(index)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm ${
-                          selectedShippingOption === index
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <Truck className="h-4 w-4" />
-                        <span className="font-medium">{option.name_ar}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Pre-Order Shipping Options (Legacy) - Compact */}
-              {product.has_pre_order && (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0) && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
-                <div className="mb-4">
-                  <Label className="text-sm font-medium mb-2 block">نوع الشحن</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {product.pre_order_free_shipping_price && (
-                      <button
-                        onClick={() => setSelectedShippingOption(0)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm ${
-                          selectedShippingOption === 0
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <Truck className="h-4 w-4" />
-                        <span className="font-medium">بحري (45 يوم)</span>
-                      </button>
-                    )}
-                    {product.pre_order_fast_shipping_price && (
-                      <button
-                        onClick={() => setSelectedShippingOption(1)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all text-sm ${
-                          selectedShippingOption === 1
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border hover:border-primary/50'
-                        }`}
-                      >
-                        <Zap className="h-4 w-4" />
-                        <span className="font-medium">جوي (15 يوم)</span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {/* Product Options - Compact */}
-              {productOptions && productOptions.length > 0 && (
-                <div className="mb-4">
-                  <Label className="text-sm font-medium mb-2 block">الخيارات</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {productOptions.map((option: any) => {
-                      const isOptionAvailable = product.has_in_stock 
-                        ? (option.available_for_direct_sale ?? true)
-                        : product.has_pre_order 
-                          ? (option.available_for_pre_order ?? false)
-                          : false;
-                      const isOptionDisabled = !isOptionAvailable || !option.in_stock;
-                      
-                      return (
-                        <button
-                          key={option.id}
-                          onClick={() => {
-                            if (isOptionDisabled) return;
-                            setSelectedOption(option.id);
-                            if (option.image_url) {
-                              setOptionImageUrl(option.image_url);
-                              setSelectedImage(0);
-                            } else {
-                              setOptionImageUrl(null);
-                            }
-                          }}
-                          disabled={isOptionDisabled}
-                          className={`px-3 py-2 rounded-lg border transition-all text-sm ${
-                            selectedOption === option.id
-                              ? 'border-primary bg-primary/10 text-primary'
-                              : 'border-border hover:border-primary/50'
-                          } ${isOptionDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
-                        >
-                          <span className="font-medium">{option.name_ar}</span>
-                          {isOptionDisabled && <span className="text-xs mr-1">(غير متوفر)</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Product Colors - Compact */}
-              {product.colors && Array.isArray(product.colors) && product.colors.length > 0 && (
-                <div className="mb-4">
-                  <Label className="text-sm font-medium mb-2 block">الألوان</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {product.colors.map((color: any, index: number) => {
-                      const isColorAvailableForProductType = product.has_in_stock 
-                        ? (color.available_for_direct_sale ?? true)
-                        : product.has_pre_order 
-                          ? (color.available_for_pre_order ?? false)
-                          : false;
-                      const isColorInStock = color.in_stock !== false;
-                      const isColorAvailable = isColorAvailableForProductType && isColorInStock;
-                      
-                      return (
+              {/* Product Details Section - Improved Layout */}
+              <div className="space-y-4">
+                {/* Pre-Order Custom Shipping Options */}
+                {product.has_pre_order && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
+                  <div className="p-4 rounded-xl bg-card/50 border border-border/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Truck className="h-4 w-4 text-primary" />
+                      </div>
+                      <Label className="text-sm font-bold">نوع الشحن</Label>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {product.pre_order_shipping_options.map((option: any, index: number) => (
                         <button
                           key={index}
-                          type="button"
-                          onClick={() => {
-                            if (!isColorAvailable) return;
-                            const newSelectedColor = selectedColor === color.name_ar ? null : color.name_ar;
-                            setSelectedColor(newSelectedColor);
-                            if (newSelectedColor && color.image_url) {
-                              setColorImageUrl(color.image_url);
-                              setSelectedImage(0);
-                            } else {
-                              setColorImageUrl(null);
-                            }
-                          }}
-                          disabled={!isColorAvailable}
-                          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border transition-all text-sm ${
-                            selectedColor === color.name_ar
-                              ? 'border-primary bg-primary/10'
-                              : 'border-border hover:border-primary/50'
-                          } ${!isColorAvailable ? 'opacity-40 cursor-not-allowed' : ''}`}
+                          onClick={() => setSelectedShippingOption(index)}
+                          className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                            selectedShippingOption === index
+                              ? 'border-primary bg-primary/5 shadow-sm'
+                              : 'border-border/50 hover:border-primary/30 bg-background/50'
+                          }`}
                         >
-                          <div
-                            className="w-4 h-4 rounded-full border border-border"
-                            style={{ backgroundColor: color.hex_code }}
-                          />
-                          <span className="font-medium text-xs">{color.name_ar}</span>
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            selectedShippingOption === index ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                          }`}>
+                            {selectedShippingOption === index && <Check className="h-3 w-3 text-primary-foreground" />}
+                          </div>
+                          <div className="flex-1 text-right">
+                            <span className="font-bold text-sm block">{option.name_ar}</span>
+                            {option.price_adjustment > 0 && (
+                              <span className="text-xs text-muted-foreground">+{formatPrice(option.price_adjustment)} {currency}</span>
+                            )}
+                          </div>
                         </button>
-                      );
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+
+                {/* Pre-Order Shipping Options (Legacy) */}
+                {product.has_pre_order && (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0) && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
+                  <div className="p-4 rounded-xl bg-card/50 border border-border/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Truck className="h-4 w-4 text-primary" />
+                      </div>
+                      <Label className="text-sm font-bold">نوع الشحن</Label>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {product.pre_order_free_shipping_price && (
+                        <button
+                          onClick={() => setSelectedShippingOption(0)}
+                          className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                            selectedShippingOption === 0
+                              ? 'border-primary bg-primary/5 shadow-sm'
+                              : 'border-border/50 hover:border-primary/30 bg-background/50'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            selectedShippingOption === 0 ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                          }`}>
+                            {selectedShippingOption === 0 && <Check className="h-3 w-3 text-primary-foreground" />}
+                          </div>
+                          <div className="flex-1 text-right">
+                            <span className="font-bold text-sm block">بحري</span>
+                            <span className="text-xs text-muted-foreground">45 يوم تقريباً</span>
+                          </div>
+                        </button>
+                      )}
+                      {product.pre_order_fast_shipping_price && (
+                        <button
+                          onClick={() => setSelectedShippingOption(1)}
+                          className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                            selectedShippingOption === 1
+                              ? 'border-primary bg-primary/5 shadow-sm'
+                              : 'border-border/50 hover:border-primary/30 bg-background/50'
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            selectedShippingOption === 1 ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                          }`}>
+                            {selectedShippingOption === 1 && <Check className="h-3 w-3 text-primary-foreground" />}
+                          </div>
+                          <div className="flex-1 text-right">
+                            <span className="font-bold text-sm block">جوي سريع</span>
+                            <span className="text-xs text-muted-foreground">15 يوم تقريباً</span>
+                          </div>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Product Options */}
+                {productOptions && productOptions.length > 0 && (
+                  <div className="p-4 rounded-xl bg-card/50 border border-border/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
+                        <Settings className="h-4 w-4 text-accent-foreground" />
+                      </div>
+                      <Label className="text-sm font-bold">الخيارات المتاحة</Label>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {productOptions.map((option: any) => {
+                        const isOptionAvailable = product.has_in_stock 
+                          ? (option.available_for_direct_sale ?? true)
+                          : product.has_pre_order 
+                            ? (option.available_for_pre_order ?? false)
+                            : false;
+                        const isOptionDisabled = !isOptionAvailable || !option.in_stock;
+                        
+                        return (
+                          <button
+                            key={option.id}
+                            onClick={() => {
+                              if (isOptionDisabled) return;
+                              setSelectedOption(option.id);
+                              if (option.image_url) {
+                                setOptionImageUrl(option.image_url);
+                                setSelectedImage(0);
+                              } else {
+                                setOptionImageUrl(null);
+                              }
+                            }}
+                            disabled={isOptionDisabled}
+                            className={`relative p-3 rounded-xl border-2 transition-all text-center ${
+                              selectedOption === option.id
+                                ? 'border-primary bg-primary/5 shadow-sm'
+                                : 'border-border/50 hover:border-primary/30 bg-background/50'
+                            } ${isOptionDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                          >
+                            {selectedOption === option.id && (
+                              <div className="absolute top-1.5 left-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                                <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                              </div>
+                            )}
+                            <span className="font-bold text-sm block">{option.name_ar}</span>
+                            {option.price_adjustment !== 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                {option.price_adjustment > 0 ? '+' : ''}{formatPrice(option.price_adjustment)} {currency}
+                              </span>
+                            )}
+                            {isOptionDisabled && (
+                              <Badge variant="destructive" className="absolute -top-1 -right-1 text-[10px] px-1.5 py-0">
+                                غير متوفر
+                              </Badge>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Product Colors */}
+                {product.colors && Array.isArray(product.colors) && product.colors.length > 0 && (
+                  <div className="p-4 rounded-xl bg-card/50 border border-border/30">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-400 via-green-400 to-blue-400 flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-background" />
+                      </div>
+                      <Label className="text-sm font-bold">الألوان المتاحة</Label>
+                      {selectedColor && (
+                        <Badge variant="outline" className="mr-auto text-xs">
+                          {selectedColor}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {product.colors.map((color: any, index: number) => {
+                        const isColorAvailableForProductType = product.has_in_stock 
+                          ? (color.available_for_direct_sale ?? true)
+                          : product.has_pre_order 
+                            ? (color.available_for_pre_order ?? false)
+                            : false;
+                        const isColorInStock = color.in_stock !== false;
+                        const isColorAvailable = isColorAvailableForProductType && isColorInStock;
+                        
+                        return (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => {
+                              if (!isColorAvailable) return;
+                              const newSelectedColor = selectedColor === color.name_ar ? null : color.name_ar;
+                              setSelectedColor(newSelectedColor);
+                              if (newSelectedColor && color.image_url) {
+                                setColorImageUrl(color.image_url);
+                                setSelectedImage(0);
+                              } else {
+                                setColorImageUrl(null);
+                              }
+                            }}
+                            disabled={!isColorAvailable}
+                            className={`group relative flex flex-col items-center gap-1.5 p-2 rounded-xl border-2 transition-all min-w-[70px] ${
+                              selectedColor === color.name_ar
+                                ? 'border-primary bg-primary/5 shadow-sm'
+                                : 'border-border/50 hover:border-primary/30 bg-background/50'
+                            } ${!isColorAvailable ? 'opacity-40 cursor-not-allowed' : ''}`}
+                          >
+                            <div className="relative">
+                              <div
+                                className={`w-8 h-8 rounded-full border-2 transition-transform group-hover:scale-110 ${
+                                  selectedColor === color.name_ar ? 'border-primary ring-2 ring-primary/30' : 'border-border'
+                                }`}
+                                style={{ backgroundColor: color.hex_code }}
+                              />
+                              {selectedColor === color.name_ar && (
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                  <Check className={`h-4 w-4 ${
+                                    color.hex_code?.toLowerCase() === '#ffffff' || color.hex_code?.toLowerCase() === '#fff' 
+                                      ? 'text-foreground' 
+                                      : 'text-white'
+                                  }`} />
+                                </div>
+                              )}
+                            </div>
+                            <span className="font-medium text-[10px] leading-tight text-center">{color.name_ar}</span>
+                            {color.price != null && color.price !== product.price && (
+                              <span className="text-[9px] text-muted-foreground">{formatPrice(color.price)}</span>
+                            )}
+                            {!isColorAvailable && (
+                              <div className="absolute inset-0 flex items-center justify-center bg-background/60 rounded-xl">
+                                <X className="h-4 w-4 text-destructive" />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Price Section - Compact */}
               <div className="border-t border-border/30 pt-4 mb-4">
