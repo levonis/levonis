@@ -116,11 +116,11 @@ const Home = () => {
           </div>
           
           {categoriesLoading || mainSectionsLoading ? (
-            <div className="grid grid-cols-2 max-[420px]:grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4" style={{ minHeight: '400px' }}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3" style={{ minHeight: '400px' }}>
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-card/50 rounded-2xl p-5 border border-border/40 animate-pulse">
-                  <div className="w-16 h-16 bg-muted rounded-xl mb-4 mx-auto" />
-                  <div className="h-4 bg-muted rounded mb-2 w-3/4 mx-auto" />
+                <div key={i} className="bg-card/50 rounded-xl p-4 border border-border/40 animate-pulse h-[160px] sm:h-[172px]">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-muted rounded-xl mb-2 mx-auto" />
+                  <div className="h-3.5 bg-muted rounded mb-2 w-3/4 mx-auto" />
                   <div className="h-3 bg-muted rounded w-full" />
                 </div>
               ))}
@@ -142,7 +142,7 @@ const Home = () => {
                       <div className="w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full" />
                       <h3 className="text-xl font-black text-primary">{mainSection.name_ar}</h3>
                     </div>
-                    <div className="grid grid-cols-2 max-[420px]:grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5 sm:gap-3">
                       {sectionCategories.map((category, index) => (
                         <div key={category.id} className={`stagger-${(index % 6) + 1}`}>
                           <CategoryCard
