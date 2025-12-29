@@ -75,7 +75,7 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
     <>
       <div
         onClick={() => setShowDetail(true)}
-        className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-xl transition-all cursor-pointer group"
+        className="bg-card border border-border rounded-lg sm:rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-lg sm:hover:shadow-xl transition-all cursor-pointer group"
       >
         {/* Square Image */}
         <div className="aspect-square relative overflow-hidden bg-muted">
@@ -87,53 +87,53 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-gradient-to-br from-muted to-muted/50">
-              <span className="text-sm">لا توجد صورة</span>
+              <span className="text-xs sm:text-sm">لا توجد صورة</span>
             </div>
           )}
         </div>
 
         {/* Content */}
-        <div className="p-2.5 space-y-1.5">
+        <div className="p-2 sm:p-2.5 space-y-1 sm:space-y-1.5">
           {/* Title */}
-          <h3 className="font-medium text-sm line-clamp-1">
+          <h3 className="font-medium text-xs sm:text-sm line-clamp-1">
             {listing.title_ar}
           </h3>
 
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-baseline gap-1">
-              <span className="font-bold text-primary text-base">
+          <div className="flex items-center justify-between gap-1 sm:gap-2">
+            <div className="flex items-baseline gap-0.5 sm:gap-1">
+              <span className="font-bold text-primary text-sm sm:text-base">
                 {Number(listing.price).toLocaleString()}
               </span>
-              <span className="text-[10px] text-muted-foreground">{listing.currency}</span>
+              <span className="text-[8px] sm:text-[10px] text-muted-foreground">{listing.currency}</span>
             </div>
-            <Badge className={`${condition.bgClass} text-white border-0 text-[9px] px-1.5 py-0`}>
+            <Badge className={`${condition.bgClass} text-white border-0 text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0`}>
               {condition.label}
             </Badge>
           </div>
 
-          <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/50">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between text-[9px] sm:text-[10px] text-muted-foreground pt-1 border-t border-border/50">
+            <div className="flex items-center gap-1 sm:gap-1.5">
               {listing.location && (
-                <span className="flex items-center gap-0.5 truncate max-w-[60px]">
-                  <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
+                <span className="flex items-center gap-0.5 truncate max-w-[40px] sm:max-w-[60px]">
+                  <MapPin className="w-2 h-2 sm:w-2.5 sm:h-2.5 flex-shrink-0" />
                   {listing.location}
                 </span>
               )}
               <span className="flex items-center gap-0.5">
-                <Eye className="w-2.5 h-2.5" />
+                <Eye className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
                 {listing.views_count ?? 0}
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5">
               {sellerProfile && (
                 <span className="flex items-center gap-0.5">
-                  <Star className="w-2.5 h-2.5 fill-yellow-500 text-yellow-500" />
+                  <Star className="w-2 h-2 sm:w-2.5 sm:h-2.5 fill-yellow-500 text-yellow-500" />
                   {(sellerProfile.average_rating ?? 0).toFixed(1)}
                 </span>
               )}
               {listing.created_at && (
                 <span className="flex items-center gap-0.5">
-                  <Clock className="w-2.5 h-2.5" />
+                  <Clock className="w-2 h-2 sm:w-2.5 sm:h-2.5" />
                   {formatRelativeTime(listing.created_at)}
                 </span>
               )}

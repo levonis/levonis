@@ -339,13 +339,13 @@ export const ListingDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0 overflow-hidden w-[95vw] sm:w-full">
         {/* Custom Close Button */}
         <button
           onClick={() => onOpenChange(false)}
-          className="absolute left-3 top-3 z-50 bg-background/90 backdrop-blur-sm rounded-full p-2 hover:bg-background shadow-lg border border-border transition-colors"
+          className="absolute left-2 top-2 sm:left-3 sm:top-3 z-50 bg-background/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 hover:bg-background shadow-lg border border-border transition-colors"
         >
-          <X className="w-4 h-4" />
+          <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </button>
 
         <ScrollArea className="max-h-[90vh]">
@@ -401,42 +401,42 @@ export const ListingDetailDialog = ({
             </div>
 
             {/* Details */}
-            <div className="lg:w-3/5 p-4 space-y-4">
+            <div className="lg:w-3/5 p-3 sm:p-4 space-y-3 sm:space-y-4">
               {/* Action Icons Row */}
-              <div className="flex items-center justify-end gap-1">
+              <div className="flex items-center justify-end gap-0.5 sm:gap-1">
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-8 px-2 gap-1"
+                  className="h-7 sm:h-8 px-1.5 sm:px-2 gap-0.5 sm:gap-1"
                   onClick={handleShare}
                   title="مشاركة"
                 >
-                  <Share2 className="w-4 h-4" />
-                  <span className="text-xs">مشاركة</span>
+                  <Share2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="text-[10px] sm:text-xs">مشاركة</span>
                 </Button>
                 {user && !isOwnListing && (
                   <>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`h-8 px-2 gap-1 ${isLiked ? 'text-blue-500' : ''}`}
+                      className={`h-7 sm:h-8 px-1.5 sm:px-2 gap-0.5 sm:gap-1 ${isLiked ? 'text-blue-500' : ''}`}
                       onClick={() => toggleLikeMutation.mutate()}
                       disabled={toggleLikeMutation.isPending}
                       title="إعجاب"
                     >
-                      <ThumbsUp className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
-                      <span className="text-xs">{likesCount || 0}</span>
+                      <ThumbsUp className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isLiked ? 'fill-current' : ''}`} />
+                      <span className="text-[10px] sm:text-xs">{likesCount || 0}</span>
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`h-8 px-2 gap-1 ${isFavorite ? 'text-red-500' : ''}`}
+                      className={`h-7 sm:h-8 px-1.5 sm:px-2 gap-0.5 sm:gap-1 ${isFavorite ? 'text-red-500' : ''}`}
                       onClick={() => toggleFavoriteMutation.mutate()}
                       disabled={toggleFavoriteMutation.isPending}
                       title={isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
                     >
-                      <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
-                      <span className="text-xs">حفظ</span>
+                      <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isFavorite ? 'fill-current' : ''}`} />
+                      <span className="text-[10px] sm:text-xs">حفظ</span>
                     </Button>
                   </>
                 )}
@@ -444,45 +444,45 @@ export const ListingDetailDialog = ({
 
               {/* Title & Condition */}
               <div>
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h2 className="text-lg font-bold leading-tight">{listing.title_ar}</h2>
-                  <Badge className={`${condition.bgClass} text-white flex-shrink-0 text-xs border-0`}>
+                <div className="flex items-start justify-between gap-2 mb-1.5 sm:mb-2">
+                  <h2 className="text-base sm:text-lg font-bold leading-tight">{listing.title_ar}</h2>
+                  <Badge className={`${condition.bgClass} text-white flex-shrink-0 text-[10px] sm:text-xs border-0`}>
                     {condition.label}
                   </Badge>
                 </div>
                 
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-primary">
+                <div className="flex items-baseline gap-1.5 sm:gap-2">
+                  <span className="text-xl sm:text-2xl font-bold text-primary">
                     {Number(listing.price).toLocaleString()}
                   </span>
-                  <span className="text-sm text-muted-foreground">{listing.currency}</span>
+                  <span className="text-xs sm:text-sm text-muted-foreground">{listing.currency}</span>
                 </div>
               </div>
 
               {/* Quick Info */}
-              <div className="grid grid-cols-2 gap-2 py-3 border-y border-border text-sm">
+              <div className="grid grid-cols-2 gap-1.5 sm:gap-2 py-2 sm:py-3 border-y border-border text-xs sm:text-sm">
                 {listing.location && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span>{listing.location}</span>
+                  <div className="flex items-center gap-1 sm:gap-1.5">
+                    <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
+                    <span className="truncate">{listing.location}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-1.5">
-                  <Eye className="w-3.5 h-3.5 text-muted-foreground" />
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
                   <span>{listing.views_count ?? 0}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Package className="w-3.5 h-3.5 text-blue-600" />
-                  <span>توصيل مباشر</span>
+                <div className="flex items-center gap-1 sm:gap-1.5">
+                  <Package className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-blue-600" />
+                  <span className="text-[10px] sm:text-sm">توصيل مباشر</span>
                 </div>
                 {listing.categories?.name_ar && (
-                  <div className="text-muted-foreground text-xs">
+                  <div className="text-muted-foreground text-[10px] sm:text-xs">
                     القسم: {listing.categories.name_ar}
                   </div>
                 )}
                 {listing.created_at && (
-                  <div className="flex items-center gap-1.5 col-span-2 text-xs">
-                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                  <div className="flex items-center gap-1 sm:gap-1.5 col-span-2 text-[10px] sm:text-xs">
+                    <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
                     <span className="text-muted-foreground">الإضافة:</span>
                     <span>{formatArabicDateTime(listing.created_at)}</span>
                   </div>
@@ -490,9 +490,9 @@ export const ListingDetailDialog = ({
               </div>
 
               {listing.description_ar && (
-                <div className="space-y-1.5">
-                  <h4 className="font-semibold text-sm text-muted-foreground">الوصف</h4>
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{listing.description_ar}</p>
+                <div className="space-y-1 sm:space-y-1.5">
+                  <h4 className="font-semibold text-xs sm:text-sm text-muted-foreground">الوصف</h4>
+                  <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{listing.description_ar}</p>
                 </div>
               )}
 
