@@ -950,6 +950,186 @@ export type Database = {
           },
         ]
       }
+      listing_conversations: {
+        Row: {
+          admin_joined: boolean | null
+          buyer_id: string
+          created_at: string
+          id: string
+          listing_id: string
+          seller_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_joined?: boolean | null
+          buyer_id: string
+          created_at?: string
+          id?: string
+          listing_id: string
+          seller_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_joined?: boolean | null
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          listing_id?: string
+          seller_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_conversations_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_fees_settings: {
+        Row: {
+          created_at: string
+          fee_type: string
+          fee_value: number
+          id: string
+          is_active: boolean | null
+          max_fee: number | null
+          min_fee: number | null
+          terms_ar: string | null
+          terms_en: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          fee_type?: string
+          fee_value?: number
+          id?: string
+          is_active?: boolean | null
+          max_fee?: number | null
+          min_fee?: number | null
+          terms_ar?: string | null
+          terms_en?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          fee_type?: string
+          fee_value?: number
+          id?: string
+          is_active?: boolean | null
+          max_fee?: number | null
+          min_fee?: number | null
+          terms_ar?: string | null
+          terms_en?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      listing_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          image_url: string | null
+          is_read: boolean | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_read?: boolean | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_read?: boolean | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "listing_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_transactions: {
+        Row: {
+          amount: number
+          buyer_id: string
+          completed_at: string | null
+          created_at: string
+          id: string
+          listing_id: string
+          phone_number: string | null
+          platform_fee: number | null
+          seller_amount: number
+          seller_id: string
+          shipping_address: string | null
+          shipping_method: string
+          status: string
+          tracking_info: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          buyer_id: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          listing_id: string
+          phone_number?: string | null
+          platform_fee?: number | null
+          seller_amount: number
+          seller_id: string
+          shipping_address?: string | null
+          shipping_method: string
+          status?: string
+          tracking_info?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          buyer_id?: string
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          listing_id?: string
+          phone_number?: string | null
+          platform_fee?: number | null
+          seller_amount?: number
+          seller_id?: string
+          shipping_address?: string | null
+          shipping_method?: string
+          status?: string
+          tracking_info?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_transactions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_levels: {
         Row: {
           benefits: Json
@@ -1666,6 +1846,80 @@ export type Database = {
           },
         ]
       }
+      seller_profiles: {
+        Row: {
+          average_rating: number | null
+          completed_orders: number | null
+          created_at: string
+          id: string
+          is_verified: boolean | null
+          total_reviews: number | null
+          total_sales: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          average_rating?: number | null
+          completed_orders?: number | null
+          created_at?: string
+          id?: string
+          is_verified?: boolean | null
+          total_reviews?: number | null
+          total_sales?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          average_rating?: number | null
+          completed_orders?: number | null
+          created_at?: string
+          id?: string
+          is_verified?: boolean | null
+          total_reviews?: number | null
+          total_sales?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      seller_reviews: {
+        Row: {
+          buyer_id: string
+          comment: string | null
+          created_at: string
+          id: string
+          listing_id: string | null
+          rating: number
+          seller_id: string
+        }
+        Insert: {
+          buyer_id: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          rating: number
+          seller_id: string
+        }
+        Update: {
+          buyer_id?: string
+          comment?: string | null
+          created_at?: string
+          id?: string
+          listing_id?: string | null
+          rating?: number
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_reviews_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_addresses: {
         Row: {
           additional_notes: string | null
@@ -1749,6 +2003,83 @@ export type Database = {
             columns: ["ticket_id"]
             isOneToOne: true
             referencedRelation: "competition_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_listings: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          category_id: string | null
+          condition: string
+          created_at: string
+          currency: string
+          description: string | null
+          description_ar: string | null
+          expires_at: string | null
+          id: string
+          images: string[] | null
+          location: string | null
+          price: number
+          seller_id: string
+          shipping_method: string
+          status: string
+          title: string
+          title_ar: string
+          updated_at: string
+          views_count: number | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          category_id?: string | null
+          condition?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          description_ar?: string | null
+          expires_at?: string | null
+          id?: string
+          images?: string[] | null
+          location?: string | null
+          price: number
+          seller_id: string
+          shipping_method?: string
+          status?: string
+          title: string
+          title_ar: string
+          updated_at?: string
+          views_count?: number | null
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          category_id?: string | null
+          condition?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          description_ar?: string | null
+          expires_at?: string | null
+          id?: string
+          images?: string[] | null
+          location?: string | null
+          price?: number
+          seller_id?: string
+          shipping_method?: string
+          status?: string
+          title?: string
+          title_ar?: string
+          updated_at?: string
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_listings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]

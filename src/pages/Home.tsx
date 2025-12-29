@@ -7,8 +7,9 @@ import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
 import { Loader2 } from 'lucide-react';
 
-// Lazy load non-critical component
+// Lazy load non-critical components
 const CustomerChat = lazy(() => import('@/components/CustomerChat'));
+const MarketplaceSection = lazy(() => import('@/components/marketplace/MarketplaceSection'));
 
 const Home = () => {
   const { data: mainSections, isLoading: mainSectionsLoading } = useQuery({
@@ -217,6 +218,11 @@ const Home = () => {
             </div>
           )}
         </section>
+
+        {/* Marketplace Section */}
+        <Suspense fallback={<div className="h-64 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+          <MarketplaceSection />
+        </Suspense>
 
         <Footer />
       </main>
