@@ -277,7 +277,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 <MessageSquare className="w-5 h-5 text-primary" />
                 <h2 className="font-bold text-sm">{listingId ? 'محادثات المنتج' : 'المحادثات'}</h2>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden" onClick={handleClose}>
                 <X className="w-4 h-4" />
               </Button>
             </div>

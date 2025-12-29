@@ -218,11 +218,11 @@ export const ListingDetailDialog = ({
           <div className="flex flex-col lg:flex-row">
             {/* Image Gallery */}
             <div className="lg:w-1/2 bg-muted relative">
-              <div className="aspect-square relative">
+              <div className="aspect-square relative overflow-hidden">
                 <img
                   src={images[currentImageIndex]}
                   alt={listing.title_ar}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
                 />
                 
                 {images.length > 1 && (

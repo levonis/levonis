@@ -183,8 +183,8 @@ export const MyListings = ({ children }: MyListingsProps) => {
                       key={listing.id}
                       className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-md transition-all"
                     >
-                      {/* Image */}
-                      <div className="relative aspect-square bg-muted">
+                      {/* Image - smaller aspect ratio */}
+                      <div className="relative aspect-[4/3] bg-muted">
                         {listing.images?.[0] ? (
                           <img
                             src={listing.images[0]}
@@ -193,14 +193,14 @@ export const MyListings = ({ children }: MyListingsProps) => {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Package className="w-12 h-12 text-muted-foreground" />
+                            <Package className="w-8 h-8 text-muted-foreground" />
                           </div>
                         )}
                         
                         {/* Status Badge */}
                         <Badge 
                           variant={status.variant} 
-                          className="absolute top-2 right-2 flex items-center gap-1"
+                          className="absolute top-2 right-2 flex items-center gap-1 text-[10px] px-1.5 py-0.5"
                         >
                           {status.icon}
                           {status.label}
