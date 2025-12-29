@@ -16,6 +16,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
+import WalletDialog from '@/components/WalletDialog';
+
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
   const { user } = useAuth();
@@ -28,6 +30,7 @@ const Cart = () => {
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'quarter'>('full');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showWalletDialog, setShowWalletDialog] = useState(false);
 
   // التحقق من وجود منتجات طلب مسبق
   const hasPreOrderItems = items.some((item: any) => 
@@ -1075,17 +1078,17 @@ const Cart = () => {
                   )}
                   
                   {/* رصيد المحفظة المطلوب */}
-                  <div className={`py-3 px-4 rounded-lg border ${hasEnoughBalance ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800' : 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800'}`}>
+                  <div className={`py-3 px-4 rounded-lg border ${hasEnoughBalance ? 'bg-primary/5 border-primary/20' : 'bg-destructive/5 border-destructive/20'}`}>
                     <div className="flex items-center gap-2 mb-2">
-                      <Wallet className={`h-5 w-5 ${hasEnoughBalance ? 'text-green-600' : 'text-red-600'}`} />
-                      <span className={`font-bold ${hasEnoughBalance ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'}`}>
+                      <Wallet className={`h-5 w-5 ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`} />
+                      <span className={`font-bold ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`}>
                         الدفع من المحفظة (إلزامي)
                       </span>
                     </div>
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">رصيد المحفظة:</span>
-                        <span className={`font-bold ${hasEnoughBalance ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`font-bold ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`}>
                           {formatPrice(walletBalance)} د.ع
                         </span>
                       </div>
@@ -1094,7 +1097,7 @@ const Cart = () => {
                         <span className="font-bold text-foreground">{formatPrice(requiredPaymentNow)} د.ع</span>
                       </div>
                       {!hasEnoughBalance && (
-                        <div className="mt-2 text-xs text-red-600 dark:text-red-400">
+                        <div className="mt-2 text-xs text-destructive">
                           ⚠️ يجب شحن المحفظة بمبلغ {formatPrice(requiredPaymentNow - walletBalance)} د.ع إضافي
                         </div>
                       )}
@@ -1159,9 +1162,9 @@ const Cart = () => {
                 
                 {!hasEnoughBalance && (
                   <Button 
-                    className="w-full mb-3 bg-green-600 hover:bg-green-700 text-white"
+                    className="w-full mb-3 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
                     size="lg"
-                    onClick={() => navigate('/my-points')}
+                    onClick={() => setShowWalletDialog(true)}
                   >
                     <Wallet className="ml-2 h-4 w-4" />
                     شحن المحفظة
@@ -1211,6 +1214,9 @@ const Cart = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Wallet Dialog */}
+      <WalletDialog open={showWalletDialog} onOpenChange={setShowWalletDialog} />
     </div>
   );
 };
