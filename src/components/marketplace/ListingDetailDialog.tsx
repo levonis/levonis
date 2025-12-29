@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -25,17 +25,20 @@ import {
   Truck,
   Package,
   Loader2,
-  Clock,
   CheckCircle2,
   Receipt,
   Calendar,
+  Heart,
+  ThumbsUp,
+  Share2,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 // Format date in Arabic with time (Baghdad timezone UTC+3)
 const formatArabicDateTime = (dateString: string): string => {
   const date = new Date(dateString);
-  // Convert to Baghdad time (UTC+3)
-  const baghdadOffset = 3 * 60; // minutes
+  const baghdadOffset = 3 * 60;
   const utc = date.getTime() + (date.getTimezoneOffset() * 60000);
   const baghdadDate = new Date(utc + (baghdadOffset * 60000));
   
@@ -89,16 +92,6 @@ const conditionLabels: Record<string, { label: string; color: string }> = {
   needs_repair: { label: 'يحتاج صيانة', color: 'bg-red-500' },
 };
 
-const usageDurationLabels: Record<string, string> = {
-  less_than_month: 'أقل من شهر',
-  '1_3_months': '1-3 أشهر',
-  '3_6_months': '3-6 أشهر',
-  '6_12_months': '6-12 شهر',
-  '1_2_years': '1-2 سنة',
-  '2_3_years': '2-3 سنوات',
-  more_than_3_years: 'أكثر من 3 سنوات',
-};
-
 export const ListingDetailDialog = ({
   listing,
   sellerProfile,
@@ -110,12 +103,29 @@ export const ListingDetailDialog = ({
   const queryClient = useQueryClient();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showBuyForm, setShowBuyForm] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [buyFormData, setBuyFormData] = useState({
     shipping_address: '',
     phone_number: '',
   });
 
   const images = listing.images?.length ? listing.images : ['/placeholder.svg'];
+
+  // Check if listing is in favorites
+  const { data: isFavorite } = useQuery({
+    queryKey: ['listing-favorite', listing.id, user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data } = await supabase
+        .from('favorites')
+        .select('id')
+        .eq('product_id', listing.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user && open,
+  });
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % images.length);
@@ -125,11 +135,56 @@ export const ListingDetailDialog = ({
     setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('يجب تسجيل الدخول');
+      
+      if (isFavorite) {
+        const { error } = await supabase
+          .from('favorites')
+          .delete()
+          .eq('product_id', listing.id)
+          .eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('favorites')
+          .insert({ product_id: listing.id, user_id: user.id });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(isFavorite ? 'تمت الإزالة من المفضلة' : 'تمت الإضافة للمفضلة');
+      queryClient.invalidateQueries({ queryKey: ['listing-favorite', listing.id] });
+    },
+    onError: () => toast.error('حدث خطأ'),
+  });
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/marketplace?listing=${listing.id}`;
+    
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: listing.title_ar,
+          text: `${listing.title_ar} - ${Number(listing.price).toLocaleString()} ${listing.currency}`,
+          url,
+        });
+      } catch {
+        // User cancelled
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success('تم نسخ الرابط');
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   const startConversationMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('يجب تسجيل الدخول');
       
-      // Check if conversation already exists
       const { data: existing } = await supabase
         .from('listing_conversations')
         .select('id')
@@ -137,9 +192,7 @@ export const ListingDetailDialog = ({
         .eq('buyer_id', user.id)
         .single();
       
-      if (existing) {
-        return existing;
-      }
+      if (existing) return existing;
       
       const { data, error } = await supabase
         .from('listing_conversations')
@@ -158,16 +211,13 @@ export const ListingDetailDialog = ({
       toast.success('تم بدء المحادثة مع البائع');
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const createTransactionMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('يجب تسجيل الدخول');
       
-      // Calculate platform fee (we'll fetch settings)
       const { data: feeSettings } = await supabase
         .from('listing_fees_settings')
         .select('*')
@@ -214,9 +264,7 @@ export const ListingDetailDialog = ({
       onOpenChange(false);
       queryClient.invalidateQueries({ queryKey: ['listing-transactions'] });
     },
-    onError: (error: Error) => {
-      toast.error(error.message);
-    },
+    onError: (error: Error) => toast.error(error.message),
   });
 
   const handleBuy = (e: React.FormEvent) => {
@@ -233,12 +281,12 @@ export const ListingDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[95vh] p-0 overflow-hidden">
-        <ScrollArea className="h-[95vh]">
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0 overflow-hidden">
+        <ScrollArea className="max-h-[90vh]">
           <div className="flex flex-col lg:flex-row">
-            {/* Image Gallery */}
-            <div className="lg:w-1/2 bg-black relative">
-              <div className="aspect-square lg:aspect-auto lg:h-[500px] relative overflow-hidden flex items-center justify-center">
+            {/* Image Gallery - Smaller on large screens */}
+            <div className="lg:w-2/5 bg-black relative">
+              <div className="aspect-square relative overflow-hidden flex items-center justify-center">
                 <img
                   src={images[currentImageIndex]}
                   alt={listing.title_ar}
@@ -249,22 +297,22 @@ export const ListingDetailDialog = ({
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/90 rounded-full p-2.5 hover:bg-white transition-colors shadow-lg"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 rounded-full p-2 hover:bg-white transition-colors shadow-lg"
                     >
-                      <ChevronLeft className="w-5 h-5" />
+                      <ChevronLeft className="w-4 h-4" />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/90 rounded-full p-2.5 hover:bg-white transition-colors shadow-lg"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 rounded-full p-2 hover:bg-white transition-colors shadow-lg"
                     >
-                      <ChevronRight className="w-5 h-5" />
+                      <ChevronRight className="w-4 h-4" />
                     </button>
                   </>
                 )}
 
                 {/* Image counter */}
                 {images.length > 1 && (
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-3 py-1 rounded-full">
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs px-2 py-0.5 rounded-full">
                     {currentImageIndex + 1} / {images.length}
                   </div>
                 )}
@@ -272,13 +320,13 @@ export const ListingDetailDialog = ({
               
               {/* Thumbnails */}
               {images.length > 1 && (
-                <div className="flex gap-2 p-3 bg-muted/50 overflow-x-auto">
+                <div className="flex gap-1.5 p-2 bg-muted/50 overflow-x-auto">
                   {images.map((img, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCurrentImageIndex(idx)}
-                      className={`w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-all ${
-                        idx === currentImageIndex ? 'border-primary ring-2 ring-primary/30' : 'border-transparent opacity-70 hover:opacity-100'
+                      className={`w-12 h-12 flex-shrink-0 rounded-md overflow-hidden border-2 transition-all ${
+                        idx === currentImageIndex ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
                       }`}
                     >
                       <img src={img} alt="" className="w-full h-full object-cover" />
@@ -289,60 +337,84 @@ export const ListingDetailDialog = ({
             </div>
 
             {/* Details */}
-            <div className="lg:w-1/2 p-6 space-y-5">
+            <div className="lg:w-3/5 p-4 space-y-4">
+              {/* Action Icons Row */}
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={handleShare}
+                  title="مشاركة"
+                >
+                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Share2 className="w-4 h-4" />}
+                </Button>
+                {user && !isOwnListing && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={`h-9 w-9 ${isFavorite ? 'text-red-500' : ''}`}
+                    onClick={() => toggleFavoriteMutation.mutate()}
+                    disabled={toggleFavoriteMutation.isPending}
+                    title={isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة'}
+                  >
+                    <Heart className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+                  </Button>
+                )}
+              </div>
+
               {/* Title & Condition */}
               <div>
-                <div className="flex items-start justify-between gap-3 mb-2">
-                  <h2 className="text-xl font-bold leading-tight">{listing.title_ar}</h2>
-                  <Badge className={`${condition.color} text-white flex-shrink-0`}>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <h2 className="text-lg font-bold leading-tight">{listing.title_ar}</h2>
+                  <Badge className={`${condition.color} text-white flex-shrink-0 text-xs`}>
                     {condition.label}
                   </Badge>
                 </div>
                 
                 {/* Price */}
                 <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold text-primary">
+                  <span className="text-2xl font-bold text-primary">
                     {Number(listing.price).toLocaleString()}
                   </span>
-                  <span className="text-muted-foreground">{listing.currency}</span>
+                  <span className="text-sm text-muted-foreground">{listing.currency}</span>
                 </div>
               </div>
 
               {/* Quick Info */}
-              <div className="grid grid-cols-2 gap-3 py-3 border-y border-border">
+              <div className="grid grid-cols-2 gap-2 py-3 border-y border-border text-sm">
                 {listing.location && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-muted-foreground" />
                     <span>{listing.location}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-sm">
-                  <Eye className="w-4 h-4 text-muted-foreground" />
+                <div className="flex items-center gap-1.5">
+                  <Eye className="w-3.5 h-3.5 text-muted-foreground" />
                   <span>{listing.views_count ?? 0} مشاهدة</span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex items-center gap-1.5">
                   {listing.shipping_method === 'through_site' ? (
                     <>
-                      <Truck className="w-4 h-4 text-green-500" />
-                      <span>عن طريق الوسيط (عمولة 5 آلاف)</span>
+                      <Truck className="w-3.5 h-3.5 text-green-500" />
+                      <span className="text-xs">عن طريق الوسيط (+5 آلاف)</span>
                     </>
                   ) : (
                     <>
-                      <Package className="w-4 h-4 text-blue-500" />
+                      <Package className="w-3.5 h-3.5 text-blue-500" />
                       <span>توصيل مباشر</span>
                     </>
                   )}
                 </div>
                 {listing.categories?.name_ar && (
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-muted-foreground text-xs">
                     القسم: {listing.categories.name_ar}
                   </div>
                 )}
-                {/* Date Added */}
                 {listing.created_at && (
-                  <div className="flex items-center gap-2 text-sm col-span-2">
-                    <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-muted-foreground">تاريخ الإضافة:</span>
+                  <div className="flex items-center gap-1.5 col-span-2 text-xs">
+                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-muted-foreground">الإضافة:</span>
                     <span>{formatArabicDateTime(listing.created_at)}</span>
                   </div>
                 )}
@@ -350,7 +422,7 @@ export const ListingDetailDialog = ({
 
               {/* Description */}
               {listing.description_ar && (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <h4 className="font-semibold text-sm text-muted-foreground">الوصف</h4>
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{listing.description_ar}</p>
                 </div>
@@ -358,20 +430,19 @@ export const ListingDetailDialog = ({
 
               {/* Seller Info */}
               {sellerProfile && (
-                <div className="bg-muted/50 rounded-xl p-4">
-                  <h4 className="font-semibold text-sm text-muted-foreground mb-3">البائع</h4>
+                <div className="bg-muted/50 rounded-lg p-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center text-lg font-bold text-primary">
+                    <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-base font-bold text-primary">
                       {sellerName?.charAt(0) || 'B'}
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold">{sellerName || 'بائع'}</span>
+                        <span className="font-medium text-sm">{sellerName || 'بائع'}</span>
                         {sellerProfile.is_verified && (
                           <ShieldCheck className="w-4 h-4 text-green-500" />
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                         <span className="flex items-center gap-1">
                           <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
                           {(sellerProfile.average_rating ?? 0).toFixed(1)}
@@ -388,66 +459,67 @@ export const ListingDetailDialog = ({
 
               {/* Actions */}
               {!isOwnListing && user && (
-                <div className="space-y-3 pt-2">
+                <div className="space-y-3 pt-1">
                   {!showBuyForm ? (
-                    <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex gap-2">
                       <Button
-                        className="flex-1 gap-2 h-12 text-base"
+                        className="flex-1 gap-2 h-10"
                         onClick={() => setShowBuyForm(true)}
                       >
-                        <ShoppingCart className="w-5 h-5" />
+                        <ShoppingCart className="w-4 h-4" />
                         شراء الآن
                       </Button>
                       <Button
                         variant="outline"
-                        className="gap-2 h-12"
+                        className="gap-2 h-10"
                         onClick={() => startConversationMutation.mutate()}
                         disabled={startConversationMutation.isPending}
                       >
                         {startConversationMutation.isPending ? (
                           <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
-                          <MessageSquare className="w-5 h-5" />
+                          <MessageSquare className="w-4 h-4" />
                         )}
-                        تواصل مع البائع
+                        تواصل
                       </Button>
                     </div>
                   ) : (
-                    <form onSubmit={handleBuy} className="space-y-4 bg-muted/50 rounded-xl p-4">
-                      <h4 className="font-semibold flex items-center gap-2">
+                    <form onSubmit={handleBuy} className="space-y-3 bg-muted/50 rounded-lg p-3">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
                         <Receipt className="w-4 h-4" />
                         معلومات الشحن
                       </h4>
-                      <div className="space-y-2">
-                        <Label>العنوان الكامل *</Label>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">العنوان الكامل *</Label>
                         <Textarea
                           value={buyFormData.shipping_address}
                           onChange={(e) => setBuyFormData(prev => ({ ...prev, shipping_address: e.target.value }))}
-                          placeholder="المحافظة، المنطقة، الشارع، أقرب نقطة دالة"
+                          placeholder="المحافظة، المنطقة، الشارع"
                           required
-                          className="resize-none"
-                          rows={3}
+                          className="resize-none text-sm"
+                          rows={2}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label>رقم الهاتف *</Label>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">رقم الهاتف *</Label>
                         <Input
                           type="tel"
                           value={buyFormData.phone_number}
                           onChange={(e) => setBuyFormData(prev => ({ ...prev, phone_number: e.target.value }))}
                           placeholder="07xxxxxxxxx"
                           required
+                          className="text-sm"
                         />
                       </div>
                       <div className="flex gap-2">
-                        <Button type="submit" className="flex-1 h-11" disabled={createTransactionMutation.isPending}>
+                        <Button type="submit" className="flex-1 h-9 text-sm" disabled={createTransactionMutation.isPending}>
                           {createTransactionMutation.isPending ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             'تأكيد الشراء'
                           )}
                         </Button>
-                        <Button type="button" variant="outline" onClick={() => setShowBuyForm(false)}>
+                        <Button type="button" variant="outline" className="h-9 text-sm" onClick={() => setShowBuyForm(false)}>
                           إلغاء
                         </Button>
                       </div>
@@ -457,13 +529,13 @@ export const ListingDetailDialog = ({
               )}
 
               {!user && (
-                <p className="text-center text-muted-foreground py-4 bg-muted/30 rounded-lg">
+                <p className="text-center text-sm text-muted-foreground py-3 bg-muted/30 rounded-lg">
                   يجب تسجيل الدخول للشراء أو التواصل مع البائع
                 </p>
               )}
 
               {isOwnListing && (
-                <p className="text-center text-muted-foreground py-4 bg-muted/30 rounded-lg">
+                <p className="text-center text-sm text-muted-foreground py-3 bg-muted/30 rounded-lg">
                   هذا منتجك
                 </p>
               )}

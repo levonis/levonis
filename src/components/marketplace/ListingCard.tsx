@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Star, MapPin, Eye, ShieldCheck, Clock } from 'lucide-react';
+import { Star, MapPin, Eye, Clock } from 'lucide-react';
 import { ListingDetailDialog } from './ListingDetailDialog';
 
 // Format relative time in Arabic (Baghdad timezone UTC+3)
 const formatRelativeTime = (dateString: string): string => {
-  // Get Baghdad time
-  const baghdadOffset = 3 * 60 * 60 * 1000; // UTC+3
+  const baghdadOffset = 3 * 60 * 60 * 1000;
   const now = new Date();
   const nowBaghdad = new Date(now.getTime() + baghdadOffset + now.getTimezoneOffset() * 60 * 1000);
   const date = new Date(dateString);
@@ -20,15 +19,15 @@ const formatRelativeTime = (dateString: string): string => {
   const diffWeeks = Math.floor(diffDays / 7);
 
   if (diffSeconds < 60) {
-    return `منذ ${diffSeconds} ثانية`;
+    return `منذ ${diffSeconds} ث`;
   } else if (diffMinutes < 60) {
-    return `منذ ${diffMinutes} دقيقة`;
+    return `منذ ${diffMinutes} د`;
   } else if (diffHours < 24) {
-    return `منذ ${diffHours} ساعة`;
+    return `منذ ${diffHours} س`;
   } else if (diffDays < 7) {
-    return `منذ ${diffDays} يوم`;
+    return `منذ ${diffDays} ي`;
   } else {
-    return `منذ ${diffWeeks} أسبوع`;
+    return `منذ ${diffWeeks} أ`;
   }
 };
 
@@ -78,70 +77,66 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
         onClick={() => setShowDetail(true)}
         className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 hover:shadow-xl transition-all cursor-pointer group"
       >
-        {/* Image with overlay */}
-        <div className="aspect-[4/3] relative overflow-hidden bg-muted">
+        {/* Square Image */}
+        <div className="aspect-square relative overflow-hidden bg-muted">
           {listing.images?.[0] ? (
             <img
               src={listing.images[0]}
               alt={listing.title_ar}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center text-muted-foreground bg-gradient-to-br from-muted to-muted/50">
               <span className="text-sm">لا توجد صورة</span>
             </div>
           )}
-          
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          
-          {/* Condition Badge */}
-          <Badge className={`absolute top-2 right-2 ${condition.color} border-0 shadow-md text-[10px] px-2 py-0.5`}>
-            {condition.label}
-          </Badge>
-
-          {/* Time Badge */}
-          {listing.created_at && (
-            <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm text-white text-[10px] px-2 py-1 rounded-full flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {formatRelativeTime(listing.created_at)}
-            </div>
-          )}
         </div>
 
         {/* Content */}
-        <div className="p-3 space-y-2">
-          <h3 className="font-semibold text-sm line-clamp-1">
+        <div className="p-2.5 space-y-1.5">
+          {/* Title */}
+          <h3 className="font-medium text-sm line-clamp-1">
             {listing.title_ar}
           </h3>
 
-          {/* Price */}
-          <div className="flex items-baseline gap-1">
-            <span className="font-bold text-primary text-lg">
-              {Number(listing.price).toLocaleString()}
-            </span>
-            <span className="text-xs text-muted-foreground">{listing.currency}</span>
+          {/* Price & Condition */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-baseline gap-1">
+              <span className="font-bold text-primary text-base">
+                {Number(listing.price).toLocaleString()}
+              </span>
+              <span className="text-[10px] text-muted-foreground">{listing.currency}</span>
+            </div>
+            <Badge className={`${condition.color} border-0 text-[9px] px-1.5 py-0`}>
+              {condition.label}
+            </Badge>
           </div>
 
           {/* Info Row */}
           <div className="flex items-center justify-between text-[10px] text-muted-foreground pt-1 border-t border-border/50">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               {listing.location && (
-                <span className="flex items-center gap-0.5">
-                  <MapPin className="w-3 h-3" />
+                <span className="flex items-center gap-0.5 truncate max-w-[60px]">
+                  <MapPin className="w-2.5 h-2.5 flex-shrink-0" />
                   {listing.location}
                 </span>
               )}
-            </div>
-            <div className="flex items-center gap-2">
               <span className="flex items-center gap-0.5">
-                <Eye className="w-3 h-3" />
+                <Eye className="w-2.5 h-2.5" />
                 {listing.views_count ?? 0}
               </span>
+            </div>
+            <div className="flex items-center gap-1.5">
               {sellerProfile && (
                 <span className="flex items-center gap-0.5">
-                  <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                  <Star className="w-2.5 h-2.5 fill-yellow-500 text-yellow-500" />
                   {(sellerProfile.average_rating ?? 0).toFixed(1)}
+                </span>
+              )}
+              {listing.created_at && (
+                <span className="flex items-center gap-0.5">
+                  <Clock className="w-2.5 h-2.5" />
+                  {formatRelativeTime(listing.created_at)}
                 </span>
               )}
             </div>
