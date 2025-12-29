@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.retry-extract-colors]
 verify_jwt = false
+
+[functions.notify-marketplace-telegram]
+verify_jwt = false
