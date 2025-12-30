@@ -25,6 +25,7 @@ export default {
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
+        "background-2": "hsl(var(--background-2))",
         foreground: "hsl(var(--foreground))",
         whatsapp: "hsl(var(--whatsapp))",
         primary: {

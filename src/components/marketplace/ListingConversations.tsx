@@ -178,11 +178,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     }, 100);
   }, [messages, selectedConversation]);
 
-  // Focus input when conversation selected and mark messages as read
+  // Mark messages as read when conversation selected (don't auto-focus to prevent keyboard popup)
   useEffect(() => {
     if (selectedConversation && user) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-      
       // Mark all messages as read when opening a conversation
       const markAsRead = async () => {
         const { error } = await supabase
@@ -262,19 +260,36 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
   const requestAdminMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedConversation) return;
+      if (!selectedConversation || !user) return;
       const { error } = await supabase
         .from('listing_conversations')
         .update({ status: 'disputed' })
         .eq('id', selectedConversation);
       if (error) throw error;
 
-      // Get conversation code for notification
+      // Get conversation details for notification
       const { data: conv } = await supabase
         .from('listing_conversations')
-        .select('conversation_code')
+        .select('conversation_code, user_listings(title_ar)')
         .eq('id', selectedConversation)
         .single();
+
+      // Get user info
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', user.id)
+        .single();
+
+      const userName = userProfile?.full_name || userProfile?.username || 'مستخدم';
+      const listingTitle = (conv?.user_listings as any)?.title_ar || 'منتج';
+
+      // Insert system message in conversation
+      await supabase.from('listing_messages').insert({
+        conversation_id: selectedConversation,
+        sender_id: user.id,
+        content: `⚠️ تم طلب تدخل الإدارة من قبل ${userName}`,
+      });
 
       // Create notification for admins
       const { data: admins } = await supabase
@@ -292,11 +307,55 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
             related_id: selectedConversation,
           }))
         );
+
+        // Send Telegram notification to admins
+        for (const admin of admins) {
+          await supabase.functions.invoke('send-telegram-notification', {
+            body: {
+              user_id: admin.user_id,
+              title: '⚠️ طلب تدخل في نزاع',
+              message: `طلب ${userName} تدخل الإدارة في محادثة بخصوص "${listingTitle}"\n\n📋 رمز المحادثة: ${conv?.conversation_code || 'غير معروف'}`,
+            },
+          });
+        }
       }
     },
     onSuccess: () => {
       toast.success('تم طلب تدخل الإدارة - سيتم إعلام الإدارة');
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+    },
+  });
+
+  const cancelDisputeMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedConversation || !user) return;
+      const { error } = await supabase
+        .from('listing_conversations')
+        .update({ status: 'open' })
+        .eq('id', selectedConversation);
+      if (error) throw error;
+
+      // Get user info
+      const { data: userProfile } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', user.id)
+        .single();
+
+      const userName = userProfile?.full_name || userProfile?.username || 'مستخدم';
+
+      // Insert system message in conversation
+      await supabase.from('listing_messages').insert({
+        conversation_id: selectedConversation,
+        sender_id: user.id,
+        content: `✅ تم إلغاء طلب تدخل الإدارة من قبل ${userName}`,
+      });
+    },
+    onSuccess: () => {
+      toast.success('تم إلغاء طلب تدخل الإدارة');
+      queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
     },
   });
 
@@ -519,11 +578,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
           {/* Messages Area - Telegram/WhatsApp Style */}
           <div className={cn(
-            "flex-1 flex flex-col min-h-0 bg-[hsl(var(--muted)/0.3)]",
+            "flex-1 flex flex-col min-h-0 bg-background-2",
             !selectedConversation ? 'hidden md:flex' : 'flex'
           )}
             style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
             }}
           >
             {selectedConversation ? (
@@ -621,6 +680,65 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               طلب تدخل الإدارة
                             </DropdownMenuItem>
                           )}
+                          {(isBuyer || isSeller) && selectedConv?.status === 'disputed' && (
+                            <DropdownMenuItem 
+                              className="text-primary gap-2"
+                              onClick={() => cancelDisputeMutation.mutate()}
+                            >
+                              <Check className="w-4 h-4" />
+                              إلغاء طلب التدخل
+                            </DropdownMenuItem>
+                          )}
+                          {isAdmin && selectedConv?.status === 'disputed' && !selectedConv?.admin_joined && (
+                            <DropdownMenuItem 
+                              className="text-primary gap-2"
+                              onClick={async () => {
+                                await supabase
+                                  .from('listing_conversations')
+                                  .update({ admin_joined: true })
+                                  .eq('id', selectedConversation);
+                                
+                                // Add system message
+                                await supabase.from('listing_messages').insert({
+                                  conversation_id: selectedConversation,
+                                  sender_id: user?.id,
+                                  content: '🛡️ انضمت الإدارة للمحادثة',
+                                });
+                                
+                                queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+                                queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+                                toast.success('تم الانضمام للمحادثة');
+                              }}
+                            >
+                              <ShieldCheck className="w-4 h-4" />
+                              الانضمام للنزاع
+                            </DropdownMenuItem>
+                          )}
+                          {isAdmin && selectedConv?.status === 'disputed' && (
+                            <DropdownMenuItem 
+                              className="text-emerald-500 gap-2"
+                              onClick={async () => {
+                                await supabase
+                                  .from('listing_conversations')
+                                  .update({ status: 'resolved', admin_joined: false })
+                                  .eq('id', selectedConversation);
+                                
+                                // Add system message
+                                await supabase.from('listing_messages').insert({
+                                  conversation_id: selectedConversation,
+                                  sender_id: user?.id,
+                                  content: '✅ تم حل النزاع بواسطة الإدارة',
+                                });
+                                
+                                queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+                                queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+                                toast.success('تم حل النزاع');
+                              }}
+                            >
+                              <CheckCheck className="w-4 h-4" />
+                              حل النزاع
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -645,30 +763,6 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     </div>
                   </div>
                   
-                  {/* Other User Listings */}
-                  {otherUserListings && otherUserListings.length > 0 && (
-                    <div className="px-3 py-2 bg-muted/20 border-t">
-                      <p className="text-[10px] text-muted-foreground mb-1.5">
-                        منتجات أخرى من {selectedConv?.buyer_id === user?.id ? 'البائع' : 'المستخدم'}
-                      </p>
-                      <ScrollArea className="w-full">
-                        <div className="flex gap-2">
-                          {otherUserListings.slice(0, 4).map((listing: any) => (
-                            <div key={listing.id} className="flex-shrink-0 w-14">
-                              <img 
-                                src={listing.images?.[0] || '/placeholder.svg'} 
-                                alt={listing.title_ar}
-                                className="w-14 h-14 rounded-md object-cover"
-                              />
-                              <p className="text-[9px] text-muted-foreground truncate mt-0.5">
-                                {Number(listing.price).toLocaleString()}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </ScrollArea>
-                    </div>
-                  )}
                 </div>
 
                 {/* Messages */}
