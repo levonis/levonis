@@ -2172,8 +2172,10 @@ export type Database = {
           expires_at: string | null
           id: string
           images: string[] | null
+          last_renewed_at: string | null
           likes_count: number | null
           location: string | null
+          original_price: number | null
           price: number
           seller_id: string
           shipping_method: string
@@ -2195,8 +2197,10 @@ export type Database = {
           expires_at?: string | null
           id?: string
           images?: string[] | null
+          last_renewed_at?: string | null
           likes_count?: number | null
           location?: string | null
+          original_price?: number | null
           price: number
           seller_id: string
           shipping_method?: string
@@ -2218,8 +2222,10 @@ export type Database = {
           expires_at?: string | null
           id?: string
           images?: string[] | null
+          last_renewed_at?: string | null
           likes_count?: number | null
           location?: string | null
+          original_price?: number | null
           price?: number
           seller_id?: string
           shipping_method?: string

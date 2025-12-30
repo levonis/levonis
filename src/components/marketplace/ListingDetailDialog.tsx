@@ -72,6 +72,7 @@ interface Listing {
   title_ar: string;
   description_ar?: string | null;
   price: number;
+  original_price?: number | null;
   currency: string;
   condition: string;
   images: string[] | null;
@@ -96,6 +97,16 @@ interface ListingDetailDialogProps {
   listing: Listing;
   sellerProfile?: SellerProfile | null;
   sellerName?: string;
+  sellerAvatar?: string | null;
+  sellerPhone?: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+interface ListingDetailDialogProps {
+  listing: Listing;
+  sellerProfile?: SellerProfile | null;
+  sellerName?: string;
   sellerPhone?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -104,16 +115,15 @@ interface ListingDetailDialogProps {
 const conditionLabels: Record<string, { label: string; bgClass: string }> = {
   new: { label: 'جديد', bgClass: 'bg-emerald-600' },
   like_new: { label: 'شبه جديد', bgClass: 'bg-teal-600' },
-  excellent: { label: 'ممتاز', bgClass: 'bg-blue-600' },
   good: { label: 'جيد', bgClass: 'bg-amber-600' },
   used: { label: 'مستعمل', bgClass: 'bg-orange-600' },
-  needs_repair: { label: 'يحتاج صيانة', bgClass: 'bg-red-600' },
 };
 
 export const ListingDetailDialog = ({
   listing,
   sellerProfile,
   sellerName,
+  sellerAvatar,
   open,
   onOpenChange,
 }: ListingDetailDialogProps) => {
@@ -128,6 +138,9 @@ export const ListingDetailDialog = ({
     phone_number: '',
     payment_method: '' as 'through_site' | 'direct' | '',
   });
+  
+  // Check if user came from a conversation
+  const returnToConversationId = sessionStorage.getItem('returnToConversation');
 
   // Fetch user addresses
   const { data: userAddresses } = useQuery({
@@ -484,11 +497,34 @@ export const ListingDetailDialog = ({
   const condition = conditionLabels[listing.condition] || conditionLabels.used;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) {
+        sessionStorage.removeItem('returnToConversation');
+      }
+      onOpenChange(isOpen);
+    }}>
       <DialogContent hideClose className="max-w-3xl max-h-[90vh] p-0 overflow-hidden w-[95vw] sm:w-full">
+        {/* Back to Conversation Button - Only show if came from conversation */}
+        {returnToConversationId && (
+          <button
+            onClick={() => {
+              sessionStorage.removeItem('returnToConversation');
+              onOpenChange(false);
+              navigate(`/marketplace?openChat=true&conversationId=${returnToConversationId}`);
+            }}
+            className="absolute right-2 top-2 sm:right-3 sm:top-3 z-50 bg-primary/90 text-primary-foreground backdrop-blur-sm rounded-full px-2.5 py-1.5 hover:bg-primary shadow-lg border border-primary/50 transition-colors flex items-center gap-1 text-xs"
+          >
+            <ChevronRight className="w-3.5 h-3.5" />
+            <span>رجوع للمحادثة</span>
+          </button>
+        )}
+
         {/* Custom Close Button */}
         <button
-          onClick={() => onOpenChange(false)}
+          onClick={() => {
+            sessionStorage.removeItem('returnToConversation');
+            onOpenChange(false);
+          }}
           className="absolute left-2 top-2 sm:left-3 sm:top-3 z-50 bg-background/90 backdrop-blur-sm rounded-full p-1.5 sm:p-2 hover:bg-background shadow-lg border border-border transition-colors"
         >
           <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -596,11 +632,16 @@ export const ListingDetailDialog = ({
                   </Badge>
                 </div>
                 
-                <div className="flex items-baseline gap-1.5 sm:gap-2">
+                <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap">
                   <span className="text-xl sm:text-2xl font-bold text-primary">
                     {Number(listing.price).toLocaleString()}
                   </span>
                   <span className="text-xs sm:text-sm text-muted-foreground">{listing.currency}</span>
+                  {listing.original_price && listing.original_price > listing.price && (
+                    <span className="text-sm sm:text-base text-muted-foreground line-through">
+                      {Number(listing.original_price).toLocaleString()}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -650,9 +691,17 @@ export const ListingDetailDialog = ({
                   className="w-full bg-muted/50 rounded-lg p-3 hover:bg-muted/70 transition-colors cursor-pointer text-right"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-base font-bold text-primary">
-                      {sellerName?.charAt(0) || 'B'}
-                    </div>
+                    {sellerAvatar ? (
+                      <img 
+                        src={sellerAvatar} 
+                        alt={sellerName || 'البائع'} 
+                        className="w-10 h-10 rounded-full object-cover border-2 border-primary/20"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-base font-bold text-primary">
+                        {sellerName?.charAt(0) || 'B'}
+                      </div>
+                    )}
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-medium text-sm">{sellerName || 'بائع'}</span>

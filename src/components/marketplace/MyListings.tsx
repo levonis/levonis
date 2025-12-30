@@ -16,7 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Package, Eye, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2, Tag, X } from 'lucide-react';
+import { Package, Eye, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2, Tag, X, RefreshCw } from 'lucide-react';
 
 // Format relative time in Arabic (Baghdad timezone UTC+3)
 const formatRelativeTime = (dateString: string): string => {
@@ -71,6 +71,14 @@ const conditionOptions = [
   { value: 'good', label: 'جيد' },
   { value: 'used', label: 'مستعمل' },
 ];
+
+// Check if listing can be renewed (once per day)
+const canRenewListing = (lastRenewedAt: string | null, createdAt: string): boolean => {
+  const lastDate = lastRenewedAt ? new Date(lastRenewedAt) : new Date(createdAt);
+  const now = new Date();
+  const diffHours = (now.getTime() - lastDate.getTime()) / (1000 * 60 * 60);
+  return diffHours >= 24;
+};
 
 export const MyListings = ({ children }: MyListingsProps) => {
   const { user } = useAuth();
@@ -179,6 +187,26 @@ export const MyListings = ({ children }: MyListingsProps) => {
     }
   };
 
+  const handleRenewListing = (listing: any) => {
+    const canRenew = canRenewListing(listing.last_renewed_at, listing.created_at);
+    if (!canRenew) {
+      toast.error('يمكنك تجديد المنتج مرة واحدة كل 24 ساعة');
+      return;
+    }
+    
+    updateListingMutation.mutate({
+      id: listing.id,
+      values: { 
+        last_renewed_at: new Date().toISOString(),
+        approved_at: new Date().toISOString() // This will make it appear at top
+      },
+    }, {
+      onSuccess: () => {
+        toast.success('تم تجديد المنتج! سيظهر أول القائمة');
+      }
+    });
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
@@ -282,7 +310,7 @@ export const MyListings = ({ children }: MyListingsProps) => {
                         )}
 
                         {/* Compact Actions */}
-                        <div className="flex gap-1.5">
+                        <div className="flex flex-wrap gap-1.5">
                           <Button 
                             variant="outline" 
                             size="sm" 
@@ -293,16 +321,28 @@ export const MyListings = ({ children }: MyListingsProps) => {
                             تعديل
                           </Button>
                           {listing.status === 'approved' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="text-green-600 hover:text-green-600 h-7 px-2"
-                              onClick={() => handleMarkAsSold(listing.id)}
-                              disabled={updateListingMutation.isPending}
-                              title="تم البيع"
-                            >
-                              <Tag className="w-3 h-3" />
-                            </Button>
+                            <>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-blue-600 hover:text-blue-600 h-7 px-2"
+                                onClick={() => handleRenewListing(listing)}
+                                disabled={updateListingMutation.isPending || !canRenewListing(listing.last_renewed_at, listing.created_at)}
+                                title={canRenewListing(listing.last_renewed_at, listing.created_at) ? 'تجديد المنتج' : 'يمكنك التجديد مرة كل 24 ساعة'}
+                              >
+                                <RefreshCw className="w-3 h-3" />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-green-600 hover:text-green-600 h-7 px-2"
+                                onClick={() => handleMarkAsSold(listing.id)}
+                                disabled={updateListingMutation.isPending}
+                                title="تم البيع"
+                              >
+                                <Tag className="w-3 h-3" />
+                              </Button>
+                            </>
                           )}
                           <Button 
                             variant="outline" 

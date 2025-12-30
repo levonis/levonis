@@ -46,10 +46,8 @@ interface AddListingDialogProps {
 const conditionOptions = [
   { value: 'new', label: 'جديد (لم يُستخدم)' },
   { value: 'like_new', label: 'شبه جديد (استخدام خفيف جداً)' },
-  { value: 'excellent', label: 'ممتاز (بحالة ممتازة)' },
   { value: 'good', label: 'جيد (آثار استخدام بسيطة)' },
   { value: 'used', label: 'مستعمل (آثار استخدام واضحة)' },
-  { value: 'needs_repair', label: 'يحتاج صيانة' },
 ];
 
 const usageDurationOptions = [
@@ -62,10 +60,7 @@ const usageDurationOptions = [
   { value: 'more_than_3_years', label: 'أكثر من 3 سنوات' },
 ];
 
-const shippingOptions = [
-  { value: 'direct', label: 'توصيل مباشر للمشتري' },
-  { value: 'through_site', label: 'عن طريق الوسيط (زيادة 5,000 دينار)' },
-];
+// Removed shipping options - customer decides this, not seller
 
 export const AddListingDialog = ({ children, editMode = false, editData, onClose }: AddListingDialogProps) => {
   const { user } = useAuth();
@@ -85,8 +80,8 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
     title_ar: editData?.title_ar || '',
     description_ar: editData?.description_ar || '',
     price: editData?.price ? String(editData.price) : '',
-    condition: editData?.condition || 'used',
-    shipping_method: editData?.shipping_method || 'through_site',
+    original_price: (editData as any)?.original_price ? String((editData as any).original_price) : '',
+    condition: editData?.condition || 'new',
     location: editData?.location || '',
     usage_duration: editData?.usage_duration || '',
   });
@@ -153,8 +148,9 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
         description_ar: formData.description_ar,
         description: formData.description_ar,
         price: parseFloat(formData.price),
+        original_price: formData.original_price ? parseFloat(formData.original_price) : null,
         condition: formData.condition,
-        shipping_method: formData.shipping_method,
+        shipping_method: 'through_site', // Default shipping method
         location: formData.location,
         images,
         status: 'pending',
@@ -202,8 +198,8 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
       title_ar: '',
       description_ar: '',
       price: '',
-      condition: 'used',
-      shipping_method: 'through_site',
+      original_price: '',
+      condition: 'new',
       location: '',
       usage_duration: '',
     });
@@ -525,7 +521,7 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
               />
             </div>
 
-            {/* Price & Condition */}
+            {/* Price */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>السعر (دينار) *</Label>
@@ -543,21 +539,37 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
                 />
               </div>
               <div className="space-y-2">
-                <Label>الحالة</Label>
-                <Select
-                  value={formData.condition}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, condition: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {conditionOptions.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>السعر الأصلي (اختياري - للتخفيضات)</Label>
+                <Input
+                  type="text"
+                  value={formData.original_price ? Number(formData.original_price.replace(/,/g, '')).toLocaleString() : ''}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/,/g, '');
+                    if (/^\d*$/.test(rawValue)) {
+                      setFormData(prev => ({ ...prev, original_price: rawValue }));
+                    }
+                  }}
+                  placeholder="150,000"
+                />
               </div>
+            </div>
+
+            {/* Condition */}
+            <div className="space-y-2">
+              <Label>الحالة</Label>
+              <Select
+                value={formData.condition}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, condition: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {conditionOptions.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Usage Duration - Only show if not new */}
@@ -580,32 +592,14 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
               </div>
             )}
 
-            {/* Shipping & Location */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>طريقة الشحن</Label>
-                <Select
-                  value={formData.shipping_method}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, shipping_method: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {shippingOptions.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>الموقع</Label>
-                <Input
-                  value={formData.location}
-                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                  placeholder="بغداد، الكرادة"
-                />
-              </div>
+            {/* Location */}
+            <div className="space-y-2">
+              <Label>الموقع</Label>
+              <Input
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                placeholder="بغداد، الكرادة"
+              />
             </div>
 
             {/* Terms & Conditions */}

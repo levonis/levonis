@@ -958,15 +958,17 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     </div>
                   </div>
                   
-                  {/* Product Info Bar - Clickable */}
+                  {/* Product Info Bar - Clickable with Back Option */}
                   <div 
-                    className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/50 transition-colors"
+                    className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/50 transition-colors group"
                     onClick={() => {
                       const listingId = selectedConv?.listing_id || (selectedConv?.user_listings as any)?.id;
                       if (!listingId) {
                         toast.error('تعذر فتح المنتج');
                         return;
                       }
+                      // Store conversation ID to return back
+                      sessionStorage.setItem('returnToConversation', selectedConv?.id || '');
                       setOpen(false);
                       setSelectedConversation(null);
                       navigate(`/marketplace?listing=${listingId}`);
@@ -987,7 +989,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         {Number((selectedConv?.user_listings as any)?.price).toLocaleString()} دينار
                       </p>
                     </div>
-                    <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+                    <div className="flex items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors">
+                      <span className="text-[10px]">عرض المنتج</span>
+                      <ChevronLeft className="w-4 h-4" />
+                    </div>
                   </div>
                   
                 </div>
