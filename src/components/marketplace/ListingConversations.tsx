@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   MessageSquare,
   Send,
@@ -31,6 +32,9 @@ import {
   Video,
   Smile,
   Paperclip,
+  Star,
+  User,
+  ShoppingBag,
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -101,14 +105,21 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     enabled: !!user && open,
   });
 
-  // Fetch profiles
+  // Fetch profiles with seller data
   const { data: profiles } = useQuery({
-    queryKey: ['conversation-profiles', conversations?.map(c => [c.buyer_id, c.seller_id]).flat()],
+    queryKey: ['conversation-profiles-full', conversations?.map(c => [c.buyer_id, c.seller_id]).flat()],
     queryFn: async () => {
       if (!conversations?.length) return {};
       const userIds = [...new Set(conversations.flatMap(c => [c.buyer_id, c.seller_id]))];
-      const { data } = await supabase.from('profiles').select('id, full_name, username, avatar_url, phone_number').in('id', userIds);
-      return data?.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as Record<string, any>) || {};
+      const { data: profilesData } = await supabase.from('profiles').select('id, full_name, username, avatar_url, phone_number').in('id', userIds);
+      const { data: sellerProfiles } = await supabase.from('seller_profiles').select('*').in('user_id', userIds);
+      
+      const result: Record<string, any> = {};
+      profilesData?.forEach(p => {
+        const sellerData = sellerProfiles?.find(sp => sp.user_id === p.id);
+        result[p.id] = { ...p, seller_profile: sellerData };
+      });
+      return result;
     },
     enabled: !!conversations?.length,
   });
@@ -157,12 +168,27 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     }, 100);
   }, [messages, selectedConversation]);
 
-  // Focus input when conversation selected
+  // Focus input when conversation selected and mark messages as read
   useEffect(() => {
-    if (selectedConversation) {
+    if (selectedConversation && user) {
       setTimeout(() => inputRef.current?.focus(), 100);
+      
+      // Mark all messages as read when opening a conversation
+      const markAsRead = async () => {
+        await supabase
+          .from('listing_messages')
+          .update({ is_read: true })
+          .eq('conversation_id', selectedConversation)
+          .neq('sender_id', user.id)
+          .eq('is_read', false);
+        
+        queryClient.invalidateQueries({ queryKey: ['marketplace-unread-users-count'] });
+        queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+        queryClient.invalidateQueries({ queryKey: ['last-messages'] });
+      };
+      markAsRead();
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, user]);
 
   const sendMessageMutation = useMutation({
     mutationFn: async (mediaUrl?: string) => {
@@ -299,6 +325,22 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const otherUserId = selectedConv ? (selectedConv.buyer_id === user?.id ? selectedConv.seller_id : selectedConv.buyer_id) : null;
   const otherUser = otherUserId ? profiles?.[otherUserId] : null;
 
+  // Fetch other listings for selected conversation user
+  const { data: otherUserListings } = useQuery({
+    queryKey: ['other-user-listings', otherUserId],
+    queryFn: async () => {
+      if (!otherUserId) return [];
+      const { data } = await supabase
+        .from('user_listings')
+        .select('id, title_ar, price, images, status')
+        .eq('seller_id', otherUserId)
+        .eq('status', 'approved')
+        .limit(6);
+      return data || [];
+    },
+    enabled: !!otherUserId && !!selectedConversation,
+  });
+
   // Group messages by date
   const groupedMessages = messages?.reduce((groups: any, msg) => {
     const date = formatMessageDate(new Date(msg.created_at));
@@ -320,10 +362,21 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         </DialogTrigger>
       )}
       <DialogContent className="max-w-4xl h-[90vh] sm:h-[85vh] p-0 flex flex-col overflow-hidden">
-        {/* Custom Close Button - Fixed on right side */}
+        {/* Custom Close Button - Only show when no conversation selected on mobile */}
+        {!selectedConversation && (
+          <button
+            onClick={handleClose}
+            className="absolute right-3 top-3 z-50 bg-destructive/90 hover:bg-destructive text-destructive-foreground rounded-full p-2 shadow-lg transition-colors md:block"
+            aria-label="إغلاق"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+        
+        {/* Desktop close button - always visible */}
         <button
           onClick={handleClose}
-          className="absolute right-3 top-3 z-50 bg-destructive/90 hover:bg-destructive text-destructive-foreground rounded-full p-2 shadow-lg transition-colors"
+          className="absolute right-3 top-3 z-50 bg-destructive/90 hover:bg-destructive text-destructive-foreground rounded-full p-2 shadow-lg transition-colors hidden md:block"
           aria-label="إغلاق"
         >
           <X className="w-4 h-4" />
@@ -465,78 +518,130 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           >
             {selectedConversation ? (
               <>
-                {/* Chat Header */}
-                <div className="p-2 sm:p-3 border-b bg-card flex items-center gap-2 sm:gap-3 flex-shrink-0 shadow-sm">
-                  <button 
-                    onClick={() => setSelectedConversation(null)} 
-                    className="p-1.5 hover:bg-muted rounded-full md:hidden"
-                  >
-                    <ArrowRight className="w-5 h-5" />
-                  </button>
+                {/* Chat Header with User Info */}
+                <div className="border-b bg-card flex-shrink-0 shadow-sm">
+                  {/* Main Header Row */}
+                  <div className="p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
+                    {/* Back/Close Button - Same position on mobile */}
+                    <button 
+                      onClick={handleClose} 
+                      className="p-1.5 hover:bg-destructive/10 rounded-full md:hidden text-destructive"
+                      aria-label="إغلاق"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                    
+                    {/* Avatar */}
+                    <div className="relative flex-shrink-0">
+                      {otherUser?.avatar_url ? (
+                        <img 
+                          src={otherUser.avatar_url} 
+                          alt="" 
+                          className="w-10 h-10 rounded-full object-cover ring-2 ring-border"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-border">
+                          <User className="w-5 h-5 text-primary" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* User Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm truncate">
+                          {otherUser?.username || otherUser?.full_name || 'مستخدم'}
+                        </p>
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          {selectedConv?.buyer_id === user?.id ? 'البائع' : 'المشتري'}
+                        </Badge>
+                      </div>
+                      {/* Rating and Stats */}
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                        {otherUser?.seller_profile && (
+                          <>
+                            <span className="flex items-center gap-0.5">
+                              <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                              {(otherUser.seller_profile.average_rating ?? 0).toFixed(1)}
+                            </span>
+                            <span className="flex items-center gap-0.5">
+                              <ShoppingBag className="w-3 h-3" />
+                              {otherUser.seller_profile.completed_orders ?? 0} طلب
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1">
+                      {selectedConv?.status === 'disputed' && (
+                        <Badge variant="destructive" className="text-xs">نزاع</Badge>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {(isBuyer || isSeller) && selectedConv?.status !== 'disputed' && (
+                            <DropdownMenuItem 
+                              className="text-destructive gap-2"
+                              onClick={() => requestAdminMutation.mutate()}
+                            >
+                              <AlertTriangle className="w-4 h-4" />
+                              طلب تدخل الإدارة
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
                   
-                  {/* Avatar */}
-                  <div className="relative flex-shrink-0">
-                    {(selectedConv?.user_listings as any)?.images?.[0] ? (
+                  {/* Product Info Bar */}
+                  <div className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs">
+                    {(selectedConv?.user_listings as any)?.images?.[0] && (
                       <img 
                         src={(selectedConv?.user_listings as any).images[0]} 
                         alt="" 
-                        className="w-10 h-10 rounded-full object-cover"
+                        className="w-8 h-8 rounded object-cover"
                       />
-                    ) : (
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Package className="w-5 h-5 text-primary" />
-                      </div>
                     )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm truncate">
-                        {otherUser?.full_name || otherUser?.username || 'مستخدم'}
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate text-foreground font-medium">
+                        {(selectedConv?.user_listings as any)?.title_ar}
                       </p>
-                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                        {selectedConv?.buyer_id === user?.id ? 'البائع' : 'المشتري'}
-                      </Badge>
+                      <p className="text-primary font-bold">
+                        {Number((selectedConv?.user_listings as any)?.price).toLocaleString()} دينار
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {(selectedConv?.user_listings as any)?.title_ar}
-                      {' • '}
-                      {Number((selectedConv?.user_listings as any)?.price).toLocaleString()} دينار
-                    </p>
-                    {/* Show phone number for the other party if available */}
-                    {otherUser?.phone_number && (
-                      <p className="text-[10px] text-primary font-medium flex items-center gap-1 mt-0.5">
-                        <Phone className="w-2.5 h-2.5" />
-                        {otherUser.phone_number}
+                  </div>
+                  
+                  {/* Other User Listings */}
+                  {otherUserListings && otherUserListings.length > 0 && (
+                    <div className="px-3 py-2 bg-muted/20 border-t">
+                      <p className="text-[10px] text-muted-foreground mb-1.5">
+                        منتجات أخرى من {selectedConv?.buyer_id === user?.id ? 'البائع' : 'المستخدم'}
                       </p>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1">
-                    {selectedConv?.status === 'disputed' && (
-                      <Badge variant="destructive" className="text-xs">نزاع</Badge>
-                    )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreVertical className="w-4 h-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        {(isBuyer || isSeller) && selectedConv?.status !== 'disputed' && (
-                          <DropdownMenuItem 
-                            className="text-destructive gap-2"
-                            onClick={() => requestAdminMutation.mutate()}
-                          >
-                            <AlertTriangle className="w-4 h-4" />
-                            طلب تدخل الإدارة
-                          </DropdownMenuItem>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                      <ScrollArea className="w-full">
+                        <div className="flex gap-2">
+                          {otherUserListings.slice(0, 4).map((listing: any) => (
+                            <div key={listing.id} className="flex-shrink-0 w-14">
+                              <img 
+                                src={listing.images?.[0] || '/placeholder.svg'} 
+                                alt={listing.title_ar}
+                                className="w-14 h-14 rounded-md object-cover"
+                              />
+                              <p className="text-[9px] text-muted-foreground truncate mt-0.5">
+                                {Number(listing.price).toLocaleString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </ScrollArea>
+                    </div>
+                  )}
                 </div>
 
                 {/* Messages */}
@@ -626,8 +731,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       </span>
                                       {isMe && (
                                         <CheckCheck className={cn(
-                                          "w-3 h-3",
-                                          msg.is_read ? "text-blue-400" : "text-primary-foreground/50"
+                                          "w-3.5 h-3.5",
+                                          msg.is_read ? "text-primary" : "text-primary-foreground/50"
                                         )} />
                                       )}
                                     </div>
