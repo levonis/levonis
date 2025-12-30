@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -32,6 +33,7 @@ import {
   ThumbsUp,
   Share2,
   X,
+  ExternalLink,
 } from 'lucide-react';
 
 // Format date in Arabic with time (Baghdad timezone UTC+3)
@@ -103,6 +105,7 @@ export const ListingDetailDialog = ({
 }: ListingDetailDialogProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showBuyForm, setShowBuyForm] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string>('');
@@ -568,7 +571,13 @@ export const ListingDetailDialog = ({
               )}
 
               {sellerProfile && (
-                <div className="bg-muted/50 rounded-lg p-3">
+                <button 
+                  onClick={() => {
+                    onOpenChange(false);
+                    navigate(`/profile/${listing.seller_id}`);
+                  }}
+                  className="w-full bg-muted/50 rounded-lg p-3 hover:bg-muted/70 transition-colors cursor-pointer text-right"
+                >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center text-base font-bold text-primary">
                       {sellerName?.charAt(0) || 'B'}
@@ -579,6 +588,7 @@ export const ListingDetailDialog = ({
                         {sellerProfile.is_verified && (
                           <ShieldCheck className="w-4 h-4 text-green-600" />
                         )}
+                        <ExternalLink className="w-3 h-3 text-muted-foreground" />
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                         <span className="flex items-center gap-1">
@@ -592,7 +602,7 @@ export const ListingDetailDialog = ({
                       </div>
                     </div>
                   </div>
-                </div>
+                </button>
               )}
 
               {!isOwnListing && user && (

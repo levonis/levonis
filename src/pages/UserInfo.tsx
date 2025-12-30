@@ -1,16 +1,115 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, Mail, Calendar, Shield, Camera, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2, User, Mail, Calendar, Shield, Camera, Lock, Eye, EyeOff, Store, Star, ShoppingBag, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 import LevelBadge from '@/components/LevelBadge';
+
+// Marketplace Profile Card Component
+const MarketplaceProfileCard = ({ userId }: { userId?: string }) => {
+  const navigate = useNavigate();
+  
+  const { data: sellerProfile, isLoading } = useQuery({
+    queryKey: ['my-seller-profile', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data } = await supabase
+        .from('seller_profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  const { data: listingsCount } = useQuery({
+    queryKey: ['my-listings-count', userId],
+    queryFn: async () => {
+      if (!userId) return 0;
+      const { count } = await supabase
+        .from('user_listings')
+        .select('*', { count: 'exact', head: true })
+        .eq('seller_id', userId);
+      return count || 0;
+    },
+    enabled: !!userId,
+  });
+
+  if (isLoading) {
+    return (
+      <Card className="glass-effect border-border/50">
+        <CardContent className="pt-6 flex justify-center">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="glass-effect border-border/50">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Store className="h-5 w-5 text-primary" />
+          ملف السوق الخاص بك
+        </CardTitle>
+        <CardDescription>
+          معلومات حسابك في سوق المستخدمين
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="bg-muted/50 rounded-lg p-3 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+            </div>
+            <p className="text-lg font-bold text-foreground">
+              {(sellerProfile?.average_rating ?? 0).toFixed(1)}
+            </p>
+            <p className="text-xs text-muted-foreground">التقييم</p>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-3 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <ShoppingBag className="w-4 h-4 text-primary" />
+            </div>
+            <p className="text-lg font-bold text-foreground">
+              {sellerProfile?.completed_orders ?? 0}
+            </p>
+            <p className="text-xs text-muted-foreground">طلب مكتمل</p>
+          </div>
+          <div className="bg-muted/50 rounded-lg p-3 text-center">
+            <div className="flex items-center justify-center gap-1 mb-1">
+              <Store className="w-4 h-4 text-primary" />
+            </div>
+            <p className="text-lg font-bold text-foreground">
+              {listingsCount}
+            </p>
+            <p className="text-xs text-muted-foreground">منتج معروض</p>
+          </div>
+        </div>
+
+        {/* View Profile Button */}
+        <Button
+          variant="outline"
+          className="w-full gap-2"
+          onClick={() => userId && navigate(`/profile/${userId}`)}
+        >
+          <ExternalLink className="w-4 h-4" />
+          عرض ملفي الشخصي العام
+        </Button>
+      </CardContent>
+    </Card>
+  );
+};
 
 const UserInfo = () => {
   const { user, loading: authLoading } = useAuth();
@@ -288,6 +387,9 @@ const UserInfo = () => {
               </form>
             </CardContent>
           </Card>
+
+          {/* Marketplace Profile Card */}
+          <MarketplaceProfileCard userId={user?.id} />
 
           {/* Account Details Card */}
           <Card className="glass-effect border-border/50">
