@@ -40,6 +40,7 @@ import {
   Ban,
   UserX,
   AlertOctagon,
+  ChevronLeft,
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -957,8 +958,17 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     </div>
                   </div>
                   
-                  {/* Product Info Bar */}
-                  <div className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs">
+                  {/* Product Info Bar - Clickable */}
+                  <div 
+                    className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => {
+                      const listingId = (selectedConv?.user_listings as any)?.id;
+                      if (listingId) {
+                        handleClose();
+                        navigate(`/marketplace?listing=${listingId}`);
+                      }
+                    }}
+                  >
                     {(selectedConv?.user_listings as any)?.images?.[0] && (
                       <img 
                         src={(selectedConv?.user_listings as any).images[0]} 
@@ -974,6 +984,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         {Number((selectedConv?.user_listings as any)?.price).toLocaleString()} دينار
                       </p>
                     </div>
+                    <ChevronLeft className="w-4 h-4 text-muted-foreground" />
                   </div>
                   
                 </div>
