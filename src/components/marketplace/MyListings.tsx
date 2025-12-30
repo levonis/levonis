@@ -190,7 +190,7 @@ export const MyListings = ({ children }: MyListingsProps) => {
             </Button>
           )}
         </DialogTrigger>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
+        <DialogContent hideClose className="max-w-2xl max-h-[85vh] overflow-y-auto p-0">
           {/* Close Button */}
           <button
             onClick={() => setOpen(false)}

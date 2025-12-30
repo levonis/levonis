@@ -1191,6 +1191,32 @@ export type Database = {
           },
         ]
       }
+      listing_views: {
+        Row: {
+          last_viewed_at: string
+          listing_id: string
+          user_id: string
+        }
+        Insert: {
+          last_viewed_at?: string
+          listing_id: string
+          user_id: string
+        }
+        Update: {
+          last_viewed_at?: string
+          listing_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_views_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_levels: {
         Row: {
           benefits: Json
@@ -2464,6 +2490,10 @@ export type Database = {
           ticket_quantity: number
         }
         Returns: Json
+      }
+      record_listing_view: {
+        Args: { p_listing_id: string }
+        Returns: undefined
       }
       redeem_letters_prize: {
         Args: { p_competition_id: string; p_word: string }

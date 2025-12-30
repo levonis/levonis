@@ -145,19 +145,41 @@ export const ListingDetailDialog = ({
     }
   }, [userAddresses, selectedAddressId]);
 
-  // Increment views count when dialog opens
+  // Increment views count when dialog opens (throttled to once per 10 minutes per user)
   useEffect(() => {
-    if (open && listing.id) {
-      const incrementViews = async () => {
-        await supabase
-          .from('user_listings')
-          .update({ views_count: (listing.views_count || 0) + 1 })
-          .eq('id', listing.id);
+    if (!open || !listing.id) return;
+
+    const THROTTLE_MS = 10 * 60 * 1000;
+
+    const record = async () => {
+      try {
+        // Logged-in users: backend throttling (per-user)
+        if (user) {
+          const { error } = await supabase.rpc('record_listing_view', {
+            p_listing_id: listing.id,
+          });
+          if (error) throw error;
+        } else {
+          // Guests: simple local throttling
+          const key = `listing:view:${listing.id}`;
+          const last = Number(localStorage.getItem(key) || 0);
+          if (!last || Date.now() - last > THROTTLE_MS) {
+            await supabase
+              .from('user_listings')
+              .update({ views_count: (listing.views_count || 0) + 1 })
+              .eq('id', listing.id);
+            localStorage.setItem(key, String(Date.now()));
+          }
+        }
+
         queryClient.invalidateQueries({ queryKey: ['approved-listings'] });
-      };
-      incrementViews();
-    }
-  }, [open, listing.id]);
+      } catch {
+        // ignore
+      }
+    };
+
+    record();
+  }, [open, listing.id, user?.id]);
 
   const images = listing.images?.length ? listing.images : ['/placeholder.svg'];
 
@@ -389,7 +411,7 @@ export const ListingDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] p-0 overflow-hidden w-[95vw] sm:w-full">
+      <DialogContent hideClose className="max-w-3xl max-h-[90vh] p-0 overflow-hidden w-[95vw] sm:w-full">
         {/* Custom Close Button */}
         <button
           onClick={() => onOpenChange(false)}
