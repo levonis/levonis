@@ -54,6 +54,7 @@ const AdminCompetitions = lazy(() => import("./pages/AdminCompetitions"));
 const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const AdminMarketplace = lazy(() => import("./pages/AdminMarketplace"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
+const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -111,6 +112,7 @@ function AppContent() {
             <Route path="/admin/marketplace" element={<AdminMarketplace />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/marketplace/:listingId" element={<Marketplace />} />
+            <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/my-points" element={<MyPoints />} />
             <Route path="/competitions" element={<Competitions />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />

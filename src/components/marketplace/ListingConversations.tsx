@@ -3,6 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,7 @@ import {
   Star,
   User,
   ShoppingBag,
+  ExternalLink,
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -63,6 +65,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const { user, isAdmin: authIsAdmin } = useAuth();
   const isAdmin = propIsAdmin || authIsAdmin;
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
@@ -526,8 +529,16 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       <ArrowRight className="w-5 h-5" />
                     </button>
                     
-                    {/* Avatar */}
-                    <div className="relative flex-shrink-0">
+                    {/* Avatar - Clickable */}
+                    <button 
+                      onClick={() => {
+                        if (otherUserId) {
+                          handleClose();
+                          navigate(`/profile/${otherUserId}`);
+                        }
+                      }}
+                      className="relative flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                    >
                       {otherUser?.avatar_url ? (
                         <img 
                           src={otherUser.avatar_url} 
@@ -539,10 +550,18 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           <User className="w-5 h-5 text-primary" />
                         </div>
                       )}
-                    </div>
+                    </button>
 
-                    {/* User Info */}
-                    <div className="flex-1 min-w-0">
+                    {/* User Info - Clickable */}
+                    <button 
+                      onClick={() => {
+                        if (otherUserId) {
+                          handleClose();
+                          navigate(`/profile/${otherUserId}`);
+                        }
+                      }}
+                      className="flex-1 min-w-0 text-right hover:opacity-80 transition-opacity cursor-pointer"
+                    >
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-sm truncate">
                           {otherUser?.username || otherUser?.full_name || 'مستخدم'}
@@ -550,6 +569,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         <Badge variant="outline" className="text-[10px] px-1.5 py-0">
                           {selectedConv?.buyer_id === user?.id ? 'البائع' : 'المشتري'}
                         </Badge>
+                        <ExternalLink className="w-3 h-3 text-muted-foreground" />
                       </div>
                       {/* Rating and Stats */}
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
@@ -566,7 +586,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           </>
                         )}
                       </div>
-                    </div>
+                    </button>
 
                     {/* Actions */}
                     <div className="flex items-center gap-1">
