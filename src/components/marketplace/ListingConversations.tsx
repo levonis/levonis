@@ -148,21 +148,28 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const { data: lastMessages } = useQuery({
     queryKey: ['last-messages', conversations?.map(c => c.id)],
     queryFn: async () => {
-      if (!conversations?.length) return {};
+      const convIds = conversations?.map(c => c.id) ?? [];
+      if (!convIds.length) return {};
+
+      const limit = Math.min(1000, Math.max(25, convIds.length * 5));
+
+      const { data, error } = await supabase
+        .from('listing_messages')
+        .select('conversation_id, content, created_at, sender_id, image_url, is_read')
+        .in('conversation_id', convIds)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (error) throw error;
+
       const results: Record<string, any> = {};
-      for (const conv of conversations) {
-        const { data } = await supabase
-          .from('listing_messages')
-          .select('content, created_at, sender_id, image_url')
-          .eq('conversation_id', conv.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        if (data) results[conv.id] = data;
+      for (const msg of data || []) {
+        if (!results[msg.conversation_id]) results[msg.conversation_id] = msg;
       }
       return results;
     },
     enabled: !!conversations?.length,
+    refetchInterval: open ? 3000 : false,
   });
 
   useEffect(() => {
@@ -482,7 +489,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           {lastMsg && (
                             <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1">
                               {lastMsg.sender_id === user?.id && (
-                                <CheckCheck className="w-3 h-3 text-primary flex-shrink-0" />
+                                <CheckCheck
+                                  className={cn(
+                                    "w-3 h-3 flex-shrink-0",
+                                    lastMsg.is_read ? "text-whatsapp" : "text-muted-foreground"
+                                  )}
+                                />
                               )}
                               {lastMsg.image_url ? '📷 صورة' : lastMsg.content}
                             </p>
@@ -745,10 +757,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                         {format(new Date(msg.created_at), 'HH:mm')}
                                       </span>
                                       {isMe && (
-                                        <CheckCheck className={cn(
-                                          "w-3.5 h-3.5",
-                                          msg.is_read ? "text-emerald-400" : "text-primary-foreground/50"
-                                        )} />
+                                        <CheckCheck
+                                          className={cn(
+                                            "w-3.5 h-3.5",
+                                            msg.is_read ? "text-whatsapp" : "text-primary-foreground/50"
+                                          )}
+                                        />
                                       )}
                                     </div>
                                   </div>
