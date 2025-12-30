@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ListingCard } from '@/components/marketplace/ListingCard';
 import { ListingDetailDialog } from '@/components/marketplace/ListingDetailDialog';
 import { AddListingDialog } from '@/components/marketplace/AddListingDialog';
@@ -34,12 +34,24 @@ export default function Marketplace() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { listingId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [conditionFilter, setConditionFilter] = useState('all');
   const [sortBy, setSortBy] = useState('newest');
   const [priceMin, setPriceMin] = useState('');
   const [priceMax, setPriceMax] = useState('');
   const [directListingOpen, setDirectListingOpen] = useState(false);
+  const [openConversations, setOpenConversations] = useState(false);
+
+  // Check for openChat query parameter
+  useEffect(() => {
+    if (searchParams.get('openChat') === 'true') {
+      setOpenConversations(true);
+      // Remove the query param after opening
+      searchParams.delete('openChat');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   // Fetch all approved listings
   const { data: listings, isLoading } = useQuery({
@@ -184,7 +196,10 @@ export default function Marketplace() {
               </Button>
             </MyListings>
             
-            <ListingConversations>
+            <ListingConversations 
+              externalOpen={openConversations} 
+              onExternalOpenChange={setOpenConversations}
+            >
               <Button variant="outline" size="sm" className="gap-2">
                 <MessageSquare className="w-4 h-4" />
                 المحادثات

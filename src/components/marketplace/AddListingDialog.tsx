@@ -282,11 +282,22 @@ export const AddListingDialog = ({ children, editMode = false, editData, onClose
     }
   };
 
-  const handleEditImage = (index: number) => {
-    // Get the existing image and open cropper
-    setImageToCrop(images[index]);
-    setEditingImageIndex(index);
-    setCropDialogOpen(true);
+  const handleEditImage = async (index: number) => {
+    // Fetch the existing image and convert to data URL for cropper
+    try {
+      const response = await fetch(images[index]);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      reader.onload = () => {
+        setImageToCrop(reader.result as string);
+        setEditingImageIndex(index);
+        setCropDialogOpen(true);
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('Error loading image for crop:', error);
+      toast.error('فشل تحميل الصورة للقص');
+    }
   };
 
   const handleCropComplete = async (blob: Blob) => {

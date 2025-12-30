@@ -53,6 +53,8 @@ interface ListingConversationsProps {
   listingId?: string;
   onClose?: () => void;
   isAdmin?: boolean;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 const formatMessageDate = (date: Date) => {
@@ -61,12 +63,20 @@ const formatMessageDate = (date: Date) => {
   return format(date, 'dd MMM yyyy', { locale: ar });
 };
 
-export const ListingConversations = ({ children, listingId, onClose, isAdmin: propIsAdmin }: ListingConversationsProps) => {
+export const ListingConversations = ({ children, listingId, onClose, isAdmin: propIsAdmin, externalOpen, onExternalOpenChange }: ListingConversationsProps) => {
   const { user, isAdmin: authIsAdmin } = useAuth();
   const isAdmin = propIsAdmin || authIsAdmin;
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const setOpen = (value: boolean) => {
+    if (onExternalOpenChange) {
+      onExternalOpenChange(value);
+    } else {
+      setInternalOpen(value);
+    }
+  };
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [uploadingMedia, setUploadingMedia] = useState(false);
@@ -795,6 +805,22 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               const isMe = msg.sender_id === user?.id;
                               const sender = profiles?.[msg.sender_id];
                               const showTail = idx === 0 || msgs[idx - 1]?.sender_id !== msg.sender_id;
+                              
+                              // Check if it's a system message
+                              const isSystemMessage = msg.content?.startsWith('⚠️') || 
+                                                     msg.content?.startsWith('✅ تم إلغاء') ||
+                                                     msg.content?.startsWith('✅ تم حل') ||
+                                                     msg.content?.startsWith('🛡️');
+                              
+                              if (isSystemMessage) {
+                                return (
+                                  <div key={msg.id} className="flex justify-center my-3">
+                                    <div className="bg-amber-500/20 text-amber-100 text-xs px-4 py-2 rounded-full shadow-sm border border-amber-500/30">
+                                      {msg.content}
+                                    </div>
+                                  </div>
+                                );
+                              }
                               
                               return (
                                 <div 
