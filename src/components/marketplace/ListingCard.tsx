@@ -44,6 +44,7 @@ interface Listing {
   shipping_method: string;
   categories?: { name_ar: string } | null;
   created_at?: string;
+  approved_at?: string | null;
 }
 
 interface SellerProfile {
@@ -131,10 +132,10 @@ export const ListingCard = ({ listing, sellerProfile, sellerName }: ListingCardP
                 <Eye className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                 {listing.views_count ?? 0}
               </span>
-              {listing.created_at && (
+              {(listing.approved_at || listing.created_at) && (
                 <span className="flex items-center gap-0.5">
                   <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                  {formatRelativeTime(listing.created_at)}
+                  {formatRelativeTime(listing.approved_at || listing.created_at!)}
                 </span>
               )}
             </div>

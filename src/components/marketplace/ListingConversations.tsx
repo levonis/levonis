@@ -55,6 +55,7 @@ interface ListingConversationsProps {
   isAdmin?: boolean;
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
+  autoOpenConversationId?: string | null;
 }
 
 const formatMessageDate = (date: Date) => {
@@ -63,7 +64,7 @@ const formatMessageDate = (date: Date) => {
   return format(date, 'dd MMM yyyy', { locale: ar });
 };
 
-export const ListingConversations = ({ children, listingId, onClose, isAdmin: propIsAdmin, externalOpen, onExternalOpenChange }: ListingConversationsProps) => {
+export const ListingConversations = ({ children, listingId, onClose, isAdmin: propIsAdmin, externalOpen, onExternalOpenChange, autoOpenConversationId }: ListingConversationsProps) => {
   const { user, isAdmin: authIsAdmin } = useAuth();
   const isAdmin = propIsAdmin || authIsAdmin;
   const queryClient = useQueryClient();
@@ -117,6 +118,16 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     },
     enabled: !!user && open,
   });
+
+  // Auto open conversation if autoOpenConversationId is provided
+  useEffect(() => {
+    if (autoOpenConversationId && conversations?.length) {
+      const conv = conversations.find(c => c.id === autoOpenConversationId);
+      if (conv) {
+        setSelectedConversation(autoOpenConversationId);
+      }
+    }
+  }, [autoOpenConversationId, conversations]);
 
   // Fetch profiles with seller data
   const { data: profiles } = useQuery({
@@ -443,7 +454,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           )}
         </DialogTrigger>
       )}
-      <DialogContent hideClose className="max-w-4xl h-[90vh] sm:h-[85vh] p-0 flex flex-col overflow-hidden">
+      <DialogContent hideClose className="max-w-5xl h-[100dvh] sm:h-[85vh] w-full sm:w-[95vw] p-0 flex flex-col overflow-hidden">
         {/* Close Button - always visible on desktop, only when no conversation on mobile */}
         <button
           onClick={handleClose}
@@ -456,10 +467,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           <X className="w-4 h-4" />
         </button>
 
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-1 min-h-0 h-full">
           {/* Conversations List - WhatsApp Style */}
           <div className={cn(
-            "flex flex-col w-full md:w-80 lg:w-96 border-l bg-card",
+            "flex flex-col w-full md:w-80 lg:w-96 md:border-l bg-card h-full min-h-0",
             selectedConversation ? 'hidden md:flex' : 'flex'
           )}>
             {/* Header */}
@@ -588,8 +599,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
           {/* Messages Area - Telegram/WhatsApp Style */}
           <div className={cn(
-            "flex-1 flex flex-col min-h-0 bg-background-2",
-            !selectedConversation ? 'hidden md:flex' : 'flex'
+            "flex-1 flex flex-col min-h-0 bg-background-2 h-full",
+            !selectedConversation ? 'hidden md:flex' : 'flex w-full'
           )}
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,

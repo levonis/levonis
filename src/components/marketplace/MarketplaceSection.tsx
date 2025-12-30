@@ -22,7 +22,7 @@ export const MarketplaceSection = () => {
           categories(name_ar)
         `)
         .eq('status', 'approved')
-        .order('created_at', { ascending: false })
+        .order('approved_at', { ascending: false, nullsFirst: false })
         .limit(8);
       
       if (error) throw error;
