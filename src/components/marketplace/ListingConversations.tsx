@@ -290,6 +290,15 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         </DialogTrigger>
       )}
       <DialogContent className="max-w-4xl h-[90vh] sm:h-[85vh] p-0 flex flex-col overflow-hidden">
+        {/* Custom Close Button - Fixed on right side */}
+        <button
+          onClick={handleClose}
+          className="absolute right-3 top-3 z-50 bg-destructive/90 hover:bg-destructive text-destructive-foreground rounded-full p-2 shadow-lg transition-colors"
+          aria-label="إغلاق"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
         <div className="flex flex-1 min-h-0">
           {/* Conversations List - WhatsApp Style */}
           <div className={cn(

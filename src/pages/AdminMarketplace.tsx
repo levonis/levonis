@@ -273,7 +273,7 @@ export default function AdminMarketplace() {
 
   // Update transaction status
   const updateTransactionMutation = useMutation({
-    mutationFn: async ({ transactionId, status }: { transactionId: string; status: string }) => {
+    mutationFn: async ({ transactionId, status, listingId }: { transactionId: string; status: string; listingId?: string }) => {
       const updates: any = { status };
       if (status === 'completed') {
         updates.completed_at = new Date().toISOString();
@@ -283,10 +283,21 @@ export default function AdminMarketplace() {
         .update(updates)
         .eq('id', transactionId);
       if (error) throw error;
+
+      // If status is confirmed or completed, mark listing as sold
+      if ((status === 'confirmed' || status === 'completed') && listingId) {
+        const { error: listingError } = await supabase
+          .from('user_listings')
+          .update({ status: 'sold' })
+          .eq('id', listingId);
+        if (listingError) throw listingError;
+      }
     },
     onSuccess: () => {
       toast.success('تم تحديث حالة الطلب');
       queryClient.invalidateQueries({ queryKey: ['admin-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-listings'] });
+      queryClient.invalidateQueries({ queryKey: ['approved-listings'] });
     },
   });
 
@@ -616,7 +627,7 @@ export default function AdminMarketplace() {
                               <div className="flex gap-2 items-center">
                                 <Select
                                   value={transaction.status}
-                                  onValueChange={(value) => updateTransactionMutation.mutate({ transactionId: transaction.id, status: value })}
+                                  onValueChange={(value) => updateTransactionMutation.mutate({ transactionId: transaction.id, status: value, listingId: transaction.listing_id })}
                                 >
                                   <SelectTrigger className="w-28 h-8 text-xs">
                                     <SelectValue />

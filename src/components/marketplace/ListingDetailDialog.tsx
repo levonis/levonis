@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -103,11 +103,59 @@ export const ListingDetailDialog = ({
   const queryClient = useQueryClient();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showBuyForm, setShowBuyForm] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('');
   const [buyFormData, setBuyFormData] = useState({
     shipping_address: '',
     phone_number: '',
     payment_method: '' as 'through_site' | 'direct' | '',
   });
+
+  // Fetch user addresses
+  const { data: userAddresses } = useQuery({
+    queryKey: ['user-addresses-buy', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('is_default', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!user && open && showBuyForm,
+  });
+
+  // Set default address when addresses are loaded
+  useEffect(() => {
+    if (userAddresses?.length && !selectedAddressId) {
+      const defaultAddr = userAddresses.find(a => a.is_default) || userAddresses[0];
+      if (defaultAddr) {
+        setSelectedAddressId(defaultAddr.id);
+        const fullAddress = `${defaultAddr.governorate} - ${defaultAddr.area}${defaultAddr.neighborhood ? ` - ${defaultAddr.neighborhood}` : ''} - ${defaultAddr.nearest_landmark}${defaultAddr.additional_notes ? ` - ${defaultAddr.additional_notes}` : ''}`;
+        setBuyFormData(prev => ({
+          ...prev,
+          shipping_address: fullAddress,
+          phone_number: defaultAddr.phone_number,
+        }));
+      }
+    }
+  }, [userAddresses, selectedAddressId]);
+
+  // Increment views count when dialog opens
+  useEffect(() => {
+    if (open && listing.id) {
+      const incrementViews = async () => {
+        await supabase
+          .from('user_listings')
+          .update({ views_count: (listing.views_count || 0) + 1 })
+          .eq('id', listing.id);
+        queryClient.invalidateQueries({ queryKey: ['approved-listings'] });
+      };
+      incrementViews();
+    }
+  }, [open, listing.id]);
 
   const images = listing.images?.length ? listing.images : ['/placeholder.svg'];
 
@@ -549,52 +597,52 @@ export const ListingDetailDialog = ({
                       </Button>
                     </div>
                   ) : (
-                    <form onSubmit={handleBuy} className="space-y-3 bg-muted/50 rounded-lg p-3">
-                      <h4 className="font-semibold text-sm flex items-center gap-2">
-                        <Receipt className="w-4 h-4" />
+                    <form onSubmit={handleBuy} className="space-y-3 bg-card border border-border rounded-lg p-4 shadow-sm">
+                      <h4 className="font-semibold text-sm flex items-center gap-2 text-foreground">
+                        <Receipt className="w-4 h-4 text-primary" />
                         اختر طريقة الدفع
                       </h4>
                       
                       {/* Payment Method Selection */}
                       <div className="space-y-2">
-                        <Label className="text-xs">طريقة الدفع *</Label>
+                        <Label className="text-xs font-medium text-foreground">طريقة الدفع *</Label>
                         <div className="space-y-2">
-                          <label className="flex items-start gap-3 p-2.5 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                          <label className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${buyFormData.payment_method === 'through_site' ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50 bg-card'}`}>
                             <input
                               type="radio"
                               name="paymentMethod"
                               value="through_site"
                               checked={buyFormData.payment_method === 'through_site'}
                               onChange={() => setBuyFormData(prev => ({ ...prev, payment_method: 'through_site' }))}
-                              className="mt-1"
+                              className="mt-1 accent-primary"
                             />
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <Truck className="w-4 h-4 text-green-600" />
-                                <span className="font-medium text-sm">عن طريق الوسيط</span>
+                                <Truck className="w-4 h-4 text-primary" />
+                                <span className="font-medium text-sm text-foreground">عن طريق الوسيط</span>
                               </div>
                               <p className="text-xs text-muted-foreground mt-1">
                                 تضاف رسوم 5,000 دينار على سعر المنتج. الموقع يضمن حقوقك.
                               </p>
-                              <p className="text-xs font-medium text-primary mt-1">
+                              <p className="text-xs font-bold text-primary mt-1">
                                 المجموع: {(Number(listing.price) + 5000).toLocaleString()} دينار
                               </p>
                             </div>
                           </label>
                           
-                          <label className="flex items-start gap-3 p-2.5 border border-border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
+                          <label className={`flex items-start gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all ${buyFormData.payment_method === 'direct' ? 'border-amber-500 bg-amber-500/5' : 'border-border hover:border-muted-foreground/50 bg-card'}`}>
                             <input
                               type="radio"
                               name="paymentMethod"
                               value="direct"
                               checked={buyFormData.payment_method === 'direct'}
                               onChange={() => setBuyFormData(prev => ({ ...prev, payment_method: 'direct' }))}
-                              className="mt-1"
+                              className="mt-1 accent-amber-500"
                             />
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
-                                <Package className="w-4 h-4 text-blue-600" />
-                                <span className="font-medium text-sm">الدفع للبائع مباشرة</span>
+                                <Package className="w-4 h-4 text-amber-600" />
+                                <span className="font-medium text-sm text-foreground">الدفع للبائع مباشرة</span>
                               </div>
                               <p className="text-xs text-muted-foreground mt-1">
                                 السعر: {Number(listing.price).toLocaleString()} دينار (بدون رسوم إضافية)
@@ -605,8 +653,8 @@ export const ListingDetailDialog = ({
                         
                         {/* Warning for direct payment */}
                         {buyFormData.payment_method === 'direct' && (
-                          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-2.5 text-xs">
-                            <p className="text-amber-700 dark:text-amber-400 font-medium flex items-center gap-1.5">
+                          <div className="bg-amber-500/10 border border-amber-500/40 rounded-lg p-3 text-xs">
+                            <p className="text-amber-700 dark:text-amber-400 font-semibold flex items-center gap-1.5">
                               ⚠️ تنبيه مهم
                             </p>
                             <p className="text-amber-600 dark:text-amber-300 mt-1">
@@ -616,26 +664,72 @@ export const ListingDetailDialog = ({
                         )}
                       </div>
 
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">العنوان الكامل *</Label>
-                        <Textarea
-                          value={buyFormData.shipping_address}
-                          onChange={(e) => setBuyFormData(prev => ({ ...prev, shipping_address: e.target.value }))}
-                          placeholder="المحافظة، المنطقة، الشارع"
-                          required
-                          className="resize-none text-sm"
-                          rows={2}
-                        />
+                      {/* Address Selection */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium text-foreground">العنوان *</Label>
+                        {userAddresses && userAddresses.length > 0 ? (
+                          <div className="space-y-2">
+                            {userAddresses.map((addr) => (
+                              <label
+                                key={addr.id}
+                                className={`block p-3 border-2 rounded-lg cursor-pointer transition-all ${selectedAddressId === addr.id ? 'border-primary bg-primary/5' : 'border-border hover:border-muted-foreground/50 bg-card'}`}
+                              >
+                                <div className="flex items-start gap-2">
+                                  <input
+                                    type="radio"
+                                    name="addressSelection"
+                                    checked={selectedAddressId === addr.id}
+                                    onChange={() => {
+                                      setSelectedAddressId(addr.id);
+                                      const fullAddress = `${addr.governorate} - ${addr.area}${addr.neighborhood ? ` - ${addr.neighborhood}` : ''} - ${addr.nearest_landmark}${addr.additional_notes ? ` - ${addr.additional_notes}` : ''}`;
+                                      setBuyFormData(prev => ({
+                                        ...prev,
+                                        shipping_address: fullAddress,
+                                        phone_number: addr.phone_number,
+                                      }));
+                                    }}
+                                    className="mt-1 accent-primary"
+                                  />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-medium text-sm text-foreground">{addr.full_name}</span>
+                                      {addr.is_default && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">افتراضي</Badge>
+                                      )}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                                      {addr.governorate} - {addr.area} - {addr.nearest_landmark}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">{addr.phone_number}</p>
+                                  </div>
+                                </div>
+                              </label>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <Textarea
+                              value={buyFormData.shipping_address}
+                              onChange={(e) => setBuyFormData(prev => ({ ...prev, shipping_address: e.target.value }))}
+                              placeholder="المحافظة، المنطقة، الشارع"
+                              required
+                              className="resize-none text-sm bg-card border-border"
+                              rows={2}
+                            />
+                          </div>
+                        )}
                       </div>
+                      
+                      {/* Phone Number */}
                       <div className="space-y-1.5">
-                        <Label className="text-xs">رقم الهاتف *</Label>
+                        <Label className="text-xs font-medium text-foreground">رقم الهاتف *</Label>
                         <Input
                           type="tel"
                           value={buyFormData.phone_number}
                           onChange={(e) => setBuyFormData(prev => ({ ...prev, phone_number: e.target.value }))}
                           placeholder="07xxxxxxxxx"
                           required
-                          className="text-sm"
+                          className="text-sm bg-card border-border"
                         />
                       </div>
                       <div className="flex gap-2">
