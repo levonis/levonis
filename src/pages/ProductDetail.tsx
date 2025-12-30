@@ -449,20 +449,36 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Availability & Shipping - Compact Row */}
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                {product.has_in_stock && (
-                  <Badge variant="secondary" className="text-xs px-2 py-1">
-                    <Package className="h-3 w-3 ml-1" />
-                    متاح
-                  </Badge>
-                )}
-                {product.has_pre_order && (
-                  <Badge variant="secondary" className="text-xs px-2 py-1">
-                    <Truck className="h-3 w-3 ml-1" />
-                    طلب مسبق
-                  </Badge>
-                )}
+              {/* Availability Type - Enhanced Display */}
+              <div className="mb-4">
+                <div className="flex flex-wrap items-stretch gap-3">
+                  {product.has_in_stock && (
+                    <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20">
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                          <Package className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-sm text-emerald-700 dark:text-emerald-300 block">بيع مباشر</span>
+                          <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70">متوفر للشراء الآن</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {product.has_pre_order && (
+                    <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20">
+                      <div className="flex items-center gap-2">
+                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                          <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-sm text-amber-700 dark:text-amber-300 block">طلب مسبق</span>
+                          <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70">يتم طلبه خصيصاً لك</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Product Details Section - Improved Layout */}
@@ -471,33 +487,46 @@ const ProductDetail = () => {
                 {product.has_pre_order && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
                   <div className="p-4 rounded-xl bg-card/50 border border-border/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Truck className="h-4 w-4 text-primary" />
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
+                        <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <Label className="text-sm font-bold">نوع الشحن</Label>
+                      <div>
+                        <Label className="text-sm font-bold block">نوع الشحن</Label>
+                        <span className="text-[10px] text-muted-foreground">اختر طريقة الشحن المناسبة</span>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
                       {product.pre_order_shipping_options.map((option: any, index: number) => (
                         <button
                           key={index}
                           onClick={() => setSelectedShippingOption(index)}
-                          className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                             selectedShippingOption === index
-                              ? 'border-primary bg-primary/5 shadow-sm'
-                              : 'border-border/50 hover:border-primary/30 bg-background/50'
+                              ? 'border-primary bg-primary/5 shadow-md'
+                              : 'border-border/50 hover:border-primary/30 bg-background/50 hover:bg-background/80'
                           }`}
                         >
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                             selectedShippingOption === index ? 'border-primary bg-primary' : 'border-muted-foreground/30'
                           }`}>
-                            {selectedShippingOption === index && <Check className="h-3 w-3 text-primary-foreground" />}
+                            {selectedShippingOption === index && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
                           </div>
                           <div className="flex-1 text-right">
                             <span className="font-bold text-sm block">{option.name_ar}</span>
-                            {option.price_adjustment > 0 && (
-                              <span className="text-xs text-muted-foreground">+{formatPrice(option.price_adjustment)} {currency}</span>
+                            {option.description && (
+                              <span className="text-xs text-muted-foreground block mt-0.5">{option.description}</span>
                             )}
                           </div>
+                          {option.price_adjustment > 0 && (
+                            <Badge variant="secondary" className="text-xs shrink-0">
+                              +{formatPrice(option.price_adjustment)} {currency}
+                            </Badge>
+                          )}
+                          {option.price_adjustment === 0 && (
+                            <Badge variant="outline" className="text-xs shrink-0 text-emerald-600 border-emerald-500/30">
+                              مجاني
+                            </Badge>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -508,66 +537,78 @@ const ProductDetail = () => {
                 {product.has_pre_order && (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0) && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
                   <div className="p-4 rounded-xl bg-card/50 border border-border/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                        <Truck className="h-4 w-4 text-primary" />
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
+                        <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                       </div>
-                      <Label className="text-sm font-bold">نوع الشحن</Label>
+                      <div>
+                        <Label className="text-sm font-bold block">نوع الشحن</Label>
+                        <span className="text-[10px] text-muted-foreground">اختر طريقة الشحن المناسبة</span>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
                       {product.pre_order_free_shipping_price && (
                         <button
                           onClick={() => setSelectedShippingOption(0)}
-                          className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                             selectedShippingOption === 0
-                              ? 'border-primary bg-primary/5 shadow-sm'
-                              : 'border-border/50 hover:border-primary/30 bg-background/50'
+                              ? 'border-primary bg-primary/5 shadow-md'
+                              : 'border-border/50 hover:border-primary/30 bg-background/50 hover:bg-background/80'
                           }`}
                         >
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                             selectedShippingOption === 0 ? 'border-primary bg-primary' : 'border-muted-foreground/30'
                           }`}>
-                            {selectedShippingOption === 0 && <Check className="h-3 w-3 text-primary-foreground" />}
+                            {selectedShippingOption === 0 && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
                           </div>
                           <div className="flex-1 text-right">
-                            <span className="font-bold text-sm block">بحري</span>
+                            <span className="font-bold text-sm block">شحن بحري</span>
                             <span className="text-xs text-muted-foreground">45 يوم تقريباً</span>
                           </div>
+                          <Badge variant="outline" className="text-xs shrink-0 text-emerald-600 border-emerald-500/30">
+                            مجاني
+                          </Badge>
                         </button>
                       )}
                       {product.pre_order_fast_shipping_price && (
                         <button
                           onClick={() => setSelectedShippingOption(1)}
-                          className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                             selectedShippingOption === 1
-                              ? 'border-primary bg-primary/5 shadow-sm'
-                              : 'border-border/50 hover:border-primary/30 bg-background/50'
+                              ? 'border-primary bg-primary/5 shadow-md'
+                              : 'border-border/50 hover:border-primary/30 bg-background/50 hover:bg-background/80'
                           }`}
                         >
-                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
                             selectedShippingOption === 1 ? 'border-primary bg-primary' : 'border-muted-foreground/30'
                           }`}>
-                            {selectedShippingOption === 1 && <Check className="h-3 w-3 text-primary-foreground" />}
+                            {selectedShippingOption === 1 && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
                           </div>
                           <div className="flex-1 text-right">
-                            <span className="font-bold text-sm block">جوي سريع</span>
+                            <span className="font-bold text-sm block">شحن جوي سريع</span>
                             <span className="text-xs text-muted-foreground">15 يوم تقريباً</span>
                           </div>
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            +{formatPrice(Number(product.pre_order_fast_shipping_price))} {currency}
+                          </Badge>
                         </button>
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* Product Options */}
+                {/* Product Options - Enhanced Design */}
                 {productOptions && productOptions.length > 0 && (
                   <div className="p-4 rounded-xl bg-card/50 border border-border/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-lg bg-accent/20 flex items-center justify-center">
-                        <Settings className="h-4 w-4 text-accent-foreground" />
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                        <Settings className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                       </div>
-                      <Label className="text-sm font-bold">الخيارات المتاحة</Label>
+                      <div>
+                        <Label className="text-sm font-bold block">الخيارات المتاحة</Label>
+                        <span className="text-[10px] text-muted-foreground">اختر الخيار المناسب لك</span>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 gap-2">
                       {productOptions.map((option: any) => {
                         const isOptionAvailable = product.has_in_stock 
                           ? (option.available_for_direct_sale ?? true)
@@ -590,25 +631,54 @@ const ProductDetail = () => {
                               }
                             }}
                             disabled={isOptionDisabled}
-                            className={`relative p-3 rounded-xl border-2 transition-all text-center ${
+                            className={`relative flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
                               selectedOption === option.id
-                                ? 'border-primary bg-primary/5 shadow-sm'
-                                : 'border-border/50 hover:border-primary/30 bg-background/50'
-                            } ${isOptionDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
+                                ? 'border-primary bg-primary/5 shadow-md'
+                                : 'border-border/50 hover:border-primary/30 bg-background/50 hover:bg-background/80'
+                            } ${isOptionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
-                            {selectedOption === option.id && (
-                              <div className="absolute top-1.5 left-1.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
-                                <Check className="h-2.5 w-2.5 text-primary-foreground" />
+                            {/* Option Image */}
+                            {option.image_url && (
+                              <div className="w-12 h-12 rounded-lg overflow-hidden border border-border/30 shrink-0">
+                                <img src={option.image_url} alt={option.name_ar} className="w-full h-full object-cover" />
                               </div>
                             )}
-                            <span className="font-bold text-sm block">{option.name_ar}</span>
+                            
+                            {/* Selection Indicator */}
+                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                              selectedOption === option.id ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                            }`}>
+                              {selectedOption === option.id && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                            </div>
+                            
+                            {/* Option Details */}
+                            <div className="flex-1 text-right">
+                              <span className="font-bold text-sm block">{option.name_ar}</span>
+                              {/* Availability Badge */}
+                              <div className="flex items-center gap-1 mt-1">
+                                {option.available_for_direct_sale && (
+                                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-emerald-600 border-emerald-500/30">
+                                    مباشر
+                                  </Badge>
+                                )}
+                                {option.available_for_pre_order && (
+                                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-amber-600 border-amber-500/30">
+                                    طلب مسبق
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Price Adjustment */}
                             {option.price_adjustment !== 0 && (
-                              <span className="text-xs text-muted-foreground">
+                              <Badge variant="secondary" className="text-xs shrink-0">
                                 {option.price_adjustment > 0 ? '+' : ''}{formatPrice(option.price_adjustment)} {currency}
-                              </span>
+                              </Badge>
                             )}
+                            
+                            {/* Unavailable Overlay */}
                             {isOptionDisabled && (
-                              <Badge variant="destructive" className="absolute -top-1 -right-1 text-[10px] px-1.5 py-0">
+                              <Badge variant="destructive" className="absolute top-2 left-2 text-[10px] px-2 py-0.5">
                                 غير متوفر
                               </Badge>
                             )}
