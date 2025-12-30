@@ -69,6 +69,7 @@ interface Listing {
   shipping_method: string;
   categories?: { name_ar: string } | null;
   created_at?: string;
+  approved_at?: string | null;
 }
 
 interface SellerProfile {
@@ -335,10 +336,10 @@ export const ListingDetailDialog = ({
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
       onOpenChange(false);
-      navigate('/marketplace?openChat=true');
+      navigate(`/marketplace?openChat=true&conversationId=${data.id}`);
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -555,11 +556,11 @@ export const ListingDetailDialog = ({
                     القسم: {listing.categories.name_ar}
                   </div>
                 )}
-                {listing.created_at && (
+                {(listing.approved_at || listing.created_at) && (
                   <div className="flex items-center gap-1 sm:gap-1.5 col-span-2 text-[10px] sm:text-xs">
                     <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-muted-foreground" />
                     <span className="text-muted-foreground">الإضافة:</span>
-                    <span>{formatArabicDateTime(listing.created_at)}</span>
+                    <span>{formatArabicDateTime(listing.approved_at || listing.created_at!)}</span>
                   </div>
                 )}
               </div>

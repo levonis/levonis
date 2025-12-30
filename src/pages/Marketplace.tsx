@@ -42,13 +42,19 @@ export default function Marketplace() {
   const [priceMax, setPriceMax] = useState('');
   const [directListingOpen, setDirectListingOpen] = useState(false);
   const [openConversations, setOpenConversations] = useState(false);
+  const [autoOpenConversationId, setAutoOpenConversationId] = useState<string | null>(null);
 
   // Check for openChat query parameter
   useEffect(() => {
     if (searchParams.get('openChat') === 'true') {
       setOpenConversations(true);
-      // Remove the query param after opening
+      const convId = searchParams.get('conversationId');
+      if (convId) {
+        setAutoOpenConversationId(convId);
+      }
+      // Remove the query params after opening
       searchParams.delete('openChat');
+      searchParams.delete('conversationId');
       setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams, setSearchParams]);
@@ -61,7 +67,7 @@ export default function Marketplace() {
         .from('user_listings')
         .select('*, categories(name_ar)')
         .eq('status', 'approved')
-        .order('created_at', { ascending: false });
+        .order('approved_at', { ascending: false, nullsFirst: false });
       
       if (error) throw error;
       return data;
@@ -114,6 +120,28 @@ export default function Marketplace() {
     enabled: !!listings?.length,
   });
 
+  // Fetch seller names
+  const { data: sellerNames } = useQuery({
+    queryKey: ['seller-names-all', listings?.map(l => l.seller_id)],
+    queryFn: async () => {
+      if (!listings?.length) return {};
+      
+      const sellerIds = [...new Set(listings.map(l => l.seller_id))];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, username')
+        .in('id', sellerIds);
+      
+      if (error) throw error;
+      
+      return data?.reduce((acc, profile) => {
+        acc[profile.id] = profile.full_name || profile.username || 'بائع';
+        return acc;
+      }, {} as Record<string, string>) || {};
+    },
+    enabled: !!listings?.length,
+  });
+
   // Filter and sort listings
   const filteredListings = useMemo(() => {
     if (!listings) return [];
@@ -146,7 +174,7 @@ export default function Marketplace() {
     // Sort
     switch (sortBy) {
       case 'oldest':
-        result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+        result.sort((a, b) => new Date(a.approved_at || a.created_at).getTime() - new Date(b.approved_at || b.created_at).getTime());
         break;
       case 'price_low':
         result.sort((a, b) => Number(a.price) - Number(b.price));
@@ -158,7 +186,7 @@ export default function Marketplace() {
         result.sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
         break;
       default: // newest
-        result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        result.sort((a, b) => new Date(b.approved_at || b.created_at).getTime() - new Date(a.approved_at || a.created_at).getTime());
     }
 
     return result;
@@ -198,7 +226,11 @@ export default function Marketplace() {
             
             <ListingConversations 
               externalOpen={openConversations} 
-              onExternalOpenChange={setOpenConversations}
+              onExternalOpenChange={(open) => {
+                setOpenConversations(open);
+                if (!open) setAutoOpenConversationId(null);
+              }}
+              autoOpenConversationId={autoOpenConversationId}
             >
               <Button variant="outline" size="sm" className="gap-2">
                 <MessageSquare className="w-4 h-4" />
@@ -325,6 +357,7 @@ export default function Marketplace() {
                 key={listing.id}
                 listing={listing}
                 sellerProfile={sellerProfiles?.[listing.seller_id]}
+                sellerName={sellerNames?.[listing.seller_id]}
               />
             ))}
           </div>
@@ -335,6 +368,7 @@ export default function Marketplace() {
           <ListingDetailDialog
             listing={directListing}
             sellerProfile={sellerProfiles?.[directListing.seller_id]}
+            sellerName={sellerNames?.[directListing.seller_id]}
             open={directListingOpen}
             onOpenChange={(open) => {
               setDirectListingOpen(open);
