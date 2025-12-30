@@ -175,20 +175,23 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       
       // Mark all messages as read when opening a conversation
       const markAsRead = async () => {
-        await supabase
+        const { error } = await supabase
           .from('listing_messages')
           .update({ is_read: true })
           .eq('conversation_id', selectedConversation)
           .neq('sender_id', user.id)
           .eq('is_read', false);
         
-        queryClient.invalidateQueries({ queryKey: ['marketplace-unread-users-count'] });
-        queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
-        queryClient.invalidateQueries({ queryKey: ['last-messages'] });
+        if (!error) {
+          // Refetch to update UI
+          queryClient.invalidateQueries({ queryKey: ['marketplace-unread-users-count'] });
+          queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+          queryClient.invalidateQueries({ queryKey: ['last-messages'] });
+        }
       };
       markAsRead();
     }
-  }, [selectedConversation, user]);
+  }, [selectedConversation, user?.id, queryClient]);
 
   const sendMessageMutation = useMutation({
     mutationFn: async (mediaUrl?: string) => {
@@ -361,22 +364,14 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           )}
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-4xl h-[90vh] sm:h-[85vh] p-0 flex flex-col overflow-hidden">
-        {/* Custom Close Button - Only show when no conversation selected on mobile */}
-        {!selectedConversation && (
-          <button
-            onClick={handleClose}
-            className="absolute right-3 top-3 z-50 bg-destructive/90 hover:bg-destructive text-destructive-foreground rounded-full p-2 shadow-lg transition-colors md:block"
-            aria-label="إغلاق"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        )}
-        
-        {/* Desktop close button - always visible */}
+      <DialogContent hideClose className="max-w-4xl h-[90vh] sm:h-[85vh] p-0 flex flex-col overflow-hidden">
+        {/* Close Button - always visible on desktop, only when no conversation on mobile */}
         <button
           onClick={handleClose}
-          className="absolute right-3 top-3 z-50 bg-destructive/90 hover:bg-destructive text-destructive-foreground rounded-full p-2 shadow-lg transition-colors hidden md:block"
+          className={cn(
+            "absolute right-3 top-3 z-50 bg-destructive/90 hover:bg-destructive text-destructive-foreground rounded-full p-2 shadow-lg transition-colors",
+            selectedConversation ? "hidden md:block" : "block"
+          )}
           aria-label="إغلاق"
         >
           <X className="w-4 h-4" />
@@ -522,13 +517,13 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 <div className="border-b bg-card flex-shrink-0 shadow-sm">
                   {/* Main Header Row */}
                   <div className="p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
-                    {/* Back/Close Button - Same position on mobile */}
+                    {/* Back Button - Mobile only, goes back to conversations list */}
                     <button 
-                      onClick={handleClose} 
-                      className="p-1.5 hover:bg-destructive/10 rounded-full md:hidden text-destructive"
-                      aria-label="إغلاق"
+                      onClick={() => setSelectedConversation(null)} 
+                      className="p-1.5 hover:bg-muted rounded-full md:hidden text-foreground"
+                      aria-label="رجوع"
                     >
-                      <X className="w-5 h-5" />
+                      <ArrowRight className="w-5 h-5" />
                     </button>
                     
                     {/* Avatar */}
@@ -732,7 +727,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       {isMe && (
                                         <CheckCheck className={cn(
                                           "w-3.5 h-3.5",
-                                          msg.is_read ? "text-primary" : "text-primary-foreground/50"
+                                          msg.is_read ? "text-emerald-400" : "text-primary-foreground/50"
                                         )} />
                                       )}
                                     </div>
