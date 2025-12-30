@@ -453,27 +453,27 @@ const ProductDetail = () => {
               <div className="mb-4">
                 <div className="flex flex-wrap items-stretch gap-3">
                   {product.has_in_stock && (
-                    <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20">
+                    <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
                       <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                          <Package className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                        <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                          <Package className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <span className="font-bold text-sm text-emerald-700 dark:text-emerald-300 block">بيع مباشر</span>
-                          <span className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70">متوفر للشراء الآن</span>
+                          <span className="font-bold text-sm text-primary block">بيع مباشر</span>
+                          <span className="text-[10px] text-primary/70">متوفر للشراء الآن</span>
                         </div>
                       </div>
                     </div>
                   )}
                   {product.has_pre_order && (
-                    <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20">
+                    <div className="flex-1 min-w-[140px] p-3 rounded-xl bg-gradient-to-br from-accent/20 to-accent/10 border border-accent/30">
                       <div className="flex items-center gap-2">
-                        <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                          <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                        <div className="w-10 h-10 rounded-xl bg-accent/30 flex items-center justify-center">
+                          <Clock className="h-5 w-5 text-accent-foreground" />
                         </div>
                         <div>
-                          <span className="font-bold text-sm text-amber-700 dark:text-amber-300 block">طلب مسبق</span>
-                          <span className="text-[10px] text-amber-600/70 dark:text-amber-400/70">يتم طلبه خصيصاً لك</span>
+                          <span className="font-bold text-sm text-accent-foreground block">طلب مسبق</span>
+                          <span className="text-[10px] text-accent-foreground/70">يتم طلبه خصيصاً لك</span>
                         </div>
                       </div>
                     </div>
@@ -487,8 +487,8 @@ const ProductDetail = () => {
                 {product.has_pre_order && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
                   <div className="p-4 rounded-xl bg-card/50 border border-border/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
-                        <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Truck className="h-4 w-4 text-primary" />
                       </div>
                       <div>
                         <Label className="text-sm font-bold block">نوع الشحن</Label>
@@ -537,8 +537,8 @@ const ProductDetail = () => {
                 {product.has_pre_order && (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0) && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
                   <div className="p-4 rounded-xl bg-card/50 border border-border/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 flex items-center justify-center">
-                        <Truck className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Truck className="h-4 w-4 text-primary" />
                       </div>
                       <div>
                         <Label className="text-sm font-bold block">نوع الشحن</Label>
@@ -564,7 +564,7 @@ const ProductDetail = () => {
                             <span className="font-bold text-sm block">شحن بحري</span>
                             <span className="text-xs text-muted-foreground">45 يوم تقريباً</span>
                           </div>
-                          <Badge variant="outline" className="text-xs shrink-0 text-emerald-600 border-emerald-500/30">
+                          <Badge variant="outline" className="text-xs shrink-0 text-primary border-primary/30">
                             مجاني
                           </Badge>
                         </button>
@@ -600,8 +600,8 @@ const ProductDetail = () => {
                 {productOptions && productOptions.length > 0 && (
                   <div className="p-4 rounded-xl bg-card/50 border border-border/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
-                        <Settings className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                      <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
+                        <Settings className="h-4 w-4 text-secondary-foreground" />
                       </div>
                       <div>
                         <Label className="text-sm font-bold block">الخيارات المتاحة</Label>
@@ -652,29 +652,30 @@ const ProductDetail = () => {
                             </div>
                             
                             {/* Option Details */}
-                            <div className="flex-1 text-right">
-                              <span className="font-bold text-sm block">{option.name_ar}</span>
+                            <div className="flex-1 min-w-0 text-right">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold text-sm truncate">{option.name_ar}</span>
+                                {/* Price Adjustment - inline with name */}
+                                {option.price_adjustment !== 0 && (
+                                  <Badge variant="secondary" className="text-[10px] shrink-0 px-1.5 py-0">
+                                    {option.price_adjustment > 0 ? '+' : ''}{formatPrice(option.price_adjustment)}
+                                  </Badge>
+                                )}
+                              </div>
                               {/* Availability Badge */}
                               <div className="flex items-center gap-1 mt-1">
                                 {option.available_for_direct_sale && (
-                                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-emerald-600 border-emerald-500/30">
+                                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-primary border-primary/30">
                                     مباشر
                                   </Badge>
                                 )}
                                 {option.available_for_pre_order && (
-                                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-amber-600 border-amber-500/30">
+                                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-accent-foreground border-accent/30">
                                     طلب مسبق
                                   </Badge>
                                 )}
                               </div>
                             </div>
-                            
-                            {/* Price Adjustment */}
-                            {option.price_adjustment !== 0 && (
-                              <Badge variant="secondary" className="text-xs shrink-0">
-                                {option.price_adjustment > 0 ? '+' : ''}{formatPrice(option.price_adjustment)} {currency}
-                              </Badge>
-                            )}
                             
                             {/* Unavailable Overlay */}
                             {isOptionDisabled && (
@@ -693,15 +694,15 @@ const ProductDetail = () => {
                 {product.colors && Array.isArray(product.colors) && product.colors.length > 0 && (
                   <div className="p-4 rounded-xl bg-card/50 border border-border/30">
                     <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-400 via-green-400 to-blue-400 flex items-center justify-center">
-                        <div className="w-5 h-5 rounded-full bg-background" />
+                      <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
+                        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary via-accent to-secondary" />
                       </div>
-                      <Label className="text-sm font-bold">الألوان المتاحة</Label>
-                      {selectedColor && (
-                        <Badge variant="outline" className="mr-auto text-xs">
-                          {selectedColor}
-                        </Badge>
-                      )}
+                      <div>
+                        <Label className="text-sm font-bold block">الألوان المتاحة</Label>
+                        {selectedColor && (
+                          <span className="text-[10px] text-muted-foreground">اللون المحدد: {selectedColor}</span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {product.colors.map((color: any, index: number) => {
