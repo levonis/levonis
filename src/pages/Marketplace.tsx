@@ -59,6 +59,34 @@ export default function Marketplace() {
     }
   }, [searchParams, setSearchParams]);
 
+  // Get listing ID from query param
+  const queryListingId = searchParams.get('listing');
+  const effectiveListingId = listingId || queryListingId;
+
+  // Fetch single listing for direct link (from params or query)
+  const { data: queryListing } = useQuery({
+    queryKey: ['query-listing', queryListingId],
+    queryFn: async () => {
+      if (!queryListingId) return null;
+      const { data, error } = await supabase
+        .from('user_listings')
+        .select('*, categories(name_ar)')
+        .eq('id', queryListingId)
+        .single();
+      
+      if (error) return null;
+      return data;
+    },
+    enabled: !!queryListingId,
+  });
+
+  // Open dialog when query listing is loaded
+  useEffect(() => {
+    if (queryListing) {
+      setDirectListingOpen(true);
+    }
+  }, [queryListing]);
+
   // Fetch all approved listings
   const { data: listings, isLoading } = useQuery({
     queryKey: ['marketplace-listings-all'],
@@ -370,16 +398,24 @@ export default function Marketplace() {
           </div>
         )}
 
-        {/* Direct listing dialog */}
-        {directListing && (
+        {/* Direct listing dialog - from params or query */}
+        {(directListing || queryListing) && (
           <ListingDetailDialog
-            listing={directListing}
-            sellerProfile={sellerProfiles?.[directListing.seller_id]}
-            sellerName={sellerNames?.[directListing.seller_id]}
+            listing={directListing || queryListing}
+            sellerProfile={sellerProfiles?.[(directListing || queryListing)?.seller_id]}
+            sellerName={sellerNames?.[(directListing || queryListing)?.seller_id]}
             open={directListingOpen}
             onOpenChange={(open) => {
               setDirectListingOpen(open);
-              if (!open) navigate('/marketplace');
+              if (!open) {
+                // Clear query param if it exists
+                if (queryListingId) {
+                  searchParams.delete('listing');
+                  setSearchParams(searchParams, { replace: true });
+                } else {
+                  navigate('/marketplace');
+                }
+              }
             }}
           />
         )}
