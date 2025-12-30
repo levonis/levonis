@@ -92,26 +92,27 @@ export const MarketplaceSection = () => {
 
   return (
     <section className="container mx-auto px-4 py-10">
-      {/* Separator from other sections */}
-      <div className="border-t border-border mb-8" />
+      {/* Decorative Separator from other sections */}
+      <div className="relative mb-10">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t-2 border-primary/20" />
+        </div>
+        <div className="relative flex justify-center">
+          <div className="bg-background px-6 py-2 flex items-center gap-2 rounded-full border border-primary/30 shadow-sm">
+            <Store className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium text-primary">قسم السوق</span>
+          </div>
+        </div>
+      </div>
 
-      {/* Header */}
+      {/* Header - Now navigates to marketplace page */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-        <div className="flex items-center gap-2">
-          <Store className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-          <h2 className="text-xl sm:text-2xl font-black text-primary">سوق المستعمل</h2>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-3">
-          <span className="text-xs sm:text-sm text-muted-foreground">منتجات من أعضاء المجتمع</span>
-          {showAllButton && (
-            <Link to="/marketplace">
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm h-8">
-                عرض الكل
-                <ArrowLeft className="w-3.5 h-3.5" />
-              </Button>
-            </Link>
-          )}
-        </div>
+        <Link to="/marketplace" className="flex items-center gap-2 group cursor-pointer">
+          <Store className="w-5 h-5 sm:w-6 sm:h-6 text-primary group-hover:scale-110 transition-transform" />
+          <h2 className="text-xl sm:text-2xl font-black text-primary group-hover:underline decoration-2 underline-offset-4 transition-all">سوق المستعمل</h2>
+          <ArrowLeft className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
+        </Link>
+        <span className="text-xs sm:text-sm text-muted-foreground">منتجات من أعضاء المجتمع</span>
       </div>
 
       {/* Action Buttons - Ordered: Add, My Products, Conversations */}

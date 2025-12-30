@@ -193,34 +193,36 @@ export default function Marketplace() {
   }, [listings, searchQuery, conditionFilter, sortBy, priceMin, priceMax]);
 
   return (
-    <div className="min-h-screen bg-background pt-24">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-background pt-20 sm:pt-24">
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowRight className="w-5 h-5" />
+        <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="h-9 w-9 sm:h-10 sm:w-10">
+            <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </Button>
-          <div className="flex items-center gap-3">
-            <Store className="w-6 h-6 text-primary" />
-            <h1 className="text-2xl font-black text-primary">سوق المستعمل</h1>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Store className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+            <h1 className="text-lg sm:text-2xl font-black text-primary">سوق المستعمل</h1>
           </div>
-          <span className="text-sm text-muted-foreground">منتجات من أعضاء المجتمع</span>
+          <span className="text-xs sm:text-sm text-muted-foreground hidden sm:inline">منتجات من أعضاء المجتمع</span>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons - Responsive */}
         {user && (
-          <div className="flex flex-wrap gap-3 mb-6">
+          <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
             <AddListingDialog>
-              <Button size="sm" className="gap-2">
-                <Plus className="w-4 h-4" />
-                أضف منتج للبيع
+              <Button size="sm" className="gap-1.5 sm:gap-2 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-4">
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">أضف منتج للبيع</span>
+                <span className="xs:hidden">إضافة</span>
               </Button>
             </AddListingDialog>
             
             <MyListings>
-              <Button variant="outline" size="sm" className="gap-2">
-                <Package className="w-4 h-4" />
-                منتجاتي
+              <Button variant="outline" size="sm" className="gap-1.5 sm:gap-2 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-4">
+                <Package className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">منتجاتي</span>
+                <span className="xs:hidden">منتجاتي</span>
               </Button>
             </MyListings>
             
@@ -232,80 +234,84 @@ export default function Marketplace() {
               }}
               autoOpenConversationId={autoOpenConversationId}
             >
-              <Button variant="outline" size="sm" className="gap-2">
-                <MessageSquare className="w-4 h-4" />
-                المحادثات
+              <Button variant="outline" size="sm" className="gap-1.5 sm:gap-2 h-8 sm:h-9 text-xs sm:text-sm px-2.5 sm:px-4">
+                <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="hidden xs:inline">المحادثات</span>
+                <span className="xs:hidden">محادثات</span>
               </Button>
             </ListingConversations>
           </div>
         )}
 
-        {/* Filters */}
-        <div className="bg-card border border-border rounded-xl p-4 mb-6 space-y-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <SlidersHorizontal className="w-4 h-4" />
-            <span>تصفية وبحث</span>
+        {/* Filters - Improved Responsiveness */}
+        <div className="bg-card border border-border rounded-xl p-3 sm:p-4 mb-4 sm:mb-6 space-y-3 sm:space-y-4">
+          {/* Search Bar - Full Width on Mobile */}
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="ابحث عن منتج..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pr-10 h-10 sm:h-11 text-sm sm:text-base"
+            />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search */}
-            <div className="relative lg:col-span-2">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="ابحث عن منتج..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10"
-              />
-            </div>
-
+          {/* Filter Row - Responsive Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
             {/* Condition */}
             <Select value={conditionFilter} onValueChange={setConditionFilter}>
-              <SelectTrigger>
+              <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
                 <SelectValue placeholder="الحالة" />
               </SelectTrigger>
               <SelectContent>
                 {conditionOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  <SelectItem key={opt.value} value={opt.value} className="text-sm">{opt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="ترتيب حسب" />
+              <SelectTrigger className="h-9 sm:h-10 text-xs sm:text-sm">
+                <SelectValue placeholder="الترتيب" />
               </SelectTrigger>
               <SelectContent>
                 {sortOptions.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  <SelectItem key={opt.value} value={opt.value} className="text-sm">{opt.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
+            {/* Price Min */}
+            <div className="relative">
+              <Input
+                type="number"
+                placeholder="السعر من"
+                value={priceMin}
+                onChange={(e) => setPriceMin(e.target.value)}
+                className="h-9 sm:h-10 text-xs sm:text-sm"
+              />
+            </div>
+
+            {/* Price Max */}
+            <div className="relative">
+              <Input
+                type="number"
+                placeholder="السعر إلى"
+                value={priceMax}
+                onChange={(e) => setPriceMax(e.target.value)}
+                className="h-9 sm:h-10 text-xs sm:text-sm"
+              />
+            </div>
           </div>
 
-          {/* Price Range */}
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">السعر:</span>
-            <Input
-              type="number"
-              placeholder="من"
-              value={priceMin}
-              onChange={(e) => setPriceMin(e.target.value)}
-              className="w-32"
-            />
-            <span>-</span>
-            <Input
-              type="number"
-              placeholder="إلى"
-              value={priceMax}
-              onChange={(e) => setPriceMax(e.target.value)}
-              className="w-32"
-            />
-            {(priceMin || priceMax || conditionFilter !== 'all' || searchQuery) && (
+          {/* Clear Filters */}
+          {(priceMin || priceMax || conditionFilter !== 'all' || searchQuery) && (
+            <div className="flex justify-end">
               <Button 
                 variant="ghost" 
                 size="sm"
+                className="text-xs sm:text-sm h-8"
                 onClick={() => {
                   setSearchQuery('');
                   setConditionFilter('all');
@@ -313,15 +319,16 @@ export default function Marketplace() {
                   setPriceMax('');
                 }}
               >
+                <SlidersHorizontal className="w-3.5 h-3.5 ml-1.5" />
                 مسح الفلاتر
               </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Results count */}
-        <div className="flex items-center justify-between mb-4">
-          <p className="text-sm text-muted-foreground">
+        <div className="flex items-center justify-between mb-3 sm:mb-4">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {filteredListings.length} منتج
           </p>
         </div>
