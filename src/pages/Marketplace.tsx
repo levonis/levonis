@@ -147,27 +147,35 @@ export default function Marketplace() {
     enabled: !!listings?.length,
   });
 
-  // Fetch seller names
-  const { data: sellerNames } = useQuery({
-    queryKey: ['seller-names-all', listings?.map(l => l.seller_id)],
+  // Fetch seller names and avatars
+  const { data: sellerData } = useQuery({
+    queryKey: ['seller-data-all', listings?.map(l => l.seller_id)],
     queryFn: async () => {
-      if (!listings?.length) return {};
+      if (!listings?.length) return { names: {}, avatars: {} };
       
       const sellerIds = [...new Set(listings.map(l => l.seller_id))];
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, username')
+        .select('id, full_name, username, avatar_url')
         .in('id', sellerIds);
       
       if (error) throw error;
       
-      return data?.reduce((acc, profile) => {
-        acc[profile.id] = profile.full_name || profile.username || 'بائع';
-        return acc;
-      }, {} as Record<string, string>) || {};
+      const names: Record<string, string> = {};
+      const avatars: Record<string, string | null> = {};
+      
+      data?.forEach(profile => {
+        names[profile.id] = profile.full_name || profile.username || 'بائع';
+        avatars[profile.id] = profile.avatar_url;
+      });
+      
+      return { names, avatars };
     },
     enabled: !!listings?.length,
   });
+
+  const sellerNames = sellerData?.names || {};
+  const sellerAvatars = sellerData?.avatars || {};
 
   // Filter and sort listings
   const filteredListings = useMemo(() => {
@@ -403,6 +411,7 @@ export default function Marketplace() {
             listing={directListing || queryListing}
             sellerProfile={sellerProfiles?.[(directListing || queryListing)?.seller_id]}
             sellerName={sellerNames?.[(directListing || queryListing)?.seller_id]}
+            sellerAvatar={sellerAvatars?.[(directListing || queryListing)?.seller_id]}
             open={directListingOpen}
             onOpenChange={(open) => {
               setDirectListingOpen(open);
