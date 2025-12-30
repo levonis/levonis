@@ -37,6 +37,9 @@ import {
   User,
   ShoppingBag,
   ExternalLink,
+  Ban,
+  UserX,
+  AlertOctagon,
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -380,6 +383,148 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     },
   });
 
+  const selectedConv = conversations?.find(c => c.id === selectedConversation);
+  const isBuyer = selectedConv?.buyer_id === user?.id;
+  const isSeller = selectedConv?.seller_id === user?.id;
+  const otherUserId = selectedConv ? (selectedConv.buyer_id === user?.id ? selectedConv.seller_id : selectedConv.buyer_id) : null;
+  const otherUser = otherUserId ? profiles?.[otherUserId] : null;
+
+  // Check if user is blocked
+  const { data: isUserBlocked } = useQuery({
+    queryKey: ['user-blocked', user?.id, otherUserId],
+    queryFn: async () => {
+      if (!user || !otherUserId) return false;
+      const { data } = await supabase
+        .from('user_blocks')
+        .select('id')
+        .eq('blocker_id', user.id)
+        .eq('blocked_id', otherUserId)
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!user && !!otherUserId,
+  });
+
+  // Block user mutation
+  const blockUserMutation = useMutation({
+    mutationFn: async (reason?: string) => {
+      if (!user || !otherUserId) throw new Error('لا يمكن الحظر');
+      
+      const { error } = await supabase
+        .from('user_blocks')
+        .insert({
+          blocker_id: user.id,
+          blocked_id: otherUserId,
+          reason: reason || 'حظر من المحادثة',
+        });
+      
+      if (error) {
+        if (error.code === '23505') {
+          throw new Error('هذا المستخدم محظور بالفعل');
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success('تم حظر المستخدم بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['user-blocks'] });
+      queryClient.invalidateQueries({ queryKey: ['user-blocked', user?.id, otherUserId] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  // Unblock user mutation
+  const unblockUserMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !otherUserId) throw new Error('لا يمكن إلغاء الحظر');
+      
+      const { error } = await supabase
+        .from('user_blocks')
+        .delete()
+        .eq('blocker_id', user.id)
+        .eq('blocked_id', otherUserId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('تم إلغاء حظر المستخدم');
+      queryClient.invalidateQueries({ queryKey: ['user-blocks'] });
+      queryClient.invalidateQueries({ queryKey: ['user-blocked', user?.id, otherUserId] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  // Admin: Ban user mutation
+  const banUserMutation = useMutation({
+    mutationFn: async ({ userId, reason, isBan }: { userId: string; reason: string; isBan: boolean }) => {
+      if (!user || !isAdmin) throw new Error('غير مصرح');
+      
+      // Update profile ban status
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ 
+          is_banned: isBan,
+          ban_reason: isBan ? reason : null,
+        })
+        .eq('id', userId);
+      
+      if (profileError) throw profileError;
+
+      // Add warning record
+      const { error: warningError } = await supabase
+        .from('user_warnings')
+        .insert({
+          user_id: userId,
+          admin_id: user.id,
+          reason: reason,
+          warning_type: isBan ? 'ban' : 'warning',
+        });
+      
+      if (warningError) throw warningError;
+
+      // Update warnings count
+      if (!isBan) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('warnings_count')
+          .eq('id', userId)
+          .single();
+        
+        await supabase
+          .from('profiles')
+          .update({ warnings_count: (profile?.warnings_count || 0) + 1 })
+          .eq('id', userId);
+      }
+
+      // Notify user
+      await supabase.from('notifications').insert({
+        user_id: userId,
+        title: isBan ? '🚫 تم حظر حسابك' : '⚠️ تحذير من الإدارة',
+        message: isBan 
+          ? `تم حظر حسابك من المنصة بسبب: ${reason}`
+          : `تلقيت تحذيراً من الإدارة بسبب: ${reason}`,
+        type: 'warning',
+      });
+
+      // Add system message
+      if (selectedConversation) {
+        await supabase.from('listing_messages').insert({
+          conversation_id: selectedConversation,
+          sender_id: user.id,
+          content: isBan 
+            ? `🚫 تم حظر المستخدم من المنصة بواسطة الإدارة\nالسبب: ${reason}`
+            : `⚠️ تم إرسال تحذير للمستخدم بواسطة الإدارة\nالسبب: ${reason}`,
+        });
+      }
+    },
+    onSuccess: (_, { isBan }) => {
+      toast.success(isBan ? 'تم حظر المستخدم بنجاح' : 'تم إرسال التحذير بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
   const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
@@ -411,12 +556,6 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     setSelectedConversation(null);
     if (onClose) onClose();
   };
-
-  const selectedConv = conversations?.find(c => c.id === selectedConversation);
-  const isBuyer = selectedConv?.buyer_id === user?.id;
-  const isSeller = selectedConv?.seller_id === user?.id;
-  const otherUserId = selectedConv ? (selectedConv.buyer_id === user?.id ? selectedConv.seller_id : selectedConv.buyer_id) : null;
-  const otherUser = otherUserId ? profiles?.[otherUserId] : null;
 
   // Fetch other listings for selected conversation user
   const { data: otherUserListings } = useQuery({
@@ -692,6 +831,27 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          {/* User block options */}
+                          {(isBuyer || isSeller) && !isUserBlocked && (
+                            <DropdownMenuItem 
+                              className="text-orange-500 gap-2"
+                              onClick={() => blockUserMutation.mutate(undefined)}
+                            >
+                              <UserX className="w-4 h-4" />
+                              حظر المستخدم
+                            </DropdownMenuItem>
+                          )}
+                          {(isBuyer || isSeller) && isUserBlocked && (
+                            <DropdownMenuItem 
+                              className="text-green-500 gap-2"
+                              onClick={() => unblockUserMutation.mutate()}
+                            >
+                              <Check className="w-4 h-4" />
+                              إلغاء حظر المستخدم
+                            </DropdownMenuItem>
+                          )}
+                          
+                          {/* Dispute options */}
                           {(isBuyer || isSeller) && selectedConv?.status !== 'disputed' && (
                             <DropdownMenuItem 
                               className="text-destructive gap-2"
@@ -710,6 +870,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               إلغاء طلب التدخل
                             </DropdownMenuItem>
                           )}
+                          
+                          {/* Admin options */}
                           {isAdmin && selectedConv?.status === 'disputed' && !selectedConv?.admin_joined && (
                             <DropdownMenuItem 
                               className="text-primary gap-2"
@@ -759,6 +921,36 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               <CheckCheck className="w-4 h-4" />
                               حل النزاع
                             </DropdownMenuItem>
+                          )}
+                          
+                          {/* Admin moderation options */}
+                          {isAdmin && otherUserId && (
+                            <>
+                              <DropdownMenuItem 
+                                className="text-amber-500 gap-2"
+                                onClick={() => {
+                                  const reason = prompt('أدخل سبب التحذير:');
+                                  if (reason) {
+                                    banUserMutation.mutate({ userId: otherUserId, reason, isBan: false });
+                                  }
+                                }}
+                              >
+                                <AlertOctagon className="w-4 h-4" />
+                                إرسال تحذير للمستخدم
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-red-600 gap-2"
+                                onClick={() => {
+                                  const reason = prompt('أدخل سبب الحظر النهائي:');
+                                  if (reason) {
+                                    banUserMutation.mutate({ userId: otherUserId, reason, isBan: true });
+                                  }
+                                }}
+                              >
+                                <Ban className="w-4 h-4" />
+                                حظر المستخدم نهائياً
+                              </DropdownMenuItem>
+                            </>
                           )}
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -821,12 +1013,25 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               const isSystemMessage = msg.content?.startsWith('⚠️') || 
                                                      msg.content?.startsWith('✅ تم إلغاء') ||
                                                      msg.content?.startsWith('✅ تم حل') ||
-                                                     msg.content?.startsWith('🛡️');
+                                                     msg.content?.startsWith('🛡️') ||
+                                                     msg.content?.startsWith('🛒') ||
+                                                     msg.content?.startsWith('🚫');
                               
                               if (isSystemMessage) {
+                                // Determine style based on message type
+                                const isOrderMessage = msg.content?.startsWith('🛒');
+                                const isBanMessage = msg.content?.startsWith('🚫');
+                                
                                 return (
                                   <div key={msg.id} className="flex justify-center my-3">
-                                    <div className="bg-amber-500/20 text-amber-100 text-xs px-4 py-2 rounded-full shadow-sm border border-amber-500/30">
+                                    <div className={cn(
+                                      "text-xs px-4 py-2 rounded-lg shadow-sm border max-w-[90%] whitespace-pre-wrap text-center",
+                                      isOrderMessage 
+                                        ? "bg-primary/20 text-primary-foreground border-primary/30" 
+                                        : isBanMessage
+                                          ? "bg-red-500/20 text-red-100 border-red-500/30"
+                                          : "bg-amber-500/20 text-amber-100 border-amber-500/30"
+                                    )}>
                                       {msg.content}
                                     </div>
                                   </div>

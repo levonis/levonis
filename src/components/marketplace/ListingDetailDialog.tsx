@@ -374,7 +374,7 @@ export const ListingDetailDialog = ({
       const finalAmount = isThroughSite ? Number(listing.price) + 5000 : Number(listing.price);
       const finalPlatformFee = isThroughSite ? 5000 : 0;
       
-      const { data, error } = await supabase
+      const { data: transaction, error: txError } = await supabase
         .from('listing_transactions')
         .insert({
           listing_id: listing.id,
@@ -390,14 +390,70 @@ export const ListingDetailDialog = ({
         .select()
         .single();
       
-      if (error) throw error;
-      return data;
+      if (txError) throw txError;
+
+      // Create or get conversation
+      const { data: existingConv } = await supabase
+        .from('listing_conversations')
+        .select('id')
+        .eq('listing_id', listing.id)
+        .eq('buyer_id', user.id)
+        .single();
+      
+      let conversationId = existingConv?.id;
+      
+      if (!conversationId) {
+        const { data: newConv, error: convError } = await supabase
+          .from('listing_conversations')
+          .insert({
+            listing_id: listing.id,
+            buyer_id: user.id,
+            seller_id: listing.seller_id,
+          })
+          .select()
+          .single();
+        
+        if (convError) throw convError;
+        conversationId = newConv.id;
+      }
+
+      // Get buyer name
+      const { data: buyerProfile } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', user.id)
+        .single();
+      
+      const buyerName = buyerProfile?.full_name || buyerProfile?.username || 'مشتري';
+      const paymentMethod = buyFormData.payment_method === 'through_site' ? 'عن طريق الوسيط' : 'دفع مباشر';
+
+      // Insert system message about order
+      await supabase.from('listing_messages').insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: `🛒 تم إنشاء طلب شراء جديد\n\n📦 المنتج: ${listing.title_ar}\n💰 المبلغ: ${finalAmount.toLocaleString()} دينار\n💳 طريقة الدفع: ${paymentMethod}\n\n⏳ بانتظار موافقة البائع على البيع`,
+      });
+
+      // Notify seller via Telegram
+      await supabase.functions.invoke('notify-marketplace-telegram', {
+        body: {
+          user_id: listing.seller_id,
+          event_type: 'new_order',
+          listing_title: listing.title_ar,
+          sender_name: buyerName,
+          message_content: `طلب شراء جديد بمبلغ ${finalAmount.toLocaleString()} دينار`,
+          conversation_id: conversationId,
+        },
+      });
+
+      return { transaction, conversationId };
     },
-    onSuccess: () => {
-      toast.success('تم إنشاء طلب الشراء بنجاح');
+    onSuccess: (data) => {
       setShowBuyForm(false);
       onOpenChange(false);
       queryClient.invalidateQueries({ queryKey: ['listing-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+      navigate(`/marketplace?openChat=true&conversationId=${data.conversationId}`);
     },
     onError: (error: Error) => toast.error(error.message),
   });
