@@ -1025,12 +1025,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 return (
                                   <div key={msg.id} className="flex justify-center my-3">
                                     <div className={cn(
-                                      "text-xs px-4 py-2 rounded-lg shadow-sm border max-w-[90%] whitespace-pre-wrap text-center",
+                                      "text-xs px-4 py-2 rounded-lg shadow-sm border max-w-[90%] whitespace-pre-wrap text-center font-medium",
                                       isOrderMessage 
-                                        ? "bg-primary/20 text-primary-foreground border-primary/30" 
+                                        ? "bg-primary/30 text-primary border-primary/40" 
                                         : isBanMessage
-                                          ? "bg-red-500/20 text-red-100 border-red-500/30"
-                                          : "bg-amber-500/20 text-amber-100 border-amber-500/30"
+                                          ? "bg-red-500/30 text-red-400 border-red-500/40"
+                                          : "bg-amber-500/30 text-amber-400 border-amber-500/40"
                                     )}>
                                       {msg.content}
                                     </div>
