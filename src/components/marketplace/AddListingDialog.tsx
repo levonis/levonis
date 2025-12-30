@@ -64,6 +64,7 @@ const usageDurationOptions = [
 
 const shippingOptions = [
   { value: 'direct', label: 'توصيل مباشر للمشتري' },
+  { value: 'through_site', label: 'عن طريق الوسيط (زيادة 5,000 دينار)' },
 ];
 
 export const AddListingDialog = ({ children, editMode = false, editData, onClose }: AddListingDialogProps) => {
