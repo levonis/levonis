@@ -644,7 +644,14 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 </div>
               ) : (
                 <div>
-                  {conversations?.map(conv => {
+                  {/* Sort conversations by last message time */}
+                  {[...(conversations || [])].sort((a, b) => {
+                    const lastMsgA = lastMessages?.[a.id];
+                    const lastMsgB = lastMessages?.[b.id];
+                    const timeA = lastMsgA ? new Date(lastMsgA.created_at).getTime() : new Date(a.updated_at).getTime();
+                    const timeB = lastMsgB ? new Date(lastMsgB.created_at).getTime() : new Date(b.updated_at).getTime();
+                    return timeB - timeA;
+                  }).map(conv => {
                     const convOtherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
                     const convOtherUser = profiles?.[convOtherUserId];
                     const lastMsg = lastMessages?.[conv.id];

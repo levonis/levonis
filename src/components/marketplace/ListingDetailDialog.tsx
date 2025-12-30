@@ -925,19 +925,34 @@ export const ListingDetailDialog = ({
 
       {/* Confirm Purchase Dialog */}
       <AlertDialog open={showConfirmBuy} onOpenChange={setShowConfirmBuy}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد طلب الشراء</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>هل أنت متأكد من إرسال طلب الشراء؟</p>
-              <div className="bg-muted rounded-lg p-3 text-sm text-right space-y-1">
-                <p><strong>المنتج:</strong> {listing.title_ar}</p>
-                <p><strong>المبلغ:</strong> {(buyFormData.payment_method === 'through_site' ? Number(listing.price) + 5000 : Number(listing.price)).toLocaleString()} دينار</p>
-                <p><strong>طريقة الدفع:</strong> {buyFormData.payment_method === 'through_site' ? 'عن طريق الوسيط' : 'دفع مباشر'}</p>
+            <AlertDialogTitle className="text-center">تأكيد طلب الشراء</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-right">
+                <p className="text-muted-foreground text-sm">هل أنت متأكد من إرسال طلب الشراء؟</p>
+                <div className="bg-muted rounded-lg p-3 text-sm space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-medium text-foreground">{listing.title_ar}</span>
+                    <span className="text-muted-foreground text-xs">المنتج</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold text-primary">
+                      {(buyFormData.payment_method === 'through_site' ? Number(listing.price) + 5000 : Number(listing.price)).toLocaleString()} د.ع
+                    </span>
+                    <span className="text-muted-foreground text-xs">المبلغ</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-foreground">
+                      {buyFormData.payment_method === 'through_site' ? 'عن طريق الوسيط' : 'دفع مباشر'}
+                    </span>
+                    <span className="text-muted-foreground text-xs">طريقة الدفع</span>
+                  </div>
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row-reverse gap-2">
+          <AlertDialogFooter className="flex-row-reverse gap-2 mt-2">
             <AlertDialogAction
               onClick={() => createTransactionMutation.mutate()}
               disabled={createTransactionMutation.isPending}
