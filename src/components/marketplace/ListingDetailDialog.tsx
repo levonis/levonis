@@ -336,8 +336,9 @@ export const ListingDetailDialog = ({
       return data;
     },
     onSuccess: () => {
-      toast.success('تم بدء المحادثة مع البائع');
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+      onOpenChange(false);
+      navigate('/marketplace?openChat=true');
     },
     onError: (error: Error) => toast.error(error.message),
   });
