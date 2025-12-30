@@ -1269,6 +1269,38 @@ export type Database = {
         }
         Relationships: []
       }
+      marketplace_telegram_context: {
+        Row: {
+          conversation_id: string
+          id: string
+          telegram_chat_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          id?: string
+          telegram_chat_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          id?: string
+          telegram_chat_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_telegram_context_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "listing_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string

@@ -25,7 +25,17 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { user_id, event_type, listing_title, listing_id, admin_notes, buyer_name, message_preview } = await req.json();
+    const { 
+      user_id, 
+      event_type, 
+      listing_title, 
+      listing_id, 
+      admin_notes, 
+      buyer_name, 
+      message_content,
+      sender_name,
+      conversation_id 
+    } = await req.json();
 
     if (!user_id || !event_type) {
       return new Response(
@@ -85,8 +95,8 @@ Deno.serve(async (req) => {
         break;
       case "new_message":
         emoji = "💬";
-        title = "رسالة جديدة";
-        message = `لديك رسالة جديدة بخصوص منتج "${listing_title}".\n\n📩 ${message_preview || ''}`;
+        title = `رسالة جديدة من ${sender_name || 'مستخدم'}`;
+        message = `📦 المنتج: ${listing_title}\n\n📩 الرسالة:\n${message_content || '(صورة)'}\n\n💡 للرد، اكتب رسالتك مباشرة هنا`;
         break;
       default:
         emoji = "ℹ️";
@@ -121,6 +131,26 @@ Deno.serve(async (req) => {
         JSON.stringify({ success: false, error: result.description }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
       );
+    }
+
+    // Save context for reply functionality (for new_message events)
+    if (event_type === "new_message" && conversation_id) {
+      const { error: contextError } = await supabase
+        .from("marketplace_telegram_context")
+        .upsert({
+          telegram_chat_id: profile.telegram_chat_id,
+          conversation_id: conversation_id,
+          user_id: user_id,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'telegram_chat_id',
+        });
+
+      if (contextError) {
+        console.error("Error saving marketplace telegram context:", contextError);
+      } else {
+        console.log("Saved marketplace telegram context for replies");
+      }
     }
 
     return new Response(
