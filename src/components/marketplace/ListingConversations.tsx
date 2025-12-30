@@ -962,17 +962,20 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   <div 
                     className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => {
-                      const listingId = (selectedConv?.user_listings as any)?.id;
-                      if (listingId) {
-                        handleClose();
-                        navigate(`/marketplace?listing=${listingId}`);
+                      const listingId = selectedConv?.listing_id || (selectedConv?.user_listings as any)?.id;
+                      if (!listingId) {
+                        toast.error('تعذر فتح المنتج');
+                        return;
                       }
+                      setOpen(false);
+                      setSelectedConversation(null);
+                      navigate(`/marketplace?listing=${listingId}`);
                     }}
                   >
                     {(selectedConv?.user_listings as any)?.images?.[0] && (
                       <img 
                         src={(selectedConv?.user_listings as any).images[0]} 
-                        alt="" 
+                        alt={`صورة ${(selectedConv?.user_listings as any)?.title_ar || 'المنتج'}`} 
                         className="w-8 h-8 rounded object-cover"
                       />
                     )}

@@ -61,7 +61,6 @@ export default function Marketplace() {
 
   // Get listing ID from query param
   const queryListingId = searchParams.get('listing');
-  const effectiveListingId = listingId || queryListingId;
 
   // Fetch single listing for direct link (from params or query)
   const { data: queryListing } = useQuery({
