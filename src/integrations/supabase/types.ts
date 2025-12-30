@@ -1840,36 +1840,45 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          ban_reason: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
           governorate: string | null
           id: string
+          is_banned: boolean | null
           phone_number: string | null
           telegram_chat_id: string | null
           username: string
+          warnings_count: number | null
         }
         Insert: {
           avatar_url?: string | null
+          ban_reason?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           governorate?: string | null
           id: string
+          is_banned?: boolean | null
           phone_number?: string | null
           telegram_chat_id?: string | null
           username: string
+          warnings_count?: number | null
         }
         Update: {
           avatar_url?: string | null
+          ban_reason?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
           governorate?: string | null
           id?: string
+          is_banned?: boolean | null
           phone_number?: string | null
           telegram_chat_id?: string | null
           username?: string
+          warnings_count?: number | null
         }
         Relationships: []
       }
@@ -2081,6 +2090,30 @@ export type Database = {
           phone_number?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+          reason: string | null
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+          reason?: string | null
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+          reason?: string | null
         }
         Relationships: []
       }
@@ -2365,6 +2398,42 @@ export type Database = {
           id?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_warnings: {
+        Row: {
+          admin_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          reason: string
+          updated_at: string
+          user_id: string
+          warning_type: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          reason: string
+          updated_at?: string
+          user_id: string
+          warning_type?: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          reason?: string
+          updated_at?: string
+          user_id?: string
+          warning_type?: string
         }
         Relationships: []
       }
