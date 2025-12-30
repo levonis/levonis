@@ -107,7 +107,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     queryFn: async () => {
       if (!conversations?.length) return {};
       const userIds = [...new Set(conversations.flatMap(c => [c.buyer_id, c.seller_id]))];
-      const { data } = await supabase.from('profiles').select('id, full_name, username, avatar_url').in('id', userIds);
+      const { data } = await supabase.from('profiles').select('id, full_name, username, avatar_url, phone_number').in('id', userIds);
       return data?.reduce((acc, p) => { acc[p.id] = p; return acc; }, {} as Record<string, any>) || {};
     },
     enabled: !!conversations?.length,
@@ -170,10 +170,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         throw new Error('لا يمكن إرسال رسالة فارغة');
       }
       
+      const messageContent = messageInput.trim() || (mediaUrl ? '📷 وسائط' : '');
+      
       const { error } = await supabase.from('listing_messages').insert({
         conversation_id: selectedConversation,
         sender_id: user.id,
-        content: messageInput.trim() || (mediaUrl ? '📷 وسائط' : ''),
+        content: messageContent,
         image_url: mediaUrl || null,
       });
       if (error) throw error;
@@ -181,6 +183,34 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       await supabase.from('listing_conversations')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', selectedConversation);
+
+      // Send Telegram notification to the other party
+      if (selectedConv) {
+        const otherUserId = selectedConv.buyer_id === user.id 
+          ? selectedConv.seller_id 
+          : selectedConv.buyer_id;
+        
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user.id)
+          .single();
+
+        const senderName = senderProfile?.full_name || senderProfile?.username || 'مستخدم';
+        const listingTitle = (selectedConv.user_listings as any)?.title_ar || 'منتج';
+
+        // Call the telegram notification function
+        await supabase.functions.invoke('notify-marketplace-telegram', {
+          body: {
+            user_id: otherUserId,
+            event_type: 'new_message',
+            listing_title: listingTitle,
+            sender_name: senderName,
+            message_content: messageContent,
+            conversation_id: selectedConversation,
+          },
+        });
+      }
     },
     onSuccess: () => {
       setMessageInput('');
@@ -461,14 +491,26 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
-                      {otherUser?.full_name || otherUser?.username || 'مستخدم'}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium text-sm truncate">
+                        {otherUser?.full_name || otherUser?.username || 'مستخدم'}
+                      </p>
+                      <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                        {selectedConv?.buyer_id === user?.id ? 'البائع' : 'المشتري'}
+                      </Badge>
+                    </div>
                     <p className="text-xs text-muted-foreground truncate">
                       {(selectedConv?.user_listings as any)?.title_ar}
                       {' • '}
                       {Number((selectedConv?.user_listings as any)?.price).toLocaleString()} دينار
                     </p>
+                    {/* Show phone number for the other party if available */}
+                    {otherUser?.phone_number && (
+                      <p className="text-[10px] text-primary font-medium flex items-center gap-1 mt-0.5">
+                        <Phone className="w-2.5 h-2.5" />
+                        {otherUser.phone_number}
+                      </p>
+                    )}
                   </div>
 
                   {/* Actions */}

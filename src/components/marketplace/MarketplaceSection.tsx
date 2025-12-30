@@ -8,6 +8,7 @@ import { MyListings } from './MyListings';
 import { ListingConversations } from './ListingConversations';
 import { Store, Plus, Package, MessageSquare, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 export const MarketplaceSection = () => {
   const { user } = useAuth();
 
@@ -49,6 +50,38 @@ export const MarketplaceSection = () => {
       }, {} as Record<string, typeof data[0]>) || {};
     },
     enabled: !!listings?.length,
+  });
+
+  // Fetch unread messages count for marketplace conversations
+  const { data: unreadCount } = useQuery({
+    queryKey: ['marketplace-unread-count', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+
+      // Get all conversations where user is buyer or seller
+      const { data: conversations, error: convError } = await supabase
+        .from('listing_conversations')
+        .select('id')
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
+
+      if (convError || !conversations?.length) return 0;
+
+      const conversationIds = conversations.map(c => c.id);
+
+      // Count unread messages not sent by the user
+      const { count, error: msgError } = await supabase
+        .from('listing_messages')
+        .select('id', { count: 'exact', head: true })
+        .in('conversation_id', conversationIds)
+        .neq('sender_id', user.id)
+        .eq('is_read', false);
+
+      if (msgError) return 0;
+      return count || 0;
+    },
+    enabled: !!user,
+    refetchInterval: 30000, // Refetch every 30 seconds
+    staleTime: 15000,
   });
 
   const totalListings = listings?.length || 0;
@@ -98,10 +131,18 @@ export const MarketplaceSection = () => {
           </MyListings>
           
           <ListingConversations>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm h-8 px-2.5 sm:px-3">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs sm:text-sm h-8 px-2.5 sm:px-3 relative">
               <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden xs:inline">المحادثات</span>
               <span className="xs:hidden">محادثات</span>
+              {unreadCount && unreadCount > 0 ? (
+                <Badge 
+                  variant="destructive" 
+                  className="absolute -top-1.5 -right-1.5 h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center text-[10px] sm:text-xs font-bold rounded-full"
+                >
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              ) : null}
             </Button>
           </ListingConversations>
         </div>

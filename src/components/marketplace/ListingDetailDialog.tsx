@@ -73,12 +73,14 @@ interface SellerProfile {
   average_rating: number | null;
   completed_orders: number | null;
   is_verified: boolean | null;
+  phone_number?: string | null;
 }
 
 interface ListingDetailDialogProps {
   listing: Listing;
   sellerProfile?: SellerProfile | null;
   sellerName?: string;
+  sellerPhone?: string | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

@@ -50,7 +50,7 @@ serve(async (req) => {
       });
     }
 
-    // Check if this is an admin replying to a customer
+    // Check if this is an admin replying to a customer (support chat)
     const { data: adminContext } = await supabase
       .from("admin_telegram_context")
       .select("conversation_id, user_id")
@@ -59,7 +59,6 @@ serve(async (req) => {
 
     if (adminContext && text) {
       // This is an admin reply - insert the message into the conversation
-      // First, find the admin's user_id by their telegram_chat_id
       const { data: adminProfile } = await supabase
         .from("profiles")
         .select("id")
@@ -67,7 +66,6 @@ serve(async (req) => {
         .single();
 
       if (adminProfile) {
-        // Insert the message
         const { error: msgError } = await supabase
           .from("messages")
           .insert({
@@ -80,7 +78,6 @@ serve(async (req) => {
           console.error("Error inserting message:", msgError);
           await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, "❌ حدث خطأ في إرسال الرسالة", "HTML");
         } else {
-          // Get customer name for confirmation
           const { data: customerProfile } = await supabase
             .from("profiles")
             .select("full_name, username")
@@ -96,11 +93,113 @@ serve(async (req) => {
           );
         }
       } else {
-        // Admin hasn't linked their Telegram account
         await sendTelegramMessage(
           TELEGRAM_BOT_TOKEN,
           chatId,
           "⚠️ للرد على العملاء، يرجى ربط حسابك في الموقع بهذا الـ Telegram ID أولاً",
+          "HTML"
+        );
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Check if this is a marketplace conversation reply
+    const { data: marketplaceContext } = await supabase
+      .from("marketplace_telegram_context")
+      .select("conversation_id, user_id")
+      .eq("telegram_chat_id", chatId)
+      .single();
+
+    if (marketplaceContext && text) {
+      // This is a marketplace reply
+      const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("id, full_name, username")
+        .eq("telegram_chat_id", chatId)
+        .single();
+
+      if (userProfile) {
+        // Insert the message into listing_messages
+        const { error: msgError } = await supabase
+          .from("listing_messages")
+          .insert({
+            conversation_id: marketplaceContext.conversation_id,
+            sender_id: userProfile.id,
+            content: text,
+          });
+
+        if (msgError) {
+          console.error("Error inserting marketplace message:", msgError);
+          await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, "❌ حدث خطأ في إرسال الرسالة", "HTML");
+        } else {
+          // Update conversation updated_at
+          await supabase
+            .from("listing_conversations")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", marketplaceContext.conversation_id);
+
+          // Get conversation details to notify the other party
+          const { data: conversation } = await supabase
+            .from("listing_conversations")
+            .select(`
+              buyer_id,
+              seller_id,
+              user_listings(title_ar)
+            `)
+            .eq("id", marketplaceContext.conversation_id)
+            .single();
+
+          if (conversation) {
+            // Determine who to notify (the other party)
+            const otherUserId = conversation.buyer_id === userProfile.id 
+              ? conversation.seller_id 
+              : conversation.buyer_id;
+
+            // Notify the other party via telegram
+            const { data: otherProfile } = await supabase
+              .from("profiles")
+              .select("telegram_chat_id")
+              .eq("id", otherUserId)
+              .single();
+
+            if (otherProfile?.telegram_chat_id) {
+              const senderName = userProfile.full_name || userProfile.username || 'مستخدم';
+              const listingTitle = (conversation.user_listings as any)?.title_ar || 'منتج';
+              
+              const notifyMessage = `💬 <b>رسالة جديدة من ${senderName}</b>\n\n📦 المنتج: ${listingTitle}\n\n📩 الرسالة:\n${text}\n\n💡 للرد، اكتب رسالتك مباشرة هنا\n\n🏪 السوق المستعمل - LEVONIS`;
+              
+              await sendTelegramMessage(TELEGRAM_BOT_TOKEN, otherProfile.telegram_chat_id, notifyMessage, "HTML");
+
+              // Update the other party's context so they can reply
+              await supabase
+                .from("marketplace_telegram_context")
+                .upsert({
+                  telegram_chat_id: otherProfile.telegram_chat_id,
+                  conversation_id: marketplaceContext.conversation_id,
+                  user_id: otherUserId,
+                  updated_at: new Date().toISOString(),
+                }, {
+                  onConflict: 'telegram_chat_id',
+                });
+            }
+          }
+
+          await sendTelegramMessage(
+            TELEGRAM_BOT_TOKEN,
+            chatId,
+            `✅ تم إرسال رسالتك`,
+            "HTML"
+          );
+        }
+      } else {
+        await sendTelegramMessage(
+          TELEGRAM_BOT_TOKEN,
+          chatId,
+          "⚠️ للرد، يرجى ربط حسابك في الموقع بهذا الـ Telegram ID أولاً",
           "HTML"
         );
       }
