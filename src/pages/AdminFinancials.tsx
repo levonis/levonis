@@ -3,8 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -12,9 +10,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { 
-  Loader2, 
   DollarSign, 
   TrendingUp, 
   Truck, 
@@ -23,7 +21,6 @@ import {
   Package,
   Check,
   X,
-  Send,
   Plus,
   Eye,
   Trash2,
@@ -33,6 +30,7 @@ import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import AdminLayout, { AdminSection, AdminStatsGrid, AdminStatCard, AdminLoading } from '@/components/admin/AdminLayout';
 
 interface EditingCell {
   orderId: string;
@@ -152,14 +150,12 @@ const AdminFinancials = () => {
 
   const deleteOrderMutation = useMutation({
     mutationFn: async (orderId: string) => {
-      // First delete order items
       const { error: itemsError } = await supabase
         .from('order_items')
         .delete()
         .eq('order_id', orderId);
       if (itemsError) throw itemsError;
 
-      // Then delete the order
       const { error } = await supabase
         .from('orders')
         .delete()
@@ -335,9 +331,9 @@ const AdminFinancials = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
+      <AdminLayout title="التقارير المالية" icon={<BarChart3 className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
     );
   }
 
@@ -392,774 +388,280 @@ const AdminFinancials = () => {
   const totalCosts = totals.totalProductCost + totals.totalShippingCost + totals.totalOtherCosts;
   const calculatedProfit = totals.totalRevenue - totalCosts;
 
-  // Prepare chart data
-  const costsBreakdownData = [
-    { name: 'تكلفة المنتجات', value: totals.totalProductCost, color: '#ef4444' },
-    { name: 'تكلفة الشحن', value: totals.totalShippingCost, color: '#f59e0b' },
-    { name: 'تكاليف أخرى', value: totals.totalOtherCosts, color: '#ec4899' },
-  ].filter(item => item.value > 0);
+  return (
+    <AdminLayout
+      title="التقارير المالية"
+      icon={<BarChart3 className="h-5 w-5" />}
+      description="تتبع الإيرادات والمصاريف والأرباح"
+      maxWidth="full"
+      actions={
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="admin-btn-primary gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">إضافة طلب يدوي</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>إضافة طلب يدوي</DialogTitle>
+            </DialogHeader>
+            <div className="admin-form space-y-4">
+              <div className="admin-form-group">
+                <Label>اسم العميل</Label>
+                <Input
+                  value={manualOrderForm.customer_name}
+                  onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_name: e.target.value })}
+                  placeholder="اسم العميل"
+                />
+              </div>
+              <div className="admin-form-group">
+                <Label>المنتجات (سطر لكل منتج)</Label>
+                <Textarea
+                  value={manualOrderForm.product_names}
+                  onChange={(e) => setManualOrderForm({ ...manualOrderForm, product_names: e.target.value })}
+                  placeholder="منتج 1&#10;منتج 2"
+                  rows={3}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="admin-form-group">
+                  <Label>المبلغ الإجمالي</Label>
+                  <Input
+                    type="number"
+                    value={manualOrderForm.total_amount}
+                    onChange={(e) => setManualOrderForm({ ...manualOrderForm, total_amount: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="admin-form-group">
+                  <Label>دفع الزبون</Label>
+                  <Input
+                    type="number"
+                    value={manualOrderForm.customer_paid_amount}
+                    onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_paid_amount: parseFloat(e.target.value) || 0 })}
+                  />
+                </div>
+              </div>
+              <Button 
+                onClick={() => addManualOrderMutation.mutate(manualOrderForm)}
+                disabled={addManualOrderMutation.isPending}
+                className="w-full"
+              >
+                {addManualOrderMutation.isPending ? 'جاري الإضافة...' : 'إضافة الطلب'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      }
+    >
+      {/* Stats */}
+      <AdminStatsGrid>
+        <AdminStatCard
+          icon={<DollarSign className="h-5 w-5" />}
+          value={formatPrice(totals.totalRevenue)}
+          label="إجمالي الإيرادات"
+          colorClass="text-green-600"
+          bgClass="bg-green-500/10"
+        />
+        <AdminStatCard
+          icon={<CreditCard className="h-5 w-5" />}
+          value={formatPrice(totals.totalCustomerPaid)}
+          label="المدفوع من الزبائن"
+          colorClass="text-blue-600"
+          bgClass="bg-blue-500/10"
+        />
+        <AdminStatCard
+          icon={<Package className="h-5 w-5" />}
+          value={formatPrice(totalCosts)}
+          label="إجمالي التكاليف"
+          colorClass="text-red-600"
+          bgClass="bg-red-500/10"
+        />
+        <AdminStatCard
+          icon={<TrendingUp className="h-5 w-5" />}
+          value={formatPrice(calculatedProfit)}
+          label="صافي الربح"
+          colorClass="text-primary"
+          bgClass="bg-primary/10"
+        />
+      </AdminStatsGrid>
 
-  const revenueVsCostsData = [
-    { name: 'الإيرادات', value: totals.totalRevenue },
-    { name: 'التكاليف', value: totalCosts },
-    { name: 'الربح', value: calculatedProfit },
-  ];
+      {/* Date Filter */}
+      <AdminSection className="mt-6">
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="admin-form-group">
+            <Label>من تاريخ</Label>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-40"
+            />
+          </div>
+          <div className="admin-form-group">
+            <Label>إلى تاريخ</Label>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-40"
+            />
+          </div>
+        </div>
+      </AdminSection>
 
-  // Group orders by date for trend chart
-  const ordersByDate = orders?.reduce((acc, order) => {
-    const date = format(new Date(order.created_at), 'MM/dd');
-    if (!acc[date]) {
-      acc[date] = { date, revenue: 0, profit: 0, count: 0 };
-    }
-    const profit = (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0);
-    acc[date].revenue += order.total_amount || 0;
-    acc[date].profit += profit;
-    acc[date].count += 1;
-    return acc;
-  }, {} as Record<string, { date: string; revenue: number; profit: number; count: number }>);
-
-  const trendData = Object.values(ordersByDate || {}).slice(-14).reverse();
-
-  const renderOrderTable = (ordersList: OrderWithDetails[] | undefined, showNotes = false) => (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-right">رقم الطلب</TableHead>
-            <TableHead className="text-right">اسم المستخدم</TableHead>
-            <TableHead className="text-right">المنتجات</TableHead>
-            <TableHead className="text-right">التاريخ</TableHead>
-            <TableHead className="text-right">المبلغ الإجمالي</TableHead>
-            <TableHead className="text-right">دفع الزبون</TableHead>
-            <TableHead className="text-right">المبلغ المكمل من قبل الإدارة</TableHead>
-            <TableHead className="text-right">تكلفة المنتج</TableHead>
-            <TableHead className="text-right">تكلفة الشحن</TableHead>
-            <TableHead className="text-right">تكاليف أخرى</TableHead>
-            <TableHead className="text-right">الضريبة</TableHead>
-            <TableHead className="text-right">الربح الصافي</TableHead>
-            <TableHead className="text-right">الحالة</TableHead>
-            {showNotes && <TableHead className="text-right">ملاحظات مالية</TableHead>}
-            <TableHead className="text-right">إجراءات</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {ordersList?.map((order) => {
-            const orderProfit = (order.total_amount || 0) - 
-              (order.admin_product_cost || 0) - 
-              (order.admin_shipping_cost || 0) -
-              (order.admin_other_costs || 0);
-            
-            return (
-              <TableRow key={order.id}>
-                <TableCell className="font-mono text-xs">
-                  <span className={isManualOrder(order.order_number) ? 'text-purple-600' : ''}>
-                    {order.order_number}
-                  </span>
-                </TableCell>
-                <TableCell className="text-xs font-medium">
-                  {getUsername(order)}
-                </TableCell>
-                <TableCell className="text-xs max-w-[150px] truncate" title={getProductNames(order)}>
-                  {getProductNames(order)}
-                </TableCell>
-                <TableCell className="text-xs">
-                  {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
-                </TableCell>
-                <TableCell>{formatPrice(order.total_amount)}</TableCell>
-                <TableCell>
-                  {renderEditableCell(order.id, 'customer_paid_amount', order.customer_paid_amount || 0, 'text-green-600')}
-                </TableCell>
-                <TableCell>
-                  {renderEditableCell(order.id, 'admin_paid_amount', order.admin_paid_amount || 0, 'text-cyan-600')}
-                </TableCell>
-                <TableCell>
-                  {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-600')}
-                </TableCell>
-                <TableCell>
-                  {renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-amber-600')}
-                </TableCell>
-                <TableCell>
-                  {renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-pink-600')}
-                </TableCell>
-                <TableCell>
-                  {renderEditableCell(order.id, 'tax_amount', order.tax_amount || 0, 'text-teal-600')}
-                </TableCell>
-                <TableCell className={orderProfit >= 0 ? 'text-emerald-600 font-semibold' : 'text-red-600 font-semibold'}>
-                  {formatPrice(orderProfit)}
-                </TableCell>
-                <TableCell>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                    order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
-                    'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {order.status === 'pending' ? 'قيد الانتظار' :
-                     order.status === 'purchased' ? 'تم الشراء' :
-                     order.status === 'confirmed' ? 'مؤكد' :
-                     order.status === 'processing' ? 'قيد التجهيز' :
-                     order.status === 'shipped' ? 'تم الشحن' :
-                     order.status === 'delivered' ? 'تم التوصيل' :
-                     order.status === 'cancelled' ? 'ملغي' : order.status}
-                  </span>
-                </TableCell>
-                {showNotes && (
-                  <TableCell className="text-xs max-w-[200px] truncate">
-                    {order.financial_notes || '-'}
-                  </TableCell>
-                )}
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-7 w-7"
-                      onClick={() => setSelectedOrder(order)}
-                      aria-label="عرض التفاصيل"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    {isManualOrder(order.order_number) && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
+      {/* Orders Table */}
+      <AdminSection title="سجل الطلبات" className="mt-6">
+        {isLoading ? (
+          <AdminLoading />
+        ) : (
+          <div className="admin-table-wrapper">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">رقم الطلب</TableHead>
+                  <TableHead className="text-right">المستخدم</TableHead>
+                  <TableHead className="text-right">التاريخ</TableHead>
+                  <TableHead className="text-right">المبلغ الإجمالي</TableHead>
+                  <TableHead className="text-right">دفع الزبون</TableHead>
+                  <TableHead className="text-right">تكلفة المنتج</TableHead>
+                  <TableHead className="text-right">تكلفة الشحن</TableHead>
+                  <TableHead className="text-right">الربح الصافي</TableHead>
+                  <TableHead className="text-right">الإجراءات</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {orders?.map((order) => {
+                  const orderProfit = (order.total_amount || 0) - 
+                    (order.admin_product_cost || 0) - 
+                    (order.admin_shipping_cost || 0) -
+                    (order.admin_other_costs || 0);
+                  
+                  return (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-mono text-xs">
+                        <span className={isManualOrder(order.order_number) ? 'text-purple-600' : ''}>
+                          {order.order_number}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-xs font-medium">
+                        {getUsername(order)}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
+                      </TableCell>
+                      <TableCell>{formatPrice(order.total_amount)}</TableCell>
+                      <TableCell>
+                        {renderEditableCell(order.id, 'customer_paid_amount', order.customer_paid_amount || 0, 'text-green-600')}
+                      </TableCell>
+                      <TableCell>
+                        {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-600')}
+                      </TableCell>
+                      <TableCell>
+                        {renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-amber-600')}
+                      </TableCell>
+                      <TableCell className={orderProfit >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                        {formatPrice(orderProfit)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7 text-red-600 hover:text-red-700 hover:bg-red-50"
-                            aria-label="حذف الطلب"
+                            className="h-7 w-7"
+                            onClick={() => setSelectedOrder(order)}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Eye className="h-3.5 w-3.5" />
                           </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent dir="rtl">
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>حذف الطلب اليدوي</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              هل أنت متأكد من حذف الطلب رقم {order.order_number}؟ لا يمكن التراجع عن هذا الإجراء.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter className="gap-2">
-                            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-red-600 hover:bg-red-700"
-                              onClick={() => deleteOrderMutation.mutate(order.id)}
-                            >
-                              حذف
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
-  );
-
-  return (
-    <div className="min-h-screen bg-background p-4 md:p-6" dir="rtl">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">التحليلات المالية</h1>
-            <p className="text-muted-foreground">تتبع الإيرادات والتكاليف والأرباح - اضغط على أي رقم لتعديله</p>
+                          {isManualOrder(order.order_number) && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>حذف الطلب</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    هل أنت متأكد من حذف هذا الطلب؟ لا يمكن التراجع عن هذا الإجراء.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteOrderMutation.mutate(order.id)}
+                                    className="bg-destructive text-destructive-foreground"
+                                  >
+                                    حذف
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
-          <div className="flex gap-2">
-            <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="default" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  إضافة طلب يدوي
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
-                <DialogHeader>
-                  <DialogTitle>إضافة طلب يدوي</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label>اسم العميل</Label>
-                    <Input
-                      value={manualOrderForm.customer_name}
-                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_name: e.target.value })}
-                      placeholder="اسم العميل"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>أسماء المنتجات (كل منتج في سطر)</Label>
-                    <Textarea
-                      value={manualOrderForm.product_names}
-                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, product_names: e.target.value })}
-                      placeholder="منتج 1&#10;منتج 2&#10;منتج 3"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>المبلغ الإجمالي</Label>
-                      <Input
-                        type="number"
-                        value={manualOrderForm.total_amount}
-                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, total_amount: parseFloat(e.target.value) || 0 })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>دفع الزبون</Label>
-                      <Input
-                        type="number"
-                        value={manualOrderForm.customer_paid_amount}
-                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, customer_paid_amount: parseFloat(e.target.value) || 0 })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>المبلغ المكمل من قبل الإدارة</Label>
-                      <Input
-                        type="number"
-                        value={manualOrderForm.admin_paid_amount}
-                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, admin_paid_amount: parseFloat(e.target.value) || 0 })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>تكلفة المنتج</Label>
-                      <Input
-                        type="number"
-                        value={manualOrderForm.admin_product_cost}
-                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, admin_product_cost: parseFloat(e.target.value) || 0 })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>تكلفة الشحن</Label>
-                      <Input
-                        type="number"
-                        value={manualOrderForm.admin_shipping_cost}
-                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, admin_shipping_cost: parseFloat(e.target.value) || 0 })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>تكاليف أخرى</Label>
-                      <Input
-                        type="number"
-                        value={manualOrderForm.admin_other_costs}
-                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, admin_other_costs: parseFloat(e.target.value) || 0 })}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>الضريبة</Label>
-                      <Input
-                        type="number"
-                        value={manualOrderForm.tax_amount}
-                        onChange={(e) => setManualOrderForm({ ...manualOrderForm, tax_amount: parseFloat(e.target.value) || 0 })}
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>ملاحظات مالية</Label>
-                    <Textarea
-                      value={manualOrderForm.financial_notes}
-                      onChange={(e) => setManualOrderForm({ ...manualOrderForm, financial_notes: e.target.value })}
-                      placeholder="ملاحظات إضافية..."
-                      rows={2}
-                    />
-                  </div>
-                  <Button 
-                    className="w-full" 
-                    onClick={() => addManualOrderMutation.mutate(manualOrderForm)}
-                    disabled={addManualOrderMutation.isPending || !manualOrderForm.customer_name}
-                  >
-                    {addManualOrderMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                    ) : null}
-                    إضافة الطلب
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-            <Button variant="outline" onClick={() => navigate('/admin')}>
-              العودة للوحة التحكم
-            </Button>
-          </div>
-        </div>
+        )}
+      </AdminSection>
 
-        {/* Date Filters */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-wrap gap-4 items-end">
-              <div className="space-y-2">
-                <Label>من تاريخ</Label>
-                <Input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-40"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>إلى تاريخ</Label>
-                <Input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-40"
-                />
-              </div>
-              <Button 
-                variant="ghost" 
-                onClick={() => { setDateFrom(''); setDateTo(''); }}
-              >
-                إعادة تعيين
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-600/5 border-green-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-green-500/20 rounded-lg">
-                  <DollarSign className="h-5 w-5 text-green-600" />
+      {/* Order Details Dialog */}
+      <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>تفاصيل الطلب {selectedOrder?.order_number}</DialogTitle>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">العميل:</span>
+                  <span className="mr-2 font-medium">{getUsername(selectedOrder)}</span>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
-                  <p className="text-lg font-bold text-green-600">{formatPrice(totals.totalRevenue)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border-blue-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/20 rounded-lg">
-                  <CreditCard className="h-5 w-5 text-blue-600" />
+                  <span className="text-muted-foreground">التاريخ:</span>
+                  <span className="mr-2 font-medium">{format(new Date(selectedOrder.created_at), 'dd/MM/yyyy', { locale: ar })}</span>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">دفعات الزبائن</p>
-                  <p className="text-lg font-bold text-blue-600">{formatPrice(totals.totalCustomerPaid)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-500/10 to-orange-600/5 border-orange-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-orange-500/20 rounded-lg">
-                  <ArrowDownRight className="h-5 w-5 text-orange-600" />
+                  <span className="text-muted-foreground">المبلغ الإجمالي:</span>
+                  <span className="mr-2 font-medium">{formatPrice(selectedOrder.total_amount)}</span>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">المبالغ المتبقية</p>
-                  <p className="text-lg font-bold text-orange-600">{formatPrice(totals.totalRemaining)}</p>
+                  <span className="text-muted-foreground">الحالة:</span>
+                  <span className="mr-2 font-medium">{selectedOrder.status}</span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-purple-500/20 rounded-lg">
-                  <Package className="h-5 w-5 text-purple-600" />
-                </div>
+              
+              {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
                 <div>
-                  <p className="text-xs text-muted-foreground">عدد الطلبات</p>
-                  <p className="text-lg font-bold text-purple-600">{totals.orderCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Costs & Profit Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Card className="bg-gradient-to-br from-cyan-500/10 to-cyan-600/5 border-cyan-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-cyan-500/20 rounded-lg">
-                  <Send className="h-5 w-5 text-cyan-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">المبلغ المكمل من قبل الإدارة</p>
-                  <p className="text-lg font-bold text-cyan-600">{formatPrice(totals.totalAdminPaid)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-red-500/10 to-red-600/5 border-red-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-red-500/20 rounded-lg">
-                  <ArrowDownRight className="h-5 w-5 text-red-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">تكلفة المنتجات</p>
-                  <p className="text-lg font-bold text-red-600">{formatPrice(totals.totalProductCost)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-600/5 border-amber-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500/20 rounded-lg">
-                  <Truck className="h-5 w-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">تكلفة الشحن</p>
-                  <p className="text-lg font-bold text-amber-600">{formatPrice(totals.totalShippingCost)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-pink-500/10 to-pink-600/5 border-pink-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-pink-500/20 rounded-lg">
-                  <ArrowDownRight className="h-5 w-5 text-pink-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">إجمالي التكاليف</p>
-                  <p className="text-lg font-bold text-pink-600">{formatPrice(totalCosts)}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-500/20 rounded-lg">
-                  <TrendingUp className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">صافي الربح</p>
-                  <p className={`text-lg font-bold ${calculatedProfit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                    {formatPrice(calculatedProfit)}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Revenue Trend Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                اتجاه الإيرادات والأرباح
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {trendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <LineChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip 
-                      formatter={(value: number) => formatPrice(value)}
-                      labelFormatter={(label) => `التاريخ: ${label}`}
-                    />
-                    <Legend />
-                    <Line type="monotone" dataKey="revenue" name="الإيرادات" stroke="#10b981" strokeWidth={2} />
-                    <Line type="monotone" dataKey="profit" name="الربح" stroke="#3b82f6" strokeWidth={2} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                  لا توجد بيانات كافية لعرض الرسم البياني
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Revenue vs Costs Bar Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">الإيرادات مقابل التكاليف والربح</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={revenueVsCostsData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip formatter={(value: number) => formatPrice(value)} />
-                  <Bar dataKey="value" fill="#10b981">
-                    {revenueVsCostsData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={index === 0 ? '#10b981' : index === 1 ? '#ef4444' : '#3b82f6'} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Costs Breakdown Pie Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">توزيع التكاليف</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {costsBreakdownData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={costsBreakdownData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {costsBreakdownData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value: number) => formatPrice(value)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                  لا توجد تكاليف مسجلة
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Orders Count by Date */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">عدد الطلبات حسب التاريخ</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {trendData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={trendData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" name="عدد الطلبات" fill="#8b5cf6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-[250px] flex items-center justify-center text-muted-foreground">
-                  لا توجد بيانات كافية لعرض الرسم البياني
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Orders Table */}
-        <Tabs defaultValue="all" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="all">جميع الطلبات</TabsTrigger>
-            <TabsTrigger value="with-costs">طلبات بتكاليف</TabsTrigger>
-            <TabsTrigger value="profitable">طلبات مربحة</TabsTrigger>
-            <TabsTrigger value="manual">طلبات يدوية</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="all">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">تفاصيل الطلبات المالية</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {isLoading ? (
-                  <div className="flex justify-center p-8">
-                    <Loader2 className="h-8 w-8 animate-spin" />
-                  </div>
-                ) : (
-                  renderOrderTable(orders)
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="with-costs">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">طلبات تم تسجيل تكاليفها</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderOrderTable(
-                  orders?.filter(o => 
-                    (o.admin_product_cost || 0) > 0 || 
-                    (o.admin_shipping_cost || 0) > 0 || 
-                    (o.admin_other_costs || 0) > 0
-                  ),
-                  true
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="profitable">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">الطلبات المربحة</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderOrderTable(
-                  orders?.filter(o => {
-                    const orderProfit = (o.total_amount || 0) - 
-                      (o.admin_product_cost || 0) - 
-                      (o.admin_shipping_cost || 0) -
-                      (o.admin_other_costs || 0);
-                    const hasCosts = (o.admin_product_cost || 0) > 0 || (o.admin_shipping_cost || 0) > 0 || (o.admin_other_costs || 0) > 0;
-                    return orderProfit > 0 && hasCosts;
-                  })
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="manual">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">الطلبات اليدوية</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {renderOrderTable(
-                  orders?.filter(o => isManualOrder(o.order_number)),
-                  true
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-
-        {/* Order Details Dialog */}
-        <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-          <DialogContent className="max-w-lg" dir="rtl">
-            <DialogHeader>
-              <DialogTitle>تفاصيل الطلب</DialogTitle>
-            </DialogHeader>
-            {selectedOrder && (
-              <div className="space-y-4 mt-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">رقم الطلب:</span>
-                    <p className="font-mono font-semibold">{selectedOrder.order_number}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">اسم المستخدم:</span>
-                    <p className="font-semibold">{getUsername(selectedOrder)}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">التاريخ:</span>
-                    <p>{format(new Date(selectedOrder.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">الحالة:</span>
-                    <p className={`font-semibold ${
-                      selectedOrder.status === 'delivered' ? 'text-green-600' :
-                      selectedOrder.status === 'cancelled' ? 'text-red-600' : 'text-yellow-600'
-                    }`}>
-                      {selectedOrder.status === 'pending' ? 'قيد الانتظار' :
-                       selectedOrder.status === 'purchased' ? 'تم الشراء' :
-                       selectedOrder.status === 'confirmed' ? 'مؤكد' :
-                       selectedOrder.status === 'processing' ? 'قيد التجهيز' :
-                       selectedOrder.status === 'shipped' ? 'تم الشحن' :
-                       selectedOrder.status === 'delivered' ? 'تم التوصيل' :
-                       selectedOrder.status === 'cancelled' ? 'ملغي' : selectedOrder.status}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="border-t pt-4">
                   <h4 className="font-semibold mb-2">المنتجات:</h4>
-                  {selectedOrder.order_items && selectedOrder.order_items.length > 0 ? (
-                    <ul className="space-y-2">
-                      {selectedOrder.order_items.map((item) => (
-                        <li key={item.id} className="flex justify-between items-center text-sm bg-muted/50 p-2 rounded">
-                          <span>{item.product_name_ar || item.product_name}</span>
-                          <span className="text-muted-foreground">
-                            {item.quantity} × {formatPrice(item.unit_price)}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-muted-foreground text-sm">لا توجد منتجات</p>
-                  )}
+                  <ul className="space-y-1 text-sm">
+                    {selectedOrder.order_items.map((item) => (
+                      <li key={item.id} className="flex justify-between">
+                        <span>{item.product_name_ar}</span>
+                        <span>{item.quantity} × {formatPrice(item.unit_price)}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-
-                <div className="border-t pt-4 grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">المبلغ الإجمالي:</span>
-                    <span className="font-semibold">{formatPrice(selectedOrder.total_amount)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">دفع الزبون:</span>
-                    <span className="text-green-600">{formatPrice(selectedOrder.customer_paid_amount || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">تكلفة المنتج:</span>
-                    <span className="text-red-600">{formatPrice(selectedOrder.admin_product_cost || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">تكلفة الشحن:</span>
-                    <span className="text-amber-600">{formatPrice(selectedOrder.admin_shipping_cost || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">تكاليف أخرى:</span>
-                    <span className="text-pink-600">{formatPrice(selectedOrder.admin_other_costs || 0)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">الضريبة:</span>
-                    <span className="text-teal-600">{formatPrice(selectedOrder.tax_amount || 0)}</span>
-                  </div>
+              )}
+              
+              {selectedOrder.financial_notes && (
+                <div>
+                  <h4 className="font-semibold mb-2">ملاحظات:</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedOrder.financial_notes}</p>
                 </div>
-
-                <div className="border-t pt-4">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span>صافي الربح:</span>
-                    <span className={
-                      ((selectedOrder.total_amount || 0) - (selectedOrder.admin_product_cost || 0) - (selectedOrder.admin_shipping_cost || 0) - (selectedOrder.admin_other_costs || 0)) >= 0 
-                        ? 'text-emerald-600' 
-                        : 'text-red-600'
-                    }>
-                      {formatPrice(
-                        (selectedOrder.total_amount || 0) - 
-                        (selectedOrder.admin_product_cost || 0) - 
-                        (selectedOrder.admin_shipping_cost || 0) - 
-                        (selectedOrder.admin_other_costs || 0)
-                      )}
-                    </span>
-                  </div>
-                </div>
-
-                {selectedOrder.financial_notes && (
-                  <div className="border-t pt-4">
-                    <h4 className="font-semibold mb-2">ملاحظات مالية:</h4>
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedOrder.financial_notes}</p>
-                  </div>
-                )}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-      </div>
-    </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </AdminLayout>
   );
 };
 

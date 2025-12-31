@@ -4,13 +4,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
-import { ArrowRight, ImageIcon, Loader2, RefreshCw, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { ImageIcon, Loader2, RefreshCw, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import AdminLayout, { AdminSection, AdminStatsGrid, AdminStatCard, AdminLoading, AdminEmptyState, AdminCard, AdminCardHeader, AdminCardContent } from '@/components/admin/AdminLayout';
 
 interface ProductWithImageStatus {
   id: string;
@@ -60,7 +60,6 @@ const AdminBrokenImages = () => {
       img.onload = () => resolve('ok');
       img.onerror = () => resolve('broken');
       img.src = url;
-      // Timeout after 10 seconds
       setTimeout(() => resolve('broken'), 10000);
     });
   };
@@ -90,14 +89,12 @@ const AdminBrokenImages = () => {
         galleryStatus: []
       };
 
-      // Check main image
       if (!product.image_url) {
         productStatus.mainImageStatus = 'missing';
       } else {
         productStatus.mainImageStatus = await checkImageUrl(product.image_url);
       }
 
-      // Check gallery images
       if (product.images && Array.isArray(product.images)) {
         for (const imgUrl of product.images) {
           const status = await checkImageUrl(imgUrl);
@@ -109,7 +106,6 @@ const AdminBrokenImages = () => {
       setScanProgress(Math.round(((i + 1) / allProducts.length) * 100));
     }
 
-    // Filter to only show products with issues
     const problemProducts = productsWithStatus.filter(p => 
       p.mainImageStatus === 'broken' || 
       p.mainImageStatus === 'missing' ||
@@ -160,7 +156,6 @@ const AdminBrokenImages = () => {
 
       if (updateError) throw updateError;
 
-      // Remove from list after successful update
       setProducts(prev => prev.filter(p => p.id !== product.id));
       
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
@@ -180,131 +175,93 @@ const AdminBrokenImages = () => {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AdminLayout title="فحص الصور المفقودة" icon={<ImageIcon className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-8" dir="rtl">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
-              <ArrowRight className="h-5 w-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">فحص الصور المفقودة</h1>
-              <p className="text-muted-foreground text-sm mt-1">اكتشاف وإصلاح صور المنتجات التالفة</p>
-            </div>
-          </div>
-          
-          <Button 
-            onClick={startScan} 
-            disabled={scanning}
-            className="gap-2"
-          >
-            {scanning ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
-            {scanning ? 'جاري الفحص...' : 'بدء الفحص'}
-          </Button>
-        </div>
-
-        {/* Progress */}
-        {scanning && (
-          <Card className="mb-6 border-primary/20">
-            <CardContent className="pt-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span>جاري فحص الصور...</span>
-                  <span>{scanProgress}%</span>
-                </div>
-                <Progress value={scanProgress} className="h-2" />
+    <AdminLayout
+      title="فحص الصور المفقودة"
+      icon={<ImageIcon className="h-5 w-5" />}
+      description="اكتشاف وإصلاح صور المنتجات التالفة"
+      actions={
+        <Button onClick={startScan} disabled={scanning} className="admin-btn-primary gap-2">
+          {scanning ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          {scanning ? 'جاري الفحص...' : 'بدء الفحص'}
+        </Button>
+      }
+    >
+      {/* Progress */}
+      {scanning && (
+        <AdminCard className="mb-6">
+          <AdminCardContent>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>جاري فحص الصور...</span>
+                <span>{scanProgress}%</span>
               </div>
-            </CardContent>
-          </Card>
-        )}
+              <Progress value={scanProgress} className="h-2" />
+            </div>
+          </AdminCardContent>
+        </AdminCard>
+      )}
 
-        {/* Stats */}
-        {products.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <Card className="border-destructive/30 bg-destructive/5">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-destructive/10">
-                    <XCircle className="h-6 w-6 text-destructive" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-destructive">{brokenCount}</p>
-                    <p className="text-sm text-muted-foreground">صور تالفة</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-warning/30 bg-warning/5">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-warning/10">
-                    <AlertTriangle className="h-6 w-6 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-yellow-600">{missingCount}</p>
-                    <p className="text-sm text-muted-foreground">صور مفقودة</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-primary/30 bg-primary/5">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-full bg-primary/10">
-                    <ImageIcon className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-primary">{products.length}</p>
-                    <p className="text-sm text-muted-foreground">منتج يحتاج إصلاح</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+      {/* Stats */}
+      {products.length > 0 && (
+        <AdminStatsGrid>
+          <AdminStatCard
+            icon={<XCircle className="h-5 w-5" />}
+            value={brokenCount}
+            label="صور تالفة"
+            colorClass="text-red-600"
+            bgClass="bg-red-500/10"
+          />
+          <AdminStatCard
+            icon={<AlertTriangle className="h-5 w-5" />}
+            value={missingCount}
+            label="صور مفقودة"
+            colorClass="text-yellow-600"
+            bgClass="bg-yellow-500/10"
+          />
+          <AdminStatCard
+            icon={<ImageIcon className="h-5 w-5" />}
+            value={products.length}
+            label="منتج يحتاج إصلاح"
+            colorClass="text-primary"
+            bgClass="bg-primary/10"
+          />
+        </AdminStatsGrid>
+      )}
 
-        {/* Results */}
-        {!scanning && products.length === 0 && allProducts && allProducts.length > 0 && (
-          <Card className="border-primary/20">
-            <CardContent className="py-12 text-center">
-              <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">جميع الصور سليمة</h3>
-              <p className="text-muted-foreground">اضغط على "بدء الفحص" للتحقق من صور المنتجات</p>
-            </CardContent>
-          </Card>
-        )}
+      {/* Results */}
+      {!scanning && products.length === 0 && allProducts && allProducts.length > 0 && (
+        <AdminEmptyState
+          icon={<CheckCircle2 className="h-12 w-12 text-green-500" />}
+          title="جميع الصور سليمة"
+          description="اضغط على 'بدء الفحص' للتحقق من صور المنتجات"
+        />
+      )}
 
-        {products.length > 0 && (
-          <Card className="border-primary/20">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                المنتجات ذات الصور المشكلة
-              </CardTitle>
-              <CardDescription>
-                انقر على زر إعادة الاستخراج لتحديث صور المنتج من الرابط الأصلي
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="rounded-lg border overflow-hidden">
+      {products.length > 0 && (
+        <AdminSection className="mt-6">
+          <AdminCard>
+            <AdminCardHeader 
+              title="المنتجات ذات الصور المشكلة"
+              icon={<AlertTriangle className="h-5 w-5" />}
+              description="انقر على زر إعادة الاستخراج لتحديث صور المنتج من الرابط الأصلي"
+            />
+            <AdminCardContent noPadding>
+              <div className="admin-table-wrapper">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>الصورة الحالية</TableHead>
+                      <TableHead>الصورة</TableHead>
                       <TableHead>الاسم</TableHead>
                       <TableHead>القسم</TableHead>
                       <TableHead>السعر</TableHead>
@@ -374,11 +331,11 @@ const AdminBrokenImages = () => {
                   </TableBody>
                 </Table>
               </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </div>
+            </AdminCardContent>
+          </AdminCard>
+        </AdminSection>
+      )}
+    </AdminLayout>
   );
 };
 
