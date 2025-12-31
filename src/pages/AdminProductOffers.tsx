@@ -5,35 +5,31 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Plus, Gift, Loader2, Trash2, Upload, X, Package, Eye, Edit } from "lucide-react";
+import { ArrowRight, Plus, Gift, Loader2, Trash2, Upload, X, Package, Edit, DollarSign, ShoppingBag, Ticket } from "lucide-react";
 import { toast } from "sonner";
-import { format, addHours } from "date-fns";
+import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import OptimizedImage from "@/components/OptimizedImage";
-
-const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy') => {
-  const date = new Date(dateString);
-  const baghdadDate = addHours(date, 3);
-  return format(baghdadDate, formatStr, { locale: ar });
-};
 
 interface ProductOffer {
   id: string;
+  title: string;
   title_ar: string;
+  description: string | null;
   description_ar: string | null;
   image_url: string | null;
   images: string[] | null;
-  ticket_price: number;
-  gift_tickets_per_purchase: number;
-  status: 'draft' | 'active' | 'completed';
+  price: number;
   currency: string;
+  gift_tickets: number;
+  status: 'draft' | 'active' | 'inactive';
+  stock_quantity: number | null;
+  total_sold: number;
   created_at: string;
-  product_id: string | null;
 }
 
 export default function AdminProductOffers() {
@@ -46,160 +42,27 @@ export default function AdminProductOffers() {
   const [formData, setFormData] = useState({
     title_ar: '',
     description_ar: '',
-    image_url: '',
     images: [] as string[],
     price: '',
     gift_tickets: '1',
-    status: 'draft' as 'draft' | 'active' | 'completed',
-    product_id: ''
+    stock_quantity: '',
+    status: 'active' as 'draft' | 'active' | 'inactive',
   });
 
-  // Fetch product offers (competitions with is_product_based = true)
   const { data: productOffers, isLoading } = useQuery({
     queryKey: ['admin-product-offers'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('competitions')
+        .from('product_offers')
         .select('*')
-        .eq('is_product_based', true)
         .order('created_at', { ascending: false });
-      
       if (error) throw error;
       return data as ProductOffer[];
     }
   });
 
-  // Fetch products for linking
-  const { data: products } = useQuery({
-    queryKey: ['products-for-offers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('products')
-        .select('id, name_ar, image_url, price')
-        .order('name_ar');
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
-      const payload: any = {
-        title: data.title_ar,
-        title_ar: data.title_ar,
-        description: data.description_ar,
-        description_ar: data.description_ar,
-        prize_description: data.title_ar,
-        prize_description_ar: data.title_ar,
-        image_url: data.images.length > 0 ? data.images[0] : (data.image_url || null),
-        images: data.images.length > 0 ? data.images : (data.image_url ? [data.image_url] : []),
-        ticket_price: parseFloat(data.price) || 0,
-        gift_tickets_per_purchase: parseInt(data.gift_tickets) || 1,
-        status: data.status,
-        competition_type: 'collect_letters' as const,
-        is_product_based: true,
-        product_id: data.product_id || null,
-        required_tickets: 1,
-        currency: 'دينار'
-      };
-
-      if (editingOffer) {
-        const { error } = await supabase
-          .from('competitions')
-          .update(payload)
-          .eq('id', editingOffer.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('competitions')
-          .insert([payload]);
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-product-offers'] });
-      toast.success(editingOffer ? 'تم تحديث العرض' : 'تم إنشاء العرض');
-      setIsDialogOpen(false);
-      resetForm();
-    },
-    onError: (error) => {
-      toast.error('حدث خطأ: ' + error.message);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('competitions')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin-product-offers'] });
-      toast.success('تم حذف العرض');
-    }
-  });
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploadingImage(true);
-    try {
-      const uploadedUrls: string[] = [];
-      
-      for (const file of Array.from(files)) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const filePath = `products/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('competition-images')
-          .upload(filePath, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('competition-images')
-          .getPublicUrl(filePath);
-
-        uploadedUrls.push(publicUrl);
-      }
-
-      setFormData({ 
-        ...formData, 
-        images: [...formData.images, ...uploadedUrls],
-        image_url: formData.images.length === 0 && uploadedUrls.length > 0 ? uploadedUrls[0] : formData.image_url
-      });
-      toast.success(`تم رفع ${uploadedUrls.length} صورة بنجاح`);
-    } catch (error: any) {
-      toast.error('خطأ في رفع الصور: ' + error.message);
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const removeImage = (index: number) => {
-    const newImages = formData.images.filter((_, i) => i !== index);
-    setFormData({
-      ...formData,
-      images: newImages,
-      image_url: newImages.length > 0 ? newImages[0] : ''
-    });
-  };
-
   const resetForm = () => {
-    setFormData({
-      title_ar: '',
-      description_ar: '',
-      image_url: '',
-      images: [],
-      price: '',
-      gift_tickets: '1',
-      status: 'draft',
-      product_id: ''
-    });
+    setFormData({ title_ar: '', description_ar: '', images: [], price: '', gift_tickets: '1', stock_quantity: '', status: 'active' });
     setEditingOffer(null);
   };
 
@@ -208,283 +71,279 @@ export default function AdminProductOffers() {
     setFormData({
       title_ar: offer.title_ar,
       description_ar: offer.description_ar || '',
-      image_url: offer.image_url || '',
-      images: offer.images || [],
-      price: offer.ticket_price?.toString() || '',
-      gift_tickets: offer.gift_tickets_per_purchase?.toString() || '1',
+      images: offer.images || (offer.image_url ? [offer.image_url] : []),
+      price: offer.price.toString(),
+      gift_tickets: offer.gift_tickets.toString(),
+      stock_quantity: offer.stock_quantity?.toString() || '',
       status: offer.status,
-      product_id: offer.product_id || ''
     });
     setIsDialogOpen(true);
   };
 
-  const statusLabels: Record<string, string> = {
-    draft: 'مسودة',
-    active: 'نشط',
-    completed: 'منتهي'
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setUploadingImage(true);
+    const newImages: string[] = [];
+    for (const file of Array.from(files)) {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `product-offers/${fileName}`;
+      const { error } = await supabase.storage.from('competition-images').upload(filePath, file);
+      if (error) { toast.error(`خطأ في رفع الصورة`); continue; }
+      const { data: publicUrl } = supabase.storage.from('competition-images').getPublicUrl(filePath);
+      newImages.push(publicUrl.publicUrl);
+    }
+    setFormData(prev => ({ ...prev, images: [...prev.images, ...newImages] }));
+    setUploadingImage(false);
   };
 
-  const statusColors: Record<string, string> = {
-    draft: 'bg-muted text-muted-foreground',
-    active: 'bg-green-500/20 text-green-400',
-    completed: 'bg-blue-500/20 text-blue-400'
+  const removeImage = (index: number) => {
+    setFormData(prev => {
+      const newImages = [...prev.images];
+      newImages.splice(index, 1);
+      return { ...prev, images: newImages };
+    });
+  };
+
+  const createMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
+      const payload = {
+        title: data.title_ar,
+        title_ar: data.title_ar,
+        description: data.description_ar,
+        description_ar: data.description_ar,
+        image_url: data.images.length > 0 ? data.images[0] : null,
+        images: data.images,
+        price: parseFloat(data.price) || 0,
+        gift_tickets: parseInt(data.gift_tickets) || 1,
+        stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
+        status: data.status,
+      };
+      const { data: result, error } = await supabase.from('product_offers').insert([payload]).select().single();
+      if (error) throw error;
+      return result;
+    },
+    onSuccess: () => {
+      toast.success('تم إنشاء العرض بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['admin-product-offers'] });
+      setIsDialogOpen(false);
+      resetForm();
+    },
+    onError: (error) => toast.error('خطأ: ' + error.message),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
+      const payload = {
+        title: data.title_ar,
+        title_ar: data.title_ar,
+        description: data.description_ar,
+        description_ar: data.description_ar,
+        image_url: data.images.length > 0 ? data.images[0] : null,
+        images: data.images,
+        price: parseFloat(data.price) || 0,
+        gift_tickets: parseInt(data.gift_tickets) || 1,
+        stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
+        status: data.status,
+      };
+      const { error } = await supabase.from('product_offers').update(payload).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('تم تحديث العرض');
+      queryClient.invalidateQueries({ queryKey: ['admin-product-offers'] });
+      setIsDialogOpen(false);
+      resetForm();
+    },
+    onError: (error) => toast.error('خطأ: ' + error.message),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('product_offers').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('تم حذف العرض');
+      queryClient.invalidateQueries({ queryKey: ['admin-product-offers'] });
+    },
+    onError: (error) => toast.error('خطأ: ' + error.message),
+  });
+
+  const handleSubmit = () => {
+    if (!formData.title_ar || !formData.price) {
+      toast.error('يرجى ملء الحقول المطلوبة');
+      return;
+    }
+    if (editingOffer) {
+      updateMutation.mutate({ id: editingOffer.id, data: formData });
+    } else {
+      createMutation.mutate(formData);
+    }
+  };
+
+  const statusLabels: Record<string, { label: string; color: string }> = {
+    draft: { label: 'مسودة', color: 'bg-gray-500' },
+    active: { label: 'نشط', color: 'bg-green-500' },
+    inactive: { label: 'متوقف', color: 'bg-red-500' },
   };
 
   return (
     <div className="min-h-screen bg-background" dir="rtl">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/admin')}>
-              <ArrowRight className="h-4 w-4 ml-2" />
-              رجوع
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold">عروض المنتجات والهدايا</h1>
-              <p className="text-muted-foreground">إدارة المنتجات مع تذاكر الهدية</p>
-            </div>
-          </div>
-          
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => { resetForm(); setIsDialogOpen(true); }}>
-                <Plus className="h-4 w-4 ml-2" />
-                إضافة عرض جديد
+      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
+                <ArrowRight className="h-5 w-5" />
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingOffer ? 'تعديل العرض' : 'إضافة عرض جديد'}
-                </DialogTitle>
-              </DialogHeader>
-              
-              <div className="space-y-6 py-4">
-                {/* اسم المنتج */}
-                <div className="space-y-2">
-                  <Label>اسم المنتج *</Label>
-                  <Input
-                    value={formData.title_ar}
-                    onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
-                    placeholder="مثال: آيفون 15 برو ماكس"
-                  />
-                </div>
-
-                {/* الوصف */}
-                <div className="space-y-2">
-                  <Label>وصف المنتج</Label>
-                  <Textarea
-                    value={formData.description_ar}
-                    onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
-                    placeholder="وصف تفصيلي للمنتج..."
-                    rows={3}
-                  />
-                </div>
-
-                {/* السعر وعدد التذاكر */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>سعر المنتج (دينار) *</Label>
-                    <Input
-                      type="number"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>عدد التذاكر الهدية *</Label>
-                    <Input
-                      type="number"
-                      value={formData.gift_tickets}
-                      onChange={(e) => setFormData({ ...formData, gift_tickets: e.target.value })}
-                      placeholder="1"
-                      min="1"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      تذاكر مجانية تُمنح عند شراء المنتج
-                    </p>
-                  </div>
-                </div>
-
-                {/* ربط بمنتج */}
-                <div className="space-y-2">
-                  <Label>ربط بمنتج (اختياري)</Label>
-                  <Select
-                    value={formData.product_id}
-                    onValueChange={(value) => setFormData({ ...formData, product_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="اختر منتج للربط" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="">بدون ربط</SelectItem>
-                      {products?.map((product) => (
-                        <SelectItem key={product.id} value={product.id}>
-                          {product.name_ar}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* الحالة */}
-                <div className="space-y-2">
-                  <Label>الحالة</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => setFormData({ ...formData, status: value as any })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">مسودة</SelectItem>
-                      <SelectItem value="active">نشط</SelectItem>
-                      <SelectItem value="completed">منتهي</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* رفع الصور */}
-                <div className="space-y-2">
-                  <Label>صور المنتج</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {formData.images.map((img, index) => (
-                      <div key={index} className="relative w-24 h-24">
-                        <img src={img} alt="" className="w-full h-full object-cover rounded-lg" />
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6"
-                          onClick={() => removeImage(index)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ))}
-                    <label className="w-24 h-24 border-2 border-dashed border-border rounded-lg flex items-center justify-center cursor-pointer hover:border-primary transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        onChange={handleImageUpload}
-                        disabled={uploadingImage}
-                      />
-                      {uploadingImage ? (
-                        <Loader2 className="h-6 w-6 animate-spin" />
-                      ) : (
-                        <Upload className="h-6 w-6 text-muted-foreground" />
-                      )}
-                    </label>
-                  </div>
-                </div>
-
-                {/* أزرار الإجراء */}
-                <div className="flex gap-2 pt-4">
-                  <Button
-                    onClick={() => createMutation.mutate(formData)}
-                    disabled={createMutation.isPending || !formData.title_ar || !formData.price}
-                    className="flex-1"
-                  >
-                    {createMutation.isPending && <Loader2 className="h-4 w-4 ml-2 animate-spin" />}
-                    {editingOffer ? 'حفظ التعديلات' : 'إنشاء العرض'}
-                  </Button>
-                  <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                    إلغاء
-                  </Button>
-                </div>
+              <div>
+                <h1 className="text-lg font-bold flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" />
+                  إدارة عروض المنتجات
+                </h1>
+                <p className="text-xs text-muted-foreground">منتجات للشراء مع تذاكر هدية مجانية</p>
               </div>
-            </DialogContent>
-          </Dialog>
+            </div>
+            <Button onClick={() => setIsDialogOpen(true)} className="gap-1">
+              <Plus className="h-4 w-4" />
+              إضافة عرض
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <main className="container mx-auto px-4 py-6 space-y-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5">
+            <CardContent className="p-4 text-center">
+              <Package className="h-6 w-6 mx-auto mb-1 text-green-600" />
+              <p className="text-xl font-bold">{productOffers?.filter(o => o.status === 'active').length || 0}</p>
+              <p className="text-xs text-muted-foreground">عروض نشطة</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+            <CardContent className="p-4 text-center">
+              <Gift className="h-6 w-6 mx-auto mb-1 text-blue-600" />
+              <p className="text-xl font-bold">{productOffers?.length || 0}</p>
+              <p className="text-xs text-muted-foreground">إجمالي العروض</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5">
+            <CardContent className="p-4 text-center">
+              <ShoppingBag className="h-6 w-6 mx-auto mb-1 text-purple-600" />
+              <p className="text-xl font-bold">{productOffers?.reduce((sum, o) => sum + (o.total_sold || 0), 0) || 0}</p>
+              <p className="text-xs text-muted-foreground">إجمالي المبيعات</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5">
+            <CardContent className="p-4 text-center">
+              <Ticket className="h-6 w-6 mx-auto mb-1 text-amber-600" />
+              <p className="text-xl font-bold">{productOffers?.reduce((sum, o) => sum + (o.gift_tickets * (o.total_sold || 0)), 0) || 0}</p>
+              <p className="text-xs text-muted-foreground">تذاكر موزعة</p>
+            </CardContent>
+          </Card>
         </div>
 
-        {/* قائمة العروض */}
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : productOffers && productOffers.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {productOffers.map((offer) => (
+          <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+        ) : productOffers?.length === 0 ? (
+          <Card className="text-center py-12">
+            <CardContent>
+              <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">لا توجد عروض منتجات حتى الآن</p>
+              <Button className="mt-4" onClick={() => setIsDialogOpen(true)}><Plus className="h-4 w-4 ml-2" />إنشاء أول عرض</Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid gap-4">
+            {productOffers?.map((offer) => (
               <Card key={offer.id} className="overflow-hidden">
-                <div className="aspect-video relative bg-muted">
-                  {offer.image_url ? (
-                    <OptimizedImage
-                      src={offer.image_url}
-                      alt={offer.title_ar}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                  <Badge className={`absolute top-2 right-2 ${statusColors[offer.status]}`}>
-                    {statusLabels[offer.status]}
-                  </Badge>
-                </div>
                 <CardContent className="p-4">
-                  <h3 className="font-bold text-lg mb-2">{offer.title_ar}</h3>
-                  
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-xl font-bold text-primary">
-                      {offer.ticket_price?.toLocaleString()} {offer.currency}
+                  <div className="flex items-start gap-4">
+                    {offer.image_url ? (
+                      <img src={offer.image_url} alt={offer.title_ar} className="w-20 h-20 object-cover rounded-lg" />
+                    ) : (
+                      <div className="w-20 h-20 bg-secondary rounded-lg flex items-center justify-center"><Package className="h-8 w-8 text-muted-foreground" /></div>
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-semibold">{offer.title_ar}</h3>
+                        <Badge className={`${statusLabels[offer.status]?.color || 'bg-gray-500'} text-white text-xs`}>{statusLabels[offer.status]?.label || offer.status}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{offer.description_ar || 'لا يوجد وصف'}</p>
+                      <div className="flex flex-wrap gap-4 text-sm">
+                        <div className="flex items-center gap-1"><DollarSign className="h-4 w-4 text-primary" /><span className="font-bold">{offer.price.toLocaleString()} {offer.currency}</span></div>
+                        <div className="flex items-center gap-1"><Gift className="h-4 w-4 text-green-600" /><span>{offer.gift_tickets} تذكرة هدية</span></div>
+                        <div className="flex items-center gap-1"><ShoppingBag className="h-4 w-4 text-blue-600" /><span>{offer.total_sold || 0} مبيعات</span></div>
+                        {offer.stock_quantity !== null && <Badge variant="outline">متبقي: {offer.stock_quantity}</Badge>}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">{format(new Date(offer.created_at), 'dd MMM yyyy', { locale: ar })}</p>
                     </div>
-                    <div className="flex items-center gap-1 text-green-400 bg-green-500/10 px-2 py-1 rounded-full">
-                      <Gift className="h-4 w-4" />
-                      <span className="text-sm font-medium">
-                        +{offer.gift_tickets_per_purchase || 1} تذكرة هدية
-                      </span>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(offer)}><Edit className="h-4 w-4" /></Button>
+                      <Button variant="destructive" size="sm" onClick={() => { if (window.confirm('هل أنت متأكد؟')) deleteMutation.mutate(offer.id); }} disabled={deleteMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
                     </div>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground mb-4">
-                    {formatBaghdadTime(offer.created_at)}
-                  </p>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => handleEdit(offer)}
-                    >
-                      <Edit className="h-4 w-4 ml-1" />
-                      تعديل
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        if (confirm('هل أنت متأكد من حذف هذا العرض؟')) {
-                          deleteMutation.mutate(offer.id);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
-        ) : (
-          <Card className="p-12 text-center">
-            <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">لا توجد عروض</h3>
-            <p className="text-muted-foreground mb-4">
-              ابدأ بإضافة عرض منتج جديد مع تذاكر هدية
-            </p>
-            <Button onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 ml-2" />
-              إضافة عرض جديد
-            </Button>
-          </Card>
         )}
-      </div>
+      </main>
+
+      <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{editingOffer ? 'تعديل العرض' : 'إضافة عرض منتج جديد'}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2"><Label>اسم المنتج *</Label><Input value={formData.title_ar} onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })} placeholder="مثال: ساعة ذكية" /></div>
+            <div className="space-y-2"><Label>وصف المنتج</Label><Textarea value={formData.description_ar} onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })} placeholder="وصف مختصر..." /></div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2"><Label>سعر المنتج (دينار) *</Label><Input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="25000" /></div>
+              <div className="space-y-2"><Label>عدد التذاكر الهدية *</Label><Input type="number" min="1" value={formData.gift_tickets} onChange={(e) => setFormData({ ...formData, gift_tickets: e.target.value })} placeholder="1" /></div>
+            </div>
+            <div className="space-y-2"><Label>الكمية المتاحة (اتركه فارغ لغير محدود)</Label><Input type="number" value={formData.stock_quantity} onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })} placeholder="غير محدود" /></div>
+            <div className="space-y-2">
+              <Label>حالة العرض</Label>
+              <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as any })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">مسودة</SelectItem>
+                  <SelectItem value="active">نشط</SelectItem>
+                  <SelectItem value="inactive">متوقف</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>صور المنتج</Label>
+              <div className="relative">
+                <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploadingImage} />
+                <Button type="button" variant="outline" className="w-full gap-2" disabled={uploadingImage}>
+                  {uploadingImage ? <><Loader2 className="h-4 w-4 animate-spin" />جاري الرفع...</> : <><Upload className="h-4 w-4" />اختر صور</>}
+                </Button>
+              </div>
+              {formData.images.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.images.map((url, index) => (
+                    <div key={index} className="relative w-20 h-20 group">
+                      <img src={url} alt={`صورة ${index + 1}`} className="w-full h-full object-cover rounded-lg border" />
+                      <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeImage(index)}><X className="h-3 w-3" /></Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="flex gap-2 pt-4">
+              <Button className="flex-1" onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
+                {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                {editingOffer ? 'حفظ التعديلات' : 'إنشاء العرض'}
+              </Button>
+              <Button variant="outline" onClick={() => setIsDialogOpen(false)}>إلغاء</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Input } from "@/components/ui/input";
-import { Gift, Loader2, Wallet, Plus, Minus, Package, ShoppingBag, Ticket, ArrowRight, Check } from "lucide-react";
+import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight, Ticket, ArrowRight, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
 
@@ -19,79 +18,58 @@ interface ProductOffer {
   description_ar: string | null;
   image_url: string | null;
   images: string[] | null;
-  ticket_price: number;
-  gift_tickets_per_purchase: number;
-  status: 'active';
+  price: number;
   currency: string;
+  gift_tickets: number;
+  stock_quantity: number | null;
 }
 
 export default function ProductOffersPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  
   const [selectedOffer, setSelectedOffer] = useState<ProductOffer | null>(null);
-  const [purchaseQuantity, setPurchaseQuantity] = useState(1);
-  const [showPurchaseConfirm, setShowPurchaseConfirm] = useState(false);
-  const [showInsufficientBalance, setShowInsufficientBalance] = useState(false);
+  const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  const [imageIndices, setImageIndices] = useState<Record<string, number>>({});
 
-  // Fetch active product offers
-  const { data: productOffers, isLoading } = useQuery({
-    queryKey: ['product-offers'],
+  const { data: offers, isLoading } = useQuery({
+    queryKey: ['product-offers-active'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('competitions')
+        .from('product_offers')
         .select('*')
-        .eq('is_product_based', true)
         .eq('status', 'active')
         .order('created_at', { ascending: false });
-      
       if (error) throw error;
       return data as ProductOffer[];
-    }
+    },
   });
 
-  // Fetch user wallet
   const { data: wallet } = useQuery({
     queryKey: ['user-wallet', user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data, error } = await supabase
-        .from('user_wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .single();
-      
+      const { data, error } = await supabase.from('user_wallets').select('balance').eq('user_id', user.id).single();
       if (error && error.code !== 'PGRST116') throw error;
       return data;
     },
-    enabled: !!user
+    enabled: !!user,
   });
 
-  // Fetch user tickets
-  const { data: userTicketBalance } = useQuery({
+  const { data: ticketBalance } = useQuery({
     queryKey: ['user-ticket-balance', user?.id],
     queryFn: async () => {
       if (!user) return 0;
-      const { data, error } = await supabase
-        .from('user_tickets')
-        .select('ticket_count')
-        .eq('user_id', user.id)
-        .single();
-      
+      const { data, error } = await supabase.from('user_tickets').select('ticket_count').eq('user_id', user.id).single();
       if (error && error.code !== 'PGRST116') throw error;
       return data?.ticket_count || 0;
     },
-    enabled: !!user
+    enabled: !!user,
   });
 
-  // Purchase mutation
   const purchaseMutation = useMutation({
-    mutationFn: async ({ offerId, quantity }: { offerId: string; quantity: number }) => {
-      const { data, error } = await supabase.rpc('purchase_product_with_gift_tickets', {
-        p_competition_id: offerId,
-        p_quantity: quantity
-      });
+    mutationFn: async (offerId: string) => {
+      const { data, error } = await supabase.rpc('purchase_product_offer', { p_offer_id: offerId, p_quantity: 1 });
       if (error) throw error;
       return data;
     },
@@ -99,288 +77,142 @@ export default function ProductOffersPage() {
       if (data.success) {
         queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
-        queryClient.invalidateQueries({ queryKey: ['user-purchased-products'] });
-        
-        toast.success(`تم شراء ${data.quantity} منتج + ${data.gift_tickets} تذكرة هدية!`);
-        
-        // Send telegram notification
+        queryClient.invalidateQueries({ queryKey: ['product-offers-active'] });
+        toast.success(`🎁 تم شراء ${data.product_name} وحصلت على ${data.gift_tickets} تذكرة هدية!`);
         try {
           await supabase.functions.invoke('send-telegram-notification', {
-            body: {
-              message: `🛒 <b>شراء منتج جديد</b>\n\n` +
-                `👤 المستخدم: ${user?.email || 'غير معروف'}\n` +
-                `📦 المنتج: ${selectedOffer?.title_ar}\n` +
-                `🔢 الكمية: ${data.quantity}\n` +
-                `🎁 التذاكر الهدية: ${data.gift_tickets}\n` +
-                `💰 المبلغ: ${data.total_cost?.toLocaleString()} دينار`,
-            },
+            body: { message: `🛍️ <b>شراء منتج</b>\n📦 ${data.product_name}\n💰 ${data.total_cost?.toLocaleString() || 0} دينار\n🎁 ${data.gift_tickets} تذكرة` },
           });
-        } catch (e) {
-          console.error('Error sending telegram notification:', e);
-        }
-        
-        setShowPurchaseConfirm(false);
+        } catch (e) { console.error(e); }
+        setShowPurchaseDialog(false);
         setSelectedOffer(null);
-        setPurchaseQuantity(1);
       } else {
-        toast.error(data.error);
+        toast.error(data.error || 'حدث خطأ');
       }
     },
-    onError: (error) => {
-      toast.error('حدث خطأ: ' + error.message);
-    }
+    onError: (error) => toast.error('خطأ: ' + error.message),
   });
 
   const handlePurchaseClick = (offer: ProductOffer) => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
+    if (!user) { navigate('/auth'); return; }
     setSelectedOffer(offer);
-    setPurchaseQuantity(1);
-
-    const totalCost = offer.ticket_price * 1;
-    if ((wallet?.balance || 0) < totalCost) {
-      setShowInsufficientBalance(true);
-    } else {
-      setShowPurchaseConfirm(true);
-    }
+    setShowPurchaseDialog(true);
   };
 
-  const confirmPurchase = () => {
-    if (!selectedOffer) return;
-    
-    const totalCost = selectedOffer.ticket_price * purchaseQuantity;
-    if ((wallet?.balance || 0) < totalCost) {
-      setShowPurchaseConfirm(false);
-      setShowInsufficientBalance(true);
-      return;
-    }
-
-    purchaseMutation.mutate({
-      offerId: selectedOffer.id,
-      quantity: purchaseQuantity
-    });
+  const navigateImage = (offerId: string, direction: 'prev' | 'next', images: string[]) => {
+    const currentIndex = imageIndices[offerId] || 0;
+    const newIndex = direction === 'prev' ? (currentIndex - 1 + images.length) % images.length : (currentIndex + 1) % images.length;
+    setImageIndices(prev => ({ ...prev, [offerId]: newIndex }));
   };
-
-  const totalCost = selectedOffer ? selectedOffer.ticket_price * purchaseQuantity : 0;
-  const totalGiftTickets = selectedOffer ? selectedOffer.gift_tickets_per_purchase * purchaseQuantity : 0;
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">عروض المنتجات والهدايا</h1>
-          <p className="text-muted-foreground">
-            اشترِ منتجات حقيقية واحصل على تذاكر هدية مجانية
-          </p>
+    <div className="min-h-screen bg-background flex flex-col" dir="rtl">
+      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={() => navigate('/')}><ArrowRight className="h-5 w-5" /></Button>
+              <div>
+                <h1 className="text-lg font-bold flex items-center gap-2"><Package className="h-5 w-5 text-primary" />عروض المنتجات</h1>
+                <p className="text-xs text-muted-foreground">اشترِ منتجات واحصل على تذاكر هدية!</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {user && (
+                <>
+                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 rounded-full text-sm"><Ticket className="h-3 w-3 text-primary" /><span className="font-medium text-xs">{ticketBalance || 0}</span></div>
+                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-secondary/50 rounded-full text-sm"><Wallet className="h-3 w-3 text-primary" /><span className="font-medium text-xs">{(wallet?.balance || 0).toLocaleString()}</span></div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
-
-        {/* User Balances */}
-        {user && (
-          <div className="flex flex-wrap justify-center gap-4 mb-8">
-            <Card className="px-6 py-3">
-              <div className="flex items-center gap-3">
-                <Wallet className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-xs text-muted-foreground">رصيد المحفظة</p>
-                  <p className="font-bold">{(wallet?.balance || 0).toLocaleString()} دينار</p>
-                </div>
-              </div>
-            </Card>
-            <Card className="px-6 py-3">
-              <div className="flex items-center gap-3">
-                <Ticket className="h-5 w-5 text-green-500" />
-                <div>
-                  <p className="text-xs text-muted-foreground">التذاكر المتاحة</p>
-                  <p className="font-bold">{userTicketBalance || 0} تذكرة</p>
-                </div>
-              </div>
-            </Card>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/my-products')}
-            >
-              <Package className="h-4 w-4 ml-2" />
-              مشترياتي
-            </Button>
-          </div>
-        )}
-
-        {/* Product Offers Grid */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : productOffers && productOffers.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {productOffers.map((offer) => (
-              <Card key={offer.id} className="overflow-hidden group hover:shadow-xl transition-all duration-300">
-                <div className="aspect-square relative bg-muted">
-                  {offer.image_url ? (
-                    <OptimizedImage
-                      src={offer.image_url}
-                      alt={offer.title_ar}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="h-16 w-16 text-muted-foreground" />
-                    </div>
-                  )}
-                  
-                  {/* Gift Badge */}
-                  <div className="absolute top-3 left-3">
-                    <Badge className="bg-green-500 text-white flex items-center gap-1 px-3 py-1">
-                      <Gift className="h-3 w-3" />
-                      +{offer.gift_tickets_per_purchase} تذكرة هدية
-                    </Badge>
-                  </div>
-                </div>
-
-                <CardContent className="p-5">
-                  <h3 className="font-bold text-lg mb-2">{offer.title_ar}</h3>
-                  
-                  {offer.description_ar && (
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {offer.description_ar}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-xs text-muted-foreground">سعر المنتج</p>
-                      <p className="text-2xl font-bold text-primary">
-                        {offer.ticket_price?.toLocaleString()} <span className="text-sm">{offer.currency}</span>
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Info Box */}
-                  <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3 mb-4">
-                    <div className="flex items-center gap-2 text-green-400">
-                      <Check className="h-4 w-4" />
-                      <span className="text-sm">التذاكر هدية مجانية مع المنتج</span>
-                    </div>
-                  </div>
-
-                  <Button
-                    className="w-full"
-                    onClick={() => handlePurchaseClick(offer)}
-                  >
-                    <ShoppingBag className="h-4 w-4 ml-2" />
-                    شراء المنتج
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <Card className="p-12 text-center">
-            <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">لا توجد عروض حالياً</h3>
-            <p className="text-muted-foreground">
-              ترقبوا العروض الجديدة قريباً
-            </p>
-          </Card>
-        )}
       </div>
 
-      {/* Purchase Confirmation Dialog */}
-      <AlertDialog open={showPurchaseConfirm} onOpenChange={setShowPurchaseConfirm}>
+      <main className="flex-1 container mx-auto px-4 py-6">
+        <div className="flex items-center justify-center gap-3 mb-6">
+          <Button variant="outline" size="sm" onClick={() => navigate('/my-offer-purchases')} className="gap-1"><ShoppingCart className="h-4 w-4" />مشترياتي</Button>
+          <Button variant="outline" size="sm" onClick={() => navigate('/competitions')} className="gap-1"><Trophy className="h-4 w-4" />المسابقات</Button>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+        ) : offers?.length === 0 ? (
+          <Card className="text-center py-12"><CardContent className="pt-6"><Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" /><p className="text-muted-foreground">لا توجد عروض متاحة حالياً</p></CardContent></Card>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {offers?.map((offer) => {
+              const images = offer.images && offer.images.length > 0 ? offer.images : (offer.image_url ? [offer.image_url] : []);
+              const currentIndex = imageIndices[offer.id] || 0;
+              const hasMultipleImages = images.length > 1;
+              const canAfford = !user || !wallet || wallet.balance >= offer.price;
+              const isOutOfStock = offer.stock_quantity !== null && offer.stock_quantity <= 0;
+
+              return (
+                <Card key={offer.id} className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-green-500/20">
+                  <div className="relative aspect-square">
+                    {images.length > 0 ? (
+                      <OptimizedImage src={images[currentIndex]} alt={offer.title_ar} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full bg-secondary flex items-center justify-center"><Package className="h-12 w-12 text-muted-foreground" /></div>
+                    )}
+                    <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg"><Gift className="h-3 w-3" />{offer.gift_tickets} تذكرة هدية</Badge>
+                    {isOutOfStock && <Badge className="absolute top-2 left-2 bg-red-600 text-white">نفذت الكمية</Badge>}
+                    {hasMultipleImages && (
+                      <>
+                        <Button variant="ghost" size="icon" className="absolute left-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-black/40 hover:bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'prev', images); }}><ChevronLeft className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 bg-black/40 hover:bg-black/60 text-white opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => { e.stopPropagation(); navigateImage(offer.id, 'next', images); }}><ChevronRight className="h-4 w-4" /></Button>
+                        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">{images.map((_, idx) => (<button key={idx} className={`w-1.5 h-1.5 rounded-full ${idx === currentIndex ? 'bg-white' : 'bg-white/50'}`} onClick={(e) => { e.stopPropagation(); setImageIndices(prev => ({ ...prev, [offer.id]: idx })); }} />))}</div>
+                      </>
+                    )}
+                  </div>
+                  <CardContent className="p-3 space-y-2">
+                    <h3 className="font-semibold text-sm line-clamp-2">{offer.title_ar}</h3>
+                    {offer.description_ar && <p className="text-xs text-muted-foreground line-clamp-2">{offer.description_ar}</p>}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div><p className="font-bold text-primary">{offer.price.toLocaleString()}</p><p className="text-xs text-muted-foreground">{offer.currency}</p></div>
+                      <Button size="sm" className="gap-1" onClick={() => handlePurchaseClick(offer)} disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}>
+                        {purchaseMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShoppingCart className="h-3 w-3" />}
+                        {!user ? 'سجّل دخول' : isOutOfStock ? 'نفذ' : !canAfford ? 'رصيد غير كافٍ' : 'شراء'}
+                      </Button>
+                    </div>
+                    <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20"><p className="text-xs text-green-700 dark:text-green-400 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p></div>
+                    {offer.stock_quantity !== null && !isOutOfStock && <p className="text-xs text-center text-muted-foreground">متبقي: {offer.stock_quantity} فقط</p>}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </main>
+
+      <Footer />
+
+      <AlertDialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد شراء المنتج</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div className="space-y-4">
-                <div className="bg-muted p-4 rounded-lg">
-                  <p className="font-medium mb-2">{selectedOffer?.title_ar}</p>
-                  <p className="text-sm text-muted-foreground">
-                    سعر الوحدة: {selectedOffer?.ticket_price?.toLocaleString()} {selectedOffer?.currency}
-                  </p>
-                </div>
-
-                {/* Quantity Selector */}
-                <div className="flex items-center justify-center gap-4">
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setPurchaseQuantity(Math.max(1, purchaseQuantity - 1))}
-                    disabled={purchaseQuantity <= 1}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
-                  <Input
-                    type="number"
-                    value={purchaseQuantity}
-                    onChange={(e) => setPurchaseQuantity(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
-                    className="w-20 text-center"
-                    min={1}
-                    max={100}
-                  />
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={() => setPurchaseQuantity(Math.min(100, purchaseQuantity + 1))}
-                    disabled={purchaseQuantity >= 100}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="bg-primary/10 p-4 rounded-lg space-y-2">
-                  <div className="flex justify-between">
-                    <span>المجموع:</span>
-                    <span className="font-bold">{totalCost.toLocaleString()} دينار</span>
+            <AlertDialogTitle className="flex items-center gap-2"><ShoppingCart className="h-5 w-5 text-primary" />تأكيد الشراء</AlertDialogTitle>
+            <AlertDialogDescription className="text-right space-y-3">
+              {selectedOffer && (
+                <>
+                  <p>هل تريد شراء <span className="font-bold text-foreground">{selectedOffer.title_ar}</span>؟</p>
+                  <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
+                    <div className="flex justify-between"><span>السعر:</span><span className="font-bold">{selectedOffer.price.toLocaleString()} {selectedOffer.currency}</span></div>
+                    <div className="flex justify-between text-green-600"><span>تذاكر هدية:</span><span className="font-bold">🎁 {selectedOffer.gift_tickets} تذكرة</span></div>
                   </div>
-                  <div className="flex justify-between text-green-400">
-                    <span>التذاكر الهدية:</span>
-                    <span className="font-bold">+{totalGiftTickets} تذكرة</span>
-                  </div>
-                </div>
-
-                <p className="text-xs text-muted-foreground text-center">
-                  سيتم خصم المبلغ من رصيد محفظتك
-                </p>
-              </div>
+                  {wallet && wallet.balance < selectedOffer.price && <p className="text-destructive text-sm">⚠️ رصيد المحفظة غير كافٍ (رصيدك: {wallet.balance.toLocaleString()} دينار)</p>}
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogAction
-              onClick={confirmPurchase}
-              disabled={purchaseMutation.isPending}
-            >
-              {purchaseMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin ml-2" />
-              ) : null}
-              تأكيد الشراء
+            <AlertDialogAction onClick={() => selectedOffer && purchaseMutation.mutate(selectedOffer.id)} disabled={purchaseMutation.isPending || (wallet && selectedOffer && wallet.balance < selectedOffer.price)}>
+              {purchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}تأكيد الشراء
             </AlertDialogAction>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Insufficient Balance Dialog */}
-      <AlertDialog open={showInsufficientBalance} onOpenChange={setShowInsufficientBalance}>
-        <AlertDialogContent dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle>رصيد غير كافٍ</AlertDialogTitle>
-            <AlertDialogDescription>
-              رصيد محفظتك الحالي ({(wallet?.balance || 0).toLocaleString()} دينار) غير كافٍ لإتمام عملية الشراء.
-              يرجى شحن المحفظة أولاً.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogAction onClick={() => setShowInsufficientBalance(false)}>
-              حسناً
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <Footer />
     </div>
   );
 }
