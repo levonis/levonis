@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+// Force rebuild due to module caching issue
 import { useAuth } from '@/hooks/useAuth';
 import { useOrderRealtimeNotifications } from '@/hooks/useOrderRealtimeNotifications';
 import { useNavigate, useParams } from 'react-router-dom';
