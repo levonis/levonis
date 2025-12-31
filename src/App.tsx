@@ -55,6 +55,7 @@ const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const AdminMarketplace = lazy(() => import("./pages/AdminMarketplace"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
+const MyPurchasedProducts = lazy(() => import("./pages/MyPurchasedProducts"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -116,6 +117,7 @@ function AppContent() {
             <Route path="/my-points" element={<MyPoints />} />
             <Route path="/competitions" element={<Competitions />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />
+            <Route path="/my-products" element={<MyPurchasedProducts />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>

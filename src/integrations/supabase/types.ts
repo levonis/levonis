@@ -271,6 +271,7 @@ export type Database = {
           draw_date: string | null
           end_date: string | null
           flash_badge_text: string | null
+          gift_tickets_per_purchase: number | null
           growing_prize_config: Json | null
           hidden_winner_ticket_id: string | null
           hidden_winner_trigger_ticket: number | null
@@ -281,6 +282,8 @@ export type Database = {
           instant_reveal: boolean | null
           is_featured: boolean | null
           is_flash: boolean | null
+          is_product_based: boolean | null
+          legal_disclaimer: string | null
           letters_config: Json | null
           max_tickets: number | null
           mystery_boxes: Json | null
@@ -291,6 +294,7 @@ export type Database = {
           prize_products: Json | null
           prize_tiers: Json | null
           prize_value: number | null
+          product_id: string | null
           remaining_prizes: number | null
           required_tickets: number
           start_date: string
@@ -321,6 +325,7 @@ export type Database = {
           draw_date?: string | null
           end_date?: string | null
           flash_badge_text?: string | null
+          gift_tickets_per_purchase?: number | null
           growing_prize_config?: Json | null
           hidden_winner_ticket_id?: string | null
           hidden_winner_trigger_ticket?: number | null
@@ -331,6 +336,8 @@ export type Database = {
           instant_reveal?: boolean | null
           is_featured?: boolean | null
           is_flash?: boolean | null
+          is_product_based?: boolean | null
+          legal_disclaimer?: string | null
           letters_config?: Json | null
           max_tickets?: number | null
           mystery_boxes?: Json | null
@@ -341,6 +348,7 @@ export type Database = {
           prize_products?: Json | null
           prize_tiers?: Json | null
           prize_value?: number | null
+          product_id?: string | null
           remaining_prizes?: number | null
           required_tickets?: number
           start_date?: string
@@ -371,6 +379,7 @@ export type Database = {
           draw_date?: string | null
           end_date?: string | null
           flash_badge_text?: string | null
+          gift_tickets_per_purchase?: number | null
           growing_prize_config?: Json | null
           hidden_winner_ticket_id?: string | null
           hidden_winner_trigger_ticket?: number | null
@@ -381,6 +390,8 @@ export type Database = {
           instant_reveal?: boolean | null
           is_featured?: boolean | null
           is_flash?: boolean | null
+          is_product_based?: boolean | null
+          legal_disclaimer?: string | null
           letters_config?: Json | null
           max_tickets?: number | null
           mystery_boxes?: Json | null
@@ -391,6 +402,7 @@ export type Database = {
           prize_products?: Json | null
           prize_tiers?: Json | null
           prize_value?: number | null
+          product_id?: string | null
           remaining_prizes?: number | null
           required_tickets?: number
           start_date?: string
@@ -416,6 +428,13 @@ export type Database = {
           {
             foreignKeyName: "competitions_prize_product_id_fkey"
             columns: ["prize_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competitions_product_id_fkey"
+            columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
@@ -2281,6 +2300,104 @@ export type Database = {
         }
         Relationships: []
       }
+      user_purchased_products: {
+        Row: {
+          competition_id: string | null
+          created_at: string
+          currency: string | null
+          delivered_at: string | null
+          gift_tickets: number
+          id: string
+          listed_in_marketplace: boolean | null
+          marketplace_listing_id: string | null
+          order_id: string | null
+          order_status: string
+          ordered_at: string | null
+          product_id: string | null
+          product_image: string | null
+          product_name: string
+          product_name_ar: string
+          product_price: number
+          purchased_at: string
+          source_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          competition_id?: string | null
+          created_at?: string
+          currency?: string | null
+          delivered_at?: string | null
+          gift_tickets?: number
+          id?: string
+          listed_in_marketplace?: boolean | null
+          marketplace_listing_id?: string | null
+          order_id?: string | null
+          order_status?: string
+          ordered_at?: string | null
+          product_id?: string | null
+          product_image?: string | null
+          product_name: string
+          product_name_ar: string
+          product_price?: number
+          purchased_at?: string
+          source_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string | null
+          created_at?: string
+          currency?: string | null
+          delivered_at?: string | null
+          gift_tickets?: number
+          id?: string
+          listed_in_marketplace?: boolean | null
+          marketplace_listing_id?: string | null
+          order_id?: string | null
+          order_status?: string
+          ordered_at?: string | null
+          product_id?: string | null
+          product_image?: string | null
+          product_name?: string
+          product_name_ar?: string
+          product_price?: number
+          purchased_at?: string
+          source_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_purchased_products_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_purchased_products_marketplace_listing_id_fkey"
+            columns: ["marketplace_listing_id"]
+            isOneToOne: false
+            referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_purchased_products_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_purchased_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_referrals: {
         Row: {
           completed_at: string | null
@@ -2490,6 +2607,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_prize_as_product: {
+        Args: {
+          p_competition_id: string
+          p_product_id?: string
+          p_product_image: string
+          p_product_name: string
+          p_product_name_ar: string
+          p_product_value?: number
+          p_user_id: string
+        }
+        Returns: string
+      }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_user_level: { Args: { points: number }; Returns: string }
       check_username_available: {
@@ -2558,6 +2687,10 @@ export type Database = {
       purchase_competition_ticket:
         | { Args: { comp_id: string }; Returns: Json }
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }
+      purchase_product_with_gift_tickets: {
+        Args: { p_competition_id: string; p_quantity?: number }
+        Returns: Json
+      }
       purchase_tickets: {
         Args: { price_per_ticket: number; ticket_quantity: number }
         Returns: Json
@@ -2576,6 +2709,10 @@ export type Database = {
       }
       redeem_letters_prize: {
         Args: { p_competition_id: string; p_word: string }
+        Returns: Json
+      }
+      request_product_delivery: {
+        Args: { p_product_ids: string[] }
         Returns: Json
       }
       send_general_notification: {
