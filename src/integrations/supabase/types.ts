@@ -2174,6 +2174,7 @@ export type Database = {
           images: string[] | null
           last_renewed_at: string | null
           likes_count: number | null
+          listing_code: string | null
           location: string | null
           original_price: number | null
           price: number
@@ -2199,6 +2200,7 @@ export type Database = {
           images?: string[] | null
           last_renewed_at?: string | null
           likes_count?: number | null
+          listing_code?: string | null
           location?: string | null
           original_price?: number | null
           price: number
@@ -2224,6 +2226,7 @@ export type Database = {
           images?: string[] | null
           last_renewed_at?: string | null
           likes_count?: number | null
+          listing_code?: string | null
           location?: string | null
           original_price?: number | null
           price?: number
@@ -2533,6 +2536,7 @@ export type Database = {
         Returns: Json
       }
       generate_conversation_code: { Args: never; Returns: string }
+      generate_listing_code: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }
       generate_referral_code:
         | { Args: never; Returns: string }
