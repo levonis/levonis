@@ -6,14 +6,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Plus, Pencil, Trash2, Megaphone } from 'lucide-react';
+import { Plus, Pencil, Trash2, Megaphone } from 'lucide-react';
 import { toast } from 'sonner';
-import { Badge } from '@/components/ui/badge';
+import AdminLayout, { AdminSection, AdminCard, AdminCardContent, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 
 const AdminAnnouncements = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -177,117 +176,96 @@ const AdminAnnouncements = () => {
   };
 
   if (authLoading || isLoading) {
-    return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </div>
-    );
+    return <AdminLoading />;
   }
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
-      {/* Decorative frame - Full screen */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-0 opacity-20"
-        style={{
-          backgroundImage: 'url(/images/decorative-frame-new.webp)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      />
-      
-      <main className="container mx-auto px-4 py-8 max-w-6xl relative z-10">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-black text-primary mb-2 flex items-center gap-3">
-              <Megaphone className="h-8 w-8" />
-              إدارة الشريط الإخباري
-            </h1>
-            <p className="text-muted-foreground">إدارة الإعلانات المتحركة في أعلى الموقع</p>
-          </div>
-          <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90">
-                <Plus className="ml-2 h-4 w-4" />
-                إضافة إعلان
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editing ? 'تعديل الإعلان' : 'إضافة إعلان جديد'}</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="message_ar">نص الإعلان (عربي)</Label>
+    <AdminLayout
+      title="إدارة الشريط الإخباري"
+      description="إدارة الإعلانات المتحركة في أعلى الموقع"
+      icon={<Megaphone className="h-5 w-5" />}
+      actions={
+        <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
+          <DialogTrigger asChild>
+            <Button className="admin-btn-primary">
+              <Plus className="ml-2 h-4 w-4" />
+              إضافة إعلان
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="admin-dialog max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editing ? 'تعديل الإعلان' : 'إضافة إعلان جديد'}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="admin-form-group">
+                <Label htmlFor="message_ar">نص الإعلان (عربي)</Label>
+                <Input
+                  id="message_ar"
+                  value={formData.message_ar}
+                  onChange={(e) => setFormData({ ...formData, message_ar: e.target.value })}
+                  placeholder="مثال: عرض خاص - خصم 20% على جميع المنتجات"
+                  required
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <Label htmlFor="message">نص الإعلان (إنجليزي - اختياري)</Label>
+                <Input
+                  id="message"
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  placeholder="Special offer - 20% off all products"
+                />
+              </div>
+
+              <div className="admin-form-group">
+                <Label htmlFor="color">لون الشريط</Label>
+                <div className="flex gap-2 items-center">
                   <Input
-                    id="message_ar"
-                    value={formData.message_ar}
-                    onChange={(e) => setFormData({ ...formData, message_ar: e.target.value })}
-                    placeholder="مثال: عرض خاص - خصم 20% على جميع المنتجات"
-                    required
+                    id="color"
+                    type="color"
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    className="w-20 h-10"
+                  />
+                  <Input
+                    type="text"
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    placeholder="#3b82f6"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
+
+              <div className="admin-form-row">
+                <div className="admin-form-group">
+                  <Label htmlFor="speed">سرعة الحركة (ثانية)</Label>
+                  <Input
+                    id="speed"
+                    type="number"
+                    value={formData.speed}
+                    onChange={(e) => setFormData({ ...formData, speed: parseInt(e.target.value) })}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="message">نص الإعلان (إنجليزي - اختياري)</Label>
-                  <Input
-                    id="message"
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    placeholder="Special offer - 20% off all products"
-                  />
+                <div className="admin-form-group">
+                  <Label htmlFor="direction">اتجاه الحركة</Label>
+                  <Select value={formData.direction} onValueChange={(value) => setFormData({ ...formData, direction: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="right">يمين ← يسار</SelectItem>
+                      <SelectItem value="left">يسار → يمين</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="color">لون الشريط</Label>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      id="color"
-                      type="color"
-                      value={formData.color}
-                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                      className="w-20 h-10"
-                    />
-                    <Input
-                      type="text"
-                      value={formData.color}
-                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                      placeholder="#3b82f6"
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="speed">سرعة الحركة (ثانية)</Label>
-                    <Input
-                      id="speed"
-                      type="number"
-                      value={formData.speed}
-                      onChange={(e) => setFormData({ ...formData, speed: parseInt(e.target.value) })}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="direction">اتجاه الحركة</Label>
-                    <Select value={formData.direction} onValueChange={(value) => setFormData({ ...formData, direction: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="right">يمين ← يسار</SelectItem>
-                        <SelectItem value="left">يسار → يمين</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="gap">المسافة بين التكرارات (gap)</Label>
+              <div className="admin-form-row">
+                <div className="admin-form-group">
+                  <Label htmlFor="gap">المسافة بين التكرارات</Label>
                   <Input
                     id="gap"
                     type="number"
@@ -296,10 +274,9 @@ const AdminAnnouncements = () => {
                     value={formData.gap}
                     onChange={(e) => setFormData({ ...formData, gap: parseInt(e.target.value) })}
                   />
-                  <p className="text-xs text-muted-foreground">المسافة بين كل تكرار والآخر (من 4 إلى 64)</p>
                 </div>
 
-                <div className="space-y-2">
+                <div className="admin-form-group">
                   <Label htmlFor="display_duration">مدة عرض الإعلان (ثانية)</Label>
                   <Input
                     id="display_duration"
@@ -309,186 +286,147 @@ const AdminAnnouncements = () => {
                     value={formData.display_duration}
                     onChange={(e) => setFormData({ ...formData, display_duration: parseInt(e.target.value) })}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    مدة عرض هذا الإعلان قبل الانتقال للإعلان التالي (من 3 إلى 30 ثانية)
-                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-2 border-t border-border/50">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="active" className="text-base">تفعيل الإعلان</Label>
+                    <p className="text-xs text-muted-foreground">عرض هذا الإعلان في الموقع</p>
+                  </div>
+                  <Switch
+                    id="active"
+                    checked={formData.active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
+                  />
                 </div>
 
-                <div className="space-y-3 pt-2 border-t border-border/50">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="active" className="text-base">تفعيل الإعلان</Label>
-                      <p className="text-xs text-muted-foreground">عرض هذا الإعلان في الموقع</p>
-                    </div>
-                    <Switch
-                      id="active"
-                      checked={formData.active}
-                      onCheckedChange={(checked) => setFormData({ ...formData, active: checked })}
-                    />
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="auto_rotate" className="text-base">التقلب التلقائي</Label>
+                    <p className="text-xs text-muted-foreground">
+                      الانتقال تلقائياً للإعلان التالي
+                    </p>
                   </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="auto_rotate" className="text-base">التقلب التلقائي</Label>
-                      <p className="text-xs text-muted-foreground">
-                        الانتقال تلقائياً للإعلان التالي (عند وجود أكثر من إعلان)
-                      </p>
-                    </div>
-                    <Switch
-                      id="auto_rotate"
-                      checked={formData.auto_rotate}
-                      onCheckedChange={(checked) => setFormData({ ...formData, auto_rotate: checked })}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="always_move" className="text-base">تحريك دائم</Label>
-                      <p className="text-xs text-muted-foreground">
-                        الحركة المستمرة للنص بدون توقف
-                      </p>
-                    </div>
-                    <Switch
-                      id="always_move"
-                      checked={formData.always_move}
-                      onCheckedChange={(checked) => setFormData({ ...formData, always_move: checked })}
-                    />
-                  </div>
+                  <Switch
+                    id="auto_rotate"
+                    checked={formData.auto_rotate}
+                    onCheckedChange={(checked) => setFormData({ ...formData, auto_rotate: checked })}
+                  />
                 </div>
 
-                {/* Preview */}
-                <div className="space-y-2 pt-4 border-t border-border/50">
-                  <Label>معاينة الإعلان</Label>
-                  <div 
-                    className="text-white py-2 px-4 rounded-md overflow-hidden h-10 flex items-center"
-                    style={{ backgroundColor: formData.color }}
-                  >
-                    {formData.always_move ? (
-                      <div className="relative w-full overflow-hidden">
-                        <div
-                          className="flex whitespace-nowrap"
-                          style={{
-                            animation: `marquee-${formData.direction} ${formData.speed}s linear infinite`,
-                            gap: `${formData.gap}px`,
-                          }}
-                        >
-                          {Array.from({ length: 6 }).map((_, i) => (
-                            <span key={i} className="inline-block px-4">
-                              {formData.message_ar || 'نص الإعلان'}
-                              {i < 5 && <span className="opacity-60 px-2">•</span>}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center w-full">
-                        <span>{formData.message_ar || 'نص الإعلان'}</span>
-                      </div>
-                    )}
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="always_move" className="text-base">تحريك دائم</Label>
+                    <p className="text-xs text-muted-foreground">
+                      الحركة المستمرة للنص بدون توقف
+                    </p>
                   </div>
-                  <style>{`
-                    @keyframes marquee-left {
-                      0% { transform: translateX(0); }
-                      100% { transform: translateX(-50%); }
-                    }
-                    @keyframes marquee-right {
-                      0% { transform: translateX(-50%); }
-                      100% { transform: translateX(0); }
-                    }
-                  `}</style>
+                  <Switch
+                    id="always_move"
+                    checked={formData.always_move}
+                    onCheckedChange={(checked) => setFormData({ ...formData, always_move: checked })}
+                  />
                 </div>
+              </div>
 
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                  disabled={createAnnouncement.isPending || updateAnnouncement.isPending}
+              {/* Preview */}
+              <div className="space-y-2 pt-4 border-t border-border/50">
+                <Label>معاينة الإعلان</Label>
+                <div 
+                  className="text-white py-2 px-4 rounded-md overflow-hidden h-10 flex items-center"
+                  style={{ backgroundColor: formData.color }}
                 >
-                  {(createAnnouncement.isPending || updateAnnouncement.isPending) && (
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                  )}
-                  {editing ? 'تحديث' : 'إضافة'}
-                </Button>
-              </form>
-            </DialogContent>
-          </Dialog>
-        </div>
+                  <div className="text-center w-full">
+                    <span>{formData.message_ar || 'نص الإعلان'}</span>
+                  </div>
+                </div>
+              </div>
 
-        <Card className="glass-effect border-border/50">
-          <CardHeader>
-            <CardTitle>الإعلانات الحالية</CardTitle>
-            <CardDescription>جميع الإعلانات المتحركة في الموقع</CardDescription>
-          </CardHeader>
-          <CardContent>
+              <Button
+                type="submit"
+                className="w-full admin-btn-primary"
+                disabled={createAnnouncement.isPending || updateAnnouncement.isPending}
+              >
+                {editing ? 'تحديث' : 'إضافة'}
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      }
+    >
+      <AdminSection>
+        <AdminCard hover={false}>
+          <AdminCardContent noPadding>
             {!announcements || announcements.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">لا توجد إعلانات بعد</p>
+              <AdminEmptyState
+                icon={<Megaphone className="h-12 w-12" />}
+                title="لا توجد إعلانات"
+                description="قم بإضافة إعلان جديد للظهور في الشريط الإخباري"
+              />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>نص الإعلان</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead className="text-left">الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {announcements.map((announcement) => (
-                    <TableRow key={announcement.id}>
-                      <TableCell className="font-medium">{announcement.message_ar}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            announcement.type === 'success'
-                              ? 'default'
-                              : announcement.type === 'warning'
-                              ? 'secondary'
-                              : announcement.type === 'error'
-                              ? 'destructive'
-                              : 'outline'
-                          }
-                        >
-                          {announcement.type === 'info' && 'معلومات'}
-                          {announcement.type === 'success' && 'نجاح'}
-                          {announcement.type === 'warning' && 'تحذير'}
-                          {announcement.type === 'error' && 'تنبيه'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={announcement.active ? 'default' : 'secondary'}>
-                          {announcement.active ? 'فعال' : 'غير فعال'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-left">
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(announcement)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              if (confirm('هل أنت متأكد من حذف هذا الإعلان؟')) {
-                                deleteAnnouncement.mutate(announcement.id);
-                              }
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <div className="admin-table-container">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="admin-table-header">
+                      <TableHead>نص الإعلان</TableHead>
+                      <TableHead>اللون</TableHead>
+                      <TableHead>الحالة</TableHead>
+                      <TableHead>الإجراءات</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {announcements.map((announcement) => (
+                      <TableRow key={announcement.id} className="admin-table-row">
+                        <TableCell className="font-medium max-w-xs truncate">
+                          {announcement.message_ar}
+                        </TableCell>
+                        <TableCell>
+                          <div 
+                            className="w-6 h-6 rounded-full border border-border"
+                            style={{ backgroundColor: announcement.color }}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <span className={announcement.active ? 'admin-badge-success' : 'admin-badge'}>
+                            {announcement.active ? 'نشط' : 'متوقف'}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              onClick={() => handleEdit(announcement)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => {
+                                if (confirm('هل أنت متأكد من حذف هذا الإعلان؟')) {
+                                  deleteAnnouncement.mutate(announcement.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+          </AdminCardContent>
+        </AdminCard>
+      </AdminSection>
+    </AdminLayout>
   );
 };
 
