@@ -130,12 +130,30 @@ export default function Competitions() {
         .from('competitions')
         .select('*')
         .in('status', ['active', 'completed'])
+        .neq('is_product_based', true) // Exclude product offers from competitions
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       return data as Competition[];
     },
     staleTime: 30000, // Cache for 30 seconds
+  });
+
+  // Fetch product offers (is_product_based = true)
+  const { data: productOffers, isLoading: isLoadingOffers } = useQuery({
+    queryKey: ['product-offers'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('competitions')
+        .select('*')
+        .eq('is_product_based', true)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 30000,
   });
 
   // Fetch ticket counts - available for all users (no auth required)
@@ -434,6 +452,62 @@ export default function Competitions() {
       toast.error('حدث خطأ: ' + error.message);
     }
   });
+
+  // Purchase product offer mutation
+  const purchaseProductMutation = useMutation({
+    mutationFn: async (offer: { id: string; title_ar: string }) => {
+      const { data, error } = await supabase.rpc('purchase_product_with_gift_tickets', {
+        p_competition_id: offer.id,
+        p_quantity: 1
+      });
+      if (error) throw error;
+      return { ...data as Record<string, any>, offer };
+    },
+    onSuccess: async (data: any) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+        queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
+        queryClient.invalidateQueries({ queryKey: ['my-purchased-products'] });
+        
+        toast.success(`🎁 تم شراء ${data.offer?.title_ar} وحصلت على ${data.gift_tickets} تذكرة هدية!`);
+        
+        // Send Telegram notification
+        try {
+          await supabase.functions.invoke('send-telegram-notification', {
+            body: {
+              message: `🛍️ <b>شراء منتج جديد</b>\n\n` +
+                `👤 المستخدم: ${user?.email || 'غير معروف'}\n` +
+                `📦 المنتج: ${data.offer?.title_ar}\n` +
+                `💰 السعر: ${data.total_cost?.toLocaleString() || 0} دينار\n` +
+                `🎁 تذاكر هدية: ${data.gift_tickets || 1}`,
+            },
+          });
+        } catch (e) {
+          console.error('Error sending telegram notification:', e);
+        }
+      } else {
+        toast.error(data.error || 'حدث خطأ');
+      }
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ: ' + error.message);
+    }
+  });
+
+  const handlePurchaseProduct = (offer: any) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    if (!wallet || wallet.balance < offer.ticket_price) {
+      setShowInsufficientBalance(true);
+      return;
+    }
+    purchaseProductMutation.mutate({
+      id: offer.id,
+      title_ar: offer.title_ar
+    });
+  };
 
   // Instant win competition mutation
   const enterInstantWinMutation = useMutation({
@@ -742,34 +816,113 @@ export default function Competitions() {
           </div>
         </div>
 
-        {isLoading ? (
+        {/* Product Offers Section */}
+        {productOffers && productOffers.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+              <Gift className="h-5 w-5 text-green-600" />
+              عروض المنتجات مع هدايا
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {productOffers.map((offer) => (
+                <Card 
+                  key={offer.id} 
+                  className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-green-500/20"
+                >
+                  <div className="relative aspect-square">
+                    {offer.image_url ? (
+                      <OptimizedImage
+                        src={offer.image_url}
+                        alt={offer.title_ar}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-secondary flex items-center justify-center">
+                        <ShoppingCart className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg">
+                      <Gift className="h-3 w-3" />
+                      {(offer as any).gift_tickets_per_purchase || 1} تذكرة هدية
+                    </Badge>
+                  </div>
+                  <CardContent className="p-3 space-y-2">
+                    <h3 className="font-semibold text-sm line-clamp-2">{offer.title_ar}</h3>
+                    {offer.description_ar && (
+                      <p className="text-xs text-muted-foreground line-clamp-2">{offer.description_ar}</p>
+                    )}
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div>
+                        <p className="font-bold text-primary">{(offer.ticket_price || 0).toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">{offer.currency || 'دينار'}</p>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        className="gap-1"
+                        onClick={() => {
+                          if (!user) {
+                            navigate('/auth');
+                            return;
+                          }
+                          handlePurchaseProduct(offer);
+                        }}
+                        disabled={purchaseProductMutation?.isPending || (user && wallet && wallet.balance < offer.ticket_price)}
+                      >
+                        {purchaseProductMutation?.isPending ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <ShoppingCart className="h-3 w-3" />
+                        )}
+                        {!user ? 'سجّل دخول' : (wallet && wallet.balance < offer.ticket_price) ? 'رصيد غير كافٍ' : 'شراء'}
+                      </Button>
+                    </div>
+                    <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20">
+                      <p className="text-xs text-green-700 dark:text-green-400 font-medium">
+                        🎁 مع كل شراء تحصل على {(offer as any).gift_tickets_per_purchase || 1} تذكرة مجاناً!
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Competitions Section */}
+        {isLoading || isLoadingOffers ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : competitions?.length === 0 ? (
+        ) : competitions?.length === 0 && (!productOffers || productOffers.length === 0) ? (
           <Card className="text-center py-8 max-w-sm mx-auto">
             <CardContent className="pt-6">
               <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">لا توجد مسابقات نشطة حالياً</p>
+              <p className="text-muted-foreground">لا توجد مسابقات أو عروض نشطة حالياً</p>
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {competitions?.map((comp) => (
-              <CompetitionCard
-                key={comp.id}
-                competition={comp}
-                ticketCount={ticketCounts?.[comp.id] || 0}
-                myTicketList={myTickets?.[comp.id] || []}
-                userTicketBalance={userTicketBalance || 0}
-                onOpenDetails={handleOpenDetails}
-                onEnterCompetition={handleEnterCompetition}
-                isEntering={enterCompetitionMutation.isPending}
-                isAuthenticated={!!user}
-                winners={winnersInfo?.[comp.id] || []}
-              />
-            ))}
-          </div>
+        ) : competitions && competitions.length > 0 && (
+          <>
+            <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
+              <Trophy className="h-5 w-5 text-primary" />
+              المسابقات النشطة
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {competitions.map((comp) => (
+                <CompetitionCard
+                  key={comp.id}
+                  competition={comp}
+                  ticketCount={ticketCounts?.[comp.id] || 0}
+                  myTicketList={myTickets?.[comp.id] || []}
+                  userTicketBalance={userTicketBalance || 0}
+                  onOpenDetails={handleOpenDetails}
+                  onEnterCompetition={handleEnterCompetition}
+                  isEntering={enterCompetitionMutation.isPending}
+                  isAuthenticated={!!user}
+                  winners={winnersInfo?.[comp.id] || []}
+                />
+              ))}
+            </div>
+          </>
         )}
       </main>
 
