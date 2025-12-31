@@ -1504,16 +1504,6 @@ const Admin = () => {
                 <span className="text-sm font-semibold">سوق المستعمل</span>
                 <span className="text-xs text-muted-foreground">إدارة منتجات البائعين</span>
               </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/product-offers')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Gift className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">عروض المنتجات</span>
-                <span className="text-xs text-muted-foreground">إدارة عروض المنتجات والهدايا</span>
-              </Button>
             </div>
           </CardContent>
         </Card>
