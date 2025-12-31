@@ -5,15 +5,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Plus, Gift, Loader2, Trash2, Upload, X, Package, Edit, DollarSign, ShoppingBag, Ticket } from "lucide-react";
+import { Plus, Gift, Loader2, Trash2, Upload, X, Package, Edit, DollarSign, ShoppingBag, Ticket } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminStatsGrid, AdminStatCard, AdminEmptyState, AdminLoading } from "@/components/admin/AdminLayout";
 
 interface ProductOffer {
   id: string;
@@ -183,131 +183,208 @@ export default function AdminProductOffers() {
     }
   };
 
-  const statusLabels: Record<string, { label: string; color: string }> = {
-    draft: { label: 'مسودة', color: 'bg-gray-500' },
-    active: { label: 'نشط', color: 'bg-green-500' },
-    inactive: { label: 'متوقف', color: 'bg-red-500' },
+  const statusLabels: Record<string, { label: string; className: string }> = {
+    draft: { label: 'مسودة', className: 'admin-badge admin-badge-muted' },
+    active: { label: 'نشط', className: 'admin-badge admin-badge-success' },
+    inactive: { label: 'متوقف', className: 'admin-badge admin-badge-danger' },
   };
 
+  if (isLoading) {
+    return (
+      <AdminLayout title="إدارة عروض المنتجات" icon={<Package className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
-                <ArrowRight className="h-5 w-5" />
-              </Button>
-              <div>
-                <h1 className="text-lg font-bold flex items-center gap-2">
-                  <Package className="h-5 w-5 text-primary" />
-                  إدارة عروض المنتجات
-                </h1>
-                <p className="text-xs text-muted-foreground">منتجات للشراء مع تذاكر هدية مجانية</p>
+    <AdminLayout
+      title="إدارة عروض المنتجات"
+      description="منتجات للشراء مع تذاكر هدية مجانية"
+      icon={<Package className="h-5 w-5" />}
+      maxWidth="6xl"
+      actions={
+        <Button onClick={() => setIsDialogOpen(true)} className="admin-btn-primary gap-2">
+          <Plus className="h-4 w-4" />
+          <span className="hidden sm:inline">إضافة عرض</span>
+        </Button>
+      }
+    >
+      {/* Stats */}
+      <AdminStatsGrid>
+        <AdminStatCard
+          icon={<Package className="h-5 w-5" />}
+          value={productOffers?.filter(o => o.status === 'active').length || 0}
+          label="عروض نشطة"
+          colorClass="text-green-600"
+          bgClass="bg-green-500/10"
+        />
+        <AdminStatCard
+          icon={<Gift className="h-5 w-5" />}
+          value={productOffers?.length || 0}
+          label="إجمالي العروض"
+          colorClass="text-blue-600"
+          bgClass="bg-blue-500/10"
+        />
+        <AdminStatCard
+          icon={<ShoppingBag className="h-5 w-5" />}
+          value={productOffers?.reduce((sum, o) => sum + (o.total_sold || 0), 0) || 0}
+          label="إجمالي المبيعات"
+          colorClass="text-purple-600"
+          bgClass="bg-purple-500/10"
+        />
+        <AdminStatCard
+          icon={<Ticket className="h-5 w-5" />}
+          value={productOffers?.reduce((sum, o) => sum + (o.gift_tickets * (o.total_sold || 0)), 0) || 0}
+          label="تذاكر موزعة"
+          colorClass="text-amber-600"
+          bgClass="bg-amber-500/10"
+        />
+      </AdminStatsGrid>
+
+      {/* Product Offers List */}
+      <div className="mt-6 space-y-3">
+        {productOffers?.length === 0 ? (
+          <AdminCard>
+            <AdminEmptyState
+              icon={<Package className="h-16 w-16" />}
+              title="لا توجد عروض منتجات"
+              description="ابدأ بإنشاء أول عرض منتج"
+              action={
+                <Button className="admin-btn-primary gap-2" onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="h-4 w-4" />
+                  إنشاء أول عرض
+                </Button>
+              }
+            />
+          </AdminCard>
+        ) : (
+          productOffers?.map((offer) => (
+            <div key={offer.id} className="admin-list-item">
+              {offer.image_url ? (
+                <img src={offer.image_url} alt={offer.title_ar} className="admin-list-item-image" />
+              ) : (
+                <div className="admin-list-item-image flex items-center justify-center">
+                  <Package className="h-6 w-6 text-muted-foreground" />
+                </div>
+              )}
+              <div className="admin-list-item-content">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="admin-list-item-title">{offer.title_ar}</h3>
+                  <Badge className={statusLabels[offer.status]?.className || 'admin-badge admin-badge-muted'}>
+                    {statusLabels[offer.status]?.label || offer.status}
+                  </Badge>
+                </div>
+                <p className="admin-list-item-desc">{offer.description_ar || 'لا يوجد وصف'}</p>
+                <div className="admin-list-item-meta">
+                  <span className="flex items-center gap-1">
+                    <DollarSign className="h-3.5 w-3.5 text-primary" />
+                    <strong>{offer.price.toLocaleString()}</strong> {offer.currency}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Gift className="h-3.5 w-3.5 text-green-600" />
+                    {offer.gift_tickets} تذكرة
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <ShoppingBag className="h-3.5 w-3.5 text-blue-600" />
+                    {offer.total_sold || 0} مبيعات
+                  </span>
+                  {offer.stock_quantity !== null && (
+                    <Badge variant="outline" className="text-xs">متبقي: {offer.stock_quantity}</Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {format(new Date(offer.created_at), 'dd MMM yyyy', { locale: ar })}
+                </p>
+              </div>
+              <div className="admin-list-item-actions">
+                <Button variant="ghost" size="sm" onClick={() => handleEdit(offer)} className="admin-btn-icon-sm">
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => { if (window.confirm('هل أنت متأكد؟')) deleteMutation.mutate(offer.id); }} 
+                  disabled={deleteMutation.isPending}
+                  className="admin-btn-icon-sm text-destructive hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
-            <Button onClick={() => setIsDialogOpen(true)} className="gap-1">
-              <Plus className="h-4 w-4" />
-              إضافة عرض
-            </Button>
-          </div>
-        </div>
+          ))
+        )}
       </div>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5">
-            <CardContent className="p-4 text-center">
-              <Package className="h-6 w-6 mx-auto mb-1 text-green-600" />
-              <p className="text-xl font-bold">{productOffers?.filter(o => o.status === 'active').length || 0}</p>
-              <p className="text-xs text-muted-foreground">عروض نشطة</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5">
-            <CardContent className="p-4 text-center">
-              <Gift className="h-6 w-6 mx-auto mb-1 text-blue-600" />
-              <p className="text-xl font-bold">{productOffers?.length || 0}</p>
-              <p className="text-xs text-muted-foreground">إجمالي العروض</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5">
-            <CardContent className="p-4 text-center">
-              <ShoppingBag className="h-6 w-6 mx-auto mb-1 text-purple-600" />
-              <p className="text-xl font-bold">{productOffers?.reduce((sum, o) => sum + (o.total_sold || 0), 0) || 0}</p>
-              <p className="text-xs text-muted-foreground">إجمالي المبيعات</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-gradient-to-br from-amber-500/10 to-amber-500/5">
-            <CardContent className="p-4 text-center">
-              <Ticket className="h-6 w-6 mx-auto mb-1 text-amber-600" />
-              <p className="text-xl font-bold">{productOffers?.reduce((sum, o) => sum + (o.gift_tickets * (o.total_sold || 0)), 0) || 0}</p>
-              <p className="text-xs text-muted-foreground">تذاكر موزعة</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {isLoading ? (
-          <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-        ) : productOffers?.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">لا توجد عروض منتجات حتى الآن</p>
-              <Button className="mt-4" onClick={() => setIsDialogOpen(true)}><Plus className="h-4 w-4 ml-2" />إنشاء أول عرض</Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {productOffers?.map((offer) => (
-              <Card key={offer.id} className="overflow-hidden">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    {offer.image_url ? (
-                      <img src={offer.image_url} alt={offer.title_ar} className="w-20 h-20 object-cover rounded-lg" />
-                    ) : (
-                      <div className="w-20 h-20 bg-secondary rounded-lg flex items-center justify-center"><Package className="h-8 w-8 text-muted-foreground" /></div>
-                    )}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">{offer.title_ar}</h3>
-                        <Badge className={`${statusLabels[offer.status]?.color || 'bg-gray-500'} text-white text-xs`}>{statusLabels[offer.status]?.label || offer.status}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{offer.description_ar || 'لا يوجد وصف'}</p>
-                      <div className="flex flex-wrap gap-4 text-sm">
-                        <div className="flex items-center gap-1"><DollarSign className="h-4 w-4 text-primary" /><span className="font-bold">{offer.price.toLocaleString()} {offer.currency}</span></div>
-                        <div className="flex items-center gap-1"><Gift className="h-4 w-4 text-green-600" /><span>{offer.gift_tickets} تذكرة هدية</span></div>
-                        <div className="flex items-center gap-1"><ShoppingBag className="h-4 w-4 text-blue-600" /><span>{offer.total_sold || 0} مبيعات</span></div>
-                        {offer.stock_quantity !== null && <Badge variant="outline">متبقي: {offer.stock_quantity}</Badge>}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">{format(new Date(offer.created_at), 'dd MMM yyyy', { locale: ar })}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEdit(offer)}><Edit className="h-4 w-4" /></Button>
-                      <Button variant="destructive" size="sm" onClick={() => { if (window.confirm('هل أنت متأكد؟')) deleteMutation.mutate(offer.id); }} disabled={deleteMutation.isPending}><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-      </main>
-
+      {/* Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) resetForm(); }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{editingOffer ? 'تعديل العرض' : 'إضافة عرض منتج جديد'}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editingOffer ? 'تعديل العرض' : 'إضافة عرض منتج جديد'}</DialogTitle>
+          </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2"><Label>اسم المنتج *</Label><Input value={formData.title_ar} onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })} placeholder="مثال: ساعة ذكية" /></div>
-            <div className="space-y-2"><Label>وصف المنتج</Label><Textarea value={formData.description_ar} onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })} placeholder="وصف مختصر..." /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2"><Label>سعر المنتج (دينار) *</Label><Input type="number" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} placeholder="25000" /></div>
-              <div className="space-y-2"><Label>عدد التذاكر الهدية *</Label><Input type="number" min="1" value={formData.gift_tickets} onChange={(e) => setFormData({ ...formData, gift_tickets: e.target.value })} placeholder="1" /></div>
+            <div className="admin-form-group">
+              <Label className="admin-form-label">اسم المنتج *</Label>
+              <Input 
+                value={formData.title_ar} 
+                onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })} 
+                placeholder="مثال: ساعة ذكية" 
+                className="admin-input"
+              />
             </div>
-            <div className="space-y-2"><Label>الكمية المتاحة (اتركه فارغ لغير محدود)</Label><Input type="number" value={formData.stock_quantity} onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })} placeholder="غير محدود" /></div>
-            <div className="space-y-2">
-              <Label>حالة العرض</Label>
+            
+            <div className="admin-form-group">
+              <Label className="admin-form-label">وصف المنتج</Label>
+              <Textarea 
+                value={formData.description_ar} 
+                onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })} 
+                placeholder="وصف مختصر..." 
+                className="admin-textarea"
+              />
+            </div>
+            
+            <div className="admin-form-row-2">
+              <div className="admin-form-group">
+                <Label className="admin-form-label">سعر المنتج (دينار) *</Label>
+                <Input 
+                  type="number" 
+                  value={formData.price} 
+                  onChange={(e) => setFormData({ ...formData, price: e.target.value })} 
+                  placeholder="25000" 
+                  className="admin-input"
+                />
+              </div>
+              <div className="admin-form-group">
+                <Label className="admin-form-label">عدد التذاكر الهدية *</Label>
+                <Input 
+                  type="number" 
+                  min="1" 
+                  value={formData.gift_tickets} 
+                  onChange={(e) => setFormData({ ...formData, gift_tickets: e.target.value })} 
+                  placeholder="1" 
+                  className="admin-input"
+                />
+              </div>
+            </div>
+            
+            <div className="admin-form-group">
+              <Label className="admin-form-label">الكمية المتاحة</Label>
+              <Input 
+                type="number" 
+                value={formData.stock_quantity} 
+                onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })} 
+                placeholder="غير محدود" 
+                className="admin-input"
+              />
+              <p className="admin-form-hint">اتركه فارغ لكمية غير محدودة</p>
+            </div>
+            
+            <div className="admin-form-group">
+              <Label className="admin-form-label">حالة العرض</Label>
               <Select value={formData.status} onValueChange={(v) => setFormData({ ...formData, status: v as any })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="admin-select">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="draft">مسودة</SelectItem>
                   <SelectItem value="active">نشط</SelectItem>
@@ -315,27 +392,54 @@ export default function AdminProductOffers() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-2">
-              <Label>صور المنتج</Label>
+            
+            <div className="admin-form-group">
+              <Label className="admin-form-label">صور المنتج</Label>
               <div className="relative">
-                <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="absolute inset-0 opacity-0 cursor-pointer" disabled={uploadingImage} />
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  multiple 
+                  onChange={handleImageUpload} 
+                  className="absolute inset-0 opacity-0 cursor-pointer" 
+                  disabled={uploadingImage} 
+                />
                 <Button type="button" variant="outline" className="w-full gap-2" disabled={uploadingImage}>
-                  {uploadingImage ? <><Loader2 className="h-4 w-4 animate-spin" />جاري الرفع...</> : <><Upload className="h-4 w-4" />اختر صور</>}
+                  {uploadingImage ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      جاري الرفع...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      اختر صور
+                    </>
+                  )}
                 </Button>
               </div>
               {formData.images.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
+                <div className="flex flex-wrap gap-2 mt-3">
                   {formData.images.map((url, index) => (
-                    <div key={index} className="relative w-20 h-20 group">
+                    <div key={index} className="relative w-16 h-16 group">
                       <img src={url} alt={`صورة ${index + 1}`} className="w-full h-full object-cover rounded-lg border" />
-                      <Button type="button" variant="destructive" size="icon" className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => removeImage(index)}><X className="h-3 w-3" /></Button>
+                      <Button 
+                        type="button" 
+                        variant="destructive" 
+                        size="icon" 
+                        className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" 
+                        onClick={() => removeImage(index)}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+            
             <div className="flex gap-2 pt-4">
-              <Button className="flex-1" onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
+              <Button className="admin-btn-primary flex-1" onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending}>
                 {(createMutation.isPending || updateMutation.isPending) && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                 {editingOffer ? 'حفظ التعديلات' : 'إنشاء العرض'}
               </Button>
@@ -344,6 +448,6 @@ export default function AdminProductOffers() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </AdminLayout>
   );
 }

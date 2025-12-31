@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Send, Bell } from 'lucide-react';
+import { Loader2, Send, Bell, Type, Palette } from 'lucide-react';
 import { toast } from 'sonner';
+import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminLoading } from '@/components/admin/AdminLayout';
 
 const AdminNotifications = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -81,169 +81,159 @@ const AdminNotifications = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </div>
+      <AdminLayout title="إدارة الإشعارات" icon={<Bell className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
-      {/* Decorative frame - Full screen */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-0 opacity-20"
-        style={{
-          backgroundImage: 'url(/images/decorative-frame-new.webp)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      />
-      
-      <main className="container mx-auto px-4 py-8 max-w-4xl relative z-10">
-        <div className="mb-8">
-          <h1 className="text-4xl font-black text-primary mb-2 flex items-center gap-3">
-            <Bell className="h-8 w-8" />
-            إدارة الإشعارات
-          </h1>
-          <p className="text-muted-foreground">إرسال إشعارات عامة لجميع المستخدمين</p>
-        </div>
+    <AdminLayout
+      title="إدارة الإشعارات"
+      description="إرسال إشعارات عامة لجميع المستخدمين"
+      icon={<Bell className="h-5 w-5" />}
+      maxWidth="2xl"
+    >
+      <AdminCard>
+        <AdminCardHeader 
+          title="إرسال إشعار عام" 
+          icon={<Send className="h-5 w-5" />}
+          description="سيتم إرسال هذا الإشعار لجميع المستخدمين المسجلين"
+        />
+        <AdminCardContent>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="admin-form-group">
+              <Label className="admin-form-label">عنوان الإشعار</Label>
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="مثال: عرض خاص"
+                className="admin-input"
+                required
+              />
+            </div>
 
-        <Card className="glass-effect border-border/50">
-          <CardHeader>
-            <CardTitle>إرسال إشعار عام</CardTitle>
-            <CardDescription>
-              سيتم إرسال هذا الإشعار لجميع المستخدمين المسجلين في النظام
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="title">عنوان الإشعار</Label>
-                <Input
-                  id="title"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="مثال: عرض خاص"
-                  required
-                />
-              </div>
+            <div className="admin-form-group">
+              <Label className="admin-form-label">نص الإشعار</Label>
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="مثال: خصم 20% على جميع المنتجات"
+                className="admin-textarea"
+                rows={4}
+                required
+              />
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="message">نص الإشعار</Label>
-                <Textarea
-                  id="message"
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="مثال: خصم 20% على جميع المنتجات"
-                  rows={4}
-                  required
-                />
-              </div>
+            <div className="admin-form-group">
+              <Label className="admin-form-label">نوع الإشعار</Label>
+              <Select value={type} onValueChange={setType}>
+                <SelectTrigger className="admin-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="info">معلومات</SelectItem>
+                  <SelectItem value="success">نجاح</SelectItem>
+                  <SelectItem value="warning">تحذير</SelectItem>
+                  <SelectItem value="error">خطأ</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="type">نوع الإشعار</Label>
-                <Select value={type} onValueChange={setType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="info">معلومات</SelectItem>
-                    <SelectItem value="success">نجاح</SelectItem>
-                    <SelectItem value="warning">تحذير</SelectItem>
-                    <SelectItem value="error">خطأ</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="admin-divider" />
 
-              <div className="space-y-2">
-                <Label htmlFor="fontFamily">نوع الخط</Label>
-                <Select value={fontFamily} onValueChange={setFontFamily}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Cairo">Cairo (القاهرة)</SelectItem>
-                    <SelectItem value="Tajawal">Tajawal (تجوال)</SelectItem>
-                    <SelectItem value="Almarai">Almarai (المراعي)</SelectItem>
-                    <SelectItem value="Amiri">Amiri (أميري)</SelectItem>
-                    <SelectItem value="Scheherazade New">Scheherazade New</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="admin-form-group">
+              <Label className="admin-form-label flex items-center gap-2">
+                <Type className="h-4 w-4 text-muted-foreground" />
+                نوع الخط
+              </Label>
+              <Select value={fontFamily} onValueChange={setFontFamily}>
+                <SelectTrigger className="admin-select">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Cairo">Cairo (القاهرة)</SelectItem>
+                  <SelectItem value="Tajawal">Tajawal (تجوال)</SelectItem>
+                  <SelectItem value="Almarai">Almarai (المراعي)</SelectItem>
+                  <SelectItem value="Amiri">Amiri (أميري)</SelectItem>
+                  <SelectItem value="Scheherazade New">Scheherazade New</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="textColor">لون النص</Label>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      id="textColor"
-                      type="color"
-                      value={textColor}
-                      onChange={(e) => setTextColor(e.target.value)}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      type="text"
-                      value={textColor}
-                      onChange={(e) => setTextColor(e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="backgroundColor">لون الخلفية</Label>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      id="backgroundColor"
-                      type="color"
-                      value={backgroundColor}
-                      onChange={(e) => setBackgroundColor(e.target.value)}
-                      className="w-16 h-10"
-                    />
-                    <Input
-                      type="text"
-                      value={backgroundColor}
-                      onChange={(e) => setBackgroundColor(e.target.value)}
-                      className="flex-1"
-                    />
-                  </div>
+            <div className="admin-form-row-2">
+              <div className="admin-form-group">
+                <Label className="admin-form-label flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-muted-foreground" />
+                  لون النص
+                </Label>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="color"
+                    value={textColor}
+                    onChange={(e) => setTextColor(e.target.value)}
+                    className="w-14 h-10 p-1 rounded-lg cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    value={textColor}
+                    onChange={(e) => setTextColor(e.target.value)}
+                    className="admin-input flex-1 font-mono text-sm"
+                  />
                 </div>
               </div>
 
-              {/* Preview */}
-              <div className="space-y-2">
-                <Label>معاينة الإشعار</Label>
-                <div 
-                  className="p-4 rounded-lg border"
-                  style={{
-                    fontFamily: fontFamily,
-                    color: textColor,
-                    backgroundColor: backgroundColor,
-                  }}
-                >
-                  <h3 className="font-bold mb-1">{title || 'عنوان الإشعار'}</h3>
-                  <p className="text-sm">{message || 'نص الإشعار سيظهر هنا'}</p>
+              <div className="admin-form-group">
+                <Label className="admin-form-label flex items-center gap-2">
+                  <Palette className="h-4 w-4 text-muted-foreground" />
+                  لون الخلفية
+                </Label>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    type="color"
+                    value={backgroundColor}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
+                    className="w-14 h-10 p-1 rounded-lg cursor-pointer"
+                  />
+                  <Input
+                    type="text"
+                    value={backgroundColor}
+                    onChange={(e) => setBackgroundColor(e.target.value)}
+                    className="admin-input flex-1 font-mono text-sm"
+                  />
                 </div>
               </div>
+            </div>
 
-              <Button
-                type="submit"
-                className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                disabled={sendNotification.isPending}
+            {/* Preview */}
+            <div className="admin-form-group">
+              <Label className="admin-form-label">معاينة الإشعار</Label>
+              <div 
+                className="p-4 rounded-xl border border-border/30"
+                style={{
+                  fontFamily: fontFamily,
+                  color: textColor,
+                  backgroundColor: backgroundColor,
+                }}
               >
-                {sendNotification.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                <Send className="ml-2 h-4 w-4" />
-                إرسال الإشعار
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </main>
-    </div>
+                <h3 className="font-bold mb-1">{title || 'عنوان الإشعار'}</h3>
+                <p className="text-sm opacity-90">{message || 'نص الإشعار سيظهر هنا'}</p>
+              </div>
+            </div>
+
+            <Button
+              type="submit"
+              className="admin-btn-primary w-full gap-2"
+              disabled={sendNotification.isPending}
+            >
+              {sendNotification.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              <Send className="h-4 w-4" />
+              إرسال الإشعار
+            </Button>
+          </form>
+        </AdminCardContent>
+      </AdminCard>
+    </AdminLayout>
   );
 };
 
