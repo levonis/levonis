@@ -485,48 +485,49 @@ const ProductDetail = () => {
               <div className="space-y-4">
                 {/* Pre-Order Custom Shipping Options */}
                 {product.has_pre_order && Array.isArray(product.pre_order_shipping_options) && product.pre_order_shipping_options.length > 0 && (
-                  <div className="p-4 rounded-xl bg-card/50 border border-border/30">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <Truck className="h-4 w-4 text-primary" />
+                  <div className="p-3 rounded-xl bg-card/50 border border-border/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Truck className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div>
-                        <Label className="text-sm font-bold block">نوع الشحن</Label>
-                        <span className="text-[10px] text-muted-foreground">اختر طريقة الشحن المناسبة</span>
+                        <Label className="text-xs font-bold block">نوع الشحن</Label>
+                        <span className="text-[9px] text-muted-foreground">اختر طريقة الشحن</span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="space-y-1.5">
                       {product.pre_order_shipping_options.map((option: any, index: number) => (
                         <button
                           key={index}
                           onClick={() => setSelectedShippingOption(index)}
-                          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                          className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${
                             selectedShippingOption === index
-                              ? 'border-primary bg-primary/5 shadow-md'
-                              : 'border-border/50 hover:border-primary/30 bg-background/50 hover:bg-background/80'
+                              ? 'border-primary bg-primary/10 shadow-sm'
+                              : 'border-border/40 hover:border-primary/40 bg-background/30'
                           }`}
                         >
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
                             selectedShippingOption === index ? 'border-primary bg-primary' : 'border-muted-foreground/30'
                           }`}>
-                            {selectedShippingOption === index && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                            {selectedShippingOption === index && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
                           </div>
-                          <div className="flex-1 text-right">
-                            <span className="font-bold text-sm block">{option.name_ar}</span>
-                            {option.description && (
-                              <span className="text-xs text-muted-foreground block mt-0.5">{option.description}</span>
+                          <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
+                            <div className="min-w-0">
+                              <span className="font-medium text-xs block truncate">{option.name_ar}</span>
+                              {option.description && (
+                                <span className="text-[9px] text-muted-foreground block truncate">{option.description}</span>
+                              )}
+                            </div>
+                            {option.price_adjustment > 0 ? (
+                              <span className="text-[10px] font-bold text-primary shrink-0">
+                                +{formatPrice(option.price_adjustment)} {currency}
+                              </span>
+                            ) : (
+                              <Badge variant="outline" className="text-[8px] shrink-0 text-emerald-600 border-emerald-500/30 px-1 py-0 h-4">
+                                مجاني
+                              </Badge>
                             )}
                           </div>
-                          {option.price_adjustment > 0 && (
-                            <Badge variant="secondary" className="text-xs shrink-0">
-                              +{formatPrice(option.price_adjustment)} {currency}
-                            </Badge>
-                          )}
-                          {option.price_adjustment === 0 && (
-                            <Badge variant="outline" className="text-xs shrink-0 text-emerald-600 border-emerald-500/30">
-                              مجاني
-                            </Badge>
-                          )}
                         </button>
                       ))}
                     </div>
@@ -535,61 +536,65 @@ const ProductDetail = () => {
 
                 {/* Pre-Order Shipping Options (Legacy) */}
                 {product.has_pre_order && (!Array.isArray(product.pre_order_shipping_options) || product.pre_order_shipping_options.length === 0) && (product.pre_order_free_shipping_price || product.pre_order_fast_shipping_price) && (
-                  <div className="p-4 rounded-xl bg-card/50 border border-border/30">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                        <Truck className="h-4 w-4 text-primary" />
+                  <div className="p-3 rounded-xl bg-card/50 border border-border/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <Truck className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div>
-                        <Label className="text-sm font-bold block">نوع الشحن</Label>
-                        <span className="text-[10px] text-muted-foreground">اختر طريقة الشحن المناسبة</span>
+                        <Label className="text-xs font-bold block">نوع الشحن</Label>
+                        <span className="text-[9px] text-muted-foreground">اختر طريقة الشحن</span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="space-y-1.5">
                       {product.pre_order_free_shipping_price && (
                         <button
                           onClick={() => setSelectedShippingOption(0)}
-                          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                          className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${
                             selectedShippingOption === 0
-                              ? 'border-primary bg-primary/5 shadow-md'
-                              : 'border-border/50 hover:border-primary/30 bg-background/50 hover:bg-background/80'
+                              ? 'border-primary bg-primary/10 shadow-sm'
+                              : 'border-border/40 hover:border-primary/40 bg-background/30'
                           }`}
                         >
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
                             selectedShippingOption === 0 ? 'border-primary bg-primary' : 'border-muted-foreground/30'
                           }`}>
-                            {selectedShippingOption === 0 && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                            {selectedShippingOption === 0 && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
                           </div>
-                          <div className="flex-1 text-right">
-                            <span className="font-bold text-sm block">شحن بحري</span>
-                            <span className="text-xs text-muted-foreground">45 يوم تقريباً</span>
+                          <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
+                            <div className="min-w-0">
+                              <span className="font-medium text-xs block">شحن بحري</span>
+                              <span className="text-[9px] text-muted-foreground">45 يوم تقريباً</span>
+                            </div>
+                            <Badge variant="outline" className="text-[8px] shrink-0 text-primary border-primary/30 px-1 py-0 h-4">
+                              مجاني
+                            </Badge>
                           </div>
-                          <Badge variant="outline" className="text-xs shrink-0 text-primary border-primary/30">
-                            مجاني
-                          </Badge>
                         </button>
                       )}
                       {product.pre_order_fast_shipping_price && (
                         <button
                           onClick={() => setSelectedShippingOption(1)}
-                          className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                          className={`w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${
                             selectedShippingOption === 1
-                              ? 'border-primary bg-primary/5 shadow-md'
-                              : 'border-border/50 hover:border-primary/30 bg-background/50 hover:bg-background/80'
+                              ? 'border-primary bg-primary/10 shadow-sm'
+                              : 'border-border/40 hover:border-primary/40 bg-background/30'
                           }`}
                         >
-                          <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                          <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
                             selectedShippingOption === 1 ? 'border-primary bg-primary' : 'border-muted-foreground/30'
                           }`}>
-                            {selectedShippingOption === 1 && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                            {selectedShippingOption === 1 && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
                           </div>
-                          <div className="flex-1 text-right">
-                            <span className="font-bold text-sm block">شحن جوي سريع</span>
-                            <span className="text-xs text-muted-foreground">15 يوم تقريباً</span>
+                          <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
+                            <div className="min-w-0">
+                              <span className="font-medium text-xs block">شحن جوي سريع</span>
+                              <span className="text-[9px] text-muted-foreground">15 يوم تقريباً</span>
+                            </div>
+                            <span className="text-[10px] font-bold text-primary shrink-0">
+                              +{formatPrice(Number(product.pre_order_fast_shipping_price))} {currency}
+                            </span>
                           </div>
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            +{formatPrice(Number(product.pre_order_fast_shipping_price))} {currency}
-                          </Badge>
                         </button>
                       )}
                     </div>
@@ -598,17 +603,17 @@ const ProductDetail = () => {
 
                 {/* Product Options - Enhanced Design */}
                 {productOptions && productOptions.length > 0 && (
-                  <div className="p-4 rounded-xl bg-card/50 border border-border/30">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-9 h-9 rounded-xl bg-secondary flex items-center justify-center">
-                        <Settings className="h-4 w-4 text-secondary-foreground" />
+                  <div className="p-3 rounded-xl bg-card/50 border border-border/30">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-lg bg-secondary flex items-center justify-center">
+                        <Settings className="h-3.5 w-3.5 text-secondary-foreground" />
                       </div>
                       <div>
-                        <Label className="text-sm font-bold block">الخيارات المتاحة</Label>
-                        <span className="text-[10px] text-muted-foreground">اختر الخيار المناسب لك</span>
+                        <Label className="text-xs font-bold block">الخيارات المتاحة</Label>
+                        <span className="text-[9px] text-muted-foreground">اختر الخيار المناسب</span>
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 gap-2">
+                    <div className="space-y-1.5 max-h-[280px] overflow-y-auto scrollbar-thin">
                       {productOptions.map((option: any) => {
                         const isOptionAvailable = product.has_in_stock 
                           ? (option.available_for_direct_sale ?? true)
@@ -631,58 +636,42 @@ const ProductDetail = () => {
                               }
                             }}
                             disabled={isOptionDisabled}
-                            className={`relative flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                            className={`relative w-full flex items-center gap-2 p-2 rounded-lg border transition-all ${
                               selectedOption === option.id
-                                ? 'border-primary bg-primary/5 shadow-md'
-                                : 'border-border/50 hover:border-primary/30 bg-background/50 hover:bg-background/80'
-                            } ${isOptionDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                ? 'border-primary bg-primary/10 shadow-sm'
+                                : 'border-border/40 hover:border-primary/40 bg-background/30'
+                            } ${isOptionDisabled ? 'opacity-40 cursor-not-allowed' : ''}`}
                           >
-                            {/* Option Image */}
+                            {/* Selection Indicator */}
+                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                              selectedOption === option.id ? 'border-primary bg-primary' : 'border-muted-foreground/30'
+                            }`}>
+                              {selectedOption === option.id && <Check className="h-2.5 w-2.5 text-primary-foreground" />}
+                            </div>
+                            
+                            {/* Option Image - Compact */}
                             {option.image_url && (
-                              <div className="w-12 h-12 rounded-lg overflow-hidden border border-border/30 shrink-0">
+                              <div className="w-8 h-8 rounded-md overflow-hidden border border-border/30 shrink-0">
                                 <img src={option.image_url} alt={option.name_ar} className="w-full h-full object-cover" />
                               </div>
                             )}
                             
-                            {/* Selection Indicator */}
-                            <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                              selectedOption === option.id ? 'border-primary bg-primary' : 'border-muted-foreground/30'
-                            }`}>
-                              {selectedOption === option.id && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
-                            </div>
-                            
-                            {/* Option Details */}
-                            <div className="flex-1 min-w-0 text-right">
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="font-bold text-sm truncate">{option.name_ar}</span>
-                                {/* Price Adjustment - inline with name */}
+                            {/* Option Details - Inline */}
+                            <div className="flex-1 min-w-0 flex items-center justify-between gap-1">
+                              <span className="font-medium text-xs truncate">{option.name_ar}</span>
+                              <div className="flex items-center gap-1 shrink-0">
                                 {option.price_adjustment !== 0 && (
-                                  <Badge variant="secondary" className="text-[10px] shrink-0 px-1.5 py-0">
+                                  <span className={`text-[10px] font-bold ${option.price_adjustment > 0 ? 'text-primary' : 'text-green-600'}`}>
                                     {option.price_adjustment > 0 ? '+' : ''}{formatPrice(option.price_adjustment)}
-                                  </Badge>
+                                  </span>
                                 )}
-                              </div>
-                              {/* Availability Badge */}
-                              <div className="flex items-center gap-1 mt-1">
-                                {option.available_for_direct_sale && (
-                                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-primary border-primary/30">
-                                    مباشر
-                                  </Badge>
-                                )}
-                                {option.available_for_pre_order && (
-                                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-accent-foreground border-accent/30">
-                                    طلب مسبق
+                                {isOptionDisabled && (
+                                  <Badge variant="destructive" className="text-[8px] px-1 py-0 h-4">
+                                    غير متوفر
                                   </Badge>
                                 )}
                               </div>
                             </div>
-                            
-                            {/* Unavailable Overlay */}
-                            {isOptionDisabled && (
-                              <Badge variant="destructive" className="absolute top-2 left-2 text-[10px] px-2 py-0.5">
-                                غير متوفر
-                              </Badge>
-                            )}
                           </button>
                         );
                       })}
