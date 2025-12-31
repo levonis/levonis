@@ -1,10 +1,10 @@
-// App component - main application entry point - v3
+// App component - main application entry point - v4
 import { Suspense, lazy, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import { useDailyLogin } from "@/hooks/useDailyLogin";
@@ -12,6 +12,7 @@ import Header from "@/components/Header";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import DecorativeFrame from "@/components/DecorativeFrame";
 import AdminRoute from "@/components/AdminRoute";
+import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import { Loader2 } from "lucide-react";
 
 // Eager load Home page for best initial load
@@ -96,26 +97,32 @@ function AppContent() {
             <Route path="/order/:orderId" element={<OrderDetail />} />
             <Route path="/my-orders/:orderId/confirm" element={<ConfirmDelivery />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-            <Route path="/admin/notifications" element={<AdminRoute><AdminNotifications /></AdminRoute>} />
-            <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
-            <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
-            <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
-            <Route path="/admin/points-settings" element={<AdminRoute><AdminPointsSettings /></AdminRoute>} />
-            <Route path="/admin/chats" element={<AdminRoute><AdminChats /></AdminRoute>} />
-            <Route path="/admin/loyalty-levels" element={<AdminRoute><AdminLoyaltyLevels /></AdminRoute>} />
-            <Route path="/admin/default-settings" element={<AdminRoute><AdminDefaultSettings /></AdminRoute>} />
-            <Route path="/admin/wallet" element={<AdminRoute><AdminWallet /></AdminRoute>} />
-            <Route path="/admin/wallet-settings" element={<AdminRoute><AdminWalletSettings /></AdminRoute>} />
-            <Route path="/admin/invoice-templates" element={<AdminRoute><AdminInvoiceTemplates /></AdminRoute>} />
-            <Route path="/admin/saved-invoices" element={<AdminRoute><AdminSavedInvoices /></AdminRoute>} />
-            <Route path="/admin/financials" element={<AdminRoute><AdminFinancials /></AdminRoute>} />
-            <Route path="/admin/partial-payment-settings" element={<AdminRoute><AdminPartialPaymentSettings /></AdminRoute>} />
             
-            <Route path="/admin/competitions" element={<AdminRoute><AdminCompetitions /></AdminRoute>} />
-            <Route path="/admin/product-offers" element={<AdminRoute><AdminProductOffers /></AdminRoute>} />
-            <Route path="/admin/ticket-bundles" element={<AdminRoute><AdminTicketBundles /></AdminRoute>} />
-            <Route path="/admin/marketplace" element={<AdminRoute><AdminMarketplace /></AdminRoute>} />
+            {/* Secure Admin Routes - Using obfuscated path */}
+            <Route path={ADMIN_BASE_PATH} element={<AdminRoute><Admin /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/notifications`} element={<AdminRoute><AdminNotifications /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/announcements`} element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/coupons`} element={<AdminRoute><AdminCoupons /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/orders`} element={<AdminRoute><AdminOrders /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/points-settings`} element={<AdminRoute><AdminPointsSettings /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/chats`} element={<AdminRoute><AdminChats /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/loyalty-levels`} element={<AdminRoute><AdminLoyaltyLevels /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/default-settings`} element={<AdminRoute><AdminDefaultSettings /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/wallet`} element={<AdminRoute><AdminWallet /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/wallet-settings`} element={<AdminRoute><AdminWalletSettings /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/invoice-templates`} element={<AdminRoute><AdminInvoiceTemplates /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/saved-invoices`} element={<AdminRoute><AdminSavedInvoices /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/financials`} element={<AdminRoute><AdminFinancials /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/partial-payment-settings`} element={<AdminRoute><AdminPartialPaymentSettings /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/competitions`} element={<AdminRoute><AdminCompetitions /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/product-offers`} element={<AdminRoute><AdminProductOffers /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/ticket-bundles`} element={<AdminRoute><AdminTicketBundles /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/marketplace`} element={<AdminRoute><AdminMarketplace /></AdminRoute>} />
+            
+            {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
+            <Route path="/admin/*" element={<NotFound />} />
+            <Route path="/admin" element={<NotFound />} />
+            
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/marketplace/:listingId" element={<Marketplace />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />

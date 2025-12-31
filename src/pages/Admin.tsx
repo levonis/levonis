@@ -18,6 +18,7 @@ import { z } from 'zod';
 import AdminMainSections from './AdminMainSections';
 import AdminCustomRequests from './AdminCustomRequests';
 import { formatPrice } from '@/lib/utils';
+import { ADMIN_ROUTES } from '@/config/adminConfig';
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -1245,7 +1246,7 @@ const Admin = () => {
 
           <div 
             className="admin-stat-card text-center cursor-pointer relative"
-            onClick={() => navigate('/admin/orders?status=pending')}
+            onClick={() => navigate(ADMIN_ROUTES.orders + '?status=pending')}
           >
             <div className="admin-stat-value text-amber-500">{stats?.pendingOrders || 0}</div>
             <div className="admin-stat-label">طلبات معلقة</div>
@@ -1261,7 +1262,7 @@ const Admin = () => {
 
           <div 
             className="admin-stat-card text-center cursor-pointer"
-            onClick={() => navigate('/admin/orders')}
+            onClick={() => navigate(ADMIN_ROUTES.orders)}
           >
             <div className="flex justify-center mb-2">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -1300,23 +1301,23 @@ const Admin = () => {
           <div className="admin-card-content">
             <div className="admin-grid-4">
               {[
-                { icon: Bell, title: 'إدارة الإشعارات', desc: 'إرسال إشعارات للمستخدمين', path: '/admin/notifications' },
-                { icon: Megaphone, title: 'الشريط الإخباري', desc: 'إدارة الإعلانات المتحركة', path: '/admin/announcements' },
-                { icon: Ticket, title: 'إدارة الكوبونات', desc: 'إنشاء وإدارة الخصومات', path: '/admin/coupons' },
-                { icon: Package, title: 'إدارة الطلبات', desc: 'تتبع وإدارة الطلبات', path: '/admin/orders' },
+                { icon: Bell, title: 'إدارة الإشعارات', desc: 'إرسال إشعارات للمستخدمين', path: ADMIN_ROUTES.notifications },
+                { icon: Megaphone, title: 'الشريط الإخباري', desc: 'إدارة الإعلانات المتحركة', path: ADMIN_ROUTES.announcements },
+                { icon: Ticket, title: 'إدارة الكوبونات', desc: 'إنشاء وإدارة الخصومات', path: ADMIN_ROUTES.coupons },
+                { icon: Package, title: 'إدارة الطلبات', desc: 'تتبع وإدارة الطلبات', path: ADMIN_ROUTES.orders },
                 { icon: FileText, title: 'الطلبات المخصصة', desc: 'مراجعة طلبات العملاء', action: () => setActiveTab('custom-requests'), badge: pendingRequestsCount },
-                { icon: Zap, title: 'الإعدادات الافتراضية', desc: 'تخصيص القيم الافتراضية', path: '/admin/default-settings' },
-                { icon: Coins, title: 'إعدادات النقاط', desc: 'إدارة نظام المكافآت', path: '/admin/points-settings' },
-                { icon: Award, title: 'مستويات الولاء', desc: 'إدارة المستويات والمزايا', path: '/admin/loyalty-levels' },
-                { icon: Wallet, title: 'إدارة المحفظة', desc: 'تعبئة وسحب الأرصدة', path: '/admin/wallet' },
-                { icon: MessageCircle, title: 'محادثات العملاء', desc: 'الدعم والمساعدة', path: '/admin/chats' },
-                { icon: Receipt, title: 'قوالب الفواتير', desc: 'تخصيص تصميم الفاتورة', path: '/admin/invoice-templates' },
-                { icon: FileText, title: 'الفواتير المحفوظة', desc: 'مراجعة وإدارة الفواتير', path: '/admin/saved-invoices' },
-                { icon: TrendingUp, title: 'التحليلات المالية', desc: 'الإيرادات والتكاليف والأرباح', path: '/admin/financials' },
-                { icon: Percent, title: 'رسوم الدفع الجزئي', desc: 'إعداد رسوم دفع ربع المبلغ', path: '/admin/partial-payment-settings' },
+                { icon: Zap, title: 'الإعدادات الافتراضية', desc: 'تخصيص القيم الافتراضية', path: ADMIN_ROUTES.defaultSettings },
+                { icon: Coins, title: 'إعدادات النقاط', desc: 'إدارة نظام المكافآت', path: ADMIN_ROUTES.pointsSettings },
+                { icon: Award, title: 'مستويات الولاء', desc: 'إدارة المستويات والمزايا', path: ADMIN_ROUTES.loyaltyLevels },
+                { icon: Wallet, title: 'إدارة المحفظة', desc: 'تعبئة وسحب الأرصدة', path: ADMIN_ROUTES.wallet },
+                { icon: MessageCircle, title: 'محادثات العملاء', desc: 'الدعم والمساعدة', path: ADMIN_ROUTES.chats },
+                { icon: Receipt, title: 'قوالب الفواتير', desc: 'تخصيص تصميم الفاتورة', path: ADMIN_ROUTES.invoiceTemplates },
+                { icon: FileText, title: 'الفواتير المحفوظة', desc: 'مراجعة وإدارة الفواتير', path: ADMIN_ROUTES.savedInvoices },
+                { icon: TrendingUp, title: 'التحليلات المالية', desc: 'الإيرادات والتكاليف والأرباح', path: ADMIN_ROUTES.financials },
+                { icon: Percent, title: 'رسوم الدفع الجزئي', desc: 'إعداد رسوم دفع ربع المبلغ', path: ADMIN_ROUTES.partialPaymentSettings },
                 
-                { icon: Trophy, title: 'المسابقات', desc: 'إدارة المسابقات والسحوبات', path: '/admin/competitions' },
-                { icon: Package, title: 'سوق المستعمل', desc: 'إدارة منتجات البائعين', path: '/admin/marketplace' },
+                { icon: Trophy, title: 'المسابقات', desc: 'إدارة المسابقات والسحوبات', path: ADMIN_ROUTES.competitions },
+                { icon: Package, title: 'سوق المستعمل', desc: 'إدارة منتجات البائعين', path: ADMIN_ROUTES.marketplace },
               ].map((item, idx) => (
                 <button
                   key={idx}

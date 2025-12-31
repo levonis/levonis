@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
+import { ADMIN_BASE_PATH } from '@/config/adminConfig';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -31,7 +32,7 @@ export default function AdminLayout({
   description,
   icon,
   actions,
-  backTo = '/admin',
+  backTo = ADMIN_BASE_PATH,
   maxWidth = '7xl',
 }: AdminLayoutProps) {
   const navigate = useNavigate();

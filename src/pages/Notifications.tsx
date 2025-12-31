@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Bell, Check, Info, AlertCircle, CheckCircle, XCircle, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
+import { ADMIN_ROUTES } from '@/config/adminConfig';
 
 const Notifications = () => {
   const { user, loading: authLoading } = useAuth();
@@ -313,7 +314,7 @@ const Notifications = () => {
                         const isOrder = text.includes('طلب') || text.includes('توصيل') || text.includes('شحن');
                         
                         if (isWallet) {
-                          navigate('/admin/wallet');
+                          navigate(ADMIN_ROUTES.wallet);
                         } else if (isCustom) {
                           navigate('/my-requests');
                         } else if (isCompetition) {
