@@ -291,6 +291,316 @@
   }
 }
 
+/* ================================
+   ADMIN DASHBOARD STYLES
+   ================================ */
+
+/* Admin page container */
+.admin-page {
+  @apply min-h-screen bg-background;
+}
+
+/* Admin header section */
+.admin-header {
+  @apply mb-8 space-y-2;
+}
+
+.admin-header h1 {
+  @apply text-3xl md:text-4xl font-black text-primary tracking-tight;
+}
+
+.admin-header p {
+  @apply text-sm md:text-base text-muted-foreground;
+}
+
+/* Admin Card enhancements */
+.admin-card {
+  @apply rounded-xl border border-border/50 bg-card shadow-md transition-all duration-200;
+}
+
+.admin-card:hover {
+  @apply shadow-lg border-primary/30;
+}
+
+.admin-card-header {
+  @apply p-5 pb-4 border-b border-border/30;
+}
+
+.admin-card-title {
+  @apply text-lg font-bold text-foreground flex items-center gap-2.5;
+}
+
+.admin-card-content {
+  @apply p-5;
+}
+
+/* Admin Stats Cards */
+.admin-stat-card {
+  @apply rounded-xl border border-border/50 bg-card p-5 transition-all duration-200 hover:shadow-lg hover:border-primary/30;
+}
+
+.admin-stat-value {
+  @apply text-3xl md:text-4xl font-black text-primary tabular-nums;
+}
+
+.admin-stat-label {
+  @apply text-xs md:text-sm text-muted-foreground font-medium mt-1;
+}
+
+/* Admin Quick Action Buttons */
+.admin-action-btn {
+  @apply relative flex flex-col items-center justify-center gap-2.5 p-6 rounded-xl border border-border/50 bg-card/50 transition-all duration-200;
+  @apply hover:bg-primary/5 hover:border-primary/40 hover:shadow-md;
+}
+
+.admin-action-btn .icon-wrapper {
+  @apply w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center transition-transform duration-200;
+}
+
+.admin-action-btn:hover .icon-wrapper {
+  @apply scale-110 bg-primary/20;
+}
+
+.admin-action-btn .icon-wrapper svg {
+  @apply h-6 w-6 text-primary;
+}
+
+.admin-action-btn .btn-title {
+  @apply text-sm font-semibold text-foreground text-center;
+}
+
+.admin-action-btn .btn-desc {
+  @apply text-xs text-muted-foreground text-center leading-relaxed;
+}
+
+/* Admin Table Styles */
+.admin-table-wrapper {
+  @apply rounded-xl border border-border/50 bg-card overflow-hidden;
+}
+
+.admin-table {
+  @apply w-full text-sm;
+}
+
+.admin-table thead {
+  @apply bg-muted/30;
+}
+
+.admin-table th {
+  @apply h-12 px-4 text-right font-semibold text-foreground/80 text-xs uppercase tracking-wide;
+}
+
+.admin-table td {
+  @apply px-4 py-3.5 align-middle border-t border-border/30;
+}
+
+.admin-table tr {
+  @apply transition-colors duration-150;
+}
+
+.admin-table tbody tr:hover {
+  @apply bg-muted/20;
+}
+
+/* Admin Form Styles */
+.admin-form-section {
+  @apply space-y-5;
+}
+
+.admin-form-group {
+  @apply space-y-2;
+}
+
+.admin-form-label {
+  @apply text-sm font-semibold text-foreground block;
+}
+
+.admin-form-hint {
+  @apply text-xs text-muted-foreground mt-1.5;
+}
+
+.admin-form-row {
+  @apply grid gap-4;
+}
+
+.admin-form-row-2 {
+  @apply grid md:grid-cols-2 gap-4;
+}
+
+.admin-form-row-3 {
+  @apply grid md:grid-cols-3 gap-4;
+}
+
+/* Admin Input enhancements */
+.admin-input {
+  @apply h-11 rounded-lg border-border/50 bg-background/50 px-4 text-sm transition-all duration-150;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
+}
+
+.admin-select {
+  @apply h-11 rounded-lg border-border/50 bg-background/50 px-4 text-sm transition-all duration-150;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
+}
+
+.admin-textarea {
+  @apply rounded-lg border-border/50 bg-background/50 px-4 py-3 text-sm transition-all duration-150;
+  @apply focus:border-primary focus:ring-2 focus:ring-primary/20;
+}
+
+/* Admin Section Divider */
+.admin-section-divider {
+  @apply border-t border-border/30 pt-5 mt-5;
+}
+
+.admin-section-title {
+  @apply text-base font-bold text-primary mb-4 flex items-center gap-2;
+}
+
+/* Admin Filter Bar */
+.admin-filters {
+  @apply grid gap-4 p-5 bg-muted/20 rounded-xl border border-border/30;
+}
+
+.admin-filter-group {
+  @apply space-y-2;
+}
+
+.admin-filter-label {
+  @apply text-xs font-medium text-muted-foreground uppercase tracking-wide;
+}
+
+/* Admin Status Badges */
+.admin-badge {
+  @apply inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold;
+}
+
+.admin-badge-success {
+  @apply bg-green-500/10 text-green-600 border border-green-500/20;
+}
+
+.admin-badge-warning {
+  @apply bg-amber-500/10 text-amber-600 border border-amber-500/20;
+}
+
+.admin-badge-danger {
+  @apply bg-red-500/10 text-red-600 border border-red-500/20;
+}
+
+.admin-badge-info {
+  @apply bg-blue-500/10 text-blue-600 border border-blue-500/20;
+}
+
+.admin-badge-muted {
+  @apply bg-muted text-muted-foreground border border-border/50;
+}
+
+/* Admin Buttons */
+.admin-btn-primary {
+  @apply h-11 px-6 rounded-lg font-semibold transition-all duration-200;
+  @apply bg-gradient-to-b from-primary to-accent text-primary-foreground shadow-md;
+  @apply hover:shadow-lg hover:opacity-90;
+}
+
+.admin-btn-secondary {
+  @apply h-11 px-6 rounded-lg font-medium transition-all duration-200;
+  @apply bg-muted/50 text-foreground border border-border/50;
+  @apply hover:bg-muted hover:border-border;
+}
+
+.admin-btn-danger {
+  @apply h-11 px-6 rounded-lg font-semibold transition-all duration-200;
+  @apply bg-destructive text-destructive-foreground;
+  @apply hover:bg-destructive/90;
+}
+
+.admin-btn-ghost {
+  @apply h-10 px-4 rounded-lg font-medium transition-all duration-200;
+  @apply text-foreground hover:bg-muted/50;
+}
+
+/* Admin Dialog Styles */
+.admin-dialog {
+  @apply rounded-2xl border-border/50 bg-card shadow-2xl;
+}
+
+.admin-dialog-header {
+  @apply p-6 pb-4 border-b border-border/30;
+}
+
+.admin-dialog-title {
+  @apply text-xl font-bold text-foreground;
+}
+
+.admin-dialog-content {
+  @apply p-6 space-y-5;
+}
+
+.admin-dialog-footer {
+  @apply p-6 pt-4 border-t border-border/30 flex justify-end gap-3;
+}
+
+/* Admin Empty State */
+.admin-empty-state {
+  @apply text-center py-12 text-muted-foreground;
+}
+
+.admin-empty-state-icon {
+  @apply mx-auto w-16 h-16 text-muted-foreground/30 mb-4;
+}
+
+.admin-empty-state-title {
+  @apply text-lg font-semibold text-foreground/80 mb-2;
+}
+
+.admin-empty-state-desc {
+  @apply text-sm text-muted-foreground;
+}
+
+/* Admin Loading State */
+.admin-loading {
+  @apply flex items-center justify-center py-16;
+}
+
+.admin-loading-spinner {
+  @apply h-8 w-8 animate-spin text-primary;
+}
+
+/* Admin Responsive Grid */
+.admin-grid-2 {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4;
+}
+
+.admin-grid-3 {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4;
+}
+
+.admin-grid-4 {
+  @apply grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4;
+}
+
+.admin-grid-5 {
+  @apply grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4;
+}
+
+/* Admin Navigation Tabs */
+.admin-tabs-list {
+  @apply flex flex-wrap gap-1 p-1 bg-muted/30 rounded-xl;
+}
+
+.admin-tab {
+  @apply px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200;
+  @apply text-muted-foreground hover:text-foreground hover:bg-muted/50;
+}
+
+.admin-tab[data-state="active"],
+.admin-tab.active {
+  @apply bg-card text-foreground shadow-sm;
+}
+
+/* ================================
+   END ADMIN STYLES
+   ================================ */
+
 /* Fixed dialog for admin forms */
 .fixed-dialog {
   position: fixed !important;

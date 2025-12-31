@@ -1204,320 +1204,150 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
-      {/* Decorative frame - Full screen */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-0 opacity-20"
-        style={{
-          backgroundImage: 'url(/images/decorative-frame-new.webp)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      />
-      
-      {/* Glow effect overlay */}
+    <div className="admin-page relative overflow-hidden">
+      {/* Subtle background decoration */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        <div className="absolute top-0 left-0 w-64 h-64 bg-ring/10 rounded-full blur-3xl animate-pulse-glow" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse-glow" style={{ animationDelay: '1s' }} />
-      </div>
-      
-      {/* Admin decorative accent */}
-      <div className="fixed top-20 left-20 w-32 h-32 pointer-events-none opacity-8 animate-float">
-        <div className="w-full h-full" style={{ 
-          background: 'var(--gradient-radial-gold)',
-          clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
-          filter: 'blur(20px)'
-        }} />
+        <div 
+          className="absolute inset-0 opacity-10"
+          style={{
+            backgroundImage: 'url(/images/decorative-frame-new.webp)',
+            backgroundSize: '100% 100%',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat'
+          }}
+        />
+        <div className="absolute top-0 left-0 w-64 h-64 bg-ring/8 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-64 h-64 bg-primary/8 rounded-full blur-3xl" />
       </div>
       
       <main className="container mx-auto px-4 py-8 pt-24 relative z-10">
-        <div className="mb-8">
-          <h1 className="text-4xl font-black text-primary mb-2">لوحة التحكم</h1>
-          <p className="text-muted-foreground">إدارة شاملة للمنتجات والأقسام والإعدادات</p>
+        {/* Admin Header */}
+        <div className="admin-header">
+          <h1>لوحة التحكم</h1>
+          <p>إدارة شاملة للمنتجات والأقسام والإعدادات</p>
         </div>
 
-        {/* Statistics Cards - Orders Focused */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <div className="text-4xl font-black text-primary">{stats?.totalProducts || 0}</div>
-                <div className="text-sm text-muted-foreground">إجمالي المنتجات</div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* Statistics Cards */}
+        <div className="admin-grid-5 mb-8">
+          <div className="admin-stat-card text-center">
+            <div className="admin-stat-value">{stats?.totalProducts || 0}</div>
+            <div className="admin-stat-label">إجمالي المنتجات</div>
+          </div>
 
-          <Card className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow">
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <div className="text-4xl font-black text-primary">{stats?.totalCategories || 0}</div>
-                <div className="text-sm text-muted-foreground">الأقسام</div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="admin-stat-card text-center">
+            <div className="admin-stat-value">{stats?.totalCategories || 0}</div>
+            <div className="admin-stat-label">الأقسام</div>
+          </div>
 
-          <Card 
-            className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative cursor-pointer hover:bg-primary/5"
-            role="button"
-            aria-label="عرض الطلبات المعلقة"
+          <div 
+            className="admin-stat-card text-center cursor-pointer relative"
             onClick={() => navigate('/admin/orders?status=pending')}
           >
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <div className="text-4xl font-black text-amber-500">{stats?.pendingOrders || 0}</div>
-                <div className="text-sm text-muted-foreground">طلبات معلقة</div>
-              </div>
-              {stats?.pendingOrders && stats.pendingOrders > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
-                >
-                  {stats.pendingOrders}
-                </Badge>
-              )}
-            </CardContent>
-          </Card>
+            <div className="admin-stat-value text-amber-500">{stats?.pendingOrders || 0}</div>
+            <div className="admin-stat-label">طلبات معلقة</div>
+            {stats?.pendingOrders && stats.pendingOrders > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
+              >
+                {stats.pendingOrders}
+              </Badge>
+            )}
+          </div>
 
-          <Card 
-            className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative cursor-pointer hover:bg-primary/5"
-            role="button"
-            aria-label="عرض جميع الطلبات"
+          <div 
+            className="admin-stat-card text-center cursor-pointer"
             onClick={() => navigate('/admin/orders')}
           >
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <Package className="h-8 w-8 text-primary mx-auto mb-1" />
-                <div className="text-sm font-semibold text-foreground">جميع الطلبات</div>
-                <div className="text-xs text-muted-foreground">تعديل وإدارة</div>
+            <div className="flex justify-center mb-2">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Package className="h-6 w-6 text-primary" />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <div className="text-sm font-semibold text-foreground">جميع الطلبات</div>
+            <div className="admin-stat-label">تعديل وإدارة</div>
+          </div>
 
-          <Card 
-            className="border-primary/20 shadow-lg hover:shadow-xl transition-shadow relative cursor-pointer hover:bg-primary/5"
-            role="button"
-            aria-label="عرض الطلبات الخاصة المعلقة"
+          <div 
+            className="admin-stat-card text-center cursor-pointer relative"
             onClick={() => setActiveTab('custom-requests')}
           >
-            <CardContent className="pt-6">
-              <div className="text-center space-y-2">
-                <div className="text-4xl font-black text-orange-500">{pendingRequestsCount || 0}</div>
-                <div className="text-sm text-muted-foreground">طلبات خاصة معلقة</div>
-              </div>
-              {pendingRequestsCount && pendingRequestsCount > 0 && (
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
-                >
-                  !
-                </Badge>
-              )}
-            </CardContent>
-          </Card>
+            <div className="admin-stat-value text-orange-500">{pendingRequestsCount || 0}</div>
+            <div className="admin-stat-label">طلبات خاصة معلقة</div>
+            {pendingRequestsCount && pendingRequestsCount > 0 && (
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
+              >
+                !
+              </Badge>
+            )}
+          </div>
         </div>
 
         {/* Quick Actions - Settings & Management */}
-        <Card className="mb-8 border-primary/20 shadow-lg">
-          <CardHeader className="border-b border-border/50">
-            <CardTitle className="text-xl flex items-center gap-2">
+        <div className="admin-card mb-8">
+          <div className="admin-card-header">
+            <div className="admin-card-title">
               <Bell className="h-5 w-5 text-primary" />
               الإعدادات والإدارة
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              <Button
-                onClick={() => navigate('/admin/notifications')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Bell className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">إدارة الإشعارات</span>
-                <span className="text-xs text-muted-foreground">إرسال إشعارات للمستخدمين</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/announcements')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Megaphone className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">الشريط الإخباري</span>
-                <span className="text-xs text-muted-foreground">إدارة الإعلانات المتحركة</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/coupons')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Ticket className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">إدارة الكوبونات</span>
-                <span className="text-xs text-muted-foreground">إنشاء وإدارة الخصومات</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/orders')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Package className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">إدارة الطلبات</span>
-                <span className="text-xs text-muted-foreground">تتبع وإدارة الطلبات</span>
-              </Button>
-              
-              <Button
-                onClick={() => setActiveTab('custom-requests')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col relative hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <FileText className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">الطلبات المخصصة</span>
-                <span className="text-xs text-muted-foreground">مراجعة طلبات العملاء</span>
-                {pendingRequestsCount && pendingRequestsCount > 0 && (
-                  <Badge 
-                    variant="destructive"
-                    className="absolute -top-2 -right-2 h-7 w-7 flex items-center justify-center p-0 text-xs rounded-full animate-pulse"
-                  >
-                    {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
-                  </Badge>
-                )}
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/default-settings')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Zap className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">الإعدادات الافتراضية</span>
-                <span className="text-xs text-muted-foreground">تخصيص القيم الافتراضية</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/points-settings')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Coins className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">إعدادات النقاط</span>
-                <span className="text-xs text-muted-foreground">إدارة نظام المكافآت</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/loyalty-levels')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Award className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">مستويات الولاء</span>
-                <span className="text-xs text-muted-foreground">إدارة المستويات والمزايا</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/wallet')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Wallet className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">إدارة المحفظة</span>
-                <span className="text-xs text-muted-foreground">تعبئة وسحب الأرصدة</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/chats')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <MessageCircle className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">محادثات العملاء</span>
-                <span className="text-xs text-muted-foreground">الدعم والمساعدة</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/invoice-templates')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Receipt className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">قوالب الفواتير</span>
-                <span className="text-xs text-muted-foreground">تخصيص تصميم الفاتورة</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/saved-invoices')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <FileText className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">الفواتير المحفوظة</span>
-                <span className="text-xs text-muted-foreground">مراجعة وإدارة الفواتير</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/financials')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <TrendingUp className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">التحليلات المالية</span>
-                <span className="text-xs text-muted-foreground">الإيرادات والتكاليف والأرباح</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/partial-payment-settings')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Percent className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">رسوم الدفع الجزئي</span>
-                <span className="text-xs text-muted-foreground">إعداد رسوم دفع ربع المبلغ</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/broken-images')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <ImageIcon className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">فحص الصور</span>
-                <span className="text-xs text-muted-foreground">اكتشاف الصور المفقودة</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/competitions')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Trophy className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">المسابقات</span>
-                <span className="text-xs text-muted-foreground">إدارة المسابقات والسحوبات</span>
-              </Button>
-              
-              <Button
-                onClick={() => navigate('/admin/marketplace')}
-                variant="outline"
-                className="gap-3 h-auto py-8 flex-col hover:bg-primary/5 hover:border-primary/40 transition-all group"
-              >
-                <Package className="h-10 w-10 text-primary group-hover:scale-110 transition-transform" />
-                <span className="text-sm font-semibold">سوق المستعمل</span>
-                <span className="text-xs text-muted-foreground">إدارة منتجات البائعين</span>
-              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="admin-card-content">
+            <div className="admin-grid-4">
+              {[
+                { icon: Bell, title: 'إدارة الإشعارات', desc: 'إرسال إشعارات للمستخدمين', path: '/admin/notifications' },
+                { icon: Megaphone, title: 'الشريط الإخباري', desc: 'إدارة الإعلانات المتحركة', path: '/admin/announcements' },
+                { icon: Ticket, title: 'إدارة الكوبونات', desc: 'إنشاء وإدارة الخصومات', path: '/admin/coupons' },
+                { icon: Package, title: 'إدارة الطلبات', desc: 'تتبع وإدارة الطلبات', path: '/admin/orders' },
+                { icon: FileText, title: 'الطلبات المخصصة', desc: 'مراجعة طلبات العملاء', action: () => setActiveTab('custom-requests'), badge: pendingRequestsCount },
+                { icon: Zap, title: 'الإعدادات الافتراضية', desc: 'تخصيص القيم الافتراضية', path: '/admin/default-settings' },
+                { icon: Coins, title: 'إعدادات النقاط', desc: 'إدارة نظام المكافآت', path: '/admin/points-settings' },
+                { icon: Award, title: 'مستويات الولاء', desc: 'إدارة المستويات والمزايا', path: '/admin/loyalty-levels' },
+                { icon: Wallet, title: 'إدارة المحفظة', desc: 'تعبئة وسحب الأرصدة', path: '/admin/wallet' },
+                { icon: MessageCircle, title: 'محادثات العملاء', desc: 'الدعم والمساعدة', path: '/admin/chats' },
+                { icon: Receipt, title: 'قوالب الفواتير', desc: 'تخصيص تصميم الفاتورة', path: '/admin/invoice-templates' },
+                { icon: FileText, title: 'الفواتير المحفوظة', desc: 'مراجعة وإدارة الفواتير', path: '/admin/saved-invoices' },
+                { icon: TrendingUp, title: 'التحليلات المالية', desc: 'الإيرادات والتكاليف والأرباح', path: '/admin/financials' },
+                { icon: Percent, title: 'رسوم الدفع الجزئي', desc: 'إعداد رسوم دفع ربع المبلغ', path: '/admin/partial-payment-settings' },
+                { icon: ImageIcon, title: 'فحص الصور', desc: 'اكتشاف الصور المفقودة', path: '/admin/broken-images' },
+                { icon: Trophy, title: 'المسابقات', desc: 'إدارة المسابقات والسحوبات', path: '/admin/competitions' },
+                { icon: Package, title: 'سوق المستعمل', desc: 'إدارة منتجات البائعين', path: '/admin/marketplace' },
+              ].map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => item.path ? navigate(item.path) : item.action?.()}
+                  className="admin-action-btn relative"
+                >
+                  <div className="icon-wrapper">
+                    <item.icon />
+                  </div>
+                  <span className="btn-title">{item.title}</span>
+                  <span className="btn-desc">{item.desc}</span>
+                  {item.badge && item.badge > 0 && (
+                    <Badge 
+                      variant="destructive"
+                      className="absolute -top-2 -right-2 h-6 w-6 flex items-center justify-center p-0 text-xs rounded-full"
+                    >
+                      {item.badge > 9 ? '9+' : item.badge}
+                    </Badge>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
 
         {/* Quick Actions - Content Management */}
-        <Card className="mb-8 border-primary/20 shadow-lg">
-          <CardHeader className="border-b border-border/50">
-            <CardTitle className="text-xl flex items-center gap-2">
+        <div className="admin-card mb-8">
+          <div className="admin-card-header">
+            <div className="admin-card-title">
               <Plus className="h-5 w-5 text-primary" />
               إضافة محتوى جديد
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            </div>
+          </div>
+          <div className="admin-card-content">
+            <div className="admin-grid-3">
               <Button
                 onClick={() => {
                   setActiveTab('products');
@@ -1528,9 +1358,9 @@ const Admin = () => {
                   setProductFeatures([]);
                   setProductDialogOpen(true);
                 }}
-                className="gap-3 h-auto py-8 flex-col bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all group"
+                className="admin-btn-primary gap-3 h-auto py-8 flex-col"
               >
-                <Plus className="h-10 w-10 group-hover:rotate-90 transition-transform" />
+                <Plus className="h-10 w-10" />
                 <span className="text-sm font-semibold">منتج جديد</span>
                 <span className="text-xs opacity-90">إضافة منتج للمتجر</span>
               </Button>
@@ -1541,9 +1371,9 @@ const Admin = () => {
                   setEditingCategory(null);
                   setCategoryDialogOpen(true);
                 }}
-                className="gap-3 h-auto py-8 flex-col bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all group"
+                className="admin-btn-primary gap-3 h-auto py-8 flex-col"
               >
-                <FolderOpen className="h-10 w-10 group-hover:scale-110 transition-transform" />
+                <FolderOpen className="h-10 w-10" />
                 <span className="text-sm font-semibold">قسم جديد</span>
                 <span className="text-xs opacity-90">إضافة قسم للمنتجات</span>
               </Button>
@@ -1554,37 +1384,37 @@ const Admin = () => {
                   setEditingMainSection(null);
                   setMainSectionDialogOpen(true);
                 }}
-                className="gap-3 h-auto py-8 flex-col bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all group"
+                className="admin-btn-primary gap-3 h-auto py-8 flex-col"
               >
-                <FolderOpen className="h-10 w-10 group-hover:scale-110 transition-transform" />
+                <FolderOpen className="h-10 w-10" />
                 <span className="text-sm font-semibold">قسم رئيسي</span>
                 <span className="text-xs opacity-90">إضافة قسم رئيسي</span>
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-6 grid grid-cols-4 w-full max-w-3xl">
-            <TabsTrigger value="products" className="gap-2">
-              <FolderOpen className="h-4 w-4" />
+          <TabsList className="admin-tabs-list mb-6 w-full max-w-3xl">
+            <TabsTrigger value="products" className="admin-tab gap-2 flex-1">
+              <Package className="h-4 w-4" />
               المنتجات
             </TabsTrigger>
-            <TabsTrigger value="categories" className="gap-2">
+            <TabsTrigger value="categories" className="admin-tab gap-2 flex-1">
               <FolderOpen className="h-4 w-4" />
               الأقسام
             </TabsTrigger>
-            <TabsTrigger value="main-sections" className="gap-2">
+            <TabsTrigger value="main-sections" className="admin-tab gap-2 flex-1">
               <FolderOpen className="h-4 w-4" />
               الأقسام الرئيسية
             </TabsTrigger>
-            <TabsTrigger value="custom-requests" className="gap-2 relative">
-              <FolderOpen className="h-4 w-4" />
+            <TabsTrigger value="custom-requests" className="admin-tab gap-2 flex-1 relative">
+              <FileText className="h-4 w-4" />
               الطلبات المخصصة
               {pendingRequestsCount && pendingRequestsCount > 0 && (
                 <Badge 
                   variant="destructive" 
-                  className="absolute -top-2 -left-2 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
+                  className="absolute -top-1 -left-1 h-5 w-5 flex items-center justify-center p-0 text-xs rounded-full"
                 >
                   {pendingRequestsCount > 9 ? '9+' : pendingRequestsCount}
                 </Badge>
@@ -1594,111 +1424,109 @@ const Admin = () => {
 
           <TabsContent value="products">
             {/* Search and Filters for Products */}
-            <Card className="mb-6 border-primary/20">
-              <CardContent className="pt-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                  <div className="lg:col-span-2">
-                    <Label className="text-xs mb-2 block">البحث</Label>
-                    <Input
-                      placeholder="ابحث بالاسم العربي أو الإنجليزي..."
-                      value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      className="h-10"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs mb-2 block">القسم</Label>
-                    <select
-                      value={productCategoryFilter}
-                      onChange={(e) => setProductCategoryFilter(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="all">جميع الأقسام</option>
-                      {categories?.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name_ar}</option>
-                      ))}
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs mb-2 block">الحالة</Label>
-                    <select
-                      value={productStockFilter}
-                      onChange={(e) => setProductStockFilter(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="all">الكل</option>
-                      <option value="in_stock">متوفر</option>
-                      <option value="out_of_stock">غير متوفر</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs mb-2 block">مميز</Label>
-                    <select
-                      value={productFeaturedFilter}
-                      onChange={(e) => setProductFeaturedFilter(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="all">الكل</option>
-                      <option value="featured">مميز</option>
-                      <option value="not_featured">غير مميز</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs mb-2 block">نوع التوفر</Label>
-                    <select
-                      value={productAvailabilityTypeFilter}
-                      onChange={(e) => setProductAvailabilityTypeFilter(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="all">الكل</option>
-                      <option value="in_stock_only">مباشر فقط</option>
-                      <option value="pre_order_only">طلب مسبق فقط</option>
-                      <option value="both">مباشر وطلب مسبق</option>
-                    </select>
-                  </div>
-                  
-                  <div>
-                    <Label className="text-xs mb-2 block">ألوان/خيارات غير متوفرة</Label>
-                    <select
-                      value={productOptionsStockFilter}
-                      onChange={(e) => setProductOptionsStockFilter(e.target.value)}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    >
-                      <option value="all">الكل</option>
-                      <option value="has_out_of_stock_color">ألوان غير متوفرة</option>
-                      <option value="has_out_of_stock_option">خيارات غير متوفرة</option>
-                      <option value="has_any_out_of_stock">أي عنصر غير متوفر</option>
-                    </select>
-                  </div>
+            <div className="admin-filters mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+                <div className="lg:col-span-2">
+                  <Label className="admin-filter-label">البحث</Label>
+                  <Input
+                    placeholder="ابحث بالاسم العربي أو الإنجليزي..."
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    className="admin-input"
+                  />
                 </div>
                 
-                {(productSearch || productCategoryFilter !== 'all' || productStockFilter !== 'all' || productFeaturedFilter !== 'all' || productAvailabilityTypeFilter !== 'all' || productOptionsStockFilter !== 'all') && (
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">
-                      {filteredProducts?.length || 0} منتج من أصل {products?.length || 0}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => {
-                        setProductSearch('');
-                        setProductCategoryFilter('all');
-                        setProductStockFilter('all');
-                        setProductFeaturedFilter('all');
-                        setProductAvailabilityTypeFilter('all');
-                        setProductOptionsStockFilter('all');
-                      }}
-                    >
-                      إعادة تعيين
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                <div>
+                  <Label className="admin-filter-label">القسم</Label>
+                  <select
+                    value={productCategoryFilter}
+                    onChange={(e) => setProductCategoryFilter(e.target.value)}
+                    className="admin-select w-full"
+                  >
+                    <option value="all">جميع الأقسام</option>
+                    {categories?.map((cat) => (
+                      <option key={cat.id} value={cat.id}>{cat.name_ar}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div>
+                  <Label className="admin-filter-label">الحالة</Label>
+                  <select
+                    value={productStockFilter}
+                    onChange={(e) => setProductStockFilter(e.target.value)}
+                    className="admin-select w-full"
+                  >
+                    <option value="all">الكل</option>
+                    <option value="in_stock">متوفر</option>
+                    <option value="out_of_stock">غير متوفر</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label className="admin-filter-label">مميز</Label>
+                  <select
+                    value={productFeaturedFilter}
+                    onChange={(e) => setProductFeaturedFilter(e.target.value)}
+                    className="admin-select w-full"
+                  >
+                    <option value="all">الكل</option>
+                    <option value="featured">مميز</option>
+                    <option value="not_featured">غير مميز</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label className="admin-filter-label">نوع التوفر</Label>
+                  <select
+                    value={productAvailabilityTypeFilter}
+                    onChange={(e) => setProductAvailabilityTypeFilter(e.target.value)}
+                    className="admin-select w-full"
+                  >
+                    <option value="all">الكل</option>
+                    <option value="in_stock_only">مباشر فقط</option>
+                    <option value="pre_order_only">طلب مسبق فقط</option>
+                    <option value="both">مباشر وطلب مسبق</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <Label className="admin-filter-label">ألوان/خيارات غير متوفرة</Label>
+                  <select
+                    value={productOptionsStockFilter}
+                    onChange={(e) => setProductOptionsStockFilter(e.target.value)}
+                    className="admin-select w-full"
+                  >
+                    <option value="all">الكل</option>
+                    <option value="has_out_of_stock_color">ألوان غير متوفرة</option>
+                    <option value="has_out_of_stock_option">خيارات غير متوفرة</option>
+                    <option value="has_any_out_of_stock">أي عنصر غير متوفر</option>
+                  </select>
+                </div>
+              </div>
+              
+              {(productSearch || productCategoryFilter !== 'all' || productStockFilter !== 'all' || productFeaturedFilter !== 'all' || productAvailabilityTypeFilter !== 'all' || productOptionsStockFilter !== 'all') && (
+                <div className="mt-4 flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    {filteredProducts?.length || 0} منتج من أصل {products?.length || 0}
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setProductSearch('');
+                      setProductCategoryFilter('all');
+                      setProductStockFilter('all');
+                      setProductFeaturedFilter('all');
+                      setProductAvailabilityTypeFilter('all');
+                      setProductOptionsStockFilter('all');
+                    }}
+                  >
+                    إعادة تعيين
+                  </Button>
+                </div>
+              )}
+            </div>
 
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-foreground">إدارة المنتجات</h2>
