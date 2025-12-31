@@ -124,7 +124,6 @@ function AppContent() {
             <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
-            <Route path="/product-offers" element={<ProductOffersPage />} />
             <Route path="/my-products" element={<MyPurchasedProducts />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

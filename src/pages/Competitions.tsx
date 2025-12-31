@@ -28,6 +28,7 @@ import BagOpenReveal from "@/components/BagOpenReveal";
 import TicketBundleOffer from "@/components/TicketBundleOffer";
 import TeamBattleDisplay from "@/components/TeamBattleDisplay";
 import CollectedLettersDisplay from "@/components/CollectedLettersDisplay";
+import CompactOfferCard from "@/components/CompactOfferCard";
 
 const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy - hh:mm a') => {
   const date = new Date(dateString);
@@ -122,6 +123,11 @@ export default function Competitions() {
   // State for multiple bag purchase
   const [showBagPurchaseDialog, setShowBagPurchaseDialog] = useState(false);
   const [bagPurchaseQuantity, setBagPurchaseQuantity] = useState(1);
+  
+  // State for offers section toggle
+  const [showOffersSection, setShowOffersSection] = useState(false);
+  const [selectedOfferForPurchase, setSelectedOfferForPurchase] = useState<any>(null);
+  const [showOfferPurchaseDialog, setShowOfferPurchaseDialog] = useState(false);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -139,8 +145,47 @@ export default function Competitions() {
     staleTime: 30000, // Cache for 30 seconds
   });
 
+  // Fetch product offers from separate table (NOT competitions)
+  const { data: productOffers, isLoading: isLoadingOffers } = useQuery({
+    queryKey: ['product-offers-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_offers')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 30000,
+  });
 
-  // Fetch ticket counts - available for all users (no auth required)
+  // Purchase offer mutation (NOT competition related)
+  const purchaseOfferMutation = useMutation({
+    mutationFn: async (offerId: string) => {
+      const { data, error } = await supabase.rpc('purchase_product_offer', { 
+        p_offer_id: offerId, 
+        p_quantity: 1 
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async (data: any) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+        queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
+        queryClient.invalidateQueries({ queryKey: ['product-offers-list'] });
+        toast.success(`🎁 تم شراء المنتج وحصلت على ${data.gift_tickets} تذكرة هدية!`);
+        setShowOfferPurchaseDialog(false);
+        setSelectedOfferForPurchase(null);
+      } else {
+        toast.error(data.error || 'حدث خطأ');
+      }
+    },
+    onError: (error) => toast.error('خطأ: ' + error.message),
+  });
+
+
   const { data: ticketCounts } = useQuery({
     queryKey: ['competition-ticket-counts'],
     queryFn: async () => {
@@ -774,13 +819,32 @@ export default function Competitions() {
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold flex items-center justify-center gap-2 mb-1">
             <Trophy className="h-6 w-6 text-primary" />
-            المسابقات والعروض
+            المسابقات
           </h1>
-          <p className="text-sm text-muted-foreground">اشترك في المسابقات واشترِ منتجات مع تذاكر هدية!</p>
+          <p className="text-sm text-muted-foreground">استخدم تذاكرك للاشتراك في المسابقات!</p>
           
-          <div className="flex items-center justify-center gap-3 mt-3">
+          {/* Toggle Buttons */}
+          <div className="flex items-center justify-center gap-2 mt-4">
             <Button
-              variant="outline"
+              variant={!showOffersSection ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowOffersSection(false)}
+              className="gap-1"
+            >
+              <Trophy className="h-4 w-4" />
+              المسابقات
+            </Button>
+            <Button
+              variant={showOffersSection ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowOffersSection(true)}
+              className="gap-1"
+            >
+              <Gift className="h-4 w-4" />
+              العروض
+            </Button>
+            <Button
+              variant="ghost"
               size="sm"
               onClick={() => navigate('/competitions/history')}
               className="gap-1"
@@ -788,61 +852,141 @@ export default function Competitions() {
               <History className="h-4 w-4" />
               السجل
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/my-purchased-products')}
-              className="gap-1"
-            >
-              <Package className="h-4 w-4" />
-              مشترياتي
-            </Button>
           </div>
         </div>
 
-        {/* Competitions Section */}
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        ) : competitions?.length === 0 ? (
-          <Card className="text-center py-8 max-w-sm mx-auto">
-            <CardContent className="pt-6">
-              <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">لا توجد مسابقات نشطة حالياً</p>
-              <Button 
-                variant="outline" 
-                className="mt-4"
-                onClick={() => navigate('/product-offers')}
-              >
-                تصفح عروض المنتجات
-              </Button>
-            </CardContent>
-          </Card>
-        ) : competitions && competitions.length > 0 && (
-          <>
-            <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-              <Trophy className="h-5 w-5 text-primary" />
-              المسابقات النشطة
+        {/* Product Offers Section - shown when toggle is on */}
+        {showOffersSection ? (
+          <div className="mb-8">
+            <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
+              <Gift className="h-5 w-5 text-green-600" />
+              عروض المنتجات
+              <span className="text-xs text-muted-foreground font-normal">اشترِ منتج واحصل على تذاكر هدية</span>
             </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {competitions.map((comp) => (
-                <CompetitionCard
-                  key={comp.id}
-                  competition={comp}
-                  ticketCount={ticketCounts?.[comp.id] || 0}
-                  myTicketList={myTickets?.[comp.id] || []}
-                  userTicketBalance={userTicketBalance || 0}
-                  onOpenDetails={handleOpenDetails}
-                  onEnterCompetition={handleEnterCompetition}
-                  isEntering={enterCompetitionMutation.isPending}
-                  isAuthenticated={!!user}
-                  winners={winnersInfo?.[comp.id] || []}
-                />
-              ))}
-            </div>
+            
+            {isLoadingOffers ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : productOffers && productOffers.length > 0 ? (
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+                {productOffers.map((offer) => (
+                  <CompactOfferCard
+                    key={offer.id}
+                    offer={offer}
+                    onPurchase={(o) => {
+                      if (!user) {
+                        navigate('/auth');
+                        return;
+                      }
+                      setSelectedOfferForPurchase(o);
+                      setShowOfferPurchaseDialog(true);
+                    }}
+                    isPurchasing={purchaseOfferMutation.isPending}
+                    isAuthenticated={!!user}
+                    canAfford={!wallet || wallet.balance >= offer.price}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="text-center py-6">
+                <CardContent className="pt-4">
+                  <Package className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">لا توجد عروض متاحة حالياً</p>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        ) : (
+          /* Competitions Section - default view */
+          <>
+            {isLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : competitions?.length === 0 ? (
+              <Card className="text-center py-8 max-w-sm mx-auto">
+                <CardContent className="pt-6">
+                  <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+                  <p className="text-muted-foreground">لا توجد مسابقات نشطة حالياً</p>
+                  <Button 
+                    variant="outline" 
+                    className="mt-4"
+                    onClick={() => setShowOffersSection(true)}
+                  >
+                    <Gift className="h-4 w-4 ml-1" />
+                    تصفح العروض
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : competitions && competitions.length > 0 && (
+              <>
+                <h2 className="text-lg font-bold flex items-center gap-2 mb-4">
+                  <Trophy className="h-5 w-5 text-primary" />
+                  المسابقات النشطة
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {competitions.map((comp) => (
+                    <CompetitionCard
+                      key={comp.id}
+                      competition={comp}
+                      ticketCount={ticketCounts?.[comp.id] || 0}
+                      myTicketList={myTickets?.[comp.id] || []}
+                      userTicketBalance={userTicketBalance || 0}
+                      onOpenDetails={handleOpenDetails}
+                      onEnterCompetition={handleEnterCompetition}
+                      isEntering={enterCompetitionMutation.isPending}
+                      isAuthenticated={!!user}
+                      winners={winnersInfo?.[comp.id] || []}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
+
+        {/* Offer Purchase Confirmation Dialog */}
+        <AlertDialog open={showOfferPurchaseDialog} onOpenChange={setShowOfferPurchaseDialog}>
+          <AlertDialogContent dir="rtl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5 text-primary" />
+                تأكيد شراء المنتج
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-right space-y-3">
+                {selectedOfferForPurchase && (
+                  <>
+                    <p>هل تريد شراء <span className="font-bold text-foreground">{selectedOfferForPurchase.title_ar}</span>؟</p>
+                    <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
+                      <div className="flex justify-between">
+                        <span>السعر:</span>
+                        <span className="font-bold">{selectedOfferForPurchase.price?.toLocaleString()} {selectedOfferForPurchase.currency}</span>
+                      </div>
+                      <div className="flex justify-between text-green-600">
+                        <span>تذاكر هدية:</span>
+                        <span className="font-bold">🎁 {selectedOfferForPurchase.gift_tickets} تذكرة</span>
+                      </div>
+                    </div>
+                    {wallet && wallet.balance < selectedOfferForPurchase.price && (
+                      <p className="text-destructive text-sm">⚠️ رصيد المحفظة غير كافٍ</p>
+                    )}
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-row-reverse gap-2">
+              <AlertDialogAction 
+                onClick={() => selectedOfferForPurchase && purchaseOfferMutation.mutate(selectedOfferForPurchase.id)} 
+                disabled={purchaseOfferMutation.isPending || (wallet && selectedOfferForPurchase && wallet.balance < selectedOfferForPurchase.price)}
+              >
+                {purchaseOfferMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                تأكيد الشراء
+              </AlertDialogAction>
+              <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </main>
 
       <Footer />
