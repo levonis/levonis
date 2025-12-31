@@ -15,9 +15,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Store, CheckCircle, XCircle, Eye, Package, Settings, Loader2, Percent, MessageSquare, Trash2, Search, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Store, CheckCircle, XCircle, Eye, Package, Settings, Loader2, Percent, MessageSquare, Trash2, Search, AlertTriangle, ChevronLeft, ChevronRight, Hash } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { AdminConversationChat } from '@/components/marketplace/AdminConversationChat';
 
 const conditionLabels: Record<string, string> = {
   new: 'جديد',
@@ -52,21 +53,38 @@ export default function AdminMarketplace() {
   const [statusFilter, setStatusFilter] = useState<string>('pending');
   const [conversationSearch, setConversationSearch] = useState('');
   const [selectedConversation, setSelectedConversation] = useState<any>(null);
+  const [listingSearch, setListingSearch] = useState('');
+  const [conversationStatusFilter, setConversationStatusFilter] = useState<string>('all');
+  
+  // Pagination states
+  const [listingsPage, setListingsPage] = useState(1);
+  const [conversationsPage, setConversationsPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
-  // Fetch listings
-  const { data: listings, isLoading: listingsLoading } = useQuery({
-    queryKey: ['admin-listings', statusFilter],
+  // Fetch listings with pagination and search
+  const { data: listingsData, isLoading: listingsLoading } = useQuery({
+    queryKey: ['admin-listings', statusFilter, listingSearch, listingsPage],
     queryFn: async () => {
       let query = supabase
         .from('user_listings')
-        .select('*, categories(name_ar)')
+        .select('*, categories(name_ar)', { count: 'exact' })
         .order('created_at', { ascending: false });
       
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter);
       }
       
-      const { data, error } = await query;
+      // Search by title or listing_code
+      if (listingSearch.trim()) {
+        query = query.or(`title_ar.ilike.%${listingSearch.trim()}%,listing_code.ilike.%${listingSearch.trim()}%`);
+      }
+      
+      // Pagination
+      const from = (listingsPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      query = query.range(from, to);
+      
+      const { data, error, count } = await query;
       if (error) throw error;
       
       // Fetch seller profiles
@@ -78,12 +96,18 @@ export default function AdminMarketplace() {
           .in('id', sellerIds);
         
         const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
-        return data.map(l => ({ ...l, seller_profile: profilesMap.get(l.seller_id) }));
+        return { 
+          listings: data.map(l => ({ ...l, seller_profile: profilesMap.get(l.seller_id) })),
+          totalCount: count || 0 
+        };
       }
-      return data;
+      return { listings: data || [], totalCount: count || 0 };
     },
     enabled: isAdmin,
   });
+  
+  const listings = listingsData?.listings;
+  const listingsTotalPages = Math.ceil((listingsData?.totalCount || 0) / ITEMS_PER_PAGE);
 
   // Fetch transactions
   const { data: transactions, isLoading: transactionsLoading } = useQuery({
@@ -117,42 +141,59 @@ export default function AdminMarketplace() {
     enabled: isAdmin,
   });
 
-  // Fetch conversations
-  const { data: conversations, isLoading: conversationsLoading } = useQuery({
-    queryKey: ['admin-conversations', conversationSearch],
+  // Fetch conversations with pagination
+  const { data: conversationsData, isLoading: conversationsLoading } = useQuery({
+    queryKey: ['admin-conversations', conversationSearch, conversationStatusFilter, conversationsPage],
     queryFn: async () => {
       let query = supabase
         .from('listing_conversations')
         .select(`
           *,
-          user_listings(title_ar, images)
-        `)
+          user_listings(title_ar, images, listing_code)
+        `, { count: 'exact' })
         .order('updated_at', { ascending: false });
       
+      // Search by conversation code or listing code
       if (conversationSearch.trim()) {
-        query = query.ilike('conversation_code', `%${conversationSearch.trim()}%`);
+        query = query.or(`conversation_code.ilike.%${conversationSearch.trim()}%`);
       }
       
-      const { data, error } = await query;
+      // Filter by status
+      if (conversationStatusFilter !== 'all') {
+        query = query.eq('status', conversationStatusFilter);
+      }
+      
+      // Pagination
+      const from = (conversationsPage - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
+      query = query.range(from, to);
+      
+      const { data, error, count } = await query;
       if (error) throw error;
 
       if (data?.length) {
         const userIds = [...new Set(data.flatMap(c => [c.buyer_id, c.seller_id]))];
         const { data: profiles } = await supabase
           .from('profiles')
-          .select('id, full_name, username')
+          .select('id, full_name, username, avatar_url')
           .in('id', userIds);
         const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
-        return data.map(c => ({
-          ...c,
-          buyer_profile: profilesMap.get(c.buyer_id),
-          seller_profile: profilesMap.get(c.seller_id),
-        }));
+        return {
+          conversations: data.map(c => ({
+            ...c,
+            buyer_profile: profilesMap.get(c.buyer_id),
+            seller_profile: profilesMap.get(c.seller_id),
+          })),
+          totalCount: count || 0,
+        };
       }
-      return data;
+      return { conversations: data || [], totalCount: count || 0 };
     },
     enabled: isAdmin,
   });
+
+  const conversations = conversationsData?.conversations;
+  const conversationsTotalPages = Math.ceil((conversationsData?.totalCount || 0) / ITEMS_PER_PAGE);
 
   // Fetch messages for selected conversation
   const { data: conversationMessages } = useQuery({
@@ -441,19 +482,38 @@ export default function AdminMarketplace() {
           <TabsContent value="listings">
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center justify-between flex-wrap gap-4">
                   <CardTitle>المنتجات المعروضة</CardTitle>
-                  <div className="flex gap-2 flex-wrap">
-                    {['all', 'pending', 'approved', 'rejected', 'sold'].map(status => (
-                      <Button
-                        key={status}
-                        variant={statusFilter === status ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setStatusFilter(status)}
-                      >
-                        {status === 'all' ? 'الكل' : statusConfig[status]?.label || status}
-                      </Button>
-                    ))}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {/* Search */}
+                    <div className="relative w-64">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="البحث بالاسم أو الكود..."
+                        className="pr-9"
+                        value={listingSearch}
+                        onChange={(e) => {
+                          setListingSearch(e.target.value);
+                          setListingsPage(1);
+                        }}
+                      />
+                    </div>
+                    {/* Status Filter */}
+                    <div className="flex gap-2 flex-wrap">
+                      {['all', 'pending', 'approved', 'rejected', 'sold'].map(status => (
+                        <Button
+                          key={status}
+                          variant={statusFilter === status ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => {
+                            setStatusFilter(status);
+                            setListingsPage(1);
+                          }}
+                        >
+                          {status === 'all' ? 'الكل' : statusConfig[status]?.label || status}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -467,100 +527,134 @@ export default function AdminMarketplace() {
                     لا توجد منتجات
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>الصورة</TableHead>
-                          <TableHead>العنوان</TableHead>
-                          <TableHead>البائع</TableHead>
-                          <TableHead>السعر</TableHead>
-                          <TableHead>الحالة</TableHead>
-                          <TableHead>التاريخ</TableHead>
-                          <TableHead>إجراءات</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {listings?.map(listing => (
-                          <TableRow key={listing.id}>
-                            <TableCell>
-                              {listing.images?.[0] ? (
-                                <img src={listing.images[0]} alt="" className="w-12 h-12 object-cover rounded" />
-                              ) : (
-                                <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
-                                  <Package className="w-5 h-5 text-muted-foreground" />
-                                </div>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{listing.title_ar}</p>
-                                <p className="text-xs text-muted-foreground">{conditionLabels[listing.condition]}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <p className="font-medium">{(listing as any).seller_profile?.full_name || (listing as any).seller_profile?.username}</p>
-                                <p className="text-xs text-muted-foreground">{(listing as any).seller_profile?.phone_number}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="font-bold text-primary">{Number(listing.price).toLocaleString()}</span>
-                              <span className="text-xs text-muted-foreground mr-1">{listing.currency}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={statusConfig[listing.status]?.variant || 'secondary'}>
-                                {statusConfig[listing.status]?.label || listing.status}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{format(new Date(listing.created_at), 'dd MMM yyyy', { locale: ar })}</span>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex gap-2">
-                                <Button size="sm" variant="ghost" onClick={() => setSelectedListing(listing)}>
-                                  <Eye className="w-4 h-4" />
-                                </Button>
-                                {listing.status === 'pending' && (
-                                  <>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="text-green-500 hover:text-green-600"
-                                      onClick={() => approveMutation.mutate(listing.id)}
-                                      disabled={approveMutation.isPending}
-                                    >
-                                      <CheckCircle className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="text-red-500 hover:text-red-600"
-                                      onClick={() => setSelectedListing({ ...listing, showReject: true })}
-                                    >
-                                      <XCircle className="w-4 h-4" />
-                                    </Button>
-                                  </>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-destructive hover:text-destructive"
-                                  onClick={() => {
-                                    if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-                                      deleteMutation.mutate(listing.id);
-                                    }
-                                  }}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+                  <>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>الكود</TableHead>
+                            <TableHead>الصورة</TableHead>
+                            <TableHead>العنوان</TableHead>
+                            <TableHead>البائع</TableHead>
+                            <TableHead>السعر</TableHead>
+                            <TableHead>الحالة</TableHead>
+                            <TableHead>التاريخ</TableHead>
+                            <TableHead>إجراءات</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
+                        </TableHeader>
+                        <TableBody>
+                          {listings?.map(listing => (
+                            <TableRow key={listing.id}>
+                              <TableCell>
+                                <Badge variant="secondary" className="font-mono text-xs">
+                                  <Hash className="w-3 h-3 ml-1" />
+                                  {listing.listing_code || 'N/A'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {listing.images?.[0] ? (
+                                  <img src={listing.images[0]} alt="" className="w-12 h-12 object-cover rounded" />
+                                ) : (
+                                  <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                                    <Package className="w-5 h-5 text-muted-foreground" />
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{listing.title_ar}</p>
+                                  <p className="text-xs text-muted-foreground">{conditionLabels[listing.condition]}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <p className="font-medium">{(listing as any).seller_profile?.full_name || (listing as any).seller_profile?.username}</p>
+                                  <p className="text-xs text-muted-foreground">{(listing as any).seller_profile?.phone_number}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <span className="font-bold text-primary">{Number(listing.price).toLocaleString()}</span>
+                                <span className="text-xs text-muted-foreground mr-1">{listing.currency}</span>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={statusConfig[listing.status]?.variant || 'secondary'}>
+                                  {statusConfig[listing.status]?.label || listing.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">{format(new Date(listing.created_at), 'dd MMM yyyy', { locale: ar })}</span>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex gap-2">
+                                  <Button size="sm" variant="ghost" onClick={() => setSelectedListing(listing)}>
+                                    <Eye className="w-4 h-4" />
+                                  </Button>
+                                  {listing.status === 'pending' && (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="text-green-500 hover:text-green-600"
+                                        onClick={() => approveMutation.mutate(listing.id)}
+                                        disabled={approveMutation.isPending}
+                                      >
+                                        <CheckCircle className="w-4 h-4" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        className="text-red-500 hover:text-red-600"
+                                        onClick={() => setSelectedListing({ ...listing, showReject: true })}
+                                      >
+                                        <XCircle className="w-4 h-4" />
+                                      </Button>
+                                    </>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => {
+                                      if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
+                                        deleteMutation.mutate(listing.id);
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    
+                    {/* Pagination */}
+                    {listingsTotalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setListingsPage(p => Math.max(1, p - 1))}
+                          disabled={listingsPage === 1}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                        <span className="text-sm">
+                          {listingsPage} / {listingsTotalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setListingsPage(p => Math.min(listingsTotalPages, p + 1))}
+                          disabled={listingsPage === listingsTotalPages}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -675,14 +769,34 @@ export default function AdminMarketplace() {
                     <MessageSquare className="w-5 h-5" />
                     المحادثات
                   </CardTitle>
-                  <div className="relative w-64">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                    <Input
-                      placeholder="البحث بكود المحادثة..."
-                      className="pr-9"
-                      value={conversationSearch}
-                      onChange={(e) => setConversationSearch(e.target.value)}
-                    />
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="relative w-64">
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="البحث بكود المحادثة..."
+                        className="pr-9"
+                        value={conversationSearch}
+                        onChange={(e) => {
+                          setConversationSearch(e.target.value);
+                          setConversationsPage(1);
+                        }}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      {['all', 'open', 'disputed', 'resolved'].map(status => (
+                        <Button
+                          key={status}
+                          variant={conversationStatusFilter === status ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => {
+                            setConversationStatusFilter(status);
+                            setConversationsPage(1);
+                          }}
+                        >
+                          {status === 'all' ? 'الكل' : status === 'open' ? 'مفتوحة' : status === 'disputed' ? 'نزاع' : 'تم الحل'}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -696,8 +810,106 @@ export default function AdminMarketplace() {
                     لا توجد محادثات
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
+                  <>
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>الكود</TableHead>
+                            <TableHead>المنتج</TableHead>
+                            <TableHead>كود المنتج</TableHead>
+                            <TableHead>المشتري</TableHead>
+                            <TableHead>البائع</TableHead>
+                            <TableHead>الحالة</TableHead>
+                            <TableHead>آخر تحديث</TableHead>
+                            <TableHead>إجراءات</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {conversations?.map(conv => (
+                            <TableRow key={conv.id} className={conv.status === 'disputed' ? 'bg-destructive/5' : ''}>
+                              <TableCell>
+                                <Badge variant="outline" className="font-mono">
+                                  {conv.conversation_code || 'N/A'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {(conv.user_listings as any)?.images?.[0] && (
+                                    <img src={(conv.user_listings as any).images[0]} alt="" className="w-10 h-10 object-cover rounded" />
+                                  )}
+                                  <span className="text-sm">{(conv.user_listings as any)?.title_ar || 'منتج'}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary" className="font-mono text-xs">
+                                  {(conv.user_listings as any)?.listing_code || 'N/A'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <p className="text-sm">{(conv as any).buyer_profile?.full_name || (conv as any).buyer_profile?.username}</p>
+                              </TableCell>
+                              <TableCell>
+                                <p className="text-sm">{(conv as any).seller_profile?.full_name || (conv as any).seller_profile?.username}</p>
+                              </TableCell>
+                              <TableCell>
+                                {conv.status === 'disputed' ? (
+                                  <Badge variant="destructive" className="gap-1">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    نزاع
+                                  </Badge>
+                                ) : conv.status === 'resolved' ? (
+                                  <Badge variant="default">تم الحل</Badge>
+                                ) : conv.admin_joined ? (
+                                  <Badge variant="secondary">الإدارة منضمة</Badge>
+                                ) : (
+                                  <Badge variant="outline">مفتوحة</Badge>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">{format(new Date(conv.updated_at), 'dd MMM HH:mm', { locale: ar })}</span>
+                              </TableCell>
+                              <TableCell>
+                                <Button size="sm" variant="outline" onClick={() => setSelectedConversation(conv)}>
+                                  <Eye className="w-4 h-4 ml-1" />
+                                  دخول المحادثة
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                    
+                    {/* Pagination */}
+                    {conversationsTotalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setConversationsPage(p => Math.max(1, p - 1))}
+                          disabled={conversationsPage === 1}
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </Button>
+                        <span className="text-sm">
+                          {conversationsPage} / {conversationsTotalPages}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setConversationsPage(p => Math.min(conversationsTotalPages, p + 1))}
+                          disabled={conversationsPage === conversationsTotalPages}
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
                       <TableHeader>
                         <TableRow>
                           <TableHead>الكود</TableHead>
