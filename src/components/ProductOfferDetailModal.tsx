@@ -84,16 +84,16 @@ export default function ProductOfferDetailModal({
             <DialogDescription>تفاصيل العرض</DialogDescription>
           </DialogHeader>
 
-          {/* Product Image - Compact */}
+          {/* Product Image - Square aspect ratio */}
           <div 
-            className="relative h-32 bg-secondary"
+            className="relative aspect-square bg-secondary"
             onClick={() => images.length > 1 && setImageIndex((prev) => (prev + 1) % images.length)}
           >
             {images.length > 0 ? (
               <OptimizedImage
                 src={images[imageIndex]}
                 alt={offer.title_ar}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain bg-white"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
