@@ -4,15 +4,16 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Wallet, Check, X, ArrowLeft, PlusCircle, MinusCircle, Search, User, Settings, Trash2 } from 'lucide-react';
+import { Wallet, Check, X, PlusCircle, MinusCircle, Search, User, Settings, Trash2, History } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import AdminLayout, { AdminSection, AdminStatsGrid, AdminStatCard, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 
 export default function AdminWallet() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -35,123 +36,57 @@ export default function AdminWallet() {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  // البحث عن المستخدمين
   const { data: searchResults, isLoading: searchLoading } = useQuery({
     queryKey: ['search-users', searchQuery, showAddFundsDialog, showDeductFundsDialog],
     queryFn: async () => {
-      console.log('Searching for users with query:', searchQuery);
-      
       let query = supabase
         .from('profiles')
         .select('id, full_name, username, phone_number, email');
       
-      // إذا كان هناك بحث، استخدم الفلترة
       if (searchQuery && searchQuery.length >= 2) {
         query = query.or(`full_name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%,phone_number.ilike.%${searchQuery}%,email.ilike.%${searchQuery}%`);
       }
       
       const { data, error } = await query.order('created_at', { ascending: false }).limit(15);
-      
-      if (error) {
-        console.error('Error searching users:', error);
-        throw error;
-      }
-      
-      console.log('Search results:', data);
+      if (error) throw error;
       return data || [];
     },
     enabled: isAdmin && (showAddFundsDialog || showDeductFundsDialog),
   });
 
-  // جلب رصيد المستخدم المحدد
   const { data: selectedUserWallet } = useQuery({
     queryKey: ['user-wallet', selectedUser?.id],
     queryFn: async () => {
       if (!selectedUser?.id) return null;
-      
       const { data, error } = await supabase
         .from('user_wallets')
         .select('*')
         .eq('user_id', selectedUser.id)
         .maybeSingle();
-      
       if (error && error.code !== 'PGRST116') throw error;
       return data;
     },
     enabled: !!selectedUser?.id,
   });
 
-  // جلب جميع معاملات المحفظة المعلقة
   const { data: pendingTransactions, isLoading } = useQuery({
     queryKey: ['admin-wallet-transactions', 'pending'],
     queryFn: async () => {
-      console.log('Fetching pending wallet transactions...');
-      
-      // جلب المعاملات المعلقة
       const { data: transactions, error } = await supabase
         .from('wallet_transactions')
         .select('*')
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       
-      if (error) {
-        console.error('Error fetching pending transactions:', error);
-        throw error;
-      }
-      
-      if (!transactions || transactions.length === 0) {
-        return [];
-      }
-      
-      // جلب بيانات المستخدمين
-      const userIds = [...new Set(transactions.map(t => t.user_id))];
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, full_name, username, phone_number')
-        .in('id', userIds);
-      
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-      }
-      
-      // دمج البيانات
-      const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
-      const result = transactions.map(t => ({
-        ...t,
-        profiles: profilesMap.get(t.user_id) || null,
-      }));
-      
-      console.log('Pending transactions:', result);
-      return result;
-    },
-    enabled: isAdmin,
-  });
-
-  // جلب جميع المعاملات
-  const { data: allTransactions } = useQuery({
-    queryKey: ['admin-wallet-transactions', 'all'],
-    queryFn: async () => {
-      // جلب المعاملات
-      const { data: transactions, error } = await supabase
-        .from('wallet_transactions')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(500);
-      
       if (error) throw error;
+      if (!transactions || transactions.length === 0) return [];
       
-      if (!transactions || transactions.length === 0) {
-        return [];
-      }
-      
-      // جلب بيانات المستخدمين
       const userIds = [...new Set(transactions.map(t => t.user_id))];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name, username, phone_number')
         .in('id', userIds);
       
-      // دمج البيانات
       const profilesMap = new Map(profiles?.map(p => [p.id, p]) || []);
       return transactions.map(t => ({
         ...t,
@@ -161,7 +96,6 @@ export default function AdminWallet() {
     enabled: isAdmin,
   });
 
-  // جلب جميع أرصدة الزبائن مع المحافظ
   const { data: customerWallets, isLoading: loadingWallets } = useQuery({
     queryKey: ['admin-customer-wallets'],
     queryFn: async () => {
@@ -171,12 +105,8 @@ export default function AdminWallet() {
         .order('balance', { ascending: false });
       
       if (error) throw error;
+      if (!wallets || wallets.length === 0) return [];
       
-      if (!wallets || wallets.length === 0) {
-        return [];
-      }
-      
-      // جلب بيانات المستخدمين
       const userIds = wallets.map(w => w.user_id);
       const { data: profiles } = await supabase
         .from('profiles')
@@ -192,34 +122,28 @@ export default function AdminWallet() {
     enabled: isAdmin,
   });
 
-  // حالات البحث والفلترة
   const [walletSearchQuery, setWalletSearchQuery] = useState('');
   const [selectedCustomerForHistory, setSelectedCustomerForHistory] = useState<any>(null);
   const [showCustomerHistoryDialog, setShowCustomerHistoryDialog] = useState(false);
 
-  // جلب سجل معاملات زبون محدد
   const { data: customerTransactionHistory } = useQuery({
     queryKey: ['customer-transaction-history', selectedCustomerForHistory?.user_id],
     queryFn: async () => {
       if (!selectedCustomerForHistory?.user_id) return [];
-      
       const { data, error } = await supabase
         .from('wallet_transactions')
         .select('*')
         .eq('user_id', selectedCustomerForHistory.user_id)
         .order('created_at', { ascending: false });
-      
       if (error) throw error;
       return data || [];
     },
     enabled: !!selectedCustomerForHistory?.user_id,
   });
 
-  // فلترة أرصدة الزبائن
   const filteredCustomerWallets = useMemo(() => {
     if (!customerWallets) return [];
     if (!walletSearchQuery) return customerWallets;
-    
     const search = walletSearchQuery.toLowerCase();
     return customerWallets.filter((w: any) => 
       w.profile?.full_name?.toLowerCase().includes(search) ||
@@ -229,31 +153,16 @@ export default function AdminWallet() {
     );
   }, [customerWallets, walletSearchQuery]);
 
-  // حساب إجمالي الأرصدة
   const totalWalletBalance = useMemo(() => {
     return customerWallets?.reduce((sum: number, w: any) => sum + (w.balance || 0), 0) || 0;
   }, [customerWallets]);
 
-  // تحديث حالة المعاملة
   const updateTransactionStatus = useMutation({
-    mutationFn: async ({ 
-      id, 
-      status, 
-      admin_notes 
-    }: { 
-      id: string; 
-      status: string; 
-      admin_notes?: string;
-    }) => {
+    mutationFn: async ({ id, status, admin_notes }: { id: string; status: string; admin_notes?: string }) => {
       const { error } = await supabase
         .from('wallet_transactions')
-        .update({ 
-          status, 
-          admin_notes,
-          updated_at: new Date().toISOString()
-        })
+        .update({ status, admin_notes, updated_at: new Date().toISOString() })
         .eq('id', id);
-      
       if (error) throw error;
     },
     onSuccess: () => {
@@ -261,50 +170,31 @@ export default function AdminWallet() {
       toast.success('تم تحديث حالة المعاملة بنجاح');
     },
     onError: (error) => {
-      console.error('خطأ في تحديث المعاملة:', error);
       toast.error('حدث خطأ في تحديث المعاملة');
     },
   });
 
-  // إضافة رصيد للمستخدم
   const addFundsToUser = useMutation({
     mutationFn: async ({ userId, amount, notes }: { userId: string; amount: number; notes: string }) => {
-      // التحقق من وجود المحفظة أولاً
-      const { data: existingWallet, error: walletCheckError } = await supabase
+      const { data: existingWallet } = await supabase
         .from('user_wallets')
         .select('id, balance')
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (walletCheckError && walletCheckError.code !== 'PGRST116') {
-        throw walletCheckError;
-      }
-
       if (existingWallet) {
-        // تحديث المحفظة الموجودة
-        const { error: updateError } = await supabase
+        const { error } = await supabase
           .from('user_wallets')
-          .update({
-            balance: existingWallet.balance + amount,
-            updated_at: new Date().toISOString(),
-          })
+          .update({ balance: existingWallet.balance + amount, updated_at: new Date().toISOString() })
           .eq('user_id', userId);
-
-        if (updateError) throw updateError;
+        if (error) throw error;
       } else {
-        // إنشاء محفظة جديدة
-        const { error: walletError } = await supabase
+        const { error } = await supabase
           .from('user_wallets')
-          .insert({
-            user_id: userId,
-            balance: amount,
-            currency: 'دينار عراقي',
-          });
-
-        if (walletError) throw walletError;
+          .insert({ user_id: userId, balance: amount, currency: 'دينار عراقي' });
+        if (error) throw error;
       }
 
-      // إضافة المعاملة للسجل
       const { error: transactionError } = await supabase
         .from('wallet_transactions')
         .insert({
@@ -314,10 +204,8 @@ export default function AdminWallet() {
           status: 'completed',
           admin_notes: notes || 'تم إضافة الرصيد من قبل الإدارة',
         });
-
       if (transactionError) throw transactionError;
 
-      // إرسال إشعار للمستخدم
       await supabase.from('notifications').insert({
         user_id: userId,
         title: 'تم إضافة رصيد لمحفظتك',
@@ -329,6 +217,7 @@ export default function AdminWallet() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-wallet-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-customer-wallets'] });
       toast.success('تم إضافة الرصيد بنجاح');
       setShowAddFundsDialog(false);
       setSelectedUser(null);
@@ -337,28 +226,22 @@ export default function AdminWallet() {
       setSearchQuery('');
     },
     onError: (error: any) => {
-      console.error('خطأ في إضافة الرصيد:', error);
       toast.error(error.message || 'حدث خطأ في إضافة الرصيد');
     },
   });
 
-  // خصم رصيد من المستخدم
   const deductFundsFromUser = useMutation({
     mutationFn: async ({ userId, amount, notes }: { userId: string; amount: number; notes: string }) => {
-      // التحقق من وجود رصيد كافٍ
-      const { data: wallet, error: walletError } = await supabase
+      const { data: wallet } = await supabase
         .from('user_wallets')
         .select('balance')
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (walletError) throw walletError;
-      
       if (!wallet || wallet.balance < amount) {
         throw new Error('رصيد المستخدم غير كافٍ');
       }
 
-      // إضافة المعاملة
       const { error: transactionError } = await supabase
         .from('wallet_transactions')
         .insert({
@@ -368,21 +251,14 @@ export default function AdminWallet() {
           status: 'completed',
           admin_notes: notes || 'تم خصم الرصيد من قبل الإدارة',
         });
-
       if (transactionError) throw transactionError;
 
-      // خصم المبلغ من المحفظة
       const { error: updateError } = await supabase
         .from('user_wallets')
-        .update({
-          balance: wallet.balance - amount,
-          updated_at: new Date().toISOString(),
-        })
+        .update({ balance: wallet.balance - amount, updated_at: new Date().toISOString() })
         .eq('user_id', userId);
-
       if (updateError) throw updateError;
 
-      // إرسال إشعار للمستخدم
       await supabase.from('notifications').insert({
         user_id: userId,
         title: 'تم خصم رصيد من محفظتك',
@@ -394,6 +270,7 @@ export default function AdminWallet() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-wallet-transactions'] });
       queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-customer-wallets'] });
       toast.success('تم خصم الرصيد بنجاح');
       setShowDeductFundsDialog(false);
       setSelectedUser(null);
@@ -402,60 +279,13 @@ export default function AdminWallet() {
       setSearchQuery('');
     },
     onError: (error: any) => {
-      console.error('خطأ في خصم الرصيد:', error);
       toast.error(error.message || 'حدث خطأ في خصم الرصيد');
     },
   });
 
   const handleApprove = async (transaction: any) => {
     if (!confirm('هل أنت متأكد من الموافقة على هذه المعاملة؟')) return;
-    
-    try {
-      const userId = transaction.user_id;
-      const amount = transaction.amount;
-      const type = transaction.type;
-
-      // للسحب فقط: التحقق من وجود رصيد كافٍ قبل الموافقة
-      if (type === 'withdrawal') {
-        const { data: wallet, error: walletError } = await supabase
-          .from('user_wallets')
-          .select('balance')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (walletError) throw walletError;
-        
-        if (!wallet || wallet.balance < amount) {
-          toast.error('رصيد المستخدم غير كافٍ');
-          return;
-        }
-      }
-
-      // تحديث حالة المعاملة فقط - الـ trigger سيتعامل مع تحديث الرصيد والإشعارات
-      // هذا يمنع التكرار في إضافة الرصيد
-      updateTransactionStatus.mutate({
-        id: transaction.id,
-        status: 'approved',
-      });
-
-      // إرسال إشعار للتيليجرام
-      try {
-        const userProfile = (transaction as any).profiles;
-        const userName = userProfile?.full_name || userProfile?.username || 'مستخدم';
-        const typeLabel = type === 'deposit' ? 'تعبئة' : 'سحب';
-        
-        await supabase.functions.invoke('send-telegram-notification', {
-          body: {
-            message: `✅ <b>تمت الموافقة على طلب ${typeLabel}</b>\n\n👤 المستخدم: ${userName}\n💰 المبلغ: ${amount.toLocaleString()} دينار عراقي`,
-          },
-        });
-      } catch (telegramError) {
-        console.error('خطأ في إرسال إشعار التيليجرام:', telegramError);
-      }
-    } catch (error: any) {
-      console.error('خطأ في الموافقة على المعاملة:', error);
-      toast.error(error.message || 'حدث خطأ في الموافقة على المعاملة');
-    }
+    updateTransactionStatus.mutate({ id: transaction.id, status: 'approved' });
   };
 
   const handleReject = (transactionId: string) => {
@@ -475,11 +305,7 @@ export default function AdminWallet() {
       toast.error('الرجاء اختيار مستخدم وإدخال مبلغ صحيح');
       return;
     }
-    addFundsToUser.mutate({
-      userId: selectedUser.id,
-      amount,
-      notes: adminNotes,
-    });
+    addFundsToUser.mutate({ userId: selectedUser.id, amount, notes: adminNotes });
   };
 
   const handleDeductFunds = () => {
@@ -488,599 +314,276 @@ export default function AdminWallet() {
       toast.error('الرجاء اختيار مستخدم وإدخال مبلغ صحيح');
       return;
     }
-    if (selectedUserWallet && amount > selectedUserWallet.balance) {
-      toast.error('المبلغ أكبر من الرصيد المتاح');
-      return;
-    }
-    deductFundsFromUser.mutate({
-      userId: selectedUser.id,
-      amount,
-      notes: deductNotes,
-    });
+    deductFundsFromUser.mutate({ userId: selectedUser.id, amount, notes: deductNotes });
   };
 
-  const handleDeleteTransaction = async (transactionId: string) => {
-    if (!confirm('هل أنت متأكد من حذف هذه المعاملة؟')) return;
-    
-    try {
-      const { error } = await supabase
-        .from('wallet_transactions')
-        .delete()
-        .eq('id', transactionId);
-      
-      if (error) throw error;
-      
-      queryClient.invalidateQueries({ queryKey: ['admin-wallet-transactions'] });
-      toast.success('تم حذف المعاملة بنجاح');
-    } catch (error: any) {
-      console.error('خطأ في حذف المعاملة:', error);
-      toast.error(error.message || 'حدث خطأ في حذف المعاملة');
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'deposit':
-        return 'تعبئة';
-      case 'withdrawal':
-        return 'سحب';
-      case 'points_conversion':
-        return 'تحويل نقاط';
-      case 'order_payment':
-        return 'دفع طلب';
-      case 'admin_deduction':
-        return 'خصم إداري';
-      default:
-        return type;
-    }
-  };
-
-  const getPaymentMethodLabel = (method: string) => {
-    switch (method) {
-      case 'mastercard_rafidain':
-        return 'ماستر كارد الرافدين';
-      case 'zaincash':
-        return 'زين كاش';
-      default:
-        return method || '-';
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700">قيد المراجعة</Badge>;
-      case 'approved':
-        return <Badge variant="outline" className="bg-green-500/10 text-green-700">تمت الموافقة</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="bg-blue-500/10 text-blue-700">مكتمل</Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-red-500/10 text-red-700">مرفوض</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  if (authLoading || !isAdmin) {
-    return null;
+  if (authLoading) {
+    return (
+      <AdminLayout title="إدارة المحفظة" icon={<Wallet className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
+    );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/admin')}
-          className="mb-4"
-        >
-          <ArrowLeft className="ml-2 h-4 w-4" />
-          العودة إلى لوحة التحكم
-        </Button>
-        
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-2">
-          <div className="flex items-center gap-3">
-            <Wallet className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">إدارة المحفظة</h1>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={() => navigate('/admin/wallet-settings')} variant="outline" className="gap-2">
-              <Settings className="h-4 w-4" />
-              الإعدادات
-            </Button>
-            <Button onClick={() => setShowAddFundsDialog(true)} className="gap-2">
-              <PlusCircle className="h-4 w-4" />
-              إضافة رصيد
-            </Button>
-            <Button onClick={() => setShowDeductFundsDialog(true)} variant="outline" className="gap-2 text-destructive border-destructive hover:bg-destructive/10">
-              <MinusCircle className="h-4 w-4" />
-              خصم رصيد
-            </Button>
-          </div>
+    <AdminLayout
+      title="إدارة المحفظة"
+      icon={<Wallet className="h-5 w-5" />}
+      description="إدارة أرصدة المستخدمين والمعاملات المالية"
+      actions={
+        <div className="flex gap-2">
+          <Button onClick={() => setShowAddFundsDialog(true)} className="admin-btn-primary gap-2">
+            <PlusCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">إضافة رصيد</span>
+          </Button>
+          <Button onClick={() => setShowDeductFundsDialog(true)} variant="outline" className="gap-2">
+            <MinusCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">خصم رصيد</span>
+          </Button>
+          <Button onClick={() => navigate('/admin/wallet-settings')} variant="outline" size="icon">
+            <Settings className="h-4 w-4" />
+          </Button>
         </div>
-        <p className="text-muted-foreground">
-          إدارة طلبات تعبئة وسحب المحفظة
-        </p>
-      </div>
+      }
+    >
+      {/* Stats */}
+      <AdminStatsGrid>
+        <AdminStatCard
+          icon={<Wallet className="h-5 w-5" />}
+          value={formatPrice(totalWalletBalance)}
+          label="إجمالي الأرصدة"
+          colorClass="text-primary"
+          bgClass="bg-primary/10"
+        />
+        <AdminStatCard
+          icon={<User className="h-5 w-5" />}
+          value={customerWallets?.length || 0}
+          label="عدد المحافظ"
+          colorClass="text-blue-600"
+          bgClass="bg-blue-500/10"
+        />
+        <AdminStatCard
+          icon={<History className="h-5 w-5" />}
+          value={pendingTransactions?.length || 0}
+          label="معاملات معلقة"
+          colorClass="text-yellow-600"
+          bgClass="bg-yellow-500/10"
+        />
+      </AdminStatsGrid>
 
-      {/* الطلبات المعلقة */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>الطلبات المعلقة ({pendingTransactions?.length || 0})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p className="text-center py-8 text-muted-foreground">جاري التحميل...</p>
-          ) : pendingTransactions && pendingTransactions.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>المستخدم</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>المبلغ</TableHead>
-                    <TableHead>طريقة الدفع</TableHead>
-                    <TableHead>إثبات الدفع</TableHead>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingTransactions.map((transaction: any) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{transaction.profiles?.full_name || 'غير معروف'}</p>
-                          <p className="text-sm text-muted-foreground">@{transaction.profiles?.username}</p>
-                          {transaction.profiles?.phone_number && (
-                            <p className="text-xs text-muted-foreground">{transaction.profiles.phone_number}</p>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{getTypeLabel(transaction.type)}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`font-bold ${
-                          transaction.type === 'withdrawal' ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {transaction.type === 'withdrawal' ? '-' : '+'}
-                          {formatPrice(transaction.amount)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {getPaymentMethodLabel(transaction.payment_method)}
-                      </TableCell>
-                      <TableCell>
-                        {transaction.payment_proof_url ? (
-                          <a 
-                            href={transaction.payment_proof_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline text-sm"
-                          >
-                            عرض الصورة
-                          </a>
-                        ) : '-'}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(transaction.created_at).toLocaleString('ar-IQ')}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleApprove(transaction)}
-                            disabled={updateTransactionStatus.isPending}
-                            className="text-green-600 hover:text-green-700"
-                          >
-                            <Check className="h-4 w-4 ml-1" />
-                            موافقة
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleReject(transaction.id)}
-                            disabled={updateTransactionStatus.isPending}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4 ml-1" />
-                            رفض
-                          </Button>
-                        </div>
-                      </TableCell>
+      {/* Tabs */}
+      <Tabs defaultValue="pending" className="mt-6">
+        <TabsList className="admin-tabs">
+          <TabsTrigger value="pending" className="admin-tab">المعاملات المعلقة</TabsTrigger>
+          <TabsTrigger value="wallets" className="admin-tab">أرصدة الزبائن</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="pending" className="mt-4">
+          <AdminSection>
+            {isLoading ? (
+              <AdminLoading />
+            ) : !pendingTransactions || pendingTransactions.length === 0 ? (
+              <AdminEmptyState
+                icon={<Wallet className="h-12 w-12" />}
+                title="لا توجد معاملات معلقة"
+                description="جميع المعاملات تمت معالجتها"
+              />
+            ) : (
+              <div className="admin-table-wrapper">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">المستخدم</TableHead>
+                      <TableHead className="text-right">النوع</TableHead>
+                      <TableHead className="text-right">المبلغ</TableHead>
+                      <TableHead className="text-right">الحالة</TableHead>
+                      <TableHead className="text-right">الإجراءات</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <p className="text-center py-8 text-muted-foreground">
-              لا توجد طلبات معلقة
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* جميع المعاملات */}
-      <Card>
-        <CardHeader>
-          <CardTitle>سجل جميع المعاملات</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {allTransactions && allTransactions.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>المستخدم</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>المبلغ</TableHead>
-                    <TableHead>طريقة الدفع</TableHead>
-                    <TableHead>إثبات الدفع</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>ملاحظات</TableHead>
-                    <TableHead>حذف</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {allTransactions.map((transaction: any) => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{transaction.profiles?.full_name || 'غير معروف'}</p>
-                          <p className="text-sm text-muted-foreground">@{transaction.profiles?.username}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{getTypeLabel(transaction.type)}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`font-bold ${
-                          transaction.type === 'withdrawal' || transaction.type === 'order_payment' || transaction.type === 'admin_deduction' ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {transaction.type === 'withdrawal' || transaction.type === 'order_payment' || transaction.type === 'admin_deduction' ? '-' : '+'}
-                          {formatPrice(transaction.amount)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {getPaymentMethodLabel(transaction.payment_method)}
-                      </TableCell>
-                      <TableCell>
-                        {transaction.payment_proof_url ? (
-                          <a 
-                            href={transaction.payment_proof_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline text-sm"
-                          >
-                            عرض الصورة
-                          </a>
-                        ) : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {getStatusBadge(transaction.status)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(transaction.created_at).toLocaleString('ar-IQ')}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                        {transaction.admin_notes || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDeleteTransaction(transaction.id)}
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <p className="text-center py-8 text-muted-foreground">
-              لا توجد معاملات
-            </p>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* أرصدة الزبائن */}
-      <Card className="mt-6">
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <User className="h-5 w-5" />
-              أرصدة الزبائن ({customerWallets?.length || 0})
-            </CardTitle>
-            <div className="flex items-center gap-4">
-              <div className="text-sm">
-                إجمالي الأرصدة: <span className="font-bold text-primary">{formatPrice(totalWalletBalance)}</span>
+                  </TableHeader>
+                  <TableBody>
+                    {pendingTransactions.map((transaction: any) => (
+                      <TableRow key={transaction.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{transaction.profiles?.full_name || transaction.profiles?.username}</p>
+                            <p className="text-xs text-muted-foreground">{transaction.profiles?.phone_number}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={transaction.type === 'deposit' ? 'default' : 'secondary'}>
+                            {transaction.type === 'deposit' ? 'تعبئة' : 'سحب'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">{formatPrice(transaction.amount)}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600">
+                            معلقة
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-green-600 hover:bg-green-50"
+                              onClick={() => handleApprove(transaction)}
+                            >
+                              <Check className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:bg-red-50"
+                              onClick={() => handleReject(transaction.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-              <div className="relative w-64">
+            )}
+          </AdminSection>
+        </TabsContent>
+
+        <TabsContent value="wallets" className="mt-4">
+          <AdminSection>
+            <div className="mb-4">
+              <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="بحث عن زبون..."
+                  placeholder="بحث عن مستخدم..."
                   value={walletSearchQuery}
                   onChange={(e) => setWalletSearchQuery(e.target.value)}
                   className="pr-10"
                 />
               </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {loadingWallets ? (
-            <p className="text-center py-8 text-muted-foreground">جاري التحميل...</p>
-          ) : filteredCustomerWallets && filteredCustomerWallets.length > 0 ? (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>#</TableHead>
-                    <TableHead>الزبون</TableHead>
-                    <TableHead>الهاتف</TableHead>
-                    <TableHead>البريد</TableHead>
-                    <TableHead>الرصيد</TableHead>
-                    <TableHead>آخر تحديث</TableHead>
-                    <TableHead>الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCustomerWallets.map((wallet: any, index: number) => (
-                    <TableRow key={wallet.id}>
-                      <TableCell className="text-muted-foreground">{index + 1}</TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{wallet.profile?.full_name || 'غير معروف'}</p>
-                          <p className="text-sm text-muted-foreground">@{wallet.profile?.username}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {wallet.profile?.phone_number || '-'}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {wallet.profile?.email || '-'}
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-bold text-primary text-lg">
-                          {formatPrice(wallet.balance)}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {new Date(wallet.updated_at).toLocaleString('ar-IQ')}
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedCustomerForHistory(wallet);
-                            setShowCustomerHistoryDialog(true);
-                          }}
-                          className="gap-1"
-                        >
-                          <Search className="h-3 w-3" />
-                          السجل
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <p className="text-center py-8 text-muted-foreground">
-              لا يوجد زبائن لديهم رصيد
-            </p>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Dialog سجل معاملات الزبون */}
-      <Dialog open={showCustomerHistoryDialog} onOpenChange={(open) => {
-        setShowCustomerHistoryDialog(open);
-        if (!open) setSelectedCustomerForHistory(null);
-      }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Wallet className="h-5 w-5" />
-              سجل معاملات: {selectedCustomerForHistory?.profile?.full_name || 'غير معروف'}
-            </DialogTitle>
-            <DialogDescription>
-              الرصيد الحالي: <span className="font-bold text-primary">{formatPrice(selectedCustomerForHistory?.balance || 0)}</span>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto">
-            {customerTransactionHistory && customerTransactionHistory.length > 0 ? (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>المبلغ</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>طريقة الدفع</TableHead>
-                    <TableHead>ملاحظات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {customerTransactionHistory.map((tx: any) => (
-                    <TableRow key={tx.id}>
-                      <TableCell className="text-sm">
-                        {new Date(tx.created_at).toLocaleString('ar-IQ')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{getTypeLabel(tx.type)}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`font-bold ${
-                          tx.type === 'withdrawal' || tx.type === 'order_payment' || tx.type === 'admin_deduction' 
-                            ? 'text-red-600' : 'text-green-600'
-                        }`}>
-                          {tx.type === 'withdrawal' || tx.type === 'order_payment' || tx.type === 'admin_deduction' ? '-' : '+'}
-                          {formatPrice(Math.abs(tx.amount))}
-                        </span>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(tx.status)}</TableCell>
-                      <TableCell className="text-sm">
-                        {getPaymentMethodLabel(tx.payment_method)}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-xs">
-                        {tx.admin_notes || '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+            {loadingWallets ? (
+              <AdminLoading />
+            ) : filteredCustomerWallets.length === 0 ? (
+              <AdminEmptyState
+                icon={<Wallet className="h-12 w-12" />}
+                title="لا توجد محافظ"
+                description="لم يتم إنشاء أي محفظة بعد"
+              />
             ) : (
-              <p className="text-center py-8 text-muted-foreground">
-                لا توجد معاملات لهذا الزبون
-              </p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog إضافة رصيد لمستخدم */}
-      <Dialog open={showAddFundsDialog} onOpenChange={(open) => {
-        setShowAddFundsDialog(open);
-        if (!open) {
-          setSelectedUser(null);
-          setAddAmount('');
-          setAdminNotes('');
-          setSearchQuery('');
-        }
-      }}>
-        <DialogContent className="max-w-lg" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <PlusCircle className="h-5 w-5" />
-              إضافة رصيد لمستخدم
-            </DialogTitle>
-            <DialogDescription>
-              البحث عن مستخدم وإضافة رصيد إلى محفظته
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4 mt-4">
-            {/* البحث عن المستخدم */}
-            <div className="space-y-2">
-              <Label>البحث عن مستخدم</Label>
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="ابحث بالاسم أو رقم الهاتف أو اسم المستخدم..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pr-10"
-                />
+              <div className="admin-table-wrapper">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="text-right">المستخدم</TableHead>
+                      <TableHead className="text-right">رقم الهاتف</TableHead>
+                      <TableHead className="text-right">الرصيد</TableHead>
+                      <TableHead className="text-right">الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCustomerWallets.map((wallet: any) => (
+                      <TableRow key={wallet.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{wallet.profile?.full_name || wallet.profile?.username}</p>
+                            <p className="text-xs text-muted-foreground">{wallet.profile?.email}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{wallet.profile?.phone_number || '-'}</TableCell>
+                        <TableCell className="font-medium text-primary">{formatPrice(wallet.balance)}</TableCell>
+                        <TableCell>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setSelectedCustomerForHistory(wallet);
+                              setShowCustomerHistoryDialog(true);
+                            }}
+                          >
+                            <History className="h-4 w-4 ml-1" />
+                            السجل
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
-              
-              {/* نتائج البحث */}
-              {!selectedUser && (
-                <div className="border rounded-lg max-h-48 overflow-y-auto">
-                  {searchLoading ? (
-                    <p className="p-3 text-center text-muted-foreground">جاري التحميل...</p>
-                  ) : searchResults && searchResults.length > 0 ? (
-                    searchResults.map((user: any) => (
-                      <button
-                        key={user.id}
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setSearchQuery('');
-                        }}
-                        className={`w-full p-3 text-right hover:bg-muted/50 border-b last:border-b-0 flex items-center gap-3 ${
-                          selectedUser?.id === user.id ? 'bg-primary/10' : ''
-                        }`}
-                      >
-                        <User className="h-8 w-8 p-1.5 bg-muted rounded-full" />
-                        <div className="flex-1">
-                          <p className="font-medium">{user.full_name || 'بدون اسم'}</p>
-                          <p className="text-sm text-muted-foreground">@{user.username}</p>
-                          {user.phone_number && (
-                            <p className="text-xs text-muted-foreground">{user.phone_number}</p>
-                          )}
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <p className="p-3 text-center text-muted-foreground">لا يوجد مستخدمين</p>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
+          </AdminSection>
+        </TabsContent>
+      </Tabs>
 
-            {/* المستخدم المحدد */}
-            {selectedUser && (
-              <Card className="bg-primary/5 border-primary/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <User className="h-10 w-10 p-2 bg-primary/10 rounded-full text-primary" />
-                      <div>
-                        <p className="font-bold">{selectedUser.full_name || 'بدون اسم'}</p>
-                        <p className="text-sm text-muted-foreground">@{selectedUser.username}</p>
-                        {selectedUser.phone_number && (
-                          <p className="text-xs text-muted-foreground">{selectedUser.phone_number}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs text-muted-foreground">الرصيد الحالي</p>
-                      <p className="font-bold text-lg text-primary">
-                        {formatPrice(selectedUserWallet?.balance || 0)}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedUser(null)}
-                    className="mt-2 text-xs"
+      {/* Add Funds Dialog */}
+      <Dialog open={showAddFundsDialog} onOpenChange={setShowAddFundsDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إضافة رصيد للمستخدم</DialogTitle>
+            <DialogDescription>ابحث عن المستخدم وحدد المبلغ المراد إضافته</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="admin-form-group">
+              <Label>البحث عن مستخدم</Label>
+              <Input
+                placeholder="اسم، هاتف، أو بريد إلكتروني..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            
+            {searchResults && searchResults.length > 0 && !selectedUser && (
+              <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
+                {searchResults.map((u: any) => (
+                  <button
+                    key={u.id}
+                    onClick={() => setSelectedUser(u)}
+                    className="w-full p-3 text-right hover:bg-muted/50 transition-colors"
                   >
-                    تغيير المستخدم
-                  </Button>
-                </CardContent>
-              </Card>
+                    <p className="font-medium">{u.full_name || u.username}</p>
+                    <p className="text-xs text-muted-foreground">{u.phone_number}</p>
+                  </button>
+                ))}
+              </div>
             )}
 
-            {/* المبلغ */}
-            <div className="space-y-2">
-              <Label htmlFor="addAmount">المبلغ</Label>
+            {selectedUser && (
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{selectedUser.full_name || selectedUser.username}</p>
+                    <p className="text-xs text-muted-foreground">الرصيد الحالي: {formatPrice(selectedUserWallet?.balance || 0)}</p>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedUser(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="admin-form-group">
+              <Label>المبلغ</Label>
               <Input
-                id="addAmount"
                 type="number"
-                placeholder="أدخل المبلغ المراد إضافته"
                 value={addAmount}
                 onChange={(e) => setAddAmount(e.target.value)}
-                min="0"
+                placeholder="0"
               />
             </div>
-
-            {/* ملاحظات */}
-            <div className="space-y-2">
-              <Label htmlFor="adminNotes">ملاحظات (اختياري)</Label>
+            
+            <div className="admin-form-group">
+              <Label>ملاحظات (اختياري)</Label>
               <Input
-                id="adminNotes"
-                placeholder="سبب الإضافة..."
                 value={adminNotes}
                 onChange={(e) => setAdminNotes(e.target.value)}
+                placeholder="سبب الإضافة..."
               />
             </div>
 
-            {/* زر الإضافة */}
-            <Button
-              onClick={handleAddFunds}
-              disabled={!selectedUser || !addAmount || Number(addAmount) <= 0 || addFundsToUser.isPending}
+            <Button 
+              onClick={handleAddFunds} 
+              disabled={addFundsToUser.isPending || !selectedUser}
               className="w-full"
             >
               {addFundsToUser.isPending ? 'جاري الإضافة...' : 'إضافة الرصيد'}
@@ -1089,155 +592,125 @@ export default function AdminWallet() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog خصم رصيد من مستخدم */}
-      <Dialog open={showDeductFundsDialog} onOpenChange={(open) => {
-        setShowDeductFundsDialog(open);
-        if (!open) {
-          setSelectedUser(null);
-          setDeductAmount('');
-          setDeductNotes('');
-          setSearchQuery('');
-        }
-      }}>
-        <DialogContent className="max-w-lg" dir="rtl">
+      {/* Deduct Funds Dialog */}
+      <Dialog open={showDeductFundsDialog} onOpenChange={setShowDeductFundsDialog}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <MinusCircle className="h-5 w-5" />
-              خصم رصيد من مستخدم
-            </DialogTitle>
-            <DialogDescription>
-              البحث عن مستخدم وخصم مبلغ من محفظته
-            </DialogDescription>
+            <DialogTitle>خصم رصيد من المستخدم</DialogTitle>
+            <DialogDescription>ابحث عن المستخدم وحدد المبلغ المراد خصمه</DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4 mt-4">
-            {/* البحث عن المستخدم */}
-            <div className="space-y-2">
+          <div className="space-y-4">
+            <div className="admin-form-group">
               <Label>البحث عن مستخدم</Label>
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="ابحث بالاسم أو رقم الهاتف أو اسم المستخدم..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pr-10"
-                />
-              </div>
-              
-              {/* نتائج البحث */}
-              {!selectedUser && (
-                <div className="border rounded-lg max-h-48 overflow-y-auto">
-                  {searchLoading ? (
-                    <p className="p-3 text-center text-muted-foreground">جاري التحميل...</p>
-                  ) : searchResults && searchResults.length > 0 ? (
-                    searchResults.map((user: any) => (
-                      <button
-                        key={user.id}
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setSearchQuery('');
-                        }}
-                        className={`w-full p-3 text-right hover:bg-muted/50 border-b last:border-b-0 flex items-center gap-3 ${
-                          selectedUser?.id === user.id ? 'bg-primary/10' : ''
-                        }`}
-                      >
-                        <User className="h-8 w-8 p-1.5 bg-muted rounded-full" />
-                        <div className="flex-1">
-                          <p className="font-medium">{user.full_name || 'بدون اسم'}</p>
-                          <p className="text-sm text-muted-foreground">@{user.username}</p>
-                          {user.phone_number && (
-                            <p className="text-xs text-muted-foreground">{user.phone_number}</p>
-                          )}
-                        </div>
-                      </button>
-                    ))
-                  ) : (
-                    <p className="p-3 text-center text-muted-foreground">لا يوجد مستخدمين</p>
-                  )}
-                </div>
-              )}
+              <Input
+                placeholder="اسم، هاتف، أو بريد إلكتروني..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
-
-            {/* المستخدم المحدد */}
-            {selectedUser && (
-              <Card className="bg-destructive/5 border-destructive/20">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <User className="h-10 w-10 p-2 bg-destructive/10 rounded-full text-destructive" />
-                      <div>
-                        <p className="font-bold">{selectedUser.full_name || 'بدون اسم'}</p>
-                        <p className="text-sm text-muted-foreground">@{selectedUser.username}</p>
-                        {selectedUser.phone_number && (
-                          <p className="text-xs text-muted-foreground">{selectedUser.phone_number}</p>
-                        )}
-                      </div>
-                    </div>
-                    <div className="text-left">
-                      <p className="text-xs text-muted-foreground">الرصيد الحالي</p>
-                      <p className="font-bold text-lg text-primary">
-                        {formatPrice(selectedUserWallet?.balance || 0)}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedUser(null)}
-                    className="mt-2 text-xs"
+            
+            {searchResults && searchResults.length > 0 && !selectedUser && (
+              <div className="max-h-40 overflow-y-auto border rounded-lg divide-y">
+                {searchResults.map((u: any) => (
+                  <button
+                    key={u.id}
+                    onClick={() => setSelectedUser(u)}
+                    className="w-full p-3 text-right hover:bg-muted/50 transition-colors"
                   >
-                    تغيير المستخدم
-                  </Button>
-                </CardContent>
-              </Card>
+                    <p className="font-medium">{u.full_name || u.username}</p>
+                    <p className="text-xs text-muted-foreground">{u.phone_number}</p>
+                  </button>
+                ))}
+              </div>
             )}
 
-            {/* المبلغ */}
-            <div className="space-y-2">
-              <Label htmlFor="deductAmount">المبلغ المراد خصمه</Label>
+            {selectedUser && (
+              <div className="p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{selectedUser.full_name || selectedUser.username}</p>
+                    <p className="text-xs text-muted-foreground">الرصيد الحالي: {formatPrice(selectedUserWallet?.balance || 0)}</p>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => setSelectedUser(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div className="admin-form-group">
+              <Label>المبلغ</Label>
               <Input
-                id="deductAmount"
                 type="number"
-                placeholder="أدخل المبلغ المراد خصمه"
                 value={deductAmount}
                 onChange={(e) => setDeductAmount(e.target.value)}
-                min="0"
-                max={selectedUserWallet?.balance || 0}
+                placeholder="0"
               />
-              {selectedUserWallet && Number(deductAmount) > selectedUserWallet.balance && (
-                <p className="text-xs text-destructive">المبلغ أكبر من الرصيد المتاح</p>
-              )}
             </div>
-
-            {/* ملاحظات */}
-            <div className="space-y-2">
-              <Label htmlFor="deductNotes">سبب الخصم</Label>
+            
+            <div className="admin-form-group">
+              <Label>سبب الخصم</Label>
               <Input
-                id="deductNotes"
-                placeholder="أدخل سبب الخصم..."
                 value={deductNotes}
                 onChange={(e) => setDeductNotes(e.target.value)}
+                placeholder="سبب الخصم..."
               />
             </div>
 
-            {/* زر الخصم */}
-            <Button
-              onClick={handleDeductFunds}
-              disabled={
-                !selectedUser || 
-                !deductAmount || 
-                Number(deductAmount) <= 0 || 
-                (selectedUserWallet && Number(deductAmount) > selectedUserWallet.balance) ||
-                deductFundsFromUser.isPending
-              }
-              variant="destructive"
+            <Button 
+              onClick={handleDeductFunds} 
+              disabled={deductFundsFromUser.isPending || !selectedUser}
               className="w-full"
+              variant="destructive"
             >
               {deductFundsFromUser.isPending ? 'جاري الخصم...' : 'خصم الرصيد'}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+
+      {/* Customer History Dialog */}
+      <Dialog open={showCustomerHistoryDialog} onOpenChange={setShowCustomerHistoryDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>سجل معاملات {selectedCustomerForHistory?.profile?.full_name}</DialogTitle>
+          </DialogHeader>
+          {customerTransactionHistory && customerTransactionHistory.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-right">النوع</TableHead>
+                  <TableHead className="text-right">المبلغ</TableHead>
+                  <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-right">التاريخ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {customerTransactionHistory.map((t: any) => (
+                  <TableRow key={t.id}>
+                    <TableCell>
+                      <Badge variant={t.type === 'deposit' ? 'default' : 'secondary'}>
+                        {t.type === 'deposit' ? 'تعبئة' : t.type === 'withdrawal' ? 'سحب' : 'خصم'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium">{formatPrice(t.amount)}</TableCell>
+                    <TableCell>
+                      <Badge variant={t.status === 'completed' ? 'default' : t.status === 'rejected' ? 'destructive' : 'outline'}>
+                        {t.status === 'completed' ? 'مكتمل' : t.status === 'pending' ? 'معلق' : 'مرفوض'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {new Date(t.created_at).toLocaleDateString('ar-IQ')}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-center text-muted-foreground py-8">لا توجد معاملات</p>
+          )}
+        </DialogContent>
+      </Dialog>
+    </AdminLayout>
   );
 }

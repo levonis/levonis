@@ -6,11 +6,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Loader2, Save, ArrowRight, Plus, X } from 'lucide-react';
+import { Save, Plus, X, Settings } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent, AdminLoading } from '@/components/admin/AdminLayout';
 
 export default function AdminDefaultSettings() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -18,7 +18,6 @@ export default function AdminDefaultSettings() {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<any>(null);
 
-  // Fetch default settings
   const { data: settings, isLoading } = useQuery({
     queryKey: ['default-settings'],
     queryFn: async () => {
@@ -33,21 +32,18 @@ export default function AdminDefaultSettings() {
     },
   });
 
-  // Initialize form data when settings are loaded
   useEffect(() => {
     if (settings?.setting_value && !formData) {
       setFormData(settings.setting_value);
     }
   }, [settings, formData]);
 
-  // Check auth and admin status
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
       navigate('/');
     }
   }, [authLoading, user, isAdmin, navigate]);
 
-  // Update mutation
   const updateMutation = useMutation({
     mutationFn: async (newSettings: any) => {
       const { error } = await supabase
@@ -98,9 +94,9 @@ export default function AdminDefaultSettings() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AdminLayout title="الإعدادات الافتراضية" icon={<Settings className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
     );
   }
 
@@ -110,41 +106,31 @@ export default function AdminDefaultSettings() {
 
   if (!formData) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AdminLayout title="الإعدادات الافتراضية" icon={<Settings className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/admin')}
-            className="mb-4"
-          >
-            <ArrowRight className="h-4 w-4 ml-2 rotate-180" />
-            العودة إلى لوحة التحكم
-          </Button>
-          <h1 className="text-3xl font-bold text-foreground">الإعدادات الافتراضية</h1>
-          <p className="text-muted-foreground mt-2">
-            قم بتخصيص الإعدادات الافتراضية التي سيتم تطبيقها على المنتجات الجديدة
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>إعدادات المنتج الافتراضية</CardTitle>
-              <CardDescription>
-                هذه الإعدادات سيتم تطبيقها تلقائياً عند إضافة منتج جديد
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+    <AdminLayout
+      title="الإعدادات الافتراضية"
+      icon={<Settings className="h-5 w-5" />}
+      description="تخصيص الإعدادات الافتراضية للمنتجات الجديدة"
+      actions={
+        <Button onClick={handleSubmit} disabled={updateMutation.isPending} className="admin-btn-primary gap-2">
+          <Save className="h-4 w-4" />
+          {updateMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+        </Button>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <AdminCard>
+          <AdminCardHeader title="إعدادات المنتج الافتراضية" description="هذه الإعدادات سيتم تطبيقها تلقائياً عند إضافة منتج جديد" />
+          <AdminCardContent>
+            <div className="space-y-6">
               {/* Currency */}
-              <div className="space-y-2">
+              <div className="admin-form-group">
                 <Label htmlFor="currency">العملة الافتراضية</Label>
                 <Input
                   id="currency"
@@ -184,7 +170,7 @@ export default function AdminDefaultSettings() {
                   </Label>
                 </div>
 
-                <div className="space-y-2">
+                <div className="admin-form-group">
                   <Label htmlFor="availability_type">نوع التوفر الافتراضي</Label>
                   <Select
                     value={formData.availability_type || 'pre_order'}
@@ -204,19 +190,6 @@ export default function AdminDefaultSettings() {
 
                 <div className="flex items-center space-x-2 space-x-reverse">
                   <Checkbox
-                    id="in_stock"
-                    checked={formData.in_stock !== false}
-                    onCheckedChange={(checked) => 
-                      setFormData({ ...formData, in_stock: checked })
-                    }
-                  />
-                  <Label htmlFor="in_stock" className="cursor-pointer">
-                    متوفر (in_stock flag)
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Checkbox
                     id="featured"
                     checked={formData.featured || false}
                     onCheckedChange={(checked) => 
@@ -228,197 +201,172 @@ export default function AdminDefaultSettings() {
                   </Label>
                 </div>
               </div>
+            </div>
+          </AdminCardContent>
+        </AdminCard>
 
-              {/* Options & Colors Availability Defaults */}
-              <div className="space-y-4 pt-4 border-t border-border">
-                <Label className="text-base font-semibold">إعدادات توفر الخيارات والألوان الافتراضية</Label>
+        {/* Options & Colors Defaults */}
+        <AdminCard>
+          <AdminCardHeader title="إعدادات توفر الخيارات والألوان" description="سيتم تطبيقها على جميع الخيارات والألوان الجديدة" />
+          <AdminCardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+                <Label className="text-sm font-semibold">إعدادات الخيارات</Label>
                 
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    هذه الإعدادات سيتم تطبيقها تلقائياً على جميع الخيارات والألوان عند إضافة منتج جديد
-                  </p>
-                  
-                  <div className="space-y-3 p-4 bg-accent/10 rounded-lg">
-                    <Label className="text-sm font-semibold">إعدادات الخيارات (Options)</Label>
-                    
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Checkbox
-                        id="default_option_in_stock"
-                        checked={formData.default_option_in_stock !== false}
-                        onCheckedChange={(checked) => 
-                          setFormData({ ...formData, default_option_in_stock: checked })
-                        }
-                      />
-                      <Label htmlFor="default_option_in_stock" className="cursor-pointer text-sm">
-                        متوفر في المخزون (افتراضي)
-                      </Label>
-                    </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="default_option_in_stock"
+                    checked={formData.default_option_in_stock !== false}
+                    onCheckedChange={(checked) => 
+                      setFormData({ ...formData, default_option_in_stock: checked })
+                    }
+                  />
+                  <Label htmlFor="default_option_in_stock" className="cursor-pointer text-sm">
+                    متوفر في المخزون
+                  </Label>
+                </div>
 
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Checkbox
-                        id="default_option_available_for_direct_sale"
-                        checked={formData.default_option_available_for_direct_sale !== false}
-                        onCheckedChange={(checked) => 
-                          setFormData({ ...formData, default_option_available_for_direct_sale: checked })
-                        }
-                      />
-                      <Label htmlFor="default_option_available_for_direct_sale" className="cursor-pointer text-sm">
-                        متوفر للبيع المباشر (افتراضي)
-                      </Label>
-                    </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="default_option_available_for_direct_sale"
+                    checked={formData.default_option_available_for_direct_sale !== false}
+                    onCheckedChange={(checked) => 
+                      setFormData({ ...formData, default_option_available_for_direct_sale: checked })
+                    }
+                  />
+                  <Label htmlFor="default_option_available_for_direct_sale" className="cursor-pointer text-sm">
+                    متوفر للبيع المباشر
+                  </Label>
+                </div>
 
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Checkbox
-                        id="default_option_available_for_pre_order"
-                        checked={formData.default_option_available_for_pre_order || false}
-                        onCheckedChange={(checked) => 
-                          setFormData({ ...formData, default_option_available_for_pre_order: checked })
-                        }
-                      />
-                      <Label htmlFor="default_option_available_for_pre_order" className="cursor-pointer text-sm">
-                        متوفر للطلب المسبق (افتراضي)
-                      </Label>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3 p-4 bg-accent/10 rounded-lg">
-                    <Label className="text-sm font-semibold">إعدادات الألوان (Colors)</Label>
-                    
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Checkbox
-                        id="default_color_in_stock"
-                        checked={formData.default_color_in_stock !== false}
-                        onCheckedChange={(checked) => 
-                          setFormData({ ...formData, default_color_in_stock: checked })
-                        }
-                      />
-                      <Label htmlFor="default_color_in_stock" className="cursor-pointer text-sm">
-                        متوفر في المخزون (افتراضي)
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Checkbox
-                        id="default_color_available_for_direct_sale"
-                        checked={formData.default_color_available_for_direct_sale !== false}
-                        onCheckedChange={(checked) => 
-                          setFormData({ ...formData, default_color_available_for_direct_sale: checked })
-                        }
-                      />
-                      <Label htmlFor="default_color_available_for_direct_sale" className="cursor-pointer text-sm">
-                        متوفر للبيع المباشر (افتراضي)
-                      </Label>
-                    </div>
-
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Checkbox
-                        id="default_color_available_for_pre_order"
-                        checked={formData.default_color_available_for_pre_order || false}
-                        onCheckedChange={(checked) => 
-                          setFormData({ ...formData, default_color_available_for_pre_order: checked })
-                        }
-                      />
-                      <Label htmlFor="default_color_available_for_pre_order" className="cursor-pointer text-sm">
-                        متوفر للطلب المسبق (افتراضي)
-                      </Label>
-                    </div>
-                  </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="default_option_available_for_pre_order"
+                    checked={formData.default_option_available_for_pre_order || false}
+                    onCheckedChange={(checked) => 
+                      setFormData({ ...formData, default_option_available_for_pre_order: checked })
+                    }
+                  />
+                  <Label htmlFor="default_option_available_for_pre_order" className="cursor-pointer text-sm">
+                    متوفر للطلب المسبق
+                  </Label>
                 </div>
               </div>
 
-              {/* Pre-order Shipping Options */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base font-semibold">خيارات الشحن للطلب المسبق</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addShippingOption}
-                  >
-                    <Plus className="h-4 w-4 ml-1" />
-                    إضافة خيار شحن
-                  </Button>
+              <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+                <Label className="text-sm font-semibold">إعدادات الألوان</Label>
+                
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="default_color_in_stock"
+                    checked={formData.default_color_in_stock !== false}
+                    onCheckedChange={(checked) => 
+                      setFormData({ ...formData, default_color_in_stock: checked })
+                    }
+                  />
+                  <Label htmlFor="default_color_in_stock" className="cursor-pointer text-sm">
+                    متوفر في المخزون
+                  </Label>
                 </div>
 
-                {formData.pre_order_shipping_options?.map((option: any, index: number) => (
-                  <Card key={index} className="p-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Label className="font-semibold">خيار الشحن {index + 1}</Label>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeShippingOption(index)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="default_color_available_for_direct_sale"
+                    checked={formData.default_color_available_for_direct_sale !== false}
+                    onCheckedChange={(checked) => 
+                      setFormData({ ...formData, default_color_available_for_direct_sale: checked })
+                    }
+                  />
+                  <Label htmlFor="default_color_available_for_direct_sale" className="cursor-pointer text-sm">
+                    متوفر للبيع المباشر
+                  </Label>
+                </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <div>
-                          <Label>الاسم بالعربي</Label>
-                          <Input
-                            value={option.name_ar}
-                            onChange={(e) => handleShippingOptionChange(index, 'name_ar', e.target.value)}
-                            placeholder="شحن مجاني (45 يومًا)"
-                          />
-                        </div>
-
-                        <div>
-                          <Label>الاسم بالإنجليزي</Label>
-                          <Input
-                            value={option.name}
-                            onChange={(e) => handleShippingOptionChange(index, 'name', e.target.value)}
-                            placeholder="Free Shipping (45 days)"
-                          />
-                        </div>
-
-                        <div className="md:col-span-2">
-                          <Label>تعديل السعر</Label>
-                          <Input
-                            type="number"
-                            value={option.price_adjustment}
-                            onChange={(e) => handleShippingOptionChange(index, 'price_adjustment', parseFloat(e.target.value) || 0)}
-                            placeholder="0"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="default_color_available_for_pre_order"
+                    checked={formData.default_color_available_for_pre_order || false}
+                    onCheckedChange={(checked) => 
+                      setFormData({ ...formData, default_color_available_for_pre_order: checked })
+                    }
+                  />
+                  <Label htmlFor="default_color_available_for_pre_order" className="cursor-pointer text-sm">
+                    متوفر للطلب المسبق
+                  </Label>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </AdminCardContent>
+        </AdminCard>
 
-          <div className="flex justify-end gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate('/admin')}
-            >
-              إلغاء
-            </Button>
-            <Button
-              type="submit"
-              disabled={updateMutation.isPending}
-            >
-              {updateMutation.isPending ? (
-                <>
-                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                  جاري الحفظ...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 ml-2" />
-                  حفظ الإعدادات
-                </>
+        {/* Shipping Options */}
+        <AdminCard>
+          <AdminCardHeader 
+            title="خيارات الشحن للطلب المسبق" 
+            actions={
+              <Button type="button" variant="outline" size="sm" onClick={addShippingOption}>
+                <Plus className="h-4 w-4 ml-1" />
+                إضافة خيار
+              </Button>
+            }
+          />
+          <AdminCardContent>
+            <div className="space-y-4">
+              {formData.pre_order_shipping_options?.map((option: any, index: number) => (
+                <div key={index} className="p-4 border rounded-lg bg-muted/20">
+                  <div className="flex items-center justify-between mb-3">
+                    <Label className="font-semibold">خيار الشحن {index + 1}</Label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeShippingOption(index)}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="admin-form-group">
+                      <Label>الاسم بالعربي</Label>
+                      <Input
+                        value={option.name_ar}
+                        onChange={(e) => handleShippingOptionChange(index, 'name_ar', e.target.value)}
+                        placeholder="شحن مجاني (45 يومًا)"
+                      />
+                    </div>
+
+                    <div className="admin-form-group">
+                      <Label>الاسم بالإنجليزي</Label>
+                      <Input
+                        value={option.name}
+                        onChange={(e) => handleShippingOptionChange(index, 'name', e.target.value)}
+                        placeholder="Free Shipping (45 days)"
+                      />
+                    </div>
+
+                    <div className="admin-form-group">
+                      <Label>تعديل السعر</Label>
+                      <Input
+                        type="number"
+                        value={option.price_adjustment}
+                        onChange={(e) => handleShippingOptionChange(index, 'price_adjustment', parseFloat(e.target.value) || 0)}
+                        placeholder="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {(!formData.pre_order_shipping_options || formData.pre_order_shipping_options.length === 0) && (
+                <p className="text-center text-muted-foreground py-8">
+                  لا توجد خيارات شحن. اضغط على "إضافة خيار" لإضافة خيار جديد.
+                </p>
               )}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
+            </div>
+          </AdminCardContent>
+        </AdminCard>
+      </form>
+    </AdminLayout>
   );
 }
