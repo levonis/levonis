@@ -4,12 +4,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { ArrowLeft, Settings, Plus, Trash2, Save } from 'lucide-react';
+import { Settings, Plus, Trash2, Save, CreditCard, Loader2 } from 'lucide-react';
+import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminLoading, AdminEmptyState } from "@/components/admin/AdminLayout";
 
 interface PaymentMethod {
   id: string;
@@ -43,7 +43,6 @@ export default function AdminWalletSettings() {
     }
   }, [user, isAdmin, authLoading, navigate]);
 
-  // جلب الإعدادات الحالية
   const { data: currentSettings, isLoading } = useQuery({
     queryKey: ['wallet-settings-admin'],
     queryFn: async () => {
@@ -65,7 +64,6 @@ export default function AdminWalletSettings() {
     }
   }, [currentSettings]);
 
-  // حفظ الإعدادات
   const saveSettings = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
@@ -123,97 +121,94 @@ export default function AdminWalletSettings() {
     return null;
   }
 
+  if (isLoading) {
+    return (
+      <AdminLayout title="إعدادات المحفظة" icon={<Settings className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
+    );
+  }
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <div className="mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate('/admin')}
-          className="mb-4"
-        >
-          <ArrowLeft className="ml-2 h-4 w-4" />
-          العودة إلى لوحة التحكم
-        </Button>
-        
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-2">
-          <div className="flex items-center gap-3">
-            <Settings className="h-8 w-8 text-primary" />
-            <h1 className="text-3xl font-bold">إعدادات المحفظة</h1>
-          </div>
-          <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending}>
+    <AdminLayout
+      title="إعدادات المحفظة"
+      description="إدارة إعدادات المحفظة وطرق الدفع"
+      icon={<Settings className="h-5 w-5" />}
+      maxWidth="4xl"
+      actions={
+        <Button size="sm" onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending}>
+          {saveSettings.isPending ? (
+            <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+          ) : (
             <Save className="ml-2 h-4 w-4" />
-            {saveSettings.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
-          </Button>
-        </div>
-        <p className="text-muted-foreground">
-          إدارة إعدادات المحفظة وطرق الدفع
-        </p>
-      </div>
-
-      {isLoading ? (
-        <p className="text-center py-8">جاري التحميل...</p>
-      ) : (
-        <div className="space-y-6">
-          {/* إعدادات السحب */}
-          <Card>
-            <CardHeader>
-              <CardTitle>إعدادات السحب</CardTitle>
-              <CardDescription>تحديد حدود السحب من المحفظة</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="minWithdrawal">الحد الأدنى للسحب (دينار عراقي)</Label>
-                  <Input
-                    id="minWithdrawal"
-                    type="number"
-                    value={settings.min_withdrawal_amount}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      min_withdrawal_amount: Number(e.target.value),
-                    }))}
-                    min="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="maxWithdrawal">الحد الأقصى للسحب (دينار عراقي)</Label>
-                  <Input
-                    id="maxWithdrawal"
-                    type="number"
-                    value={settings.max_withdrawal_amount}
-                    onChange={(e) => setSettings(prev => ({
-                      ...prev,
-                      max_withdrawal_amount: Number(e.target.value),
-                    }))}
-                    min="0"
-                  />
-                </div>
+          )}
+          حفظ الإعدادات
+        </Button>
+      }
+    >
+      <div className="space-y-6">
+        {/* إعدادات السحب */}
+        <AdminCard>
+          <AdminCardHeader 
+            title="إعدادات السحب" 
+            description="تحديد حدود السحب من المحفظة"
+          />
+          <AdminCardContent>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="minWithdrawal">الحد الأدنى للسحب (دينار عراقي)</Label>
+                <Input
+                  id="minWithdrawal"
+                  type="number"
+                  value={settings.min_withdrawal_amount}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    min_withdrawal_amount: Number(e.target.value),
+                  }))}
+                  min="0"
+                />
               </div>
-            </CardContent>
-          </Card>
-
-          {/* طرق الدفع */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>طرق الدفع</CardTitle>
-                  <CardDescription>إدارة طرق الدفع المتاحة للمستخدمين</CardDescription>
-                </div>
-                <Button onClick={addPaymentMethod} size="sm">
-                  <Plus className="ml-2 h-4 w-4" />
-                  إضافة طريقة
-                </Button>
+              <div className="space-y-2">
+                <Label htmlFor="maxWithdrawal">الحد الأقصى للسحب (دينار عراقي)</Label>
+                <Input
+                  id="maxWithdrawal"
+                  type="number"
+                  value={settings.max_withdrawal_amount}
+                  onChange={(e) => setSettings(prev => ({
+                    ...prev,
+                    max_withdrawal_amount: Number(e.target.value),
+                  }))}
+                  min="0"
+                />
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {settings.payment_methods.length === 0 ? (
-                <p className="text-center py-4 text-muted-foreground">
-                  لا توجد طرق دفع. اضغط على "إضافة طريقة" لإضافة طريقة جديدة.
-                </p>
-              ) : (
-                settings.payment_methods.map((method, index) => (
-                  <div key={method.id} className="p-4 border rounded-lg space-y-4">
+            </div>
+          </AdminCardContent>
+        </AdminCard>
+
+        {/* طرق الدفع */}
+        <AdminCard>
+          <AdminCardHeader 
+            title="طرق الدفع" 
+            description="إدارة طرق الدفع المتاحة للمستخدمين"
+            icon={<CreditCard className="h-5 w-5" />}
+            actions={
+              <Button onClick={addPaymentMethod} size="sm" variant="outline">
+                <Plus className="ml-2 h-4 w-4" />
+                إضافة طريقة
+              </Button>
+            }
+          />
+          <AdminCardContent>
+            {settings.payment_methods.length === 0 ? (
+              <AdminEmptyState
+                icon={<CreditCard className="h-10 w-10" />}
+                title="لا توجد طرق دفع"
+                description="اضغط على 'إضافة طريقة' لإضافة طريقة جديدة"
+              />
+            ) : (
+              <div className="space-y-4">
+                {settings.payment_methods.map((method, index) => (
+                  <div key={method.id} className="p-4 border border-border/40 rounded-lg space-y-4 bg-muted/30">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium">طريقة الدفع #{index + 1}</h4>
                       <div className="flex items-center gap-4">
@@ -265,12 +260,12 @@ export default function AdminWalletSettings() {
                       />
                     </div>
                   </div>
-                ))
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
-    </div>
+                ))}
+              </div>
+            )}
+          </AdminCardContent>
+        </AdminCard>
+      </div>
+    </AdminLayout>
   );
 }

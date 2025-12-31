@@ -1,8 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Eye, Trash2, Download, AlertCircle } from "lucide-react";
+import { Loader2, Eye, Trash2, Download, AlertCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import DOMPurify from "dompurify";
@@ -27,6 +26,7 @@ import {
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminEmptyState, AdminLoading } from "@/components/admin/AdminLayout";
 
 export default function AdminSavedInvoices() {
   const { user, isAdmin } = useAuth();
@@ -105,97 +105,95 @@ export default function AdminSavedInvoices() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AdminLayout title="الفواتير المحفوظة" icon={<FileText className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 px-4" dir="rtl">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold mb-2">الفواتير المحفوظة</h1>
-          <p className="text-muted-foreground">إجمالي الفواتير: {invoices?.length || 0}</p>
-        </div>
-      </div>
-
+    <AdminLayout
+      title="الفواتير المحفوظة"
+      description={`إجمالي الفواتير: ${invoices?.length || 0}`}
+      icon={<FileText className="h-5 w-5" />}
+    >
       {!invoices || invoices.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">لا توجد فواتير محفوظة</p>
-          </CardContent>
-        </Card>
+        <AdminEmptyState
+          icon={<FileText className="h-12 w-12" />}
+          title="لا توجد فواتير محفوظة"
+          description="ستظهر الفواتير المحفوظة هنا"
+        />
       ) : (
-        <div className="grid gap-4">
+        <div className="space-y-4">
           {invoices.map((invoice) => {
             const expired = isWarrantyExpired(invoice.warranty_expires_at);
             const soonExpiring = isWarrantySoonExpiring(invoice.warranty_expires_at);
             
             return (
-              <Card key={invoice.id} className={`hover:shadow-lg transition-shadow ${expired ? 'border-red-300' : soonExpiring ? 'border-yellow-300' : ''}`}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
+              <AdminCard 
+                key={invoice.id} 
+                className={expired ? 'border-destructive/30' : soonExpiring ? 'border-yellow-500/30' : ''}
+              >
+                <AdminCardContent className="py-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex-1">
-                      <CardTitle className="text-lg mb-2">
-                        فاتورة #{invoice.orders?.order_number || 'غير معروف'}
-                      </CardTitle>
+                      <div className="flex items-center gap-2 mb-2">
+                        <h3 className="font-bold text-foreground">
+                          فاتورة #{invoice.orders?.order_number || 'غير معروف'}
+                        </h3>
+                        {expired && (
+                          <Badge variant="destructive" className="gap-1">
+                            <AlertCircle className="h-3 w-3" />
+                            منتهي
+                          </Badge>
+                        )}
+                        {soonExpiring && (
+                          <Badge variant="secondary" className="gap-1 bg-yellow-100 text-yellow-800">
+                            <AlertCircle className="h-3 w-3" />
+                            ينتهي قريباً
+                          </Badge>
+                        )}
+                      </div>
                       <div className="space-y-1 text-sm text-muted-foreground">
                         <p>العميل: {invoice.orders?.profiles?.full_name || invoice.orders?.profiles?.username || 'غير معروف'}</p>
                         <p>تاريخ التوليد: {format(new Date(invoice.generated_at), 'dd/MM/yyyy - hh:mm a', { locale: ar })}</p>
                         {invoice.warranty_expires_at && (
-                          <div className="flex items-center gap-2">
-                            <p>انتهاء الضمان: {format(new Date(invoice.warranty_expires_at), 'dd/MM/yyyy', { locale: ar })}</p>
-                            {expired && (
-                              <Badge variant="destructive" className="gap-1">
-                                <AlertCircle className="h-3 w-3" />
-                                منتهي
-                              </Badge>
-                            )}
-                            {soonExpiring && (
-                              <Badge variant="secondary" className="gap-1 bg-yellow-100 text-yellow-800">
-                                <AlertCircle className="h-3 w-3" />
-                                ينتهي قريباً
-                              </Badge>
-                            )}
-                          </div>
+                          <p>انتهاء الضمان: {format(new Date(invoice.warranty_expires_at), 'dd/MM/yyyy', { locale: ar })}</p>
                         )}
                         {invoice.notes && (
                           <p className="text-xs bg-muted p-2 rounded mt-2">ملاحظات: {invoice.notes}</p>
                         )}
                       </div>
                     </div>
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setViewingInvoice(invoice)}
+                      >
+                        <Eye className="h-4 w-4 ml-2" />
+                        معاينة
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => downloadInvoice(invoice)}
+                      >
+                        <Download className="h-4 w-4 ml-2" />
+                        تنزيل
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setDeletingId(invoice.id)}
+                      >
+                        <Trash2 className="h-4 w-4 ml-2" />
+                        حذف
+                      </Button>
+                    </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setViewingInvoice(invoice)}
-                    >
-                      <Eye className="h-4 w-4 ml-2" />
-                      معاينة
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => downloadInvoice(invoice)}
-                    >
-                      <Download className="h-4 w-4 ml-2" />
-                      تنزيل
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => setDeletingId(invoice.id)}
-                    >
-                      <Trash2 className="h-4 w-4 ml-2" />
-                      حذف
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+                </AdminCardContent>
+              </AdminCard>
             );
           })}
         </div>
@@ -235,6 +233,6 @@ export default function AdminSavedInvoices() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminLayout>
   );
 }
