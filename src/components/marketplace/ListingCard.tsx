@@ -45,6 +45,7 @@ interface Listing {
   categories?: { name_ar: string } | null;
   created_at?: string;
   approved_at?: string | null;
+  listing_code?: string | null;
 }
 
 interface SellerProfile {

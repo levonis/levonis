@@ -16,7 +16,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Package, Eye, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2, Tag, X, RefreshCw } from 'lucide-react';
+import { Package, Eye, Edit, Clock, CheckCircle, XCircle, ShoppingBag, Trash2, Loader2, Tag, X, RefreshCw, Hash, AlertTriangle } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 // Format relative time in Arabic (Baghdad timezone UTC+3)
 const formatRelativeTime = (dateString: string): string => {
@@ -85,6 +86,12 @@ export const MyListings = ({ children }: MyListingsProps) => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [editingListing, setEditingListing] = useState<any>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; listing: any | null; canDelete: boolean; reason: string }>({
+    open: false,
+    listing: null,
+    canDelete: true,
+    reason: ''
+  });
   const [editForm, setEditForm] = useState({
     title_ar: '',
     description_ar: '',
@@ -172,9 +179,57 @@ export const MyListings = ({ children }: MyListingsProps) => {
     });
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-      deleteListingMutation.mutate(id);
+  const checkAndDelete = async (listing: any) => {
+    // Check for active transactions or disputes
+    const [transactionCheck, disputeCheck] = await Promise.all([
+      supabase
+        .from('listing_transactions')
+        .select('id, status')
+        .eq('listing_id', listing.id)
+        .in('status', ['pending', 'confirmed', 'shipped', 'disputed'])
+        .limit(1),
+      supabase
+        .from('listing_conversations')
+        .select('id, status')
+        .eq('listing_id', listing.id)
+        .eq('status', 'disputed')
+        .limit(1)
+    ]);
+
+    const hasActiveTransaction = (transactionCheck.data?.length || 0) > 0;
+    const hasDispute = (disputeCheck.data?.length || 0) > 0;
+
+    if (hasActiveTransaction) {
+      setDeleteDialog({
+        open: true,
+        listing,
+        canDelete: false,
+        reason: 'لا يمكن حذف المنتج لأنه يوجد طلب شراء نشط عليه'
+      });
+    } else if (hasDispute) {
+      setDeleteDialog({
+        open: true,
+        listing,
+        canDelete: false,
+        reason: 'لا يمكن حذف المنتج لأنه يوجد نزاع مفتوح عليه'
+      });
+    } else {
+      setDeleteDialog({
+        open: true,
+        listing,
+        canDelete: true,
+        reason: ''
+      });
+    }
+  };
+
+  const handleConfirmDelete = () => {
+    if (deleteDialog.listing && deleteDialog.canDelete) {
+      deleteListingMutation.mutate(deleteDialog.listing.id, {
+        onSuccess: () => {
+          setDeleteDialog({ open: false, listing: null, canDelete: true, reason: '' });
+        }
+      });
     }
   };
 
@@ -281,6 +336,14 @@ export const MyListings = ({ children }: MyListingsProps) => {
 
                       {/* Compact Details */}
                       <div className="p-2">
+                        {/* Listing Code */}
+                        {listing.listing_code && (
+                          <div className="flex items-center gap-1 mb-1">
+                            <Hash className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-[10px] font-mono text-muted-foreground">{listing.listing_code}</span>
+                          </div>
+                        )}
+                        
                         <h3 className="font-medium text-xs truncate mb-1">{listing.title_ar}</h3>
                         
                         <div className="flex items-center justify-between mb-1.5">
@@ -348,8 +411,9 @@ export const MyListings = ({ children }: MyListingsProps) => {
                             variant="outline" 
                             size="sm" 
                             className="text-destructive hover:text-destructive h-7 px-2"
-                            onClick={() => handleDelete(listing.id)}
+                            onClick={() => checkAndDelete(listing)}
                             disabled={deleteListingMutation.isPending}
+                            title="حذف المنتج"
                           >
                             {deleteListingMutation.isPending ? (
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -441,6 +505,46 @@ export const MyListings = ({ children }: MyListingsProps) => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) => !open && setDeleteDialog({ open: false, listing: null, canDelete: true, reason: '' })}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-center flex items-center justify-center gap-2">
+              {deleteDialog.canDelete ? (
+                <Trash2 className="w-5 h-5 text-destructive" />
+              ) : (
+                <AlertTriangle className="w-5 h-5 text-amber-500" />
+              )}
+              {deleteDialog.canDelete ? 'تأكيد الحذف' : 'لا يمكن الحذف'}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center">
+              {deleteDialog.canDelete ? (
+                <>هل أنت متأكد من حذف المنتج "{deleteDialog.listing?.title_ar}"؟ لا يمكن التراجع عن هذا الإجراء.</>
+              ) : (
+                <span className="text-amber-600">{deleteDialog.reason}</span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            {deleteDialog.canDelete ? (
+              <>
+                <AlertDialogAction
+                  onClick={handleConfirmDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={deleteListingMutation.isPending}
+                >
+                  {deleteListingMutation.isPending && <Loader2 className="w-4 h-4 animate-spin ml-2" />}
+                  حذف
+                </AlertDialogAction>
+                <AlertDialogCancel>إلغاء</AlertDialogCancel>
+              </>
+            ) : (
+              <AlertDialogCancel>حسناً</AlertDialogCancel>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };
