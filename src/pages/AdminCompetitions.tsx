@@ -882,8 +882,8 @@ export default function AdminCompetitions() {
 
   return (
     <>
-      <div className="min-h-screen bg-background" dir="rtl">
-        <div className="container mx-auto px-4 py-8">
+      <div className="min-h-screen bg-background overflow-x-hidden" dir="rtl">
+        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 max-w-full overflow-x-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-2 sm:gap-4">
               <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
@@ -966,7 +966,7 @@ export default function AdminCompetitions() {
               setIsDialogOpen(open);
               if (!open) resetForm();
             }}>
-            <DialogContent className="max-w-3xl h-[85vh] flex flex-col" onPointerDownOutside={(e) => e.preventDefault()}>
+            <DialogContent className="fixed-dialog w-[95vw] max-w-3xl h-[85vh] max-h-[85vh] flex flex-col overflow-hidden" onPointerDownOutside={(e) => e.preventDefault()}>
               <DialogHeader className="flex-shrink-0 pb-4 border-b">
                 <DialogTitle className="text-xl">{editingCompetition ? 'تعديل المسابقة' : 'إنشاء مسابقة جديدة'}</DialogTitle>
               </DialogHeader>
@@ -1190,75 +1190,6 @@ export default function AdminCompetitions() {
                   </div>
                 </div>
 
-                {/* ⭐ نظام المنتجات مع الهدايا (بدون قمار) */}
-                <div className="border-2 border-green-500/50 rounded-lg p-4 bg-green-50/50 dark:bg-green-950/20">
-                  <h3 className="font-semibold mb-4 flex items-center gap-2 text-green-700 dark:text-green-300">
-                    <Gift className="h-5 w-5" />
-                    ⭐ نظام المنتجات مع الهدايا (حلال - بدون قمار)
-                  </h3>
-                  <p className="text-xs text-green-600 dark:text-green-400 mb-4">
-                    عند تفعيل هذا الخيار، سيتم عرض المنتج في صفحة "منتجات مع هدايا" بدلاً من صفحة المسابقات. المستخدم يشتري منتج حقيقي ويحصل على تذاكر مجانية كهدية.
-                  </p>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-background rounded-lg border">
-                      <input
-                        type="checkbox"
-                        id="is_product_based"
-                        checked={formData.is_product_based}
-                        onChange={(e) => setFormData({ ...formData, is_product_based: e.target.checked })}
-                        className="h-5 w-5"
-                      />
-                      <Label htmlFor="is_product_based" className="text-base font-semibold cursor-pointer">
-                        تفعيل كمنتج مع هدية (ليس مسابقة)
-                      </Label>
-                    </div>
-
-                    {formData.is_product_based && (
-                      <div className="grid grid-cols-2 gap-4 mt-4">
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2">
-                            💰 سعر المنتج (دينار عراقي)
-                          </Label>
-                          <Input
-                            type="number"
-                            min="0"
-                            value={formData.ticket_price}
-                            onChange={(e) => setFormData({ ...formData, ticket_price: e.target.value })}
-                            placeholder="25000"
-                          />
-                          <p className="text-xs text-muted-foreground">السعر الذي يدفعه المستخدم لشراء المنتج</p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label className="flex items-center gap-2">
-                            🎁 عدد التذاكر الهدية
-                          </Label>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={formData.gift_tickets_per_purchase}
-                            onChange={(e) => setFormData({ ...formData, gift_tickets_per_purchase: e.target.value })}
-                            placeholder="1"
-                          />
-                          <p className="text-xs text-muted-foreground">عدد التذاكر المجانية التي يحصل عليها المشتري كهدية</p>
-                        </div>
-
-                        <div className="space-y-2 col-span-2">
-                          <Label className="flex items-center gap-2">
-                            📋 النص القانوني / التوضيحي
-                          </Label>
-                          <Input
-                            value={formData.legal_disclaimer}
-                            onChange={(e) => setFormData({ ...formData, legal_disclaimer: e.target.value })}
-                            placeholder="الشراء يتم على منتجات حقيقية، والتذاكر هدية مجانية مرفقة."
-                          />
-                          <p className="text-xs text-muted-foreground">هذا النص سيظهر للمستخدم لتوضيح أن الشراء على المنتج وليس التذاكر</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
 
                 {/* قسم التواريخ */}
                 <div className="border rounded-lg p-4 bg-muted/30">
