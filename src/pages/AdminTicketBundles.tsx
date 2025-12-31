@@ -6,11 +6,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Plus, Trash2, Loader2, Save, Ticket, Gift, Sparkles, TrendingUp, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Trash2, Loader2, Save, Ticket, Gift, Sparkles, TrendingUp, GripVertical, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
+import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminStatsGrid, AdminStatCard, AdminLoading } from "@/components/admin/AdminLayout";
 
 interface TicketBundle {
   id: string;
@@ -137,7 +137,7 @@ export default function AdminTicketBundles() {
   };
 
   const calculateSavings = (bundle: TicketBundle) => {
-    const ticketPrice = 250; // Base price per ticket
+    const ticketPrice = 250;
     const regularCost = bundle.quantity * ticketPrice;
     const totalTickets = bundle.quantity + bundle.bonus_tickets;
     const effectivePrice = bundle.price / totalTickets;
@@ -148,9 +148,9 @@ export default function AdminTicketBundles() {
 
   if (authLoading || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AdminLayout title="إدارة عروض التذاكر" icon={<Ticket className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
     );
   }
 
@@ -160,51 +160,43 @@ export default function AdminTicketBundles() {
   }
 
   return (
-    <div className="min-h-screen bg-background" dir="rtl">
-      <div className="container mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowRight className="h-5 w-5" />
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <Ticket className="h-6 w-6 text-primary" />
-              إدارة عروض التذاكر
-            </h1>
-            <p className="text-sm text-muted-foreground">تحديد باقات التذاكر والأسعار والهدايا - اسحب لتغيير الترتيب</p>
-          </div>
+    <AdminLayout
+      title="إدارة عروض التذاكر"
+      description="تحديد باقات التذاكر والأسعار والهدايا - اسحب لتغيير الترتيب"
+      icon={<Ticket className="h-5 w-5" />}
+      actions={
+        <Button
+          onClick={() => saveMutation.mutate(bundles)}
+          disabled={!hasChanges || saveMutation.isPending}
+          size="sm"
+        >
+          {saveMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin ml-2" />
+          ) : (
+            <Save className="h-4 w-4 ml-2" />
+          )}
+          حفظ التغييرات
+        </Button>
+      }
+    >
+      {/* Bundles Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+        {bundles.map((bundle, index) => {
+          const { savings, savingsPercent, totalTickets, effectivePrice } = calculateSavings(bundle);
           
-          <Button
-            onClick={() => saveMutation.mutate(bundles)}
-            disabled={!hasChanges || saveMutation.isPending}
-            className="gap-2"
-          >
-            {saveMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            حفظ التغييرات
-          </Button>
-        </div>
-
-        {/* Bundles Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {bundles.map((bundle, index) => {
-            const { savings, savingsPercent, totalTickets, effectivePrice } = calculateSavings(bundle);
-            
-            return (
-              <Card 
-                key={bundle.id} 
+          return (
+            <AdminCard 
+              key={bundle.id}
+              className={`relative cursor-move transition-all ${bundle.highlight ? 'border-primary ring-2 ring-primary/20' : ''} ${!bundle.active ? 'opacity-60' : ''} ${draggedIndex === index ? 'opacity-50 scale-95' : ''}`}
+            >
+              <div
                 draggable
                 onDragStart={() => handleDragStart(index)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDragEnd={handleDragEnd}
-                className={`relative cursor-move transition-all ${bundle.highlight ? 'border-primary ring-2 ring-primary/20' : ''} ${!bundle.active ? 'opacity-60' : ''} ${draggedIndex === index ? 'opacity-50 scale-95' : ''}`}
               >
                 {bundle.highlight && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
                     <Badge className="gap-1 bg-primary">
                       <Sparkles className="h-3 w-3" />
                       الأفضل
@@ -212,8 +204,8 @@ export default function AdminTicketBundles() {
                   </div>
                 )}
                 
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
+                <AdminCardContent className="pt-6">
+                  <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
                       <Badge variant="secondary" className="text-xs">#{index + 1}</Badge>
@@ -247,134 +239,139 @@ export default function AdminTicketBundles() {
                       </Button>
                     </div>
                   </div>
+                  
                   <Input
                     value={bundle.label}
                     onChange={(e) => updateBundle(bundle.id, 'label', e.target.value)}
-                    className="font-bold text-lg h-8 w-full mt-2"
+                    className="font-bold text-lg h-8 w-full mb-4"
                   />
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">عدد التذاكر</Label>
-                      <Input
-                        type="number"
-                        value={bundle.quantity}
-                        onChange={(e) => updateBundle(bundle.id, 'quantity', parseInt(e.target.value) || 0)}
-                        min={1}
-                      />
+                  
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <Label className="text-xs">عدد التذاكر</Label>
+                        <Input
+                          type="number"
+                          value={bundle.quantity}
+                          onChange={(e) => updateBundle(bundle.id, 'quantity', parseInt(e.target.value) || 0)}
+                          min={1}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs flex items-center gap-1">
+                          <Gift className="h-3 w-3" />
+                          تذاكر هدية
+                        </Label>
+                        <Input
+                          type="number"
+                          value={bundle.bonus_tickets}
+                          onChange={(e) => updateBundle(bundle.id, 'bonus_tickets', parseInt(e.target.value) || 0)}
+                          min={0}
+                        />
+                      </div>
                     </div>
+                    
                     <div className="space-y-1">
-                      <Label className="text-xs flex items-center gap-1">
-                        <Gift className="h-3 w-3" />
-                        تذاكر هدية
-                      </Label>
+                      <Label className="text-xs">السعر (دينار)</Label>
                       <Input
                         type="number"
-                        value={bundle.bonus_tickets}
-                        onChange={(e) => updateBundle(bundle.id, 'bonus_tickets', parseInt(e.target.value) || 0)}
+                        value={bundle.price}
+                        onChange={(e) => updateBundle(bundle.id, 'price', parseInt(e.target.value) || 0)}
                         min={0}
                       />
                     </div>
-                  </div>
-                  
-                  <div className="space-y-1">
-                    <Label className="text-xs">السعر (دينار)</Label>
-                    <Input
-                      type="number"
-                      value={bundle.price}
-                      onChange={(e) => updateBundle(bundle.id, 'price', parseInt(e.target.value) || 0)}
-                      min={0}
-                    />
-                  </div>
-                  
-                  {/* Stats */}
-                  <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">إجمالي التذاكر:</span>
-                      <span className="font-bold">{totalTickets}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">سعر التذكرة الفعلي:</span>
-                      <span className="font-bold">{effectivePrice.toFixed(0)} دينار</span>
-                    </div>
-                    {savings > 0 && (
-                      <div className="flex justify-between text-green-600">
-                        <span>التوفير:</span>
-                        <span className="font-bold">{savings.toLocaleString()} ({savingsPercent.toFixed(0)}%)</span>
+                    
+                    {/* Stats */}
+                    <div className="bg-muted/50 rounded-lg p-3 space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">إجمالي التذاكر:</span>
+                        <span className="font-bold">{totalTickets}</span>
                       </div>
-                    )}
-                  </div>
-                  
-                  {/* Toggles */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={bundle.highlight}
-                        onCheckedChange={(checked) => updateBundle(bundle.id, 'highlight', checked)}
-                      />
-                      <Label className="text-xs">عرض مميز</Label>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">سعر التذكرة الفعلي:</span>
+                        <span className="font-bold">{effectivePrice.toFixed(0)} دينار</span>
+                      </div>
+                      {savings > 0 && (
+                        <div className="flex justify-between text-green-600">
+                          <span>التوفير:</span>
+                          <span className="font-bold">{savings.toLocaleString()} ({savingsPercent.toFixed(0)}%)</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Switch
-                        checked={bundle.active}
-                        onCheckedChange={(checked) => updateBundle(bundle.id, 'active', checked)}
-                      />
-                      <Label className="text-xs">مفعّل</Label>
+                    
+                    {/* Toggles */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={bundle.highlight}
+                          onCheckedChange={(checked) => updateBundle(bundle.id, 'highlight', checked)}
+                        />
+                        <Label className="text-xs">عرض مميز</Label>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={bundle.active}
+                          onCheckedChange={(checked) => updateBundle(bundle.id, 'active', checked)}
+                        />
+                        <Label className="text-xs">مفعّل</Label>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-          
-          {/* Add New Bundle Card */}
-          <Card 
-            className="border-dashed border-2 flex items-center justify-center min-h-[300px] cursor-pointer hover:border-primary/50 transition-colors"
-            onClick={addBundle}
-          >
-            <CardContent className="text-center">
-              <Plus className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-              <p className="text-muted-foreground">إضافة باقة جديدة</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Stats */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              ملخص العروض
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-2xl font-bold text-primary">{bundles.filter(b => b.active).length}</p>
-                <p className="text-sm text-muted-foreground">عروض نشطة</p>
+                </AdminCardContent>
               </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-2xl font-bold text-primary">
-                  {bundles.reduce((sum, b) => sum + b.bonus_tickets, 0)}
-                </p>
-                <p className="text-sm text-muted-foreground">إجمالي التذاكر المجانية</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-2xl font-bold text-primary">{bundles.filter(b => b.highlight).length}</p>
-                <p className="text-sm text-muted-foreground">عروض مميزة</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-3">
-                <p className="text-2xl font-bold text-primary">
-                  {Math.max(...bundles.map(b => calculateSavings(b).savingsPercent), 0).toFixed(0)}%
-                </p>
-                <p className="text-sm text-muted-foreground">أعلى توفير</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </AdminCard>
+          );
+        })}
+        
+        {/* Add New Bundle Card */}
+        <AdminCard 
+          className="border-dashed border-2 flex items-center justify-center min-h-[300px] cursor-pointer hover:border-primary/50 transition-colors"
+          hover={false}
+        >
+          <div className="text-center p-6" onClick={addBundle}>
+            <Plus className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+            <p className="text-muted-foreground">إضافة باقة جديدة</p>
+          </div>
+        </AdminCard>
       </div>
-    </div>
+
+      {/* Quick Stats */}
+      <AdminCard>
+        <AdminCardHeader 
+          title="ملخص العروض"
+          icon={<TrendingUp className="h-4 w-4" />}
+        />
+        <AdminCardContent>
+          <AdminStatsGrid>
+            <AdminStatCard
+              icon={<Ticket className="h-5 w-5" />}
+              value={bundles.filter(b => b.active).length}
+              label="عروض نشطة"
+            />
+            <AdminStatCard
+              icon={<Gift className="h-5 w-5" />}
+              value={bundles.reduce((sum, b) => sum + b.bonus_tickets, 0)}
+              label="إجمالي التذاكر المجانية"
+              colorClass="text-green-600"
+              bgClass="bg-green-500/10"
+            />
+            <AdminStatCard
+              icon={<Sparkles className="h-5 w-5" />}
+              value={bundles.filter(b => b.highlight).length}
+              label="عروض مميزة"
+              colorClass="text-amber-600"
+              bgClass="bg-amber-500/10"
+            />
+            <AdminStatCard
+              icon={<TrendingUp className="h-5 w-5" />}
+              value={`${Math.max(...bundles.map(b => calculateSavings(b).savingsPercent), 0).toFixed(0)}%`}
+              label="أعلى توفير"
+              colorClass="text-blue-600"
+              bgClass="bg-blue-500/10"
+            />
+          </AdminStatsGrid>
+        </AdminCardContent>
+      </AdminCard>
+    </AdminLayout>
   );
 }

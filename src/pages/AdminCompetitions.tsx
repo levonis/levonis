@@ -456,6 +456,7 @@ export default function AdminCompetitions() {
           open={participantsDialogOpen}
           onOpenChange={setParticipantsDialogOpen}
           competitionId={selectedCompetitionForParticipants.id}
+          competitionTitle={selectedCompetitionForParticipants.title_ar}
         />
       )}
 

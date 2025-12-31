@@ -1,8 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, Plus, Edit, Trash2, Eye } from "lucide-react";
+import { Loader2, Plus, Edit, Trash2, Eye, FileText, Star } from "lucide-react";
 import { toast } from "sonner";
 import { useState } from "react";
 import {
@@ -25,6 +24,8 @@ import { InvoiceTemplateEditor } from "@/components/InvoiceTemplateEditor";
 import { InvoiceTemplatePreview } from "@/components/InvoiceTemplatePreview";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
+import AdminLayout, { AdminCard, AdminCardHeader, AdminCardContent, AdminEmptyState, AdminLoading } from "@/components/admin/AdminLayout";
+import { Badge } from "@/components/ui/badge";
 
 export default function AdminInvoiceTemplates() {
   const { user, isAdmin } = useAuth();
@@ -68,13 +69,11 @@ export default function AdminInvoiceTemplates() {
 
   const setDefaultMutation = useMutation({
     mutationFn: async (id: string) => {
-      // First, unset all defaults
       await supabase
         .from("invoice_templates")
         .update({ is_default: false })
         .neq("id", id);
 
-      // Then set the new default
       const { error } = await supabase
         .from("invoice_templates")
         .update({ is_default: true })
@@ -97,17 +96,20 @@ export default function AdminInvoiceTemplates() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
+      <AdminLayout title="قوالب الفواتير" icon={<FileText className="h-5 w-5" />}>
+        <AdminLoading />
+      </AdminLayout>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 px-4" dir="rtl">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">قوالب الفواتير</h1>
+    <AdminLayout
+      title="قوالب الفواتير"
+      description={`إجمالي القوالب: ${templates?.length || 0}`}
+      icon={<FileText className="h-5 w-5" />}
+      actions={
         <Button
+          size="sm"
           onClick={() => {
             setEditingTemplate(null);
             setIsEditorOpen(true);
@@ -116,83 +118,92 @@ export default function AdminInvoiceTemplates() {
           <Plus className="ml-2 h-4 w-4" />
           إضافة قالب جديد
         </Button>
-      </div>
-
-      <div className="mb-8">
-        <Card className="border-primary/20">
-          <CardHeader>
-            <CardTitle className="text-lg">القوالب المحفوظة ({templates?.length || 0})</CardTitle>
-          </CardHeader>
-        </Card>
-      </div>
-
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {templates?.map((template) => (
-          <Card key={template.id} className="relative hover:shadow-lg transition-shadow border-2">
-            {template.is_default && (
-              <div className="absolute -top-3 -right-3 bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-bold shadow-md">
-                ⭐ افتراضي
-              </div>
-            )}
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">{template.name_ar}</CardTitle>
-              <p className="text-sm text-muted-foreground">{template.name}</p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => setPreviewingTemplate(template)}
-                >
-                  <Eye className="ml-2 h-4 w-4" />
-                  معاينة
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => {
-                    setEditingTemplate(template);
-                    setIsEditorOpen(true);
-                  }}
-                >
-                  <Edit className="ml-2 h-4 w-4" />
-                  تعديل
-                </Button>
-              </div>
-              {!template.is_default && (
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setDefaultMutation.mutate(template.id)}
-                  >
-                    اجعله افتراضي
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => setDeletingId(template.id)}
-                  >
-                    <Trash2 className="ml-2 h-4 w-4" />
-                    حذف
-                  </Button>
+      }
+    >
+      {!templates || templates.length === 0 ? (
+        <AdminEmptyState
+          icon={<FileText className="h-12 w-12" />}
+          title="لا توجد قوالب"
+          description="ابدأ بإضافة قالب فاتورة جديد"
+          action={
+            <Button onClick={() => setIsEditorOpen(true)}>
+              <Plus className="ml-2 h-4 w-4" />
+              إضافة قالب
+            </Button>
+          }
+        />
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {templates.map((template) => (
+            <AdminCard key={template.id} className="relative">
+              {template.is_default && (
+                <div className="absolute -top-2 -right-2 z-10">
+                  <Badge className="gap-1 bg-primary shadow-md">
+                    <Star className="h-3 w-3" />
+                    افتراضي
+                  </Badge>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              <AdminCardHeader 
+                title={template.name_ar}
+                description={template.name}
+              />
+              <AdminCardContent>
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setPreviewingTemplate(template)}
+                  >
+                    <Eye className="ml-2 h-4 w-4" />
+                    معاينة
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => {
+                      setEditingTemplate(template);
+                      setIsEditorOpen(true);
+                    }}
+                  >
+                    <Edit className="ml-2 h-4 w-4" />
+                    تعديل
+                  </Button>
+                </div>
+                {!template.is_default && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setDefaultMutation.mutate(template.id)}
+                    >
+                      اجعله افتراضي
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setDeletingId(template.id)}
+                    >
+                      <Trash2 className="ml-2 h-4 w-4" />
+                      حذف
+                    </Button>
+                  </div>
+                )}
+              </AdminCardContent>
+            </AdminCard>
+          ))}
+        </div>
+      )}
 
       <Dialog open={isEditorOpen} onOpenChange={setIsEditorOpen}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-hidden p-0">
           <DialogHeader className="p-6 pb-4 border-b">
-            <DialogTitle className="text-2xl">
-              {editingTemplate ? "✏️ تعديل القالب" : "➕ إضافة قالب جديد"}
+            <DialogTitle className="text-xl">
+              {editingTemplate ? "تعديل القالب" : "إضافة قالب جديد"}
             </DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto max-h-[calc(95vh-80px)]">
@@ -213,8 +224,8 @@ export default function AdminInvoiceTemplates() {
       >
         <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0">
           <DialogHeader className="p-6 pb-4 border-b bg-muted/30">
-            <DialogTitle className="text-2xl">
-              👁️ معاينة القالب: {previewingTemplate?.name_ar}
+            <DialogTitle className="text-xl">
+              معاينة القالب: {previewingTemplate?.name_ar}
             </DialogTitle>
           </DialogHeader>
           <div className="overflow-y-auto max-h-[calc(95vh-80px)] p-6 bg-muted/10">
@@ -248,6 +259,6 @@ export default function AdminInvoiceTemplates() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AdminLayout>
   );
 }
