@@ -30,6 +30,7 @@ import TeamBattleDisplay from "@/components/TeamBattleDisplay";
 import CollectedLettersDisplay from "@/components/CollectedLettersDisplay";
 import CompactOfferCard from "@/components/CompactOfferCard";
 import ProductOfferDetailModal from "@/components/ProductOfferDetailModal";
+import MyPurchasedProductsPanel from "@/components/MyPurchasedProductsPanel";
 
 const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy - hh:mm a') => {
   const date = new Date(dateString);
@@ -129,6 +130,9 @@ export default function Competitions() {
   const [showOffersSection, setShowOffersSection] = useState(false);
   const [selectedOfferForPurchase, setSelectedOfferForPurchase] = useState<any>(null);
   const [showOfferPurchaseDialog, setShowOfferPurchaseDialog] = useState(false);
+  
+  // State for purchased products panel
+  const [showPurchasedProductsPanel, setShowPurchasedProductsPanel] = useState(false);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['competitions'],
@@ -845,6 +849,17 @@ export default function Competitions() {
               <Gift className="h-4 w-4" />
               العروض
             </Button>
+            {user && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowPurchasedProductsPanel(true)}
+                className="gap-1 bg-green-600 hover:bg-green-700 text-white"
+              >
+                <Package className="h-4 w-4" />
+                مشترياتي
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="sm"
@@ -1598,6 +1613,12 @@ export default function Competitions() {
           </ScrollArea>
         </DialogContent>
       </Dialog>
+
+      {/* Purchased Products Panel */}
+      <MyPurchasedProductsPanel
+        isOpen={showPurchasedProductsPanel}
+        onClose={() => setShowPurchasedProductsPanel(false)}
+      />
     </div>
   );
 }
