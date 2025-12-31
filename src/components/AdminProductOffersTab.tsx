@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -16,13 +16,16 @@ interface ProductOffer {
   id: string;
   title: string;
   title_ar: string;
+  description: string | null;
   description_ar: string | null;
   image_url: string | null;
   images: string[] | null;
-  ticket_price: number; // This is the product price
-  gift_tickets_per_purchase: number;
-  status: 'draft' | 'active' | 'completed';
-  is_product_based: boolean;
+  price: number;
+  gift_tickets: number;
+  stock_quantity: number | null;
+  total_sold: number;
+  status: 'draft' | 'active' | 'inactive';
+  currency: string;
   created_at: string;
 }
 
@@ -39,17 +42,17 @@ export default function AdminProductOffersTab() {
     images: [] as string[],
     price: '',
     gift_tickets: '1',
-    status: 'active' as 'draft' | 'active' | 'completed',
+    stock_quantity: '',
+    status: 'active' as 'draft' | 'active' | 'inactive',
   });
 
-  // Fetch product offers (competitions with is_product_based = true)
+  // Fetch product offers from dedicated product_offers table (NOT competitions)
   const { data: offers, isLoading } = useQuery({
     queryKey: ['admin-product-offers'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('competitions')
+        .from('product_offers')
         .select('*')
-        .eq('is_product_based', true)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -65,6 +68,7 @@ export default function AdminProductOffersTab() {
       images: [],
       price: '',
       gift_tickets: '1',
+      stock_quantity: '',
       status: 'active',
     });
     setEditingOffer(null);
@@ -77,8 +81,9 @@ export default function AdminProductOffersTab() {
       description_ar: offer.description_ar || '',
       image_url: offer.image_url || '',
       images: offer.images || (offer.image_url ? [offer.image_url] : []),
-      price: offer.ticket_price.toString(),
-      gift_tickets: ((offer as any).gift_tickets_per_purchase || 1).toString(),
+      price: offer.price.toString(),
+      gift_tickets: offer.gift_tickets.toString(),
+      stock_quantity: offer.stock_quantity?.toString() || '',
       status: offer.status,
     });
     setIsDialogOpen(true);
@@ -132,6 +137,7 @@ export default function AdminProductOffersTab() {
     });
   };
 
+  // Create mutation - uses product_offers table (NOT competitions)
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const payload = {
@@ -141,19 +147,14 @@ export default function AdminProductOffersTab() {
         description_ar: data.description_ar,
         image_url: data.images.length > 0 ? data.images[0] : null,
         images: data.images,
-        prize_description: 'منتج للشراء',
-        prize_description_ar: 'منتج للشراء',
-        ticket_price: parseFloat(data.price) || 0,
-        gift_tickets_per_purchase: parseInt(data.gift_tickets) || 1,
-        status: data.status as 'draft' | 'active' | 'completed',
-        is_product_based: true,
-        competition_type: 'free' as const, // Not a real competition
-        required_tickets: 0, // No tickets required - direct purchase
-        start_date: new Date().toISOString(),
+        price: parseFloat(data.price) || 0,
+        gift_tickets: parseInt(data.gift_tickets) || 1,
+        stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
+        status: data.status,
       };
 
       const { data: result, error } = await supabase
-        .from('competitions')
+        .from('product_offers')
         .insert([payload])
         .select()
         .single();
@@ -164,6 +165,7 @@ export default function AdminProductOffersTab() {
     onSuccess: () => {
       toast.success('تم إنشاء العرض بنجاح');
       queryClient.invalidateQueries({ queryKey: ['admin-product-offers'] });
+      queryClient.invalidateQueries({ queryKey: ['product-offers-list'] });
       setIsDialogOpen(false);
       resetForm();
     },
@@ -172,6 +174,7 @@ export default function AdminProductOffersTab() {
     },
   });
 
+  // Update mutation - uses product_offers table
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
       const payload = {
@@ -181,13 +184,14 @@ export default function AdminProductOffersTab() {
         description_ar: data.description_ar,
         image_url: data.images.length > 0 ? data.images[0] : null,
         images: data.images,
-        ticket_price: parseFloat(data.price) || 0,
-        gift_tickets_per_purchase: parseInt(data.gift_tickets) || 1,
+        price: parseFloat(data.price) || 0,
+        gift_tickets: parseInt(data.gift_tickets) || 1,
+        stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
         status: data.status,
       };
 
       const { error } = await supabase
-        .from('competitions')
+        .from('product_offers')
         .update(payload)
         .eq('id', id);
 
@@ -196,6 +200,7 @@ export default function AdminProductOffersTab() {
     onSuccess: () => {
       toast.success('تم تحديث العرض بنجاح');
       queryClient.invalidateQueries({ queryKey: ['admin-product-offers'] });
+      queryClient.invalidateQueries({ queryKey: ['product-offers-list'] });
       setIsDialogOpen(false);
       resetForm();
     },
@@ -204,10 +209,11 @@ export default function AdminProductOffersTab() {
     },
   });
 
+  // Delete mutation - uses product_offers table
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
-        .from('competitions')
+        .from('product_offers')
         .delete()
         .eq('id', id);
 
@@ -216,6 +222,7 @@ export default function AdminProductOffersTab() {
     onSuccess: () => {
       toast.success('تم حذف العرض');
       queryClient.invalidateQueries({ queryKey: ['admin-product-offers'] });
+      queryClient.invalidateQueries({ queryKey: ['product-offers-list'] });
     },
     onError: (error) => {
       toast.error('خطأ في الحذف: ' + error.message);
@@ -238,7 +245,7 @@ export default function AdminProductOffersTab() {
   const statusLabels = {
     draft: { label: 'مسودة', color: 'bg-gray-500' },
     active: { label: 'نشط', color: 'bg-green-500' },
-    completed: { label: 'متوقف', color: 'bg-red-500' },
+    inactive: { label: 'متوقف', color: 'bg-red-500' },
   };
 
   return (
@@ -278,7 +285,7 @@ export default function AdminProductOffersTab() {
           <CardContent className="p-4 text-center">
             <Ticket className="h-6 w-6 mx-auto mb-1 text-purple-600" />
             <p className="text-xl font-bold">
-              {offers?.reduce((sum, o) => sum + ((o as any).gift_tickets_per_purchase || 1), 0) || 0}
+              {offers?.reduce((sum, o) => sum + (o.gift_tickets || 1), 0) || 0}
             </p>
             <p className="text-xs text-muted-foreground">تذاكر هدية</p>
           </CardContent>
@@ -317,8 +324,8 @@ export default function AdminProductOffersTab() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <h3 className="font-semibold">{offer.title_ar}</h3>
-                      <Badge className={`${statusLabels[offer.status].color} text-white text-xs`}>
-                        {statusLabels[offer.status].label}
+                      <Badge className={`${statusLabels[offer.status]?.color || 'bg-gray-500'} text-white text-xs`}>
+                        {statusLabels[offer.status]?.label || offer.status}
                       </Badge>
                     </div>
                     
@@ -329,11 +336,19 @@ export default function AdminProductOffersTab() {
                     <div className="flex flex-wrap gap-4 text-sm">
                       <div className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4 text-primary" />
-                        <span className="font-bold">{offer.ticket_price.toLocaleString()} دينار</span>
+                        <span className="font-bold">{offer.price.toLocaleString()} {offer.currency}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Gift className="h-4 w-4 text-green-600" />
-                        <span>{(offer as any).gift_tickets_per_purchase || 1} تذكرة هدية</span>
+                        <span>{offer.gift_tickets} تذكرة هدية</span>
+                      </div>
+                      {offer.stock_quantity !== null && (
+                        <div className="text-muted-foreground">
+                          المخزون: {offer.stock_quantity}
+                        </div>
+                      )}
+                      <div className="text-muted-foreground">
+                        المباع: {offer.total_sold || 0}
                       </div>
                     </div>
                   </div>
@@ -367,7 +382,7 @@ export default function AdminProductOffersTab() {
         setIsDialogOpen(open);
         if (!open) resetForm();
       }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingOffer ? 'تعديل العرض' : 'إضافة عرض منتج جديد'}</DialogTitle>
           </DialogHeader>
@@ -411,6 +426,17 @@ export default function AdminProductOffersTab() {
                   placeholder="1"
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>كمية المخزون (اختياري)</Label>
+              <Input
+                type="number"
+                min="0"
+                value={formData.stock_quantity}
+                onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
+                placeholder="اتركه فارغاً لمخزون غير محدود"
+              />
             </div>
 
             <div className="space-y-2">

@@ -105,7 +105,6 @@ function AppContent() {
             <Route path="/admin/loyalty-levels" element={<AdminLoyaltyLevels />} />
             <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
             <Route path="/admin/wallet" element={<AdminWallet />} />
-            <Route path="/admin/wallet" element={<AdminWallet />} />
             <Route path="/admin/wallet-settings" element={<AdminWalletSettings />} />
             <Route path="/admin/invoice-templates" element={<AdminInvoiceTemplates />} />
             <Route path="/admin/saved-invoices" element={<AdminSavedInvoices />} />
