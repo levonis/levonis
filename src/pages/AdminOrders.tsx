@@ -17,6 +17,7 @@ import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { toast } from 'sonner';
+import AdminCreateOrderDialog from '@/components/admin/AdminCreateOrderDialog';
 import LevelBadge from '@/components/LevelBadge';
 
 const AdminOrders = () => {
@@ -527,135 +528,17 @@ const AdminOrders = () => {
             <h1 className="text-4xl font-black text-primary mb-2">إدارة الطلبات</h1>
             <p className="text-muted-foreground">تتبع وإدارة جميع الطلبات ومعلومات الشحن</p>
           </div>
-          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90">
-                <Package className="ml-2 h-4 w-4" />
-                إنشاء طلب جديد
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>إنشاء طلب جديد</DialogTitle>
-              </DialogHeader>
-
-              <form onSubmit={handleCreateOrder} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="user_id">معرف المستخدم *</Label>
-                  <Input
-                    id="user_id"
-                    name="user_id"
-                    placeholder="UUID للمستخدم"
-                    required
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    يجب إدخال معرف المستخدم من جدول المستخدمين
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="total_amount">المبلغ الإجمالي *</Label>
-                  <Input
-                    id="total_amount"
-                    name="total_amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="currency">العملة</Label>
-                  <Input
-                    id="currency"
-                    name="currency"
-                    defaultValue="دينار عراقي"
-                    placeholder="دينار عراقي"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone_number">رقم الهاتف *</Label>
-                  <Input
-                    id="phone_number"
-                    name="phone_number"
-                    placeholder="07XXXXXXXXX"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="governorate">المحافظة *</Label>
-                  <Input
-                    id="governorate"
-                    name="governorate"
-                    placeholder="بغداد"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="shipping_address">عنوان الشحن *</Label>
-                  <Textarea
-                    id="shipping_address"
-                    name="shipping_address"
-                    placeholder="العنوان الكامل"
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="status">الحالة *</Label>
-                  <select
-                    id="status"
-                    name="status"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    required
-                  >
-                    <option value="pending">قيد الانتظار</option>
-                    <option value="confirmed">مؤكد</option>
-                    <option value="processing">قيد التجهيز</option>
-                    <option value="shipped">تم الشحن</option>
-                    <option value="delivered">تم التوصيل</option>
-                    <option value="cancelled">ملغي</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="shipping_notes">ملاحظات الشحن</Label>
-                  <Textarea
-                    id="shipping_notes"
-                    name="shipping_notes"
-                    placeholder="أي ملاحظات إضافية..."
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setCreateDialogOpen(false)}
-                  >
-                    إلغاء
-                  </Button>
-                  <Button
-                    type="submit"
-                    disabled={createOrderMutation.isPending}
-                  >
-                    {createOrderMutation.isPending ? (
-                      <>
-                        <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                        جاري الإنشاء...
-                      </>
-                    ) : (
-                      'إنشاء الطلب'
-                    )}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+            onClick={() => setCreateDialogOpen(true)}
+          >
+            <Package className="ml-2 h-4 w-4" />
+            إنشاء طلب جديد
+          </Button>
+          <AdminCreateOrderDialog 
+            open={createDialogOpen} 
+            onOpenChange={setCreateDialogOpen} 
+          />
         </div>
 
         {/* البحث والتصفية */}
