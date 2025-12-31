@@ -2,7 +2,7 @@ import { memo, useState, useEffect, useCallback } from 'react';
 import logoNew from '@/assets/new-logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Gift } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -176,16 +176,16 @@ const TopBar = memo(() => {
 
           {/* Cart and User Actions */}
           <div className="flex items-center gap-3">
-            {/* Competitions Button */}
+            {/* Product Offers Button */}
             <Button
               variant="outline"
               size="icon"
               onClick={() => navigate('/competitions')}
               className="rounded-full border-primary/30 hover:border-primary"
-              title="المسابقات"
-              aria-label="المسابقات"
+              title="عروض المنتجات"
+              aria-label="عروض المنتجات"
             >
-              <Trophy className="h-4 w-4" />
+              <Gift className="h-4 w-4" />
             </Button>
 
             {/* Custom Product Request Button */}

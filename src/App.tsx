@@ -52,7 +52,9 @@ const Competitions = lazy(() => import("./pages/Competitions"));
 const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
 const ProductShop = lazy(() => import("./pages/ProductShop"));
 const ProductsWithGifts = lazy(() => import("./pages/ProductsWithGifts"));
+const ProductOffersPage = lazy(() => import("./pages/ProductOffersPage"));
 const AdminCompetitions = lazy(() => import("./pages/AdminCompetitions"));
+const AdminProductOffers = lazy(() => import("./pages/AdminProductOffers"));
 const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const AdminMarketplace = lazy(() => import("./pages/AdminMarketplace"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
@@ -111,16 +113,18 @@ function AppContent() {
             <Route path="/admin/partial-payment-settings" element={<AdminPartialPaymentSettings />} />
             <Route path="/admin/broken-images" element={<AdminBrokenImages />} />
             <Route path="/admin/competitions" element={<AdminCompetitions />} />
+            <Route path="/admin/product-offers" element={<AdminProductOffers />} />
             <Route path="/admin/ticket-bundles" element={<AdminTicketBundles />} />
             <Route path="/admin/marketplace" element={<AdminMarketplace />} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/marketplace/:listingId" element={<Marketplace />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/my-points" element={<MyPoints />} />
-            <Route path="/competitions" element={<Competitions />} />
+            <Route path="/competitions" element={<ProductOffersPage />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
+            <Route path="/product-offers" element={<ProductOffersPage />} />
             <Route path="/my-products" element={<MyPurchasedProducts />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
