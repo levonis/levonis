@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Gift, ShoppingCart, Loader2, Plus, Minus, Wallet, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Gift, ShoppingCart, Loader2, Plus, Minus, Wallet, AlertCircle } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
 
 interface ProductOffer {
@@ -59,12 +59,7 @@ export default function ProductOfferDetailModal({
   };
 
   const handleBuyClick = () => {
-    if (!isAuthenticated) {
-      return;
-    }
-    if (!canAfford) {
-      return;
-    }
+    if (!isAuthenticated || !canAfford) return;
     setShowConfirmDialog(true);
   };
 
@@ -83,14 +78,17 @@ export default function ProductOfferDetailModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-sm w-[95vw] p-0 overflow-hidden max-h-[90vh]" dir="rtl">
+        <DialogContent className="w-[85vw] max-w-[320px] p-0 overflow-hidden rounded-xl" dir="rtl">
           <DialogHeader className="sr-only">
             <DialogTitle>{offer.title_ar}</DialogTitle>
             <DialogDescription>تفاصيل العرض</DialogDescription>
           </DialogHeader>
 
-          {/* Product Image */}
-          <div className="relative aspect-[4/3] bg-secondary">
+          {/* Product Image - Compact */}
+          <div 
+            className="relative h-32 bg-secondary"
+            onClick={() => images.length > 1 && setImageIndex((prev) => (prev + 1) % images.length)}
+          >
             {images.length > 0 ? (
               <OptimizedImage
                 src={images[imageIndex]}
@@ -99,131 +97,88 @@ export default function ProductOfferDetailModal({
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <ShoppingCart className="h-16 w-16 text-muted-foreground/50" />
+                <ShoppingCart className="h-10 w-10 text-muted-foreground/50" />
               </div>
             )}
 
             {/* Gift Badge */}
-            <Badge className="absolute top-3 right-3 bg-green-600 text-white gap-1.5 text-sm px-3 py-1.5">
-              <Gift className="h-4 w-4" />
-              +{offer.gift_tickets} تذكرة هدية
+            <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 text-[10px] px-2 py-0.5">
+              <Gift className="h-3 w-3" />
+              +{offer.gift_tickets}
             </Badge>
 
-            {/* Image Navigation */}
+            {/* Image dots */}
             {images.length > 1 && (
-              <>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white h-8 w-8"
-                  onClick={() => setImageIndex((imageIndex - 1 + images.length) % images.length)}
-                >
-                  <ChevronLeft className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white h-8 w-8"
-                  onClick={() => setImageIndex((imageIndex + 1) % images.length)}
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </Button>
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                  {images.map((_, idx) => (
-                    <button
-                      key={idx}
-                      className={`w-2 h-2 rounded-full transition-colors ${idx === imageIndex ? 'bg-white' : 'bg-white/50'}`}
-                      onClick={() => setImageIndex(idx)}
-                    />
-                  ))}
-                </div>
-              </>
+              <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-1">
+                {images.map((_, idx) => (
+                  <span 
+                    key={idx} 
+                    className={`w-1.5 h-1.5 rounded-full ${idx === imageIndex ? 'bg-white' : 'bg-white/50'}`} 
+                  />
+                ))}
+              </div>
             )}
 
-            {/* Out of Stock Overlay */}
             {isOutOfStock && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <span className="text-white text-xl font-bold">نفذت الكمية</span>
+                <span className="text-white text-sm font-bold">نفذت الكمية</span>
               </div>
             )}
           </div>
 
-          {/* Product Info */}
-          <div className="p-3 space-y-3 overflow-y-auto max-h-[45vh]">
-            <div>
-              <h2 className="text-lg font-bold mb-0.5">{offer.title_ar}</h2>
-              {offer.description_ar && (
-                <p className="text-xs text-muted-foreground line-clamp-2">{offer.description_ar}</p>
-              )}
+          {/* Product Info - Compact */}
+          <div className="p-3 space-y-2.5">
+            <h2 className="text-sm font-bold line-clamp-1">{offer.title_ar}</h2>
+
+            {/* Price Row */}
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-bold text-primary text-base">{offer.price.toLocaleString()} {offer.currency}</span>
+              <span className="text-green-600 text-xs flex items-center gap-0.5">
+                <Gift className="h-3 w-3" />
+                {offer.gift_tickets} تذكرة
+              </span>
             </div>
 
-            {/* Price and Tickets */}
-            <div className="flex items-center justify-between p-2 bg-secondary/50 rounded-lg">
-              <div>
-                <p className="text-xs text-muted-foreground">سعر الوحدة</p>
-                <p className="text-lg font-bold text-primary">{offer.price.toLocaleString()} <span className="text-xs">{offer.currency}</span></p>
-              </div>
-              <div className="text-left">
-                <p className="text-xs text-muted-foreground">تذاكر هدية</p>
-                <p className="text-sm font-bold text-green-600 flex items-center gap-1">
-                  <Gift className="h-3 w-3" />
-                  {offer.gift_tickets}
-                </p>
-              </div>
-            </div>
-
-            {/* Quantity Selector */}
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium">الكمية</p>
-              <div className="flex items-center gap-2">
+            {/* Quantity + Total Row */}
+            <div className="flex items-center justify-between gap-2 p-2 bg-secondary/50 rounded-lg">
+              <div className="flex items-center gap-1.5">
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-6 w-6"
                   onClick={() => handleQuantityChange(-1)}
                   disabled={quantity <= 1 || isOutOfStock}
                 >
                   <Minus className="h-3 w-3" />
                 </Button>
-                <span className="text-lg font-bold w-8 text-center">{quantity}</span>
+                <span className="text-sm font-bold w-6 text-center">{quantity}</span>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-6 w-6"
                   onClick={() => handleQuantityChange(1)}
                   disabled={quantity >= maxQuantity || isOutOfStock}
                 >
                   <Plus className="h-3 w-3" />
                 </Button>
               </div>
-            </div>
-
-            {/* Total Summary */}
-            <div className="p-2 bg-primary/10 rounded-lg space-y-1">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">المجموع:</span>
-                <span className="text-lg font-bold">{totalPrice.toLocaleString()} {offer.currency}</span>
-              </div>
-              <div className="flex justify-between items-center text-green-600 text-sm">
-                <span>إجمالي التذاكر:</span>
-                <span className="font-bold flex items-center gap-1">
-                  <Gift className="h-3 w-3" />
-                  {totalTickets} تذكرة
-                </span>
+              <div className="text-left">
+                <p className="text-[10px] text-muted-foreground">المجموع</p>
+                <p className="text-sm font-bold">{totalPrice.toLocaleString()}</p>
               </div>
             </div>
 
-            {/* Wallet Balance Warning */}
+            {/* Warning */}
             {isAuthenticated && !canAfford && (
-              <div className="flex items-center gap-2 p-2 bg-destructive/10 text-destructive rounded-lg text-xs">
-                <AlertCircle className="h-3 w-3 flex-shrink-0" />
-                <span>رصيد غير كافٍ ({walletBalance.toLocaleString()})</span>
+              <div className="flex items-center gap-1.5 text-destructive text-[11px]">
+                <AlertCircle className="h-3 w-3" />
+                <span>رصيد غير كافٍ</span>
               </div>
             )}
 
             {/* Buy Button */}
             <Button
-              className="w-full gap-2"
+              className="w-full gap-1.5 h-9 text-sm"
               onClick={handleBuyClick}
               disabled={isPurchasing || isOutOfStock || (isAuthenticated && !canAfford)}
             >
@@ -232,13 +187,7 @@ export default function ProductOfferDetailModal({
               ) : (
                 <>
                   <Wallet className="h-4 w-4" />
-                  {!isAuthenticated 
-                    ? 'سجل دخول للشراء' 
-                    : isOutOfStock 
-                      ? 'نفذت الكمية' 
-                      : !canAfford 
-                        ? 'رصيد غير كافٍ' 
-                        : 'شراء الآن'}
+                  {!isAuthenticated ? 'سجل دخول' : isOutOfStock ? 'نفذت' : !canAfford ? 'رصيد غير كافٍ' : 'شراء'}
                 </>
               )}
             </Button>
@@ -246,56 +195,36 @@ export default function ProductOfferDetailModal({
         </DialogContent>
       </Dialog>
 
-      {/* Purchase Confirmation Dialog */}
+      {/* Confirmation Dialog - Compact */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent dir="rtl">
+        <AlertDialogContent dir="rtl" className="max-w-[300px]">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-primary" />
-              تأكيد عملية الشراء
-            </AlertDialogTitle>
+            <AlertDialogTitle className="text-base">تأكيد الشراء</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-4 text-right">
-                <p>هل تريد تأكيد شراء المنتج التالي؟</p>
-                
-                <div className="p-4 bg-secondary/50 rounded-lg space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">المنتج:</span>
-                    <span className="font-bold text-foreground">{offer.title_ar}</span>
+              <div className="space-y-2 text-right text-sm">
+                <div className="p-2 bg-secondary/50 rounded-lg space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span>{offer.title_ar}</span>
+                    <span>×{quantity}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">الكمية:</span>
-                    <span className="font-bold text-foreground">{quantity}</span>
+                  <div className="flex justify-between font-bold">
+                    <span>المجموع:</span>
+                    <span className="text-primary">{totalPrice.toLocaleString()} {offer.currency}</span>
                   </div>
-                  <div className="flex justify-between border-t border-border pt-2">
-                    <span className="text-muted-foreground">المبلغ الإجمالي:</span>
-                    <span className="font-bold text-lg text-primary">{totalPrice.toLocaleString()} {offer.currency}</span>
-                  </div>
-                  <div className="flex justify-between text-green-600">
+                  <div className="flex justify-between text-green-600 text-xs">
                     <span>تذاكر هدية:</span>
-                    <span className="font-bold flex items-center gap-1">
-                      <Gift className="h-4 w-4" />
-                      {totalTickets} تذكرة
-                    </span>
+                    <span>{totalTickets}</span>
                   </div>
                 </div>
-
-                <p className="text-sm text-muted-foreground">
-                  سيتم خصم المبلغ من رصيد محفظتك
-                </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogAction 
-              onClick={handleConfirmPurchase}
-              disabled={isPurchasing}
-              className="gap-2"
-            >
-              {isPurchasing && <Loader2 className="h-4 w-4 animate-spin" />}
-              تأكيد الشراء
+            <AlertDialogAction onClick={handleConfirmPurchase} disabled={isPurchasing} className="h-8 text-sm">
+              {isPurchasing && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
+              تأكيد
             </AlertDialogAction>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel className="h-8 text-sm">إلغاء</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
