@@ -4,16 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Settings, Save, Plus, Pencil, Trash2, Award } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Plus, Pencil, Trash2, Award } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
+import AdminLayout, { AdminSection, AdminCard, AdminCardContent, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 
 export default function AdminLoyaltyLevels() {
   const { user } = useAuth();
@@ -72,7 +70,6 @@ export default function AdminLoyaltyLevels() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // حساب display_order التلقائي
       let displayOrder = 1;
       if (!editingLevel && levels) {
         displayOrder = levels.length + 1;
@@ -177,194 +174,197 @@ export default function AdminLoyaltyLevels() {
 
   if (!user) return null;
 
+  if (isLoading) {
+    return <AdminLoading />;
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-              <Award className="h-8 w-8" />
-              إدارة مستويات الولاء
-            </h1>
-            <p className="text-muted-foreground">إدارة المستويات والمزايا الخاصة بكل مستوى</p>
-          </div>
+    <AdminLayout
+      title="إدارة مستويات الولاء"
+      description="إدارة المستويات والمزايا الخاصة بكل مستوى"
+      icon={<Award className="h-5 w-5" />}
+      actions={
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="admin-btn-primary" onClick={resetForm}>
+              <Plus className="ml-2 h-4 w-4" />
+              إضافة مستوى جديد
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="admin-dialog max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{editingLevel ? "تعديل المستوى" : "إضافة مستوى جديد"}</DialogTitle>
+            </DialogHeader>
 
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="ml-2 h-4 w-4" />
-                إضافة مستوى جديد
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>{editingLevel ? "تعديل المستوى" : "إضافة مستوى جديد"}</DialogTitle>
-              </DialogHeader>
+            <div className="space-y-4">
+              <div className="admin-form-group">
+                <Label>مفتاح المستوى (بالإنجليزي، بدون مسافات)</Label>
+                <Input
+                  value={formData.level_key}
+                  onChange={(e) => setFormData({ ...formData, level_key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                  placeholder="مثال: vip, premium"
+                  disabled={!!editingLevel}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  لا يمكن تغيير المفتاح بعد الإنشاء
+                </p>
+              </div>
 
-              <div className="space-y-4">
-                <div>
-                  <Label>مفتاح المستوى (بالإنجليزي، بدون مسافات)</Label>
+              <div className="admin-form-row">
+                <div className="admin-form-group">
+                  <Label>الاسم بالعربي</Label>
                   <Input
-                    value={formData.level_key}
-                    onChange={(e) => setFormData({ ...formData, level_key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                    placeholder="مثال: vip, premium"
-                    disabled={!!editingLevel}
+                    value={formData.name_ar}
+                    onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    لا يمكن تغيير المفتاح بعد الإنشاء
-                  </p>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>الاسم بالعربي</Label>
-                    <Input
-                      value={formData.name_ar}
-                      onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <Label>الاسم بالإنجليزي</Label>
-                    <Input
-                      value={formData.name_en}
-                      onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>الحد الأدنى من النقاط</Label>
-                    <Input
-                      type="number"
-                      value={formData.min_points}
-                      onChange={(e) => setFormData({ ...formData, min_points: parseFloat(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <Label>اللون</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        type="color"
-                        value={formData.color}
-                        onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                        className="w-20"
-                      />
-                      <Input
-                        value={formData.color}
-                        onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>نسبة الخصم (%)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={formData.discount_percentage}
-                      onChange={(e) => setFormData({ ...formData, discount_percentage: parseFloat(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <Label>نسبة النقاط الإضافية (%)</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={formData.bonus_points_percentage}
-                      onChange={(e) => setFormData({ ...formData, bonus_points_percentage: parseFloat(e.target.value) })}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Switch
-                    checked={formData.free_shipping}
-                    onCheckedChange={(checked) => setFormData({ ...formData, free_shipping: checked })}
+                <div className="admin-form-group">
+                  <Label>الاسم بالإنجليزي</Label>
+                  <Input
+                    value={formData.name_en}
+                    onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
                   />
-                  <Label>شحن مجاني</Label>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <Label>المزايا</Label>
-                    <Button size="sm" variant="outline" onClick={handleAddBenefit}>
-                      <Plus className="ml-2 h-3 w-3" />
-                      إضافة ميزة
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {benefits.map((benefit, index) => (
-                      <Card key={index}>
-                        <CardContent className="pt-4">
-                          <div className="flex gap-2">
-                            <div className="flex-1 space-y-2">
-                              <Input
-                                placeholder="النص بالعربي"
-                                value={benefit.text_ar}
-                                onChange={(e) => handleBenefitChange(index, "text_ar", e.target.value)}
-                              />
-                              <Input
-                                placeholder="النص بالإنجليزي"
-                                value={benefit.text_en}
-                                onChange={(e) => handleBenefitChange(index, "text_en", e.target.value)}
-                              />
-                            </div>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => handleRemoveBenefit(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                    إلغاء
-                  </Button>
-                  <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-                    {saveMutation.isPending ? "جاري الحفظ..." : "حفظ"}
-                  </Button>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
 
-        {isLoading ? (
-          <div className="text-center py-12">جاري التحميل...</div>
-        ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle>المستويات الحالية</CardTitle>
-              <CardDescription>قائمة جميع مستويات الولاء المتاحة</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>المستوى</TableHead>
-                    <TableHead>الحد الأدنى من النقاط</TableHead>
-                    <TableHead>الخصم</TableHead>
-                    <TableHead>النقاط الإضافية</TableHead>
-                    <TableHead>شحن مجاني</TableHead>
-                    <TableHead>الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {levels && levels.length > 0 ? (
-                    levels.map((level) => (
-                      <TableRow key={level.id}>
+              <div className="admin-form-row">
+                <div className="admin-form-group">
+                  <Label>الحد الأدنى من النقاط</Label>
+                  <Input
+                    type="number"
+                    value={formData.min_points}
+                    onChange={(e) => setFormData({ ...formData, min_points: parseFloat(e.target.value) })}
+                  />
+                </div>
+                <div className="admin-form-group">
+                  <Label>اللون</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      className="w-16 h-10"
+                    />
+                    <Input
+                      value={formData.color}
+                      onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-form-row">
+                <div className="admin-form-group">
+                  <Label>نسبة الخصم (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={formData.discount_percentage}
+                    onChange={(e) => setFormData({ ...formData, discount_percentage: parseFloat(e.target.value) })}
+                  />
+                </div>
+                <div className="admin-form-group">
+                  <Label>نسبة النقاط الإضافية (%)</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.bonus_points_percentage}
+                    onChange={(e) => setFormData({ ...formData, bonus_points_percentage: parseFloat(e.target.value) })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <Switch
+                  checked={formData.free_shipping}
+                  onCheckedChange={(checked) => setFormData({ ...formData, free_shipping: checked })}
+                />
+                <Label>شحن مجاني</Label>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <Label>المزايا</Label>
+                  <Button size="sm" variant="outline" onClick={handleAddBenefit}>
+                    <Plus className="ml-2 h-3 w-3" />
+                    إضافة ميزة
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {benefits.map((benefit, index) => (
+                    <div key={index} className="admin-card p-3">
+                      <div className="flex gap-2">
+                        <div className="flex-1 space-y-2">
+                          <Input
+                            placeholder="النص بالعربي"
+                            value={benefit.text_ar}
+                            onChange={(e) => handleBenefitChange(index, "text_ar", e.target.value)}
+                          />
+                          <Input
+                            placeholder="النص بالإنجليزي"
+                            value={benefit.text_en}
+                            onChange={(e) => handleBenefitChange(index, "text_en", e.target.value)}
+                          />
+                        </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="shrink-0 text-destructive hover:text-destructive"
+                          onClick={() => handleRemoveBenefit(index)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4 border-t">
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  إلغاء
+                </Button>
+                <Button 
+                  className="admin-btn-primary"
+                  onClick={() => saveMutation.mutate()} 
+                  disabled={saveMutation.isPending}
+                >
+                  {saveMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      }
+    >
+      <AdminSection>
+        <AdminCard hover={false}>
+          <AdminCardContent noPadding>
+            {!levels || levels.length === 0 ? (
+              <AdminEmptyState
+                icon={<Award className="h-12 w-12" />}
+                title="لا توجد مستويات"
+                description="قم بإضافة مستوى جديد لبرنامج الولاء"
+              />
+            ) : (
+              <div className="admin-table-container">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="admin-table-header">
+                      <TableHead>المستوى</TableHead>
+                      <TableHead>الحد الأدنى من النقاط</TableHead>
+                      <TableHead>الخصم</TableHead>
+                      <TableHead>النقاط الإضافية</TableHead>
+                      <TableHead>شحن مجاني</TableHead>
+                      <TableHead>الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {levels.map((level) => (
+                      <TableRow key={level.id} className="admin-table-row">
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div
@@ -374,53 +374,47 @@ export default function AdminLoyaltyLevels() {
                             <span className="font-medium">{level.name_ar}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{level.min_points}</TableCell>
+                        <TableCell>{level.min_points.toLocaleString()}</TableCell>
                         <TableCell>{level.discount_percentage}%</TableCell>
                         <TableCell>{level.bonus_points_percentage}%</TableCell>
                         <TableCell>
-                          {level.free_shipping ? (
-                            <Badge variant="default">نعم</Badge>
-                          ) : (
-                            <Badge variant="secondary">لا</Badge>
-                          )}
+                          <span className={level.free_shipping ? 'admin-badge-success' : 'admin-badge'}>
+                            {level.free_shipping ? 'نعم' : 'لا'}
+                          </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex gap-2">
+                          <div className="flex gap-1">
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="ghost"
+                              className="h-8 w-8"
                               onClick={() => handleEdit(level)}
                             >
                               <Pencil className="h-4 w-4" />
                             </Button>
                             <Button
-                              size="sm"
+                              size="icon"
                               variant="ghost"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
                               onClick={() => {
                                 if (confirm("هل أنت متأكد من حذف هذا المستوى؟")) {
                                   deleteMutation.mutate(level.id);
                                 }
                               }}
                             >
-                              <Trash2 className="h-4 w-4 text-destructive" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        لا توجد مستويات بعد
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        )}
-      </main>
-    </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </AdminCardContent>
+        </AdminCard>
+      </AdminSection>
+    </AdminLayout>
   );
 }
