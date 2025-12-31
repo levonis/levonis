@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-// Force rebuild due to module caching issue
 import { useAuth } from '@/hooks/useAuth';
 import { useOrderRealtimeNotifications } from '@/hooks/useOrderRealtimeNotifications';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -17,6 +16,7 @@ import CustomerChat from '@/components/CustomerChat';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { OrderTimeline } from '@/components/OrderTimeline';
+import { ADMIN_ROUTES } from '@/config/adminConfig';
 
 // Helper function to determine if order is pre-order
 // An order is DIRECT only if ALL items come from in-stock products
@@ -266,7 +266,7 @@ const OrderDetail = () => {
               <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-xl font-bold text-foreground mb-2">الطلب غير موجود</h3>
               <p className="text-muted-foreground mb-6">لم نتمكن من العثور على هذا الطلب</p>
-              <Button onClick={() => navigate(isAdmin ? '/admin/orders' : '/my-orders')}>
+              <Button onClick={() => navigate(isAdmin ? ADMIN_ROUTES.orders : '/my-orders')}>
                 <ArrowRight className="ml-2 h-4 w-4" />
                 {isAdmin ? 'العودة إلى لوحة الطلبات' : 'العودة إلى طلباتي'}
               </Button>
@@ -294,7 +294,7 @@ const OrderDetail = () => {
         <div className="mb-6">
           <Button 
             variant="ghost" 
-            onClick={() => navigate(isAdmin ? '/admin/orders' : '/my-orders')}
+            onClick={() => navigate(isAdmin ? ADMIN_ROUTES.orders : '/my-orders')}
             className="mb-4 hover:bg-primary/10"
           >
             <ArrowRight className="ml-2 h-4 w-4" />

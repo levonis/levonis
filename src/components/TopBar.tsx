@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { ADMIN_ROUTES } from '@/config/adminConfig';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -222,7 +223,7 @@ const TopBar = memo(() => {
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => navigate('/admin/chats')}
+                onClick={() => navigate(ADMIN_ROUTES.chats)}
                 className="relative rounded-full border-primary/30 hover:border-primary"
                 title="محادثات العملاء"
                 aria-label="محادثات العملاء"
@@ -301,7 +302,7 @@ const TopBar = memo(() => {
                     )}
                   </DropdownMenuItem>
                   {isAdmin && (
-                    <DropdownMenuItem onClick={() => navigate('/admin')}>
+                    <DropdownMenuItem onClick={() => navigate(ADMIN_ROUTES.dashboard)}>
                       <Settings className="ml-2 h-3.5 w-3.5" />
                       <span>لوحة التحكم</span>
                     </DropdownMenuItem>

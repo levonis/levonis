@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { Wallet, Check, X, PlusCircle, MinusCircle, Search, User, Settings, Trash2, History } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import AdminLayout, { AdminSection, AdminStatsGrid, AdminStatCard, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
+import { ADMIN_ROUTES } from '@/config/adminConfig';
 
 export default function AdminWallet() {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -340,7 +341,7 @@ export default function AdminWallet() {
             <MinusCircle className="h-4 w-4" />
             <span className="hidden sm:inline">خصم رصيد</span>
           </Button>
-          <Button onClick={() => navigate('/admin/wallet-settings')} variant="outline" size="icon">
+          <Button onClick={() => navigate(ADMIN_ROUTES.walletSettings)} variant="outline" size="icon">
             <Settings className="h-4 w-4" />
           </Button>
         </div>
