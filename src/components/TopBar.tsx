@@ -180,7 +180,7 @@ const TopBar = memo(() => {
             <Button
               variant="outline"
               size="icon"
-              onClick={() => navigate('/competitions')}
+              onClick={() => navigate('/product-offers')}
               className="rounded-full border-primary/30 hover:border-primary"
               title="عروض المنتجات"
               aria-label="عروض المنتجات"

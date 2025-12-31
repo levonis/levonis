@@ -120,7 +120,7 @@ function AppContent() {
             <Route path="/marketplace/:listingId" element={<Marketplace />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/my-points" element={<MyPoints />} />
-            <Route path="/competitions" element={<ProductOffersPage />} />
+            <Route path="/competitions" element={<Competitions />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
