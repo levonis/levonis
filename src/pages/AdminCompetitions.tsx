@@ -317,15 +317,9 @@ export default function AdminCompetitions() {
 
   return (
     <AdminLayout
-      title="إدارة المسابقات"
+      title="إدارة المسابقات والعروض"
       icon={<Trophy className="h-5 w-5" />}
-      description="إنشاء وإدارة جميع أنواع المسابقات"
-      actions={
-        <Button onClick={() => setIsDialogOpen(true)} className="admin-btn-primary gap-2">
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">مسابقة جديدة</span>
-        </Button>
-      }
+      description="إنشاء وإدارة المسابقات وعروض المنتجات"
     >
       {showCelebration && winnerInfo && (
         <CelebrationEffect 
@@ -336,120 +330,148 @@ export default function AdminCompetitions() {
         />
       )}
 
-      {/* Stats */}
-      <AdminStatsGrid>
-        <AdminStatCard 
-          icon={<Trophy className="h-5 w-5" />}
-          value={activeCompetitions}
-          label="مسابقات نشطة"
-          colorClass="text-green-600"
-          bgClass="bg-green-500/10"
-        />
-        <AdminStatCard 
-          icon={<Ticket className="h-5 w-5" />}
-          value={totalTicketsSold}
-          label="التذاكر المباعة"
-          colorClass="text-primary"
-          bgClass="bg-primary/10"
-        />
-        <AdminStatCard 
-          icon={<Users className="h-5 w-5" />}
-          value={totalParticipants}
-          label="إجمالي المشاركين"
-          colorClass="text-blue-600"
-          bgClass="bg-blue-500/10"
-        />
-        <AdminStatCard 
-          icon={<Calendar className="h-5 w-5" />}
-          value={competitions?.length || 0}
-          label="إجمالي المسابقات"
-          colorClass="text-purple-600"
-          bgClass="bg-purple-500/10"
-        />
-      </AdminStatsGrid>
+      {/* Tabs for Competitions and Product Offers */}
+      <Tabs defaultValue="competitions" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="competitions" className="gap-2">
+            <Trophy className="h-4 w-4" />
+            المسابقات
+          </TabsTrigger>
+          <TabsTrigger value="product-offers" className="gap-2">
+            <Package className="h-4 w-4" />
+            عروض المنتجات
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Competitions List */}
-      <AdminSection title="المسابقات" className="mt-6">
-        {!competitions || competitions.length === 0 ? (
-          <AdminEmptyState 
-            icon={<Trophy className="h-12 w-12" />}
-            title="لا توجد مسابقات بعد"
-            description="ابدأ بإنشاء مسابقة جديدة"
-            action={
-              <Button onClick={() => setIsDialogOpen(true)} className="admin-btn-primary gap-2">
-                <Plus className="h-4 w-4" />
-                إنشاء مسابقة
-              </Button>
-            }
-          />
-        ) : (
-          <div className="admin-grid-3">
-            {competitions.map((competition) => (
-              <AdminCard key={competition.id} className="overflow-hidden">
-                {competition.image_url && (
-                  <div className="aspect-video w-full overflow-hidden">
-                    <img 
-                      src={competition.image_url} 
-                      alt={competition.title_ar}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-2 mb-3">
-                    <h3 className="font-bold text-foreground line-clamp-1">{competition.title_ar}</h3>
-                    <Badge className={statusColors[competition.status]}>
-                      {statusLabels[competition.status]}
-                    </Badge>
-                  </div>
-                  
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                    {competition.prize_description_ar}
-                  </p>
-                  
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
-                    <div className="flex items-center gap-1">
-                      <Ticket className="h-3.5 w-3.5" />
-                      <span>{ticketCounts?.tickets?.[competition.id] || 0}</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-3.5 w-3.5" />
-                      <span>{ticketCounts?.participants?.[competition.id] || 0}</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      size="sm" 
-                      variant="outline"
-                      className="flex-1 text-xs"
-                      onClick={() => {
-                        setSelectedCompetitionForParticipants(competition);
-                        setParticipantsDialogOpen(true);
-                      }}
-                    >
-                      <Eye className="h-3 w-3 ml-1" />
-                      المشاركين
-                    </Button>
-                    <Button 
-                      size="sm"
-                      className="flex-1 text-xs admin-btn-primary"
-                      onClick={() => {
-                        setEditingCompetition(competition);
-                        setIsDialogOpen(true);
-                      }}
-                    >
-                      <Settings className="h-3 w-3 ml-1" />
-                      تعديل
-                    </Button>
-                  </div>
-                </div>
-              </AdminCard>
-            ))}
+        {/* Competitions Tab */}
+        <TabsContent value="competitions" className="space-y-6">
+          <div className="flex justify-end mb-4">
+            <Button onClick={() => setIsDialogOpen(true)} className="admin-btn-primary gap-2">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">مسابقة جديدة</span>
+            </Button>
           </div>
-        )}
-      </AdminSection>
 
+          {/* Stats */}
+          <AdminStatsGrid>
+            <AdminStatCard 
+              icon={<Trophy className="h-5 w-5" />}
+              value={activeCompetitions}
+              label="مسابقات نشطة"
+              colorClass="text-green-600"
+              bgClass="bg-green-500/10"
+            />
+            <AdminStatCard 
+              icon={<Ticket className="h-5 w-5" />}
+              value={totalTicketsSold}
+              label="التذاكر المباعة"
+              colorClass="text-primary"
+              bgClass="bg-primary/10"
+            />
+            <AdminStatCard 
+              icon={<Users className="h-5 w-5" />}
+              value={totalParticipants}
+              label="إجمالي المشاركين"
+              colorClass="text-blue-600"
+              bgClass="bg-blue-500/10"
+            />
+            <AdminStatCard 
+              icon={<Calendar className="h-5 w-5" />}
+              value={competitions?.length || 0}
+              label="إجمالي المسابقات"
+              colorClass="text-purple-600"
+              bgClass="bg-purple-500/10"
+            />
+          </AdminStatsGrid>
+
+          {/* Competitions List */}
+          <AdminSection title="المسابقات">
+            {!competitions || competitions.length === 0 ? (
+              <AdminEmptyState 
+                icon={<Trophy className="h-12 w-12" />}
+                title="لا توجد مسابقات بعد"
+                description="ابدأ بإنشاء مسابقة جديدة"
+                action={
+                  <Button onClick={() => setIsDialogOpen(true)} className="admin-btn-primary gap-2">
+                    <Plus className="h-4 w-4" />
+                    إنشاء مسابقة
+                  </Button>
+                }
+              />
+            ) : (
+              <div className="admin-grid-3">
+                {competitions.map((competition) => (
+                  <AdminCard key={competition.id} className="overflow-hidden">
+                    {competition.image_url && (
+                      <div className="aspect-video w-full overflow-hidden">
+                        <img 
+                          src={competition.image_url} 
+                          alt={competition.title_ar}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        <h3 className="font-bold text-foreground line-clamp-1">{competition.title_ar}</h3>
+                        <Badge className={statusColors[competition.status]}>
+                          {statusLabels[competition.status]}
+                        </Badge>
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        {competition.prize_description_ar}
+                      </p>
+                      
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground mb-4">
+                        <div className="flex items-center gap-1">
+                          <Ticket className="h-3.5 w-3.5" />
+                          <span>{ticketCounts?.tickets?.[competition.id] || 0}</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3.5 w-3.5" />
+                          <span>{ticketCounts?.participants?.[competition.id] || 0}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          className="flex-1 text-xs"
+                          onClick={() => {
+                            setSelectedCompetitionForParticipants(competition);
+                            setParticipantsDialogOpen(true);
+                          }}
+                        >
+                          <Eye className="h-3 w-3 ml-1" />
+                          المشاركين
+                        </Button>
+                        <Button 
+                          size="sm"
+                          className="flex-1 text-xs admin-btn-primary"
+                          onClick={() => {
+                            setEditingCompetition(competition);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          <Settings className="h-3 w-3 ml-1" />
+                          تعديل
+                        </Button>
+                      </div>
+                    </div>
+                  </AdminCard>
+                ))}
+              </div>
+            )}
+          </AdminSection>
+        </TabsContent>
+
+        {/* Product Offers Tab */}
+        <TabsContent value="product-offers">
+          <AdminProductOffersTab />
+        </TabsContent>
+      </Tabs>
       {/* Dialogs remain the same */}
       {participantsDialogOpen && selectedCompetitionForParticipants && (
         <CompetitionParticipantsDialog
