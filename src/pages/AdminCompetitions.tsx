@@ -10,7 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye, RotateCcw, ImagePlus, Settings, Save, Sparkles } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowRight, Plus, Trophy, Users, Ticket, Calendar, Gift, Loader2, Trash2, Play, Crown, Upload, X, Eye, RotateCcw, ImagePlus, Settings, Save, Sparkles, Package } from "lucide-react";
+import AdminProductOffersTab from "@/components/AdminProductOffersTab";
 import { toast } from "sonner";
 import { format, addHours } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -890,27 +892,43 @@ export default function AdminCompetitions() {
               <div>
                 <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
                   <Trophy className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                  إدارة المسابقات
+                  إدارة المسابقات والمنتجات
                 </h1>
-                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">إنشاء وإدارة المسابقات والسحوبات</p>
+                <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">إدارة المسابقات وعروض المنتجات</p>
               </div>
             </div>
-
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" className="gap-1 text-xs sm:text-sm flex-1 sm:flex-none" onClick={() => setTicketsManagerOpen(true)}>
-                <Ticket className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">إدارة</span> التذاكر
-              </Button>
-              <Button variant="outline" size="sm" className="gap-1 text-xs sm:text-sm flex-1 sm:flex-none" onClick={() => navigate('/admin/ticket-bundles')}>
-                <Gift className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">عروض</span> العروض
-              </Button>
-              <Button size="sm" className="gap-1 text-xs sm:text-sm flex-1 sm:flex-none" onClick={() => setIsDialogOpen(true)}>
-                <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">إنشاء</span> مسابقة
-              </Button>
-            </div>
           </div>
+
+          {/* Main Tabs: Competitions + Product Offers */}
+          <Tabs defaultValue="competitions" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="competitions" className="gap-2">
+                <Trophy className="h-4 w-4" />
+                المسابقات
+              </TabsTrigger>
+              <TabsTrigger value="product-offers" className="gap-2">
+                <Package className="h-4 w-4" />
+                عروض المنتجات والهدايا
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Product Offers Tab Content */}
+            <TabsContent value="product-offers">
+              <AdminProductOffersTab />
+            </TabsContent>
+
+            {/* Competitions Tab Content */}
+            <TabsContent value="competitions">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto mb-6">
+                <Button variant="outline" size="sm" className="gap-1 text-xs sm:text-sm" onClick={() => setTicketsManagerOpen(true)}>
+                  <Ticket className="h-3 w-3 sm:h-4 sm:w-4" />
+                  إدارة التذاكر
+                </Button>
+                <Button size="sm" className="gap-1 text-xs sm:text-sm" onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+                  إنشاء مسابقة
+                </Button>
+              </div>
 
           {/* Statistics Cards */}
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4 mb-6">
@@ -940,13 +958,6 @@ export default function AdminCompetitions() {
                 <Crown className="h-4 w-4 sm:h-6 sm:w-6 mx-auto mb-1 text-yellow-600" />
                 <p className="text-sm sm:text-xl font-bold">{totalWinners}</p>
                 <p className="text-[10px] sm:text-xs text-muted-foreground">فائزين</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5 hidden sm:block">
-              <CardContent className="p-2 sm:p-4 text-center">
-                <Ticket className="h-4 w-4 sm:h-6 sm:w-6 mx-auto mb-1 text-purple-600" />
-                <p className="text-sm sm:text-xl font-bold">{ticketSettings?.price || 250}</p>
-                <p className="text-[10px] sm:text-xs text-muted-foreground">سعر التذكرة</p>
               </CardContent>
             </Card>
           </div>
@@ -2687,53 +2698,6 @@ export default function AdminCompetitions() {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
-
-        {/* Ticket Price Settings */}
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Settings className="h-5 w-5 text-primary" />
-              إعدادات التذاكر
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4">
-              <div className="flex-1 max-w-xs">
-                <Label className="text-sm text-muted-foreground mb-1 block">سعر التذكرة الواحدة (دينار عراقي)</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    type="number"
-                    min={0}
-                    placeholder={ticketSettings?.price?.toString() || '1000'}
-                    defaultValue={ticketSettings?.price}
-                    onChange={(e) => setTicketPriceInput(e.target.value)}
-                    className="w-40"
-                  />
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      const price = parseInt(ticketPriceInput) || ticketSettings?.price || 1000;
-                      updateTicketPriceMutation.mutate(price);
-                    }}
-                    disabled={updateTicketPriceMutation.isPending}
-                    className="gap-1"
-                  >
-                    {updateTicketPriceMutation.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    حفظ
-                  </Button>
-                </div>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                السعر الحالي: <span className="font-bold text-primary">{ticketSettings?.price?.toLocaleString() || 1000} دينار</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         {isLoading ? (
           <div className="flex justify-center py-12">
@@ -2902,6 +2866,9 @@ export default function AdminCompetitions() {
             ))}
           </div>
         )}
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
       
       <CelebrationEffect
