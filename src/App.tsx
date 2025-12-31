@@ -11,6 +11,7 @@ import { useDailyLogin } from "@/hooks/useDailyLogin";
 import Header from "@/components/Header";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import DecorativeFrame from "@/components/DecorativeFrame";
+import AdminRoute from "@/components/AdminRoute";
 import { Loader2 } from "lucide-react";
 
 // Eager load Home page for best initial load
@@ -95,26 +96,26 @@ function AppContent() {
             <Route path="/order/:orderId" element={<OrderDetail />} />
             <Route path="/my-orders/:orderId/confirm" element={<ConfirmDelivery />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="/admin/notifications" element={<AdminNotifications />} />
-            <Route path="/admin/announcements" element={<AdminAnnouncements />} />
-            <Route path="/admin/coupons" element={<AdminCoupons />} />
-            <Route path="/admin/orders" element={<AdminOrders />} />
-            <Route path="/admin/points-settings" element={<AdminPointsSettings />} />
-            <Route path="/admin/chats" element={<AdminChats />} />
-            <Route path="/admin/loyalty-levels" element={<AdminLoyaltyLevels />} />
-            <Route path="/admin/default-settings" element={<AdminDefaultSettings />} />
-            <Route path="/admin/wallet" element={<AdminWallet />} />
-            <Route path="/admin/wallet-settings" element={<AdminWalletSettings />} />
-            <Route path="/admin/invoice-templates" element={<AdminInvoiceTemplates />} />
-            <Route path="/admin/saved-invoices" element={<AdminSavedInvoices />} />
-            <Route path="/admin/financials" element={<AdminFinancials />} />
-            <Route path="/admin/partial-payment-settings" element={<AdminPartialPaymentSettings />} />
+            <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+            <Route path="/admin/notifications" element={<AdminRoute><AdminNotifications /></AdminRoute>} />
+            <Route path="/admin/announcements" element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
+            <Route path="/admin/coupons" element={<AdminRoute><AdminCoupons /></AdminRoute>} />
+            <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
+            <Route path="/admin/points-settings" element={<AdminRoute><AdminPointsSettings /></AdminRoute>} />
+            <Route path="/admin/chats" element={<AdminRoute><AdminChats /></AdminRoute>} />
+            <Route path="/admin/loyalty-levels" element={<AdminRoute><AdminLoyaltyLevels /></AdminRoute>} />
+            <Route path="/admin/default-settings" element={<AdminRoute><AdminDefaultSettings /></AdminRoute>} />
+            <Route path="/admin/wallet" element={<AdminRoute><AdminWallet /></AdminRoute>} />
+            <Route path="/admin/wallet-settings" element={<AdminRoute><AdminWalletSettings /></AdminRoute>} />
+            <Route path="/admin/invoice-templates" element={<AdminRoute><AdminInvoiceTemplates /></AdminRoute>} />
+            <Route path="/admin/saved-invoices" element={<AdminRoute><AdminSavedInvoices /></AdminRoute>} />
+            <Route path="/admin/financials" element={<AdminRoute><AdminFinancials /></AdminRoute>} />
+            <Route path="/admin/partial-payment-settings" element={<AdminRoute><AdminPartialPaymentSettings /></AdminRoute>} />
             
-            <Route path="/admin/competitions" element={<AdminCompetitions />} />
-            <Route path="/admin/product-offers" element={<AdminProductOffers />} />
-            <Route path="/admin/ticket-bundles" element={<AdminTicketBundles />} />
-            <Route path="/admin/marketplace" element={<AdminMarketplace />} />
+            <Route path="/admin/competitions" element={<AdminRoute><AdminCompetitions /></AdminRoute>} />
+            <Route path="/admin/product-offers" element={<AdminRoute><AdminProductOffers /></AdminRoute>} />
+            <Route path="/admin/ticket-bundles" element={<AdminRoute><AdminTicketBundles /></AdminRoute>} />
+            <Route path="/admin/marketplace" element={<AdminRoute><AdminMarketplace /></AdminRoute>} />
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/marketplace/:listingId" element={<Marketplace />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />

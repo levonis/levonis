@@ -124,14 +124,106 @@ const AdminOrders = () => {
     return { name, isFast };
   };
 
+  // Helper function to create invoice automatically
+  const createAutoInvoice = async (orderId: string) => {
+    try {
+      // Check if invoice already exists for this order
+      const { data: existingInvoice } = await supabase
+        .from('saved_invoices')
+        .select('id')
+        .eq('order_id', orderId)
+        .maybeSingle();
+      
+      if (existingInvoice) {
+        console.log('Invoice already exists for order:', orderId);
+        return; // Invoice already exists
+      }
+      
+      // Get order details for invoice
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items!order_items_order_id_fkey(
+            *,
+            products!order_items_product_id_fkey(name_ar, image_url),
+            custom_product_requests(product_name, image_url)
+          ),
+          profiles(full_name, email)
+        `)
+        .eq('id', orderId)
+        .single();
+      
+      if (orderError || !order) {
+        console.error('Error fetching order for invoice:', orderError);
+        return;
+      }
+      
+      // Get default template
+      const { data: template } = await supabase
+        .from('invoice_templates')
+        .select('id')
+        .eq('is_default', true)
+        .maybeSingle();
+      
+      // Calculate warranty expiry (1 year from now)
+      const warrantyExpiresAt = new Date();
+      warrantyExpiresAt.setFullYear(warrantyExpiresAt.getFullYear() + 1);
+      
+      // Create simple invoice HTML
+      const invoiceHTML = `
+        <div style="direction: rtl; font-family: Cairo, sans-serif; padding: 20px;">
+          <h1 style="color: #d4af37;">فاتورة رقم ${order.order_number}</h1>
+          <p>تاريخ الإنشاء: ${new Date().toLocaleDateString('ar-IQ')}</p>
+          <p>العميل: ${order.profiles?.full_name || 'غير معروف'}</p>
+          <p>العنوان: ${order.shipping_address}</p>
+          <p>الهاتف: ${order.phone_number}</p>
+          <hr/>
+          <h3>المنتجات:</h3>
+          <ul>
+            ${order.order_items?.map((item: any) => `
+              <li>${item.product_name_ar} - الكمية: ${item.quantity} - السعر: ${item.total_price}</li>
+            `).join('') || ''}
+          </ul>
+          <hr/>
+          <p><strong>المجموع: ${order.total_amount} ${order.currency}</strong></p>
+        </div>
+      `;
+      
+      // Insert invoice
+      const { error: invoiceError } = await supabase
+        .from('saved_invoices')
+        .insert({
+          order_id: orderId,
+          invoice_html: invoiceHTML,
+          template_id: template?.id || null,
+          warranty_expires_at: warrantyExpiresAt.toISOString(),
+          notes: 'تم إنشاء الفاتورة تلقائياً عند تأكيد الطلب'
+        });
+      
+      if (invoiceError) {
+        console.error('Error creating auto invoice:', invoiceError);
+      } else {
+        console.log('Auto invoice created for order:', orderId);
+      }
+    } catch (error) {
+      console.error('Error in createAutoInvoice:', error);
+    }
+  };
+
   const updateOrderMutation = useMutation({
-    mutationFn: async ({ id, values }: { id: string; values: any }) => {
+    mutationFn: async ({ id, values, previousStatus }: { id: string; values: any; previousStatus?: string }) => {
       const { error } = await supabase
         .from('orders')
         .update(values)
         .eq('id', id);
 
       if (error) throw error;
+      
+      // Auto-create invoice when order is confirmed
+      if (values.status === 'confirmed' && previousStatus !== 'confirmed') {
+        await createAutoInvoice(id);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
@@ -350,10 +442,10 @@ const AdminOrders = () => {
       updateData.arrived_iraq_at = new Date().toISOString();
     }
 
-    updateOrderMutation.mutate({ id: editingOrder.id, values: updateData });
+    updateOrderMutation.mutate({ id: editingOrder.id, values: updateData, previousStatus: editingOrder.status });
   };
 
-  const handleQuickStatusChange = (orderId: string, newStatus: string) => {
+  const handleQuickStatusChange = (orderId: string, newStatus: string, currentStatus?: string) => {
     const updateData: any = {
       status: newStatus,
       updated_at: new Date().toISOString(),
@@ -372,7 +464,7 @@ const AdminOrders = () => {
       updateData.arrived_iraq_at = new Date().toISOString();
     }
 
-    updateOrderMutation.mutate({ id: orderId, values: updateData });
+    updateOrderMutation.mutate({ id: orderId, values: updateData, previousStatus: currentStatus });
   };
 
   const getStatusBadge = (status: string) => {
@@ -567,7 +659,7 @@ const AdminOrders = () => {
                           <TableCell>
                             <Select
                               value={order.status}
-                              onValueChange={(value) => handleQuickStatusChange(order.id, value)}
+                              onValueChange={(value) => handleQuickStatusChange(order.id, value, order.status)}
                             >
                               <SelectTrigger className="w-[140px] h-8 text-xs">
                                 <SelectValue />

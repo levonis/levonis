@@ -27,6 +27,7 @@ const productSchema = z.object({
   description: z.string().nullable().optional(),
   price: z.number().positive('السعر يجب أن يكون أكبر من صفر'),
   original_price: z.number().positive().nullable().optional(),
+  cost_price: z.number().nonnegative().nullable().optional(),
   currency: z.string().optional(),
   images: z.array(z.string()).optional(),
   image_url: z.string().nullable().optional(),
@@ -992,6 +993,9 @@ const Admin = () => {
         original_price: formData.get('original_price') && formData.get('original_price') !== '' 
           ? Number(formData.get('original_price')) 
           : null,
+        cost_price: formData.get('cost_price') && formData.get('cost_price') !== '' 
+          ? Number(formData.get('cost_price')) 
+          : null,
         currency: (formData.get('currency') as string) || 'دينار عراقي',
         images: finalImages.length > 0 ? finalImages : [],
         image_url: finalImages[0] || null,
@@ -1654,7 +1658,7 @@ const Admin = () => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="price">السعر *</Label>
                         <Input 
@@ -1676,6 +1680,21 @@ const Admin = () => {
                           step="0.01"
                           defaultValue={editingProduct?.original_price}
                         />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="cost_price">سعر التكلفة (للمشرف فقط)</Label>
+                        <Input 
+                          id="cost_price" 
+                          name="cost_price"
+                          type="number"
+                          step="0.01"
+                          defaultValue={editingProduct?.cost_price}
+                          placeholder="سعر الشراء من المورد"
+                        />
+                        <p className="text-xs text-muted-foreground">يستخدم لحساب الأرباح - مرئي للمشرف فقط</p>
                       </div>
 
                       <div className="space-y-2">
