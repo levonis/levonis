@@ -28,6 +28,7 @@ const TopBar = memo(() => {
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
   const isHomePage = location.pathname === '/' || location.pathname === '/home';
 
+  // Optimized: Only fetch notifications when user is logged in, with longer stale time
   const { data: unreadNotifications } = useQuery({
     queryKey: ['unread-notifications', user?.id],
     queryFn: async () => {
@@ -41,10 +42,12 @@ const TopBar = memo(() => {
       return count || 0;
     },
     enabled: !!user?.id,
-    refetchInterval: 60000, // Increased to 60 seconds
-    staleTime: 30000,
+    refetchInterval: 120000, // Increased to 2 minutes
+    staleTime: 60000, // 1 minute stale time
+    gcTime: 300000, // 5 minutes cache
   });
 
+  // Optimized: Cache points settings longer
   const { data: pointsSettings } = useQuery({
     queryKey: ['points-settings-status'],
     queryFn: async () => {
@@ -57,14 +60,16 @@ const TopBar = memo(() => {
       if (error) throw error;
       return data?.setting_value as any;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes cache
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const pointsStatus = pointsSettings?.points_status || 'active';
   const showPointsMenu = pointsStatus === 'active';
 
-  // جلب عدد الرسائل غير المقروءة للأدمن
+  // Optimized: Admin unread messages - only fetch when admin
   const { data: adminUnreadMessages } = useQuery({
     queryKey: ['admin-unread-messages', user?.id],
     queryFn: async () => {
@@ -72,7 +77,8 @@ const TopBar = memo(() => {
 
       const { data: conversations } = await supabase
         .from('conversations')
-        .select('id');
+        .select('id')
+        .limit(50); // Limit conversations for performance
 
       if (!conversations || conversations.length === 0) return 0;
 
@@ -89,11 +95,12 @@ const TopBar = memo(() => {
       return count || 0;
     },
     enabled: !!user?.id && isAdmin,
-    refetchInterval: 60000, // Increased to 60 seconds
-    staleTime: 30000,
+    refetchInterval: 120000, // Increased to 2 minutes
+    staleTime: 60000,
+    gcTime: 300000,
   });
 
-  // جلب رصيد المحفظة
+  // Optimized: Wallet balance with longer cache
   const { data: wallet } = useQuery({
     queryKey: ['wallet-balance', user?.id],
     queryFn: async () => {
@@ -108,18 +115,27 @@ const TopBar = memo(() => {
       return data;
     },
     enabled: !!user?.id,
-    refetchInterval: 60000, // Increased to 60 seconds
-    staleTime: 30000,
+    refetchInterval: 120000, // Increased to 2 minutes
+    staleTime: 60000, // 1 minute stale
+    gcTime: 300000, // 5 min cache
+    refetchOnWindowFocus: false,
   });
 
-  const handleScroll = useCallback(() => {
-    setIsScrolled(window.scrollY > 20);
-  }, []);
-
+  // Optimized scroll handler with RAF throttle
   useEffect(() => {
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
+  }, []);
 
   return (
     <div className={`sticky top-0 z-50 border-b overflow-hidden transition-all duration-500 ${

@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useRef, useCallback } from 'react';
+import { memo, useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -9,7 +9,8 @@ const AnnouncementBar = memo(() => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const unitRef = useRef<HTMLDivElement>(null);
-  const [repeats, setRepeats] = useState(8);
+  const [repeats, setRepeats] = useState(4); // Reduced default
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const { data: announcements } = useQuery({
     queryKey: ['active-announcements'],
@@ -18,14 +19,17 @@ const AnnouncementBar = memo(() => {
         .from('announcements')
         .select('*')
         .eq('active', true)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(5); // Limit announcements
       if (error) throw error;
       return data;
     },
-    refetchInterval: 60000,
+    refetchInterval: 120000, // Increased to 2 minutes
+    staleTime: 60000,
+    gcTime: 300000,
   });
 
-  // Auto-rotate between announcements
+  // Auto-rotate with cleanup
   useEffect(() => {
     if (!announcements || announcements.length <= 1) return;
     const current = announcements[currentIndex];
@@ -33,34 +37,42 @@ const AnnouncementBar = memo(() => {
     const duration = (current?.display_duration || 5) * 1000;
     if (!autoRotate) return;
 
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % announcements.length);
     }, duration);
 
-    return () => clearInterval(interval);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [announcements, currentIndex]);
 
-  // Ensure the marquee never leaves empty space by repeating units to exceed container width
+  // Ensure the marquee repeats - optimized with debounce
   useEffect(() => {
     const current = announcements?.[currentIndex];
     if (!current || !(current.always_move ?? false)) return;
 
+    let resizeTimeout: NodeJS.Timeout;
     const recalc = () => {
       const cw = containerRef.current?.offsetWidth || 0;
       const uw = unitRef.current?.scrollWidth || 0;
       if (cw && uw && uw > 0) {
-        // Calculate minimum repeats needed to fill container twice for seamless loop
+        // Reduced repeats for mobile performance
+        const isMobile = window.innerWidth < 768;
         const needed = Math.ceil((cw * 2) / uw) + 1;
-        setRepeats(Math.max(needed, 3));
+        setRepeats(Math.min(needed, isMobile ? 3 : 6));
       }
     };
 
     recalc();
-    const timer = setTimeout(recalc, 100);
-    window.addEventListener('resize', recalc);
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(recalc, 200);
+    };
+    
+    window.addEventListener('resize', handleResize, { passive: true });
     return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', recalc);
+      clearTimeout(resizeTimeout);
+      window.removeEventListener('resize', handleResize);
     };
   }, [announcements, currentIndex]);
 
