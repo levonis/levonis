@@ -801,73 +801,104 @@ export default function Competitions() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Header with wallet info only - no ticket purchase */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
-        <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3">
-          <div className="flex items-center justify-center gap-4">
-            {user && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-full text-sm">
-                <Ticket className="h-4 w-4 text-primary" />
-                <span className="font-medium">{userTicketBalance || 0} تذكرة</span>
+      {/* Header with wallet info */}
+      <div className="sticky top-0 z-50 bg-gradient-to-b from-card via-card/98 to-card/95 backdrop-blur-md border-b border-border/50 shadow-lg">
+        <div className="container mx-auto px-3 sm:px-6 py-3 sm:py-4">
+          {/* Wallet & Tickets Row */}
+          {user && (
+            <div className="flex items-center justify-center gap-3 sm:gap-4">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/15 to-primary/5 rounded-xl border border-primary/20 shadow-sm">
+                <div className="p-1 bg-primary/20 rounded-lg">
+                  <Ticket className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex flex-col items-start">
+                  <span className="text-[10px] text-muted-foreground leading-none">التذاكر</span>
+                  <span className="font-bold text-sm text-foreground">{userTicketBalance || 0}</span>
+                </div>
               </div>
-            )}
-            {user && wallet && (
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full text-sm">
-                <Wallet className="h-4 w-4 text-primary" />
-                <span className="font-medium">{wallet.balance.toLocaleString()} دينار</span>
-              </div>
-            )}
-          </div>
+              {wallet && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500/15 to-amber-500/5 rounded-xl border border-amber-500/20 shadow-sm">
+                  <div className="p-1 bg-amber-500/20 rounded-lg">
+                    <Wallet className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-[10px] text-muted-foreground leading-none">الرصيد</span>
+                    <span className="font-bold text-sm text-foreground">{wallet.balance.toLocaleString()}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 py-6">
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-bold flex items-center justify-center gap-2 mb-1">
-            <Trophy className="h-6 w-6 text-primary" />
-            المسابقات
-          </h1>
-          <p className="text-sm text-muted-foreground">استخدم تذاكرك للاشتراك في المسابقات!</p>
-          
-          {/* Toggle Buttons */}
-          <div className="flex items-center justify-center gap-2 mt-4">
+      <main className="flex-1 container mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Page Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center gap-3 mb-2">
+            <div className="p-2.5 bg-primary/10 rounded-xl">
+              <Trophy className="h-7 w-7 text-primary" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">المسابقات</h1>
+          </div>
+          <p className="text-sm sm:text-base text-muted-foreground max-w-md mx-auto">
+            استخدم تذاكرك للاشتراك في المسابقات والفوز بجوائز رائعة!
+          </p>
+        </div>
+        
+        {/* Navigation Tabs */}
+        <div className="flex flex-col items-center gap-4 mb-8">
+          {/* Main Toggle Buttons */}
+          <div className="inline-flex items-center p-1 bg-secondary/60 rounded-xl border border-border/50 shadow-sm">
             <Button
-              variant={!showOffersSection ? "default" : "outline"}
+              variant="ghost"
               size="sm"
               onClick={() => setShowOffersSection(false)}
-              className="gap-1"
+              className={`gap-2 rounded-lg px-4 py-2 h-9 transition-all duration-200 ${
+                !showOffersSection 
+                  ? 'bg-primary text-primary-foreground shadow-md hover:bg-primary/90' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+              }`}
             >
               <Trophy className="h-4 w-4" />
-              المسابقات
+              <span className="font-medium">المسابقات</span>
             </Button>
             <Button
-              variant={showOffersSection ? "default" : "outline"}
+              variant="ghost"
               size="sm"
               onClick={() => setShowOffersSection(true)}
-              className="gap-1"
+              className={`gap-2 rounded-lg px-4 py-2 h-9 transition-all duration-200 ${
+                showOffersSection 
+                  ? 'bg-primary text-primary-foreground shadow-md hover:bg-primary/90' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
+              }`}
             >
               <Gift className="h-4 w-4" />
-              العروض
+              <span className="font-medium">العروض</span>
             </Button>
+          </div>
+
+          {/* Action Buttons Row */}
+          <div className="flex items-center gap-2 sm:gap-3">
             {user && (
               <Button
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 onClick={() => setShowPurchasedProductsPanel(true)}
-                className="gap-1 bg-green-600 hover:bg-green-700 text-white"
+                className="gap-2 h-9 px-4 rounded-xl border-2 border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300 hover:bg-violet-500/20 hover:border-violet-500/50 transition-all duration-200 shadow-sm"
               >
                 <Package className="h-4 w-4" />
-                مشترياتي
+                <span className="font-medium">مشترياتي</span>
               </Button>
             )}
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate('/competitions/history')}
-              className="gap-1"
+              className="gap-2 h-9 px-4 rounded-xl text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-all duration-200"
             >
               <History className="h-4 w-4" />
-              السجل
+              <span className="font-medium">السجل</span>
             </Button>
           </div>
         </div>
@@ -875,18 +906,22 @@ export default function Competitions() {
         {/* Product Offers Section - shown when toggle is on */}
         {showOffersSection ? (
           <div className="mb-8">
-            <h2 className="text-lg font-bold flex items-center gap-2 mb-3">
-              <Gift className="h-5 w-5 text-green-600" />
-              عروض المنتجات
-              <span className="text-xs text-muted-foreground font-normal">اشترِ منتج واحصل على تذاكر هدية</span>
-            </h2>
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 bg-green-500/10 rounded-xl">
+                <Gift className="h-5 w-5 text-green-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-foreground">عروض المنتجات</h2>
+                <p className="text-xs text-muted-foreground">اشترِ منتج واحصل على تذاكر هدية</p>
+              </div>
+            </div>
             
             {isLoadingOffers ? (
-              <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <div className="flex justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : productOffers && productOffers.length > 0 ? (
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
                 {productOffers.map((offer) => (
                   <CompactOfferCard
                     key={offer.id}
@@ -899,10 +934,12 @@ export default function Competitions() {
                 ))}
               </div>
             ) : (
-              <Card className="text-center py-6">
+              <Card className="text-center py-10 max-w-sm mx-auto border-dashed">
                 <CardContent className="pt-4">
-                  <Package className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
-                  <p className="text-sm text-muted-foreground">لا توجد عروض متاحة حالياً</p>
+                  <div className="p-3 bg-muted rounded-full w-fit mx-auto mb-3">
+                    <Package className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground font-medium">لا توجد عروض متاحة حالياً</p>
                 </CardContent>
               </Card>
             )}
@@ -915,27 +952,34 @@ export default function Competitions() {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : competitions?.length === 0 ? (
-              <Card className="text-center py-8 max-w-sm mx-auto">
-                <CardContent className="pt-6">
-                  <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">لا توجد مسابقات نشطة حالياً</p>
+              <Card className="text-center py-10 max-w-sm mx-auto border-dashed">
+                <CardContent className="pt-4">
+                  <div className="p-3 bg-muted rounded-full w-fit mx-auto mb-3">
+                    <Trophy className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground font-medium mb-4">لا توجد مسابقات نشطة حالياً</p>
                   <Button 
                     variant="outline" 
-                    className="mt-4"
+                    className="gap-2"
                     onClick={() => setShowOffersSection(true)}
                   >
-                    <Gift className="h-4 w-4 ml-1" />
+                    <Gift className="h-4 w-4" />
                     تصفح العروض
                   </Button>
                 </CardContent>
               </Card>
             ) : competitions && competitions.length > 0 && (
               <>
-                <h2 className="text-lg font-bold flex items-center gap-2 mb-4">
-                  <Trophy className="h-5 w-5 text-primary" />
-                  المسابقات النشطة
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="p-2 bg-primary/10 rounded-xl">
+                    <Trophy className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold text-foreground">المسابقات النشطة</h2>
+                    <p className="text-xs text-muted-foreground">اختر مسابقة واستخدم تذاكرك للفوز</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                   {competitions.map((comp) => (
                     <CompetitionCard
                       key={comp.id}
