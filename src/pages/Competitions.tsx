@@ -29,6 +29,7 @@ import TicketBundleOffer from "@/components/TicketBundleOffer";
 import TeamBattleDisplay from "@/components/TeamBattleDisplay";
 import CollectedLettersDisplay from "@/components/CollectedLettersDisplay";
 import CompactOfferCard from "@/components/CompactOfferCard";
+import ProductOfferDetailModal from "@/components/ProductOfferDetailModal";
 
 const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy - hh:mm a') => {
   const date = new Date(dateString);
@@ -160,12 +161,12 @@ export default function Competitions() {
     staleTime: 30000,
   });
 
-  // Purchase offer mutation (NOT competition related)
+  // Purchase offer mutation (NOT competition related) - supports quantity
   const purchaseOfferMutation = useMutation({
-    mutationFn: async (offerId: string) => {
+    mutationFn: async ({ offerId, quantity }: { offerId: string; quantity: number }) => {
       const { data, error } = await supabase.rpc('purchase_product_offer', { 
         p_offer_id: offerId, 
-        p_quantity: 1 
+        p_quantity: quantity 
       });
       if (error) throw error;
       return data;
@@ -175,6 +176,7 @@ export default function Competitions() {
         queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
         queryClient.invalidateQueries({ queryKey: ['product-offers-list'] });
+        queryClient.invalidateQueries({ queryKey: ['my-purchased-products'] });
         toast.success(`🎁 تم شراء المنتج وحصلت على ${data.gift_tickets} تذكرة هدية!`);
         setShowOfferPurchaseDialog(false);
         setSelectedOfferForPurchase(null);
@@ -874,17 +876,10 @@ export default function Competitions() {
                   <CompactOfferCard
                     key={offer.id}
                     offer={offer}
-                    onPurchase={(o) => {
-                      if (!user) {
-                        navigate('/auth');
-                        return;
-                      }
-                      setSelectedOfferForPurchase(o);
+                    onClick={() => {
+                      setSelectedOfferForPurchase(offer);
                       setShowOfferPurchaseDialog(true);
                     }}
-                    isPurchasing={purchaseOfferMutation.isPending}
-                    isAuthenticated={!!user}
-                    canAfford={!wallet || wallet.balance >= offer.price}
                   />
                 ))}
               </div>
@@ -946,47 +941,25 @@ export default function Competitions() {
           </>
         )}
 
-        {/* Offer Purchase Confirmation Dialog */}
-        <AlertDialog open={showOfferPurchaseDialog} onOpenChange={setShowOfferPurchaseDialog}>
-          <AlertDialogContent dir="rtl">
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <ShoppingCart className="h-5 w-5 text-primary" />
-                تأكيد شراء المنتج
-              </AlertDialogTitle>
-              <AlertDialogDescription className="text-right space-y-3">
-                {selectedOfferForPurchase && (
-                  <>
-                    <p>هل تريد شراء <span className="font-bold text-foreground">{selectedOfferForPurchase.title_ar}</span>؟</p>
-                    <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
-                      <div className="flex justify-between">
-                        <span>السعر:</span>
-                        <span className="font-bold">{selectedOfferForPurchase.price?.toLocaleString()} {selectedOfferForPurchase.currency}</span>
-                      </div>
-                      <div className="flex justify-between text-green-600">
-                        <span>تذاكر هدية:</span>
-                        <span className="font-bold">🎁 {selectedOfferForPurchase.gift_tickets} تذكرة</span>
-                      </div>
-                    </div>
-                    {wallet && wallet.balance < selectedOfferForPurchase.price && (
-                      <p className="text-destructive text-sm">⚠️ رصيد المحفظة غير كافٍ</p>
-                    )}
-                  </>
-                )}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter className="flex-row-reverse gap-2">
-              <AlertDialogAction 
-                onClick={() => selectedOfferForPurchase && purchaseOfferMutation.mutate(selectedOfferForPurchase.id)} 
-                disabled={purchaseOfferMutation.isPending || (wallet && selectedOfferForPurchase && wallet.balance < selectedOfferForPurchase.price)}
-              >
-                {purchaseOfferMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-                تأكيد الشراء
-              </AlertDialogAction>
-              <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Product Offer Detail Modal with Purchase */}
+        <ProductOfferDetailModal
+          offer={selectedOfferForPurchase}
+          isOpen={showOfferPurchaseDialog}
+          onClose={() => {
+            setShowOfferPurchaseDialog(false);
+            setSelectedOfferForPurchase(null);
+          }}
+          onPurchase={(offerId, quantity) => {
+            if (!user) {
+              navigate('/auth');
+              return;
+            }
+            purchaseOfferMutation.mutate({ offerId, quantity });
+          }}
+          isPurchasing={purchaseOfferMutation.isPending}
+          walletBalance={wallet?.balance || 0}
+          isAuthenticated={!!user}
+        />
       </main>
 
       <Footer />
