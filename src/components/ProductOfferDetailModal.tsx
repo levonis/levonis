@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Gift, ShoppingCart, Loader2, Plus, Minus, Wallet, AlertCircle } from "lucide-react";
+import { Gift, ShoppingCart, Loader2, Plus, Minus, Wallet, AlertCircle, X } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
 
 interface ProductOffer {
@@ -78,32 +78,42 @@ export default function ProductOfferDetailModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="w-[85vw] max-w-[320px] p-0 overflow-hidden rounded-xl" dir="rtl">
+        <DialogContent className="w-[280px] max-w-[85vw] p-0 overflow-hidden rounded-lg" dir="rtl" hideClose>
           <DialogHeader className="sr-only">
             <DialogTitle>{offer.title_ar}</DialogTitle>
             <DialogDescription>تفاصيل العرض</DialogDescription>
           </DialogHeader>
 
-          {/* Product Image - Square aspect ratio */}
+          {/* Close Button - Custom */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute top-1 left-1 z-10 h-7 w-7 rounded-full bg-black/50 hover:bg-black/70 text-white"
+            onClick={handleClose}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+
+          {/* Product Image - 3:2 ratio for better fit */}
           <div 
-            className="relative aspect-square bg-secondary"
+            className="relative aspect-[3/2] bg-white"
             onClick={() => images.length > 1 && setImageIndex((prev) => (prev + 1) % images.length)}
           >
             {images.length > 0 ? (
               <OptimizedImage
                 src={images[imageIndex]}
                 alt={offer.title_ar}
-                className="w-full h-full object-contain bg-white"
+                className="w-full h-full object-contain"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <ShoppingCart className="h-10 w-10 text-muted-foreground/50" />
+              <div className="w-full h-full flex items-center justify-center bg-secondary">
+                <ShoppingCart className="h-8 w-8 text-muted-foreground/50" />
               </div>
             )}
 
             {/* Gift Badge */}
-            <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 text-[10px] px-2 py-0.5">
-              <Gift className="h-3 w-3" />
+            <Badge className="absolute top-1 right-1 bg-green-600 text-white gap-0.5 text-[9px] px-1.5 py-0.5">
+              <Gift className="h-2.5 w-2.5" />
               +{offer.gift_tickets}
             </Badge>
 
@@ -113,7 +123,7 @@ export default function ProductOfferDetailModal({
                 {images.map((_, idx) => (
                   <span 
                     key={idx} 
-                    className={`w-1.5 h-1.5 rounded-full ${idx === imageIndex ? 'bg-white' : 'bg-white/50'}`} 
+                    className={`w-1 h-1 rounded-full ${idx === imageIndex ? 'bg-primary' : 'bg-primary/30'}`} 
                   />
                 ))}
               </div>
@@ -121,7 +131,7 @@ export default function ProductOfferDetailModal({
 
             {isOutOfStock && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                <span className="text-white text-sm font-bold">نفذت الكمية</span>
+                <span className="text-white text-xs font-bold">نفذت الكمية</span>
               </div>
             )}
           </div>
