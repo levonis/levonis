@@ -910,69 +910,6 @@ export default function AdminMarketplace() {
               </CardContent>
             </Card>
           </TabsContent>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>الكود</TableHead>
-                          <TableHead>المنتج</TableHead>
-                          <TableHead>المشتري</TableHead>
-                          <TableHead>البائع</TableHead>
-                          <TableHead>الحالة</TableHead>
-                          <TableHead>آخر تحديث</TableHead>
-                          <TableHead>إجراءات</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {conversations?.map(conv => (
-                          <TableRow key={conv.id}>
-                            <TableCell>
-                              <Badge variant="outline" className="font-mono">
-                                {conv.conversation_code || 'N/A'}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {(conv.user_listings as any)?.images?.[0] && (
-                                  <img src={(conv.user_listings as any).images[0]} alt="" className="w-10 h-10 object-cover rounded" />
-                                )}
-                                <span className="text-sm">{(conv.user_listings as any)?.title_ar || 'منتج'}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <p className="text-sm">{(conv as any).buyer_profile?.full_name || (conv as any).buyer_profile?.username}</p>
-                            </TableCell>
-                            <TableCell>
-                              <p className="text-sm">{(conv as any).seller_profile?.full_name || (conv as any).seller_profile?.username}</p>
-                            </TableCell>
-                            <TableCell>
-                              {conv.status === 'disputed' ? (
-                                <Badge variant="destructive" className="gap-1">
-                                  <AlertTriangle className="w-3 h-3" />
-                                  نزاع
-                                </Badge>
-                              ) : conv.admin_joined ? (
-                                <Badge variant="default">الإدارة منضمة</Badge>
-                              ) : (
-                                <Badge variant="outline">{conv.status}</Badge>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <span className="text-sm">{format(new Date(conv.updated_at), 'dd MMM HH:mm', { locale: ar })}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Button size="sm" variant="outline" onClick={() => setSelectedConversation(conv)}>
-                                <Eye className="w-4 h-4 ml-1" />
-                                عرض
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           {/* Fees Tab */}
           <TabsContent value="fees">
@@ -1161,79 +1098,12 @@ export default function AdminMarketplace() {
           </DialogContent>
         </Dialog>
 
-        {/* Conversation Messages Dialog */}
-        <Dialog open={!!selectedConversation} onOpenChange={() => setSelectedConversation(null)}>
-          <DialogContent className="max-w-2xl max-h-[90vh]">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5" />
-                سجل المحادثة
-                {selectedConversation?.conversation_code && (
-                  <Badge variant="outline" className="font-mono mr-2">
-                    {selectedConversation.conversation_code}
-                  </Badge>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-
-            {selectedConversation && (
-              <div className="space-y-4">
-                {/* Product Info */}
-                <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                  {(selectedConversation.user_listings as any)?.images?.[0] && (
-                    <img 
-                      src={(selectedConversation.user_listings as any).images[0]} 
-                      alt="" 
-                      className="w-12 h-12 object-cover rounded" 
-                    />
-                  )}
-                  <div>
-                    <p className="font-medium">{(selectedConversation.user_listings as any)?.title_ar}</p>
-                    <p className="text-sm text-muted-foreground">
-                      المشتري: {(selectedConversation as any).buyer_profile?.full_name || 'غير معروف'} • 
-                      البائع: {(selectedConversation as any).seller_profile?.full_name || 'غير معروف'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <div className="h-[400px] overflow-y-auto space-y-3 p-3 bg-muted/20 rounded-lg">
-                  {conversationMessages?.length === 0 ? (
-                    <div className="text-center text-muted-foreground py-8">
-                      لا توجد رسائل
-                    </div>
-                  ) : (
-                    conversationMessages?.map((msg: any) => (
-                      <div
-                        key={msg.id}
-                        className={`flex flex-col ${msg.sender_id === selectedConversation.buyer_id ? 'items-end' : 'items-start'}`}
-                      >
-                        <div className="text-xs text-muted-foreground mb-1">
-                          {msg.sender_profile?.full_name || msg.sender_profile?.username}
-                        </div>
-                        <div
-                          className={`max-w-[80%] p-3 rounded-lg ${
-                            msg.sender_id === selectedConversation.buyer_id
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-card border'
-                          }`}
-                        >
-                          {msg.image_url && (
-                            <img src={msg.image_url} alt="" className="max-w-[200px] rounded mb-2" />
-                          )}
-                          <p className="text-sm">{msg.content}</p>
-                        </div>
-                        <span className="text-[10px] text-muted-foreground mt-1">
-                          {format(new Date(msg.created_at), 'HH:mm dd/MM', { locale: ar })}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
+        {/* Admin Conversation Chat Dialog */}
+        <AdminConversationChat
+          conversation={selectedConversation}
+          open={!!selectedConversation}
+          onClose={() => setSelectedConversation(null)}
+        />
       </div>
     </div>
   );
