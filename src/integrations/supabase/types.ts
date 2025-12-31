@@ -1717,6 +1717,116 @@ export type Database = {
         }
         Relationships: []
       }
+      product_offer_purchases: {
+        Row: {
+          created_at: string
+          delivered_at: string | null
+          gift_tickets_awarded: number
+          id: string
+          offer_id: string
+          purchase_status: string
+          quantity: number
+          shipped_at: string | null
+          shipping_requested_at: string | null
+          total_price: number
+          unit_price: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delivered_at?: string | null
+          gift_tickets_awarded: number
+          id?: string
+          offer_id: string
+          purchase_status?: string
+          quantity?: number
+          shipped_at?: string | null
+          shipping_requested_at?: string | null
+          total_price: number
+          unit_price: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delivered_at?: string | null
+          gift_tickets_awarded?: number
+          id?: string
+          offer_id?: string
+          purchase_status?: string
+          quantity?: number
+          shipped_at?: string | null
+          shipping_requested_at?: string | null
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_offer_purchases_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "product_offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_offers: {
+        Row: {
+          created_at: string
+          currency: string | null
+          description: string | null
+          description_ar: string | null
+          gift_tickets: number
+          id: string
+          image_url: string | null
+          images: string[] | null
+          price: number
+          status: string
+          stock_quantity: number | null
+          title: string
+          title_ar: string
+          total_sold: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          description_ar?: string | null
+          gift_tickets?: number
+          id?: string
+          image_url?: string | null
+          images?: string[] | null
+          price?: number
+          status?: string
+          stock_quantity?: number | null
+          title: string
+          title_ar: string
+          total_sold?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          description_ar?: string | null
+          gift_tickets?: number
+          id?: string
+          image_url?: string | null
+          images?: string[] | null
+          price?: number
+          status?: string
+          stock_quantity?: number | null
+          title?: string
+          title_ar?: string
+          total_sold?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_options: {
         Row: {
           available_for_direct_sale: boolean | null
@@ -2687,6 +2797,10 @@ export type Database = {
       purchase_competition_ticket:
         | { Args: { comp_id: string }; Returns: Json }
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }
+      purchase_product_offer: {
+        Args: { p_offer_id: string; p_quantity?: number }
+        Returns: Json
+      }
       purchase_product_with_gift_tickets: {
         Args: { p_competition_id: string; p_quantity?: number }
         Returns: Json
@@ -2709,6 +2823,10 @@ export type Database = {
       }
       redeem_letters_prize: {
         Args: { p_competition_id: string; p_word: string }
+        Returns: Json
+      }
+      request_offer_shipment: {
+        Args: { p_purchase_ids: string[] }
         Returns: Json
       }
       request_product_delivery: {
