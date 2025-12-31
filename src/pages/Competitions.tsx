@@ -139,22 +139,6 @@ export default function Competitions() {
     staleTime: 30000, // Cache for 30 seconds
   });
 
-  // Fetch product offers (is_product_based = true)
-  const { data: productOffers, isLoading: isLoadingOffers } = useQuery({
-    queryKey: ['product-offers'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('competitions')
-        .select('*')
-        .eq('is_product_based', true)
-        .eq('status', 'active')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-    staleTime: 30000,
-  });
 
   // Fetch ticket counts - available for all users (no auth required)
   const { data: ticketCounts } = useQuery({
@@ -816,88 +800,23 @@ export default function Competitions() {
           </div>
         </div>
 
-        {/* Product Offers Section */}
-        {productOffers && productOffers.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold flex items-center gap-2 mb-4">
-              <Gift className="h-5 w-5 text-green-600" />
-              عروض المنتجات مع هدايا
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {productOffers.map((offer) => (
-                <Card 
-                  key={offer.id} 
-                  className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-green-500/20"
-                >
-                  <div className="relative aspect-square">
-                    {offer.image_url ? (
-                      <OptimizedImage
-                        src={offer.image_url}
-                        alt={offer.title_ar}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-secondary flex items-center justify-center">
-                        <ShoppingCart className="h-12 w-12 text-muted-foreground" />
-                      </div>
-                    )}
-                    <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg">
-                      <Gift className="h-3 w-3" />
-                      {(offer as any).gift_tickets_per_purchase || 1} تذكرة هدية
-                    </Badge>
-                  </div>
-                  <CardContent className="p-3 space-y-2">
-                    <h3 className="font-semibold text-sm line-clamp-2">{offer.title_ar}</h3>
-                    {offer.description_ar && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">{offer.description_ar}</p>
-                    )}
-                    <div className="flex items-center justify-between pt-2 border-t">
-                      <div>
-                        <p className="font-bold text-primary">{(offer.ticket_price || 0).toLocaleString()}</p>
-                        <p className="text-xs text-muted-foreground">{offer.currency || 'دينار'}</p>
-                      </div>
-                      <Button 
-                        size="sm" 
-                        className="gap-1"
-                        onClick={() => {
-                          if (!user) {
-                            navigate('/auth');
-                            return;
-                          }
-                          handlePurchaseProduct(offer);
-                        }}
-                        disabled={purchaseProductMutation?.isPending || (user && wallet && wallet.balance < offer.ticket_price)}
-                      >
-                        {purchaseProductMutation?.isPending ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <ShoppingCart className="h-3 w-3" />
-                        )}
-                        {!user ? 'سجّل دخول' : (wallet && wallet.balance < offer.ticket_price) ? 'رصيد غير كافٍ' : 'شراء'}
-                      </Button>
-                    </div>
-                    <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20">
-                      <p className="text-xs text-green-700 dark:text-green-400 font-medium">
-                        🎁 مع كل شراء تحصل على {(offer as any).gift_tickets_per_purchase || 1} تذكرة مجاناً!
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Competitions Section */}
-        {isLoading || isLoadingOffers ? (
+        {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
-        ) : competitions?.length === 0 && (!productOffers || productOffers.length === 0) ? (
+        ) : competitions?.length === 0 ? (
           <Card className="text-center py-8 max-w-sm mx-auto">
             <CardContent className="pt-6">
               <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">لا توجد مسابقات أو عروض نشطة حالياً</p>
+              <p className="text-muted-foreground">لا توجد مسابقات نشطة حالياً</p>
+              <Button 
+                variant="outline" 
+                className="mt-4"
+                onClick={() => navigate('/product-offers')}
+              >
+                تصفح عروض المنتجات
+              </Button>
             </CardContent>
           </Card>
         ) : competitions && competitions.length > 0 && (
