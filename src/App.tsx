@@ -50,6 +50,7 @@ const MyPoints = lazy(() => import("./pages/MyPoints"));
 const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
 const Competitions = lazy(() => import("./pages/Competitions"));
 const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
+const ProductShop = lazy(() => import("./pages/ProductShop"));
 const AdminCompetitions = lazy(() => import("./pages/AdminCompetitions"));
 const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const AdminMarketplace = lazy(() => import("./pages/AdminMarketplace"));
@@ -117,6 +118,7 @@ function AppContent() {
             <Route path="/my-points" element={<MyPoints />} />
             <Route path="/competitions" element={<Competitions />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />
+            <Route path="/shop" element={<ProductShop />} />
             <Route path="/my-products" element={<MyPurchasedProducts />} />
             <Route path="*" element={<NotFound />} />
           </Routes>

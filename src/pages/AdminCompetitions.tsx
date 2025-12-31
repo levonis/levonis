@@ -255,7 +255,12 @@ export default function AdminCompetitions() {
     max_bags_per_purchase: 10 as number,
     allow_skip_animation: true as boolean,
     // Ticket rewards
-    ticket_rewards: [] as TicketReward[]
+    ticket_rewards: [] as TicketReward[],
+    // Product-based purchase system (NOT gambling)
+    is_product_based: false,
+    product_id: '' as string,
+    gift_tickets_per_purchase: '1',
+    legal_disclaimer: 'الشراء يتم على منتجات حقيقية، والتذاكر هدية مجانية مرفقة.'
   });
 
   // Fetch products for prize selection
@@ -452,7 +457,13 @@ export default function AdminCompetitions() {
         unlimited_winners: data.unlimited_winners,
         is_featured: data.is_featured,
         prize_product_id: data.prize_product_id || null,
-        prize_products: data.prize_products.length > 0 ? data.prize_products : []
+        prize_products: data.prize_products.length > 0 ? data.prize_products : [],
+        // Product-based purchase system (NOT gambling)
+        is_product_based: data.is_product_based,
+        product_id: data.product_id || null,
+        gift_tickets_per_purchase: parseInt(data.gift_tickets_per_purchase) || 1,
+        legal_disclaimer: data.legal_disclaimer || null,
+        ticket_price: data.is_product_based ? parseFloat(data.ticket_price) : 0
       };
 
       // Add type-specific fields
@@ -721,7 +732,12 @@ export default function AdminCompetitions() {
       animation_type: 'bags',
       max_bags_per_purchase: 10,
       allow_skip_animation: true,
-      ticket_rewards: []
+      ticket_rewards: [],
+      // Product-based purchase system
+      is_product_based: false,
+      product_id: '',
+      gift_tickets_per_purchase: '1',
+      legal_disclaimer: 'الشراء يتم على منتجات حقيقية، والتذاكر هدية مجانية مرفقة.'
     });
     setEditingCompetition(null);
   };
@@ -845,7 +861,12 @@ export default function AdminCompetitions() {
               name: t.name_ar || '',
               tickets: t.tickets_amount || 1,
               probability: t.probability || 0
-            }))
+            })),
+      // Product-based purchase system
+      is_product_based: compAny.is_product_based || false,
+      product_id: compAny.product_id || '',
+      gift_tickets_per_purchase: compAny.gift_tickets_per_purchase?.toString() || '1',
+      legal_disclaimer: compAny.legal_disclaimer || 'الشراء يتم على منتجات حقيقية، والتذاكر هدية مجانية مرفقة.'
     });
     setIsDialogOpen(true);
   };
