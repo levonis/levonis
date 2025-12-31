@@ -1310,7 +1310,7 @@ const Admin = () => {
                 { icon: FileText, title: 'الفواتير المحفوظة', desc: 'مراجعة وإدارة الفواتير', path: '/admin/saved-invoices' },
                 { icon: TrendingUp, title: 'التحليلات المالية', desc: 'الإيرادات والتكاليف والأرباح', path: '/admin/financials' },
                 { icon: Percent, title: 'رسوم الدفع الجزئي', desc: 'إعداد رسوم دفع ربع المبلغ', path: '/admin/partial-payment-settings' },
-                { icon: ImageIcon, title: 'فحص الصور', desc: 'اكتشاف الصور المفقودة', path: '/admin/broken-images' },
+                
                 { icon: Trophy, title: 'المسابقات', desc: 'إدارة المسابقات والسحوبات', path: '/admin/competitions' },
                 { icon: Package, title: 'سوق المستعمل', desc: 'إدارة منتجات البائعين', path: '/admin/marketplace' },
               ].map((item, idx) => (

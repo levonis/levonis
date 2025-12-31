@@ -45,7 +45,7 @@ const AdminInvoiceTemplates = lazy(() => import("./pages/AdminInvoiceTemplates")
 const AdminSavedInvoices = lazy(() => import("./pages/AdminSavedInvoices"));
 const AdminFinancials = lazy(() => import("./pages/AdminFinancials"));
 const AdminPartialPaymentSettings = lazy(() => import("./pages/AdminPartialPaymentSettings"));
-const AdminBrokenImages = lazy(() => import("./pages/AdminBrokenImages"));
+
 const MyPoints = lazy(() => import("./pages/MyPoints"));
 const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
 const Competitions = lazy(() => import("./pages/Competitions"));
@@ -110,7 +110,7 @@ function AppContent() {
             <Route path="/admin/saved-invoices" element={<AdminSavedInvoices />} />
             <Route path="/admin/financials" element={<AdminFinancials />} />
             <Route path="/admin/partial-payment-settings" element={<AdminPartialPaymentSettings />} />
-            <Route path="/admin/broken-images" element={<AdminBrokenImages />} />
+            
             <Route path="/admin/competitions" element={<AdminCompetitions />} />
             <Route path="/admin/product-offers" element={<AdminProductOffers />} />
             <Route path="/admin/ticket-bundles" element={<AdminTicketBundles />} />
