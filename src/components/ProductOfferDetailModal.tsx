@@ -48,7 +48,7 @@ export default function ProductOfferDetailModal({
     : (offer.image_url ? [offer.image_url] : []);
 
   const isOutOfStock = offer.stock_quantity !== null && offer.stock_quantity <= 0;
-  const maxQuantity = offer.stock_quantity !== null ? Math.min(offer.stock_quantity, 10) : 10;
+  const maxQuantity = offer.stock_quantity !== null ? offer.stock_quantity : 99;
   
   const totalPrice = offer.price * quantity;
   const totalTickets = offer.gift_tickets * quantity;
@@ -83,14 +83,14 @@ export default function ProductOfferDetailModal({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="max-w-md p-0 overflow-hidden" dir="rtl">
+        <DialogContent className="max-w-sm w-[95vw] p-0 overflow-hidden max-h-[90vh]" dir="rtl">
           <DialogHeader className="sr-only">
             <DialogTitle>{offer.title_ar}</DialogTitle>
             <DialogDescription>تفاصيل العرض</DialogDescription>
           </DialogHeader>
 
           {/* Product Image */}
-          <div className="relative aspect-square bg-secondary">
+          <div className="relative aspect-[4/3] bg-secondary">
             {images.length > 0 ? (
               <OptimizedImage
                 src={images[imageIndex]}
@@ -149,63 +149,65 @@ export default function ProductOfferDetailModal({
           </div>
 
           {/* Product Info */}
-          <div className="p-4 space-y-4">
+          <div className="p-3 space-y-3 overflow-y-auto max-h-[45vh]">
             <div>
-              <h2 className="text-xl font-bold mb-1">{offer.title_ar}</h2>
+              <h2 className="text-lg font-bold mb-0.5">{offer.title_ar}</h2>
               {offer.description_ar && (
-                <p className="text-sm text-muted-foreground line-clamp-2">{offer.description_ar}</p>
+                <p className="text-xs text-muted-foreground line-clamp-2">{offer.description_ar}</p>
               )}
             </div>
 
             {/* Price and Tickets */}
-            <div className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg">
+            <div className="flex items-center justify-between p-2 bg-secondary/50 rounded-lg">
               <div>
-                <p className="text-sm text-muted-foreground">سعر الوحدة</p>
-                <p className="text-2xl font-bold text-primary">{offer.price.toLocaleString()} <span className="text-sm">{offer.currency}</span></p>
+                <p className="text-xs text-muted-foreground">سعر الوحدة</p>
+                <p className="text-lg font-bold text-primary">{offer.price.toLocaleString()} <span className="text-xs">{offer.currency}</span></p>
               </div>
               <div className="text-left">
-                <p className="text-sm text-muted-foreground">تذاكر هدية</p>
-                <p className="text-lg font-bold text-green-600 flex items-center gap-1">
-                  <Gift className="h-4 w-4" />
+                <p className="text-xs text-muted-foreground">تذاكر هدية</p>
+                <p className="text-sm font-bold text-green-600 flex items-center gap-1">
+                  <Gift className="h-3 w-3" />
                   {offer.gift_tickets}
                 </p>
               </div>
             </div>
 
             {/* Quantity Selector */}
-            <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <p className="text-sm font-medium">الكمية</p>
-              <div className="flex items-center justify-center gap-4">
+              <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="icon"
+                  className="h-8 w-8"
                   onClick={() => handleQuantityChange(-1)}
                   disabled={quantity <= 1 || isOutOfStock}
                 >
-                  <Minus className="h-4 w-4" />
+                  <Minus className="h-3 w-3" />
                 </Button>
-                <span className="text-2xl font-bold w-12 text-center">{quantity}</span>
+                <span className="text-lg font-bold w-8 text-center">{quantity}</span>
                 <Button
                   variant="outline"
                   size="icon"
+                  className="h-8 w-8"
                   onClick={() => handleQuantityChange(1)}
                   disabled={quantity >= maxQuantity || isOutOfStock}
                 >
-                  <Plus className="h-4 w-4" />
+                  <Plus className="h-3 w-3" />
                 </Button>
               </div>
             </div>
 
             {/* Total Summary */}
-            <div className="p-3 bg-primary/10 rounded-lg space-y-2">
+            <div className="p-2 bg-primary/10 rounded-lg space-y-1">
               <div className="flex justify-between items-center">
-                <span className="text-muted-foreground">المجموع:</span>
-                <span className="text-xl font-bold">{totalPrice.toLocaleString()} {offer.currency}</span>
+                <span className="text-sm text-muted-foreground">المجموع:</span>
+                <span className="text-lg font-bold">{totalPrice.toLocaleString()} {offer.currency}</span>
               </div>
-              <div className="flex justify-between items-center text-green-600">
-                <span>إجمالي التذاكر الهدية:</span>
+              <div className="flex justify-between items-center text-green-600 text-sm">
+                <span>إجمالي التذاكر:</span>
                 <span className="font-bold flex items-center gap-1">
-                  <Gift className="h-4 w-4" />
+                  <Gift className="h-3 w-3" />
                   {totalTickets} تذكرة
                 </span>
               </div>
@@ -213,24 +215,23 @@ export default function ProductOfferDetailModal({
 
             {/* Wallet Balance Warning */}
             {isAuthenticated && !canAfford && (
-              <div className="flex items-center gap-2 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span>رصيد المحفظة غير كافٍ ({walletBalance.toLocaleString()} {offer.currency})</span>
+              <div className="flex items-center gap-2 p-2 bg-destructive/10 text-destructive rounded-lg text-xs">
+                <AlertCircle className="h-3 w-3 flex-shrink-0" />
+                <span>رصيد غير كافٍ ({walletBalance.toLocaleString()})</span>
               </div>
             )}
 
             {/* Buy Button */}
             <Button
               className="w-full gap-2"
-              size="lg"
               onClick={handleBuyClick}
               disabled={isPurchasing || isOutOfStock || (isAuthenticated && !canAfford)}
             >
               {isPurchasing ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <>
-                  <Wallet className="h-5 w-5" />
+                  <Wallet className="h-4 w-4" />
                   {!isAuthenticated 
                     ? 'سجل دخول للشراء' 
                     : isOutOfStock 
