@@ -25,7 +25,9 @@ import { usePagination } from '@/hooks/usePagination';
 
 const statusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
+  { value: 'confirmed', label: 'تم التأكيد' },
   { value: 'processing', label: 'قيد المعالجة' },
+  { value: 'purchased', label: 'تم الشراء' },
   { value: 'shipped', label: 'تم الشحن' },
   { value: 'arrived_warehouse', label: 'وصل المخزن' },
   { value: 'arrived_iraq', label: 'وصل العراق' },
@@ -376,7 +378,9 @@ const AdminOrders = () => {
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       pending: { label: 'قيد الانتظار', className: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
+      confirmed: { label: 'تم التأكيد', className: 'bg-sky-500/20 text-sky-400 border-sky-500/30' },
       processing: { label: 'قيد المعالجة', className: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+      purchased: { label: 'تم الشراء', className: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' },
       shipped: { label: 'تم الشحن', className: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
       delivered: { label: 'تم التوصيل', className: 'bg-green-500/20 text-green-400 border-green-500/30' },
       cancelled: { label: 'ملغي', className: 'bg-red-500/20 text-red-400 border-red-500/30' },
