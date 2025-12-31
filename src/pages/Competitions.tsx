@@ -692,231 +692,22 @@ export default function Competitions() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Purchase Confirmation Dialog */}
-      <AlertDialog open={showPurchaseConfirm} onOpenChange={setShowPurchaseConfirm}>
-        <AlertDialogContent dir="rtl">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Ticket className="h-5 w-5 text-primary" />
-              تأكيد شراء التذاكر
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-right">
-              هل تريد شراء <span className="font-bold text-foreground">{ticketPurchaseQuantity} تذكرة</span> بمبلغ <span className="font-bold text-foreground">{totalTicketCost.toLocaleString()} دينار</span>؟
-              <br />
-              <span className="text-muted-foreground text-sm">سيتم خصم المبلغ من رصيد المحفظة.</span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogAction
-              onClick={() => {
-                purchaseTicketsMutation.mutate(ticketPurchaseQuantity);
-                setShowPurchaseConfirm(false);
-              }}
-              className="gap-1"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              تأكيد الشراء
-            </AlertDialogAction>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Fixed Ticket Purchase Bar */}
+      {/* Header with wallet info only - no ticket purchase */}
       <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
         <div className="container mx-auto px-2 sm:px-4 py-2 sm:py-3">
-          {/* Mobile Layout */}
-          <div className="flex flex-col gap-2 sm:hidden">
-            {/* Row 1: Balance info */}
-            <div className="flex items-center justify-center gap-2">
-              {user && (
-                <div className="inline-flex items-center gap-1 px-2 py-1 bg-secondary/50 rounded-full text-xs">
-                  <Ticket className="h-3 w-3 text-primary" />
-                  <span className="font-medium">{userTicketBalance || 0}</span>
-                </div>
-              )}
-              {user && wallet && (
-                <div className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 rounded-full text-xs">
-                  <Wallet className="h-3 w-3 text-primary" />
-                  <span className="font-medium">{wallet.balance.toLocaleString()}</span>
-                </div>
-              )}
-            </div>
-            
-            {/* Row 2: Purchase controls */}
-            <div className="flex items-center justify-center gap-1.5">
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setTicketPurchaseQuantity(q => Math.max(1, q - 1))}
-                  disabled={ticketPurchaseQuantity <= 1}
-                >
-                  <Minus className="h-2.5 w-2.5" />
-                </Button>
-                <Input
-                  type="number"
-                  min={1}
-                  value={ticketPurchaseQuantity}
-                  onChange={(e) => setTicketPurchaseQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-10 h-6 text-center text-xs px-0.5"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => setTicketPurchaseQuantity(q => q + 1)}
-                >
-                  <Plus className="h-2.5 w-2.5" />
-                </Button>
+          <div className="flex items-center justify-center gap-4">
+            {user && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-full text-sm">
+                <Ticket className="h-4 w-4 text-primary" />
+                <span className="font-medium">{userTicketBalance || 0} تذكرة</span>
               </div>
-              
-              <span className="text-xs font-bold text-primary whitespace-nowrap">
-                {totalTicketCost.toLocaleString()}
-              </span>
-              
-              <Button 
-                size="sm"
-                className="gap-0.5 h-6 px-2 text-xs"
-                onClick={() => {
-                  if (!user) {
-                    toast.error('يجب تسجيل الدخول أولاً');
-                    navigate('/auth');
-                    return;
-                  }
-                  if (!canBuyTickets) {
-                    setShowInsufficientBalance(true);
-                    return;
-                  }
-                  setShowPurchaseConfirm(true);
-                }}
-                disabled={purchaseTicketsMutation.isPending}
-              >
-                {purchaseTicketsMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <ShoppingCart className="h-3 w-3" />
-                )}
-                شراء
-              </Button>
-              
-              <Button 
-                variant="outline"
-                size="sm"
-                className="gap-0.5 h-6 px-2 text-xs"
-                onClick={() => {
-                  if (!user) {
-                    toast.error('يجب تسجيل الدخول أولاً');
-                    navigate('/auth');
-                    return;
-                  }
-                  setShowBundleOffers(true);
-                }}
-              >
-                <Sparkles className="h-3 w-3" />
-                عروض
-              </Button>
-            </div>
-          </div>
-
-          {/* Desktop Layout */}
-          <div className="hidden sm:flex items-center justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Ticket className="h-5 w-5 text-primary" />
-                <span className="font-medium text-sm">شراء تذاكر</span>
+            )}
+            {user && wallet && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full text-sm">
+                <Wallet className="h-4 w-4 text-primary" />
+                <span className="font-medium">{wallet.balance.toLocaleString()} دينار</span>
               </div>
-              
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => setTicketPurchaseQuantity(q => Math.max(1, q - 1))}
-                  disabled={ticketPurchaseQuantity <= 1}
-                >
-                  <Minus className="h-3 w-3" />
-                </Button>
-                <Input
-                  type="number"
-                  min={1}
-                  value={ticketPurchaseQuantity}
-                  onChange={(e) => setTicketPurchaseQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                  className="w-14 h-7 text-center text-sm px-1"
-                />
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-7 w-7"
-                  onClick={() => setTicketPurchaseQuantity(q => q + 1)}
-                >
-                  <Plus className="h-3 w-3" />
-                </Button>
-              </div>
-              
-              <span className="text-sm font-bold text-primary">
-                {totalTicketCost.toLocaleString()} دينار
-              </span>
-              
-              <Button 
-                size="sm"
-                className="gap-1"
-                onClick={() => {
-                  if (!user) {
-                    toast.error('يجب تسجيل الدخول أولاً');
-                    navigate('/auth');
-                    return;
-                  }
-                  if (!canBuyTickets) {
-                    setShowInsufficientBalance(true);
-                    return;
-                  }
-                  setShowPurchaseConfirm(true);
-                }}
-                disabled={purchaseTicketsMutation.isPending}
-              >
-                {purchaseTicketsMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ShoppingCart className="h-4 w-4" />
-                )}
-                شراء
-              </Button>
-              
-              {/* Bundle Offers Button */}
-              <Button 
-                variant="outline"
-                size="sm"
-                className="gap-1"
-                onClick={() => {
-                  if (!user) {
-                    toast.error('يجب تسجيل الدخول أولاً');
-                    navigate('/auth');
-                    return;
-                  }
-                  setShowBundleOffers(true);
-                }}
-              >
-                <Sparkles className="h-4 w-4" />
-                عروض
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-3">
-              {user && (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-secondary/50 rounded-full text-sm">
-                  <Ticket className="h-4 w-4 text-primary" />
-                  <span className="font-medium">{userTicketBalance || 0} تذكرة</span>
-                </div>
-              )}
-              {user && wallet && (
-                <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-primary/10 rounded-full text-sm">
-                  <Wallet className="h-4 w-4 text-primary" />
-                  <span className="font-medium">{wallet.balance.toLocaleString()} دينار</span>
-                </div>
-              )}
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -925,9 +716,9 @@ export default function Competitions() {
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold flex items-center justify-center gap-2 mb-1">
             <Trophy className="h-6 w-6 text-primary" />
-            المسابقات والسحوبات
+            المسابقات والعروض
           </h1>
-          <p className="text-sm text-muted-foreground">اشترك في المسابقات واربح جوائز قيمة!</p>
+          <p className="text-sm text-muted-foreground">اشترك في المسابقات واشترِ منتجات مع تذاكر هدية!</p>
           
           <div className="flex items-center justify-center gap-3 mt-3">
             <Button
@@ -938,6 +729,15 @@ export default function Competitions() {
             >
               <History className="h-4 w-4" />
               السجل
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/my-purchased-products')}
+              className="gap-1"
+            >
+              <Package className="h-4 w-4" />
+              مشترياتي
             </Button>
           </div>
         </div>
