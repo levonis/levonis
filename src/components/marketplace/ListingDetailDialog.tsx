@@ -46,6 +46,7 @@ import {
   Share2,
   X,
   ExternalLink,
+  Hash,
 } from 'lucide-react';
 
 // Format date in Arabic with time (Baghdad timezone UTC+3)
@@ -83,6 +84,7 @@ interface Listing {
   categories?: { name_ar: string } | null;
   created_at?: string;
   approved_at?: string | null;
+  listing_code?: string | null;
 }
 
 interface ListingDetailDialogProps {
@@ -642,6 +644,14 @@ export const ListingDetailDialog = ({
 
                 {/* Title & Condition */}
                 <div>
+                  {/* Listing Code */}
+                  {listing.listing_code && (
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Hash className="w-4 h-4 text-muted-foreground" />
+                      <span className="text-xs font-mono text-muted-foreground bg-muted px-2 py-0.5 rounded">{listing.listing_code}</span>
+                    </div>
+                  )}
+                  
                   <div className="flex items-start justify-between gap-2 mb-1.5 sm:mb-2">
                     <h2 className="text-lg sm:text-xl lg:text-2xl font-bold leading-tight">{listing.title_ar}</h2>
                     <Badge className={`${condition.bgClass} text-white flex-shrink-0 text-[10px] sm:text-xs border-0`}>
