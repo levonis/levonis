@@ -213,7 +213,7 @@ export type Database = {
       }
       competition_tickets: {
         Row: {
-          competition_id: string
+          competition_id: string | null
           id: string
           is_winner: boolean
           letter_awarded: string | null
@@ -226,7 +226,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          competition_id: string
+          competition_id?: string | null
           id?: string
           is_winner?: boolean
           letter_awarded?: string | null
@@ -239,7 +239,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          competition_id?: string
+          competition_id?: string | null
           id?: string
           is_winner?: boolean
           letter_awarded?: string | null
@@ -850,7 +850,7 @@ export type Database = {
       }
       letter_prize_coupons: {
         Row: {
-          competition_id: string
+          competition_id: string | null
           coupon_code: string
           created_at: string
           expires_at: string | null
@@ -864,7 +864,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          competition_id: string
+          competition_id?: string | null
           coupon_code: string
           created_at?: string
           expires_at?: string | null
@@ -878,7 +878,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          competition_id?: string
+          competition_id?: string | null
           coupon_code?: string
           created_at?: string
           expires_at?: string | null
@@ -917,7 +917,7 @@ export type Database = {
       }
       letter_prize_redemptions: {
         Row: {
-          competition_id: string
+          competition_id: string | null
           created_at: string
           id: string
           letters_used: Json
@@ -929,7 +929,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          competition_id: string
+          competition_id?: string | null
           created_at?: string
           id?: string
           letters_used?: Json
@@ -941,7 +941,7 @@ export type Database = {
           user_id: string
         }
         Update: {
-          competition_id?: string
+          competition_id?: string | null
           created_at?: string
           id?: string
           letters_used?: Json
@@ -2252,7 +2252,7 @@ export type Database = {
       user_collected_letters: {
         Row: {
           collected_at: string | null
-          competition_id: string
+          competition_id: string | null
           id: string
           letter: string
           ticket_id: string | null
@@ -2260,7 +2260,7 @@ export type Database = {
         }
         Insert: {
           collected_at?: string | null
-          competition_id: string
+          competition_id?: string | null
           id?: string
           letter: string
           ticket_id?: string | null
@@ -2268,7 +2268,7 @@ export type Database = {
         }
         Update: {
           collected_at?: string | null
-          competition_id?: string
+          competition_id?: string | null
           id?: string
           letter?: string
           ticket_id?: string | null
