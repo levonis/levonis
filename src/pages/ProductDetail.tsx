@@ -10,17 +10,20 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus, Star, Award, Check, CheckCircle, Zap, Sparkles, Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic, X } from 'lucide-react';
+import { Loader2, ShoppingCart, ArrowRight, Package, Shield, Truck, Heart, Minus, Plus, Star, Award, Check, CheckCircle, Zap, Sparkles, Cpu, Battery, Wifi, Smartphone, Monitor, Headphones, Camera, Music, Video, Image, Disc, Download, Upload, Rocket, Flame, Gift, Crown, Gem, Clock, Timer, Globe, Lock, Unlock, Key, Settings, Hammer, Lightbulb, Sun, Moon, Cloud, Droplet, Wind, Leaf, TreePine, Feather, Target, ThumbsUp, Home, Building, Store, ShoppingBag, CreditCard, Wallet, DollarSign, Tag, BarChart, TrendingUp, Users, User, Mail, Phone, MessageCircle, Send, Bell, Volume2, Mic, X, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { formatPrice } from '@/lib/utils';
 import ProductCard from '@/components/ProductCard';
 import ProductReviews from '@/components/ProductReviews';
+import { useTaobaoAutoSync } from '@/hooks/useTaobaoAutoSync';
+import { isVariantAvailable } from '@/lib/api/taobaoSync';
+import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
 
 const ProductDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { addToCart } = useCart();
   const queryClient = useQueryClient();
   const [selectedImage, setSelectedImage] = useState(0);
@@ -32,7 +35,7 @@ const ProductDetail = () => {
   const [selectedShippingOption, setSelectedShippingOption] = useState<number | null>(null);
   const [showFullDescription, setShowFullDescription] = useState(false);
 
-  const { data: product, isLoading } = useQuery({
+  const { data: product, isLoading, refetch: refetchProduct } = useQuery({
     queryKey: ['product', slug],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -45,6 +48,15 @@ const ProductDetail = () => {
       if (!data) throw new Error('Product not found');
       return data;
     }
+  });
+  
+  // Auto-sync Taobao availability in background
+  useTaobaoAutoSync({
+    productId: product?.id,
+    taobaoUrl: (product as any)?.taobao_url,
+    lastSyncAt: (product as any)?.taobao_last_sync_at,
+    maxAgeHours: 24,
+    onSyncComplete: () => refetchProduct()
   });
 
   const { data: productOptions } = useQuery({
@@ -429,8 +441,12 @@ const ProductDetail = () => {
                 </Badge>
               )}
 
-              <h1 className="text-2xl md:text-3xl font-black text-gradient-gold mb-3">
+              <h1 className="text-2xl md:text-3xl font-black text-gradient-gold mb-3 flex items-center gap-2">
                 {product.name_ar}
+                {/* Admin-only Taobao quick access */}
+                {isAdmin && (product as any).taobao_url && (
+                  <TaobaoLinkButton taobaoUrl={(product as any).taobao_url} />
+                )}
               </h1>
               
               {product.description_ar && (

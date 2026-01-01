@@ -1842,6 +1842,9 @@ export type Database = {
           name_ar: string
           price_adjustment: number | null
           product_id: string
+          taobao_available: boolean | null
+          taobao_last_sync_at: string | null
+          taobao_sku_id: string | null
         }
         Insert: {
           available_for_direct_sale?: boolean | null
@@ -1854,6 +1857,9 @@ export type Database = {
           name_ar: string
           price_adjustment?: number | null
           product_id: string
+          taobao_available?: boolean | null
+          taobao_last_sync_at?: string | null
+          taobao_sku_id?: string | null
         }
         Update: {
           available_for_direct_sale?: boolean | null
@@ -1866,6 +1872,9 @@ export type Database = {
           name_ar?: string
           price_adjustment?: number | null
           product_id?: string
+          taobao_available?: boolean | null
+          taobao_last_sync_at?: string | null
+          taobao_sku_id?: string | null
         }
         Relationships: [
           {
@@ -1903,6 +1912,11 @@ export type Database = {
           pre_order_shipping_options: Json | null
           price: number
           slug: string
+          taobao_availability_cache: Json | null
+          taobao_last_sync_at: string | null
+          taobao_sync_status: string | null
+          taobao_url: string | null
+          taobao_variant_mapping: Json | null
           updated_at: string | null
         }
         Insert: {
@@ -1930,6 +1944,11 @@ export type Database = {
           pre_order_shipping_options?: Json | null
           price: number
           slug: string
+          taobao_availability_cache?: Json | null
+          taobao_last_sync_at?: string | null
+          taobao_sync_status?: string | null
+          taobao_url?: string | null
+          taobao_variant_mapping?: Json | null
           updated_at?: string | null
         }
         Update: {
@@ -1957,6 +1976,11 @@ export type Database = {
           pre_order_shipping_options?: Json | null
           price?: number
           slug?: string
+          taobao_availability_cache?: Json | null
+          taobao_last_sync_at?: string | null
+          taobao_sync_status?: string | null
+          taobao_url?: string | null
+          taobao_variant_mapping?: Json | null
           updated_at?: string | null
         }
         Relationships: [
@@ -2176,6 +2200,41 @@ export type Database = {
             columns: ["listing_id"]
             isOneToOne: false
             referencedRelation: "user_listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      taobao_sync_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          product_id: string | null
+          sync_status: string
+          variants_synced: number | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          product_id?: string | null
+          sync_status?: string
+          variants_synced?: number | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          product_id?: string | null
+          sync_status?: string
+          variants_synced?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "taobao_sync_logs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
             referencedColumns: ["id"]
           },
         ]

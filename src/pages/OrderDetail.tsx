@@ -17,6 +17,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { OrderTimeline } from '@/components/OrderTimeline';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
+import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
 
 // Helper function to determine if order is pre-order
 // An order is DIRECT only if ALL items come from in-stock products
@@ -73,7 +74,7 @@ const OrderDetail = () => {
           *,
           order_items!order_items_order_id_fkey(
             *,
-            products!order_items_product_id_fkey(name_ar, image_url, images),
+            products!order_items_product_id_fkey(id, name_ar, image_url, images, taobao_url),
             custom_product_requests(product_name, image_url, suggested_price)
           ),
           profiles(full_name, email)
@@ -543,6 +544,10 @@ const OrderDetail = () => {
                       {productName}
                       {isCustomRequest && (
                         <Badge variant="secondary" className="text-xs">طلب خاص</Badge>
+                      )}
+                      {/* Admin-only Taobao link */}
+                      {isAdmin && !isCustomRequest && item.products?.taobao_url && (
+                        <TaobaoLinkButton taobaoUrl={item.products.taobao_url} />
                       )}
                     </div>
                     <div className="space-y-1 text-sm text-muted-foreground">
