@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.notify-marketplace-telegram]
 verify_jwt = false
+
+[functions.sync-taobao-availability]
+verify_jwt = false
