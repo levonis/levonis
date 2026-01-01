@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,11 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Plus, Gift, Loader2, Trash2, Upload, X, Edit, Package, DollarSign, Ticket } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Gift, Loader2, Trash2, Upload, X, Edit, Package, DollarSign, Ticket, BarChart3, Download, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
+import * as XLSX from "xlsx";
 
 interface ProductOffer {
   id: string;
@@ -21,6 +25,7 @@ interface ProductOffer {
   image_url: string | null;
   images: string[] | null;
   price: number;
+  cost_price: number;
   gift_tickets: number;
   stock_quantity: number | null;
   total_sold: number;
@@ -29,11 +34,27 @@ interface ProductOffer {
   created_at: string;
 }
 
+interface OfferPurchase {
+  id: string;
+  user_id: string;
+  offer_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  gift_tickets_awarded: number;
+  created_at: string;
+  profiles?: {
+    username: string;
+    full_name: string | null;
+  };
+}
+
 export default function AdminProductOffersTab() {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingOffer, setEditingOffer] = useState<ProductOffer | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [activeTab, setActiveTab] = useState<"offers" | "report">("offers");
 
   const [formData, setFormData] = useState({
     title_ar: '',
@@ -41,12 +62,13 @@ export default function AdminProductOffersTab() {
     image_url: '',
     images: [] as string[],
     price: '',
+    cost_price: '',
     gift_tickets: '1',
     stock_quantity: '',
     status: 'active' as 'draft' | 'active' | 'inactive',
   });
 
-  // Fetch product offers from dedicated product_offers table (NOT competitions)
+  // Fetch product offers
   const { data: offers, isLoading } = useQuery({
     queryKey: ['admin-product-offers'],
     queryFn: async () => {
@@ -60,6 +82,85 @@ export default function AdminProductOffersTab() {
     },
   });
 
+  // Fetch all purchases for financial report
+  const { data: purchases } = useQuery({
+    queryKey: ['product-offer-purchases-all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('product_offer_purchases')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Fetch profiles separately
+      const userIds = [...new Set(data?.map(p => p.user_id) || [])];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, full_name')
+        .in('id', userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+      
+      return data?.map(p => ({
+        ...p,
+        profiles: profileMap.get(p.user_id) || null
+      })) as OfferPurchase[];
+    },
+  });
+
+  // Calculate financial stats
+  const financialStats = useMemo(() => {
+    if (!offers || !purchases) return { totalRevenue: 0, totalCost: 0, netProfit: 0, totalTickets: 0, ticketsByOffer: [] as any[] };
+    
+    const offerMap = new Map(offers.map(o => [o.id, o]));
+    
+    let totalRevenue = 0;
+    let totalCost = 0;
+    let totalTickets = 0;
+    const ticketsByOffer: { offer: ProductOffer; tickets: number; revenue: number; cost: number; profit: number; purchases: number }[] = [];
+    
+    // Group purchases by offer
+    const purchasesByOffer = new Map<string, OfferPurchase[]>();
+    purchases.forEach(p => {
+      if (!purchasesByOffer.has(p.offer_id)) {
+        purchasesByOffer.set(p.offer_id, []);
+      }
+      purchasesByOffer.get(p.offer_id)!.push(p);
+    });
+    
+    offers.forEach(offer => {
+      const offerPurchases = purchasesByOffer.get(offer.id) || [];
+      const offerRevenue = offerPurchases.reduce((sum, p) => sum + p.total_price, 0);
+      const offerTickets = offerPurchases.reduce((sum, p) => sum + p.gift_tickets_awarded, 0);
+      const purchaseCount = offerPurchases.reduce((sum, p) => sum + p.quantity, 0);
+      const offerCost = purchaseCount * (offer.cost_price || 0);
+      
+      totalRevenue += offerRevenue;
+      totalCost += offerCost;
+      totalTickets += offerTickets;
+      
+      if (purchaseCount > 0) {
+        ticketsByOffer.push({
+          offer,
+          tickets: offerTickets,
+          revenue: offerRevenue,
+          cost: offerCost,
+          profit: offerRevenue - offerCost,
+          purchases: purchaseCount,
+        });
+      }
+    });
+    
+    return {
+      totalRevenue,
+      totalCost,
+      netProfit: totalRevenue - totalCost,
+      totalTickets,
+      ticketsByOffer: ticketsByOffer.sort((a, b) => b.revenue - a.revenue),
+    };
+  }, [offers, purchases]);
+
   const resetForm = () => {
     setFormData({
       title_ar: '',
@@ -67,6 +168,7 @@ export default function AdminProductOffersTab() {
       image_url: '',
       images: [],
       price: '',
+      cost_price: '',
       gift_tickets: '1',
       stock_quantity: '',
       status: 'active',
@@ -82,6 +184,7 @@ export default function AdminProductOffersTab() {
       image_url: offer.image_url || '',
       images: offer.images || (offer.image_url ? [offer.image_url] : []),
       price: offer.price.toString(),
+      cost_price: (offer.cost_price || 0).toString(),
       gift_tickets: offer.gift_tickets.toString(),
       stock_quantity: offer.stock_quantity?.toString() || '',
       status: offer.status,
@@ -137,7 +240,7 @@ export default function AdminProductOffersTab() {
     });
   };
 
-  // Create mutation - uses product_offers table (NOT competitions)
+  // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const payload = {
@@ -148,6 +251,7 @@ export default function AdminProductOffersTab() {
         image_url: data.images.length > 0 ? data.images[0] : null,
         images: data.images,
         price: parseFloat(data.price) || 0,
+        cost_price: parseFloat(data.cost_price) || 0,
         gift_tickets: parseInt(data.gift_tickets) || 1,
         stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
         status: data.status,
@@ -174,7 +278,7 @@ export default function AdminProductOffersTab() {
     },
   });
 
-  // Update mutation - uses product_offers table
+  // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: typeof formData }) => {
       const payload = {
@@ -185,6 +289,7 @@ export default function AdminProductOffersTab() {
         image_url: data.images.length > 0 ? data.images[0] : null,
         images: data.images,
         price: parseFloat(data.price) || 0,
+        cost_price: parseFloat(data.cost_price) || 0,
         gift_tickets: parseInt(data.gift_tickets) || 1,
         stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
         status: data.status,
@@ -209,7 +314,7 @@ export default function AdminProductOffersTab() {
     },
   });
 
-  // Delete mutation - uses product_offers table
+  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -242,6 +347,41 @@ export default function AdminProductOffersTab() {
     }
   };
 
+  const exportFinancialReport = () => {
+    if (!financialStats.ticketsByOffer.length) {
+      toast.error('لا توجد بيانات للتصدير');
+      return;
+    }
+
+    const exportData = financialStats.ticketsByOffer.map((item, index) => ({
+      '#': index + 1,
+      'اسم المنتج': item.offer.title_ar,
+      'عدد المشتريات': item.purchases,
+      'التذاكر الممنوحة': item.tickets,
+      'الإيرادات': item.revenue,
+      'التكلفة': item.cost,
+      'الربح': item.profit,
+    }));
+
+    // Add summary row
+    exportData.push({
+      '#': '' as any,
+      'اسم المنتج': 'الإجمالي',
+      'عدد المشتريات': financialStats.ticketsByOffer.reduce((s, i) => s + i.purchases, 0),
+      'التذاكر الممنوحة': financialStats.totalTickets,
+      'الإيرادات': financialStats.totalRevenue,
+      'التكلفة': financialStats.totalCost,
+      'الربح': financialStats.netProfit,
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'التقرير المالي');
+
+    XLSX.writeFile(workbook, `تقرير-عروض-المنتجات-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    toast.success('تم تصدير التقرير بنجاح');
+  };
+
   const statusLabels = {
     draft: { label: 'مسودة', color: 'bg-gray-500' },
     active: { label: 'نشط', color: 'bg-green-500' },
@@ -250,269 +390,382 @@ export default function AdminProductOffersTab() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            عروض المنتجات والهدايا
-          </h2>
-          <p className="text-sm text-muted-foreground">منتجات للشراء مع تذاكر هدية مجانية</p>
-        </div>
-        <Button onClick={() => setIsDialogOpen(true)} className="gap-1">
-          <Plus className="h-4 w-4" />
-          إضافة عرض
-        </Button>
-      </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5">
-          <CardContent className="p-4 text-center">
-            <Package className="h-6 w-6 mx-auto mb-1 text-green-600" />
-            <p className="text-xl font-bold">{offers?.filter(o => o.status === 'active').length || 0}</p>
-            <p className="text-xs text-muted-foreground">عروض نشطة</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5">
-          <CardContent className="p-4 text-center">
-            <Gift className="h-6 w-6 mx-auto mb-1 text-blue-600" />
-            <p className="text-xl font-bold">{offers?.length || 0}</p>
-            <p className="text-xs text-muted-foreground">إجمالي العروض</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5">
-          <CardContent className="p-4 text-center">
-            <Ticket className="h-6 w-6 mx-auto mb-1 text-purple-600" />
-            <p className="text-xl font-bold">
-              {offers?.reduce((sum, o) => sum + (o.gift_tickets || 1), 0) || 0}
-            </p>
-            <p className="text-xs text-muted-foreground">تذاكر هدية</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Offers List */}
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      ) : offers?.length === 0 ? (
-        <Card className="text-center py-12">
-          <CardContent>
-            <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">لا توجد عروض منتجات حتى الآن</p>
-            <Button className="mt-4" onClick={() => setIsDialogOpen(true)}>
-              <Plus className="h-4 w-4 ml-2" />
-              إنشاء أول عرض
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "offers" | "report")}>
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <TabsList>
+            <TabsTrigger value="offers" className="gap-2">
+              <Package className="h-4 w-4" />
+              العروض
+            </TabsTrigger>
+            <TabsTrigger value="report" className="gap-2">
+              <BarChart3 className="h-4 w-4" />
+              التقرير المالي
+            </TabsTrigger>
+          </TabsList>
+          
+          {activeTab === "offers" && (
+            <Button onClick={() => setIsDialogOpen(true)} className="gap-1">
+              <Plus className="h-4 w-4" />
+              إضافة عرض
             </Button>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-4">
-          {offers?.map((offer) => (
-            <Card key={offer.id} className="overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  {offer.image_url && (
-                    <img 
-                      src={offer.image_url} 
-                      alt={offer.title_ar}
-                      className="w-20 h-20 object-cover rounded-lg"
-                    />
-                  )}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold">{offer.title_ar}</h3>
-                      <Badge className={`${statusLabels[offer.status]?.color || 'bg-gray-500'} text-white text-xs`}>
-                        {statusLabels[offer.status]?.label || offer.status}
-                      </Badge>
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                      {offer.description_ar || 'لا يوجد وصف'}
-                    </p>
-                    
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4 text-primary" />
-                        <span className="font-bold">{offer.price.toLocaleString()} {offer.currency}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Gift className="h-4 w-4 text-green-600" />
-                        <span>{offer.gift_tickets} تذكرة هدية</span>
-                      </div>
-                      {offer.stock_quantity !== null && (
-                        <div className="text-muted-foreground">
-                          المخزون: {offer.stock_quantity}
-                        </div>
-                      )}
-                      <div className="text-muted-foreground">
-                        المباع: {offer.total_sold || 0}
-                      </div>
-                    </div>
-                  </div>
+          )}
+          {activeTab === "report" && (
+            <Button variant="outline" onClick={exportFinancialReport} className="gap-1">
+              <Download className="h-4 w-4" />
+              تصدير Excel
+            </Button>
+          )}
+        </div>
 
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(offer)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button 
-                      variant="destructive" 
-                      size="sm"
-                      onClick={() => {
-                        if (window.confirm('هل أنت متأكد من حذف هذا العرض؟')) {
-                          deleteMutation.mutate(offer.id);
-                        }
-                      }}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+        <TabsContent value="offers" className="space-y-4 mt-4">
+          {/* Statistics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Card className="bg-gradient-to-br from-green-500/10 to-green-500/5">
+              <CardContent className="p-4 text-center">
+                <Package className="h-6 w-6 mx-auto mb-1 text-green-600" />
+                <p className="text-xl font-bold">{offers?.filter(o => o.status === 'active').length || 0}</p>
+                <p className="text-xs text-muted-foreground">عروض نشطة</p>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+            <Card className="bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+              <CardContent className="p-4 text-center">
+                <Ticket className="h-6 w-6 mx-auto mb-1 text-blue-600" />
+                <p className="text-xl font-bold">{financialStats.totalTickets}</p>
+                <p className="text-xs text-muted-foreground">تذاكر ممنوحة</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
+              <CardContent className="p-4 text-center">
+                <DollarSign className="h-6 w-6 mx-auto mb-1 text-primary" />
+                <p className="text-xl font-bold">{financialStats.totalRevenue.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-purple-500/10 to-purple-500/5">
+              <CardContent className="p-4 text-center">
+                <TrendingUp className="h-6 w-6 mx-auto mb-1 text-purple-600" />
+                <p className="text-xl font-bold">{financialStats.netProfit.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">صافي الربح</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Offers List */}
+          {isLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : offers?.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">لا توجد عروض منتجات حتى الآن</p>
+                <Button className="mt-4" onClick={() => setIsDialogOpen(true)}>
+                  <Plus className="h-4 w-4 ml-2" />
+                  إنشاء أول عرض
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {offers?.map((offer) => (
+                <Card key={offer.id} className="overflow-hidden">
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-4">
+                      {offer.image_url && (
+                        <img 
+                          src={offer.image_url} 
+                          alt={offer.title_ar}
+                          className="w-20 h-20 object-cover rounded-lg"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <h3 className="font-semibold truncate">{offer.title_ar}</h3>
+                          <Badge className={`${statusLabels[offer.status]?.color || 'bg-gray-500'} text-white text-xs`}>
+                            {statusLabels[offer.status]?.label || offer.status}
+                          </Badge>
+                        </div>
+                        
+                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                          {offer.description_ar || 'لا يوجد وصف'}
+                        </p>
+                        
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-4 w-4 text-primary" />
+                            <span className="font-bold">{offer.price.toLocaleString()} {offer.currency}</span>
+                          </div>
+                          {offer.cost_price > 0 && (
+                            <div className="flex items-center gap-1 text-muted-foreground">
+                              <span>التكلفة: {offer.cost_price.toLocaleString()}</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1">
+                            <Gift className="h-4 w-4 text-green-600" />
+                            <span>{offer.gift_tickets} تذكرة هدية</span>
+                          </div>
+                          {offer.stock_quantity !== null && (
+                            <div className="text-muted-foreground">
+                              المخزون: {offer.stock_quantity}
+                            </div>
+                          )}
+                          <div className="text-muted-foreground">
+                            المباع: {offer.total_sold || 0}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 shrink-0">
+                        <Button variant="outline" size="sm" onClick={() => handleEdit(offer)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => {
+                            if (window.confirm('هل أنت متأكد من حذف هذا العرض؟')) {
+                              deleteMutation.mutate(offer.id);
+                            }
+                          }}
+                          disabled={deleteMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="report" className="space-y-4 mt-4">
+          {/* Financial Summary Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Ticket className="h-6 w-6 mx-auto mb-1 text-blue-600" />
+                <p className="text-2xl font-bold">{financialStats.totalTickets}</p>
+                <p className="text-xs text-muted-foreground">إجمالي التذاكر الممنوحة</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <DollarSign className="h-6 w-6 mx-auto mb-1 text-green-600" />
+                <p className="text-2xl font-bold">{financialStats.totalRevenue.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">إجمالي الإيرادات</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <Package className="h-6 w-6 mx-auto mb-1 text-orange-600" />
+                <p className="text-2xl font-bold">{financialStats.totalCost.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">إجمالي التكلفة</p>
+              </CardContent>
+            </Card>
+            <Card className={financialStats.netProfit >= 0 ? 'bg-green-500/10' : 'bg-red-500/10'}>
+              <CardContent className="p-4 text-center">
+                <TrendingUp className={`h-6 w-6 mx-auto mb-1 ${financialStats.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+                <p className={`text-2xl font-bold ${financialStats.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {financialStats.netProfit.toLocaleString()}
+                </p>
+                <p className="text-xs text-muted-foreground">صافي الربح</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Breakdown by Offer */}
+          <Card>
+            <CardContent className="p-0">
+              <div className="p-4 border-b">
+                <h3 className="font-semibold flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  تفاصيل حسب العرض
+                </h3>
+              </div>
+              <ScrollArea className="h-[400px]">
+                {financialStats.ticketsByOffer.length === 0 ? (
+                  <div className="p-8 text-center text-muted-foreground">
+                    لا توجد مشتريات بعد
+                  </div>
+                ) : (
+                  <div className="divide-y">
+                    {financialStats.ticketsByOffer.map((item) => (
+                      <div key={item.offer.id} className="p-4 hover:bg-muted/50">
+                        <div className="flex items-center gap-4">
+                          {item.offer.image_url && (
+                            <img src={item.offer.image_url} alt="" className="w-12 h-12 object-cover rounded" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{item.offer.title_ar}</p>
+                            <p className="text-sm text-muted-foreground">{item.purchases} عملية شراء</p>
+                          </div>
+                          <div className="text-left space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Ticket className="h-3 w-3 text-blue-600" />
+                              <span>{item.tickets} تذكرة</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <DollarSign className="h-3 w-3 text-green-600" />
+                              <span>{item.revenue.toLocaleString()}</span>
+                            </div>
+                            <div className={`text-sm font-medium ${item.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              ربح: {item.profit.toLocaleString()}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
         setIsDialogOpen(open);
         if (!open) resetForm();
       }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingOffer ? 'تعديل العرض' : 'إضافة عرض منتج جديد'}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>اسم المنتج *</Label>
-              <Input
-                value={formData.title_ar}
-                onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
-                placeholder="مثال: ساعة ذكية سامسونج"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>وصف المنتج</Label>
-              <Textarea
-                value={formData.description_ar}
-                onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
-                placeholder="وصف مختصر للمنتج..."
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+          <ScrollArea className="max-h-[60vh] pr-4">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label>سعر المنتج (دينار) *</Label>
+                <Label>اسم المنتج *</Label>
                 <Input
-                  type="number"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  placeholder="25000"
+                  value={formData.title_ar}
+                  onChange={(e) => setFormData({ ...formData, title_ar: e.target.value })}
+                  placeholder="مثال: ساعة ذكية سامسونج"
                 />
               </div>
+
               <div className="space-y-2">
-                <Label>عدد التذاكر الهدية</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={formData.gift_tickets}
-                  onChange={(e) => setFormData({ ...formData, gift_tickets: e.target.value })}
-                  placeholder="1"
+                <Label>وصف المنتج</Label>
+                <Textarea
+                  value={formData.description_ar}
+                  onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                  placeholder="وصف مختصر للمنتج..."
                 />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label>كمية المخزون (اختياري)</Label>
-              <Input
-                type="number"
-                min="0"
-                value={formData.stock_quantity}
-                onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
-                placeholder="اتركه فارغاً لمخزون غير محدود"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label>صورة المنتج</Label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleImageUpload}
-                    className="absolute inset-0 opacity-0 cursor-pointer"
-                    disabled={uploadingImage}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>سعر البيع (دينار) *</Label>
+                  <Input
+                    type="number"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    placeholder="25000"
                   />
-                  <Button type="button" variant="outline" className="w-full gap-2" disabled={uploadingImage}>
-                    {uploadingImage ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        جاري الرفع...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="h-4 w-4" />
-                        اختر صورة
-                      </>
-                    )}
-                  </Button>
+                </div>
+                <div className="space-y-2">
+                  <Label>سعر التكلفة (دينار)</Label>
+                  <Input
+                    type="number"
+                    value={formData.cost_price}
+                    onChange={(e) => setFormData({ ...formData, cost_price: e.target.value })}
+                    placeholder="20000"
+                  />
                 </div>
               </div>
-              
-              {formData.images.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.images.map((url, index) => (
-                    <div key={index} className="relative w-20 h-20 group">
-                      <img
-                        src={url}
-                        alt={`صورة ${index + 1}`}
-                        className="w-full h-full object-cover rounded-lg border"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute -top-2 -right-2 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeImage(index)}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>عدد التذاكر الهدية</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={formData.gift_tickets}
+                    onChange={(e) => setFormData({ ...formData, gift_tickets: e.target.value })}
+                    placeholder="1"
+                  />
                 </div>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between p-3 border rounded-lg">
-              <div>
-                <Label>حالة العرض</Label>
-                <p className="text-xs text-muted-foreground">العرض النشط يظهر للمستخدمين</p>
+                <div className="space-y-2">
+                  <Label>كمية المخزون</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={formData.stock_quantity}
+                    onChange={(e) => setFormData({ ...formData, stock_quantity: e.target.value })}
+                    placeholder="غير محدود"
+                  />
+                </div>
               </div>
-              <Switch
-                checked={formData.status === 'active'}
-                onCheckedChange={(checked) => setFormData({ ...formData, status: checked ? 'active' : 'draft' })}
-              />
-            </div>
 
+              <div className="space-y-2">
+                <Label>صورة المنتج</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      disabled={uploadingImage}
+                    />
+                    <Button type="button" variant="outline" className="w-full gap-2" disabled={uploadingImage}>
+                      {uploadingImage ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          جاري الرفع...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-4 w-4" />
+                          اختر صورة
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                {formData.images.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {formData.images.map((url, index) => (
+                      <div key={index} className="relative w-20 h-20 group">
+                        <img
+                          src={url}
+                          alt={`صورة ${index + 1}`}
+                          className="w-full h-full object-cover rounded-lg border"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(index)}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>
+              إلغاء
+            </Button>
             <Button 
-              className="w-full" 
               onClick={handleSubmit}
               disabled={createMutation.isPending || updateMutation.isPending}
             >
-              {(createMutation.isPending || updateMutation.isPending) ? (
+              {(createMutation.isPending || updateMutation.isPending) && (
                 <Loader2 className="h-4 w-4 animate-spin ml-2" />
-              ) : null}
-              {editingOffer ? 'تحديث العرض' : 'إنشاء العرض'}
+              )}
+              {editingOffer ? 'تحديث' : 'إنشاء'}
             </Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

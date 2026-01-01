@@ -508,22 +508,22 @@ export default function CompetitionFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden flex flex-col" dir="rtl">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0" dir="rtl">
+        <DialogHeader className="p-6 pb-0 shrink-0">
           <DialogTitle className="text-right text-xl">
             {editingCompetition ? 'تعديل المسابقة' : 'إنشاء مسابقة جديدة'}
           </DialogTitle>
         </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-          <TabsList className="grid w-full grid-cols-4 mb-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden px-6">
+          <TabsList className="grid w-full grid-cols-4 mb-4 shrink-0">
             <TabsTrigger value="basic" className="gap-1 text-xs"><Settings className="h-3 w-3" />أساسي</TabsTrigger>
             <TabsTrigger value="settings" className="gap-1 text-xs"><Zap className="h-3 w-3" />إعدادات</TabsTrigger>
             <TabsTrigger value="prizes" className="gap-1 text-xs"><Gift className="h-3 w-3" />الجوائز</TabsTrigger>
             <TabsTrigger value="display" className="gap-1 text-xs"><Star className="h-3 w-3" />العرض</TabsTrigger>
           </TabsList>
 
-          <div className="flex-1 overflow-y-auto px-1">
+          <div className="flex-1 overflow-y-auto pb-4" style={{ minHeight: 0 }}>
             {/* Basic Tab */}
             <TabsContent value="basic" className="space-y-4 mt-0">
               <div className="grid grid-cols-2 gap-4">
@@ -588,18 +588,14 @@ export default function CompetitionFormDialog({
                 </div>
               </div>
 
-              {/* Pricing */}
-              <div className="grid grid-cols-3 gap-4">
-                <div>
-                  <Label>سعر التذكرة</Label>
-                  <Input type="number" value={formData.ticket_price} onChange={(e) => setFormData(prev => ({ ...prev, ticket_price: e.target.value }))} min="0" />
-                </div>
+              {/* Competition Settings */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>قيمة الجائزة</Label>
                   <Input type="number" value={formData.prize_value} onChange={(e) => setFormData(prev => ({ ...prev, prize_value: e.target.value }))} min="0" />
                 </div>
                 <div>
-                  <Label>التذاكر المطلوبة</Label>
+                  <Label>التذاكر المطلوبة للمشاركة</Label>
                   <Input type="number" value={formData.required_tickets} onChange={(e) => setFormData(prev => ({ ...prev, required_tickets: e.target.value }))} min="1" />
                 </div>
               </div>
@@ -917,7 +913,7 @@ export default function CompetitionFormDialog({
           </div>
         </Tabs>
 
-        <div className="flex justify-end gap-2 pt-4 border-t mt-4">
+        <div className="flex justify-end gap-2 p-6 pt-4 border-t shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>إلغاء</Button>
           <Button onClick={handleSubmit} disabled={createCompetitionMutation.isPending} className="admin-btn-primary">
             {createCompetitionMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
