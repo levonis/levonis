@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight, Ticket, ArrowRight, Trophy } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight, Ticket, ArrowRight, Trophy, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
 
@@ -24,6 +25,16 @@ interface ProductOffer {
   stock_quantity: number | null;
 }
 
+type SortOption = 'newest' | 'price_asc' | 'price_desc' | 'tickets_asc' | 'tickets_desc';
+
+const sortOptions: { value: SortOption; label: string; icon?: React.ReactNode }[] = [
+  { value: 'newest', label: 'الأحدث' },
+  { value: 'price_asc', label: 'السعر: الأقل', icon: <ArrowUp className="h-3 w-3" /> },
+  { value: 'price_desc', label: 'السعر: الأعلى', icon: <ArrowDown className="h-3 w-3" /> },
+  { value: 'tickets_asc', label: 'التذاكر: الأقل', icon: <ArrowUp className="h-3 w-3" /> },
+  { value: 'tickets_desc', label: 'التذاكر: الأكثر', icon: <ArrowDown className="h-3 w-3" /> },
+];
+
 export default function ProductOffersPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -31,6 +42,7 @@ export default function ProductOffersPage() {
   const [selectedOffer, setSelectedOffer] = useState<ProductOffer | null>(null);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
   const [imageIndices, setImageIndices] = useState<Record<string, number>>({});
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
 
   const { data: offers, isLoading } = useQuery({
     queryKey: ['product-offers-active'],
@@ -44,6 +56,33 @@ export default function ProductOffersPage() {
       return data as ProductOffer[];
     },
   });
+
+  const sortedOffers = useMemo(() => {
+    if (!offers) return [];
+    
+    const sorted = [...offers];
+    
+    switch (sortBy) {
+      case 'price_asc':
+        sorted.sort((a, b) => a.price - b.price);
+        break;
+      case 'price_desc':
+        sorted.sort((a, b) => b.price - a.price);
+        break;
+      case 'tickets_asc':
+        sorted.sort((a, b) => a.gift_tickets - b.gift_tickets);
+        break;
+      case 'tickets_desc':
+        sorted.sort((a, b) => b.gift_tickets - a.gift_tickets);
+        break;
+      case 'newest':
+      default:
+        // Already sorted by created_at desc
+        break;
+    }
+    
+    return sorted;
+  }, [offers, sortBy]);
 
   const { data: wallet } = useQuery({
     queryKey: ['user-wallet', user?.id],
@@ -78,6 +117,7 @@ export default function ProductOffersPage() {
         queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
         queryClient.invalidateQueries({ queryKey: ['user-ticket-balance'] });
         queryClient.invalidateQueries({ queryKey: ['product-offers-active'] });
+        queryClient.invalidateQueries({ queryKey: ['my-purchased-products'] });
         toast.success(`🎁 تم شراء ${data.product_name} وحصلت على ${data.gift_tickets} تذكرة هدية!`);
         try {
           await supabase.functions.invoke('send-telegram-notification', {
@@ -130,18 +170,45 @@ export default function ProductOffersPage() {
       </div>
 
       <main className="flex-1 container mx-auto px-4 py-6">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <Button variant="outline" size="sm" onClick={() => navigate('/my-offer-purchases')} className="gap-1"><ShoppingCart className="h-4 w-4" />مشترياتي</Button>
-          <Button variant="outline" size="sm" onClick={() => navigate('/competitions')} className="gap-1"><Trophy className="h-4 w-4" />المسابقات</Button>
+        {/* Quick Actions & Sort */}
+        <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/my-offer-purchases')} className="gap-1">
+              <ShoppingCart className="h-4 w-4" />مشترياتي
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/competitions')} className="gap-1">
+              <Trophy className="h-4 w-4" />المسابقات
+            </Button>
+          </div>
+
+          {/* Sorting */}
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="h-4 w-4 text-muted-foreground" />
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-[150px] h-9">
+                <SelectValue placeholder="ترتيب حسب" />
+              </SelectTrigger>
+              <SelectContent>
+                {sortOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <span className="flex items-center gap-1">
+                      {option.icon}
+                      {option.label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {isLoading ? (
           <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-        ) : offers?.length === 0 ? (
+        ) : sortedOffers.length === 0 ? (
           <Card className="text-center py-12"><CardContent className="pt-6"><Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" /><p className="text-muted-foreground">لا توجد عروض متاحة حالياً</p></CardContent></Card>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {offers?.map((offer) => {
+            {sortedOffers.map((offer) => {
               const images = offer.images && offer.images.length > 0 ? offer.images : (offer.image_url ? [offer.image_url] : []);
               const currentIndex = imageIndices[offer.id] || 0;
               const hasMultipleImages = images.length > 1;
@@ -177,7 +244,14 @@ export default function ProductOffersPage() {
                       </Button>
                     </div>
                     <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20"><p className="text-xs text-green-700 dark:text-green-400 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p></div>
-                    {offer.stock_quantity !== null && !isOutOfStock && <p className="text-xs text-center text-muted-foreground">متبقي: {offer.stock_quantity} فقط</p>}
+                    {offer.stock_quantity !== null && (
+                      <div className="flex items-center justify-center gap-1 text-xs">
+                        <Package className="h-3 w-3 text-muted-foreground" />
+                        <span className={isOutOfStock ? 'text-destructive' : 'text-muted-foreground'}>
+                          {isOutOfStock ? 'غير متوفر' : `متبقي: ${offer.stock_quantity} قطعة`}
+                        </span>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               );
@@ -196,11 +270,26 @@ export default function ProductOffersPage() {
               {selectedOffer && (
                 <>
                   <p>هل تريد شراء <span className="font-bold text-foreground">{selectedOffer.title_ar}</span>؟</p>
+                  
+                  {/* Stock Info */}
+                  {selectedOffer.stock_quantity !== null && (
+                    <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">المتوفر في المخزون: <strong>{selectedOffer.stock_quantity}</strong> قطعة</span>
+                    </div>
+                  )}
+                  
                   <div className="p-3 bg-secondary/50 rounded-lg space-y-2">
                     <div className="flex justify-between"><span>السعر:</span><span className="font-bold">{selectedOffer.price.toLocaleString()} {selectedOffer.currency}</span></div>
                     <div className="flex justify-between text-green-600"><span>تذاكر هدية:</span><span className="font-bold">🎁 {selectedOffer.gift_tickets} تذكرة</span></div>
+                    {wallet && (
+                      <div className="flex justify-between border-t pt-2 mt-2">
+                        <span>رصيدك الحالي:</span>
+                        <span className="font-bold">{wallet.balance.toLocaleString()} دينار</span>
+                      </div>
+                    )}
                   </div>
-                  {wallet && wallet.balance < selectedOffer.price && <p className="text-destructive text-sm">⚠️ رصيد المحفظة غير كافٍ (رصيدك: {wallet.balance.toLocaleString()} دينار)</p>}
+                  {wallet && wallet.balance < selectedOffer.price && <p className="text-destructive text-sm">⚠️ رصيد المحفظة غير كافٍ</p>}
                 </>
               )}
             </AlertDialogDescription>
