@@ -288,10 +288,17 @@ const CompetitionCard = memo(({
             </>
           )}
           
-          <Badge className="absolute top-2 right-2 text-xs px-2 py-1 bg-primary/90 backdrop-blur-sm text-primary-foreground border-0">
-            <Ticket className="h-3 w-3 ml-1" />
-            {requiredTickets} تذكرة
-          </Badge>
+          {!isFreeCompetition ? (
+            <Badge className="absolute top-2 right-2 text-xs px-2 py-1 bg-primary/90 backdrop-blur-sm text-primary-foreground border-0">
+              <Ticket className="h-3 w-3 ml-1" />
+              {requiredTickets} تذكرة
+            </Badge>
+          ) : (
+            <Badge className="absolute top-2 right-2 text-xs px-2 py-1 bg-green-600/90 backdrop-blur-sm text-white border-0">
+              <Gift className="h-3 w-3 ml-1" />
+              مجاني
+            </Badge>
+          )}
           
           {comp.status === 'completed' && !isWinner && (
             <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
@@ -482,7 +489,7 @@ const CompetitionCard = memo(({
             size="sm"
             className={`w-full gap-1 text-xs ${isFreeCompetition ? 'bg-green-600 hover:bg-green-700' : ''}`}
             onClick={handleEnterClick}
-            disabled={isEntering || !canEnter}
+            disabled={isEntering || (!isFreeCompetition && !canEnter) || (isFreeCompetition && hasTicket)}
           >
             {isEntering ? (
               <Loader2 className="h-3 w-3 animate-spin" />
@@ -492,7 +499,7 @@ const CompetitionCard = memo(({
               <Ticket className="h-3 w-3" />
             )}
             {isFreeCompetition 
-              ? (hasTicket ? 'شاركت مسبقاً' : 'سجّل مجاناً')
+              ? (hasTicket ? 'شاركت مسبقاً ✓' : 'سجّل مجاناً')
               : canEnter 
                 ? `دخول (${requiredTickets} تذكرة)` 
                 : `تحتاج ${requiredTickets} تذكرة`}
