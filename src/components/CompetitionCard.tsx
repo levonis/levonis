@@ -183,7 +183,8 @@ const CompetitionCard = memo(({
   const isSoldOut = comp.max_tickets ? ticketCount >= comp.max_tickets : false;
   const isEnded = comp.status === 'completed' || (comp.end_date && new Date(comp.end_date) < new Date());
   const requiredTickets = comp.required_tickets || 1;
-  const canEnter = userTicketBalance >= requiredTickets;
+  const isFreeCompetition = comp.competition_type === 'free';
+  const canEnter = isFreeCompetition || userTicketBalance >= requiredTickets;
 
   const compImages = comp.images?.length ? comp.images : (comp.image_url ? [comp.image_url] : []);
   const prizeText = comp.prize_description_ar;
@@ -479,16 +480,22 @@ const CompetitionCard = memo(({
         {comp.status === 'active' && !isSoldOut && !isEnded && (
           <Button
             size="sm"
-            className="w-full gap-1 text-xs"
+            className={`w-full gap-1 text-xs ${isFreeCompetition ? 'bg-green-600 hover:bg-green-700' : ''}`}
             onClick={handleEnterClick}
             disabled={isEntering || !canEnter}
           >
             {isEntering ? (
               <Loader2 className="h-3 w-3 animate-spin" />
+            ) : isFreeCompetition ? (
+              <Gift className="h-3 w-3" />
             ) : (
               <Ticket className="h-3 w-3" />
             )}
-            {canEnter ? `دخول (${requiredTickets} تذكرة)` : `تحتاج ${requiredTickets} تذكرة`}
+            {isFreeCompetition 
+              ? (hasTicket ? 'شاركت مسبقاً' : 'سجّل مجاناً')
+              : canEnter 
+                ? `دخول (${requiredTickets} تذكرة)` 
+                : `تحتاج ${requiredTickets} تذكرة`}
           </Button>
         )}
         

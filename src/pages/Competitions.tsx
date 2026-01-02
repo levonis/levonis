@@ -678,6 +678,29 @@ export default function Competitions() {
     }
   });
 
+  // Free competition mutation (no ticket cost)
+  const enterFreeCompetitionMutation = useMutation({
+    mutationFn: async (competitionId: string) => {
+      const { data, error } = await supabase.rpc('enter_free_competition', {
+        comp_id: competitionId
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data: any) => {
+      if (data.success) {
+        queryClient.invalidateQueries({ queryKey: ['my-competition-tickets'] });
+        queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
+        toast.success(`🎉 ${data.message || 'تم التسجيل بنجاح!'} رقم تذكرتك: ${data.ticket_number}`);
+      } else {
+        toast.error(data.error);
+      }
+    },
+    onError: (error) => {
+      toast.error('حدث خطأ: ' + error.message);
+    }
+  });
+
   const enterCompetitionMutation = useMutation({
     mutationFn: async (competitionId: string) => {
       const { data, error } = await supabase.rpc('enter_competition_with_tickets', {
@@ -706,6 +729,9 @@ export default function Competitions() {
     if (!comp) return;
     
     switch (comp.competition_type) {
+      case 'free':
+        enterFreeCompetitionMutation.mutate(comp.id);
+        break;
       case 'instant_winner':
         enterInstantWinMutation.mutate(comp.id);
         break;
@@ -721,7 +747,7 @@ export default function Competitions() {
       default:
         enterCompetitionMutation.mutate(comp.id);
     }
-  }, [enterInstantWinMutation, enterCollectLettersMutation, enterMysteryBoxMutation, enterEveryoneWinsMutation, enterCompetitionMutation]);
+  }, [enterFreeCompetitionMutation, enterInstantWinMutation, enterCollectLettersMutation, enterMysteryBoxMutation, enterEveryoneWinsMutation, enterCompetitionMutation]);
 
   const getAllImages = useCallback((comp: Competition): string[] => {
     if (comp.images?.length) return comp.images;
@@ -1081,8 +1107,16 @@ export default function Competitions() {
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Ticket className="h-5 w-5 text-primary" />
-              {selectedCompetitionForEntry?.competition_type === 'collect_letters' ? 'اجمع أحرف واربح!' : 'تأكيد الدخول في المسابقة'}
+              {selectedCompetitionForEntry?.competition_type === 'free' ? (
+                <Gift className="h-5 w-5 text-green-500" />
+              ) : (
+                <Ticket className="h-5 w-5 text-primary" />
+              )}
+              {selectedCompetitionForEntry?.competition_type === 'collect_letters' 
+                ? 'اجمع أحرف واربح!' 
+                : selectedCompetitionForEntry?.competition_type === 'free'
+                  ? 'مسابقة مجانية!'
+                  : 'تأكيد الدخول في المسابقة'}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-right" asChild>
               <div>
@@ -1091,6 +1125,19 @@ export default function Competitions() {
                     <p className="mb-3">
                       هل تريد الدخول في مسابقة <span className="font-bold text-foreground">{selectedCompetitionForEntry.title_ar}</span>؟
                     </p>
+                    
+                    {/* Free competition message */}
+                    {selectedCompetitionForEntry.competition_type === 'free' && (
+                      <div className="mt-4 p-4 bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-green-500/10 rounded-xl border border-green-500/20">
+                        <p className="font-semibold text-green-600 flex items-center gap-2">
+                          <Gift className="h-5 w-5" />
+                          هذه المسابقة مجانية!
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          لا يلزم خصم أي تذاكر للمشاركة.
+                        </p>
+                      </div>
+                    )}
                     
                     {/* Bag quantity selector for collect_letters with bags animation */}
                     {selectedCompetitionForEntry.competition_type === 'collect_letters' && 
@@ -1141,8 +1188,9 @@ export default function Competitions() {
                       </div>
                     )}
                     
-                    {/* Standard message for other types or scratch animation */}
-                    {(selectedCompetitionForEntry.competition_type !== 'collect_letters' || 
+                    {/* Standard message for other types or scratch animation (NOT free) */}
+                    {selectedCompetitionForEntry.competition_type !== 'free' &&
+                     (selectedCompetitionForEntry.competition_type !== 'collect_letters' || 
                       selectedCompetitionForEntry.letters_config?.animation_type === 'scratch') && (
                       <p className="text-muted-foreground text-sm">
                         سيتم خصم <span className="font-bold text-foreground">{selectedCompetitionForEntry.required_tickets || 1} تذكرة</span> من رصيدك.
@@ -1166,10 +1214,12 @@ export default function Competitions() {
                 setSelectedCompetitionForEntry(null);
               }}
               className="gap-1"
-              disabled={enterCompetitionMutation.isPending || enterInstantWinMutation.isPending || enterCollectLettersMutation.isPending || enterMysteryBoxMutation.isPending || enterEveryoneWinsMutation.isPending}
+              disabled={enterCompetitionMutation.isPending || enterInstantWinMutation.isPending || enterCollectLettersMutation.isPending || enterMysteryBoxMutation.isPending || enterEveryoneWinsMutation.isPending || enterFreeCompetitionMutation.isPending}
             >
-              {(enterCompetitionMutation.isPending || enterInstantWinMutation.isPending || enterCollectLettersMutation.isPending || enterMysteryBoxMutation.isPending || enterEveryoneWinsMutation.isPending) ? (
+              {(enterCompetitionMutation.isPending || enterInstantWinMutation.isPending || enterCollectLettersMutation.isPending || enterMysteryBoxMutation.isPending || enterEveryoneWinsMutation.isPending || enterFreeCompetitionMutation.isPending) ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : selectedCompetitionForEntry?.competition_type === 'free' ? (
+                <Gift className="h-4 w-4" />
               ) : (
                 selectedCompetitionForEntry?.competition_type === 'collect_letters' && 
                 selectedCompetitionForEntry?.letters_config?.animation_type !== 'scratch' ? (
@@ -1178,10 +1228,12 @@ export default function Competitions() {
                   <Ticket className="h-4 w-4" />
                 )
               )}
-              {selectedCompetitionForEntry?.competition_type === 'collect_letters' && 
-               selectedCompetitionForEntry?.letters_config?.animation_type !== 'scratch' 
-                ? `افتح ${bagPurchaseQuantity} كيس` 
-                : 'تأكيد الدخول'}
+              {selectedCompetitionForEntry?.competition_type === 'free'
+                ? 'سجّل الآن مجاناً'
+                : selectedCompetitionForEntry?.competition_type === 'collect_letters' && 
+                  selectedCompetitionForEntry?.letters_config?.animation_type !== 'scratch' 
+                    ? `افتح ${bagPurchaseQuantity} كيس` 
+                    : 'تأكيد الدخول'}
             </AlertDialogAction>
             <AlertDialogCancel onClick={() => {
               setSelectedCompetitionForEntry(null);
@@ -1212,7 +1264,8 @@ export default function Competitions() {
             const isSoldOut = comp.max_tickets ? ticketCount >= comp.max_tickets : false;
             const isEnded = comp.status === 'completed' || (comp.end_date && new Date(comp.end_date) < new Date());
             const requiredTickets = comp.required_tickets || 1;
-            const canEnter = (userTicketBalance || 0) >= requiredTickets;
+            const isFreeCompetition = comp.competition_type === 'free';
+            const canEnter = isFreeCompetition || (userTicketBalance || 0) >= requiredTickets;
 
             return (
               <>
@@ -1524,7 +1577,7 @@ export default function Competitions() {
                     {/* Enter Button */}
                     {comp.status === 'active' && !isSoldOut && !isEnded && (
                       <Button
-                        className="w-full gap-2"
+                        className={`w-full gap-2 ${isFreeCompetition ? 'bg-green-600 hover:bg-green-700' : ''}`}
                         size="lg"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1537,14 +1590,20 @@ export default function Competitions() {
                           setShowEnterConfirm(true);
                           setShowDetailsDialog(false);
                         }}
-                        disabled={enterCompetitionMutation.isPending || !canEnter}
+                        disabled={enterCompetitionMutation.isPending || enterFreeCompetitionMutation.isPending || !canEnter}
                       >
-                        {enterCompetitionMutation.isPending ? (
+                        {(enterCompetitionMutation.isPending || enterFreeCompetitionMutation.isPending) ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : isFreeCompetition ? (
+                          <Gift className="h-4 w-4" />
                         ) : (
                           <Ticket className="h-4 w-4" />
                         )}
-                        {canEnter ? `دخول المسابقة (${requiredTickets} تذكرة)` : `تحتاج ${requiredTickets} تذكرة للدخول`}
+                        {isFreeCompetition 
+                          ? 'سجّل في المسابقة مجاناً'
+                          : canEnter 
+                            ? `دخول المسابقة (${requiredTickets} تذكرة)` 
+                            : `تحتاج ${requiredTickets} تذكرة للدخول`}
                       </Button>
                     )}
 
