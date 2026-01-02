@@ -2899,6 +2899,10 @@ export type Database = {
       }
       cleanup_old_coupon_attempts: { Args: never; Returns: undefined }
       complete_daily_task: { Args: { task_key_param: string }; Returns: Json }
+      convert_points_to_tickets: {
+        Args: { points_amount: number }
+        Returns: Json
+      }
       convert_points_to_wallet: {
         Args: { points_amount: number }
         Returns: Json
