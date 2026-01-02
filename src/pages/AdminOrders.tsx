@@ -762,9 +762,8 @@ const AdminOrders = () => {
         </AdminCard>
       </AdminSection>
 
-      {/* Edit Order Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle>تعديل الطلب {editingOrder?.order_number}</DialogTitle>
           </DialogHeader>
