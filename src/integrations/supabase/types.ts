@@ -2207,90 +2207,6 @@ export type Database = {
           },
         ]
       }
-      shipment_request_items: {
-        Row: {
-          created_at: string
-          id: string
-          purchased_product_id: string
-          quantity: number
-          shipment_request_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          purchased_product_id: string
-          quantity?: number
-          shipment_request_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          purchased_product_id?: string
-          quantity?: number
-          shipment_request_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shipment_request_items_purchased_product_id_fkey"
-            columns: ["purchased_product_id"]
-            isOneToOne: false
-            referencedRelation: "user_purchased_products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shipment_request_items_shipment_request_id_fkey"
-            columns: ["shipment_request_id"]
-            isOneToOne: false
-            referencedRelation: "shipment_requests"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      shipment_requests: {
-        Row: {
-          admin_notes: string | null
-          created_at: string
-          delivered_at: string | null
-          governorate: string | null
-          id: string
-          phone_number: string | null
-          shipped_at: string | null
-          shipping_address: string | null
-          status: string
-          tracking_number: string | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          admin_notes?: string | null
-          created_at?: string
-          delivered_at?: string | null
-          governorate?: string | null
-          id?: string
-          phone_number?: string | null
-          shipped_at?: string | null
-          shipping_address?: string | null
-          status?: string
-          tracking_number?: string | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          admin_notes?: string | null
-          created_at?: string
-          delivered_at?: string | null
-          governorate?: string | null
-          id?: string
-          phone_number?: string | null
-          shipped_at?: string | null
-          shipping_address?: string | null
-          status?: string
-          tracking_number?: string | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       taobao_sync_logs: {
         Row: {
           created_at: string
@@ -2578,8 +2494,6 @@ export type Database = {
           product_name_ar: string
           product_price: number
           purchased_at: string
-          shipment_request_id: string | null
-          shipped_at: string | null
           source_type: string
           updated_at: string
           user_id: string
@@ -2602,8 +2516,6 @@ export type Database = {
           product_name_ar: string
           product_price?: number
           purchased_at?: string
-          shipment_request_id?: string | null
-          shipped_at?: string | null
           source_type?: string
           updated_at?: string
           user_id: string
@@ -2626,8 +2538,6 @@ export type Database = {
           product_name_ar?: string
           product_price?: number
           purchased_at?: string
-          shipment_request_id?: string | null
-          shipped_at?: string | null
           source_type?: string
           updated_at?: string
           user_id?: string
@@ -2659,13 +2569,6 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_purchased_products_shipment_request_id_fkey"
-            columns: ["shipment_request_id"]
-            isOneToOne: false
-            referencedRelation: "shipment_requests"
             referencedColumns: ["id"]
           },
         ]

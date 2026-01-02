@@ -5,18 +5,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Package, Truck, CheckCircle, Clock, ShoppingBag, Gift, Store, Loader2, ArrowRight, ChevronDown, ChevronUp, Minus, Plus, PackageCheck, PackageX } from "lucide-react";
+import { Package, Truck, CheckCircle, Clock, ShoppingBag, Gift, Store, Loader2, ArrowRight, History, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import OptimizedImage from "@/components/OptimizedImage";
-import ShipmentTrackingTimeline from "@/components/ShipmentTrackingTimeline";
 
 interface PurchasedProduct {
   id: string;
@@ -37,24 +36,6 @@ interface PurchasedProduct {
   purchased_at: string;
   ordered_at: string | null;
   delivered_at: string | null;
-  shipped_at: string | null;
-  shipment_request_id: string | null;
-  updated_at: string;
-  created_at: string;
-}
-
-interface AggregatedProduct {
-  key: string;
-  product_name: string;
-  product_name_ar: string;
-  product_image: string | null;
-  product_price: number;
-  currency: string;
-  totalQuantity: number;
-  availableForOrder: number;
-  items: PurchasedProduct[];
-  latestStatus: string;
-  latestUpdate: string;
 }
 
 const statusLabels: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -62,7 +43,7 @@ const statusLabels: Record<string, { label: string; color: string; icon: React.R
   ordered: { label: 'تم الطلب', color: 'bg-blue-500', icon: <ShoppingBag className="h-3 w-3" /> },
   shipped: { label: 'تم الشحن', color: 'bg-orange-500', icon: <Truck className="h-3 w-3" /> },
   delivered: { label: 'تم التوصيل', color: 'bg-green-500', icon: <CheckCircle className="h-3 w-3" /> },
-  cancelled: { label: 'ملغي', color: 'bg-red-500', icon: <PackageX className="h-3 w-3" /> },
+  cancelled: { label: 'ملغي', color: 'bg-red-500', icon: <AlertCircle className="h-3 w-3" /> },
 };
 
 const sourceLabels: Record<string, { label: string; icon: React.ReactNode }> = {
@@ -75,10 +56,11 @@ export default function MyPurchasedProducts() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [showListDialog, setShowListDialog] = useState(false);
+  const [productToList, setProductToList] = useState<PurchasedProduct | null>(null);
   const [activeTab, setActiveTab] = useState('all');
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // Fetch user's purchased products
   const { data: products, isLoading } = useQuery({
@@ -97,23 +79,6 @@ export default function MyPurchasedProducts() {
     enabled: !!user,
   });
 
-  // Fetch shipment requests for tracking
-  const { data: shipmentRequests } = useQuery({
-    queryKey: ['my-shipment-requests', user?.id],
-    queryFn: async () => {
-      if (!user) return [];
-      const { data, error } = await supabase
-        .from('shipment_requests')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-  });
-
   // Request delivery mutation
   const requestDeliveryMutation = useMutation({
     mutationFn: async (productIds: string[]) => {
@@ -127,8 +92,7 @@ export default function MyPurchasedProducts() {
       if (data.success) {
         toast.success(data.message);
         queryClient.invalidateQueries({ queryKey: ['my-purchased-products'] });
-        queryClient.invalidateQueries({ queryKey: ['my-shipment-requests'] });
-        setSelectedQuantities({});
+        setSelectedProducts([]);
         setShowRequestDialog(false);
       } else {
         toast.error(data.error);
@@ -139,130 +103,35 @@ export default function MyPurchasedProducts() {
     }
   });
 
-  // Aggregate products by name and image
-  const aggregatedProducts = useMemo(() => {
+  // Filter products by status
+  const filteredProducts = useMemo(() => {
     if (!products) return [];
-    
-    const grouped: Record<string, AggregatedProduct> = {};
-    
-    products.forEach(product => {
-      const key = `${product.product_name_ar}-${product.product_image || 'no-image'}`;
-      
-      if (!grouped[key]) {
-        grouped[key] = {
-          key,
-          product_name: product.product_name,
-          product_name_ar: product.product_name_ar,
-          product_image: product.product_image,
-          product_price: product.product_price,
-          currency: product.currency,
-          totalQuantity: 0,
-          availableForOrder: 0,
-          items: [],
-          latestStatus: product.order_status,
-          latestUpdate: product.updated_at || product.purchased_at,
-        };
-      }
-      
-      grouped[key].totalQuantity++;
-      grouped[key].items.push(product);
-      
-      if (product.order_status === 'not_ordered' && !product.listed_in_marketplace) {
-        grouped[key].availableForOrder++;
-      }
-      
-      // Update latest status based on most recent item
-      const currentDate = new Date(product.updated_at || product.purchased_at);
-      const latestDate = new Date(grouped[key].latestUpdate);
-      if (currentDate > latestDate) {
-        grouped[key].latestStatus = product.order_status;
-        grouped[key].latestUpdate = product.updated_at || product.purchased_at;
-      }
-    });
-    
-    return Object.values(grouped).sort((a, b) => 
-      new Date(b.latestUpdate).getTime() - new Date(a.latestUpdate).getTime()
-    );
+    if (activeTab === 'all') return products;
+    return products.filter(p => p.order_status === activeTab);
+  }, [products, activeTab]);
+
+  // Products available for ordering
+  const availableForOrder = useMemo(() => {
+    return products?.filter(p => p.order_status === 'not_ordered' && !p.listed_in_marketplace) || [];
   }, [products]);
 
-  // Filter aggregated products by status
-  const filteredProducts = useMemo(() => {
-    if (activeTab === 'all') return aggregatedProducts;
-    return aggregatedProducts.filter(group => 
-      group.items.some(item => item.order_status === activeTab)
+  // Toggle product selection
+  const toggleProductSelection = (productId: string) => {
+    setSelectedProducts(prev => 
+      prev.includes(productId) 
+        ? prev.filter(id => id !== productId)
+        : [...prev, productId]
     );
-  }, [aggregatedProducts, activeTab]);
-
-  // Total available for order
-  const totalAvailableForOrder = useMemo(() => {
-    return aggregatedProducts.reduce((sum, g) => sum + g.availableForOrder, 0);
-  }, [aggregatedProducts]);
-
-  // Total selected items
-  const totalSelected = useMemo(() => {
-    return Object.values(selectedQuantities).reduce((sum, q) => sum + q, 0);
-  }, [selectedQuantities]);
-
-  // Get selected product IDs for the request
-  const getSelectedProductIds = () => {
-    const ids: string[] = [];
-    
-    Object.entries(selectedQuantities).forEach(([key, quantity]) => {
-      const group = aggregatedProducts.find(g => g.key === key);
-      if (group) {
-        const availableItems = group.items.filter(
-          item => item.order_status === 'not_ordered' && !item.listed_in_marketplace
-        );
-        ids.push(...availableItems.slice(0, quantity).map(item => item.id));
-      }
-    });
-    
-    return ids;
   };
 
-  // Update quantity for a group
-  const updateQuantity = (key: string, delta: number) => {
-    const group = aggregatedProducts.find(g => g.key === key);
-    if (!group) return;
-    
-    setSelectedQuantities(prev => {
-      const current = prev[key] || 0;
-      const newQty = Math.max(0, Math.min(current + delta, group.availableForOrder));
-      
-      if (newQty === 0) {
-        const { [key]: _, ...rest } = prev;
-        return rest;
-      }
-      return { ...prev, [key]: newQty };
-    });
-  };
-
-  // Toggle group expansion
-  const toggleExpand = (key: string) => {
-    setExpandedGroups(prev => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        next.delete(key);
-      } else {
-        next.add(key);
-      }
-      return next;
-    });
-  };
-
-  // Select all
+  // Select all available products
   const selectAll = () => {
-    const newQuantities: Record<string, number> = {};
-    aggregatedProducts.forEach(group => {
-      if (group.availableForOrder > 0) {
-        newQuantities[group.key] = group.availableForOrder;
-      }
-    });
-    setSelectedQuantities(newQuantities);
+    setSelectedProducts(availableForOrder.map(p => p.id));
   };
 
   // Handle list in marketplace
   const handleListInMarketplace = (product: PurchasedProduct) => {
+    // Navigate to marketplace with product info
     navigate('/marketplace', { 
       state: { 
         prefillListing: {
@@ -296,9 +165,6 @@ export default function MyPurchasedProducts() {
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
               <h1 className="text-lg font-bold">منتجاتي</h1>
-              <Badge variant="secondary" className="text-xs">
-                {products?.length || 0} منتج
-              </Badge>
             </div>
             <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
               <ArrowRight className="h-4 w-4" />
@@ -309,31 +175,31 @@ export default function MyPurchasedProducts() {
 
       <main className="flex-1 container mx-auto px-4 py-6">
         {/* Bulk Actions */}
-        {totalAvailableForOrder > 0 && (
+        {availableForOrder.length > 0 && (
           <Card className="mb-4 border-primary/20 bg-primary/5">
             <CardContent className="p-4">
               <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => {
-                      if (totalSelected === totalAvailableForOrder) {
-                        setSelectedQuantities({});
-                      } else {
-                        selectAll();
-                      }
-                    }}
-                  >
-                    {totalSelected === totalAvailableForOrder ? 'إلغاء التحديد' : `تحديد الكل (${totalAvailableForOrder})`}
-                  </Button>
-                  {totalSelected > 0 && (
-                    <Badge variant="secondary">{totalSelected} محدد</Badge>
+                  <div className="flex items-center gap-2">
+                    <Checkbox 
+                      checked={selectedProducts.length === availableForOrder.length && availableForOrder.length > 0}
+                      onCheckedChange={() => {
+                        if (selectedProducts.length === availableForOrder.length) {
+                          setSelectedProducts([]);
+                        } else {
+                          selectAll();
+                        }
+                      }}
+                    />
+                    <span className="text-sm">تحديد الكل ({availableForOrder.length})</span>
+                  </div>
+                  {selectedProducts.length > 0 && (
+                    <Badge variant="secondary">{selectedProducts.length} محدد</Badge>
                   )}
                 </div>
                 <Button 
                   size="sm"
-                  disabled={totalSelected === 0 || requestDeliveryMutation.isPending}
+                  disabled={selectedProducts.length === 0 || requestDeliveryMutation.isPending}
                   onClick={() => setShowRequestDialog(true)}
                   className="gap-1"
                 >
@@ -342,7 +208,7 @@ export default function MyPurchasedProducts() {
                   ) : (
                     <Truck className="h-4 w-4" />
                   )}
-                  طلب التوصيل ({totalSelected})
+                  طلب التوصيل ({selectedProducts.length})
                 </Button>
               </div>
             </CardContent>
@@ -374,162 +240,109 @@ export default function MyPurchasedProducts() {
                     className="mt-4"
                     onClick={() => navigate('/competitions')}
                   >
-                    تصفح العروض
+                    تصفح المنتجات
                   </Button>
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-4">
-                {filteredProducts.map((group) => (
-                  <Collapsible 
-                    key={group.key} 
-                    open={expandedGroups.has(group.key)}
-                    onOpenChange={() => toggleExpand(group.key)}
-                  >
-                    <Card className="overflow-hidden">
-                      <div className="flex gap-4 p-4">
-                        {/* Product Image */}
-                        <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-secondary">
-                          {group.product_image ? (
-                            <OptimizedImage
-                              src={group.product_image}
-                              alt={group.product_name_ar}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Package className="h-8 w-8 text-muted-foreground" />
-                            </div>
-                          )}
-                          <Badge className="absolute -top-1 -right-1 text-xs px-1.5 py-0.5">
-                            {group.totalQuantity}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredProducts.map((product) => (
+                  <Card key={product.id} className="overflow-hidden">
+                    <div className="relative">
+                      {product.product_image ? (
+                        <OptimizedImage
+                          src={product.product_image}
+                          alt={product.product_name_ar}
+                          className="w-full h-40 object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-40 bg-secondary flex items-center justify-center">
+                          <Package className="h-12 w-12 text-muted-foreground" />
+                        </div>
+                      )}
+                      
+                      {/* Status Badge */}
+                      <Badge className={`absolute top-2 right-2 ${statusLabels[product.order_status].color} text-white gap-1`}>
+                        {statusLabels[product.order_status].icon}
+                        {statusLabels[product.order_status].label}
+                      </Badge>
+                      
+                      {/* Source Badge */}
+                      <Badge variant="secondary" className="absolute top-2 left-2 gap-1">
+                        {sourceLabels[product.source_type].icon}
+                        {sourceLabels[product.source_type].label}
+                      </Badge>
+
+                      {/* Selection Checkbox */}
+                      {product.order_status === 'not_ordered' && !product.listed_in_marketplace && (
+                        <div className="absolute bottom-2 right-2">
+                          <Checkbox 
+                            checked={selectedProducts.includes(product.id)}
+                            onCheckedChange={() => toggleProductSelection(product.id)}
+                            className="bg-background/80"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold text-sm mb-1 line-clamp-2">{product.product_name_ar}</h3>
+                      
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="font-bold text-primary">
+                          {product.product_price.toLocaleString()} {product.currency}
+                        </span>
+                        {product.gift_tickets > 0 && (
+                          <Badge variant="outline" className="text-xs gap-1">
+                            <Gift className="h-3 w-3" />
+                            {product.gift_tickets} تذكرة هدية
                           </Badge>
-                        </div>
-
-                        {/* Product Info */}
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                            {group.product_name_ar}
-                          </h3>
-                          
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge className={`${statusLabels[group.latestStatus].color} text-white text-xs gap-1`}>
-                              {statusLabels[group.latestStatus].icon}
-                              {statusLabels[group.latestStatus].label}
-                            </Badge>
-                            <span className="text-sm font-medium text-primary">
-                              {group.product_price.toLocaleString()} {group.currency}
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-muted-foreground">
-                            آخر تحديث: {format(new Date(group.latestUpdate), 'dd MMM yyyy', { locale: ar })}
-                          </p>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex flex-col items-end gap-2">
-                          {group.availableForOrder > 0 && (
-                            <div className="flex items-center gap-1 bg-secondary rounded-lg p-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  updateQuantity(group.key, -1);
-                                }}
-                                disabled={(selectedQuantities[group.key] || 0) === 0}
-                              >
-                                <Minus className="h-3 w-3" />
-                              </Button>
-                              <span className="w-8 text-center text-sm font-medium">
-                                {selectedQuantities[group.key] || 0}
-                              </span>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  updateQuantity(group.key, 1);
-                                }}
-                                disabled={(selectedQuantities[group.key] || 0) >= group.availableForOrder}
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          )}
-                          
-                          <CollapsibleTrigger asChild>
-                            <Button variant="ghost" size="sm" className="gap-1 text-xs">
-                              التفاصيل
-                              {expandedGroups.has(group.key) ? (
-                                <ChevronUp className="h-3 w-3" />
-                              ) : (
-                                <ChevronDown className="h-3 w-3" />
-                              )}
-                            </Button>
-                          </CollapsibleTrigger>
-                        </div>
+                        )}
                       </div>
 
-                      {/* Expanded Details */}
-                      <CollapsibleContent>
-                        <div className="border-t px-4 py-3 bg-muted/30">
-                          <p className="text-xs text-muted-foreground mb-3">
-                            {group.totalQuantity} وحدة • {group.availableForOrder} متاح للتوصيل
-                          </p>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        {format(new Date(product.purchased_at), 'dd MMM yyyy', { locale: ar })}
+                      </p>
 
-                          {/* Show tracking timeline if any item is ordered */}
-                          {group.items.some(item => item.order_status !== 'not_ordered' && item.shipment_request_id) && (
-                            <div className="mb-4">
-                              <ShipmentTrackingTimeline 
-                                shipmentRequest={shipmentRequests?.find(
-                                  sr => sr.id === group.items.find(i => i.shipment_request_id)?.shipment_request_id
-                                )}
-                              />
-                            </div>
-                          )}
-
-                          <div className="space-y-2 max-h-48 overflow-y-auto">
-                            {group.items.map((item) => (
-                              <div 
-                                key={item.id} 
-                                className="flex items-center justify-between p-2 bg-background rounded-lg text-sm"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-xs gap-1">
-                                    {sourceLabels[item.source_type].icon}
-                                    {sourceLabels[item.source_type].label}
-                                  </Badge>
-                                  <span className="text-xs text-muted-foreground">
-                                    {format(new Date(item.purchased_at), 'dd/MM/yyyy', { locale: ar })}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Badge className={`${statusLabels[item.order_status].color} text-white text-xs`}>
-                                    {statusLabels[item.order_status].label}
-                                  </Badge>
-                                  {item.order_status === 'not_ordered' && !item.listed_in_marketplace && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      className="h-7 text-xs gap-1"
-                                      onClick={() => handleListInMarketplace(item)}
-                                    >
-                                      <Store className="h-3 w-3" />
-                                      بيع
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </Card>
-                  </Collapsible>
+                      {/* Actions */}
+                      <div className="flex gap-2 mt-3">
+                        {product.order_status === 'not_ordered' && !product.listed_in_marketplace && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              className="flex-1 gap-1"
+                              onClick={() => {
+                                setSelectedProducts([product.id]);
+                                setShowRequestDialog(true);
+                              }}
+                            >
+                              <Truck className="h-3 w-3" />
+                              طلب
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="gap-1"
+                              onClick={() => handleListInMarketplace(product)}
+                            >
+                              <Store className="h-3 w-3" />
+                              بيع
+                            </Button>
+                          </>
+                        )}
+                        {product.listed_in_marketplace && (
+                          <Badge variant="secondary" className="w-full justify-center">
+                            معروض في السوق
+                          </Badge>
+                        )}
+                        {product.order_status !== 'not_ordered' && !product.listed_in_marketplace && (
+                          <Badge variant="outline" className="w-full justify-center">
+                            {product.ordered_at && `طُلب: ${format(new Date(product.ordered_at), 'dd MMM', { locale: ar })}`}
+                          </Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             )}
@@ -544,33 +357,18 @@ export default function MyPurchasedProducts() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <PackageCheck className="h-5 w-5 text-primary" />
-              تأكيد طلب التوصيل
+              <Truck className="h-5 w-5 text-primary" />
+              طلب توصيل المنتجات
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-right space-y-3">
-              <p>ستقوم بطلب توصيل <span className="font-bold text-foreground">{totalSelected} منتج</span></p>
-              
-              <div className="bg-muted p-3 rounded-lg space-y-2 text-sm">
-                {Object.entries(selectedQuantities).map(([key, qty]) => {
-                  const group = aggregatedProducts.find(g => g.key === key);
-                  if (!group || qty === 0) return null;
-                  return (
-                    <div key={key} className="flex justify-between">
-                      <span className="line-clamp-1">{group.product_name_ar}</span>
-                      <Badge variant="secondary">{qty} قطعة</Badge>
-                    </div>
-                  );
-                })}
-              </div>
-              
-              <p className="text-sm text-muted-foreground">
-                سيتم التواصل معك لتأكيد العنوان وتفاصيل الشحن.
-              </p>
+            <AlertDialogDescription className="text-right">
+              سيتم تسجيل طلب توصيل لـ <span className="font-bold">{selectedProducts.length} منتج</span>.
+              <br />
+              <span className="text-sm">سيتم التواصل معك لتأكيد العنوان وتفاصيل الشحن.</span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
             <AlertDialogAction
-              onClick={() => requestDeliveryMutation.mutate(getSelectedProductIds())}
+              onClick={() => requestDeliveryMutation.mutate(selectedProducts)}
               disabled={requestDeliveryMutation.isPending}
             >
               {requestDeliveryMutation.isPending ? (
