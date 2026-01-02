@@ -63,6 +63,8 @@ const AdminMarketplace = lazy(() => import("./pages/AdminMarketplace"));
 const Marketplace = lazy(() => import("./pages/Marketplace"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const MyPurchasedProducts = lazy(() => import("./pages/MyPurchasedProducts"));
+const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
+const AdminOfferPurchases = lazy(() => import("./pages/AdminOfferPurchases"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -120,6 +122,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/ticket-bundles`} element={<AdminRoute><AdminTicketBundles /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/shipment-requests`} element={<AdminRoute><AdminShipmentRequests /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/marketplace`} element={<AdminRoute><AdminMarketplace /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/offer-purchases`} element={<AdminRoute><AdminOfferPurchases /></AdminRoute>} />
             
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />
@@ -134,6 +137,8 @@ function AppContent() {
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
             <Route path="/my-products" element={<MyPurchasedProducts />} />
+            <Route path="/my-offer-purchases" element={<MyOfferPurchases />} />
+            <Route path="/product-offers" element={<ProductOffersPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
