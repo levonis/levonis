@@ -772,3 +772,19 @@ html, body {
   max-width: 100%;
   overflow-x: hidden;
 }
+
+/* Dialog scroll isolation - prevents body scroll when dialog is open */
+[data-radix-dialog-overlay] {
+  overscroll-behavior: contain;
+}
+
+[data-radix-dialog-content] {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent body scroll when dialog is open */
+body:has([data-radix-dialog-overlay]) {
+  overflow: hidden;
+  touch-action: none;
+}
