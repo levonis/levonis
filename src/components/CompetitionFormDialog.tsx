@@ -594,10 +594,12 @@ export default function CompetitionFormDialog({
                   <Label>قيمة الجائزة</Label>
                   <Input type="number" value={formData.prize_value} onChange={(e) => setFormData(prev => ({ ...prev, prize_value: e.target.value }))} min="0" />
                 </div>
-                <div>
-                  <Label>التذاكر المطلوبة للمشاركة</Label>
-                  <Input type="number" value={formData.required_tickets} onChange={(e) => setFormData(prev => ({ ...prev, required_tickets: e.target.value }))} min="1" />
-                </div>
+                {formData.competition_type !== 'free' && (
+                  <div>
+                    <Label>التذاكر المطلوبة للمشاركة</Label>
+                    <Input type="number" value={formData.required_tickets} onChange={(e) => setFormData(prev => ({ ...prev, required_tickets: e.target.value }))} min="1" />
+                  </div>
+                )}
               </div>
 
               {/* Dates */}
