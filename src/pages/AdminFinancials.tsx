@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { 
   DollarSign, 
@@ -511,73 +512,88 @@ const AdminFinancials = () => {
       </AdminSection>
 
       {/* Orders Table */}
-      <AdminSection title="سجل الطلبات" className="mt-6">
+      <AdminSection title="جميع الطلبات" className="mt-6">
         {isLoading ? (
-          <AdminLoading />
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+          </div>
         ) : (
-          <div className="admin-table-wrapper">
+          <div className="rounded-lg border overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-right">رقم الطلب</TableHead>
                   <TableHead className="text-right">المستخدم</TableHead>
-                  <TableHead className="text-right">التاريخ</TableHead>
+                  <TableHead className="text-right">المنتجات</TableHead>
                   <TableHead className="text-right">المبلغ الإجمالي</TableHead>
-                  <TableHead className="text-right">دفع الزبون</TableHead>
-                  <TableHead className="text-right">تكلفة المنتج</TableHead>
+                  <TableHead className="text-right">تكلفة المنتجات</TableHead>
                   <TableHead className="text-right">تكلفة الشحن</TableHead>
-                  <TableHead className="text-right">الربح الصافي</TableHead>
-                  <TableHead className="text-right">الإجراءات</TableHead>
+                  <TableHead className="text-right">تكاليف أخرى</TableHead>
+                  <TableHead className="text-right">صافي الربح</TableHead>
+                  <TableHead className="text-right">الحالة</TableHead>
+                  <TableHead className="text-center">التاريخ</TableHead>
+                  <TableHead className="text-center">إجراءات</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {orders?.map((order) => {
-                  const orderProfit = (order.total_amount || 0) - 
-                    (order.admin_product_cost || 0) - 
-                    (order.admin_shipping_cost || 0) -
-                    (order.admin_other_costs || 0);
+                  const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0);
                   
                   return (
                     <TableRow key={order.id}>
-                      <TableCell className="font-mono text-xs">
-                        <span className={isManualOrder(order.order_number) ? 'text-purple-600' : ''}>
-                          {order.order_number}
-                        </span>
+                      <TableCell className="font-mono text-sm">{order.order_number}</TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{getUsername(order)}</span>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-xs font-medium">
-                        {getUsername(order)}
+                      <TableCell className="max-w-[200px] truncate" title={getProductNames(order)}>
+                        {getProductNames(order)}
                       </TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell>
+                        {renderEditableCell(order.id, 'total_amount', order.total_amount || 0, 'text-green-600 font-medium')}
+                      </TableCell>
+                      <TableCell>
+                        {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-500')}
+                      </TableCell>
+                      <TableCell>
+                        {renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-orange-500')}
+                      </TableCell>
+                      <TableCell>
+                        {renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-amber-500')}
+                      </TableCell>
+                      <TableCell className={netProfit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                        {formatPrice(netProfit)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={order.status === 'delivered' ? 'default' : 'secondary'}>
+                          {order.status === 'delivered' ? 'مكتمل' : order.status === 'cancelled' ? 'ملغي' : 'قيد التنفيذ'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center text-sm text-muted-foreground">
                         {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
                       </TableCell>
-                      <TableCell>{formatPrice(order.total_amount)}</TableCell>
-                      <TableCell>
-                        {renderEditableCell(order.id, 'customer_paid_amount', order.customer_paid_amount || 0, 'text-green-600')}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-600')}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-amber-600')}
-                      </TableCell>
-                      <TableCell className={orderProfit >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-                        {formatPrice(orderProfit)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="h-7 w-7"
+                            className="h-8 w-8"
                             onClick={() => setSelectedOrder(order)}
+                            title="عرض التفاصيل"
                           >
-                            <Eye className="h-3.5 w-3.5" />
+                            <Eye className="h-4 w-4" />
                           </Button>
                           {isManualOrder(order.order_number) && (
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive">
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-destructive hover:text-destructive"
+                                  title="حذف"
+                                >
+                                  <Trash2 className="h-4 w-4" />
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>
@@ -590,8 +606,8 @@ const AdminFinancials = () => {
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>إلغاء</AlertDialogCancel>
                                   <AlertDialogAction
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                     onClick={() => deleteOrderMutation.mutate(order.id)}
-                                    className="bg-destructive text-destructive-foreground"
                                   >
                                     حذف
                                   </AlertDialogAction>
@@ -612,49 +628,54 @@ const AdminFinancials = () => {
 
       {/* Order Details Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
           <DialogHeader>
             <DialogTitle>تفاصيل الطلب {selectedOrder?.order_number}</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <span className="text-muted-foreground">العميل:</span>
-                  <span className="mr-2 font-medium">{getUsername(selectedOrder)}</span>
+                  <Label className="text-muted-foreground">المستخدم</Label>
+                  <p className="font-medium">{getUsername(selectedOrder)}</p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">التاريخ:</span>
-                  <span className="mr-2 font-medium">{format(new Date(selectedOrder.created_at), 'dd/MM/yyyy', { locale: ar })}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">المبلغ الإجمالي:</span>
-                  <span className="mr-2 font-medium">{formatPrice(selectedOrder.total_amount)}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">الحالة:</span>
-                  <span className="mr-2 font-medium">{selectedOrder.status}</span>
+                  <Label className="text-muted-foreground">الحالة</Label>
+                  <Badge variant={selectedOrder.status === 'delivered' ? 'default' : 'secondary'}>
+                    {selectedOrder.status}
+                  </Badge>
                 </div>
               </div>
               
-              {selectedOrder.order_items && selectedOrder.order_items.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-2">المنتجات:</h4>
-                  <ul className="space-y-1 text-sm">
-                    {selectedOrder.order_items.map((item) => (
-                      <li key={item.id} className="flex justify-between">
-                        <span>{item.product_name_ar}</span>
-                        <span>{item.quantity} × {formatPrice(item.unit_price)}</span>
-                      </li>
-                    ))}
-                  </ul>
+              <div>
+                <Label className="text-muted-foreground">المنتجات</Label>
+                <div className="mt-2 space-y-2">
+                  {selectedOrder.order_items?.map((item, idx) => (
+                    <div key={idx} className="flex justify-between p-2 bg-muted/50 rounded">
+                      <span>{item.product_name_ar || item.product_name}</span>
+                      <span className="text-muted-foreground">x{item.quantity} - {formatPrice(item.total_price)}</span>
+                    </div>
+                  ))}
                 </div>
-              )}
-              
-              {selectedOrder.financial_notes && (
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                 <div>
-                  <h4 className="font-semibold mb-2">ملاحظات:</h4>
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{selectedOrder.financial_notes}</p>
+                  <Label className="text-muted-foreground">المبلغ الإجمالي</Label>
+                  <p className="font-bold text-green-600">{formatPrice(selectedOrder.total_amount || 0)}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">صافي الربح</Label>
+                  <p className={`font-bold ${((selectedOrder.total_amount || 0) - (selectedOrder.admin_product_cost || 0) - (selectedOrder.admin_shipping_cost || 0) - (selectedOrder.admin_other_costs || 0)) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatPrice((selectedOrder.total_amount || 0) - (selectedOrder.admin_product_cost || 0) - (selectedOrder.admin_shipping_cost || 0) - (selectedOrder.admin_other_costs || 0))}
+                  </p>
+                </div>
+              </div>
+
+              {selectedOrder.financial_notes && (
+                <div className="pt-4 border-t">
+                  <Label className="text-muted-foreground">ملاحظات مالية</Label>
+                  <p className="whitespace-pre-wrap text-sm">{selectedOrder.financial_notes}</p>
                 </div>
               )}
             </div>

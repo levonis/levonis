@@ -411,20 +411,92 @@ const AdminOrders = () => {
     setDialogOpen(true);
   };
 
-  const handleSaveOrder = () => {
+  const handleSaveOrder = async () => {
     if (!editingOrder) return;
+    
+    // Upload images first
+    let serialImageUrl = editingOrder.serial_number_image_url;
+    let adminImagesUrls = [...existingAdminImages];
+    let adminFilesUrls = [...existingAdminFiles];
+    
+    try {
+      // Upload serial image if new file selected
+      if (serialImageFile) {
+        setUploadingImage(true);
+        const fileExt = serialImageFile.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const fileName = `serial-${editingOrder.id}-${Date.now()}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('order-files')
+          .upload(fileName, serialImageFile);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('order-files')
+          .getPublicUrl(fileName);
+        
+        serialImageUrl = publicUrl;
+      }
+      
+      // Upload admin images
+      for (const file of adminImageFiles) {
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+        const fileName = `admin-img-${editingOrder.id}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('order-files')
+          .upload(fileName, file);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('order-files')
+          .getPublicUrl(fileName);
+        
+        adminImagesUrls.push(publicUrl);
+      }
+      
+      // Upload admin files
+      for (const file of adminFilesArray) {
+        const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+        const fileName = `admin-file-${editingOrder.id}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('order-files')
+          .upload(fileName, file);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('order-files')
+          .getPublicUrl(fileName);
+        
+        adminFilesUrls.push(publicUrl);
+      }
+    } catch (error) {
+      console.error('Error uploading files:', error);
+      toast.error('حدث خطأ أثناء رفع الملفات');
+      setUploadingImage(false);
+      return;
+    }
+    setUploadingImage(false);
     
     const updateData: any = {
       status: editStatus,
       payment_status: editPaymentStatus,
       internal_notes: editInternalNotes,
       shipping_notes: editShippingNotes,
+      total_amount: totalAmount,
       admin_product_cost: adminProductCost,
       admin_shipping_cost: adminShippingCost,
       admin_other_costs: adminOtherCosts,
       tax_amount: taxAmount,
       tax_percentage: taxPercentage,
       profit_amount: calculatedProfit,
+      serial_number_image_url: serialImageUrl,
+      admin_images: adminImagesUrls,
+      admin_files: adminFilesUrls,
       updated_at: new Date().toISOString(),
     };
 
@@ -824,7 +896,15 @@ const AdminOrders = () => {
               </div>
 
               {/* Financial */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="space-y-2">
+                  <Label>المبلغ الإجمالي</Label>
+                  <Input
+                    type="number"
+                    value={totalAmount}
+                    onChange={(e) => setTotalAmount(Number(e.target.value))}
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label>تكلفة المنتجات</Label>
                   <Input
@@ -857,6 +937,140 @@ const AdminOrders = () => {
                     readOnly
                     className={calculatedProfit >= 0 ? 'text-green-500' : 'text-red-500'}
                   />
+                </div>
+              </div>
+
+              {/* Admin Images and Files */}
+              <div className="space-y-4 p-4 bg-muted/30 rounded-lg">
+                <h4 className="font-medium text-sm">صور وملفات الإدارة</h4>
+                
+                {/* Serial Number Image */}
+                <div className="space-y-2">
+                  <Label>صورة الرقم التسلسلي</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setSerialImageFile(file);
+                          setSerialImagePreview(URL.createObjectURL(file));
+                        }
+                      }}
+                      className="flex-1"
+                    />
+                    {serialImagePreview && (
+                      <div className="relative">
+                        <img src={serialImagePreview} alt="Serial" className="w-12 h-12 object-cover rounded" />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="destructive"
+                          className="absolute -top-2 -right-2 h-5 w-5"
+                          onClick={() => {
+                            setSerialImageFile(null);
+                            setSerialImagePreview('');
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Admin Images */}
+                <div className="space-y-2">
+                  <Label>صور إضافية</Label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setAdminImageFiles([...adminImageFiles, ...files]);
+                      const previews = files.map(f => URL.createObjectURL(f));
+                      setAdminImagePreviews([...adminImagePreviews, ...previews]);
+                    }}
+                  />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {existingAdminImages.map((url, idx) => (
+                      <div key={`existing-${idx}`} className="relative">
+                        <img src={url} alt={`Admin ${idx}`} className="w-16 h-16 object-cover rounded" />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="destructive"
+                          className="absolute -top-2 -right-2 h-5 w-5"
+                          onClick={() => setExistingAdminImages(existingAdminImages.filter((_, i) => i !== idx))}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                    {adminImagePreviews.map((url, idx) => (
+                      <div key={`new-${idx}`} className="relative">
+                        <img src={url} alt={`New ${idx}`} className="w-16 h-16 object-cover rounded border-2 border-primary" />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="destructive"
+                          className="absolute -top-2 -right-2 h-5 w-5"
+                          onClick={() => {
+                            setAdminImageFiles(adminImageFiles.filter((_, i) => i !== idx));
+                            setAdminImagePreviews(adminImagePreviews.filter((_, i) => i !== idx));
+                          }}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Admin Files */}
+                <div className="space-y-2">
+                  <Label>ملفات مرفقة (PDF, DOC...)</Label>
+                  <Input
+                    type="file"
+                    accept=".pdf,.doc,.docx,.xls,.xlsx"
+                    multiple
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setAdminFilesArray([...adminFilesArray, ...files]);
+                    }}
+                  />
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {existingAdminFiles.map((url, idx) => (
+                      <Badge key={`existing-file-${idx}`} variant="secondary" className="gap-1">
+                        <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs">ملف {idx + 1}</a>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-4 w-4 p-0"
+                          onClick={() => setExistingAdminFiles(existingAdminFiles.filter((_, i) => i !== idx))}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    ))}
+                    {adminFilesArray.map((file, idx) => (
+                      <Badge key={`new-file-${idx}`} variant="outline" className="gap-1 border-primary">
+                        <span className="text-xs">{file.name}</span>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-4 w-4 p-0"
+                          onClick={() => setAdminFilesArray(adminFilesArray.filter((_, i) => i !== idx))}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               </div>
 
