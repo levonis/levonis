@@ -1778,6 +1778,7 @@ export type Database = {
       }
       product_offers: {
         Row: {
+          colors: Json | null
           cost_price: number | null
           created_at: string
           currency: string | null
@@ -1787,6 +1788,7 @@ export type Database = {
           id: string
           image_url: string | null
           images: string[] | null
+          options: Json | null
           price: number
           status: string
           stock_quantity: number | null
@@ -1796,6 +1798,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          colors?: Json | null
           cost_price?: number | null
           created_at?: string
           currency?: string | null
@@ -1805,6 +1808,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: string[] | null
+          options?: Json | null
           price?: number
           status?: string
           stock_quantity?: number | null
@@ -1814,6 +1818,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          colors?: Json | null
           cost_price?: number | null
           created_at?: string
           currency?: string | null
@@ -1823,6 +1828,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           images?: string[] | null
+          options?: Json | null
           price?: number
           status?: string
           stock_quantity?: number | null
