@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -22,6 +23,7 @@ import LevelBadge from '@/components/LevelBadge';
 import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent, AdminStatsGrid, AdminStatCard, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 import AdminPagination from '@/components/admin/AdminPagination';
 import { usePagination } from '@/hooks/usePagination';
+import OfferPurchasesTab from '@/components/admin/OfferPurchasesTab';
 
 const statusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
@@ -39,6 +41,7 @@ const AdminOrders = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [activeTab, setActiveTab] = useState('orders');
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -590,44 +593,59 @@ const AdminOrders = () => {
   return (
     <AdminLayout
       title="إدارة الطلبات"
-      description="عرض وإدارة جميع طلبات العملاء"
+      description="عرض وإدارة جميع طلبات العملاء وطلبات شحن العروض"
       icon={<Package className="h-5 w-5" />}
       actions={
-        <AdminCreateOrderDialog
-          open={createDialogOpen}
-          onOpenChange={setCreateDialogOpen}
-        />
+        activeTab === 'orders' ? (
+          <AdminCreateOrderDialog
+            open={createDialogOpen}
+            onOpenChange={setCreateDialogOpen}
+          />
+        ) : undefined
       }
     >
-      {/* Stats Grid */}
-      <AdminStatsGrid>
-        <AdminStatCard
-          icon={<Package className="h-5 w-5" />}
-          value={orders?.length || 0}
-          label="إجمالي الطلبات"
-        />
-        <AdminStatCard
-          icon={<Loader2 className="h-5 w-5" />}
-          value={statusCounts['pending'] || 0}
-          label="قيد الانتظار"
-          colorClass="text-amber-500"
-          bgClass="bg-amber-500/10"
-        />
-        <AdminStatCard
-          icon={<Truck className="h-5 w-5" />}
-          value={statusCounts['shipped'] || 0}
-          label="تم الشحن"
-          colorClass="text-blue-500"
-          bgClass="bg-blue-500/10"
-        />
-        <AdminStatCard
-          icon={<ShoppingBag className="h-5 w-5" />}
-          value={statusCounts['delivered'] || 0}
-          label="تم التوصيل"
-          colorClass="text-green-500"
-          bgClass="bg-green-500/10"
-        />
-      </AdminStatsGrid>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="orders" className="gap-2">
+            <Package className="h-4 w-4" />
+            طلبات الموقع
+          </TabsTrigger>
+          <TabsTrigger value="offer-purchases" className="gap-2">
+            <Gift className="h-4 w-4" />
+            طلبات شحن العروض
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="orders">
+          {/* Stats Grid */}
+          <AdminStatsGrid>
+            <AdminStatCard
+              icon={<Package className="h-5 w-5" />}
+              value={orders?.length || 0}
+              label="إجمالي الطلبات"
+            />
+            <AdminStatCard
+              icon={<Loader2 className="h-5 w-5" />}
+              value={statusCounts['pending'] || 0}
+              label="قيد الانتظار"
+              colorClass="text-amber-500"
+              bgClass="bg-amber-500/10"
+            />
+            <AdminStatCard
+              icon={<Truck className="h-5 w-5" />}
+              value={statusCounts['shipped'] || 0}
+              label="تم الشحن"
+              colorClass="text-blue-500"
+              bgClass="bg-blue-500/10"
+            />
+            <AdminStatCard
+              icon={<ShoppingBag className="h-5 w-5" />}
+              value={statusCounts['delivered'] || 0}
+              label="تم التوصيل"
+              colorClass="text-green-500"
+              bgClass="bg-green-500/10"
+            />
+          </AdminStatsGrid>
 
       {/* Filters */}
       <AdminSection className="mt-6">
@@ -1117,6 +1135,12 @@ const AdminOrders = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+
+        <TabsContent value="offer-purchases">
+          <OfferPurchasesTab />
+        </TabsContent>
+      </Tabs>
     </AdminLayout>
   );
 };

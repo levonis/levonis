@@ -1317,9 +1317,7 @@ const Admin = () => {
                 { icon: FileText, title: 'الفواتير المحفوظة', desc: 'مراجعة وإدارة الفواتير', path: ADMIN_ROUTES.savedInvoices },
                 { icon: TrendingUp, title: 'التحليلات المالية', desc: 'الإيرادات والتكاليف والأرباح', path: ADMIN_ROUTES.financials },
                 { icon: Percent, title: 'رسوم الدفع الجزئي', desc: 'إعداد رسوم دفع ربع المبلغ', path: ADMIN_ROUTES.partialPaymentSettings },
-                { icon: Trophy, title: 'المسابقات', desc: 'إدارة المسابقات والسحوبات', path: ADMIN_ROUTES.competitions },
-                { icon: Gift, title: 'عروض المنتجات', desc: 'إدارة العروض والمبيعات', path: ADMIN_ROUTES.productOffers },
-                { icon: Truck, title: 'طلبات شحن العروض', desc: 'إدارة طلبات شحن مشتريات العروض', path: ADMIN_ROUTES.offerPurchases },
+                { icon: Trophy, title: 'المسابقات والعروض', desc: 'إدارة المسابقات وعروض المنتجات', path: ADMIN_ROUTES.competitions },
                 { icon: Package, title: 'سوق المستعمل', desc: 'إدارة منتجات البائعين', path: ADMIN_ROUTES.marketplace },
               ].map((item, idx) => (
                 <button
