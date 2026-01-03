@@ -65,7 +65,7 @@ const statusConfig: Record<string, { label: string; color: string; icon: React.R
     color: "bg-amber-100 text-amber-800 border-amber-200", 
     icon: <Clock className="h-3 w-3" /> 
   },
-  pending: { 
+  ordered: { 
     label: "قيد المعالجة", 
     color: "bg-blue-100 text-blue-800 border-blue-200", 
     icon: <Clock className="h-3 w-3" /> 
@@ -161,7 +161,7 @@ export default function MyPurchasedProductsPanel({ isOpen, onClose }: MyPurchase
         case 'not_ordered':
           group.availableCount++;
           break;
-        case 'pending':
+        case 'ordered':
           group.pendingCount++;
           break;
         case 'shipped':
@@ -341,8 +341,21 @@ export default function MyPurchasedProductsPanel({ isOpen, onClose }: MyPurchase
                     onOpenChange={() => toggleGroup(group.key)}
                   >
                     <div className="border rounded-lg overflow-hidden bg-card">
-                      {/* Group Header */}
-                      <div className="flex items-center gap-3 p-3">
+                      {/* Group Header - clickable to select all */}
+                      <div 
+                        className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-secondary/50 transition-colors ${
+                          (selectedQuantities[group.key] || 0) === group.availableCount && group.availableCount > 0 
+                            ? 'bg-primary/10 border-r-2 border-primary' 
+                            : ''
+                        }`}
+                        onClick={() => {
+                          if (group.availableCount > 0) {
+                            const currentQty = selectedQuantities[group.key] || 0;
+                            // Toggle: if all selected, deselect all; otherwise select all
+                            updateQuantity(group.key, currentQty === group.availableCount ? 0 : group.availableCount, group.availableCount);
+                          }
+                        }}
+                      >
                         {/* Product Image */}
                         <div className="w-14 h-14 rounded-md overflow-hidden bg-secondary shrink-0">
                           {group.product_image ? (
@@ -392,13 +405,14 @@ export default function MyPurchasedProductsPanel({ isOpen, onClose }: MyPurchase
 
                         {/* Quantity Selector for Available Items */}
                         {group.availableCount > 0 && (
-                          <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                             <Label className="text-xs sr-only">الكمية</Label>
                             <Input
                               type="number"
                               min={0}
                               max={group.availableCount}
-                              value={selectedQuantities[group.key] || 0}
+                              value={selectedQuantities[group.key] || ''}
+                              placeholder=""
                               onChange={(e) => updateQuantity(group.key, parseInt(e.target.value) || 0, group.availableCount)}
                               className="w-16 h-8 text-center text-sm"
                             />
@@ -408,7 +422,7 @@ export default function MyPurchasedProductsPanel({ isOpen, onClose }: MyPurchase
 
                         {/* Expand Button */}
                         <CollapsibleTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={(e) => e.stopPropagation()}>
                             {expandedGroups.has(group.key) ? (
                               <ChevronUp className="h-4 w-4" />
                             ) : (

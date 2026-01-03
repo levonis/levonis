@@ -1590,7 +1590,12 @@ export default function Competitions() {
                           setShowEnterConfirm(true);
                           setShowDetailsDialog(false);
                         }}
-                        disabled={enterCompetitionMutation.isPending || enterFreeCompetitionMutation.isPending || !canEnter}
+                        disabled={
+                          enterCompetitionMutation.isPending || 
+                          enterFreeCompetitionMutation.isPending || 
+                          (!isFreeCompetition && !canEnter) ||
+                          (isFreeCompetition && hasTicket)
+                        }
                       >
                         {(enterCompetitionMutation.isPending || enterFreeCompetitionMutation.isPending) ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
@@ -1600,7 +1605,7 @@ export default function Competitions() {
                           <Ticket className="h-4 w-4" />
                         )}
                         {isFreeCompetition 
-                          ? 'سجّل في المسابقة مجاناً'
+                          ? (hasTicket ? 'شاركت مسبقاً ✓' : 'سجّل في المسابقة مجاناً')
                           : canEnter 
                             ? `دخول المسابقة (${requiredTickets} تذكرة)` 
                             : `تحتاج ${requiredTickets} تذكرة للدخول`}
