@@ -776,24 +776,16 @@ html, body {
 /* Dialog scroll isolation - prevents body scroll when dialog is open */
 [data-radix-dialog-overlay] {
   overscroll-behavior: contain;
-  position: fixed;
-  inset: 0;
 }
 
+/* Dialog content scrolling */
 [data-radix-dialog-content] {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Allow scrolling inside ScrollArea within dialogs */
+[data-radix-scroll-area-viewport] {
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Prevent body scroll when dialog is open - but allow touch on dialog content */
-body:has([data-radix-dialog-overlay]) {
-  overflow: hidden;
-  position: fixed;
-  width: 100%;
-}
-
-/* Allow scrolling inside dialog content */
-[data-radix-dialog-content] [data-radix-scroll-area-viewport] {
-  touch-action: pan-y;
-  -webkit-overflow-scrolling: touch;
 }
