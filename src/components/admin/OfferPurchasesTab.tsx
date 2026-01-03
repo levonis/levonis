@@ -6,15 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ShoppingBag, Search, Package, Truck, CheckCircle, Edit2, Loader2, User, Gift } from "lucide-react";
+import { ShoppingBag, Search, Package, Truck, CheckCircle, Edit2, Loader2, User, Gift, Trash2, Undo2, Ticket, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { format, addHours } from "date-fns";
 import { ar } from "date-fns/locale";
-import { AdminCard, AdminCardContent, AdminStatsGrid, AdminStatCard, AdminLoading, AdminEmptyState } from "@/components/admin/AdminLayout";
+import { AdminCard, AdminCardContent, AdminStatsGrid, AdminStatCard, AdminEmptyState } from "@/components/admin/AdminLayout";
 
 const formatBaghdadTime = (dateString: string) => {
   const date = new Date(dateString);
@@ -60,7 +61,10 @@ export default function OfferPurchasesTab() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [editStatus, setEditStatus] = useState("");
+  const [refundMoney, setRefundMoney] = useState(true);
+  const [deductTickets, setDeductTickets] = useState(true);
 
   const { data: purchases, isLoading } = useQuery({
     queryKey: ["admin-offer-purchases"],
@@ -98,7 +102,7 @@ export default function OfferPurchasesTab() {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const updateData: any = { purchase_status: status };
+      const updateData: any = { purchase_status: status, updated_at: new Date().toISOString() };
       
       if (status === "shipped") {
         updateData.shipped_at = new Date().toISOString();
@@ -117,6 +121,104 @@ export default function OfferPurchasesTab() {
       queryClient.invalidateQueries({ queryKey: ["admin-offer-purchases"] });
       toast.success("تم تحديث الحالة بنجاح");
       setShowEditDialog(false);
+    },
+    onError: (error) => {
+      toast.error("حدث خطأ: " + error.message);
+    },
+  });
+
+  const deletePurchaseMutation = useMutation({
+    mutationFn: async ({ purchase, refund, deduct }: { purchase: Purchase; refund: boolean; deduct: boolean }) => {
+      // 1. Refund money to wallet if requested
+      if (refund && purchase.total_price > 0) {
+        // Get current wallet balance
+        const { data: wallet, error: walletFetchError } = await supabase
+          .from("user_wallets")
+          .select("balance")
+          .eq("user_id", purchase.user_id)
+          .maybeSingle();
+
+        if (walletFetchError) throw walletFetchError;
+
+        const currentBalance = wallet?.balance || 0;
+
+        // Update or create wallet
+        const { error: walletError } = await supabase
+          .from("user_wallets")
+          .upsert({
+            user_id: purchase.user_id,
+            balance: currentBalance + purchase.total_price,
+            updated_at: new Date().toISOString()
+          }, { onConflict: "user_id" });
+
+        if (walletError) throw walletError;
+
+        // Record transaction
+        const { error: transactionError } = await supabase
+          .from("wallet_transactions")
+          .insert({
+            user_id: purchase.user_id,
+            type: "refund",
+            amount: purchase.total_price,
+            status: "completed",
+            admin_notes: `استرجاع مبلغ شراء العرض: ${purchase.product_offers?.title_ar}`
+          });
+
+        if (transactionError) throw transactionError;
+      }
+
+      // 2. Deduct tickets if requested
+      if (deduct && purchase.gift_tickets_awarded > 0) {
+        const { data: userTickets, error: ticketsFetchError } = await supabase
+          .from("user_tickets")
+          .select("ticket_count")
+          .eq("user_id", purchase.user_id)
+          .maybeSingle();
+
+        if (ticketsFetchError) throw ticketsFetchError;
+
+        const currentTickets = userTickets?.ticket_count || 0;
+        const newTickets = Math.max(0, currentTickets - purchase.gift_tickets_awarded);
+
+        const { error: ticketsUpdateError } = await supabase
+          .from("user_tickets")
+          .upsert({
+            user_id: purchase.user_id,
+            ticket_count: newTickets,
+            updated_at: new Date().toISOString()
+          }, { onConflict: "user_id" });
+
+        if (ticketsUpdateError) throw ticketsUpdateError;
+      }
+
+      // 3. Delete the purchase record
+      const { error: deleteError } = await supabase
+        .from("product_offer_purchases")
+        .delete()
+        .eq("id", purchase.id);
+
+      if (deleteError) throw deleteError;
+
+      // 4. Send notification to user
+      await supabase
+        .from("notifications")
+        .insert({
+          user_id: purchase.user_id,
+          title: "تم إلغاء طلبك",
+          message: `تم إلغاء طلب العرض "${purchase.product_offers?.title_ar}"${refund ? ` واسترجاع ${purchase.total_price.toLocaleString()} دينار إلى محفظتك` : ""}${deduct ? ` وخصم ${purchase.gift_tickets_awarded} تذكرة` : ""}`,
+          type: "info"
+        });
+
+      return { refund, deduct };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-offer-purchases"] });
+      let message = "تم حذف الطلب بنجاح";
+      if (data.refund) message += " واسترجاع المبلغ";
+      if (data.deduct) message += " وخصم التذاكر";
+      toast.success(message);
+      setShowDeleteDialog(false);
+      setSelectedPurchase(null);
     },
     onError: (error) => {
       toast.error("حدث خطأ: " + error.message);
@@ -149,9 +251,25 @@ export default function OfferPurchasesTab() {
     setShowEditDialog(true);
   };
 
+  const handleDeleteClick = (purchase: Purchase) => {
+    setSelectedPurchase(purchase);
+    setRefundMoney(true);
+    setDeductTickets(true);
+    setShowDeleteDialog(true);
+  };
+
   const handleSaveStatus = () => {
     if (!selectedPurchase) return;
     updateStatusMutation.mutate({ id: selectedPurchase.id, status: editStatus });
+  };
+
+  const handleConfirmDelete = () => {
+    if (!selectedPurchase) return;
+    deletePurchaseMutation.mutate({
+      purchase: selectedPurchase,
+      refund: refundMoney,
+      deduct: deductTickets
+    });
   };
 
   return (
@@ -289,15 +407,24 @@ export default function OfferPurchasesTab() {
                           {formatBaghdadTime(purchase.created_at)}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleEditClick(purchase)}
-                            className="gap-1"
-                          >
-                            <Edit2 className="h-3 w-3" />
-                            تعديل
-                          </Button>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleEditClick(purchase)}
+                              className="gap-1 h-8 px-2"
+                            >
+                              <Edit2 className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteClick(purchase)}
+                              className="gap-1 h-8 px-2"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
@@ -344,19 +471,114 @@ export default function OfferPurchasesTab() {
                 </Select>
               </div>
 
-              <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setShowEditDialog(false)} className="flex-1">
+              {/* Status timestamps */}
+              {selectedPurchase.shipped_at && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Truck className="h-3 w-3" />
+                  تم الشحن: {formatBaghdadTime(selectedPurchase.shipped_at)}
+                </p>
+              )}
+              {selectedPurchase.delivered_at && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <CheckCircle className="h-3 w-3" />
+                  تم التسليم: {formatBaghdadTime(selectedPurchase.delivered_at)}
+                </p>
+              )}
+
+              <DialogFooter className="gap-2">
+                <Button variant="outline" onClick={() => setShowEditDialog(false)}>
                   إلغاء
                 </Button>
-                <Button onClick={handleSaveStatus} className="flex-1" disabled={updateStatusMutation.isPending}>
+                <Button onClick={handleSaveStatus} disabled={updateStatusMutation.isPending}>
                   {updateStatusMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
                   حفظ
                 </Button>
-              </div>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              حذف الطلب
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              هل أنت متأكد من حذف هذا الطلب؟
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          {selectedPurchase && (
+            <div className="space-y-4 py-2">
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                {selectedPurchase.product_offers?.image_url && (
+                  <img src={selectedPurchase.product_offers.image_url} alt="" className="w-12 h-12 rounded object-cover" />
+                )}
+                <div>
+                  <p className="font-medium text-sm">{selectedPurchase.product_offers?.title_ar}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedPurchase.profiles?.full_name || selectedPurchase.profiles?.username}
+                  </p>
+                </div>
+              </div>
+
+              {/* Refund option */}
+              <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/30 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={refundMoney}
+                  onChange={(e) => setRefundMoney(e.target.checked)}
+                  className="h-4 w-4 rounded"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Undo2 className="h-4 w-4 text-green-600" />
+                    <span className="font-medium text-sm">استرجاع المال للمحفظة</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    سيتم إضافة {selectedPurchase.total_price.toLocaleString()} د.ع لمحفظة المستخدم
+                  </p>
+                </div>
+              </label>
+
+              {/* Deduct tickets option */}
+              <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/30 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={deductTickets}
+                  onChange={(e) => setDeductTickets(e.target.checked)}
+                  className="h-4 w-4 rounded"
+                />
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <Ticket className="h-4 w-4 text-amber-600" />
+                    <span className="font-medium text-sm">خصم التذاكر الممنوحة</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    سيتم خصم {selectedPurchase.gift_tickets_awarded} تذكرة من رصيد المستخدم
+                  </p>
+                </div>
+              </label>
+            </div>
+          )}
+
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deletePurchaseMutation.isPending}
+            >
+              {deletePurchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              حذف الطلب
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
