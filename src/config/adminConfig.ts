@@ -33,8 +33,10 @@ export const ADMIN_ROUTES = {
   partialPaymentSettings: `${ADMIN_BASE_PATH}/partial-payment-settings`,
   competitions: `${ADMIN_BASE_PATH}/competitions`,
   productOffers: `${ADMIN_BASE_PATH}/product-offers`,
+  offerPurchases: `${ADMIN_BASE_PATH}/offer-purchases`,
   ticketBundles: `${ADMIN_BASE_PATH}/ticket-bundles`,
   marketplace: `${ADMIN_BASE_PATH}/marketplace`,
+  shipmentRequests: `${ADMIN_BASE_PATH}/shipment-requests`,
 } as const;
 
 // Helper to check if a path is an admin path
