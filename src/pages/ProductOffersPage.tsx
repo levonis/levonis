@@ -12,6 +12,19 @@ import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
 
+interface ProductOption {
+  name_ar: string;
+  price_adjustment: number;
+  in_stock: boolean;
+}
+
+interface ProductColor {
+  name_ar: string;
+  hex_code: string;
+  image_url: string | null;
+  in_stock: boolean;
+}
+
 interface ProductOffer {
   id: string;
   title_ar: string;
@@ -22,6 +35,8 @@ interface ProductOffer {
   currency: string;
   gift_tickets: number;
   stock_quantity: number | null;
+  options: ProductOption[] | null;
+  colors: ProductColor[] | null;
 }
 
 export default function ProductOffersPage() {
@@ -41,7 +56,7 @@ export default function ProductOffersPage() {
         .eq('status', 'active')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as ProductOffer[];
+      return data as unknown as ProductOffer[];
     },
   });
 
@@ -169,6 +184,37 @@ export default function ProductOffersPage() {
                   <CardContent className="p-3 space-y-2">
                     <h3 className="font-semibold text-sm line-clamp-2">{offer.title_ar}</h3>
                     {offer.description_ar && <p className="text-xs text-muted-foreground line-clamp-2">{offer.description_ar}</p>}
+                    
+                    {/* Colors Display */}
+                    {offer.colors && (offer.colors as ProductColor[]).length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {(offer.colors as ProductColor[]).filter(c => c.in_stock).map((color, idx) => (
+                          <div
+                            key={idx}
+                            className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
+                            style={{ backgroundColor: color.hex_code }}
+                            title={color.name_ar}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Options Display */}
+                    {offer.options && (offer.options as ProductOption[]).length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {(offer.options as ProductOption[]).filter(o => o.in_stock).slice(0, 3).map((opt, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                            {opt.name_ar}
+                          </Badge>
+                        ))}
+                        {(offer.options as ProductOption[]).filter(o => o.in_stock).length > 3 && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5">
+                            +{(offer.options as ProductOption[]).filter(o => o.in_stock).length - 3}
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                    
                     <div className="flex items-center justify-between pt-2 border-t">
                       <div><p className="font-bold text-primary">{offer.price.toLocaleString()}</p><p className="text-xs text-muted-foreground">{offer.currency}</p></div>
                       <Button size="sm" className="gap-1" onClick={() => handlePurchaseClick(offer)} disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}>
@@ -177,7 +223,11 @@ export default function ProductOffersPage() {
                       </Button>
                     </div>
                     <div className="text-center py-2 bg-green-500/10 rounded-lg border border-green-500/20"><p className="text-xs text-green-700 dark:text-green-400 font-medium">🎁 مع كل شراء تحصل على {offer.gift_tickets} تذكرة مجاناً!</p></div>
-                    {offer.stock_quantity !== null && !isOutOfStock && <p className="text-xs text-center text-muted-foreground">متبقي: {offer.stock_quantity} فقط</p>}
+                    {offer.stock_quantity !== null && !isOutOfStock && (
+                      <p className="text-xs text-center text-amber-600 font-medium bg-amber-500/10 py-1 rounded">
+                        📦 متبقي: {offer.stock_quantity} فقط
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               );

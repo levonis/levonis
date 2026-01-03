@@ -10,11 +10,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Gift, Loader2, Trash2, Upload, X, Edit, Package, DollarSign, Ticket, BarChart3, Download, TrendingUp } from "lucide-react";
+import { Plus, Gift, Loader2, Trash2, Upload, X, Edit, Package, DollarSign, Ticket, BarChart3, Download, TrendingUp, Palette, Settings2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import * as XLSX from "xlsx";
+
+interface ProductOption {
+  name_ar: string;
+  price_adjustment: number;
+  in_stock: boolean;
+}
+
+interface ProductColor {
+  name_ar: string;
+  hex_code: string;
+  image_url: string | null;
+  in_stock: boolean;
+}
 
 interface ProductOffer {
   id: string;
@@ -32,6 +45,8 @@ interface ProductOffer {
   status: 'draft' | 'active' | 'inactive';
   currency: string;
   created_at: string;
+  options: ProductOption[] | null;
+  colors: ProductColor[] | null;
 }
 
 interface OfferPurchase {
@@ -66,6 +81,8 @@ export default function AdminProductOffersTab() {
     gift_tickets: '1',
     stock_quantity: '',
     status: 'active' as 'draft' | 'active' | 'inactive',
+    options: [] as ProductOption[],
+    colors: [] as ProductColor[],
   });
 
   // Fetch product offers
@@ -78,7 +95,7 @@ export default function AdminProductOffersTab() {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data as ProductOffer[];
+      return data as unknown as ProductOffer[];
     },
   });
 
@@ -172,6 +189,8 @@ export default function AdminProductOffersTab() {
       gift_tickets: '1',
       stock_quantity: '',
       status: 'active',
+      options: [],
+      colors: [],
     });
     setEditingOffer(null);
   };
@@ -188,6 +207,8 @@ export default function AdminProductOffersTab() {
       gift_tickets: offer.gift_tickets.toString(),
       stock_quantity: offer.stock_quantity?.toString() || '',
       status: offer.status,
+      options: (offer.options as ProductOption[]) || [],
+      colors: (offer.colors as ProductColor[]) || [],
     });
     setIsDialogOpen(true);
   };
@@ -255,6 +276,8 @@ export default function AdminProductOffersTab() {
         gift_tickets: parseInt(data.gift_tickets) || 1,
         stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
         status: data.status,
+        options: JSON.parse(JSON.stringify(data.options)),
+        colors: JSON.parse(JSON.stringify(data.colors)),
       };
 
       const { data: result, error } = await supabase
@@ -293,6 +316,8 @@ export default function AdminProductOffersTab() {
         gift_tickets: parseInt(data.gift_tickets) || 1,
         stock_quantity: data.stock_quantity ? parseInt(data.stock_quantity) : null,
         status: data.status,
+        options: JSON.parse(JSON.stringify(data.options)),
+        colors: JSON.parse(JSON.stringify(data.colors)),
       };
 
       const { error } = await supabase
@@ -748,6 +773,139 @@ export default function AdminProductOffersTab() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Options Section */}
+              <div className="space-y-2 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2"><Settings2 className="h-4 w-4" />الخيارات</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData(prev => ({
+                      ...prev,
+                      options: [...prev.options, { name_ar: '', price_adjustment: 0, in_stock: true }]
+                    }))}
+                  >
+                    <Plus className="h-3 w-3 ml-1" />إضافة خيار
+                  </Button>
+                </div>
+                {formData.options.map((opt, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 bg-secondary/30 rounded-lg">
+                    <Input
+                      placeholder="اسم الخيار"
+                      value={opt.name_ar}
+                      onChange={(e) => {
+                        const newOptions = [...formData.options];
+                        newOptions[idx].name_ar = e.target.value;
+                        setFormData(prev => ({ ...prev, options: newOptions }));
+                      }}
+                      className="flex-1"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="فرق السعر"
+                      value={opt.price_adjustment}
+                      onChange={(e) => {
+                        const newOptions = [...formData.options];
+                        newOptions[idx].price_adjustment = parseFloat(e.target.value) || 0;
+                        setFormData(prev => ({ ...prev, options: newOptions }));
+                      }}
+                      className="w-24"
+                    />
+                    <label className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={opt.in_stock}
+                        onChange={(e) => {
+                          const newOptions = [...formData.options];
+                          newOptions[idx].in_stock = e.target.checked;
+                          setFormData(prev => ({ ...prev, options: newOptions }));
+                        }}
+                      />
+                      متوفر
+                    </label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      onClick={() => setFormData(prev => ({
+                        ...prev,
+                        options: prev.options.filter((_, i) => i !== idx)
+                      }))}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Colors Section */}
+              <div className="space-y-2 border-t pt-4">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2"><Palette className="h-4 w-4" />الألوان</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData(prev => ({
+                      ...prev,
+                      colors: [...prev.colors, { name_ar: '', hex_code: '#000000', image_url: null, in_stock: true }]
+                    }))}
+                  >
+                    <Plus className="h-3 w-3 ml-1" />إضافة لون
+                  </Button>
+                </div>
+                {formData.colors.map((color, idx) => (
+                  <div key={idx} className="flex items-center gap-2 p-2 bg-secondary/30 rounded-lg">
+                    <input
+                      type="color"
+                      value={color.hex_code}
+                      onChange={(e) => {
+                        const newColors = [...formData.colors];
+                        newColors[idx].hex_code = e.target.value;
+                        setFormData(prev => ({ ...prev, colors: newColors }));
+                      }}
+                      className="w-10 h-8 rounded border cursor-pointer"
+                    />
+                    <Input
+                      placeholder="اسم اللون"
+                      value={color.name_ar}
+                      onChange={(e) => {
+                        const newColors = [...formData.colors];
+                        newColors[idx].name_ar = e.target.value;
+                        setFormData(prev => ({ ...prev, colors: newColors }));
+                      }}
+                      className="flex-1"
+                    />
+                    <label className="flex items-center gap-1 text-xs">
+                      <input
+                        type="checkbox"
+                        checked={color.in_stock}
+                        onChange={(e) => {
+                          const newColors = [...formData.colors];
+                          newColors[idx].in_stock = e.target.checked;
+                          setFormData(prev => ({ ...prev, colors: newColors }));
+                        }}
+                      />
+                      متوفر
+                    </label>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      onClick={() => setFormData(prev => ({
+                        ...prev,
+                        colors: prev.colors.filter((_, i) => i !== idx)
+                      }))}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
             </div>
           </ScrollArea>
