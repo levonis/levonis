@@ -1251,7 +1251,7 @@ export default function Competitions() {
           setSelectedCompetitionForDetails(null);
         }
       }}>
-        <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden overscroll-contain" dir="rtl" aria-describedby={undefined}>
+        <DialogContent className="max-w-lg max-h-[90vh] p-0 flex flex-col" dir="rtl" aria-describedby={undefined}>
           <VisuallyHidden>
             <DialogTitle>{selectedCompetitionForDetails?.title_ar || 'تفاصيل المسابقة'}</DialogTitle>
           </VisuallyHidden>
@@ -1378,7 +1378,7 @@ export default function Competitions() {
                   </div>
                 )}
 
-                <ScrollArea className="max-h-[calc(90vh-16rem)] overscroll-contain" style={{ touchAction: 'pan-y' }}>
+                <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
                   <div className="p-5 space-y-4">
                     {/* Title */}
                     <div>
@@ -1616,7 +1616,7 @@ export default function Competitions() {
                       <Badge variant="secondary" className="w-full justify-center py-3 text-base">نفذت التذاكر</Badge>
                     )}
                   </div>
-                </ScrollArea>
+                </div>
               </>
             );
           })()}
