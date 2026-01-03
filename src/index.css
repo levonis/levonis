@@ -776,6 +776,8 @@ html, body {
 /* Dialog scroll isolation - prevents body scroll when dialog is open */
 [data-radix-dialog-overlay] {
   overscroll-behavior: contain;
+  position: fixed;
+  inset: 0;
 }
 
 [data-radix-dialog-content] {
@@ -783,8 +785,15 @@ html, body {
   -webkit-overflow-scrolling: touch;
 }
 
-/* Prevent body scroll when dialog is open */
+/* Prevent body scroll when dialog is open - but allow touch on dialog content */
 body:has([data-radix-dialog-overlay]) {
   overflow: hidden;
-  touch-action: none;
+  position: fixed;
+  width: 100%;
+}
+
+/* Allow scrolling inside dialog content */
+[data-radix-dialog-content] [data-radix-scroll-area-viewport] {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
