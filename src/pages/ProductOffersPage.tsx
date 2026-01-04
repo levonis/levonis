@@ -270,11 +270,8 @@ export default function ProductOffersPage() {
               const hasMultipleImages = images.length > 1;
               const colors = Array.isArray(detailOffer.colors) ? detailOffer.colors as ProductColor[] : [];
               const options = Array.isArray(detailOffer.options) ? detailOffer.options as ProductOption[] : [];
-              console.log('Detail offer colors:', detailOffer.colors, 'parsed colors:', colors);
-              console.log('Detail offer options:', detailOffer.options, 'parsed options:', options);
-              const availableColors = colors.filter(c => c.in_stock);
-              const availableOptions = options.filter(o => o.in_stock);
-              console.log('Available colors:', availableColors.length, 'Available options:', availableOptions.length);
+              const availableColors = colors.filter(c => c.in_stock && (c.stock_quantity === null || c.stock_quantity > 0));
+              const availableOptions = options.filter(o => o.in_stock && (o.stock_quantity === null || o.stock_quantity > 0));
               const canAfford = !user || !wallet || wallet.balance >= detailOffer.price;
               const isOutOfStock = detailOffer.stock_quantity !== null && detailOffer.stock_quantity <= 0;
 
