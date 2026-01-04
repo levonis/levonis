@@ -656,12 +656,12 @@ export default function AdminProductOffersTab() {
         setIsDialogOpen(open);
         if (!open) resetForm();
       }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingOffer ? 'تعديل العرض' : 'إضافة عرض منتج جديد'}</DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[60vh] pr-4">
+          <div className="flex-1 overflow-y-auto pr-4" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>اسم المنتج *</Label>
@@ -908,9 +908,9 @@ export default function AdminProductOffersTab() {
                 ))}
               </div>
             </div>
-          </ScrollArea>
+          </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="gap-2 sm:gap-0 pt-4 border-t">
             <Button variant="outline" onClick={() => { setIsDialogOpen(false); resetForm(); }}>
               إلغاء
             </Button>

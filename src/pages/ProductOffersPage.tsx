@@ -7,8 +7,9 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight, Ticket, ArrowRight, Trophy } from "lucide-react";
+import { Gift, Loader2, Wallet, Package, ShoppingCart, ChevronLeft, ChevronRight, Ticket, ArrowRight, Trophy, X } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
 
@@ -45,6 +46,11 @@ export default function ProductOffersPage() {
   const queryClient = useQueryClient();
   const [selectedOffer, setSelectedOffer] = useState<ProductOffer | null>(null);
   const [showPurchaseDialog, setShowPurchaseDialog] = useState(false);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [detailOffer, setDetailOffer] = useState<ProductOffer | null>(null);
+  const [detailImageIndex, setDetailImageIndex] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null);
+  const [selectedOption, setSelectedOption] = useState<ProductOption | null>(null);
   const [imageIndices, setImageIndices] = useState<Record<string, number>>({});
 
   const { data: offers, isLoading } = useQuery({
@@ -114,6 +120,14 @@ export default function ProductOffersPage() {
     setShowPurchaseDialog(true);
   };
 
+  const handleOfferClick = (offer: ProductOffer) => {
+    setDetailOffer(offer);
+    setDetailImageIndex(0);
+    setSelectedColor(null);
+    setSelectedOption(null);
+    setShowDetailDialog(true);
+  };
+
   const navigateImage = (offerId: string, direction: 'prev' | 'next', images: string[]) => {
     const currentIndex = imageIndices[offerId] || 0;
     const newIndex = direction === 'prev' ? (currentIndex - 1 + images.length) % images.length : (currentIndex + 1) % images.length;
@@ -164,7 +178,11 @@ export default function ProductOffersPage() {
               const isOutOfStock = offer.stock_quantity !== null && offer.stock_quantity <= 0;
 
               return (
-                <Card key={offer.id} className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-green-500/20">
+                <Card 
+                  key={offer.id} 
+                  className="overflow-hidden group hover:shadow-lg transition-all duration-300 border-green-500/20 cursor-pointer"
+                  onClick={() => handleOfferClick(offer)}
+                >
                   <div className="relative aspect-square">
                     {images.length > 0 ? (
                       <OptimizedImage src={images[currentIndex]} alt={offer.title_ar} className="w-full h-full object-cover" />
@@ -217,7 +235,7 @@ export default function ProductOffersPage() {
                     
                     <div className="flex items-center justify-between pt-2 border-t">
                       <div><p className="font-bold text-primary">{offer.price.toLocaleString()}</p><p className="text-xs text-muted-foreground">{offer.currency}</p></div>
-                      <Button size="sm" className="gap-1" onClick={() => handlePurchaseClick(offer)} disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}>
+                      <Button size="sm" className="gap-1" onClick={(e) => { e.stopPropagation(); handlePurchaseClick(offer); }} disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}>
                         {purchaseMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <ShoppingCart className="h-3 w-3" />}
                         {!user ? 'سجّل دخول' : isOutOfStock ? 'نفذ' : !canAfford ? 'رصيد غير كافٍ' : 'شراء'}
                       </Button>
@@ -237,6 +255,132 @@ export default function ProductOffersPage() {
       </main>
 
       <Footer />
+
+      {/* Product Detail Dialog */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden" dir="rtl">
+          <div className="flex flex-col max-h-[90vh]">
+            {detailOffer && (() => {
+              const images = detailOffer.images && detailOffer.images.length > 0 ? detailOffer.images : (detailOffer.image_url ? [detailOffer.image_url] : []);
+              const hasMultipleImages = images.length > 1;
+              const colors = (detailOffer.colors as ProductColor[]) || [];
+              const options = (detailOffer.options as ProductOption[]) || [];
+              const availableColors = colors.filter(c => c.in_stock);
+              const availableOptions = options.filter(o => o.in_stock);
+              const canAfford = !user || !wallet || wallet.balance >= detailOffer.price;
+              const isOutOfStock = detailOffer.stock_quantity !== null && detailOffer.stock_quantity <= 0;
+
+              return (
+                <>
+                  {/* Image Gallery */}
+                  <div className="relative aspect-square bg-secondary">
+                    {images.length > 0 ? (
+                      <OptimizedImage src={selectedColor?.image_url || images[detailImageIndex]} alt={detailOffer.title_ar} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center"><Package className="h-16 w-16 text-muted-foreground" /></div>
+                    )}
+                    <Button variant="ghost" size="icon" className="absolute top-2 left-2 bg-black/40 hover:bg-black/60 text-white h-8 w-8" onClick={() => setShowDetailDialog(false)}><X className="h-4 w-4" /></Button>
+                    <Badge className="absolute top-2 right-2 bg-green-600 text-white gap-1 shadow-lg"><Gift className="h-3 w-3" />{detailOffer.gift_tickets} تذكرة هدية</Badge>
+                    {hasMultipleImages && (
+                      <>
+                        <Button variant="ghost" size="icon" className="absolute left-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-black/40 hover:bg-black/60 text-white" onClick={() => setDetailImageIndex((detailImageIndex - 1 + images.length) % images.length)}><ChevronLeft className="h-5 w-5" /></Button>
+                        <Button variant="ghost" size="icon" className="absolute right-2 top-1/2 -translate-y-1/2 h-10 w-10 bg-black/40 hover:bg-black/60 text-white" onClick={() => setDetailImageIndex((detailImageIndex + 1) % images.length)}><ChevronRight className="h-5 w-5" /></Button>
+                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+                          {images.map((_, idx) => (
+                            <button key={idx} className={`w-2.5 h-2.5 rounded-full transition-all ${idx === detailImageIndex ? 'bg-white scale-125' : 'bg-white/50'}`} onClick={() => setDetailImageIndex(idx)} />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
+                    <div>
+                      <h2 className="text-xl font-bold">{detailOffer.title_ar}</h2>
+                      {detailOffer.description_ar && <p className="text-muted-foreground mt-1">{detailOffer.description_ar}</p>}
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-2xl font-bold text-primary">{detailOffer.price.toLocaleString()}</p>
+                        <p className="text-sm text-muted-foreground">{detailOffer.currency}</p>
+                      </div>
+                      {detailOffer.stock_quantity !== null && !isOutOfStock && (
+                        <Badge variant="secondary" className="text-amber-600 bg-amber-500/10">📦 متبقي: {detailOffer.stock_quantity}</Badge>
+                      )}
+                      {isOutOfStock && <Badge variant="destructive">نفذت الكمية</Badge>}
+                    </div>
+
+                    {/* Colors Selection */}
+                    {availableColors.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="font-medium text-sm">اختر اللون:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {availableColors.map((color, idx) => (
+                            <button
+                              key={idx}
+                              className={`w-10 h-10 rounded-full border-2 transition-all ${selectedColor?.hex_code === color.hex_code ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:scale-105'}`}
+                              style={{ backgroundColor: color.hex_code }}
+                              onClick={() => setSelectedColor(selectedColor?.hex_code === color.hex_code ? null : color)}
+                              title={color.name_ar}
+                            />
+                          ))}
+                        </div>
+                        {selectedColor && <p className="text-sm text-muted-foreground">اللون المختار: {selectedColor.name_ar}</p>}
+                      </div>
+                    )}
+
+                    {/* Options Selection */}
+                    {availableOptions.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="font-medium text-sm">اختر الخيار:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {availableOptions.map((opt, idx) => (
+                            <Button
+                              key={idx}
+                              variant={selectedOption?.name_ar === opt.name_ar ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setSelectedOption(selectedOption?.name_ar === opt.name_ar ? null : opt)}
+                              className="gap-1"
+                            >
+                              {opt.name_ar}
+                              {opt.price_adjustment !== 0 && (
+                                <span className="text-xs">({opt.price_adjustment > 0 ? '+' : ''}{opt.price_adjustment.toLocaleString()})</span>
+                              )}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Gift Tickets Info */}
+                    <div className="p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                      <p className="text-sm text-green-700 dark:text-green-400 font-medium text-center">
+                        🎁 مع كل شراء تحصل على {detailOffer.gift_tickets} تذكرة مجاناً للمشاركة في السحوبات!
+                      </p>
+                    </div>
+
+                    {/* Purchase Button */}
+                    <Button 
+                      className="w-full gap-2" 
+                      size="lg"
+                      onClick={() => {
+                        setShowDetailDialog(false);
+                        handlePurchaseClick(detailOffer);
+                      }}
+                      disabled={purchaseMutation.isPending || isOutOfStock || (user && !canAfford)}
+                    >
+                      {purchaseMutation.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShoppingCart className="h-5 w-5" />}
+                      {!user ? 'سجّل دخول للشراء' : isOutOfStock ? 'نفذت الكمية' : !canAfford ? 'رصيد غير كافٍ' : 'شراء الآن'}
+                    </Button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={showPurchaseDialog} onOpenChange={setShowPurchaseDialog}>
         <AlertDialogContent dir="rtl">
