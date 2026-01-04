@@ -123,14 +123,11 @@ export default function ProductOffersPage() {
   };
 
   const handleOfferClick = (offer: ProductOffer) => {
-    console.log('handleOfferClick called with offer:', offer.id, offer.title_ar);
-    console.log('Setting showDetailDialog to true');
     setDetailOffer(offer);
     setDetailImageIndex(0);
     setSelectedColor(null);
     setSelectedOption(null);
     setShowDetailDialog(true);
-    console.log('State updated, dialog should open');
   };
 
   const navigateImage = (offerId: string, direction: 'prev' | 'next', images: string[]) => {
@@ -262,17 +259,13 @@ export default function ProductOffersPage() {
       <Footer />
 
       {/* Product Detail Dialog */}
-      <Dialog open={showDetailDialog} onOpenChange={(open) => {
-        console.log('Dialog onOpenChange:', open);
-        setShowDetailDialog(open);
-      }}>
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-lg max-h-[90vh] p-0 z-[100]" hideClose dir="rtl">
           <DialogHeader className="sr-only">
             <DialogTitle>{detailOffer?.title_ar || 'تفاصيل المنتج'}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col max-h-[90vh] overflow-hidden">
             {detailOffer ? (() => {
-              console.log('Rendering dialog content for:', detailOffer.title_ar);
               const images = detailOffer.images && detailOffer.images.length > 0 ? detailOffer.images : (detailOffer.image_url ? [detailOffer.image_url] : []);
               const hasMultipleImages = images.length > 1;
               const colors = (detailOffer.colors as ProductColor[]) || [];
