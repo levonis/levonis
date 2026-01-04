@@ -260,11 +260,11 @@ export default function ProductOffersPage() {
 
       {/* Product Detail Dialog */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-lg max-h-[90vh] p-0 overflow-hidden" hideClose dir="rtl">
+        <DialogContent className="max-w-lg max-h-[90vh] p-0" hideClose dir="rtl">
           <DialogHeader className="sr-only">
             <DialogTitle>{detailOffer?.title_ar || 'تفاصيل المنتج'}</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col max-h-[90vh]">
+          <div className="flex flex-col max-h-[90vh] overflow-hidden">
             {detailOffer && (() => {
               const images = detailOffer.images && detailOffer.images.length > 0 ? detailOffer.images : (detailOffer.image_url ? [detailOffer.image_url] : []);
               const hasMultipleImages = images.length > 1;
