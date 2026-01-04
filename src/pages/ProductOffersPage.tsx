@@ -268,10 +268,13 @@ export default function ProductOffersPage() {
             {detailOffer ? (() => {
               const images = detailOffer.images && detailOffer.images.length > 0 ? detailOffer.images : (detailOffer.image_url ? [detailOffer.image_url] : []);
               const hasMultipleImages = images.length > 1;
-              const colors = (detailOffer.colors as ProductColor[]) || [];
-              const options = (detailOffer.options as ProductOption[]) || [];
+              const colors = Array.isArray(detailOffer.colors) ? detailOffer.colors as ProductColor[] : [];
+              const options = Array.isArray(detailOffer.options) ? detailOffer.options as ProductOption[] : [];
+              console.log('Detail offer colors:', detailOffer.colors, 'parsed colors:', colors);
+              console.log('Detail offer options:', detailOffer.options, 'parsed options:', options);
               const availableColors = colors.filter(c => c.in_stock);
               const availableOptions = options.filter(o => o.in_stock);
+              console.log('Available colors:', availableColors.length, 'Available options:', availableOptions.length);
               const canAfford = !user || !wallet || wallet.balance >= detailOffer.price;
               const isOutOfStock = detailOffer.stock_quantity !== null && detailOffer.stock_quantity <= 0;
 
