@@ -17,6 +17,7 @@ interface ProductOption {
   name_ar: string;
   price_adjustment: number;
   in_stock: boolean;
+  stock_quantity: number | null;
 }
 
 interface ProductColor {
@@ -24,6 +25,7 @@ interface ProductColor {
   hex_code: string;
   image_url: string | null;
   in_stock: boolean;
+  stock_quantity: number | null;
 }
 
 interface ProductOffer {
@@ -318,16 +320,31 @@ export default function ProductOffersPage() {
                         <p className="font-medium text-sm">اختر اللون:</p>
                         <div className="flex flex-wrap gap-2">
                           {availableColors.map((color, idx) => (
-                            <button
-                              key={idx}
-                              className={`w-10 h-10 rounded-full border-2 transition-all ${selectedColor?.hex_code === color.hex_code ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:scale-105'}`}
-                              style={{ backgroundColor: color.hex_code }}
-                              onClick={() => setSelectedColor(selectedColor?.hex_code === color.hex_code ? null : color)}
-                              title={color.name_ar}
-                            />
+                            <div key={idx} className="flex flex-col items-center gap-1">
+                              <button
+                                className={`w-10 h-10 rounded-full border-2 transition-all ${selectedColor?.hex_code === color.hex_code ? 'border-primary ring-2 ring-primary/30 scale-110' : 'border-border hover:scale-105'} ${color.stock_quantity === 0 ? 'opacity-50' : ''}`}
+                                style={{ backgroundColor: color.hex_code }}
+                                onClick={() => setSelectedColor(selectedColor?.hex_code === color.hex_code ? null : color)}
+                                title={color.name_ar}
+                                disabled={color.stock_quantity === 0}
+                              />
+                              {color.stock_quantity !== null && color.stock_quantity > 0 && (
+                                <span className="text-[10px] text-muted-foreground">{color.stock_quantity}</span>
+                              )}
+                              {color.stock_quantity === 0 && (
+                                <span className="text-[10px] text-destructive">نفذ</span>
+                              )}
+                            </div>
                           ))}
                         </div>
-                        {selectedColor && <p className="text-sm text-muted-foreground">اللون المختار: {selectedColor.name_ar}</p>}
+                        {selectedColor && (
+                          <p className="text-sm text-muted-foreground">
+                            اللون المختار: {selectedColor.name_ar}
+                            {selectedColor.stock_quantity !== null && selectedColor.stock_quantity > 0 && (
+                              <span className="text-amber-600 mr-2">(متبقي: {selectedColor.stock_quantity})</span>
+                            )}
+                          </p>
+                        )}
                       </div>
                     )}
 
@@ -342,11 +359,19 @@ export default function ProductOffersPage() {
                               variant={selectedOption?.name_ar === opt.name_ar ? "default" : "outline"}
                               size="sm"
                               onClick={() => setSelectedOption(selectedOption?.name_ar === opt.name_ar ? null : opt)}
-                              className="gap-1"
+                              className="gap-1 flex-col h-auto py-2"
+                              disabled={opt.stock_quantity === 0}
                             >
-                              {opt.name_ar}
-                              {opt.price_adjustment !== 0 && (
-                                <span className="text-xs">({opt.price_adjustment > 0 ? '+' : ''}{opt.price_adjustment.toLocaleString()})</span>
+                              <span className="flex items-center gap-1">
+                                {opt.name_ar}
+                                {opt.price_adjustment !== 0 && (
+                                  <span className="text-xs">({opt.price_adjustment > 0 ? '+' : ''}{opt.price_adjustment.toLocaleString()})</span>
+                                )}
+                              </span>
+                              {opt.stock_quantity !== null && (
+                                <span className={`text-[10px] ${opt.stock_quantity === 0 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                                  {opt.stock_quantity === 0 ? 'نفذ' : `متبقي: ${opt.stock_quantity}`}
+                                </span>
                               )}
                             </Button>
                           ))}

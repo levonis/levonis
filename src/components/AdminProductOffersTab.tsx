@@ -20,6 +20,7 @@ interface ProductOption {
   name_ar: string;
   price_adjustment: number;
   in_stock: boolean;
+  stock_quantity: number | null;
 }
 
 interface ProductColor {
@@ -27,6 +28,7 @@ interface ProductColor {
   hex_code: string;
   image_url: string | null;
   in_stock: boolean;
+  stock_quantity: number | null;
 }
 
 interface ProductOffer {
@@ -785,14 +787,14 @@ export default function AdminProductOffersTab() {
                     size="sm"
                     onClick={() => setFormData(prev => ({
                       ...prev,
-                      options: [...prev.options, { name_ar: '', price_adjustment: 0, in_stock: true }]
+                      options: [...prev.options, { name_ar: '', price_adjustment: 0, in_stock: true, stock_quantity: null }]
                     }))}
                   >
                     <Plus className="h-3 w-3 ml-1" />إضافة خيار
                   </Button>
                 </div>
                 {formData.options.map((opt, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 bg-secondary/30 rounded-lg">
+                  <div key={idx} className="flex flex-wrap items-center gap-2 p-2 bg-secondary/30 rounded-lg">
                     <Input
                       placeholder="اسم الخيار"
                       value={opt.name_ar}
@@ -801,7 +803,7 @@ export default function AdminProductOffersTab() {
                         newOptions[idx].name_ar = e.target.value;
                         setFormData(prev => ({ ...prev, options: newOptions }));
                       }}
-                      className="flex-1"
+                      className="flex-1 min-w-[120px]"
                     />
                     <Input
                       type="number"
@@ -812,9 +814,20 @@ export default function AdminProductOffersTab() {
                         newOptions[idx].price_adjustment = parseFloat(e.target.value) || 0;
                         setFormData(prev => ({ ...prev, options: newOptions }));
                       }}
-                      className="w-24"
+                      className="w-20"
                     />
-                    <label className="flex items-center gap-1 text-xs">
+                    <Input
+                      type="number"
+                      placeholder="المخزون"
+                      value={opt.stock_quantity ?? ''}
+                      onChange={(e) => {
+                        const newOptions = [...formData.options];
+                        newOptions[idx].stock_quantity = e.target.value ? parseInt(e.target.value) : null;
+                        setFormData(prev => ({ ...prev, options: newOptions }));
+                      }}
+                      className="w-20"
+                    />
+                    <label className="flex items-center gap-1 text-xs whitespace-nowrap">
                       <input
                         type="checkbox"
                         checked={opt.in_stock}
@@ -852,14 +865,14 @@ export default function AdminProductOffersTab() {
                     size="sm"
                     onClick={() => setFormData(prev => ({
                       ...prev,
-                      colors: [...prev.colors, { name_ar: '', hex_code: '#000000', image_url: null, in_stock: true }]
+                      colors: [...prev.colors, { name_ar: '', hex_code: '#000000', image_url: null, in_stock: true, stock_quantity: null }]
                     }))}
                   >
                     <Plus className="h-3 w-3 ml-1" />إضافة لون
                   </Button>
                 </div>
                 {formData.colors.map((color, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 bg-secondary/30 rounded-lg">
+                  <div key={idx} className="flex flex-wrap items-center gap-2 p-2 bg-secondary/30 rounded-lg">
                     <input
                       type="color"
                       value={color.hex_code}
@@ -878,9 +891,20 @@ export default function AdminProductOffersTab() {
                         newColors[idx].name_ar = e.target.value;
                         setFormData(prev => ({ ...prev, colors: newColors }));
                       }}
-                      className="flex-1"
+                      className="flex-1 min-w-[100px]"
                     />
-                    <label className="flex items-center gap-1 text-xs">
+                    <Input
+                      type="number"
+                      placeholder="المخزون"
+                      value={color.stock_quantity ?? ''}
+                      onChange={(e) => {
+                        const newColors = [...formData.colors];
+                        newColors[idx].stock_quantity = e.target.value ? parseInt(e.target.value) : null;
+                        setFormData(prev => ({ ...prev, colors: newColors }));
+                      }}
+                      className="w-20"
+                    />
+                    <label className="flex items-center gap-1 text-xs whitespace-nowrap">
                       <input
                         type="checkbox"
                         checked={color.in_stock}
