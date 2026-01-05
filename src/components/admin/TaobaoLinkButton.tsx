@@ -38,7 +38,7 @@ export function TaobaoLinkButton({
             onClick={handleClick}
           >
             <ExternalLink className="h-4 w-4" />
-            {size !== 'icon' && <span className="mr-2">Taobao</span>}
+            {size !== 'icon' && size !== 'sm' && <span className="mr-2">Taobao</span>}
           </Button>
         </TooltipTrigger>
         <TooltipContent>

@@ -3,8 +3,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Copy, Sparkles, Search, ExternalLink } from 'lucide-react';
+import { Pencil, Trash2, Copy, Sparkles, Search } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import TaobaoLinkButton from './TaobaoLinkButton';
 
 interface ProductsTableProps {
   products: any[];
@@ -174,6 +175,7 @@ const ProductsTable = memo(({
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1">
+                    <TaobaoLinkButton taobaoUrl={product.taobao_url} size="sm" variant="outline" />
                     <Button size="sm" variant="outline" onClick={() => onEdit(product)}>
                       <Pencil className="h-3 w-3" />
                     </Button>
