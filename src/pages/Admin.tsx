@@ -2298,7 +2298,7 @@ const Admin = () => {
                                   </div>
                                 </div>
                                 
-                                {option.in_stock && option.available_for_direct_sale && (
+                                {option.available_for_direct_sale && (
                                   <div className="space-y-1">
                                     <Label className="text-xs">كمية المخزون (اختياري)</Label>
                                     <Input
@@ -2320,6 +2320,7 @@ const Admin = () => {
                                 <Label className="text-xs">صورة الخيار (اختياري)</Label>
                                 <div className="flex gap-2 items-end">
                                   <Input
+                                    id={`option-image-${index}`}
                                     type="file"
                                     accept="image/*"
                                     onChange={async (e) => {
@@ -2327,11 +2328,11 @@ const Admin = () => {
                                       if (!file) return;
                                       
                                       try {
-                                        toast.info('جاري رفع الصورة...');
+                                        toast.info('جاري رفع صورة الخيار...');
                                         const fileExt = file.name.split('.').pop();
                                         const timestamp = Date.now();
                                         const random = Math.random().toString().substring(2, 10);
-                                        const fileName = `option-${timestamp}-${random}.${fileExt}`;
+                                        const fileName = `option-${index}-${timestamp}-${random}.${fileExt}`;
                                         
                                         const { error: uploadError } = await supabase.storage
                                           .from('product-images')
@@ -2351,6 +2352,9 @@ const Admin = () => {
                                         updateProductOption(index, 'image_url', publicUrl);
                                         console.log('[OptionImage] Updated option at index', index, 'with image_url:', publicUrl);
                                         toast.success('تم رفع صورة الخيار بنجاح');
+                                        
+                                        // Clear the file input
+                                        e.target.value = '';
                                       } catch (err) {
                                         console.error('Option image upload exception:', err);
                                         toast.error('حدث خطأ غير متوقع أثناء رفع الصورة');
@@ -2589,7 +2593,7 @@ const Admin = () => {
                                      </Label>
                                    </div>
                                    
-                                   {color.in_stock !== false && color.available_for_direct_sale && (
+                                   {color.available_for_direct_sale && (
                                      <div className="space-y-1 mr-6">
                                        <Label className="text-xs">كمية المخزون (اختياري)</Label>
                                        <Input
