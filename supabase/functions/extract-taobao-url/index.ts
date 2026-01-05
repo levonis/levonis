@@ -40,14 +40,18 @@ serve(async (req) => {
       
       // Extract item ID
       const itemId = extractItemId(extractedUrl);
+      const platform = detectPlatform(extractedUrl);
+      
+      // Convert to standard format
+      const standardUrl = convertToStandardUrl(extractedUrl, itemId, platform);
       
       return new Response(
         JSON.stringify({
           success: true,
           original_text: text,
-          extracted_url: extractedUrl,
+          extracted_url: standardUrl,
           item_id: itemId,
-          platform: detectPlatform(extractedUrl),
+          platform: platform,
           method: 'regex'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -140,13 +144,17 @@ serve(async (req) => {
         }
       }
 
+      const itemId = parsedResult.item_id || extractItemId(finalUrl);
+      const platform = parsedResult.platform || detectPlatform(finalUrl);
+      const standardUrl = convertToStandardUrl(finalUrl, itemId, platform);
+      
       return new Response(
         JSON.stringify({
           success: true,
           original_text: text,
-          extracted_url: finalUrl,
-          item_id: parsedResult.item_id || extractItemId(finalUrl),
-          platform: parsedResult.platform || detectPlatform(finalUrl),
+          extracted_url: standardUrl,
+          item_id: itemId,
+          platform: platform,
           method: 'ai'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -279,4 +287,22 @@ function detectPlatform(url: string): string {
   if (url.includes('tmall.com')) return 'tmall';
   if (url.includes('1688.com')) return '1688';
   return 'taobao';
+}
+
+// Convert any URL to standard format: https://item.taobao.com/item.htm?id=... or equivalent
+function convertToStandardUrl(url: string, itemId: string | null, platform: string): string {
+  if (!itemId) return url; // Can't convert without item ID
+  
+  switch (platform) {
+    case 'taobao':
+      return `https://item.taobao.com/item.htm?id=${itemId}`;
+    case 'tmall':
+      return `https://detail.tmall.com/item.htm?id=${itemId}`;
+    case 'jd':
+      return `https://item.jd.com/${itemId}.html`;
+    case '1688':
+      return `https://detail.1688.com/offer/${itemId}.html`;
+    default:
+      return url;
+  }
 }

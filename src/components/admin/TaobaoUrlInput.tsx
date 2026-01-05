@@ -3,16 +3,17 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Package, Sparkles, Check, AlertCircle, ExternalLink } from 'lucide-react';
-import { extractTaobaoUrl, isShortUrl } from '@/lib/api/extractTaobaoUrl';
+import { Loader2, Package, Sparkles, Check, AlertCircle, ExternalLink, Download } from 'lucide-react';
+import { extractTaobaoUrl } from '@/lib/api/extractTaobaoUrl';
 import { toast } from 'sonner';
 
 interface TaobaoUrlInputProps {
   defaultValue?: string;
   onExtracted?: (url: string, itemId?: string, platform?: string) => void;
+  onTriggerProductExtraction?: (url: string) => void;
 }
 
-export function TaobaoUrlInput({ defaultValue = '', onExtracted }: TaobaoUrlInputProps) {
+export function TaobaoUrlInput({ defaultValue = '', onExtracted, onTriggerProductExtraction }: TaobaoUrlInputProps) {
   const [pastedText, setPastedText] = useState('');
   const [extractedUrl, setExtractedUrl] = useState(defaultValue);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -82,6 +83,12 @@ export function TaobaoUrlInput({ defaultValue = '', onExtracted }: TaobaoUrlInpu
     }
   };
 
+  const handleExtractProductInfo = () => {
+    if (extractedUrl && onTriggerProductExtraction) {
+      onTriggerProductExtraction(extractedUrl);
+    }
+  };
+
   const getPlatformName = (p?: string) => {
     switch (p) {
       case 'taobao': return 'تاوباو';
@@ -104,13 +111,27 @@ export function TaobaoUrlInput({ defaultValue = '', onExtracted }: TaobaoUrlInpu
 
   return (
     <div className="p-4 border border-orange-200 rounded-lg bg-orange-50/50 dark:bg-orange-950/20 dark:border-orange-800 space-y-4">
-      <div className="flex items-center gap-2 text-sm font-medium text-orange-600 dark:text-orange-400">
-        <Package className="h-4 w-4" />
-        <span>رابط Taobao / JD (للمزامنة التلقائية)</span>
-        {platform && (
-          <span className={`text-xs px-2 py-0.5 rounded-full bg-white/50 ${getPlatformColor(platform)}`}>
-            {getPlatformName(platform)}
-          </span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm font-medium text-orange-600 dark:text-orange-400">
+          <Package className="h-4 w-4" />
+          <span>رابط Taobao / JD (للمزامنة التلقائية)</span>
+          {platform && (
+            <span className={`text-xs px-2 py-0.5 rounded-full bg-white/50 ${getPlatformColor(platform)}`}>
+              {getPlatformName(platform)}
+            </span>
+          )}
+        </div>
+        {extractedUrl && onTriggerProductExtraction && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={handleExtractProductInfo}
+            className="gap-1 text-xs"
+          >
+            <Download className="h-3 w-3" />
+            استخراج المعلومات
+          </Button>
         )}
       </div>
       
@@ -137,7 +158,7 @@ export function TaobaoUrlInput({ defaultValue = '', onExtracted }: TaobaoUrlInpu
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <Label htmlFor="taobao_url" className="text-xs flex items-center gap-1">
-            الرابط المستخرج
+            الرابط المستخرج (بالصيغة القياسية)
             {isExtracting && <Loader2 className="h-3 w-3 animate-spin" />}
             {extractionStatus === 'success' && <Check className="h-3 w-3 text-green-600" />}
             {extractionStatus === 'error' && <AlertCircle className="h-3 w-3 text-red-500" />}
@@ -161,8 +182,11 @@ export function TaobaoUrlInput({ defaultValue = '', onExtracted }: TaobaoUrlInpu
             name="taobao_url"
             placeholder="https://item.taobao.com/item.htm?id=..."
             value={extractedUrl}
-            onChange={(e) => setExtractedUrl(e.target.value)}
-            className="flex-1 text-xs"
+            onChange={(e) => {
+              setExtractedUrl(e.target.value);
+              onExtracted?.(e.target.value);
+            }}
+            className="flex-1 text-xs font-mono"
           />
           {pastedText && !extractedUrl && (
             <Button
@@ -182,7 +206,8 @@ export function TaobaoUrlInput({ defaultValue = '', onExtracted }: TaobaoUrlInpu
         </div>
         {itemId && (
           <p className="text-xs text-muted-foreground">
-            معرف المنتج: <code className="bg-muted px-1 rounded">{itemId}</code>
+            معرف المنتج: <code className="bg-muted px-1 rounded font-mono">{itemId}</code>
+            {platform && <span className="mr-2">• المنصة: {getPlatformName(platform)}</span>}
           </p>
         )}
       </div>
