@@ -110,60 +110,39 @@ const COLOR_MAP: Record<string, { ar: string; hex: string }> = {
   'graphite': { ar: 'جرافيت', hex: '#383838' },
 };
 
-// Extract colors and options directly from HTML
-function extractFromHtml(html: string): {
-  colors: Array<{ name: string; name_ar: string; hex_code: string; image_url: string | null }>;
-  options: Array<{ name: string; name_ar: string; price_adjustment: number; image_url: string | null }>;
-  images: string[];
-  prices: number[];
-} {
-  const colors: Array<{ name: string; name_ar: string; hex_code: string; image_url: string | null }> = [];
-  const options: Array<{ name: string; name_ar: string; price_adjustment: number; image_url: string | null }> = [];
+// Clean and validate color name
+function isValidColorName(name: string): boolean {
+  const nameLower = name.toLowerCase().trim();
+  // Must be a simple color name, not HTML/code garbage
+  if (nameLower.length < 2 || nameLower.length > 30) return false;
+  if (nameLower.includes('<') || nameLower.includes('>')) return false;
+  if (nameLower.includes('[') || nameLower.includes(']')) return false;
+  if (nameLower.includes('{') || nameLower.includes('}')) return false;
+  if (nameLower.includes('\\')) return false;
+  if (nameLower.includes('http')) return false;
+  if (nameLower.includes('class=')) return false;
+  if (nameLower.includes('style=')) return false;
+  if (/^\d+$/.test(nameLower)) return false; // Just numbers
+  // Must match a known color or be simple text
+  return Object.keys(COLOR_MAP).some(c => nameLower === c || nameLower.includes(c));
+}
+
+// Clean and validate option name
+function isValidOptionName(name: string): boolean {
+  const nameTrimmed = name.trim();
+  if (nameTrimmed.length < 1 || nameTrimmed.length > 50) return false;
+  if (nameTrimmed.includes('<') || nameTrimmed.includes('>')) return false;
+  if (nameTrimmed.includes('{') || nameTrimmed.includes('}')) return false;
+  if (nameTrimmed.includes('\\')) return false;
+  if (/^(select|choose|pick|اختر|option)/i.test(nameTrimmed)) return false;
+  return true;
+}
+
+// Extract product images from HTML
+function extractImages(html: string): string[] {
   const images: string[] = [];
-  const prices: number[] = [];
-  
-  const seenColors = new Set<string>();
-  const seenOptions = new Set<string>();
   const seenImages = new Set<string>();
 
-  // Helper to add color
-  const addColor = (name: string, imageUrl: string | null = null) => {
-    const nameLower = name.toLowerCase().trim();
-    if (nameLower.length < 2 || nameLower.length > 50 || seenColors.has(nameLower)) return;
-    
-    // Find matching color in our map
-    let colorInfo = Object.entries(COLOR_MAP).find(([key]) => 
-      nameLower.includes(key) || key.includes(nameLower)
-    );
-    
-    const hex = colorInfo ? colorInfo[1].hex : '#808080';
-    const ar = colorInfo ? colorInfo[1].ar : name;
-    
-    seenColors.add(nameLower);
-    colors.push({
-      name: name.charAt(0).toUpperCase() + name.slice(1),
-      name_ar: ar,
-      hex_code: hex,
-      image_url: imageUrl
-    });
-  };
-
-  // Helper to add option
-  const addOption = (name: string, imageUrl: string | null = null) => {
-    const nameLower = name.toLowerCase().trim();
-    if (nameLower.length < 1 || nameLower.length > 100 || seenOptions.has(nameLower)) return;
-    if (/^(select|choose|pick|اختر)/i.test(nameLower)) return;
-    
-    seenOptions.add(nameLower);
-    options.push({
-      name: name.trim(),
-      name_ar: name.trim(),
-      price_adjustment: 0,
-      image_url: imageUrl
-    });
-  };
-
-  // Helper to add image
   const addImage = (url: string) => {
     if (!url || seenImages.has(url)) return;
     let cleanUrl = url.trim();
@@ -171,202 +150,79 @@ function extractFromHtml(html: string): {
     if (!cleanUrl.startsWith('http')) return;
     if (cleanUrl.includes('data:image')) return;
     if (cleanUrl.includes('placeholder')) return;
+    if (cleanUrl.includes('icon')) return;
+    if (cleanUrl.includes('logo')) return;
+    if (cleanUrl.includes('avatar')) return;
+    if (cleanUrl.includes('consent')) return;
+    if (cleanUrl.includes('trustarc')) return;
     if (cleanUrl.length < 20) return;
-    seenImages.add(cleanUrl);
-    images.push(cleanUrl);
+    // Must be a product image (common patterns)
+    if (cleanUrl.includes('product') || 
+        cleanUrl.includes('store.bblcdn') || 
+        cleanUrl.includes('cdn.') ||
+        cleanUrl.includes('images/') ||
+        cleanUrl.includes('img.') ||
+        cleanUrl.includes('media.') ||
+        /\.(jpg|jpeg|png|webp)/i.test(cleanUrl)) {
+      seenImages.add(cleanUrl);
+      images.push(cleanUrl);
+    }
   };
 
-  // 1. Extract from JSON-LD (most reliable)
+  // Extract from og:image
+  const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
+  if (ogMatch) addImage(ogMatch[1]);
+
+  // Extract from JSON-LD
   const jsonLdMatches = html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
   for (const match of jsonLdMatches) {
     try {
       const data = JSON.parse(match[1]);
-      
-      // Handle single product
-      if (data['@type'] === 'Product') {
-        if (data.image) {
-          const imgs = Array.isArray(data.image) ? data.image : [data.image];
-          imgs.forEach(addImage);
-        }
-        if (data.offers?.price) prices.push(parseFloat(data.offers.price));
-        if (data.color) addColor(data.color);
-        if (Array.isArray(data.hasVariant)) {
-          for (const variant of data.hasVariant) {
-            if (variant.color) addColor(variant.color, variant.image);
-            if (variant.size) addOption(variant.size);
-            if (variant.name) {
-              // Check if it's a color or size
-              const isColor = Object.keys(COLOR_MAP).some(c => variant.name.toLowerCase().includes(c));
-              if (isColor) addColor(variant.name, variant.image);
-              else addOption(variant.name);
-            }
-          }
-        }
-      }
-      
-      // Handle offers array
-      if (Array.isArray(data.offers)) {
-        for (const offer of data.offers) {
-          if (offer.price) prices.push(parseFloat(offer.price));
-          if (offer.name) addOption(offer.name);
-        }
+      if (data['@type'] === 'Product' && data.image) {
+        const imgs = Array.isArray(data.image) ? data.image : [data.image];
+        imgs.forEach(addImage);
       }
     } catch {}
   }
 
-  // 2. Extract from Shopify JSON (very reliable)
-  const shopifyPatterns = [
-    /var\s+meta\s*=\s*(\{[\s\S]*?\});/,
-    /var\s+product\s*=\s*(\{[\s\S]*?\});/,
-    /<script[^>]*>[\s\S]*?window\.ShopifyAnalytics[\s\S]*?product['"]\s*:\s*(\{[\s\S]*?\})\s*[,}]/,
+  // Extract from product gallery images
+  const galleryPatterns = [
+    /<img[^>]*class=["'][^"']*(?:gallery|product|main|zoom)[^"']*["'][^>]*src=["']([^"']+)["']/gi,
+    /<img[^>]*src=["']([^"']+store\.bblcdn[^"']+)["']/gi,
+    /<img[^>]*data-src=["']([^"']+store\.bblcdn[^"']+)["']/gi,
+    /<img[^>]*src=["']([^"']+)["'][^>]*alt=["'][^"']*(?:product|item)[^"']*["']/gi,
   ];
   
-  for (const pattern of shopifyPatterns) {
-    const match = html.match(pattern);
-    if (match) {
-      try {
-        const data = JSON.parse(match[1]);
-        const product = data.product || data;
-        
-        if (product.variants && Array.isArray(product.variants)) {
-          for (const v of product.variants) {
-            if (v.option1) {
-              const isColor = Object.keys(COLOR_MAP).some(c => v.option1.toLowerCase().includes(c));
-              if (isColor) addColor(v.option1, v.featured_image?.src);
-              else addOption(v.option1);
-            }
-            if (v.option2) addOption(v.option2);
-            if (v.option3) addOption(v.option3);
-            if (v.featured_image?.src) addImage(v.featured_image.src);
-          }
-        }
-        
-        if (product.images && Array.isArray(product.images)) {
-          product.images.forEach((img: any) => addImage(typeof img === 'string' ? img : img.src));
-        }
-      } catch {}
-    }
-  }
-
-  // 3. Extract from product options/variants containers
-  const variantContainerPatterns = [
-    /<select[^>]*(?:variant|option|color|size)[^>]*>([\s\S]*?)<\/select>/gi,
-    /<div[^>]*class=["'][^"']*(?:variant|swatch|color|option)[^"']*["'][^>]*>([\s\S]*?)<\/div>/gi,
-    /<ul[^>]*class=["'][^"']*(?:variant|swatch|color|option)[^"']*["'][^>]*>([\s\S]*?)<\/ul>/gi,
-  ];
-
-  for (const pattern of variantContainerPatterns) {
-    const matches = html.matchAll(pattern);
-    for (const match of matches) {
-      const container = match[1] || match[0];
-      
-      // Extract options from select
-      const optionMatches = container.matchAll(/<option[^>]*(?:value=["']([^"']+)["'])?[^>]*>([^<]*)<\/option>/gi);
-      for (const opt of optionMatches) {
-        const value = (opt[2] || opt[1] || '').trim();
-        if (value && value.length > 0) {
-          const isColor = Object.keys(COLOR_MAP).some(c => value.toLowerCase().includes(c));
-          if (isColor) addColor(value);
-          else addOption(value);
-        }
-      }
-      
-      // Extract from buttons/links
-      const buttonMatches = container.matchAll(/<(?:button|a|span|label)[^>]*(?:data-value|data-option|aria-label|title)=["']([^"']+)["'][^>]*>/gi);
-      for (const btn of buttonMatches) {
-        const value = btn[1].trim();
-        const isColor = Object.keys(COLOR_MAP).some(c => value.toLowerCase().includes(c));
-        if (isColor) addColor(value);
-        else if (value.length < 50) addOption(value);
-      }
-    }
-  }
-
-  // 4. Extract from data attributes (very common pattern)
-  const dataAttrPatterns = [
-    /data-(?:color|variant-color|option-color)=["']([^"']+)["']/gi,
-    /data-(?:option|variant|value|size|sku)=["']([^"']+)["']/gi,
-    /data-variant=["']([^"']+)["']/gi,
-  ];
-  
-  for (const pattern of dataAttrPatterns) {
-    const matches = html.matchAll(pattern);
-    for (const match of matches) {
-      const value = match[1].trim();
-      if (value.length > 1 && value.length < 50) {
-        const isColor = Object.keys(COLOR_MAP).some(c => value.toLowerCase().includes(c));
-        if (isColor) addColor(value);
-        else addOption(value);
-      }
-    }
-  }
-
-  // 5. Extract from swatches with images
-  const swatchWithImgPatterns = [
-    /<(?:button|div|span|a)[^>]*(?:swatch|color)[^>]*data-(?:value|color|variant)=["']([^"']+)["'][^>]*>[\s\S]*?<img[^>]*src=["']([^"']+)["']/gi,
-    /<img[^>]*src=["']([^"']+)["'][^>]*alt=["']([^"']+)["'][^>]*>/gi,
-    /<img[^>]*alt=["']([^"']+)["'][^>]*src=["']([^"']+)["'][^>]*>/gi,
-  ];
-  
-  for (const pattern of swatchWithImgPatterns) {
-    const matches = html.matchAll(pattern);
-    for (const match of matches) {
-      const colorOrAlt = match[1]?.trim() || match[2]?.trim();
-      const imgUrl = match[2]?.trim() || match[1]?.trim();
-      
-      if (colorOrAlt && Object.keys(COLOR_MAP).some(c => colorOrAlt.toLowerCase().includes(c))) {
-        const cleanImg = imgUrl?.startsWith('//') ? 'https:' + imgUrl : imgUrl;
-        addColor(colorOrAlt, cleanImg?.startsWith('http') ? cleanImg : null);
-      }
-    }
-  }
-
-  // 6. Extract product images
-  const imagePatterns = [
-    /<img[^>]*class=["'][^"']*(?:product|gallery|main|primary|zoom)[^"']*["'][^>]*src=["']([^"']+)["']/gi,
-    /<img[^>]*data-(?:src|zoom|large)=["']([^"']+)["']/gi,
-    /data-image=["']([^"']+)["']/gi,
-    /<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/gi,
-  ];
-  
-  for (const pattern of imagePatterns) {
+  for (const pattern of galleryPatterns) {
     const matches = html.matchAll(pattern);
     for (const match of matches) {
       addImage(match[1]);
     }
   }
 
-  // 7. Extract prices
+  return images.slice(0, 10);
+}
+
+// Extract price from HTML
+function extractPrice(html: string): number | null {
+  // Look for price patterns
   const pricePatterns = [
-    /(?:price|cost|amount)[^>]*>\s*[\$€¥£]?\s*([\d,]+\.?\d*)/gi,
-    /data-price=["'](\d+\.?\d*)["']/gi,
-    /"price"\s*:\s*"?(\d+\.?\d*)"?/gi,
+    /\$(\d+(?:\.\d{2})?)\s*USD/gi,
+    /"price"\s*:\s*"?(\d+(?:\.\d{2})?)"?/gi,
+    /data-price=["'](\d+(?:\.\d{2})?)["']/gi,
+    /class=["'][^"']*price[^"']*["'][^>]*>\s*\$?(\d+(?:\.\d{2})?)/gi,
   ];
-  
+
   for (const pattern of pricePatterns) {
     const matches = html.matchAll(pattern);
     for (const match of matches) {
-      const price = parseFloat(match[1].replace(',', ''));
-      if (price > 0 && price < 100000) prices.push(price);
+      const price = parseFloat(match[1]);
+      if (price > 0 && price < 100000) {
+        return price;
+      }
     }
   }
-
-  // 8. Look for color/size labels directly in text
-  const colorLabelPattern = /(?:color|لون|颜色)\s*[:\-]?\s*([^<,\n]{2,30})/gi;
-  const matches = html.matchAll(colorLabelPattern);
-  for (const match of matches) {
-    const value = match[1].trim();
-    if (Object.keys(COLOR_MAP).some(c => value.toLowerCase().includes(c))) {
-      addColor(value);
-    }
-  }
-
-  return {
-    colors: colors.slice(0, 50),
-    options: options.slice(0, 50),
-    images: images.slice(0, 20),
-    prices: [...new Set(prices)].slice(0, 10)
-  };
+  return null;
 }
 
 serve(async (req) => {
@@ -461,55 +317,50 @@ serve(async (req) => {
       );
     }
 
-    // First, extract directly from HTML (this is most reliable)
-    const directExtraction = extractFromHtml(pageContent);
-    console.log('Direct extraction results - colors:', directExtraction.colors.length, 'options:', directExtraction.options.length, 'images:', directExtraction.images.length);
+    // Extract images and price directly from HTML
+    const directImages = extractImages(pageContent);
+    const directPrice = extractPrice(pageContent);
+    console.log('Direct extraction - images:', directImages.length, 'price:', directPrice);
 
-    // Use AI to extract basic product info (name, description)
+    // Use AI to extract complete product info
     console.log('Using AI to extract product info...');
 
-    // Build context from direct extraction
-    const directColorsStr = directExtraction.colors.length > 0 
-      ? directExtraction.colors.map(c => `${c.name} (${c.hex_code})`).join(', ')
-      : 'None extracted directly';
-    
-    const directOptionsStr = directExtraction.options.length > 0
-      ? directExtraction.options.map(o => o.name).join(', ')
-      : 'None extracted directly';
+    const prompt = `أنت خبير في استخراج بيانات المنتجات من صفحات الويب.
 
-    const prompt = `Extract product information from this e-commerce page. I have already extracted some data directly from the HTML, but I need you to provide complete product name and description, and verify/enhance the colors and options.
-
+استخرج معلومات المنتج من هذه الصفحة:
 URL: ${url}
 Platform: ${platform}
 
-=== ALREADY EXTRACTED FROM HTML ===
-Colors found: ${directColorsStr}
-Options found: ${directOptionsStr}
-Price candidates: ${directExtraction.prices.join(', ') || 'None'}
+=== HTML محتوى الصفحة ===
+${pageContent.substring(0, 20000)}
 
-=== PAGE HTML (truncated) ===
-${pageContent.substring(0, 15000)}
-
-=== INSTRUCTIONS ===
-Return a JSON object with:
+=== التعليمات ===
+استخرج وأرجع كائن JSON بهذا الهيكل بالضبط:
 {
-  "name": "Product name in English",
+  "name": "اسم المنتج بالإنجليزية",
   "name_ar": "اسم المنتج بالعربية",
-  "description": "Brief description in English",
-  "description_ar": "وصف موجز بالعربية",
+  "description": "وصف مختصر بالإنجليزية (جملة أو جملتين)",
+  "description_ar": "وصف مختصر بالعربية (جملة أو جملتين)",
   "price": 29.99,
   "original_price": 39.99,
   "currency": "USD",
-  "additional_colors": [{"name": "ColorName", "name_ar": "اللون", "hex_code": "#HEXCODE"}],
-  "additional_options": [{"name": "Option", "name_ar": "الخيار"}],
-  "additional_images": ["https://image-url.jpg"]
+  "images": ["https://image1.jpg", "https://image2.jpg"],
+  "colors": [
+    {"name": "Black", "name_ar": "أسود", "hex_code": "#000000"}
+  ],
+  "options": [
+    {"name": "Size M", "name_ar": "مقاس M"}
+  ]
 }
 
-IMPORTANT:
-- Only add colors/options in "additional_*" fields if they are NOT already in the extracted list above
-- Focus on providing accurate name and description
-- Price should be a number
-- Return ONLY valid JSON`;
+قواعد مهمة جداً:
+1. الألوان يجب أن تكون أسماء ألوان فعلية فقط (Black, White, Red, Blue, إلخ)
+2. لا تضع أي نص HTML أو كود في الألوان أو الخيارات
+3. إذا لم تجد ألوان حقيقية، أرجع مصفوفة فارغة []
+4. الخيارات يجب أن تكون خيارات منتج فعلية (مقاسات، أحجام، نماذج)
+5. استخرج الصور من الصفحة - يجب أن تكون روابط كاملة تبدأ بـ https://
+6. السعر يجب أن يكون رقم فقط
+7. أرجع JSON فقط بدون أي نص إضافي`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -522,7 +373,7 @@ IMPORTANT:
         messages: [
           {
             role: 'system',
-            content: 'You are a product data extraction assistant. Return only valid JSON, no explanations.'
+            content: 'أنت مساعد لاستخراج بيانات المنتجات. أرجع JSON صالح فقط.'
           },
           {
             role: 'user',
@@ -533,7 +384,18 @@ IMPORTANT:
       }),
     });
 
-    let aiProductInfo: any = {};
+    let productInfo: any = {
+      name: 'Product',
+      name_ar: 'منتج',
+      description: '',
+      description_ar: '',
+      price: directPrice || 0,
+      original_price: null,
+      currency: 'USD',
+      images: directImages,
+      colors: [],
+      options: []
+    };
     
     if (aiResponse.ok) {
       try {
@@ -543,67 +405,88 @@ IMPORTANT:
         
         const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          aiProductInfo = JSON.parse(jsonMatch[0]);
+          const aiProductInfo = JSON.parse(jsonMatch[0]);
+          
+          // Merge AI results with direct extraction
+          productInfo.name = aiProductInfo.name || productInfo.name;
+          productInfo.name_ar = aiProductInfo.name_ar || productInfo.name_ar;
+          productInfo.description = aiProductInfo.description || productInfo.description;
+          productInfo.description_ar = aiProductInfo.description_ar || productInfo.description_ar;
+          productInfo.price = aiProductInfo.price || productInfo.price;
+          productInfo.original_price = aiProductInfo.original_price;
+          productInfo.currency = aiProductInfo.currency || productInfo.currency;
+          
+          // Merge images - prefer direct extraction, add AI images if unique
+          if (aiProductInfo.images && Array.isArray(aiProductInfo.images)) {
+            for (const img of aiProductInfo.images) {
+              if (img && img.startsWith('http') && !productInfo.images.includes(img)) {
+                productInfo.images.push(img);
+              }
+            }
+          }
+          
+          // Filter and add colors - only valid color names
+          if (aiProductInfo.colors && Array.isArray(aiProductInfo.colors)) {
+            for (const color of aiProductInfo.colors) {
+              if (color.name && isValidColorName(color.name)) {
+                const colorLower = color.name.toLowerCase();
+                const colorInfo = Object.entries(COLOR_MAP).find(([key]) => colorLower.includes(key));
+                productInfo.colors.push({
+                  name: color.name,
+                  name_ar: colorInfo ? colorInfo[1].ar : color.name_ar || color.name,
+                  hex_code: colorInfo ? colorInfo[1].hex : color.hex_code || '#808080',
+                  image_url: null
+                });
+              }
+            }
+          }
+          
+          // Filter and add options - only valid option names
+          if (aiProductInfo.options && Array.isArray(aiProductInfo.options)) {
+            for (const opt of aiProductInfo.options) {
+              if (opt.name && isValidOptionName(opt.name)) {
+                productInfo.options.push({
+                  name: opt.name,
+                  name_ar: opt.name_ar || opt.name,
+                  price_adjustment: 0,
+                  image_url: null
+                });
+              }
+            }
+          }
         }
       } catch (parseError) {
         console.error('AI response parse error:', parseError);
       }
     } else {
-      console.error('AI request failed:', aiResponse.status);
-    }
-
-    // Merge direct extraction with AI results
-    const finalColors = [...directExtraction.colors];
-    if (aiProductInfo.additional_colors && Array.isArray(aiProductInfo.additional_colors)) {
-      for (const color of aiProductInfo.additional_colors) {
-        if (color.name && !finalColors.some(c => c.name.toLowerCase() === color.name.toLowerCase())) {
-          finalColors.push({
-            name: color.name,
-            name_ar: color.name_ar || color.name,
-            hex_code: color.hex_code || '#808080',
-            image_url: null
-          });
-        }
+      const errorText = await aiResponse.text();
+      console.error('AI request failed:', aiResponse.status, errorText);
+      
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'تم تجاوز حد الطلبات، يرجى المحاولة لاحقاً',
+            requiresManualInput: true
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'يرجى إضافة رصيد للمحفظة',
+            requiresManualInput: true
+          }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
     }
 
-    const finalOptions = [...directExtraction.options];
-    if (aiProductInfo.additional_options && Array.isArray(aiProductInfo.additional_options)) {
-      for (const opt of aiProductInfo.additional_options) {
-        if (opt.name && !finalOptions.some(o => o.name.toLowerCase() === opt.name.toLowerCase())) {
-          finalOptions.push({
-            name: opt.name,
-            name_ar: opt.name_ar || opt.name,
-            price_adjustment: 0,
-            image_url: null
-          });
-        }
-      }
-    }
-
-    const finalImages = [...directExtraction.images];
-    if (aiProductInfo.additional_images && Array.isArray(aiProductInfo.additional_images)) {
-      for (const img of aiProductInfo.additional_images) {
-        if (img && !finalImages.includes(img) && img.startsWith('http')) {
-          finalImages.push(img);
-        }
-      }
-    }
-
-    const finalPrice = aiProductInfo.price || (directExtraction.prices.length > 0 ? Math.min(...directExtraction.prices) : 0);
-
-    const productInfo = {
-      name: aiProductInfo.name || 'Product',
-      name_ar: aiProductInfo.name_ar || 'منتج',
-      description: aiProductInfo.description || '',
-      description_ar: aiProductInfo.description_ar || '',
-      price: finalPrice,
-      original_price: aiProductInfo.original_price || null,
-      currency: aiProductInfo.currency || 'USD',
-      images: finalImages.slice(0, 10),
-      colors: finalColors,
-      options: finalOptions
-    };
+    // Limit images to 10
+    productInfo.images = productInfo.images.slice(0, 10);
 
     console.log('Final product info - colors:', productInfo.colors.length, 'options:', productInfo.options.length, 'images:', productInfo.images.length);
 
