@@ -175,12 +175,13 @@ const Admin = () => {
           .eq('product_id', editingProduct.id)
           .then(({ data, error }) => {
             if (!error && data) {
+              console.log('[Admin] Loaded product options:', data);
               setProductOptions(
                 data.map((opt) => ({
                   name: opt.name,
                   name_ar: opt.name_ar,
                   price_adjustment: Number(opt.price_adjustment),
-                  in_stock: opt.in_stock,
+                  in_stock: opt.in_stock ?? true,
                   image_url: opt.image_url || undefined,
                   available_for_direct_sale: opt.available_for_direct_sale ?? true,
                   available_for_pre_order: opt.available_for_pre_order ?? false
@@ -760,6 +761,7 @@ const Admin = () => {
     }
 
     // Set images - remove duplicates by base URL
+    // Clear existing editing product images first to avoid duplication
     if (productInfo.images && Array.isArray(productInfo.images) && productInfo.images.length > 0) {
       const seenBases = new Set<string>();
       const uniqueImages: string[] = [];
@@ -774,6 +776,10 @@ const Admin = () => {
           seenBases.add(base);
           uniqueImages.push(img);
         }
+      }
+      // When extracting new product info, clear editing product images and use only new ones
+      if (editingProduct) {
+        setEditingProduct({ ...editingProduct, images: [] });
       }
       setUploadedImages(uniqueImages);
     }
@@ -2341,7 +2347,9 @@ const Admin = () => {
                                           .from('product-images')
                                           .getPublicUrl(fileName);
                                         
+                                        console.log('[OptionImage] Uploaded successfully, URL:', publicUrl);
                                         updateProductOption(index, 'image_url', publicUrl);
+                                        console.log('[OptionImage] Updated option at index', index, 'with image_url:', publicUrl);
                                         toast.success('تم رفع صورة الخيار بنجاح');
                                       } catch (err) {
                                         console.error('Option image upload exception:', err);
