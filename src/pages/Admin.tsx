@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -1616,14 +1616,14 @@ const Admin = () => {
                   </DialogHeader>
                   
                   <form key={editingProduct?.id || 'new'} onSubmit={handleProductSubmit} className="space-y-4">
-                    {/* Text Paste & URL Extraction Section */}
+                    {/* Text Paste & URL Extraction Section - For Quick Access */}
                     <div className="p-4 border-2 border-dashed border-amber-500/30 rounded-lg bg-amber-500/5 space-y-3">
                       <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
                         <FileText className="h-4 w-4" />
-                        <span>لصق النص واستخراج الرابط و Item ID</span>
+                        <span>لصق النص واستخراج الرابط (للوصول السريع)</span>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        الصق نص المشاركة من تطبيق تاوباو أو JD وسيتم استخراج الرابط و ID تلقائياً
+                        الصق نص المشاركة من تطبيق تاوباو أو JD وسيتم استخراج الرابط و Item ID للوصول السريع للمنتج
                       </p>
                       <div className="flex gap-2">
                         <Textarea
@@ -1646,34 +1646,40 @@ const Admin = () => {
                         </Button>
                       </div>
                       {extractedUrlInfo && (
-                        <div className="p-3 bg-card border border-border rounded-lg space-y-2 text-sm">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary">{extractedUrlInfo.platform || 'غير معروف'}</Badge>
+                        <div className="p-3 bg-card border border-border rounded-lg space-y-3 text-sm">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge variant="secondary" className="uppercase">{extractedUrlInfo.platform || 'غير معروف'}</Badge>
                             {extractedUrlInfo.itemId && (
-                              <Badge variant="outline" className="font-mono">ID: {extractedUrlInfo.itemId}</Badge>
+                              <Badge variant="outline" className="font-mono text-xs">
+                                Item ID: {extractedUrlInfo.itemId}
+                              </Badge>
                             )}
                           </div>
                           {extractedUrlInfo.url && (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                value={extractedUrlInfo.url}
-                                readOnly
-                                className="text-xs font-mono flex-1"
-                                dir="ltr"
-                              />
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  if (extractedUrlInfo.url) {
-                                    setProductUrl(extractedUrlInfo.url);
-                                    toast.success('تم نسخ الرابط إلى حقل الاستخراج');
-                                  }
-                                }}
-                              >
-                                استخدام
-                              </Button>
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  value={extractedUrlInfo.url}
+                                  readOnly
+                                  className="text-xs font-mono flex-1 bg-muted"
+                                  dir="ltr"
+                                />
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="default"
+                                  className="gap-1 shrink-0"
+                                  onClick={() => window.open(extractedUrlInfo.url!, '_blank')}
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  فتح
+                                </Button>
+                              </div>
+                              {!extractedUrlInfo.itemId && (
+                                <p className="text-xs text-amber-600 dark:text-amber-400">
+                                  ⚠️ هذا رابط مختصر - اضغط "فتح" للوصول للمنتج الأصلي
+                                </p>
+                              )}
                             </div>
                           )}
                         </div>

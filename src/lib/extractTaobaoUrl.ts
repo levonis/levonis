@@ -59,6 +59,24 @@ function extractItemId(url: string): { itemId: string | null; platform: Extracte
 }
 
 /**
+ * Build a canonical product URL from item ID and platform
+ */
+export function buildCanonicalUrl(itemId: string, platform: ExtractedUrlInfo['platform']): string {
+  switch (platform) {
+    case 'taobao':
+      return `https://item.taobao.com/item.htm?id=${itemId}`;
+    case 'tmall':
+      return `https://detail.tmall.com/item.htm?id=${itemId}`;
+    case 'jd':
+      return `https://item.jd.com/${itemId}.html`;
+    case '1688':
+      return `https://detail.1688.com/offer/${itemId}.html`;
+    default:
+      return `https://item.taobao.com/item.htm?id=${itemId}`;
+  }
+}
+
+/**
  * Extract URL from messy text containing Taobao/JD links
  */
 export function extractUrlFromText(text: string): ExtractedUrlInfo {
@@ -71,9 +89,10 @@ export function extractUrlFromText(text: string): ExtractedUrlInfo {
     const match = text.match(pattern);
     if (match) {
       // Return the short URL - it will redirect to the actual product page
+      // Can't extract ID from short URL without following redirect
       return { 
         url: match[0].trim(), 
-        itemId: null, // Can't extract ID from short URL without expanding it
+        itemId: null,
         platform: 'taobao' 
       };
     }
@@ -85,7 +104,9 @@ export function extractUrlFromText(text: string): ExtractedUrlInfo {
     if (match) {
       const url = match[0].trim();
       const { itemId } = extractItemId(url);
-      return { url, itemId, platform };
+      // If we have an itemId, build the canonical URL
+      const canonicalUrl = itemId ? buildCanonicalUrl(itemId, platform) : url;
+      return { url: canonicalUrl, itemId, platform };
     }
   }
 
@@ -99,8 +120,10 @@ export function extractUrlFromText(text: string): ExtractedUrlInfo {
       // Check if it's from a known e-commerce domain
       if (/taobao|tmall|jd\.com|1688|tb\.cn/i.test(cleanUrl)) {
         const { itemId, platform } = extractItemId(cleanUrl);
+        // If we have an itemId, build the canonical URL
+        const canonicalUrl = itemId ? buildCanonicalUrl(itemId, platform || 'taobao') : cleanUrl;
         return { 
-          url: cleanUrl, 
+          url: canonicalUrl, 
           itemId, 
           platform: platform || 'taobao' 
         };
