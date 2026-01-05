@@ -275,6 +275,51 @@ function extractImages(html: string): string[] {
   return images.slice(0, 10);
 }
 
+// Currency conversion rates to USD
+const CURRENCY_TO_USD: Record<string, number> = {
+  'USD': 1,
+  'CNY': 0.14,
+  'RMB': 0.14,
+  'EUR': 1.08,
+  'GBP': 1.27,
+  'JPY': 0.0067,
+  'AED': 0.27,
+  'SAR': 0.27,
+  'KWD': 3.26,
+};
+
+// USD to IQD conversion rate
+const USD_TO_IQD = 1400;
+
+// Convert price to IQD
+function convertToIQD(price: number, currency: string): number {
+  const currencyUpper = currency.toUpperCase();
+  
+  // If already IQD, return as is
+  if (currencyUpper === 'IQD') {
+    return price;
+  }
+  
+  // Get USD rate for the currency
+  const toUsdRate = CURRENCY_TO_USD[currencyUpper] || 1;
+  
+  // Convert to USD first, then to IQD
+  const priceInUsd = price * toUsdRate;
+  const priceInIqd = priceInUsd * USD_TO_IQD;
+  
+  return priceInIqd;
+}
+
+// Round price to nearest 500 or 1000 IQD
+function roundPrice(price: number): number {
+  if (price <= 0) return 0;
+  
+  // Round to nearest 500
+  const rounded = Math.round(price / 500) * 500;
+  
+  return Math.floor(rounded); // Ensure integer
+}
+
 // Extract price from HTML
 function extractPrice(html: string): number | null {
   const patterns = [
@@ -386,6 +431,7 @@ ${pageContent.substring(0, 25000)}
   "description": "وصف قصير بالإنجليزية",
   "description_ar": "وصف قصير بالعربية",
   "price": 29.99,
+  "original_price": 39.99,
   "currency": "USD",
   "main_product_images": ["https://صورة-المنتج-الرئيسية.jpg"],
   "colors": [{"name": "Black", "name_ar": "أسود", "hex_code": "#000000", "image_url": "https://صورة-خاصة-بهذا-اللون.jpg"}],
@@ -393,37 +439,53 @@ ${pageContent.substring(0, 25000)}
   "features": [{"text": "Feature in English", "text_ar": "الميزة بالعربية"}]
 }
 
+===== قواعد استخراج الأسعار (مهم جداً) =====
+
+1. price (السعر الحالي):
+   - السعر النهائي بعد الخصم
+   - السعر المعروض بشكل بارز للشراء
+
+2. original_price (السعر الأصلي قبل الخصم):
+   - ابحث عن السعر المشطوب (strikethrough price)
+   - أو السعر الأعلى المعروض بجانب السعر الحالي
+   - أو "السعر الأصلي" / "قبل الخصم" / "was" / "regular price"
+   - إذا لم يوجد خصم: original_price = price
+
+3. currency (العملة):
+   - حدد العملة المستخدمة في الصفحة
+   - USD, CNY, RMB, EUR, GBP, JPY, AED, SAR, etc.
+
 ===== قواعد تصنيف الصور (مهم جداً جداً) =====
 
-1. main_product_images (صور المنتج الرئيسية):
+4. main_product_images (صور المنتج الرئيسية):
    - فقط الصور العامة للمنتج التي تُظهر المنتج بشكل عام
    - الصور من معرض الصور الرئيسي (main gallery)
    - الصور التي تظهر المنتج من زوايا مختلفة
    - لا تضع هنا أي صورة خاصة بلون أو خيار معين!
    - لا تكرر الصور الموجودة في colors أو options!
 
-2. colors[].image_url (صور الألوان):
+5. colors[].image_url (صور الألوان):
    - الصورة الخاصة بكل لون على حدة
    - ابحث عن data-color-image أو data-sku-image أو الصور المرتبطة بكل لون
    - يجب أن تكون صورة مختلفة لكل لون
    - هذه الصورة يجب ألا تكون في main_product_images!
 
-3. options[].image_url (صور الخيارات):
+6. options[].image_url (صور الخيارات):
    - الصورة الخاصة بكل خيار/مقاس/نوع على حدة
    - ابحث عن الصور المرتبطة بكل variant
    - هذه الصورة يجب ألا تكون في main_product_images!
 
 ===== قواعد أخرى =====
 
-4. colors: فقط أسماء ألوان حقيقية. مصفوفة فارغة [] إذا لم توجد ألوان.
+7. colors: فقط أسماء ألوان حقيقية. مصفوفة فارغة [] إذا لم توجد ألوان.
 
-5. options: خيارات المنتج مثل الأحجام أو المقاسات. مصفوفة فارغة [] إذا لم توجد.
+8. options: خيارات المنتج مثل الأحجام أو المقاسات. مصفوفة فارغة [] إذا لم توجد.
 
-6. features: مميزات المنتج المهمة (3-6 مميزات).
+9. features: مميزات المنتج المهمة (3-6 مميزات).
 
-7. لا تضع صورة واحدة في أكثر من مكان. كل صورة تنتمي لفئة واحدة فقط.
+10. لا تضع صورة واحدة في أكثر من مكان. كل صورة تنتمي لفئة واحدة فقط.
 
-8. أرجع فقط كائن JSON بدون أي نص إضافي.`;
+11. أرجع فقط كائن JSON بدون أي نص إضافي.`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -446,9 +508,9 @@ ${pageContent.substring(0, 25000)}
       name_ar: 'منتج',
       description: '',
       description_ar: '',
-      price: directPrice || 0,
+      price: 0,
       original_price: null,
-      currency: 'USD',
+      currency: 'IQD',
       images: [],
       colors: [],
       options: [],
@@ -472,8 +534,44 @@ ${pageContent.substring(0, 25000)}
           productInfo.name_ar = ai.name_ar || productInfo.name_ar;
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';
-          productInfo.price = ai.price || productInfo.price;
-          productInfo.currency = ai.currency || 'USD';
+          
+          // Extract currency and prices
+          const extractedCurrency = ai.currency || 'USD';
+          const extractedPrice = ai.price || directPrice || 0;
+          const extractedOriginalPrice = ai.original_price || null;
+          
+          console.log('Extracted prices - Current:', extractedPrice, 'Original:', extractedOriginalPrice, 'Currency:', extractedCurrency);
+          
+          // Convert prices to IQD
+          let priceInIqd = convertToIQD(extractedPrice, extractedCurrency);
+          let originalPriceInIqd = extractedOriginalPrice 
+            ? convertToIQD(extractedOriginalPrice, extractedCurrency) 
+            : null;
+          
+          console.log('Converted to IQD - Current:', priceInIqd, 'Original:', originalPriceInIqd);
+          
+          // Round prices to nearest 500
+          priceInIqd = roundPrice(priceInIqd);
+          if (originalPriceInIqd !== null) {
+            originalPriceInIqd = roundPrice(originalPriceInIqd);
+          }
+          
+          console.log('Rounded prices - Current:', priceInIqd, 'Original:', originalPriceInIqd);
+          
+          // Ensure original_price >= price
+          if (originalPriceInIqd !== null && originalPriceInIqd < priceInIqd) {
+            console.log('Warning: original_price < price, setting original_price = price');
+            originalPriceInIqd = priceInIqd;
+          }
+          
+          // If no discount, set original_price = price
+          if (originalPriceInIqd === null || originalPriceInIqd === priceInIqd) {
+            originalPriceInIqd = priceInIqd;
+          }
+          
+          productInfo.price = priceInIqd;
+          productInfo.original_price = originalPriceInIqd;
+          productInfo.currency = 'IQD';
           
           // STEP 1: First, collect ALL color image URLs
           if (ai.colors && Array.isArray(ai.colors)) {
