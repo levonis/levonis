@@ -759,14 +759,15 @@ const Admin = () => {
       setUploadedImages(productInfo.images);
     }
 
-    // Set sizes/options
-    if (productInfo.sizes && Array.isArray(productInfo.sizes) && productInfo.sizes.length > 0) {
-      setProductOptions(productInfo.sizes.map((size: any) => ({
-        name: size.name || '',
-        name_ar: size.name_ar || '',
-        price_adjustment: 0,
+    // Set sizes/options - check both 'options' and 'sizes' keys
+    const optionsData = productInfo.options || productInfo.sizes || [];
+    if (Array.isArray(optionsData) && optionsData.length > 0) {
+      setProductOptions(optionsData.map((opt: any) => ({
+        name: opt.name || '',
+        name_ar: opt.name_ar || '',
+        price_adjustment: opt.price_adjustment || 0,
         in_stock: true,
-        image_url: size.image_url || undefined
+        image_url: opt.image_url || undefined
       })));
     }
 
@@ -795,8 +796,8 @@ const Admin = () => {
     setShowManualInput(false);
 
     const colorsCount = productInfo.colors?.length || 0;
-    const sizesCount = productInfo.sizes?.length || 0;
-    toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${sizesCount} خيارات)`);
+    const optionsCount = optionsData.length || 0;
+    toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات)`);
   };
 
   // Re-extract images only for a product using AI
