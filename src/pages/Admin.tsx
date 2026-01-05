@@ -2292,7 +2292,7 @@ const Admin = () => {
                                   </div>
                                 </div>
                                 
-                                {option.in_stock && (
+                                {option.in_stock && option.available_for_direct_sale && (
                                   <div className="space-y-1">
                                     <Label className="text-xs">كمية المخزون (اختياري)</Label>
                                     <Input
@@ -2320,23 +2320,33 @@ const Admin = () => {
                                       const file = e.target.files?.[0];
                                       if (!file) return;
                                       
-                                      const fileExt = file.name.split('.').pop();
-                                      const fileName = `${Math.random()}.${fileExt}`;
-                                      const { error: uploadError, data } = await supabase.storage
-                                        .from('product-images')
-                                        .upload(fileName, file);
-                                      
-                                      if (uploadError) {
-                                        toast.error('حدث خطأ أثناء رفع الصورة');
-                                        return;
+                                      try {
+                                        toast.info('جاري رفع الصورة...');
+                                        const fileExt = file.name.split('.').pop();
+                                        const timestamp = Date.now();
+                                        const random = Math.random().toString().substring(2, 10);
+                                        const fileName = `option-${timestamp}-${random}.${fileExt}`;
+                                        
+                                        const { error: uploadError } = await supabase.storage
+                                          .from('product-images')
+                                          .upload(fileName, file);
+                                        
+                                        if (uploadError) {
+                                          console.error('Option image upload error:', uploadError);
+                                          toast.error(`فشل رفع الصورة: ${uploadError.message}`);
+                                          return;
+                                        }
+                                        
+                                        const { data: { publicUrl } } = supabase.storage
+                                          .from('product-images')
+                                          .getPublicUrl(fileName);
+                                        
+                                        updateProductOption(index, 'image_url', publicUrl);
+                                        toast.success('تم رفع صورة الخيار بنجاح');
+                                      } catch (err) {
+                                        console.error('Option image upload exception:', err);
+                                        toast.error('حدث خطأ غير متوقع أثناء رفع الصورة');
                                       }
-                                      
-                                      const { data: { publicUrl } } = supabase.storage
-                                        .from('product-images')
-                                        .getPublicUrl(fileName);
-                                      
-                                      updateProductOption(index, 'image_url', publicUrl);
-                                      toast.success('تم رفع صورة الخيار بنجاح');
                                     }}
                                     className="h-9"
                                   />
@@ -2571,7 +2581,7 @@ const Admin = () => {
                                      </Label>
                                    </div>
                                    
-                                   {color.in_stock !== false && (
+                                   {color.in_stock !== false && color.available_for_direct_sale && (
                                      <div className="space-y-1 mr-6">
                                        <Label className="text-xs">كمية المخزون (اختياري)</Label>
                                        <Input
