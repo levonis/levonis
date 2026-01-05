@@ -405,6 +405,7 @@ ${textContent}
 
 2. وصف المنتج:
    - بالعربية: ترجمة شاملة ومفصلة واحترافية لجميع التفاصيل
+   - بالإنجليزية: الوصف الأصلي من الصفحة (إذا كان بالصينية، ترجمه للإنجليزية باحترافية)
 
 3. الأحجام/الخيارات:
    - استخرج فقط الخيارات المتوفرة فعلياً
@@ -473,6 +474,10 @@ ${textContent}
                     type: "string", 
                     description: "وصف تفصيلي وشامل للمنتج بالعربية - ترجمة احترافية كاملة لجميع التفاصيل المهمة، يجب أن تكون الترجمة طبيعية ومفهومة" 
                   },
+                  description: { 
+                    type: "string", 
+                    description: "Product description in English - the original description from the page. If the original is in Chinese, translate it professionally to English. Must be detailed and comprehensive." 
+                  },
                   images: {
                     type: "array",
                     items: { type: "string" },
@@ -519,7 +524,7 @@ ${textContent}
                     description: "جميع مميزات وخصائص المنتج المذكورة بوضوح في الصفحة مع اختيار أيقونة مناسبة لكل ميزة. استخرج فقط المميزات الواضحة والمحددة واختر الأيقونة الأنسب"
                   }
                 },
-                required: ["name", "name_ar", "description_ar", "images", "sizes", "colors", "features"],
+                required: ["name", "name_ar", "description_ar", "description", "images", "sizes", "colors", "features"],
                 additionalProperties: false
               }
             }
