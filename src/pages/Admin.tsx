@@ -754,24 +754,35 @@ const Admin = () => {
       if (textarea) textarea.value = productInfo.description;
     }
 
-    // Set images
+    // Set images - remove duplicates
     if (productInfo.images && Array.isArray(productInfo.images) && productInfo.images.length > 0) {
-      setUploadedImages(productInfo.images);
+      const uniqueImages = [...new Set(productInfo.images as string[])];
+      setUploadedImages(uniqueImages);
     }
 
-    // Set sizes/options - check both 'options' and 'sizes' keys
+    // Get default settings for options and colors
+    const defaultOptionInStock = defaultSettings?.default_option_in_stock !== false;
+    const defaultOptionDirectSale = defaultSettings?.default_option_available_for_direct_sale !== false;
+    const defaultOptionPreOrder = defaultSettings?.default_option_available_for_pre_order || false;
+    const defaultColorInStock = defaultSettings?.default_color_in_stock !== false;
+    const defaultColorDirectSale = defaultSettings?.default_color_available_for_direct_sale !== false;
+    const defaultColorPreOrder = defaultSettings?.default_color_available_for_pre_order || false;
+
+    // Set sizes/options - check both 'options' and 'sizes' keys, apply default settings
     const optionsData = productInfo.options || productInfo.sizes || [];
     if (Array.isArray(optionsData) && optionsData.length > 0) {
       setProductOptions(optionsData.map((opt: any) => ({
         name: opt.name || '',
         name_ar: opt.name_ar || '',
         price_adjustment: opt.price_adjustment || 0,
-        in_stock: true,
-        image_url: opt.image_url || undefined
+        in_stock: opt.in_stock ?? defaultOptionInStock,
+        image_url: opt.image_url || undefined,
+        available_for_direct_sale: opt.available_for_direct_sale ?? defaultOptionDirectSale,
+        available_for_pre_order: opt.available_for_pre_order ?? defaultOptionPreOrder
       })));
     }
 
-    // Set colors
+    // Set colors with default settings
     if (productInfo.colors && Array.isArray(productInfo.colors) && productInfo.colors.length > 0) {
       setProductColors(productInfo.colors.map((color: any) => ({
         name: color.name || '',
@@ -779,16 +790,18 @@ const Admin = () => {
         hex_code: color.hex_code || '#000000',
         price: undefined,
         image_url: color.image_url || undefined,
-        in_stock: true
+        in_stock: color.in_stock ?? defaultColorInStock,
+        available_for_direct_sale: color.available_for_direct_sale ?? defaultColorDirectSale,
+        available_for_pre_order: color.available_for_pre_order ?? defaultColorPreOrder
       })));
     }
 
-    // Set features
+    // Set features with icon
     if (productInfo.features && Array.isArray(productInfo.features) && productInfo.features.length > 0) {
       setProductFeatures(productInfo.features.map((feature: any) => ({
         text: feature.text || '',
         text_ar: feature.text_ar || '',
-        icon: feature.icon || ''
+        icon: feature.icon || 'Check'
       })));
     }
 
@@ -797,7 +810,8 @@ const Admin = () => {
 
     const colorsCount = productInfo.colors?.length || 0;
     const optionsCount = optionsData.length || 0;
-    toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات)`);
+    const featuresCount = productInfo.features?.length || 0;
+    toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات)`);
   };
 
   // Re-extract images only for a product using AI
@@ -937,10 +951,10 @@ const Admin = () => {
     setProductOptions([...productOptions, {
       name: '',
       name_ar: '',
-      available_for_direct_sale: true,
-      available_for_pre_order: false,
+      available_for_direct_sale: defaultSettings?.default_option_available_for_direct_sale !== false,
+      available_for_pre_order: defaultSettings?.default_option_available_for_pre_order || false,
       price_adjustment: 0,
-      in_stock: true,
+      in_stock: defaultSettings?.default_option_in_stock !== false,
       image_url: undefined
     }]);
   };
@@ -959,12 +973,12 @@ const Admin = () => {
     setProductColors([...productColors, {
       name: '',
       name_ar: '',
-      available_for_direct_sale: true,
-      available_for_pre_order: false,
+      available_for_direct_sale: defaultSettings?.default_color_available_for_direct_sale !== false,
+      available_for_pre_order: defaultSettings?.default_color_available_for_pre_order || false,
       hex_code: '#000000',
       price: undefined,
       image_url: undefined,
-      in_stock: true
+      in_stock: defaultSettings?.default_color_in_stock !== false
     }]);
   };
 
