@@ -218,7 +218,7 @@ function getImageBaseUrl(url: string): string {
   }
 }
 
-// Extract product images with better deduplication
+// Extract product images with better deduplication - ONLY MAIN PRODUCT IMAGES
 function extractImages(html: string): string[] {
   const seenBases = new Set<string>();
   const images: string[] = [];
@@ -247,7 +247,7 @@ function extractImages(html: string): string[] {
   const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
   if (ogMatch) addImage(ogMatch[1]);
 
-  // JSON-LD images
+  // JSON-LD images - only from main product, not variants
   const jsonLdMatches = html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
   for (const match of jsonLdMatches) {
     try {
@@ -259,7 +259,7 @@ function extractImages(html: string): string[] {
     } catch {}
   }
 
-  // Product gallery images
+  // Product gallery images - main gallery only
   const galleryPatterns = [
     /data-(?:large-)?src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi,
     /data-zoom-image=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi,
@@ -364,13 +364,13 @@ serve(async (req) => {
       );
     }
 
-    // Direct extraction
+    // Direct extraction - main product images only
     const directImages = extractImages(pageContent);
     const directPrice = extractPrice(pageContent);
     console.log('Direct extraction - images:', directImages.length, 'price:', directPrice);
 
-    // AI extraction with comprehensive prompt
-    console.log('Using AI for extraction...');
+    // AI extraction with STRICT image classification rules
+    console.log('Using AI for extraction with strict image classification...');
 
     const prompt = `استخرج معلومات المنتج من صفحة الويب هذه وأرجعها بصيغة JSON فقط.
 
@@ -387,20 +387,43 @@ ${pageContent.substring(0, 25000)}
   "description_ar": "وصف قصير بالعربية",
   "price": 29.99,
   "currency": "USD",
-  "images": ["https://رابط-صورة-كامل.jpg"],
-  "colors": [{"name": "Black", "name_ar": "أسود", "hex_code": "#000000", "image_url": "https://رابط-صورة-اللون.jpg"}],
-  "options": [{"name": "0.4mm", "name_ar": "0.4 ملم", "image_url": "https://رابط-صورة-الخيار.jpg"}],
+  "main_product_images": ["https://صورة-المنتج-الرئيسية.jpg"],
+  "colors": [{"name": "Black", "name_ar": "أسود", "hex_code": "#000000", "image_url": "https://صورة-خاصة-بهذا-اللون.jpg"}],
+  "options": [{"name": "0.4mm", "name_ar": "0.4 ملم", "image_url": "https://صورة-خاصة-بهذا-الخيار.jpg"}],
   "features": [{"text": "Feature in English", "text_ar": "الميزة بالعربية"}]
 }
 
-قواعد مهمة جداً:
-1. colors: فقط أسماء ألوان حقيقية (Black, White, Red, Blue, Green, Yellow, Pink, Purple, Orange, Gray, Brown, Gold, Silver, Navy, Beige, إلخ). مصفوفة فارغة [] إذا لم توجد ألوان. مهم جداً: إذا كان لكل لون صورة خاصة به في الموقع، أضف رابط الصورة في image_url.
-2. options: خيارات المنتج مثل الأحجام أو المقاسات أو أنواع مختلفة. ابحث عن قوائم منسدلة أو أزرار الاختيار. مثال: "0.4mm", "0.6mm", "0.8mm", "S", "M", "L", "XL", "128GB", "256GB" إلخ. مهم جداً: إذا كان لكل خيار صورة خاصة به في الموقع، أضف رابط الصورة في image_url.
-3. features: مميزات المنتج المهمة. ابحث عن المواصفات والميزات البارزة. مثال: "شاشة 6.5 بوصة", "بطارية 5000mAh", "كاميرا 108MP" إلخ. أضف 3-6 مميزات رئيسية.
-4. images: روابط صور كاملة تبدأ بـ https:// وتكون صور المنتج الرئيسية فقط (ليس أيقونات أو لوغو أو صور الألوان/الخيارات).
-5. لا تضع أي علامات HTML أو كود أو نص غير مفيد.
-6. أرجع فقط كائن JSON بدون أي نص إضافي.
-7. ابحث في HTML عن الصور المرتبطة بكل لون أو خيار (عادة تكون في data-src أو data-image أو onclick events).`;
+===== قواعد تصنيف الصور (مهم جداً جداً) =====
+
+1. main_product_images (صور المنتج الرئيسية):
+   - فقط الصور العامة للمنتج التي تُظهر المنتج بشكل عام
+   - الصور من معرض الصور الرئيسي (main gallery)
+   - الصور التي تظهر المنتج من زوايا مختلفة
+   - لا تضع هنا أي صورة خاصة بلون أو خيار معين!
+   - لا تكرر الصور الموجودة في colors أو options!
+
+2. colors[].image_url (صور الألوان):
+   - الصورة الخاصة بكل لون على حدة
+   - ابحث عن data-color-image أو data-sku-image أو الصور المرتبطة بكل لون
+   - يجب أن تكون صورة مختلفة لكل لون
+   - هذه الصورة يجب ألا تكون في main_product_images!
+
+3. options[].image_url (صور الخيارات):
+   - الصورة الخاصة بكل خيار/مقاس/نوع على حدة
+   - ابحث عن الصور المرتبطة بكل variant
+   - هذه الصورة يجب ألا تكون في main_product_images!
+
+===== قواعد أخرى =====
+
+4. colors: فقط أسماء ألوان حقيقية. مصفوفة فارغة [] إذا لم توجد ألوان.
+
+5. options: خيارات المنتج مثل الأحجام أو المقاسات. مصفوفة فارغة [] إذا لم توجد.
+
+6. features: مميزات المنتج المهمة (3-6 مميزات).
+
+7. لا تضع صورة واحدة في أكثر من مكان. كل صورة تنتمي لفئة واحدة فقط.
+
+8. أرجع فقط كائن JSON بدون أي نص إضافي.`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -411,7 +434,7 @@ ${pageContent.substring(0, 25000)}
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'أنت مستخرج بيانات منتجات. أرجع JSON صحيح فقط بدون أي نص إضافي.' },
+          { role: 'system', content: 'أنت مستخرج بيانات منتجات خبير. مهمتك الأساسية هي فصل صور المنتج الرئيسية عن صور الألوان والخيارات بشكل صحيح. لا تخلط أبداً بين أنواع الصور. أرجع JSON صحيح فقط.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.1,
@@ -426,11 +449,14 @@ ${pageContent.substring(0, 25000)}
       price: directPrice || 0,
       original_price: null,
       currency: 'USD',
-      images: [...directImages],
+      images: [],
       colors: [],
       options: [],
       features: []
     };
+    
+    // Collect option/color image URLs for exclusion from main images
+    const variantImageUrls = new Set<string>();
     
     if (aiResponse.ok) {
       try {
@@ -449,31 +475,25 @@ ${pageContent.substring(0, 25000)}
           productInfo.price = ai.price || productInfo.price;
           productInfo.currency = ai.currency || 'USD';
           
-          // Merge images (avoiding duplicates)
-          if (ai.images && Array.isArray(ai.images)) {
-            const existingBases = new Set(productInfo.images.map(getImageBaseUrl));
-            for (const img of ai.images) {
-              if (img?.startsWith('http') && !/\.svg/i.test(img)) {
-                const base = getImageBaseUrl(img);
-                if (!existingBases.has(base)) {
-                  existingBases.add(base);
-                  productInfo.images.push(normalizeImageUrl(img));
-                }
-              }
-            }
-          }
-          
-          // Add valid colors with image_url
+          // STEP 1: First, collect ALL color image URLs
           if (ai.colors && Array.isArray(ai.colors)) {
             for (const c of ai.colors) {
               if (c.name && isValidColorName(c.name)) {
                 const colorLower = c.name.toLowerCase();
                 const info = Object.entries(COLOR_MAP).find(([k]) => colorLower.includes(k));
+                
+                let colorImageUrl = null;
+                if (c.image_url && c.image_url.startsWith('http')) {
+                  colorImageUrl = normalizeImageUrl(c.image_url);
+                  // Add to variant images set for exclusion
+                  variantImageUrls.add(getImageBaseUrl(colorImageUrl));
+                }
+                
                 productInfo.colors.push({
                   name: c.name,
                   name_ar: info ? info[1].ar : c.name_ar || c.name,
                   hex_code: info ? info[1].hex : c.hex_code || '#808080',
-                  image_url: c.image_url || null,
+                  image_url: colorImageUrl,
                   in_stock: true,
                   available_for_direct_sale: true,
                   available_for_pre_order: false
@@ -482,19 +502,52 @@ ${pageContent.substring(0, 25000)}
             }
           }
           
-          // Add valid options with image_url
+          // STEP 2: Collect ALL option image URLs
           if (ai.options && Array.isArray(ai.options)) {
             for (const o of ai.options) {
               if (o.name && isValidOptionName(o.name)) {
+                let optionImageUrl = null;
+                if (o.image_url && o.image_url.startsWith('http')) {
+                  optionImageUrl = normalizeImageUrl(o.image_url);
+                  // Add to variant images set for exclusion
+                  variantImageUrls.add(getImageBaseUrl(optionImageUrl));
+                }
+                
                 productInfo.options.push({
                   name: o.name,
                   name_ar: o.name_ar || o.name,
                   price_adjustment: 0,
-                  image_url: o.image_url || null,
+                  image_url: optionImageUrl,
                   in_stock: true,
                   available_for_direct_sale: true,
                   available_for_pre_order: false
                 });
+              }
+            }
+          }
+          
+          console.log('Variant images collected for exclusion:', variantImageUrls.size);
+          
+          // STEP 3: Process main product images - EXCLUDE any variant images
+          const mainProductImages = ai.main_product_images || ai.images || [];
+          if (Array.isArray(mainProductImages)) {
+            const seenBases = new Set<string>();
+            for (const img of mainProductImages) {
+              if (img?.startsWith('http') && !/\.svg/i.test(img)) {
+                const normalizedImg = normalizeImageUrl(img);
+                const base = getImageBaseUrl(normalizedImg);
+                
+                // Skip if this is a variant image
+                if (variantImageUrls.has(base)) {
+                  console.log('Skipping variant image from main:', base);
+                  continue;
+                }
+                
+                // Skip duplicates
+                if (seenBases.has(base)) continue;
+                seenBases.add(base);
+                
+                productInfo.images.push(normalizedImg);
               }
             }
           }
@@ -527,11 +580,32 @@ ${pageContent.substring(0, 25000)}
       }
     }
 
-    // Final image cleanup - remove duplicates by base URL
+    // STEP 4: If no AI images, use direct extraction but still exclude variant images
+    if (productInfo.images.length === 0 && directImages.length > 0) {
+      console.log('Using direct extraction images with variant exclusion...');
+      const seenBases = new Set<string>();
+      for (const img of directImages) {
+        const base = getImageBaseUrl(img);
+        if (variantImageUrls.has(base)) {
+          console.log('Skipping direct variant image:', base);
+          continue;
+        }
+        if (seenBases.has(base)) continue;
+        seenBases.add(base);
+        productInfo.images.push(img);
+      }
+    }
+
+    // STEP 5: Final cleanup - ensure no variant images in main product images
     const finalImages: string[] = [];
     const finalBases = new Set<string>();
     for (const img of productInfo.images) {
       const base = getImageBaseUrl(img);
+      // Double-check exclusion
+      if (variantImageUrls.has(base)) {
+        console.log('Final cleanup - removing variant image:', base);
+        continue;
+      }
       if (!finalBases.has(base) && !/\.svg/i.test(img)) {
         finalBases.add(base);
         finalImages.push(img);
@@ -539,7 +613,12 @@ ${pageContent.substring(0, 25000)}
     }
     productInfo.images = finalImages.slice(0, 10);
 
-    console.log('Final - colors:', productInfo.colors.length, 'options:', productInfo.options.length, 'features:', productInfo.features.length, 'images:', productInfo.images.length);
+    console.log('=== FINAL EXTRACTION RESULT ===');
+    console.log('Main product images:', productInfo.images.length);
+    console.log('Colors with images:', productInfo.colors.filter((c: any) => c.image_url).length, '/', productInfo.colors.length);
+    console.log('Options with images:', productInfo.options.filter((o: any) => o.image_url).length, '/', productInfo.options.length);
+    console.log('Features:', productInfo.features.length);
+    console.log('Variant images excluded:', variantImageUrls.size);
 
     return new Response(
       JSON.stringify({
