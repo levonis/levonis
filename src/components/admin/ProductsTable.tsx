@@ -4,9 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Pencil, Trash2, Copy, Sparkles, Search, RefreshCw, CheckCircle, AlertCircle, Clock, ExternalLink } from 'lucide-react';
+import { Pencil, Trash2, Copy, Sparkles, Search, RefreshCw, CheckCircle, AlertCircle, Clock, ExternalLink, Loader2 } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
-import { syncProductAvailability } from '@/lib/api/taobaoSync';
+import { syncProductAvailability, syncAllProductsAvailability } from '@/lib/api/taobaoSync';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -19,6 +19,7 @@ interface ProductsTableProps {
   onDelete: (id: string) => void;
   onDuplicate: (product: any) => void;
   onReExtract: (product: any) => void;
+  onRefresh?: () => void;
   filters: {
     search: string;
     setSearch: (v: string) => void;
@@ -43,9 +44,11 @@ const ProductsTable = memo(({
   onDelete, 
   onDuplicate,
   onReExtract,
+  onRefresh,
   filters 
 }: ProductsTableProps) => {
   const [syncingProducts, setSyncingProducts] = useState<Set<string>>(new Set());
+  const [bulkSyncing, setBulkSyncing] = useState(false);
   
   const {
     search,
@@ -85,6 +88,33 @@ const ProductsTable = memo(({
         next.delete(product.id);
         return next;
       });
+    }
+  };
+
+  const handleBulkSync = async () => {
+    const productsWithUrl = products.filter(p => p.taobao_url);
+    if (productsWithUrl.length === 0) {
+      toast.error('لا توجد منتجات مرتبطة بروابط Taobao/JD');
+      return;
+    }
+    
+    setBulkSyncing(true);
+    toast.info(`جاري مزامنة ${productsWithUrl.length} منتج...`);
+    
+    try {
+      const result = await syncAllProductsAvailability();
+      if (result.success) {
+        const successCount = result.results.filter(r => r.success).length;
+        const failedCount = result.results.filter(r => !r.success).length;
+        toast.success(`تم مزامنة ${successCount} منتج بنجاح${failedCount > 0 ? ` (${failedCount} فشل)` : ''}`);
+        onRefresh?.();
+      } else {
+        toast.error('فشل في المزامنة الجماعية');
+      }
+    } catch (error) {
+      toast.error('حدث خطأ أثناء المزامنة الجماعية');
+    } finally {
+      setBulkSyncing(false);
     }
   };
 
@@ -159,8 +189,39 @@ const ProductsTable = memo(({
     }) || [];
   }, [products, search, categoryFilter, stockFilter, featuredFilter, availabilityTypeFilter, optionsStockFilter]);
 
+  const productsWithTaobaoUrl = products?.filter(p => p.taobao_url).length || 0;
+
   return (
     <div className="space-y-4">
+      {/* Bulk Sync Button */}
+      {productsWithTaobaoUrl > 0 && (
+        <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+          <div className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300">
+            <RefreshCw className="h-4 w-4" />
+            <span>{productsWithTaobaoUrl} منتج مرتبط بروابط Taobao/JD</span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleBulkSync}
+            disabled={bulkSyncing}
+            className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:text-orange-300 dark:hover:bg-orange-900/30"
+          >
+            {bulkSyncing ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                جاري المزامنة...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="h-4 w-4" />
+                مزامنة الكل
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+      
       {/* Filters */}
       <div className="flex flex-wrap gap-3 p-4 bg-card/50 rounded-lg border border-border/40">
         <div className="flex-1 min-w-[200px]">

@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -1609,9 +1609,20 @@ const Admin = () => {
                     {/* Taobao URL Section for Auto-Sync with Smart Extraction */}
                     <TaobaoUrlInput 
                       defaultValue={editingProduct?.taobao_url || ''} 
-                      onExtracted={(url) => {
+                      onExtracted={(url, itemId, platform) => {
                         const input = document.getElementById('taobao_url') as HTMLInputElement;
                         if (input) input.value = url;
+                        // Auto-fill product URL for AI extraction if empty
+                        if (url && !productUrl) {
+                          setProductUrl(url);
+                        }
+                      }}
+                      onTriggerProductExtraction={(url) => {
+                        setProductUrl(url);
+                        // Trigger extraction after a short delay to allow state update
+                        setTimeout(() => {
+                          handleExtractProductInfo();
+                        }, 100);
                       }}
                     />
                     
@@ -2031,7 +2042,21 @@ const Admin = () => {
                           {productOptions.map((option, index) => (
                             <div key={index} className="p-3 border border-border rounded-lg bg-card/50 space-y-3">
                               <div className="flex justify-between items-start">
-                                <span className="text-sm font-medium">خيار {index + 1}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium">خيار {index + 1}</span>
+                                  {editingProduct?.taobao_url && (
+                                    <Badge 
+                                      variant={option.available_for_pre_order ? "default" : "secondary"}
+                                      className="text-[10px] gap-1"
+                                    >
+                                      {option.available_for_pre_order ? (
+                                        <><Check className="h-3 w-3" /> متزامن</>
+                                      ) : (
+                                        <><AlertCircle className="h-3 w-3" /> غير متزامن</>
+                                      )}
+                                    </Badge>
+                                  )}
+                                </div>
                                 <Button
                                   type="button"
                                   size="sm"
@@ -2207,7 +2232,21 @@ const Admin = () => {
                           {productColors.map((color, index) => (
                             <div key={index} className="p-3 border border-border rounded-lg bg-card/50 space-y-3">
                               <div className="flex justify-between items-start">
-                                <span className="text-sm font-medium">لون {index + 1}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium">لون {index + 1}</span>
+                                  {editingProduct?.taobao_url && (
+                                    <Badge 
+                                      variant={color.available_for_pre_order !== false ? "default" : "secondary"}
+                                      className="text-[10px] gap-1"
+                                    >
+                                      {color.available_for_pre_order !== false ? (
+                                        <><Check className="h-3 w-3" /> متزامن</>
+                                      ) : (
+                                        <><AlertCircle className="h-3 w-3" /> غير متزامن</>
+                                      )}
+                                    </Badge>
+                                  )}
+                                </div>
                                 <Button
                                   type="button"
                                   size="sm"
