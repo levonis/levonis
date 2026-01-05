@@ -19,10 +19,6 @@ import AdminMainSections from './AdminMainSections';
 import AdminCustomRequests from './AdminCustomRequests';
 import { formatPrice } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
-import { TaobaoUrlInput } from '@/components/admin/TaobaoUrlInput';
-import { OptionSyncBadge } from '@/components/admin/TaobaoSyncStatus';
-import { BulkSyncButton } from '@/components/admin/BulkSyncButton';
-import { ManualProductInput } from '@/components/admin/ManualProductInput';
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -1577,11 +1573,6 @@ const Admin = () => {
               <h2 className="text-2xl font-bold text-foreground">إدارة المنتجات</h2>
               
               <div className="flex items-center gap-2">
-                {/* Bulk Sync Button */}
-                <BulkSyncButton 
-                  products={products || []}
-                  onSyncComplete={() => refetchProducts()}
-                />
                 
                 <Dialog open={productDialogOpen} onOpenChange={(open) => {
                   setProductDialogOpen(open);
@@ -1651,41 +1642,6 @@ const Admin = () => {
                       </div>
                     </div>
                     
-                    {/* Manual Input Form - Shows when auto extraction fails */}
-                    {showManualInput && (
-                      <ManualProductInput
-                        itemId={extractionItemId}
-                        platform={extractionPlatform}
-                        onExtracted={(productInfo) => {
-                          applyProductInfo(productInfo);
-                          setShowManualInput(false);
-                        }}
-                        onCancel={() => setShowManualInput(false)}
-                      />
-                    )}
-                    
-                    {/* Taobao URL Section for Auto-Sync with Smart Extraction */}
-                    <TaobaoUrlInput 
-                      defaultValue={editingProduct?.taobao_url || ''} 
-                      onExtracted={(url, itemId, platform) => {
-                        const input = document.getElementById('taobao_url') as HTMLInputElement;
-                        if (input) input.value = url;
-                        // Store for manual input fallback
-                        setExtractionItemId(itemId || '');
-                        setExtractionPlatform(platform || 'taobao');
-                        // Auto-fill product URL for AI extraction if empty
-                        if (url && !productUrl) {
-                          setProductUrl(url);
-                        }
-                      }}
-                      onTriggerProductExtraction={(url) => {
-                        setProductUrl(url);
-                        // Trigger extraction after a short delay to allow state update
-                        setTimeout(() => {
-                          handleExtractProductInfo();
-                        }, 100);
-                      }}
-                    />
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
@@ -2105,14 +2061,6 @@ const Admin = () => {
                               <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-medium">خيار {index + 1}</span>
-                                  <OptionSyncBadge
-                                    itemName={option.name}
-                                    itemNameAr={option.name_ar}
-                                    cachedVariants={(editingProduct?.taobao_availability_cache?.variants as any[]) || []}
-                                    linkedTaobaoName={option.taobao_linked_name}
-                                    onLinkChange={(taobaoName) => updateProductOption(index, 'taobao_linked_name', taobaoName)}
-                                    hasTaobaoUrl={!!editingProduct?.taobao_url}
-                                  />
                                 </div>
                                 <Button
                                   type="button"
@@ -2291,14 +2239,6 @@ const Admin = () => {
                               <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-medium">لون {index + 1}</span>
-                                  <OptionSyncBadge
-                                    itemName={color.name}
-                                    itemNameAr={color.name_ar}
-                                    cachedVariants={(editingProduct?.taobao_availability_cache?.variants as any[]) || []}
-                                    linkedTaobaoName={color.taobao_linked_name}
-                                    onLinkChange={(taobaoName) => updateProductColor(index, 'taobao_linked_name', taobaoName)}
-                                    hasTaobaoUrl={!!editingProduct?.taobao_url}
-                                  />
                                 </div>
                                 <Button
                                   type="button"
