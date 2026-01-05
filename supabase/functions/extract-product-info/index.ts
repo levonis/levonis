@@ -540,34 +540,37 @@ ${pageContent.substring(0, 25000)}
           const extractedPrice = ai.price || directPrice || 0;
           const extractedOriginalPrice = ai.original_price || null;
           
-          console.log('Extracted prices - Current:', extractedPrice, 'Original:', extractedOriginalPrice, 'Currency:', extractedCurrency);
+          console.log('=== PRICE EXTRACTION ===');
+          console.log('AI extracted - price:', extractedPrice, 'original_price:', extractedOriginalPrice, 'currency:', extractedCurrency);
           
-          // Convert prices to IQD
+          // Check if there are TWO DIFFERENT prices in the source
+          const hasTwoDifferentPrices = extractedOriginalPrice !== null && 
+                                        extractedOriginalPrice > 0 && 
+                                        extractedOriginalPrice !== extractedPrice;
+          
+          console.log('Has two different prices (real discount):', hasTwoDifferentPrices);
+          
+          // Convert current price to IQD
           let priceInIqd = convertToIQD(extractedPrice, extractedCurrency);
-          let originalPriceInIqd = extractedOriginalPrice 
-            ? convertToIQD(extractedOriginalPrice, extractedCurrency) 
-            : null;
-          
-          console.log('Converted to IQD - Current:', priceInIqd, 'Original:', originalPriceInIqd);
-          
-          // Round prices to nearest 500
           priceInIqd = roundPrice(priceInIqd);
-          if (originalPriceInIqd !== null) {
+          
+          // Only set original_price if there's a REAL discount (two different prices)
+          let originalPriceInIqd: number | null = null;
+          
+          if (hasTwoDifferentPrices) {
+            // Convert original price to IQD
+            originalPriceInIqd = convertToIQD(extractedOriginalPrice, extractedCurrency);
             originalPriceInIqd = roundPrice(originalPriceInIqd);
+            
+            // Ensure original_price > price (if equal after rounding, set to null)
+            if (originalPriceInIqd <= priceInIqd) {
+              console.log('After rounding, original_price <= price. Setting original_price to null');
+              originalPriceInIqd = null;
+            }
           }
           
-          console.log('Rounded prices - Current:', priceInIqd, 'Original:', originalPriceInIqd);
-          
-          // Ensure original_price >= price
-          if (originalPriceInIqd !== null && originalPriceInIqd < priceInIqd) {
-            console.log('Warning: original_price < price, setting original_price = price');
-            originalPriceInIqd = priceInIqd;
-          }
-          
-          // If no discount, set original_price = price
-          if (originalPriceInIqd === null || originalPriceInIqd === priceInIqd) {
-            originalPriceInIqd = priceInIqd;
-          }
+          console.log('Final prices - price:', priceInIqd, 'original_price:', originalPriceInIqd);
+          console.log('=== END PRICE EXTRACTION ===');
           
           productInfo.price = priceInIqd;
           productInfo.original_price = originalPriceInIqd;

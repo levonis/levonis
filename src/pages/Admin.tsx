@@ -766,10 +766,16 @@ const Admin = () => {
       if (priceInput) priceInput.value = String(productInfo.price);
     }
 
-    // Set original price (before discount)
-    if (productInfo.original_price && productInfo.original_price > 0) {
-      const originalPriceInput = form.querySelector('#original_price') as HTMLInputElement;
-      if (originalPriceInput) originalPriceInput.value = String(productInfo.original_price);
+    // Set original price (before discount) - ONLY if it exists and is different from price
+    const originalPriceInput = form.querySelector('#original_price') as HTMLInputElement;
+    if (originalPriceInput) {
+      if (productInfo.original_price && productInfo.original_price > 0 && productInfo.original_price !== productInfo.price) {
+        // Real discount exists - set the original price
+        originalPriceInput.value = String(productInfo.original_price);
+      } else {
+        // No discount - clear the field
+        originalPriceInput.value = '';
+      }
     }
 
     // Collect option/color image URLs to exclude from main product images
