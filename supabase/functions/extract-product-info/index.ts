@@ -12,7 +12,6 @@ serve(async (req) => {
   }
 
   try {
-    // Verify admin authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -38,14 +37,14 @@ serve(async (req) => {
       );
     }
 
-    const { data: roleData, error: roleError } = await supabase
+    const { data: roleData } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id)
       .eq('role', 'admin')
       .single();
 
-    if (roleError || !roleData) {
+    if (!roleData) {
       return new Response(
         JSON.stringify({ error: 'Admin access required' }),
         { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -56,175 +55,167 @@ serve(async (req) => {
     console.log('Processing URL:', url);
 
     // Extract item ID from URL
-    const itemIdMatch = url.match(/[?&]id=(\d+)/);
+    const itemIdMatch = url.match(/[?&]id=(\d+)/) || url.match(/\/(\d{10,})\.html/);
     const itemId = itemIdMatch?.[1];
     
+    if (!itemId) {
+      return new Response(
+        JSON.stringify({ error: 'Could not extract item ID from URL', success: false }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Item ID:', itemId);
+
     // Determine platform
-    const isTaobao = url.includes('taobao.com') || url.includes('tmall.com');
+    const isTmall = url.includes('tmall.com');
     const isJD = url.includes('jd.com');
     const is1688 = url.includes('1688.com');
+    const platform = isTmall ? 'tmall' : isJD ? 'jd' : is1688 ? '1688' : 'taobao';
 
-    let html = '';
-    let pageTitle = '';
-    
-    // Use a more reliable method to fetch the page
-    const fetchWithHeaders = async (targetUrl: string) => {
-      const headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,ar;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Referer': isTaobao ? 'https://www.taobao.com/' : isJD ? 'https://www.jd.com/' : 'https://www.1688.com/',
-      };
+    // Try multiple methods to get product data
+    let productData: any = null;
+    let method = '';
+
+    // Method 1: Try mobile API endpoint (often less restricted)
+    try {
+      console.log('Trying mobile API...');
+      const mobileApiUrl = `https://h5api.m.taobao.com/h5/mtop.taobao.detail.getdetail/6.0/?data=${encodeURIComponent(JSON.stringify({ itemNumId: itemId }))}`;
       
+      const mobileResponse = await fetch(mobileApiUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+          'Referer': 'https://m.taobao.com/',
+        }
+      });
+      
+      if (mobileResponse.ok) {
+        const text = await mobileResponse.text();
+        // Try to parse JSONP response
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const data = JSON.parse(jsonMatch[0]);
+          if (data.data?.item) {
+            productData = data.data.item;
+            method = 'mobile_api';
+            console.log('Mobile API success');
+          }
+        }
+      }
+    } catch (e) {
+      console.log('Mobile API failed:', e);
+    }
+
+    // Method 2: Fetch the mobile page directly
+    if (!productData) {
       try {
-        const response = await fetch(targetUrl, { headers });
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        return await response.text();
+        console.log('Trying mobile page...');
+        const mobilePageUrl = `https://h5.m.taobao.com/awp/core/detail.htm?id=${itemId}`;
+        
+        const pageResponse = await fetch(mobilePageUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15',
+            'Accept': 'text/html,application/xhtml+xml,application/xml',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
+          }
+        });
+        
+        if (pageResponse.ok) {
+          const html = await pageResponse.text();
+          console.log('Mobile page fetched, length:', html.length);
+          
+          // Extract data from the page
+          const titleMatch = html.match(/<title>([^<]+)<\/title>/i);
+          const title = titleMatch?.[1]?.replace(/-淘宝网.*$/, '').trim() || '';
+          
+          // Extract images
+          const images: string[] = [];
+          const imgRegex = /(?:src|data-src)=["']([^"']*(?:alicdn|taobaocdn)[^"']*\.(?:jpg|png|webp))[^"']*/gi;
+          let imgMatch;
+          while ((imgMatch = imgRegex.exec(html)) !== null && images.length < 10) {
+            let img = imgMatch[1];
+            if (img.startsWith('//')) img = 'https:' + img;
+            // Get larger version
+            img = img.replace(/_\d+x\d+\.[a-z]+$/i, '');
+            if (!images.includes(img)) images.push(img);
+          }
+
+          // Look for SKU data in scripts
+          const skuColors: any[] = [];
+          const skuSizes: any[] = [];
+          
+          // Pattern for SKU data
+          const skuMatch = html.match(/skuInfo["\s]*:["\s]*(\{[\s\S]*?\})\s*[,}]/);
+          if (skuMatch) {
+            try {
+              const skuData = JSON.parse(skuMatch[1]);
+              console.log('Found SKU data');
+            } catch (e) {}
+          }
+
+          // Extract color options from common patterns
+          const colorPatterns = [
+            /颜色[分类]*[:：]\s*([^\n<]+)/gi,
+            /"颜色[分类]*":\s*\[([^\]]+)\]/gi,
+          ];
+          
+          if (title || images.length > 0) {
+            productData = { title, images };
+            method = 'mobile_page';
+            console.log('Mobile page partial success:', title?.substring(0, 50));
+          }
+        }
       } catch (e) {
-        console.warn('Direct fetch failed, trying alternative...');
-        return null;
-      }
-    };
-
-    // Try to fetch the page
-    html = await fetchWithHeaders(url) || '';
-    
-    if (!html || html.length < 1000) {
-      console.log('Page fetch returned minimal content, using item ID for extraction');
-    }
-
-    // Extract text content from HTML
-    let textContent = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .substring(0, 30000);
-
-    // Extract all image URLs from the page
-    const imageUrls: string[] = [];
-    const imgRegex = /<img[^>]*(?:src|data-src|data-original)=["']([^"']+)["'][^>]*>/gi;
-    let match;
-    while ((match = imgRegex.exec(html)) !== null) {
-      let imgUrl = match[1];
-      if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
-      if (imgUrl.startsWith('http') && !imgUrl.includes('icon') && !imgUrl.includes('logo')) {
-        // Clean Taobao image URLs - remove size suffixes
-        imgUrl = imgUrl.replace(/_\d+x\d+\.[a-z]+$/i, '');
-        imgUrl = imgUrl.replace(/\.(jpg|png|webp)_\d+x\d+\.jpg/i, '.$1');
-        if (!imageUrls.includes(imgUrl)) imageUrls.push(imgUrl);
+        console.log('Mobile page failed:', e);
       }
     }
 
-    // Also extract from background-image CSS
-    const bgRegex = /background(?:-image)?\s*:\s*url\(['"]?([^'")]+)['"]?\)/gi;
-    while ((match = bgRegex.exec(html)) !== null) {
-      let imgUrl = match[1];
-      if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
-      if (imgUrl.startsWith('http') && !imageUrls.includes(imgUrl)) {
-        imageUrls.push(imgUrl);
-      }
-    }
-
-    // Extract SKU/variant information from JavaScript
-    const skuData: any[] = [];
+    // Method 3: Use AI with the URL and item ID to generate reasonable product info
+    // Since direct scraping is blocked, we'll use AI to help based on any data we got
+    console.log('Using AI for product extraction...');
     
-    // Look for Taobao SKU data
-    const skuMapMatch = html.match(/skuMap\s*[=:]\s*(\{[\s\S]*?\})\s*[,;]/);
-    const propertyPicsMatch = html.match(/propertyPics\s*[=:]\s*(\{[\s\S]*?\})\s*[,;]/);
-    
-    // Extract color/variant names from the page
-    const colorNames: string[] = [];
-    const sizeNames: string[] = [];
-    
-    // Look for specific patterns in Chinese e-commerce pages
-    const colorPatterns = [
-      /颜色[分类]*[:：]\s*([^\n<]+)/gi,
-      /color[s]?\s*[:：]\s*([^\n<]+)/gi,
-      /data-value="([^"]+)"/gi,
-      /<li[^>]*class="[^"]*sku-[^"]*"[^>]*>([^<]+)<\/li>/gi,
-    ];
-
-    // Extract product title
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i) ||
-                       html.match(/data-title="([^"]+)"/i) ||
-                       html.match(/class="[^"]*title[^"]*"[^>]*>([^<]+)</i);
-    pageTitle = titleMatch?.[1]?.trim() || '';
-
-    console.log(`Extracted: ${imageUrls.length} images, title: ${pageTitle?.substring(0, 50)}`);
-
-    // Call Lovable AI to extract product information
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const systemPrompt = `You are a professional product data extractor for Chinese e-commerce platforms (Taobao, Tmall, JD.com, 1688).
+    // Build context from what we found
+    let context = `Product URL: ${url}\nItem ID: ${itemId}\nPlatform: ${platform}\n`;
+    if (productData?.title) {
+      context += `Title found: ${productData.title}\n`;
+    }
+    if (productData?.images?.length) {
+      context += `Images found: ${productData.images.slice(0, 5).join('\n')}\n`;
+    }
 
-Your task is to extract accurate product information and translate it professionally.
+    const systemPrompt = `You are a product data extraction assistant for Chinese e-commerce products.
 
 CRITICAL RULES:
-1. NEVER include price information
-2. Extract the FULL color/option names (e.g., "Matte Ivory White" not just "White")
-3. Translate Chinese to Arabic NATURALLY (not literal translation)
-4. Also provide English translations for all text
-5. Extract HEX color codes based on the color names (use accurate color values)
-6. Keep image URLs exactly as provided (do not modify them)
-7. Separate COLORS from SIZES/OPTIONS clearly:
-   - Colors: variations in color only (Red, Blue, Matte Black, etc.)
-   - Sizes/Options: variations in size, material, bundle, capacity, etc.
+1. If title is provided, use it and translate it professionally
+2. If no title is provided, return an error - DO NOT make up product names
+3. Only use images that were actually found on the page
+4. Translate Chinese to Arabic naturally (not literally)
+5. Provide English translations for all text
+6. Never include prices
+7. For colors, extract full color names and accurate HEX codes
+8. Keep all image URLs exactly as provided
 
-For HEX codes, use accurate values:
-- 黑色/Black: #000000
-- 白色/White: #FFFFFF
-- 红色/Red: #FF0000
-- 蓝色/Blue: #0000FF
-- 绿色/Green: #00FF00
-- 黄色/Yellow: #FFFF00
-- 橙色/Orange: #FFA500
-- 粉色/Pink: #FFC0CB
-- 紫色/Purple: #800080
-- 棕色/Brown: #8B4513
-- 灰色/Gray: #808080
-- 米色/Beige: #F5F5DC
-- 深色 (Dark): darken the base color
-- 浅色 (Light): lighten the base color
-- 哑光/Matte: same hex but note in name`;
+If you cannot find enough real product information, indicate that in your response.`;
 
-    const userPrompt = `Extract product information from this Chinese e-commerce page:
+    const userPrompt = `Extract product information from this Chinese e-commerce product:
 
-Page Title: ${pageTitle}
+${context}
 
-Page Content (cleaned):
-${textContent.substring(0, 20000)}
+If a title was found, translate and structure it. If no title was found, return an error response.
 
-Available Image URLs:
-${imageUrls.slice(0, 50).join('\n')}
+Return structured data with:
+- name (English) and name_ar (Arabic)
+- description (English) and description_ar (Arabic) - based on product type
+- images array (only from URLs actually found)
+- colors array (if any found) with name, name_ar, hex_code, image_url
+- sizes/options array (if any found) with name, name_ar, image_url
+- features array with text, text_ar, icon (lucide icon name)`;
 
-Item ID: ${itemId || 'unknown'}
-Platform: ${isTaobao ? 'Taobao/Tmall' : isJD ? 'JD.com' : is1688 ? '1688' : 'Unknown'}
-
-Extract and return:
-1. Product name (Arabic + English)
-2. Product description (Arabic + English) - comprehensive and professional
-3. Main product images (3-5 best quality images)
-4. All available COLORS with:
-   - Full name in English (original)
-   - Full name in Arabic (translated)
-   - Accurate HEX code
-   - Image URL if available
-5. All available SIZES/OPTIONS with:
-   - Full name in English
-   - Full name in Arabic
-   - Image URL if available
-6. Product features (Arabic + English)`;
-
-    console.log('Calling AI for extraction...');
-    
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -233,8 +224,8 @@ Extract and return:
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        temperature: 0.2,
-        max_tokens: 8000,
+        temperature: 0.1,
+        max_tokens: 4000,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -244,10 +235,11 @@ Extract and return:
             type: "function",
             function: {
               name: "extract_product_info",
-              description: "Extract product information from e-commerce page",
+              description: "Extract and structure product information",
               parameters: {
                 type: "object",
                 properties: {
+                  error: { type: "string", description: "Error message if extraction failed" },
                   name: { type: "string", description: "Product name in English" },
                   name_ar: { type: "string", description: "Product name in Arabic" },
                   description: { type: "string", description: "Product description in English" },
@@ -255,44 +247,41 @@ Extract and return:
                   images: {
                     type: "array",
                     items: { type: "string" },
-                    description: "Main product image URLs (3-5 images)"
+                    description: "Product image URLs"
                   },
                   colors: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        name: { type: "string", description: "Full color name in English" },
-                        name_ar: { type: "string", description: "Full color name in Arabic" },
-                        hex_code: { type: "string", description: "HEX color code (e.g., #FF0000)" },
-                        image_url: { type: "string", description: "Color variant image URL" }
+                        name: { type: "string" },
+                        name_ar: { type: "string" },
+                        hex_code: { type: "string" },
+                        image_url: { type: "string" }
                       }
-                    },
-                    description: "All available colors"
+                    }
                   },
                   sizes: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        name: { type: "string", description: "Full size/option name in English" },
-                        name_ar: { type: "string", description: "Full size/option name in Arabic" },
-                        image_url: { type: "string", description: "Size/option image URL" }
+                        name: { type: "string" },
+                        name_ar: { type: "string" },
+                        image_url: { type: "string" }
                       }
-                    },
-                    description: "All available sizes/options (not colors)"
+                    }
                   },
                   features: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        text: { type: "string", description: "Feature in English" },
-                        text_ar: { type: "string", description: "Feature in Arabic" },
-                        icon: { type: "string", description: "Lucide icon name" }
+                        text: { type: "string" },
+                        text_ar: { type: "string" },
+                        icon: { type: "string" }
                       }
-                    },
-                    description: "Product features"
+                    }
                   }
                 },
                 required: ["name", "name_ar", "description", "description_ar", "images", "colors", "sizes", "features"]
@@ -307,7 +296,7 @@ Extract and return:
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('AI error:', aiResponse.status, errorText);
-      throw new Error('Failed to connect to AI service');
+      throw new Error('AI service error');
     }
 
     const aiData = await aiResponse.json();
@@ -318,14 +307,22 @@ Extract and return:
     }
 
     const productInfo = JSON.parse(toolCall.function.arguments);
-    console.log('AI extracted:', productInfo.name, `(${productInfo.colors?.length || 0} colors, ${productInfo.sizes?.length || 0} sizes)`);
-
-    // Validate and clean the data
-    if (!productInfo.name || !productInfo.name_ar) {
-      throw new Error('Failed to extract product name');
+    
+    // Check if AI returned an error
+    if (productInfo.error) {
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: productInfo.error || 'Could not extract product information. Taobao may be blocking access.',
+          hint: 'Try copying the product title and images manually from the Taobao page.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Clean and validate hex codes
+    console.log('Extraction complete:', productInfo.name);
+
+    // Validate hex codes
     if (productInfo.colors && Array.isArray(productInfo.colors)) {
       productInfo.colors = productInfo.colors.map((color: any) => {
         let hex = color.hex_code || '#808080';
@@ -335,29 +332,37 @@ Extract and return:
       });
     }
 
-    // Keep original image URLs (don't upload - they will be uploaded when product is saved)
-    // This speeds up the extraction process significantly
-    
+    // Ensure images array exists and has proper URLs
+    if (!productInfo.images) productInfo.images = [];
+    if (productData?.images) {
+      // Add any images we found from the page
+      for (const img of productData.images) {
+        if (!productInfo.images.includes(img)) {
+          productInfo.images.push(img);
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
         productInfo,
-        note: 'Images are kept as original URLs. They will be processed when the product is saved.'
+        extraction_method: method || 'ai_only',
+        item_id: itemId,
+        platform
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Error in extract-product-info:', error);
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : 'An unexpected error occurred',
-        success: false 
+        error: error instanceof Error ? error.message : 'An error occurred',
+        success: false,
+        hint: 'Taobao may be blocking automated access. Try copying product details manually.'
       }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
