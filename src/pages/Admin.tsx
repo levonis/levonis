@@ -760,8 +760,35 @@ const Admin = () => {
       if (textarea) textarea.value = productInfo.description;
     }
 
-    // Set images - remove duplicates by base URL
-    // Clear existing editing product images first to avoid duplication
+    // Collect option/color image URLs to exclude from main product images
+    const optionColorImageUrls = new Set<string>();
+    const optionsData = productInfo.options || productInfo.sizes || [];
+    if (Array.isArray(optionsData)) {
+      for (const opt of optionsData) {
+        if (opt.image_url) {
+          try {
+            const urlObj = new URL(opt.image_url);
+            optionColorImageUrls.add(urlObj.origin + urlObj.pathname);
+          } catch {
+            optionColorImageUrls.add(opt.image_url);
+          }
+        }
+      }
+    }
+    if (Array.isArray(productInfo.colors)) {
+      for (const color of productInfo.colors) {
+        if (color.image_url) {
+          try {
+            const urlObj = new URL(color.image_url);
+            optionColorImageUrls.add(urlObj.origin + urlObj.pathname);
+          } catch {
+            optionColorImageUrls.add(color.image_url);
+          }
+        }
+      }
+    }
+
+    // Set images - remove duplicates by base URL and exclude option/color images
     if (productInfo.images && Array.isArray(productInfo.images) && productInfo.images.length > 0) {
       const seenBases = new Set<string>();
       const uniqueImages: string[] = [];
@@ -772,6 +799,10 @@ const Admin = () => {
           const urlObj = new URL(img);
           base = urlObj.origin + urlObj.pathname;
         } catch {}
+        // Skip if this image belongs to an option or color
+        if (optionColorImageUrls.has(base)) {
+          continue;
+        }
         if (!seenBases.has(base)) {
           seenBases.add(base);
           uniqueImages.push(img);
@@ -793,7 +824,6 @@ const Admin = () => {
     const defaultColorPreOrder = defaultSettings?.default_color_available_for_pre_order || false;
 
     // Set sizes/options - check both 'options' and 'sizes' keys, apply default settings
-    const optionsData = productInfo.options || productInfo.sizes || [];
     if (Array.isArray(optionsData) && optionsData.length > 0) {
       setProductOptions(optionsData.map((opt: any) => ({
         name: opt.name || '',
