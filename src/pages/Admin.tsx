@@ -80,6 +80,7 @@ const Admin = () => {
     name_ar: string;
     price_adjustment: number;
     in_stock: boolean;
+    stock_quantity?: number;
     image_url?: string;
     available_for_direct_sale?: boolean;
     available_for_pre_order?: boolean;
@@ -90,6 +91,7 @@ const Admin = () => {
     name_ar: string;
     hex_code: string;
     price?: number;
+    stock_quantity?: number;
     image_url?: string;
     in_stock?: boolean;
     available_for_direct_sale?: boolean;
@@ -156,8 +158,11 @@ const Admin = () => {
   // Ensure product options, colors, and features load reliably when opening the editor
   useEffect(() => {
     if (productDialogOpen && editingProduct) {
-      // Initialize from the current product
-      setProductColors(Array.isArray(editingProduct.colors) ? editingProduct.colors : []);
+      // Initialize from the current product - include stock_quantity from colors
+      const colorsWithStock = Array.isArray(editingProduct.colors) 
+        ? editingProduct.colors.map((c: any) => ({ ...c, stock_quantity: c.stock_quantity ?? undefined }))
+        : [];
+      setProductColors(colorsWithStock);
       setProductFeatures(Array.isArray(editingProduct.features) ? editingProduct.features : []);
       setPreOrderShippingOptions(Array.isArray(editingProduct.pre_order_shipping_options) ? editingProduct.pre_order_shipping_options : []);
 
@@ -754,9 +759,22 @@ const Admin = () => {
       if (textarea) textarea.value = productInfo.description;
     }
 
-    // Set images - remove duplicates
+    // Set images - remove duplicates by base URL
     if (productInfo.images && Array.isArray(productInfo.images) && productInfo.images.length > 0) {
-      const uniqueImages = [...new Set(productInfo.images as string[])];
+      const seenBases = new Set<string>();
+      const uniqueImages: string[] = [];
+      for (const img of productInfo.images as string[]) {
+        // Get base URL without query params for comparison
+        let base = img;
+        try {
+          const urlObj = new URL(img);
+          base = urlObj.origin + urlObj.pathname;
+        } catch {}
+        if (!seenBases.has(base)) {
+          seenBases.add(base);
+          uniqueImages.push(img);
+        }
+      }
       setUploadedImages(uniqueImages);
     }
 
@@ -776,6 +794,7 @@ const Admin = () => {
         name_ar: opt.name_ar || '',
         price_adjustment: opt.price_adjustment || 0,
         in_stock: opt.in_stock ?? defaultOptionInStock,
+        stock_quantity: opt.stock_quantity ?? undefined,
         image_url: opt.image_url || undefined,
         available_for_direct_sale: opt.available_for_direct_sale ?? defaultOptionDirectSale,
         available_for_pre_order: opt.available_for_pre_order ?? defaultOptionPreOrder
@@ -789,6 +808,7 @@ const Admin = () => {
         name_ar: color.name_ar || '',
         hex_code: color.hex_code || '#000000',
         price: undefined,
+        stock_quantity: color.stock_quantity ?? undefined,
         image_url: color.image_url || undefined,
         in_stock: color.in_stock ?? defaultColorInStock,
         available_for_direct_sale: color.available_for_direct_sale ?? defaultColorDirectSale,
@@ -955,6 +975,7 @@ const Admin = () => {
       available_for_pre_order: defaultSettings?.default_option_available_for_pre_order || false,
       price_adjustment: 0,
       in_stock: defaultSettings?.default_option_in_stock !== false,
+      stock_quantity: undefined,
       image_url: undefined
     }]);
   };
@@ -977,6 +998,7 @@ const Admin = () => {
       available_for_pre_order: defaultSettings?.default_color_available_for_pre_order || false,
       hex_code: '#000000',
       price: undefined,
+      stock_quantity: undefined,
       image_url: undefined,
       in_stock: defaultSettings?.default_color_in_stock !== false
     }]);
@@ -1049,8 +1071,11 @@ const Admin = () => {
         availabilityType = 'in_stock'; // Default to in_stock if both are selected
       }
       
-      // Filter valid colors and features
-      const validColors = productColors.filter(c => c.name_ar.trim() && c.name.trim());
+      // Filter valid colors and features - include stock_quantity
+      const validColors = productColors.filter(c => c.name_ar.trim() && c.name.trim()).map(c => ({
+        ...c,
+        stock_quantity: c.stock_quantity ?? undefined
+      }));
       const validFeatures = productFeatures.filter(f => f.text_ar.trim() && f.text.trim());
       
       const values = {
@@ -2255,12 +2280,34 @@ const Admin = () => {
                                     <input
                                       type="checkbox"
                                       checked={option.in_stock}
-                                      onChange={(e) => updateProductOption(index, 'in_stock', e.target.checked)}
+                                      onChange={(e) => {
+                                        updateProductOption(index, 'in_stock', e.target.checked);
+                                        if (!e.target.checked) {
+                                          updateProductOption(index, 'stock_quantity', 0);
+                                        }
+                                      }}
                                       className="rounded"
                                     />
                                     <span className="text-sm">متاح في المخزون</span>
                                   </div>
                                 </div>
+                                
+                                {option.in_stock && (
+                                  <div className="space-y-1">
+                                    <Label className="text-xs">كمية المخزون (اختياري)</Label>
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      value={option.stock_quantity ?? ''}
+                                      onChange={(e) => updateProductOption(index, 'stock_quantity', e.target.value ? Number(e.target.value) : undefined)}
+                                      placeholder="اتركه فارغاً لغير محدود"
+                                      className="h-9"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                      اتركه فارغاً إذا كان المخزون غير محدود
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                               
                               <div className="space-y-1">
@@ -2503,7 +2550,7 @@ const Admin = () => {
                                  
                                  <div 
                                    id="colors-in-stock-notice"
-                                   className="flex items-center space-x-2 space-x-reverse pt-2"
+                                   className="space-y-2 pt-2"
                                    style={{ display: (editingProduct?.has_in_stock ?? true) ? 'block' : 'none' }}
                                  >
                                    <div className="flex items-center gap-2">
@@ -2511,13 +2558,32 @@ const Admin = () => {
                                        type="checkbox"
                                        id={`color-in-stock-${index}`}
                                        checked={color.in_stock !== false}
-                                       onChange={(e) => updateProductColor(index, 'in_stock', e.target.checked)}
+                                       onChange={(e) => {
+                                         updateProductColor(index, 'in_stock', e.target.checked);
+                                         if (!e.target.checked) {
+                                           updateProductColor(index, 'stock_quantity', 0);
+                                         }
+                                       }}
                                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                                      />
                                      <Label htmlFor={`color-in-stock-${index}`} className="text-xs cursor-pointer">
                                        متوفر في المخزون
                                      </Label>
                                    </div>
+                                   
+                                   {color.in_stock !== false && (
+                                     <div className="space-y-1 mr-6">
+                                       <Label className="text-xs">كمية المخزون (اختياري)</Label>
+                                       <Input
+                                         type="number"
+                                         min="0"
+                                         value={color.stock_quantity ?? ''}
+                                         onChange={(e) => updateProductColor(index, 'stock_quantity', e.target.value ? Number(e.target.value) : undefined)}
+                                         placeholder="اتركه فارغاً لغير محدود"
+                                         className="h-9"
+                                       />
+                                     </div>
+                                   )}
                                  </div>
                                  <p 
                                    className="text-xs text-muted-foreground"
