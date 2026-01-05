@@ -2323,7 +2323,11 @@ const Admin = () => {
                                     id={`option-image-${index}`}
                                     type="file"
                                     accept="image/*"
+                                    onClick={(e) => e.stopPropagation()}
                                     onChange={async (e) => {
+                                      e.stopPropagation();
+                                      e.preventDefault();
+                                      
                                       const file = e.target.files?.[0];
                                       if (!file) return;
                                       
@@ -2332,14 +2336,16 @@ const Admin = () => {
                                         const fileExt = file.name.split('.').pop();
                                         const timestamp = Date.now();
                                         const random = Math.random().toString().substring(2, 10);
-                                        const fileName = `option-${index}-${timestamp}-${random}.${fileExt}`;
+                                        const fileName = `option-img-${index}-${timestamp}-${random}.${fileExt}`;
+                                        
+                                        console.log('[OptionImage] Starting upload for option', index, 'file:', fileName);
                                         
                                         const { error: uploadError } = await supabase.storage
                                           .from('product-images')
                                           .upload(fileName, file);
                                         
                                         if (uploadError) {
-                                          console.error('Option image upload error:', uploadError);
+                                          console.error('[OptionImage] Upload error:', uploadError);
                                           toast.error(`فشل رفع الصورة: ${uploadError.message}`);
                                           return;
                                         }
@@ -2349,14 +2355,19 @@ const Admin = () => {
                                           .getPublicUrl(fileName);
                                         
                                         console.log('[OptionImage] Uploaded successfully, URL:', publicUrl);
-                                        updateProductOption(index, 'image_url', publicUrl);
-                                        console.log('[OptionImage] Updated option at index', index, 'with image_url:', publicUrl);
+                                        
+                                        // Update the option's image_url directly
+                                        const updatedOptions = [...productOptions];
+                                        updatedOptions[index] = { ...updatedOptions[index], image_url: publicUrl };
+                                        setProductOptions(updatedOptions);
+                                        
+                                        console.log('[OptionImage] Updated productOptions state for index', index);
                                         toast.success('تم رفع صورة الخيار بنجاح');
                                         
                                         // Clear the file input
                                         e.target.value = '';
                                       } catch (err) {
-                                        console.error('Option image upload exception:', err);
+                                        console.error('[OptionImage] Exception:', err);
                                         toast.error('حدث خطأ غير متوقع أثناء رفع الصورة');
                                       }
                                     }}
@@ -2488,29 +2499,56 @@ const Admin = () => {
                                   <Label className="text-xs">صورة اللون (اختياري)</Label>
                                   <div className="flex gap-2 items-end">
                                     <Input
+                                      id={`color-image-${index}`}
                                       type="file"
                                       accept="image/*"
+                                      onClick={(e) => e.stopPropagation()}
                                       onChange={async (e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        
                                         const file = e.target.files?.[0];
                                         if (!file) return;
                                         
-                                        const fileExt = file.name.split('.').pop();
-                                        const fileName = `${Math.random()}.${fileExt}`;
-                                        const { error: uploadError, data } = await supabase.storage
-                                          .from('product-images')
-                                          .upload(fileName, file);
-                                        
-                                        if (uploadError) {
-                                          toast.error('حدث خطأ أثناء رفع الصورة');
-                                          return;
+                                        try {
+                                          toast.info('جاري رفع صورة اللون...');
+                                          const fileExt = file.name.split('.').pop();
+                                          const timestamp = Date.now();
+                                          const random = Math.random().toString().substring(2, 10);
+                                          const fileName = `color-img-${index}-${timestamp}-${random}.${fileExt}`;
+                                          
+                                          console.log('[ColorImage] Starting upload for color', index, 'file:', fileName);
+                                          
+                                          const { error: uploadError } = await supabase.storage
+                                            .from('product-images')
+                                            .upload(fileName, file);
+                                          
+                                          if (uploadError) {
+                                            console.error('[ColorImage] Upload error:', uploadError);
+                                            toast.error(`فشل رفع الصورة: ${uploadError.message}`);
+                                            return;
+                                          }
+                                          
+                                          const { data: { publicUrl } } = supabase.storage
+                                            .from('product-images')
+                                            .getPublicUrl(fileName);
+                                          
+                                          console.log('[ColorImage] Uploaded successfully, URL:', publicUrl);
+                                          
+                                          // Update the color's image_url directly
+                                          const updatedColors = [...productColors];
+                                          updatedColors[index] = { ...updatedColors[index], image_url: publicUrl };
+                                          setProductColors(updatedColors);
+                                          
+                                          console.log('[ColorImage] Updated productColors state for index', index);
+                                          toast.success('تم رفع صورة اللون بنجاح');
+                                          
+                                          // Clear the file input
+                                          e.target.value = '';
+                                        } catch (err) {
+                                          console.error('[ColorImage] Exception:', err);
+                                          toast.error('حدث خطأ غير متوقع أثناء رفع الصورة');
                                         }
-                                        
-                                        const { data: { publicUrl } } = supabase.storage
-                                          .from('product-images')
-                                          .getPublicUrl(fileName);
-                                        
-                                        updateProductColor(index, 'image_url', publicUrl);
-                                        toast.success('تم رفع صورة اللون بنجاح');
                                       }}
                                       className="h-9"
                                     />
