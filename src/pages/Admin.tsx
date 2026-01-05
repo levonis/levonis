@@ -760,6 +760,18 @@ const Admin = () => {
       if (textarea) textarea.value = productInfo.description;
     }
 
+    // Set price (current price after discount)
+    if (productInfo.price && productInfo.price > 0) {
+      const priceInput = form.querySelector('#price') as HTMLInputElement;
+      if (priceInput) priceInput.value = String(productInfo.price);
+    }
+
+    // Set original price (before discount)
+    if (productInfo.original_price && productInfo.original_price > 0) {
+      const originalPriceInput = form.querySelector('#original_price') as HTMLInputElement;
+      if (originalPriceInput) originalPriceInput.value = String(productInfo.original_price);
+    }
+
     // Collect option/color image URLs to exclude from main product images
     const optionColorImageUrls = new Set<string>();
     const optionsData = productInfo.options || productInfo.sizes || [];
