@@ -35,6 +35,9 @@ serve(async (req) => {
         if (resolvedUrl) {
           extractedUrl = resolvedUrl;
           console.log('Resolved to:', extractedUrl);
+        } else {
+          // If resolution fails, still try to extract item ID from any redirects we got
+          console.log('Short URL resolution failed, trying alternate methods...');
         }
       }
       
@@ -44,6 +47,8 @@ serve(async (req) => {
       
       // Convert to standard format
       const standardUrl = convertToStandardUrl(extractedUrl, itemId, platform);
+      
+      console.log('Final result:', { standardUrl, itemId, platform });
       
       return new Response(
         JSON.stringify({
@@ -74,14 +79,12 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
-        temperature: 0.1,
-        max_tokens: 1000,
         messages: [
           {
             role: 'system',
-            content: `أنت متخصص في استخراج روابط المنتجات من النصوص.
+            content: `أنت متخصص في استخراج روابط المنتجات من النصوص الصينية.
             
-مهمتك: استخراج رابط المنتج الأصلي من النص المُعطى.
+مهمتك: استخراج رابط المنتج ومعرف المنتج (item ID) من النص المُعطى.
 
 المنصات المدعومة:
 - Taobao (taobao.com, e.tb.cn, s.taobao.com, m.tb.cn, a.m.taobao.com)
@@ -90,21 +93,21 @@ serve(async (req) => {
 - 1688 (1688.com, detail.1688.com)
 
 قواعد مهمة:
-1. ابحث عن أي رابط URL في النص (قد يكون مختصراً)
-2. إذا وجدت رابط مختصر مثل e.tb.cn أو m.tb.cn، أعده كما هو
-3. استخرج معرف المنتج (item ID) إذا كان متاحاً في الرابط
-4. تجاهل أي نص صيني أو عربي أو رموز تعبيرية، فقط ركز على الرابط
+1. ابحث عن أي رابط URL في النص
+2. استخرج معرف المنتج (item ID) - عادة رقم طويل مكون من 9-15 رقم
+3. إذا وجدت رابط مختصر مثل e.tb.cn، ابحث عن معرف المنتج في النص أو أعد الرابط المختصر
+4. تجاهل أي نص صيني أو عربي، فقط ركز على الرابط ومعرف المنتج
 
 أعد الإجابة بتنسيق JSON فقط:
 {
   "url": "الرابط المستخرج",
-  "item_id": "معرف المنتج إن وجد",
+  "item_id": "معرف المنتج (رقم فقط)",
   "platform": "taobao أو jd أو tmall أو 1688"
 }`
           },
           {
             role: 'user',
-            content: `استخرج رابط المنتج من هذا النص:\n\n${text}`
+            content: `استخرج رابط المنتج ومعرف المنتج من هذا النص:\n\n${text}`
           }
         ]
       })
@@ -131,22 +134,19 @@ serve(async (req) => {
       console.error('Failed to parse AI response:', e);
     }
 
-    if (parsedResult.url) {
-      let finalUrl = parsedResult.url;
+    if (parsedResult.url || parsedResult.item_id) {
+      let finalUrl = parsedResult.url || '';
       
-      // Resolve short URL if needed
-      if (isShortUrl(finalUrl)) {
-        console.log('AI found short URL, resolving...');
-        const resolvedUrl = await resolveShortUrl(finalUrl);
-        if (resolvedUrl) {
-          finalUrl = resolvedUrl;
-          parsedResult.item_id = extractItemId(finalUrl) || parsedResult.item_id;
-        }
-      }
-
+      // If we have item_id, we can build the standard URL directly
       const itemId = parsedResult.item_id || extractItemId(finalUrl);
-      const platform = parsedResult.platform || detectPlatform(finalUrl);
-      const standardUrl = convertToStandardUrl(finalUrl, itemId, platform);
+      const platform = parsedResult.platform || detectPlatform(finalUrl) || 'taobao';
+      
+      // Build standard URL from item ID
+      const standardUrl = itemId 
+        ? convertToStandardUrl(finalUrl, itemId, platform)
+        : finalUrl;
+      
+      console.log('AI extraction result:', { standardUrl, itemId, platform });
       
       return new Response(
         JSON.stringify({
@@ -183,49 +183,61 @@ serve(async (req) => {
 });
 
 function extractUrlWithRegex(text: string): string | null {
-  // Pattern 1: Standard full URLs (highest priority - already in correct format)
+  // Pattern 1: Standard full URLs with item ID (highest priority)
   const fullUrlPatterns = [
     // Full Taobao URLs with item ID
-    /https?:\/\/(?:www\.)?item\.taobao\.com\/item\.htm[^\s\]》】)「」]*/gi,
+    /https?:\/\/(?:www\.)?item\.taobao\.com\/item\.htm\?[^\s\]》】)「」]*/gi,
     // Full Tmall URLs with item ID
-    /https?:\/\/(?:www\.)?detail\.tmall\.com\/item\.htm[^\s\]》】)「」]*/gi,
+    /https?:\/\/(?:www\.)?detail\.tmall\.com\/item\.htm\?[^\s\]》】)「」]*/gi,
     // Full JD URLs
-    /https?:\/\/(?:www\.)?item\.jd\.com\/\d+\.html[^\s\]》】)「」]*/gi,
+    /https?:\/\/(?:www\.)?item\.jd\.com\/\d+\.html/gi,
     // 1688 URLs
-    /https?:\/\/(?:www\.)?detail\.1688\.com\/offer\/\d+\.html[^\s\]》】)「」]*/gi,
+    /https?:\/\/(?:www\.)?detail\.1688\.com\/offer\/\d+\.html/gi,
   ];
 
-  // Pattern 2: Shortened URLs (need resolution)
-  const shortUrlPatterns = [
-    /https?:\/\/e\.tb\.cn\/[^\s\]》】)「」]+/gi,
-    /https?:\/\/m\.tb\.cn\/[^\s\]》】)「」]+/gi,
-    /https?:\/\/c\.tb\.cn\/[^\s\]》】)「」]+/gi,
-    /https?:\/\/s\.taobao\.com\/[^\s\]》】)「」]+/gi,
-    /https?:\/\/a\.m\.taobao\.com\/[^\s\]》】)「」]+/gi,
-    // Mobile JD URLs
-    /https?:\/\/m\.jd\.com\/[^\s\]》】)「」]+/gi,
-    // Mobile 1688 URLs
-    /https?:\/\/m\.1688\.com\/[^\s\]》】)「」]+/gi,
-  ];
-
-  // Try full URLs first
+  // Try full URLs first - these are already in the correct format
   for (const pattern of fullUrlPatterns) {
     const matches = text.match(pattern);
     if (matches && matches.length > 0) {
       let url = matches[0];
-      url = url.replace(/[》】」』）\)「【]+$/, '');
-      if (url.endsWith('&') || url.endsWith('?')) url = url.slice(0, -1);
+      // Clean up trailing characters
+      url = cleanUrl(url);
+      console.log('Found full URL:', url);
       return url;
     }
   }
 
-  // Then try short URLs
+  // Pattern 2: Shortened URLs (need resolution)
+  const shortUrlPatterns = [
+    /https?:\/\/e\.tb\.cn\/[a-zA-Z0-9._\-?=&]+/gi,
+    /https?:\/\/m\.tb\.cn\/[a-zA-Z0-9._\-?=&]+/gi,
+    /https?:\/\/c\.tb\.cn\/[a-zA-Z0-9._\-?=&]+/gi,
+  ];
+
   for (const pattern of shortUrlPatterns) {
     const matches = text.match(pattern);
     if (matches && matches.length > 0) {
       let url = matches[0];
-      url = url.replace(/[》】」』）\)「【]+$/, '');
-      if (url.endsWith('&') || url.endsWith('?')) url = url.slice(0, -1);
+      // Clean up trailing characters
+      url = cleanUrl(url);
+      console.log('Found short URL:', url);
+      return url;
+    }
+  }
+
+  // Pattern 3: Mobile/alternate URLs
+  const mobileUrlPatterns = [
+    /https?:\/\/s\.taobao\.com\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/a\.m\.taobao\.com\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/m\.jd\.com\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/m\.1688\.com\/[^\s\]》】)「」]+/gi,
+  ];
+
+  for (const pattern of mobileUrlPatterns) {
+    const matches = text.match(pattern);
+    if (matches && matches.length > 0) {
+      let url = matches[0];
+      url = cleanUrl(url);
       return url;
     }
   }
@@ -233,51 +245,78 @@ function extractUrlWithRegex(text: string): string | null {
   return null;
 }
 
+function cleanUrl(url: string): string {
+  // Remove trailing Chinese characters and brackets
+  url = url.replace(/[》】」』）\)「【\u4e00-\u9fff]+$/, '');
+  // Remove trailing punctuation
+  if (url.endsWith('&') || url.endsWith('?') || url.endsWith(',')) {
+    url = url.slice(0, -1);
+  }
+  return url;
+}
+
 function isShortUrl(url: string): boolean {
   const shortDomains = [
     'e.tb.cn',
     'm.tb.cn',
+    'c.tb.cn',
     's.taobao.com',
     'a.m.taobao.com',
-    'c.tb.cn',
   ];
   return shortDomains.some(domain => url.includes(domain));
 }
 
 async function resolveShortUrl(shortUrl: string): Promise<string | null> {
   try {
-    // Follow redirects to get the final URL
+    console.log('Attempting to resolve short URL:', shortUrl);
+    
+    // Try following redirects with GET request
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    
     const response = await fetch(shortUrl, {
-      method: 'HEAD',
+      method: 'GET',
       redirect: 'follow',
+      signal: controller.signal,
       headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'zh-CN,zh;q=0.9',
       }
     });
     
-    const finalUrl = response.url;
-    console.log('Resolved URL:', finalUrl);
+    clearTimeout(timeoutId);
     
-    // Verify it's a valid product URL
+    const finalUrl = response.url;
+    console.log('Redirect resolved to:', finalUrl);
+    
+    // Check if we got a valid product URL
     if (finalUrl && (
-      finalUrl.includes('taobao.com') ||
-      finalUrl.includes('tmall.com') ||
-      finalUrl.includes('jd.com') ||
-      finalUrl.includes('1688.com')
+      finalUrl.includes('item.taobao.com') ||
+      finalUrl.includes('detail.tmall.com') ||
+      finalUrl.includes('item.jd.com') ||
+      finalUrl.includes('detail.1688.com')
     )) {
       return finalUrl;
     }
     
-    // Try GET request for more accurate redirect following
-    const getResponse = await fetch(shortUrl, {
-      method: 'GET',
-      redirect: 'follow',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'
-      }
-    });
+    // Try to extract item ID from the response URL even if not exact match
+    const itemId = extractItemId(finalUrl);
+    if (itemId) {
+      const platform = detectPlatform(finalUrl);
+      console.log('Extracted item ID from redirect:', itemId);
+      return convertToStandardUrl(finalUrl, itemId, platform);
+    }
     
-    return getResponse.url || null;
+    // Check the response body for redirects or item IDs
+    const html = await response.text();
+    const itemIdMatch = html.match(/id=(\d{9,15})/);
+    if (itemIdMatch) {
+      console.log('Found item ID in response body:', itemIdMatch[1]);
+      return `https://item.taobao.com/item.htm?id=${itemIdMatch[1]}`;
+    }
+    
+    return finalUrl;
   } catch (error) {
     console.error('Error resolving short URL:', error);
     return null;
@@ -285,18 +324,20 @@ async function resolveShortUrl(shortUrl: string): Promise<string | null> {
 }
 
 function extractItemId(url: string): string | null {
-  // Taobao item ID patterns
+  // Multiple patterns for item ID extraction
   const patterns = [
-    /[?&]id=(\d+)/i,
-    /\/item\/(\d+)/i,
-    /\/i(\d+)\.htm/i,
-    /offer\/(\d+)\.html/i,  // 1688
-    /\/(\d+)\.html/i,
+    /[?&]id=(\d{9,15})/i,           // Standard ?id= or &id=
+    /\/item\/(\d{9,15})/i,          // /item/12345
+    /\/i(\d{9,15})\.htm/i,          // /i12345.htm
+    /offer\/(\d{9,15})\.html/i,     // 1688: /offer/12345.html
+    /item\.jd\.com\/(\d{9,15})/i,   // JD: item.jd.com/12345
+    /\/(\d{9,15})\.html/i,          // Generic /12345.html
   ];
 
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match && match[1]) {
+      console.log('Extracted item ID:', match[1], 'using pattern:', pattern.source);
       return match[1];
     }
   }
@@ -305,26 +346,31 @@ function extractItemId(url: string): string | null {
 }
 
 function detectPlatform(url: string): string {
-  if (url.includes('jd.com')) return 'jd';
-  if (url.includes('tmall.com')) return 'tmall';
-  if (url.includes('1688.com')) return '1688';
+  const lowerUrl = url.toLowerCase();
+  if (lowerUrl.includes('jd.com')) return 'jd';
+  if (lowerUrl.includes('tmall.com')) return 'tmall';
+  if (lowerUrl.includes('1688.com')) return '1688';
   return 'taobao';
 }
 
-// Convert any URL to standard format: https://item.taobao.com/item.htm?id=... or equivalent
+// Convert any URL to standard format
 function convertToStandardUrl(url: string, itemId: string | null, platform: string): string {
-  if (!itemId) return url; // Can't convert without item ID
-  
-  switch (platform) {
-    case 'taobao':
-      return `https://item.taobao.com/item.htm?id=${itemId}`;
-    case 'tmall':
-      return `https://detail.tmall.com/item.htm?id=${itemId}`;
-    case 'jd':
-      return `https://item.jd.com/${itemId}.html`;
-    case '1688':
-      return `https://detail.1688.com/offer/${itemId}.html`;
-    default:
-      return url;
+  // If we have an item ID, return the standard format
+  if (itemId) {
+    switch (platform) {
+      case 'taobao':
+        return `https://item.taobao.com/item.htm?id=${itemId}`;
+      case 'tmall':
+        return `https://detail.tmall.com/item.htm?id=${itemId}`;
+      case 'jd':
+        return `https://item.jd.com/${itemId}.html`;
+      case '1688':
+        return `https://detail.1688.com/offer/${itemId}.html`;
+      default:
+        return `https://item.taobao.com/item.htm?id=${itemId}`;
+    }
   }
+  
+  // If no item ID, return the original URL
+  return url;
 }

@@ -20,6 +20,8 @@ import AdminCustomRequests from './AdminCustomRequests';
 import { formatPrice } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { TaobaoUrlInput } from '@/components/admin/TaobaoUrlInput';
+import { OptionSyncBadge } from '@/components/admin/TaobaoSyncStatus';
+import { BulkSyncButton } from '@/components/admin/BulkSyncButton';
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -83,6 +85,7 @@ const Admin = () => {
     image_url?: string;
     available_for_direct_sale?: boolean;
     available_for_pre_order?: boolean;
+    taobao_linked_name?: string | null;
   }>>([]);
   const [productColors, setProductColors] = useState<Array<{
     name: string;
@@ -93,6 +96,7 @@ const Admin = () => {
     in_stock?: boolean;
     available_for_direct_sale?: boolean;
     available_for_pre_order?: boolean;
+    taobao_linked_name?: string | null;
   }>>([]);
   const [productFeatures, setProductFeatures] = useState<Array<{
     text_ar: string;
@@ -200,12 +204,12 @@ const Admin = () => {
     }
   }, [productDialogOpen, editingProduct, defaultSettings]);
 
-  const { data: products, isLoading: productsLoading } = useQuery({
+  const { data: products, isLoading: productsLoading, refetch: refetchProducts } = useQuery({
     queryKey: ['admin-products-with-options'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, categories(name_ar), product_options(id, in_stock, taobao_available)')
+        .select('*, categories(name_ar), product_options(id, in_stock, taobao_available, taobao_sku_id)')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -1538,22 +1542,29 @@ const Admin = () => {
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-foreground">إدارة المنتجات</h2>
               
-              <Dialog open={productDialogOpen} onOpenChange={(open) => {
-                setProductDialogOpen(open);
-                if (!open) {
-                  setEditingProduct(null);
-                  setUploadedImages([]);
-                  setProductOptions([]);
-                  setProductColors([]);
-                  setProductFeatures([]);
-                }
-              }}>
-                <DialogTrigger asChild>
-                  <Button className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90">
-                    <Plus className="ml-2 h-4 w-4" />
-                    إضافة منتج جديد
-                  </Button>
-                </DialogTrigger>
+              <div className="flex items-center gap-2">
+                {/* Bulk Sync Button */}
+                <BulkSyncButton 
+                  products={products || []}
+                  onSyncComplete={() => refetchProducts()}
+                />
+                
+                <Dialog open={productDialogOpen} onOpenChange={(open) => {
+                  setProductDialogOpen(open);
+                  if (!open) {
+                    setEditingProduct(null);
+                    setUploadedImages([]);
+                    setProductOptions([]);
+                    setProductColors([]);
+                    setProductFeatures([]);
+                  }
+                }}>
+                  <DialogTrigger asChild>
+                    <Button className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90">
+                      <Plus className="ml-2 h-4 w-4" />
+                      إضافة منتج جديد
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
                     <DialogTitle>{editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}</DialogTitle>
@@ -2044,18 +2055,14 @@ const Admin = () => {
                               <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-medium">خيار {index + 1}</span>
-                                  {editingProduct?.taobao_url && (
-                                    <Badge 
-                                      variant={option.available_for_pre_order ? "default" : "secondary"}
-                                      className="text-[10px] gap-1"
-                                    >
-                                      {option.available_for_pre_order ? (
-                                        <><Check className="h-3 w-3" /> متزامن</>
-                                      ) : (
-                                        <><AlertCircle className="h-3 w-3" /> غير متزامن</>
-                                      )}
-                                    </Badge>
-                                  )}
+                                  <OptionSyncBadge
+                                    itemName={option.name}
+                                    itemNameAr={option.name_ar}
+                                    cachedVariants={(editingProduct?.taobao_availability_cache?.variants as any[]) || []}
+                                    linkedTaobaoName={option.taobao_linked_name}
+                                    onLinkChange={(taobaoName) => updateProductOption(index, 'taobao_linked_name', taobaoName)}
+                                    hasTaobaoUrl={!!editingProduct?.taobao_url}
+                                  />
                                 </div>
                                 <Button
                                   type="button"
@@ -2234,18 +2241,14 @@ const Admin = () => {
                               <div className="flex justify-between items-start">
                                 <div className="flex items-center gap-2">
                                   <span className="text-sm font-medium">لون {index + 1}</span>
-                                  {editingProduct?.taobao_url && (
-                                    <Badge 
-                                      variant={color.available_for_pre_order !== false ? "default" : "secondary"}
-                                      className="text-[10px] gap-1"
-                                    >
-                                      {color.available_for_pre_order !== false ? (
-                                        <><Check className="h-3 w-3" /> متزامن</>
-                                      ) : (
-                                        <><AlertCircle className="h-3 w-3" /> غير متزامن</>
-                                      )}
-                                    </Badge>
-                                  )}
+                                  <OptionSyncBadge
+                                    itemName={color.name}
+                                    itemNameAr={color.name_ar}
+                                    cachedVariants={(editingProduct?.taobao_availability_cache?.variants as any[]) || []}
+                                    linkedTaobaoName={color.taobao_linked_name}
+                                    onLinkChange={(taobaoName) => updateProductColor(index, 'taobao_linked_name', taobaoName)}
+                                    hasTaobaoUrl={!!editingProduct?.taobao_url}
+                                  />
                                 </div>
                                 <Button
                                   type="button"
@@ -2588,6 +2591,7 @@ const Admin = () => {
                   </form>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
 
             {productsLoading ? (
