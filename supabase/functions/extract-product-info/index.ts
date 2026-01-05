@@ -535,43 +535,34 @@ ${pageContent.substring(0, 25000)}
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';
           
-          // Extract currency and prices
+          // ===== قاعدة استخراج السعر =====
+          // السعر المستخرج من الرابط = السعر الأصلي قبل التخفيض فقط
+          // السعر الحالي = فارغ (يُحدد يدوياً لاحقاً)
+          
           const extractedCurrency = ai.currency || 'USD';
-          const extractedPrice = ai.price || directPrice || 0;
-          const extractedOriginalPrice = ai.original_price || null;
+          // Use the highest price found as original_price
+          const extractedOriginalPrice = ai.original_price || ai.price || directPrice || 0;
           
-          console.log('Extracted prices - Current:', extractedPrice, 'Original:', extractedOriginalPrice, 'Currency:', extractedCurrency);
+          console.log('Extracted original price:', extractedOriginalPrice, 'Currency:', extractedCurrency);
           
-          // Convert prices to IQD
-          let priceInIqd = convertToIQD(extractedPrice, extractedCurrency);
-          let originalPriceInIqd = extractedOriginalPrice 
-            ? convertToIQD(extractedOriginalPrice, extractedCurrency) 
-            : null;
+          // Convert original_price to IQD
+          let originalPriceInIqd = convertToIQD(extractedOriginalPrice, extractedCurrency);
           
-          console.log('Converted to IQD - Current:', priceInIqd, 'Original:', originalPriceInIqd);
+          console.log('Converted to IQD:', originalPriceInIqd);
           
-          // Round prices to nearest 500
-          priceInIqd = roundPrice(priceInIqd);
-          if (originalPriceInIqd !== null) {
-            originalPriceInIqd = roundPrice(originalPriceInIqd);
-          }
+          // Round price to nearest 500
+          originalPriceInIqd = roundPrice(originalPriceInIqd);
           
-          console.log('Rounded prices - Current:', priceInIqd, 'Original:', originalPriceInIqd);
+          console.log('Rounded original_price:', originalPriceInIqd);
           
-          // Ensure original_price >= price
-          if (originalPriceInIqd !== null && originalPriceInIqd < priceInIqd) {
-            console.log('Warning: original_price < price, setting original_price = price');
-            originalPriceInIqd = priceInIqd;
-          }
-          
-          // If no discount, set original_price = price
-          if (originalPriceInIqd === null || originalPriceInIqd === priceInIqd) {
-            originalPriceInIqd = priceInIqd;
-          }
-          
-          productInfo.price = priceInIqd;
-          productInfo.original_price = originalPriceInIqd;
+          // Set prices:
+          // price = null (0) - to be set manually later
+          // original_price = extracted price from link
+          productInfo.price = null;
+          productInfo.original_price = originalPriceInIqd > 0 ? originalPriceInIqd : null;
           productInfo.currency = 'IQD';
+          
+          console.log('Final prices - price:', productInfo.price, 'original_price:', productInfo.original_price);
           
           // STEP 1: First, collect ALL color image URLs
           if (ai.colors && Array.isArray(ai.colors)) {
