@@ -659,6 +659,8 @@ const Admin = () => {
     }
 
     setExtractingInfo(true);
+    toast.info('جاري استخراج معلومات المنتج... قد يستغرق هذا بضع ثوانٍ');
+    
     try {
       const response = await supabase.functions.invoke('extract-product-info', {
         body: { url: productUrl }
@@ -668,7 +670,15 @@ const Admin = () => {
         throw new Error(response.error.message || 'فشل في استخراج المعلومات');
       }
 
-      const { productInfo } = response.data;
+      const { productInfo, success, error: extractError, hint } = response.data;
+      
+      if (!success || extractError) {
+        toast.error(extractError || 'فشل في استخراج المعلومات');
+        if (hint) {
+          toast.info(hint, { duration: 8000 });
+        }
+        return;
+      }
       
       if (!productInfo) {
         throw new Error('لم يتم العثور على معلومات المنتج');
@@ -697,9 +707,16 @@ const Admin = () => {
         (form.querySelector('#description') as HTMLTextAreaElement).value = productInfo.description;
       }
 
-      // Set images
+      // Set images (note: these may be Chinese CDN URLs that need proxy)
       if (productInfo.images && Array.isArray(productInfo.images) && productInfo.images.length > 0) {
         setUploadedImages(productInfo.images);
+        // Warn about Chinese CDN images
+        const hasChineseImages = productInfo.images.some((img: string) => 
+          img.includes('alicdn.com') || img.includes('taobaocdn.com') || img.includes('tbcdn.com')
+        );
+        if (hasChineseImages) {
+          toast.warning('بعض الصور من خوادم صينية قد لا تظهر مباشرة. يُنصح برفع الصور يدوياً.', { duration: 6000 });
+        }
       }
 
       // Set sizes/options
@@ -740,10 +757,11 @@ const Admin = () => {
       const colorImages = productInfo.colors?.filter((c: any) => c.image_url).length || 0;
       const totalImages = mainImages + optionImages + colorImages;
 
-      toast.success(`تم استخراج معلومات المنتج بنجاح! تم تحميل ${totalImages} صورة (${mainImages} رئيسية، ${optionImages} للخيارات، ${colorImages} للألوان).`);
+      toast.success(`تم استخراج معلومات المنتج! (${productInfo.colors?.length || 0} ألوان، ${productInfo.sizes?.length || 0} خيارات، ${totalImages} صور)`);
     } catch (error) {
       console.error('Error extracting product info:', error);
       toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء استخراج المعلومات');
+      toast.info('Taobao قد يحظر الوصول التلقائي. حاول نسخ التفاصيل يدوياً.', { duration: 6000 });
     } finally {
       setExtractingInfo(false);
     }
