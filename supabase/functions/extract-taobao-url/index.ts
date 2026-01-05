@@ -183,27 +183,49 @@ serve(async (req) => {
 });
 
 function extractUrlWithRegex(text: string): string | null {
-  // Pattern 1: Standard URLs
-  const urlPatterns = [
-    // Full URLs
-    /https?:\/\/(?:www\.)?(?:item\.taobao\.com|taobao\.com|detail\.tmall\.com|tmall\.com|item\.jd\.com|jd\.com|detail\.1688\.com|1688\.com)[^\s\]》】)]+/gi,
-    // Shortened Taobao URLs
-    /https?:\/\/(?:e\.tb\.cn|m\.tb\.cn|s\.taobao\.com|a\.m\.taobao\.com)[^\s\]》】)]+/gi,
-    // Mobile JD URLs
-    /https?:\/\/m\.jd\.com[^\s\]》】)]+/gi,
-    // Any URL that looks like a product link
-    /https?:\/\/[^\s\]》】]+(?:item|product|detail|goods)[^\s\]》】]*/gi,
-    // Generic shortened URLs that might be Taobao/JD
-    /https?:\/\/[a-z0-9]+\.[a-z]+\.[a-z]+\/[^\s\]》】]+/gi,
+  // Pattern 1: Standard full URLs (highest priority - already in correct format)
+  const fullUrlPatterns = [
+    // Full Taobao URLs with item ID
+    /https?:\/\/(?:www\.)?item\.taobao\.com\/item\.htm[^\s\]》】)「」]*/gi,
+    // Full Tmall URLs with item ID
+    /https?:\/\/(?:www\.)?detail\.tmall\.com\/item\.htm[^\s\]》】)「」]*/gi,
+    // Full JD URLs
+    /https?:\/\/(?:www\.)?item\.jd\.com\/\d+\.html[^\s\]》】)「」]*/gi,
+    // 1688 URLs
+    /https?:\/\/(?:www\.)?detail\.1688\.com\/offer\/\d+\.html[^\s\]》】)「」]*/gi,
   ];
 
-  for (const pattern of urlPatterns) {
+  // Pattern 2: Shortened URLs (need resolution)
+  const shortUrlPatterns = [
+    /https?:\/\/e\.tb\.cn\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/m\.tb\.cn\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/c\.tb\.cn\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/s\.taobao\.com\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/a\.m\.taobao\.com\/[^\s\]》】)「」]+/gi,
+    // Mobile JD URLs
+    /https?:\/\/m\.jd\.com\/[^\s\]》】)「」]+/gi,
+    // Mobile 1688 URLs
+    /https?:\/\/m\.1688\.com\/[^\s\]》】)「」]+/gi,
+  ];
+
+  // Try full URLs first
+  for (const pattern of fullUrlPatterns) {
     const matches = text.match(pattern);
     if (matches && matches.length > 0) {
-      // Clean up the URL
       let url = matches[0];
-      // Remove trailing Chinese/Arabic characters or punctuation
-      url = url.replace(/[》】」』）\)]+$/, '');
+      url = url.replace(/[》】」』）\)「【]+$/, '');
+      if (url.endsWith('&') || url.endsWith('?')) url = url.slice(0, -1);
+      return url;
+    }
+  }
+
+  // Then try short URLs
+  for (const pattern of shortUrlPatterns) {
+    const matches = text.match(pattern);
+    if (matches && matches.length > 0) {
+      let url = matches[0];
+      url = url.replace(/[》】」』）\)「【]+$/, '');
+      if (url.endsWith('&') || url.endsWith('?')) url = url.slice(0, -1);
       return url;
     }
   }

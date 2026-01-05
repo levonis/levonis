@@ -53,33 +53,68 @@ export async function extractTaobaoUrl(text: string): Promise<ExtractResult> {
  * Try to extract URL locally without calling the edge function
  */
 function extractUrlLocally(text: string): { url: string; itemId: string | null; platform: 'taobao' | 'jd' | 'tmall' | '1688' } | null {
-  // Pattern for various URL formats
+  // Pattern for various URL formats - ordered by priority
   const urlPatterns = [
-    // Full Taobao/Tmall URLs
-    /https?:\/\/(?:www\.)?(?:item\.taobao\.com|detail\.tmall\.com)[^\s\]》】)]+/gi,
-    // Shortened Taobao URLs
-    /https?:\/\/(?:e\.tb\.cn|m\.tb\.cn|s\.taobao\.com|a\.m\.taobao\.com)[^\s\]》】)]+/gi,
-    // JD URLs
-    /https?:\/\/(?:item\.jd\.com|m\.jd\.com)[^\s\]》】)]+/gi,
+    // Full Taobao/Tmall URLs with item ID (highest priority)
+    /https?:\/\/(?:www\.)?item\.taobao\.com\/item\.htm[^\s\]》】)「」]*/gi,
+    /https?:\/\/(?:www\.)?detail\.tmall\.com\/item\.htm[^\s\]》】)「」]*/gi,
+    // Full JD URLs
+    /https?:\/\/(?:www\.)?item\.jd\.com\/\d+\.html[^\s\]》】)「」]*/gi,
     // 1688 URLs
-    /https?:\/\/(?:detail\.1688\.com|m\.1688\.com)[^\s\]》】)]+/gi,
+    /https?:\/\/(?:www\.)?detail\.1688\.com\/offer\/\d+\.html[^\s\]》】)「」]*/gi,
+    // Shortened Taobao URLs (need resolution)
+    /https?:\/\/e\.tb\.cn\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/m\.tb\.cn\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/c\.tb\.cn\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/s\.taobao\.com\/[^\s\]》】)「」]+/gi,
+    /https?:\/\/a\.m\.taobao\.com\/[^\s\]》】)「」]+/gi,
+    // Mobile JD URLs
+    /https?:\/\/m\.jd\.com\/[^\s\]》】)「」]+/gi,
+    // Mobile 1688 URLs
+    /https?:\/\/m\.1688\.com\/[^\s\]》】)「」]+/gi,
   ];
 
   for (const pattern of urlPatterns) {
     const matches = text.match(pattern);
     if (matches && matches.length > 0) {
       let url = matches[0];
-      // Clean up trailing characters
-      url = url.replace(/[》】」』）\)]+$/, '');
+      // Clean up trailing characters (Chinese brackets, parentheses, etc.)
+      url = url.replace(/[》】」』）\)「【]+$/, '');
+      // Remove any trailing query params that might be cut off
+      if (url.endsWith('&') || url.endsWith('?')) {
+        url = url.slice(0, -1);
+      }
       
       const platform = detectPlatform(url);
       const itemId = extractItemId(url);
+      
+      // If we have an item ID, convert to standard format
+      if (itemId) {
+        const standardUrl = convertToStandardUrl(itemId, platform);
+        return { url: standardUrl, itemId, platform };
+      }
       
       return { url, itemId, platform };
     }
   }
 
   return null;
+}
+
+// Convert to standard format: https://item.taobao.com/item.htm?id=...
+function convertToStandardUrl(itemId: string, platform: 'taobao' | 'jd' | 'tmall' | '1688'): string {
+  switch (platform) {
+    case 'taobao':
+      return `https://item.taobao.com/item.htm?id=${itemId}`;
+    case 'tmall':
+      return `https://detail.tmall.com/item.htm?id=${itemId}`;
+    case 'jd':
+      return `https://item.jd.com/${itemId}.html`;
+    case '1688':
+      return `https://detail.1688.com/offer/${itemId}.html`;
+    default:
+      return `https://item.taobao.com/item.htm?id=${itemId}`;
+  }
 }
 
 function detectPlatform(url: string): 'taobao' | 'jd' | 'tmall' | '1688' {
