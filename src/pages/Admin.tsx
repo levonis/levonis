@@ -22,6 +22,7 @@ import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { TaobaoUrlInput } from '@/components/admin/TaobaoUrlInput';
 import { OptionSyncBadge } from '@/components/admin/TaobaoSyncStatus';
 import { BulkSyncButton } from '@/components/admin/BulkSyncButton';
+import { ManualProductInput } from '@/components/admin/ManualProductInput';
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -112,6 +113,9 @@ const Admin = () => {
   // AI extraction states
   const [productUrl, setProductUrl] = useState('');
   const [extractingInfo, setExtractingInfo] = useState(false);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [extractionItemId, setExtractionItemId] = useState<string>('');
+  const [extractionPlatform, setExtractionPlatform] = useState<string>('');
   const [reExtractingImages, setReExtractingImages] = useState<string | null>(null); // product id being re-extracted
   
   // Search and filter states
@@ -659,7 +663,7 @@ const Admin = () => {
     }
 
     setExtractingInfo(true);
-    toast.info('جاري استخراج معلومات المنتج... قد يستغرق هذا بضع ثوانٍ');
+    toast.info('جاري فحص إمكانية الاستخراج...');
     
     try {
       const response = await supabase.functions.invoke('extract-product-info', {
@@ -670,101 +674,113 @@ const Admin = () => {
         throw new Error(response.error.message || 'فشل في استخراج المعلومات');
       }
 
-      const { productInfo, success, error: extractError, hint } = response.data;
+      const { productInfo, success, error: extractError, requiresManualInput, item_id, platform, message } = response.data;
       
+      // If requires manual input, show the manual input form
+      if (requiresManualInput) {
+        setExtractionItemId(item_id || '');
+        setExtractionPlatform(platform || 'taobao');
+        setShowManualInput(true);
+        toast.info(message || 'يرجى إدخال البيانات يدوياً', { duration: 5000 });
+        return;
+      }
+
       if (!success || extractError) {
-        toast.error(extractError || 'فشل في استخراج المعلومات');
-        if (hint) {
-          toast.info(hint, { duration: 8000 });
-        }
+        // Show manual input option
+        setShowManualInput(true);
+        toast.error(extractError || 'فشل في استخراج المعلومات - استخدم الإدخال اليدوي');
         return;
       }
       
       if (!productInfo) {
-        throw new Error('لم يتم العثور على معلومات المنتج');
+        setShowManualInput(true);
+        toast.error('لم يتم العثور على معلومات المنتج - استخدم الإدخال اليدوي');
+        return;
       }
 
-      // Fill form fields with extracted data
-      const form = document.querySelector('form') as HTMLFormElement;
-      if (!form) return;
-
-      // Fill text inputs
-      if (productInfo.name_ar) {
-        (form.querySelector('#name_ar') as HTMLInputElement).value = productInfo.name_ar;
-      }
-      if (productInfo.name) {
-        (form.querySelector('#name') as HTMLInputElement).value = productInfo.name;
-      }
-      if (productInfo.name_ar && productInfo.name) {
-        // Generate slug from English name
-        const slug = productInfo.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-        (form.querySelector('#slug') as HTMLInputElement).value = slug;
-      }
-      if (productInfo.description_ar) {
-        (form.querySelector('#description_ar') as HTMLTextAreaElement).value = productInfo.description_ar;
-      }
-      if (productInfo.description) {
-        (form.querySelector('#description') as HTMLTextAreaElement).value = productInfo.description;
-      }
-
-      // Set images (note: these may be Chinese CDN URLs that need proxy)
-      if (productInfo.images && Array.isArray(productInfo.images) && productInfo.images.length > 0) {
-        setUploadedImages(productInfo.images);
-        // Warn about Chinese CDN images
-        const hasChineseImages = productInfo.images.some((img: string) => 
-          img.includes('alicdn.com') || img.includes('taobaocdn.com') || img.includes('tbcdn.com')
-        );
-        if (hasChineseImages) {
-          toast.warning('بعض الصور من خوادم صينية قد لا تظهر مباشرة. يُنصح برفع الصور يدوياً.', { duration: 6000 });
-        }
-      }
-
-      // Set sizes/options
-      if (productInfo.sizes && Array.isArray(productInfo.sizes) && productInfo.sizes.length > 0) {
-        setProductOptions(productInfo.sizes.map((size: any) => ({
-          name: size.name || '',
-          name_ar: size.name_ar || '',
-          price_adjustment: 0,
-          in_stock: true,
-          image_url: size.image_url || undefined
-        })));
-      }
-
-      // Set colors
-      if (productInfo.colors && Array.isArray(productInfo.colors) && productInfo.colors.length > 0) {
-        setProductColors(productInfo.colors.map((color: any) => ({
-          name: color.name || '',
-          name_ar: color.name_ar || '',
-          hex_code: color.hex_code || '#000000',
-          price: undefined,
-          image_url: color.image_url || undefined,
-          in_stock: true
-        })));
-      }
-
-      // Set features
-      if (productInfo.features && Array.isArray(productInfo.features) && productInfo.features.length > 0) {
-        setProductFeatures(productInfo.features.map((feature: any) => ({
-          text: feature.text || '',
-          text_ar: feature.text_ar || '',
-          icon: ''
-        })));
-      }
-
-      // Count uploaded images
-      const mainImages = productInfo.images?.length || 0;
-      const optionImages = productInfo.sizes?.filter((s: any) => s.image_url).length || 0;
-      const colorImages = productInfo.colors?.filter((c: any) => c.image_url).length || 0;
-      const totalImages = mainImages + optionImages + colorImages;
-
-      toast.success(`تم استخراج معلومات المنتج! (${productInfo.colors?.length || 0} ألوان، ${productInfo.sizes?.length || 0} خيارات، ${totalImages} صور)`);
+      // Fill form with extracted data
+      applyProductInfo(productInfo);
+      
     } catch (error) {
       console.error('Error extracting product info:', error);
-      toast.error(error instanceof Error ? error.message : 'حدث خطأ أثناء استخراج المعلومات');
-      toast.info('Taobao قد يحظر الوصول التلقائي. حاول نسخ التفاصيل يدوياً.', { duration: 6000 });
+      setShowManualInput(true);
+      toast.error('Taobao يحظر الوصول. استخدم الإدخال اليدوي.');
     } finally {
       setExtractingInfo(false);
     }
+  };
+
+  // Apply product info to form (shared between auto and manual extraction)
+  const applyProductInfo = (productInfo: any) => {
+    const form = document.querySelector('form') as HTMLFormElement;
+    if (!form) return;
+
+    // Fill text inputs
+    if (productInfo.name_ar) {
+      const input = form.querySelector('#name_ar') as HTMLInputElement;
+      if (input) input.value = productInfo.name_ar;
+    }
+    if (productInfo.name) {
+      const input = form.querySelector('#name') as HTMLInputElement;
+      if (input) input.value = productInfo.name;
+    }
+    if (productInfo.name_ar && productInfo.name) {
+      const slug = productInfo.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const input = form.querySelector('#slug') as HTMLInputElement;
+      if (input) input.value = slug;
+    }
+    if (productInfo.description_ar) {
+      const textarea = form.querySelector('#description_ar') as HTMLTextAreaElement;
+      if (textarea) textarea.value = productInfo.description_ar;
+    }
+    if (productInfo.description) {
+      const textarea = form.querySelector('#description') as HTMLTextAreaElement;
+      if (textarea) textarea.value = productInfo.description;
+    }
+
+    // Set images
+    if (productInfo.images && Array.isArray(productInfo.images) && productInfo.images.length > 0) {
+      setUploadedImages(productInfo.images);
+    }
+
+    // Set sizes/options
+    if (productInfo.sizes && Array.isArray(productInfo.sizes) && productInfo.sizes.length > 0) {
+      setProductOptions(productInfo.sizes.map((size: any) => ({
+        name: size.name || '',
+        name_ar: size.name_ar || '',
+        price_adjustment: 0,
+        in_stock: true,
+        image_url: size.image_url || undefined
+      })));
+    }
+
+    // Set colors
+    if (productInfo.colors && Array.isArray(productInfo.colors) && productInfo.colors.length > 0) {
+      setProductColors(productInfo.colors.map((color: any) => ({
+        name: color.name || '',
+        name_ar: color.name_ar || '',
+        hex_code: color.hex_code || '#000000',
+        price: undefined,
+        image_url: color.image_url || undefined,
+        in_stock: true
+      })));
+    }
+
+    // Set features
+    if (productInfo.features && Array.isArray(productInfo.features) && productInfo.features.length > 0) {
+      setProductFeatures(productInfo.features.map((feature: any) => ({
+        text: feature.text || '',
+        text_ar: feature.text_ar || '',
+        icon: feature.icon || ''
+      })));
+    }
+
+    // Hide manual input if it was shown
+    setShowManualInput(false);
+
+    const colorsCount = productInfo.colors?.length || 0;
+    const sizesCount = productInfo.sizes?.length || 0;
+    toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${sizesCount} خيارات)`);
   };
 
   // Re-extract images only for a product using AI
@@ -1635,12 +1651,28 @@ const Admin = () => {
                       </div>
                     </div>
                     
+                    {/* Manual Input Form - Shows when auto extraction fails */}
+                    {showManualInput && (
+                      <ManualProductInput
+                        itemId={extractionItemId}
+                        platform={extractionPlatform}
+                        onExtracted={(productInfo) => {
+                          applyProductInfo(productInfo);
+                          setShowManualInput(false);
+                        }}
+                        onCancel={() => setShowManualInput(false)}
+                      />
+                    )}
+                    
                     {/* Taobao URL Section for Auto-Sync with Smart Extraction */}
                     <TaobaoUrlInput 
                       defaultValue={editingProduct?.taobao_url || ''} 
                       onExtracted={(url, itemId, platform) => {
                         const input = document.getElementById('taobao_url') as HTMLInputElement;
                         if (input) input.value = url;
+                        // Store for manual input fallback
+                        setExtractionItemId(itemId || '');
+                        setExtractionPlatform(platform || 'taobao');
                         // Auto-fill product URL for AI extraction if empty
                         if (url && !productUrl) {
                           setProductUrl(url);
