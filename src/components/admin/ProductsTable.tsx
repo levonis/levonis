@@ -1,10 +1,15 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Pencil, Trash2, Copy, Sparkles, Search } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Pencil, Trash2, Copy, Sparkles, Search, RefreshCw, CheckCircle, AlertCircle, Clock, ExternalLink } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { syncProductAvailability } from '@/lib/api/taobaoSync';
+import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
+import { ar } from 'date-fns/locale';
 
 interface ProductsTableProps {
   products: any[];
@@ -40,6 +45,8 @@ const ProductsTable = memo(({
   onReExtract,
   filters 
 }: ProductsTableProps) => {
+  const [syncingProducts, setSyncingProducts] = useState<Set<string>>(new Set());
+  
   const {
     search,
     setSearch,
@@ -54,6 +61,72 @@ const ProductsTable = memo(({
     optionsStockFilter,
     setOptionsStockFilter
   } = filters;
+
+  const handleSyncProduct = async (product: any) => {
+    if (!product.taobao_url) {
+      toast.error('لا يوجد رابط Taobao لهذا المنتج');
+      return;
+    }
+    
+    setSyncingProducts(prev => new Set(prev).add(product.id));
+    
+    try {
+      const result = await syncProductAvailability(product.id, product.taobao_url);
+      if (result.success) {
+        toast.success(`تم مزامنة "${product.name_ar}" - ${result.product_available ? 'متوفر' : 'غير متوفر'}`);
+      } else {
+        toast.error(result.error || 'فشل في المزامنة');
+      }
+    } catch (error) {
+      toast.error('حدث خطأ أثناء المزامنة');
+    } finally {
+      setSyncingProducts(prev => {
+        const next = new Set(prev);
+        next.delete(product.id);
+        return next;
+      });
+    }
+  };
+
+  const getSyncStatusBadge = (product: any) => {
+    if (!product.taobao_url) return null;
+    
+    const status = product.taobao_sync_status;
+    const lastSync = product.taobao_last_sync_at;
+    
+    let icon;
+    let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
+    let text = 'لم تتم المزامنة';
+    
+    if (status === 'success') {
+      icon = <CheckCircle className="h-3 w-3 text-green-500" />;
+      variant = 'default';
+      text = lastSync ? formatDistanceToNow(new Date(lastSync), { addSuffix: true, locale: ar }) : 'تمت المزامنة';
+    } else if (status === 'error') {
+      icon = <AlertCircle className="h-3 w-3 text-red-500" />;
+      variant = 'destructive';
+      text = 'فشل';
+    } else {
+      icon = <Clock className="h-3 w-3" />;
+    }
+    
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant={variant} className="text-[10px] cursor-default gap-1">
+              {icon}
+              <span className="max-w-[60px] truncate">{text}</span>
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>حالة مزامنة Taobao/JD</p>
+            {lastSync && <p className="text-xs">آخر مزامنة: {new Date(lastSync).toLocaleString('ar-IQ')}</p>}
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  };
 
   // Filter products
   const filteredProducts = useMemo(() => {
@@ -141,6 +214,7 @@ const ProductsTable = memo(({
               <TableHead className="text-right">القسم</TableHead>
               <TableHead className="text-right">السعر</TableHead>
               <TableHead className="text-right">الحالة</TableHead>
+              <TableHead className="text-right">المزامنة</TableHead>
               <TableHead className="text-right">الإجراءات</TableHead>
             </TableRow>
           </TableHeader>
@@ -155,7 +229,22 @@ const ProductsTable = memo(({
                     loading="lazy"
                   />
                 </TableCell>
-                <TableCell className="font-medium">{product.name_ar}</TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-medium">{product.name_ar}</span>
+                    {product.taobao_url && (
+                      <a 
+                        href={product.taobao_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        رابط Taobao/JD
+                      </a>
+                    )}
+                  </div>
+                </TableCell>
                 <TableCell>{product.categories?.name_ar || '-'}</TableCell>
                 <TableCell>{formatPrice(product.price)}</TableCell>
                 <TableCell>
@@ -164,6 +253,22 @@ const ProductsTable = memo(({
                       {product.in_stock ? 'متوفر' : 'غير متوفر'}
                     </Badge>
                     {product.featured && <Badge variant="secondary">مميز</Badge>}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    {getSyncStatusBadge(product)}
+                    {product.taobao_url && (
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-7 w-7 p-0"
+                        onClick={() => handleSyncProduct(product)}
+                        disabled={syncingProducts.has(product.id)}
+                      >
+                        <RefreshCw className={`h-3 w-3 ${syncingProducts.has(product.id) ? 'animate-spin' : ''}`} />
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>

@@ -204,7 +204,7 @@ const Admin = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, categories(name_ar), product_options(id, in_stock)')
+        .select('*, categories(name_ar), product_options(id, in_stock, taobao_available)')
         .order('created_at', { ascending: false });
       
       if (error) throw error;
