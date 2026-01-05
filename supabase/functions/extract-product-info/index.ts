@@ -51,8 +51,101 @@ function detectPlatform(url: string): { platform: string; itemId: string | null 
     return { platform: 'shein', itemId: idMatch?.[1] || null };
   }
   
+  // Bambu Lab
+  if (urlLower.includes('bambulab.com')) {
+    return { platform: 'bambulab', itemId: null };
+  }
+  
+  // Shopify stores (generic)
+  if (urlLower.includes('/products/')) {
+    return { platform: 'shopify', itemId: null };
+  }
+  
   // Unknown platform
-  return { platform: 'unknown', itemId: null };
+  return { platform: 'other', itemId: null };
+}
+
+// Extract hints from HTML for colors and options
+function extractHintsFromHtml(html: string): { colorHints: string[], optionHints: string[], priceHints: string[] } {
+  const colorHints: string[] = [];
+  const optionHints: string[] = [];
+  const priceHints: string[] = [];
+
+  // Extract from data attributes
+  const dataColorMatches = html.matchAll(/data-(?:color|variant|option)[^=]*=["']([^"']+)["']/gi);
+  for (const match of dataColorMatches) {
+    colorHints.push(match[1]);
+  }
+
+  // Extract from select options
+  const selectMatches = html.matchAll(/<option[^>]*>([^<]+)<\/option>/gi);
+  for (const match of selectMatches) {
+    const value = match[1].trim();
+    if (value && value.length < 50) {
+      optionHints.push(value);
+    }
+  }
+
+  // Extract from swatch labels
+  const swatchMatches = html.matchAll(/(?:swatch|color|variant)[^>]*>([^<]{2,30})</gi);
+  for (const match of swatchMatches) {
+    colorHints.push(match[1].trim());
+  }
+
+  // Extract from aria-labels
+  const ariaMatches = html.matchAll(/aria-label=["']([^"']+)["']/gi);
+  for (const match of ariaMatches) {
+    const label = match[1].toLowerCase();
+    if (label.includes('color') || label.includes('size') || label.includes('variant')) {
+      optionHints.push(match[1]);
+    }
+  }
+
+  // Extract from JSON-LD
+  const jsonLdMatches = html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  for (const match of jsonLdMatches) {
+    try {
+      const data = JSON.parse(match[1]);
+      if (data.offers?.price) priceHints.push(String(data.offers.price));
+      if (data.offers?.priceCurrency) priceHints.push(data.offers.priceCurrency);
+      if (Array.isArray(data.offers)) {
+        for (const offer of data.offers) {
+          if (offer.name) optionHints.push(offer.name);
+          if (offer.price) priceHints.push(String(offer.price));
+        }
+      }
+    } catch {}
+  }
+
+  // Extract from inline JavaScript objects
+  const jsVarMatches = html.matchAll(/(?:variants?|options?|colors?)\s*[=:]\s*(\[[\s\S]*?\])/gi);
+  for (const match of jsVarMatches) {
+    try {
+      const arr = JSON.parse(match[1]);
+      if (Array.isArray(arr)) {
+        for (const item of arr) {
+          if (typeof item === 'string') optionHints.push(item);
+          if (item?.title) optionHints.push(item.title);
+          if (item?.name) optionHints.push(item.name);
+          if (item?.option1) colorHints.push(item.option1);
+          if (item?.option2) optionHints.push(item.option2);
+          if (item?.price) priceHints.push(String(item.price));
+        }
+      }
+    } catch {}
+  }
+
+  // Extract price from common patterns
+  const priceMatches = html.matchAll(/(?:price|cost|amount)[^>]*>\s*[\$€¥£]?\s*([\d,]+\.?\d*)/gi);
+  for (const match of priceMatches) {
+    priceHints.push(match[1]);
+  }
+
+  return {
+    colorHints: [...new Set(colorHints)].slice(0, 50),
+    optionHints: [...new Set(optionHints)].slice(0, 50),
+    priceHints: [...new Set(priceHints)].slice(0, 20)
+  };
 }
 
 serve(async (req) => {
@@ -129,7 +222,9 @@ serve(async (req) => {
         'aliexpress': 'علي إكسبريس',
         'amazon': 'أمازون',
         'shein': 'شي إن',
-        'unknown': 'غير معروف'
+        'bambulab': 'بامبو لاب',
+        'shopify': 'المتجر',
+        'other': 'الموقع'
       };
 
       return new Response(
@@ -144,53 +239,65 @@ serve(async (req) => {
       );
     }
 
+    // Extract hints from HTML
+    const { colorHints, optionHints, priceHints } = extractHintsFromHtml(pageContent);
+    console.log('Found hints - colors:', colorHints.length, 'options:', optionHints.length, 'prices:', priceHints.length);
+
     // Use AI to extract product info from the page content
     console.log('Using AI to extract product info...');
 
-    const prompt = `Extract product information from this HTML page content.
+    const prompt = `You are a product data extraction expert. Extract ALL product information from this e-commerce page.
 
 URL: ${url}
 Platform: ${platform}
 Item ID: ${itemId || 'Unknown'}
 
-Page content (first 15000 chars):
-${pageContent.substring(0, 15000)}
+=== EXTRACTED HINTS FROM PAGE ===
+Color hints found: ${colorHints.join(', ') || 'None'}
+Option hints found: ${optionHints.join(', ') || 'None'}
+Price hints found: ${priceHints.join(', ') || 'None'}
 
-Extract and return ONLY a JSON object with this exact structure:
+=== PAGE HTML (truncated) ===
+${pageContent.substring(0, 20000)}
+
+=== INSTRUCTIONS ===
+Extract and return a JSON object with this EXACT structure:
 {
   "name": "Product name in English",
   "name_ar": "اسم المنتج بالعربية",
-  "description": "Brief description in English",
-  "description_ar": "وصف مختصر بالعربية",
-  "price": 0,
-  "original_price": 0,
+  "description": "Detailed description in English (2-3 sentences)",
+  "description_ar": "وصف مفصل بالعربية (2-3 جمل)",
+  "price": 29.99,
+  "original_price": 39.99,
   "currency": "USD",
-  "images": ["image_url_1", "image_url_2"],
+  "images": ["https://full-image-url-1.jpg", "https://full-image-url-2.jpg"],
   "colors": [
     {
-      "name": "Color name",
-      "name_ar": "اسم اللون",
-      "image_url": "color_image_url",
+      "name": "Black",
+      "name_ar": "أسود",
+      "image_url": "https://color-swatch-or-product-image.jpg",
       "hex_code": "#000000"
     }
   ],
   "options": [
     {
-      "name": "Option name",
-      "name_ar": "اسم الخيار",
+      "name": "Size M",
+      "name_ar": "مقاس M",
       "price_adjustment": 0,
-      "image_url": "option_image_url"
+      "image_url": null
     }
   ]
 }
 
-Important:
-- Extract ALL available images
-- Extract ALL color variants
-- Extract ALL size/option variants
-- Translate names to Arabic
-- Ensure image URLs are complete (add https: if missing)
-- Return ONLY the JSON object, no other text`;
+CRITICAL REQUIREMENTS:
+1. Extract EVERY color variant - look in swatches, dropdowns, buttons, data attributes
+2. Extract EVERY size/option variant - look in select dropdowns, radio buttons, variant selectors
+3. For colors: provide hex codes based on color names (Black=#000000, White=#FFFFFF, Red=#FF0000, Blue=#0000FF, etc.)
+4. Make sure ALL image URLs are complete (start with https://)
+5. If no colors found but hints suggest variants, still extract them
+6. Translate all names to Arabic accurately
+7. Price should be a number, not a string
+8. Return ONLY the JSON object, no other text or explanation`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -203,20 +310,43 @@ Important:
         messages: [
           {
             role: 'system',
-            content: 'You are a product data extraction expert. Extract accurate product information from HTML content. Always return valid JSON only.'
+            content: 'You are a product data extraction expert. You MUST extract ALL variants, colors, and options from e-commerce pages. Always return valid JSON only with complete data. Never leave colors or options empty if they exist on the page.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.2,
+        temperature: 0.1,
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error('AI API error:', errorText);
+      console.error('AI API error:', aiResponse.status, errorText);
+      
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'تم تجاوز حد الطلبات، يرجى المحاولة لاحقاً',
+            requiresManualInput: true
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'يرجى إضافة رصيد للمحفظة',
+            requiresManualInput: true
+          }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -232,7 +362,7 @@ Important:
     const aiData = await aiResponse.json();
     const extractedText = aiData.choices[0].message.content;
 
-    console.log('AI response received');
+    console.log('AI response received, length:', extractedText.length);
 
     // Parse the extracted JSON
     const jsonMatch = extractedText.match(/\{[\s\S]*\}/);
@@ -269,20 +399,41 @@ Important:
 
     // Fix image URLs (add https: if missing)
     if (productInfo.images) {
-      productInfo.images = productInfo.images.map((img: string) => {
-        if (img.startsWith('//')) return 'https:' + img;
-        return img;
-      });
+      productInfo.images = productInfo.images
+        .map((img: string) => {
+          if (!img) return null;
+          if (img.startsWith('//')) return 'https:' + img;
+          if (!img.startsWith('http')) return null;
+          return img;
+        })
+        .filter(Boolean);
     }
 
     if (productInfo.colors) {
       productInfo.colors = productInfo.colors.map((color: any) => ({
         ...color,
-        image_url: color.image_url?.startsWith('//') ? 'https:' + color.image_url : color.image_url
+        image_url: color.image_url 
+          ? (color.image_url.startsWith('//') ? 'https:' + color.image_url : color.image_url)
+          : null
       }));
     }
 
-    console.log('Product info extracted successfully');
+    if (productInfo.options) {
+      productInfo.options = productInfo.options.map((opt: any) => ({
+        ...opt,
+        image_url: opt.image_url 
+          ? (opt.image_url.startsWith('//') ? 'https:' + opt.image_url : opt.image_url)
+          : null,
+        price_adjustment: opt.price_adjustment || 0
+      }));
+    }
+
+    // Ensure arrays exist
+    productInfo.colors = productInfo.colors || [];
+    productInfo.options = productInfo.options || [];
+    productInfo.images = productInfo.images || [];
+
+    console.log('Product info extracted - colors:', productInfo.colors.length, 'options:', productInfo.options.length, 'images:', productInfo.images.length);
 
     return new Response(
       JSON.stringify({
