@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.sync-taobao-availability]
 verify_jwt = false
+
+[functions.extract-taobao-url]
+verify_jwt = false

@@ -19,6 +19,7 @@ import AdminMainSections from './AdminMainSections';
 import AdminCustomRequests from './AdminCustomRequests';
 import { formatPrice } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
+import { TaobaoUrlInput } from '@/components/admin/TaobaoUrlInput';
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -1605,23 +1606,14 @@ const Admin = () => {
                       </div>
                     </div>
                     
-                    {/* Taobao URL Section for Auto-Sync */}
-                    <div className="p-4 border border-orange-200 rounded-lg bg-orange-50/50 dark:bg-orange-950/20 dark:border-orange-800 space-y-3">
-                      <div className="flex items-center gap-2 text-sm font-medium text-orange-600 dark:text-orange-400">
-                        <Package className="h-4 w-4" />
-                        <span>رابط Taobao (للمزامنة التلقائية)</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        أدخل رابط المنتج على Taobao لمزامنة التوفر تلقائياً - سيتم تحديث حالة المخزون يومياً
-                      </p>
-                      <Input
-                        id="taobao_url"
-                        name="taobao_url"
-                        placeholder="https://item.taobao.com/item.htm?id=..."
-                        defaultValue={editingProduct?.taobao_url || ''}
-                        className="flex-1"
-                      />
-                    </div>
+                    {/* Taobao URL Section for Auto-Sync with Smart Extraction */}
+                    <TaobaoUrlInput 
+                      defaultValue={editingProduct?.taobao_url || ''} 
+                      onExtracted={(url) => {
+                        const input = document.getElementById('taobao_url') as HTMLInputElement;
+                        if (input) input.value = url;
+                      }}
+                    />
                     
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
