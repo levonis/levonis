@@ -27,7 +27,8 @@ const productSchema = z.object({
   slug: z.string().min(1, 'الرابط مطلوب'),
   description_ar: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
-  price: z.number().positive('السعر يجب أن يكون أكبر من صفر'),
+  // Allow 0 or positive price - validation will show warning but not block save
+  price: z.number().nonnegative('السعر يجب أن يكون صفر أو أكبر'),
   original_price: z.number().positive().nullable().optional(),
   cost_price: z.number().nonnegative().nullable().optional(),
   currency: z.string().optional(),
@@ -129,6 +130,7 @@ const Admin = () => {
   const [draggedImageIndex, setDraggedImageIndex] = useState<number | null>(null);
   const [categorySearch, setCategorySearch] = useState('');
   const [categoryMainSectionFilter, setCategoryMainSectionFilter] = useState<string>('all');
+  const [formKey, setFormKey] = useState(0); // Key to force form re-render with correct defaults
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -196,6 +198,7 @@ const Admin = () => {
       setProductColors([]);
       setProductFeatures([]);
       setProductUrl(''); // Clear URL when opening for new product
+      setFormKey(prev => prev + 1); // Force form to re-render with correct defaults
       
       // Load default shipping options from settings
       if (defaultSettings && Array.isArray(defaultSettings.pre_order_shipping_options)) {
@@ -210,6 +213,7 @@ const Admin = () => {
     } else if (!productDialogOpen) {
       // Clear URL when closing dialog
       setProductUrl('');
+      setFormKey(prev => prev + 1); // Reset form key when closing
     }
   }, [productDialogOpen, editingProduct, defaultSettings]);
 
@@ -1703,7 +1707,7 @@ const Admin = () => {
                     <DialogTitle>{editingProduct ? 'تعديل المنتج' : 'إضافة منتج جديد'}</DialogTitle>
                   </DialogHeader>
                   
-                  <form key={editingProduct?.id || 'new'} onSubmit={handleProductSubmit} className="space-y-4">
+                  <form key={editingProduct?.id || `new-${formKey}`} onSubmit={handleProductSubmit} className="space-y-4">
                     {/* Text Paste & URL Extraction Section - For Quick Access */}
                     <div className="p-4 border-2 border-dashed border-amber-500/30 rounded-lg bg-amber-500/5 space-y-3">
                       <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
@@ -1884,9 +1888,11 @@ const Admin = () => {
                           name="price"
                           type="number"
                           step="0.01"
-                          defaultValue={editingProduct?.price}
+                          min="0"
+                          defaultValue={editingProduct?.price ?? 0}
                           required 
                         />
+                        <p className="text-xs text-muted-foreground">يمكن تركه 0 وتعديله لاحقاً</p>
                       </div>
                       
                       <div className="space-y-2">
