@@ -16,8 +16,6 @@ import { useState, useCallback } from 'react';
 import { formatPrice } from '@/lib/utils';
 import ProductCard from '@/components/ProductCard';
 import ProductReviews from '@/components/ProductReviews';
-import { useTaobaoAutoSync } from '@/hooks/useTaobaoAutoSync';
-import { isVariantAvailable } from '@/lib/api/taobaoSync';
 import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
 
 const ProductDetail = () => {
@@ -48,15 +46,6 @@ const ProductDetail = () => {
       if (!data) throw new Error('Product not found');
       return data;
     }
-  });
-  
-  // Auto-sync Taobao availability in background
-  useTaobaoAutoSync({
-    productId: product?.id,
-    taobaoUrl: (product as any)?.taobao_url,
-    lastSyncAt: (product as any)?.taobao_last_sync_at,
-    maxAgeHours: 24,
-    onSyncComplete: () => refetchProduct()
   });
 
   const { data: productOptions } = useQuery({

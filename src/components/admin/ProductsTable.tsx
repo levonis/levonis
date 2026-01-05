@@ -3,13 +3,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Pencil, Trash2, Copy, Sparkles, Search, RefreshCw, CheckCircle, AlertCircle, Clock, ExternalLink, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Copy, Sparkles, Search, ExternalLink } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
-import { syncProductAvailability, syncAllProductsAvailability } from '@/lib/api/taobaoSync';
-import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
-import { ar } from 'date-fns/locale';
 
 interface ProductsTableProps {
   products: any[];
@@ -47,9 +42,6 @@ const ProductsTable = memo(({
   onRefresh,
   filters 
 }: ProductsTableProps) => {
-  const [syncingProducts, setSyncingProducts] = useState<Set<string>>(new Set());
-  const [bulkSyncing, setBulkSyncing] = useState(false);
-  
   const {
     search,
     setSearch,
@@ -64,99 +56,6 @@ const ProductsTable = memo(({
     optionsStockFilter,
     setOptionsStockFilter
   } = filters;
-
-  const handleSyncProduct = async (product: any) => {
-    if (!product.taobao_url) {
-      toast.error('لا يوجد رابط Taobao لهذا المنتج');
-      return;
-    }
-    
-    setSyncingProducts(prev => new Set(prev).add(product.id));
-    
-    try {
-      const result = await syncProductAvailability(product.id, product.taobao_url);
-      if (result.success) {
-        toast.success(`تم مزامنة "${product.name_ar}" - ${result.product_available ? 'متوفر' : 'غير متوفر'}`);
-      } else {
-        toast.error(result.error || 'فشل في المزامنة');
-      }
-    } catch (error) {
-      toast.error('حدث خطأ أثناء المزامنة');
-    } finally {
-      setSyncingProducts(prev => {
-        const next = new Set(prev);
-        next.delete(product.id);
-        return next;
-      });
-    }
-  };
-
-  const handleBulkSync = async () => {
-    const productsWithUrl = products.filter(p => p.taobao_url);
-    if (productsWithUrl.length === 0) {
-      toast.error('لا توجد منتجات مرتبطة بروابط Taobao/JD');
-      return;
-    }
-    
-    setBulkSyncing(true);
-    toast.info(`جاري مزامنة ${productsWithUrl.length} منتج...`);
-    
-    try {
-      const result = await syncAllProductsAvailability();
-      if (result.success) {
-        const successCount = result.results.filter(r => r.success).length;
-        const failedCount = result.results.filter(r => !r.success).length;
-        toast.success(`تم مزامنة ${successCount} منتج بنجاح${failedCount > 0 ? ` (${failedCount} فشل)` : ''}`);
-        onRefresh?.();
-      } else {
-        toast.error('فشل في المزامنة الجماعية');
-      }
-    } catch (error) {
-      toast.error('حدث خطأ أثناء المزامنة الجماعية');
-    } finally {
-      setBulkSyncing(false);
-    }
-  };
-
-  const getSyncStatusBadge = (product: any) => {
-    if (!product.taobao_url) return null;
-    
-    const status = product.taobao_sync_status;
-    const lastSync = product.taobao_last_sync_at;
-    
-    let icon;
-    let variant: 'default' | 'secondary' | 'destructive' | 'outline' = 'secondary';
-    let text = 'لم تتم المزامنة';
-    
-    if (status === 'success') {
-      icon = <CheckCircle className="h-3 w-3 text-green-500" />;
-      variant = 'default';
-      text = lastSync ? formatDistanceToNow(new Date(lastSync), { addSuffix: true, locale: ar }) : 'تمت المزامنة';
-    } else if (status === 'error') {
-      icon = <AlertCircle className="h-3 w-3 text-red-500" />;
-      variant = 'destructive';
-      text = 'فشل';
-    } else {
-      icon = <Clock className="h-3 w-3" />;
-    }
-    
-    return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Badge variant={variant} className="text-[10px] cursor-default gap-1">
-              {icon}
-              <span className="max-w-[60px] truncate">{text}</span>
-            </Badge>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>حالة مزامنة Taobao/JD</p>
-            {lastSync && <p className="text-xs">آخر مزامنة: {new Date(lastSync).toLocaleString('ar-IQ')}</p>}
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    );
-  };
 
   // Filter products
   const filteredProducts = useMemo(() => {
@@ -189,39 +88,8 @@ const ProductsTable = memo(({
     }) || [];
   }, [products, search, categoryFilter, stockFilter, featuredFilter, availabilityTypeFilter, optionsStockFilter]);
 
-  const productsWithTaobaoUrl = products?.filter(p => p.taobao_url).length || 0;
-
   return (
     <div className="space-y-4">
-      {/* Bulk Sync Button */}
-      {productsWithTaobaoUrl > 0 && (
-        <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
-          <div className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300">
-            <RefreshCw className="h-4 w-4" />
-            <span>{productsWithTaobaoUrl} منتج مرتبط بروابط Taobao/JD</span>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleBulkSync}
-            disabled={bulkSyncing}
-            className="gap-2 border-orange-300 text-orange-700 hover:bg-orange-100 dark:border-orange-700 dark:text-orange-300 dark:hover:bg-orange-900/30"
-          >
-            {bulkSyncing ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                جاري المزامنة...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                مزامنة الكل
-              </>
-            )}
-          </Button>
-        </div>
-      )}
-      
       {/* Filters */}
       <div className="flex flex-wrap gap-3 p-4 bg-card/50 rounded-lg border border-border/40">
         <div className="flex-1 min-w-[200px]">
@@ -275,7 +143,6 @@ const ProductsTable = memo(({
               <TableHead className="text-right">القسم</TableHead>
               <TableHead className="text-right">السعر</TableHead>
               <TableHead className="text-right">الحالة</TableHead>
-              <TableHead className="text-right">المزامنة</TableHead>
               <TableHead className="text-right">الإجراءات</TableHead>
             </TableRow>
           </TableHeader>
@@ -293,17 +160,6 @@ const ProductsTable = memo(({
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     <span className="font-medium">{product.name_ar}</span>
-                    {product.taobao_url && (
-                      <a 
-                        href={product.taobao_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        رابط Taobao/JD
-                      </a>
-                    )}
                   </div>
                 </TableCell>
                 <TableCell>{product.categories?.name_ar || '-'}</TableCell>
@@ -314,22 +170,6 @@ const ProductsTable = memo(({
                       {product.in_stock ? 'متوفر' : 'غير متوفر'}
                     </Badge>
                     {product.featured && <Badge variant="secondary">مميز</Badge>}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1">
-                    {getSyncStatusBadge(product)}
-                    {product.taobao_url && (
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="h-7 w-7 p-0"
-                        onClick={() => handleSyncProduct(product)}
-                        disabled={syncingProducts.has(product.id)}
-                      >
-                        <RefreshCw className={`h-3 w-3 ${syncingProducts.has(product.id) ? 'animate-spin' : ''}`} />
-                      </Button>
-                    )}
                   </div>
                 </TableCell>
                 <TableCell>
