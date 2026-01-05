@@ -19,6 +19,7 @@ import AdminMainSections from './AdminMainSections';
 import AdminCustomRequests from './AdminCustomRequests';
 import { formatPrice } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
+import { extractUrlFromText, ExtractedUrlInfo } from '@/lib/extractTaobaoUrl';
 
 const productSchema = z.object({
   name_ar: z.string().min(1, 'الاسم مطلوب'),
@@ -113,6 +114,8 @@ const Admin = () => {
   const [extractionItemId, setExtractionItemId] = useState<string>('');
   const [extractionPlatform, setExtractionPlatform] = useState<string>('');
   const [reExtractingImages, setReExtractingImages] = useState<string | null>(null); // product id being re-extracted
+  const [pastedText, setPastedText] = useState<string>('');
+  const [extractedUrlInfo, setExtractedUrlInfo] = useState<ExtractedUrlInfo | null>(null);
   
   // Search and filter states
   const [productSearch, setProductSearch] = useState('');
@@ -703,6 +706,23 @@ const Admin = () => {
       toast.error('Taobao يحظر الوصول. استخدم الإدخال اليدوي.');
     } finally {
       setExtractingInfo(false);
+    }
+  };
+
+  // Handle extracting URL from pasted messy text
+  const handleExtractFromPastedText = () => {
+    if (!pastedText.trim()) {
+      toast.error('الرجاء لصق النص أولاً');
+      return;
+    }
+
+    const result = extractUrlFromText(pastedText);
+    setExtractedUrlInfo(result);
+
+    if (result.url) {
+      toast.success(`تم استخراج الرابط من ${result.platform || 'المنصة'}`);
+    } else {
+      toast.error('لم يتم العثور على رابط منتج في النص');
     }
   };
 
@@ -1596,6 +1616,70 @@ const Admin = () => {
                   </DialogHeader>
                   
                   <form key={editingProduct?.id || 'new'} onSubmit={handleProductSubmit} className="space-y-4">
+                    {/* Text Paste & URL Extraction Section */}
+                    <div className="p-4 border-2 border-dashed border-amber-500/30 rounded-lg bg-amber-500/5 space-y-3">
+                      <div className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400">
+                        <FileText className="h-4 w-4" />
+                        <span>لصق النص واستخراج الرابط و Item ID</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        الصق نص المشاركة من تطبيق تاوباو أو JD وسيتم استخراج الرابط و ID تلقائياً
+                      </p>
+                      <div className="flex gap-2">
+                        <Textarea
+                          placeholder="【淘宝】假一赔四 https://e.tb.cn/h.77BGXtZFQ2kzrfF?tk=G4D2UbFSfoL CZ356..."
+                          value={pastedText}
+                          onChange={(e) => setPastedText(e.target.value)}
+                          rows={2}
+                          className="flex-1 text-xs"
+                          dir="ltr"
+                        />
+                        <Button
+                          type="button"
+                          onClick={handleExtractFromPastedText}
+                          disabled={!pastedText.trim()}
+                          variant="outline"
+                          className="gap-2 shrink-0"
+                        >
+                          <Zap className="h-4 w-4" />
+                          استخراج
+                        </Button>
+                      </div>
+                      {extractedUrlInfo && (
+                        <div className="p-3 bg-card border border-border rounded-lg space-y-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{extractedUrlInfo.platform || 'غير معروف'}</Badge>
+                            {extractedUrlInfo.itemId && (
+                              <Badge variant="outline" className="font-mono">ID: {extractedUrlInfo.itemId}</Badge>
+                            )}
+                          </div>
+                          {extractedUrlInfo.url && (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                value={extractedUrlInfo.url}
+                                readOnly
+                                className="text-xs font-mono flex-1"
+                                dir="ltr"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  if (extractedUrlInfo.url) {
+                                    setProductUrl(extractedUrlInfo.url);
+                                    toast.success('تم نسخ الرابط إلى حقل الاستخراج');
+                                  }
+                                }}
+                              >
+                                استخدام
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
                     {/* AI Product Extraction Section - Always visible for both new and editing */}
                     <div className="p-4 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 space-y-3">
                       <div className="flex items-center gap-2 text-sm font-medium text-primary">
