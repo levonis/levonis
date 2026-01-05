@@ -388,18 +388,19 @@ ${pageContent.substring(0, 25000)}
   "price": 29.99,
   "currency": "USD",
   "images": ["https://رابط-صورة-كامل.jpg"],
-  "colors": [{"name": "Black", "name_ar": "أسود", "hex_code": "#000000"}],
-  "options": [{"name": "0.4mm", "name_ar": "0.4 ملم"}],
+  "colors": [{"name": "Black", "name_ar": "أسود", "hex_code": "#000000", "image_url": "https://رابط-صورة-اللون.jpg"}],
+  "options": [{"name": "0.4mm", "name_ar": "0.4 ملم", "image_url": "https://رابط-صورة-الخيار.jpg"}],
   "features": [{"text": "Feature in English", "text_ar": "الميزة بالعربية"}]
 }
 
 قواعد مهمة جداً:
-1. colors: فقط أسماء ألوان حقيقية (Black, White, Red, Blue, Green, Yellow, Pink, Purple, Orange, Gray, Brown, Gold, Silver, Navy, Beige, إلخ). مصفوفة فارغة [] إذا لم توجد ألوان.
-2. options: خيارات المنتج مثل الأحجام أو المقاسات أو أنواع مختلفة. ابحث عن قوائم منسدلة أو أزرار الاختيار. مثال: "0.4mm", "0.6mm", "0.8mm", "S", "M", "L", "XL", "128GB", "256GB" إلخ.
+1. colors: فقط أسماء ألوان حقيقية (Black, White, Red, Blue, Green, Yellow, Pink, Purple, Orange, Gray, Brown, Gold, Silver, Navy, Beige, إلخ). مصفوفة فارغة [] إذا لم توجد ألوان. مهم جداً: إذا كان لكل لون صورة خاصة به في الموقع، أضف رابط الصورة في image_url.
+2. options: خيارات المنتج مثل الأحجام أو المقاسات أو أنواع مختلفة. ابحث عن قوائم منسدلة أو أزرار الاختيار. مثال: "0.4mm", "0.6mm", "0.8mm", "S", "M", "L", "XL", "128GB", "256GB" إلخ. مهم جداً: إذا كان لكل خيار صورة خاصة به في الموقع، أضف رابط الصورة في image_url.
 3. features: مميزات المنتج المهمة. ابحث عن المواصفات والميزات البارزة. مثال: "شاشة 6.5 بوصة", "بطارية 5000mAh", "كاميرا 108MP" إلخ. أضف 3-6 مميزات رئيسية.
-4. images: روابط صور كاملة تبدأ بـ https:// وتكون صور المنتج فقط (ليس أيقونات أو لوغو).
+4. images: روابط صور كاملة تبدأ بـ https:// وتكون صور المنتج الرئيسية فقط (ليس أيقونات أو لوغو أو صور الألوان/الخيارات).
 5. لا تضع أي علامات HTML أو كود أو نص غير مفيد.
-6. أرجع فقط كائن JSON بدون أي نص إضافي.`;
+6. أرجع فقط كائن JSON بدون أي نص إضافي.
+7. ابحث في HTML عن الصور المرتبطة بكل لون أو خيار (عادة تكون في data-src أو data-image أو onclick events).`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
