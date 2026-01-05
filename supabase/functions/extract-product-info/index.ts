@@ -540,10 +540,19 @@ ${pageContent.substring(0, 25000)}
           // السعر الحالي = فارغ (يُحدد يدوياً لاحقاً)
           
           const extractedCurrency = ai.currency || 'USD';
-          // Use the highest price found as original_price
-          const extractedOriginalPrice = ai.original_price || ai.price || directPrice || 0;
           
-          console.log('Extracted original price:', extractedOriginalPrice, 'Currency:', extractedCurrency);
+          // Get all available prices
+          const aiPrice = parseFloat(ai.price) || 0;
+          const aiOriginalPrice = parseFloat(ai.original_price) || 0;
+          const directPriceNum = directPrice || 0;
+          
+          console.log('All prices found - AI price:', aiPrice, 'AI original:', aiOriginalPrice, 'Direct:', directPriceNum, 'Currency:', extractedCurrency);
+          
+          // Use the HIGHEST price found as original_price (before discount)
+          // This ensures we capture the original price, not a discounted one
+          const extractedOriginalPrice = Math.max(aiPrice, aiOriginalPrice, directPriceNum);
+          
+          console.log('Using highest price as original_price:', extractedOriginalPrice);
           
           // Convert original_price to IQD
           let originalPriceInIqd = convertToIQD(extractedOriginalPrice, extractedCurrency);
@@ -557,7 +566,7 @@ ${pageContent.substring(0, 25000)}
           
           // Set prices:
           // price = null (0) - to be set manually later
-          // original_price = extracted price from link
+          // original_price = highest extracted price from link
           productInfo.price = null;
           productInfo.original_price = originalPriceInIqd > 0 ? originalPriceInIqd : null;
           productInfo.currency = 'IQD';
