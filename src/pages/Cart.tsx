@@ -98,6 +98,27 @@ const Cart = () => {
     refetchOnMount: 'always',
   });
 
+  // جلب إعدادات الضريبة
+  interface TaxSettingsData {
+    tax_percentage: number;
+  }
+
+  const { data: taxSettings } = useQuery({
+    queryKey: ['tax-settings'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('default_settings')
+        .select('setting_value')
+        .eq('setting_key', 'tax_settings')
+        .maybeSingle();
+      return data?.setting_value as unknown as TaxSettingsData | null;
+    },
+    staleTime: 0,
+    refetchOnMount: 'always',
+  });
+
+  const taxPercentage = taxSettings?.tax_percentage ?? 30;
+
   const getDeliveryFee = (governorate: string | null) => {
     if (!governorate) return 6000;
     if (governorate.toLowerCase().includes('بغداد') || governorate.toLowerCase().includes('baghdad')) {
@@ -123,6 +144,12 @@ const Cart = () => {
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const subtotalAfterDiscount = total - discount;
   
+  // حساب الضريبة
+  const taxAmount = Math.ceil(subtotalAfterDiscount * (taxPercentage / 100));
+  
+  // المبلغ بعد إضافة الضريبة
+  const subtotalWithTax = subtotalAfterDiscount + taxAmount;
+  
   // حساب رسوم الدفع الجزئي بناءً على الشرائح (تُضاف للمبلغ المتبقي وليس للدفعة الأولى)
   const calculatePartialPaymentFee = () => {
     if (!hasPreOrderItems || preOrderPaymentOption !== 'quarter') return 0;
@@ -130,28 +157,28 @@ const Cart = () => {
     // استخدام الشرائح إذا كانت موجودة
     if (partialPaymentSettings?.fee_tiers && partialPaymentSettings.fee_tiers.length > 0) {
       const applicableTier = partialPaymentSettings.fee_tiers.find(
-        tier => subtotalAfterDiscount >= tier.min_amount && subtotalAfterDiscount <= tier.max_amount
+        tier => subtotalWithTax >= tier.min_amount && subtotalWithTax <= tier.max_amount
       );
       if (applicableTier) {
-        return Math.ceil(subtotalAfterDiscount * (applicableTier.fee_percentage / 100));
+        return Math.ceil(subtotalWithTax * (applicableTier.fee_percentage / 100));
       }
       // إذا لم يجد شريحة مطابقة، استخدم آخر شريحة إذا كان المبلغ أكبر
       const lastTier = partialPaymentSettings.fee_tiers[partialPaymentSettings.fee_tiers.length - 1];
-      if (subtotalAfterDiscount > lastTier.max_amount) {
-        return Math.ceil(subtotalAfterDiscount * (lastTier.fee_percentage / 100));
+      if (subtotalWithTax > lastTier.max_amount) {
+        return Math.ceil(subtotalWithTax * (lastTier.fee_percentage / 100));
       }
     }
     
     // للتوافق مع الإعدادات القديمة
     const fallbackPercentage = partialPaymentSettings?.quarter_payment_fee_percentage ?? 10;
-    return Math.ceil(subtotalAfterDiscount * (fallbackPercentage / 100));
+    return Math.ceil(subtotalWithTax * (fallbackPercentage / 100));
   };
   
   const partialPaymentFee = calculatePartialPaymentFee();
   
   const preOrderPaymentAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
-    ? Math.ceil(subtotalAfterDiscount * 0.25) 
-    : subtotalAfterDiscount;
+    ? Math.ceil(subtotalWithTax * 0.25) 
+    : subtotalWithTax;
   
   // حساب المبلغ المستخدم من المحفظة (بدون رسوم الدفع الجزئي لأنها تُدفع لاحقاً)
   const walletDeduction = useWalletBalance && wallet?.balance 
@@ -162,7 +189,7 @@ const Cart = () => {
   
   // المبلغ المتبقي للطلب المسبق (يشمل رسوم الدفع الجزئي)
   const remainingAmount = hasPreOrderItems && preOrderPaymentOption === 'quarter' 
-    ? (subtotalAfterDiscount - preOrderPaymentAmount) + partialPaymentFee
+    ? (subtotalWithTax - preOrderPaymentAmount) + partialPaymentFee
     : 0;
 
   const applyCoupon = async () => {
@@ -1027,6 +1054,14 @@ const Cart = () => {
                     </div>
                   )}
                   
+                  {/* الضريبة */}
+                  {taxAmount > 0 && (
+                    <div className="flex justify-between text-foreground">
+                      <span>الضريبة ({taxPercentage}%)</span>
+                      <span className="font-bold">{formatPrice(taxAmount)} دينار عراقي</span>
+                    </div>
+                  )}
+                  
                   <div className="flex justify-between text-foreground">
                     <span>التوصيل</span>
                     <span className="font-bold">{formatPrice(deliveryFee)} دينار عراقي</span>
@@ -1053,7 +1088,7 @@ const Cart = () => {
                           <Label htmlFor="payment-full" className="flex-1 cursor-pointer">
                             <div className="font-bold text-foreground">الدفع الكامل مقدماً</div>
                             <div className="text-xs text-muted-foreground">
-                              ادفع المبلغ كاملاً الآن ({formatPrice(total - discount)} د.ع)
+                              ادفع المبلغ كاملاً الآن ({formatPrice(subtotalWithTax)} د.ع)
                             </div>
                           </Label>
                         </div>
@@ -1066,7 +1101,7 @@ const Cart = () => {
                           <Label htmlFor="payment-quarter" className="flex-1 cursor-pointer">
                             <div className="font-bold text-foreground">دفع ربع المبلغ</div>
                             <div className="text-xs text-muted-foreground">
-                              ادفع الآن: {formatPrice(Math.ceil((total - discount) * 0.25))} د.ع
+                              ادفع الآن: {formatPrice(Math.ceil(subtotalWithTax * 0.25))} د.ع
                             </div>
                             <div className="text-xs text-orange-500 mt-1">
                               المتبقي عند الاستلام: {formatPrice(remainingAmount)} د.ع (يشمل رسوم إضافية)

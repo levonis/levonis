@@ -32,11 +32,37 @@ export default function AdminDefaultSettings() {
     },
   });
 
+  // جلب إعدادات الضريبة
+  const { data: taxSettings, isLoading: taxLoading } = useQuery({
+    queryKey: ['tax-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('default_settings')
+        .select('*')
+        .eq('setting_key', 'tax_settings')
+        .maybeSingle();
+      
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [taxPercentage, setTaxPercentage] = useState<number>(30);
+
   useEffect(() => {
     if (settings?.setting_value && !formData) {
       setFormData(settings.setting_value);
     }
   }, [settings, formData]);
+
+  useEffect(() => {
+    if (taxSettings?.setting_value) {
+      const taxValue = (taxSettings.setting_value as any)?.tax_percentage;
+      if (typeof taxValue === 'number') {
+        setTaxPercentage(taxValue);
+      }
+    }
+  }, [taxSettings]);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -62,11 +88,43 @@ export default function AdminDefaultSettings() {
     },
   });
 
+  const updateTaxMutation = useMutation({
+    mutationFn: async (percentage: number) => {
+      // التحقق من وجود الإعداد
+      const { data: existing } = await supabase
+        .from('default_settings')
+        .select('id')
+        .eq('setting_key', 'tax_settings')
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from('default_settings')
+          .update({ setting_value: { tax_percentage: percentage } })
+          .eq('setting_key', 'tax_settings');
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from('default_settings')
+          .insert({ setting_key: 'tax_settings', setting_value: { tax_percentage: percentage } });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tax-settings'] });
+      toast.success('تم حفظ إعدادات الضريبة بنجاح');
+    },
+    onError: (error: any) => {
+      toast.error('فشل حفظ إعدادات الضريبة: ' + error.message);
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData) {
       updateMutation.mutate(formData);
     }
+    updateTaxMutation.mutate(taxPercentage);
   };
 
   const handleShippingOptionChange = (index: number, field: string, value: any) => {
@@ -92,7 +150,7 @@ export default function AdminDefaultSettings() {
     setFormData({ ...formData, pre_order_shipping_options: newOptions });
   };
 
-  if (authLoading || isLoading) {
+  if (authLoading || isLoading || taxLoading) {
     return (
       <AdminLayout title="الإعدادات الافتراضية" icon={<Settings className="h-5 w-5" />}>
         <AdminLoading />
@@ -118,9 +176,9 @@ export default function AdminDefaultSettings() {
       icon={<Settings className="h-5 w-5" />}
       description="تخصيص الإعدادات الافتراضية للمنتجات الجديدة"
       actions={
-        <Button onClick={handleSubmit} disabled={updateMutation.isPending} className="admin-btn-primary gap-2">
+        <Button onClick={handleSubmit} disabled={updateMutation.isPending || updateTaxMutation.isPending} className="admin-btn-primary gap-2">
           <Save className="h-4 w-4" />
-          {updateMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+          {updateMutation.isPending || updateTaxMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
         </Button>
       }
     >
@@ -363,6 +421,28 @@ export default function AdminDefaultSettings() {
                   لا توجد خيارات شحن. اضغط على "إضافة خيار" لإضافة خيار جديد.
                 </p>
               )}
+            </div>
+          </AdminCardContent>
+        </AdminCard>
+        {/* Tax Settings */}
+        <AdminCard>
+          <AdminCardHeader title="إعدادات الضرائب" description="تحديد نسبة الضريبة المفروضة على الطلبات" />
+          <AdminCardContent>
+            <div className="admin-form-group max-w-xs">
+              <Label htmlFor="tax_percentage">نسبة الضريبة (%)</Label>
+              <Input
+                id="tax_percentage"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={taxPercentage}
+                onChange={(e) => setTaxPercentage(parseFloat(e.target.value) || 0)}
+                placeholder="30"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                النسبة الافتراضية هي 30%. سيتم تطبيقها على جميع الطلبات.
+              </p>
             </div>
           </AdminCardContent>
         </AdminCard>
