@@ -50,10 +50,10 @@ export default function AdminDefaultSettings() {
   const [taxPercentage, setTaxPercentage] = useState<number>(30);
 
   useEffect(() => {
-    if (settings?.setting_value && !formData) {
+    if (settings?.setting_value) {
       setFormData(settings.setting_value);
     }
-  }, [settings, formData]);
+  }, [settings]);
 
   useEffect(() => {
     if (taxSettings?.setting_value) {
