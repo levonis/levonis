@@ -18,19 +18,22 @@ export default function AdminDefaultSettings() {
   const queryClient = useQueryClient();
   const [formData, setFormData] = useState<any>(null);
 
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings, isLoading, error: settingsError } = useQuery({
     queryKey: ['default-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('default_settings')
         .select('*')
         .eq('setting_key', 'product_defaults')
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
       return data;
     },
   });
+
+  // Log for debugging
+  console.log('Settings loaded:', settings, 'Error:', settingsError, 'Loading:', isLoading);
 
   // جلب إعدادات الضريبة
   const { data: taxSettings, isLoading: taxLoading } = useQuery({
@@ -52,8 +55,18 @@ export default function AdminDefaultSettings() {
   useEffect(() => {
     if (settings?.setting_value) {
       setFormData(settings.setting_value);
+    } else if (settings === null && !isLoading) {
+      // إذا لم توجد إعدادات، نضع قيم افتراضية
+      setFormData({
+        currency: 'دينار عراقي',
+        has_in_stock: false,
+        has_pre_order: true,
+        availability_type: 'pre_order',
+        featured: false,
+        pre_order_shipping_options: []
+      });
     }
-  }, [settings]);
+  }, [settings, isLoading]);
 
   useEffect(() => {
     if (taxSettings?.setting_value) {
