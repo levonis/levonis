@@ -18,10 +18,15 @@ interface OrderTimelineProps {
   order: {
     status: string;
     created_at: string;
+    confirmed_at?: string | null;
+    processing_at?: string | null;
+    purchased_at?: string | null;
     arrived_warehouse_at?: string | null;
     shipped_at?: string | null;
     arrived_iraq_at?: string | null;
+    on_the_way_at?: string | null;
     delivered_at?: string | null;
+    cancelled_at?: string | null;
     serial_number_image_url?: string | null;
     estimated_delivery_date?: string | null;
   };
@@ -40,7 +45,7 @@ interface TimelineStep {
 
 export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
   const getPreOrderSteps = (): TimelineStep[] => {
-    const statusOrder = ['pending', 'confirmed', 'processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'];
+    const statusOrder = ['pending', 'confirmed', 'processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'on_the_way', 'delivered'];
     const currentIndex = statusOrder.indexOf(order.status);
     
     return [
@@ -58,6 +63,7 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
         description: 'تم تأكيد طلبك وجاري طلب المنتج من المورد',
         icon: <CreditCard className="h-4 w-4" />,
         isCompleted: currentIndex >= 1,
+        timestamp: order.confirmed_at,
       },
       {
         key: 'purchased',
@@ -65,6 +71,7 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
         description: 'تم شراء المنتج من المورد وجاري الشحن إلى مخزننا',
         icon: <PackageCheck className="h-4 w-4" />,
         isCompleted: currentIndex >= 2,
+        timestamp: order.purchased_at,
       },
       {
         key: 'arrived_warehouse',
@@ -92,18 +99,26 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
         timestamp: order.arrived_iraq_at,
       },
       {
+        key: 'on_the_way',
+        title: 'في الطريق إليك',
+        description: 'الشحنة في الطريق إلى عنوانك',
+        icon: <Truck className="h-4 w-4" />,
+        isCompleted: currentIndex >= 6,
+        timestamp: order.on_the_way_at,
+      },
+      {
         key: 'delivered',
         title: 'تم التوصيل',
         description: 'تم توصيل طلبك بنجاح',
         icon: <CheckCircle2 className="h-4 w-4" />,
-        isCompleted: currentIndex >= 6,
+        isCompleted: currentIndex >= 7,
         timestamp: order.delivered_at,
       },
     ];
   };
 
   const getDirectOrderSteps = (): TimelineStep[] => {
-    const statusOrder = ['pending', 'confirmed', 'processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'delivered'];
+    const statusOrder = ['pending', 'confirmed', 'processing', 'shipped', 'on_the_way', 'delivered'];
     const currentIndex = statusOrder.indexOf(order.status);
     
     return [
@@ -121,6 +136,7 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
         description: 'تم تأكيد طلبك وجاري تجهيزه',
         icon: <CreditCard className="h-4 w-4" />,
         isCompleted: currentIndex >= 1,
+        timestamp: order.confirmed_at,
       },
       {
         key: 'processing',
@@ -128,21 +144,30 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
         description: 'جاري تجهيز وتغليف طلبك',
         icon: <PackageCheck className="h-4 w-4" />,
         isCompleted: currentIndex >= 2,
+        timestamp: order.processing_at,
       },
       {
         key: 'shipped',
-        title: 'تم إرسال الشحنة إليك',
-        description: 'تم شحن طلبك وفي الطريق إليك',
+        title: 'تم إرسال الشحنة',
+        description: 'تم شحن طلبك',
+        icon: <Truck className="h-4 w-4" />,
+        isCompleted: currentIndex >= 3,
+        timestamp: order.shipped_at,
+      },
+      {
+        key: 'on_the_way',
+        title: 'في الطريق إليك',
+        description: 'الشحنة في الطريق إلى عنوانك',
         icon: <Truck className="h-4 w-4" />,
         isCompleted: currentIndex >= 4,
-        timestamp: order.shipped_at,
+        timestamp: order.on_the_way_at,
       },
       {
         key: 'delivered',
         title: 'تم التوصيل',
         description: 'تم توصيل طلبك بنجاح',
         icon: <CheckCircle2 className="h-4 w-4" />,
-        isCompleted: currentIndex >= 6,
+        isCompleted: currentIndex >= 5,
         timestamp: order.delivered_at,
       },
     ];
