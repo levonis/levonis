@@ -1544,6 +1544,8 @@ export type Database = {
           arrived_iraq_at: string | null
           arrived_warehouse_at: string | null
           auto_confirmed: boolean | null
+          cancelled_at: string | null
+          confirmed_at: string | null
           created_at: string
           currency: string
           customer_paid_amount: number | null
@@ -1555,6 +1557,7 @@ export type Database = {
           governorate: string
           id: string
           internal_notes: string | null
+          on_the_way_at: string | null
           order_number: string
           package_dimensions: string | null
           paid_amount: number | null
@@ -1562,7 +1565,9 @@ export type Database = {
           payment_status: string | null
           phone_number: string
           priority: string | null
+          processing_at: string | null
           profit_amount: number | null
+          purchased_at: string | null
           remaining_amount: number | null
           serial_number_image_url: string | null
           shipped_at: string | null
@@ -1592,6 +1597,8 @@ export type Database = {
           arrived_iraq_at?: string | null
           arrived_warehouse_at?: string | null
           auto_confirmed?: boolean | null
+          cancelled_at?: string | null
+          confirmed_at?: string | null
           created_at?: string
           currency?: string
           customer_paid_amount?: number | null
@@ -1603,6 +1610,7 @@ export type Database = {
           governorate: string
           id?: string
           internal_notes?: string | null
+          on_the_way_at?: string | null
           order_number: string
           package_dimensions?: string | null
           paid_amount?: number | null
@@ -1610,7 +1618,9 @@ export type Database = {
           payment_status?: string | null
           phone_number: string
           priority?: string | null
+          processing_at?: string | null
           profit_amount?: number | null
+          purchased_at?: string | null
           remaining_amount?: number | null
           serial_number_image_url?: string | null
           shipped_at?: string | null
@@ -1640,6 +1650,8 @@ export type Database = {
           arrived_iraq_at?: string | null
           arrived_warehouse_at?: string | null
           auto_confirmed?: boolean | null
+          cancelled_at?: string | null
+          confirmed_at?: string | null
           created_at?: string
           currency?: string
           customer_paid_amount?: number | null
@@ -1651,6 +1663,7 @@ export type Database = {
           governorate?: string
           id?: string
           internal_notes?: string | null
+          on_the_way_at?: string | null
           order_number?: string
           package_dimensions?: string | null
           paid_amount?: number | null
@@ -1658,7 +1671,9 @@ export type Database = {
           payment_status?: string | null
           phone_number?: string
           priority?: string | null
+          processing_at?: string | null
           profit_amount?: number | null
+          purchased_at?: string | null
           remaining_amount?: number | null
           serial_number_image_url?: string | null
           shipped_at?: string | null

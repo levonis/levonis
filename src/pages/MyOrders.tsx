@@ -50,6 +50,7 @@ const MyOrders = () => {
       arrived_warehouse: { variant: 'default', label: 'وصل إلى المخزن' },
       shipped: { variant: 'default', label: 'تم الشحن' },
       arrived_iraq: { variant: 'default', label: 'وصل إلى العراق' },
+      on_the_way: { variant: 'default', label: 'في الطريق إليك' },
       delivered: { variant: 'secondary', label: 'تم التوصيل' },
       cancelled: { variant: 'destructive', label: 'ملغي' },
     };

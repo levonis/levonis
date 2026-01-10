@@ -33,6 +33,7 @@ const statusOptions = [
   { value: 'shipped', label: 'تم الشحن' },
   { value: 'arrived_warehouse', label: 'وصل المخزن' },
   { value: 'arrived_iraq', label: 'وصل العراق' },
+  { value: 'on_the_way', label: 'في الطريق إليك' },
   { value: 'delivered', label: 'تم التوصيل' },
   { value: 'cancelled', label: 'ملغي' },
 ];
@@ -62,6 +63,7 @@ const AdminOrders = () => {
   const [editPaymentStatus, setEditPaymentStatus] = useState('');
   const [editInternalNotes, setEditInternalNotes] = useState('');
   const [editShippingNotes, setEditShippingNotes] = useState('');
+  const [editEstimatedDeliveryDate, setEditEstimatedDeliveryDate] = useState('');
   
   // Financial fields state for live calculation
   const [totalAmount, setTotalAmount] = useState<number>(0);
@@ -384,6 +386,7 @@ const AdminOrders = () => {
     setEditPaymentStatus('');
     setEditInternalNotes('');
     setEditShippingNotes('');
+    setEditEstimatedDeliveryDate('');
     setTotalAmount(0);
     setAdminProductCost(0);
     setAdminShippingCost(0);
@@ -399,6 +402,7 @@ const AdminOrders = () => {
     setEditPaymentStatus(order.payment_status || '');
     setEditInternalNotes(order.internal_notes || '');
     setEditShippingNotes(order.shipping_notes || '');
+    setEditEstimatedDeliveryDate(order.estimated_delivery_date ? order.estimated_delivery_date.split('T')[0] : '');
     setTotalAmount(order.total_amount || 0);
     setAdminProductCost(order.admin_product_cost || 0);
     setAdminShippingCost(order.admin_shipping_cost || 0);
@@ -490,6 +494,7 @@ const AdminOrders = () => {
       payment_status: editPaymentStatus,
       internal_notes: editInternalNotes,
       shipping_notes: editShippingNotes,
+      estimated_delivery_date: editEstimatedDeliveryDate ? new Date(editEstimatedDeliveryDate).toISOString() : null,
       total_amount: totalAmount,
       admin_product_cost: adminProductCost,
       admin_shipping_cost: adminShippingCost,
@@ -503,40 +508,73 @@ const AdminOrders = () => {
       updated_at: new Date().toISOString(),
     };
 
-    // Handle status-based timestamps
-    if (editStatus === 'shipped' && !editingOrder.shipped_at) {
-      updateData.shipped_at = new Date().toISOString();
+    // Handle status-based timestamps for all statuses
+    const now = new Date().toISOString();
+    if (editStatus === 'confirmed' && !editingOrder.confirmed_at) {
+      updateData.confirmed_at = now;
     }
-    if (editStatus === 'delivered' && !editingOrder.delivered_at) {
-      updateData.delivered_at = new Date().toISOString();
+    if (editStatus === 'processing' && !editingOrder.processing_at) {
+      updateData.processing_at = now;
+    }
+    if (editStatus === 'purchased' && !editingOrder.purchased_at) {
+      updateData.purchased_at = now;
+    }
+    if (editStatus === 'shipped' && !editingOrder.shipped_at) {
+      updateData.shipped_at = now;
     }
     if (editStatus === 'arrived_warehouse' && !editingOrder.arrived_warehouse_at) {
-      updateData.arrived_warehouse_at = new Date().toISOString();
+      updateData.arrived_warehouse_at = now;
     }
     if (editStatus === 'arrived_iraq' && !editingOrder.arrived_iraq_at) {
-      updateData.arrived_iraq_at = new Date().toISOString();
+      updateData.arrived_iraq_at = now;
+    }
+    if (editStatus === 'on_the_way' && !editingOrder.on_the_way_at) {
+      updateData.on_the_way_at = now;
+    }
+    if (editStatus === 'delivered' && !editingOrder.delivered_at) {
+      updateData.delivered_at = now;
+    }
+    if (editStatus === 'cancelled' && !editingOrder.cancelled_at) {
+      updateData.cancelled_at = now;
     }
 
     updateOrderMutation.mutate({ id: editingOrder.id, values: updateData, previousStatus: editingOrder.status });
   };
 
   const handleQuickStatusChange = (orderId: string, newStatus: string, currentStatus?: string) => {
+    const now = new Date().toISOString();
     const updateData: any = {
       status: newStatus,
-      updated_at: new Date().toISOString(),
+      updated_at: now,
     };
 
-    if (newStatus === 'shipped') {
-      updateData.shipped_at = new Date().toISOString();
+    // Handle status-based timestamps for all statuses
+    if (newStatus === 'confirmed') {
+      updateData.confirmed_at = now;
     }
-    if (newStatus === 'delivered') {
-      updateData.delivered_at = new Date().toISOString();
+    if (newStatus === 'processing') {
+      updateData.processing_at = now;
+    }
+    if (newStatus === 'purchased') {
+      updateData.purchased_at = now;
+    }
+    if (newStatus === 'shipped') {
+      updateData.shipped_at = now;
     }
     if (newStatus === 'arrived_warehouse') {
-      updateData.arrived_warehouse_at = new Date().toISOString();
+      updateData.arrived_warehouse_at = now;
     }
     if (newStatus === 'arrived_iraq') {
-      updateData.arrived_iraq_at = new Date().toISOString();
+      updateData.arrived_iraq_at = now;
+    }
+    if (newStatus === 'on_the_way') {
+      updateData.on_the_way_at = now;
+    }
+    if (newStatus === 'delivered') {
+      updateData.delivered_at = now;
+    }
+    if (newStatus === 'cancelled') {
+      updateData.cancelled_at = now;
     }
 
     updateOrderMutation.mutate({ id: orderId, values: updateData, previousStatus: currentStatus });
@@ -549,10 +587,11 @@ const AdminOrders = () => {
       processing: { label: 'قيد المعالجة', className: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
       purchased: { label: 'تم الشراء', className: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30' },
       shipped: { label: 'تم الشحن', className: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
-      delivered: { label: 'تم التوصيل', className: 'bg-green-500/20 text-green-400 border-green-500/30' },
-      cancelled: { label: 'ملغي', className: 'bg-red-500/20 text-red-400 border-red-500/30' },
       arrived_warehouse: { label: 'وصل المخزن', className: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
       arrived_iraq: { label: 'وصل العراق', className: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' },
+      on_the_way: { label: 'في الطريق إليك', className: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
+      delivered: { label: 'تم التوصيل', className: 'bg-green-500/20 text-green-400 border-green-500/30' },
+      cancelled: { label: 'ملغي', className: 'bg-red-500/20 text-red-400 border-red-500/30' },
     };
 
     const config = statusConfig[status] || { label: status, className: 'bg-muted text-muted-foreground' };
@@ -881,7 +920,7 @@ const AdminOrders = () => {
               </div>
 
               {/* Status */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>حالة الطلب</Label>
                   <Select value={editStatus} onValueChange={setEditStatus}>
@@ -910,6 +949,17 @@ const AdminOrders = () => {
                       <SelectItem value="refunded">مسترجع</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    التاريخ المتوقع للوصول
+                  </Label>
+                  <Input
+                    type="date"
+                    value={editEstimatedDeliveryDate}
+                    onChange={(e) => setEditEstimatedDeliveryDate(e.target.value)}
+                  />
                 </div>
               </div>
 

@@ -89,6 +89,8 @@ const AdminFinancials = () => {
   const queryClient = useQueryClient();
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [quickFilter, setQuickFilter] = useState<string>('');
   const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -104,6 +106,44 @@ const AdminFinancials = () => {
     tax_amount: 0,
     financial_notes: '',
   });
+
+  // Quick filter date helpers
+  const applyQuickFilter = (filter: string) => {
+    const now = new Date();
+    let fromDate = '';
+    let toDate = format(now, 'yyyy-MM-dd');
+    
+    switch (filter) {
+      case 'last_week':
+        fromDate = format(new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+        break;
+      case 'last_month':
+        fromDate = format(new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()), 'yyyy-MM-dd');
+        break;
+      case 'last_3_months':
+        fromDate = format(new Date(now.getFullYear(), now.getMonth() - 3, now.getDate()), 'yyyy-MM-dd');
+        break;
+      case 'last_6_months':
+        fromDate = format(new Date(now.getFullYear(), now.getMonth() - 6, now.getDate()), 'yyyy-MM-dd');
+        break;
+      case 'last_year':
+        fromDate = format(new Date(now.getFullYear() - 1, now.getMonth(), now.getDate()), 'yyyy-MM-dd');
+        break;
+      case 'this_month':
+        fromDate = format(new Date(now.getFullYear(), now.getMonth(), 1), 'yyyy-MM-dd');
+        break;
+      case 'this_year':
+        fromDate = format(new Date(now.getFullYear(), 0, 1), 'yyyy-MM-dd');
+        break;
+      default:
+        fromDate = '';
+        toDate = '';
+    }
+    
+    setQuickFilter(filter);
+    setDateFrom(fromDate);
+    setDateTo(toDate);
+  };
 
   const { data: orders, isLoading } = useQuery({
     queryKey: ['admin-financials', dateFrom, dateTo],
@@ -343,8 +383,17 @@ const AdminFinancials = () => {
     return null;
   }
 
-  // Calculate totals
-  const totals = orders?.reduce((acc, order) => {
+  // Filter orders by status
+  const filteredOrders = orders?.filter(order => {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'delivered') return order.status === 'delivered';
+    if (statusFilter === 'cancelled') return order.status === 'cancelled';
+    if (statusFilter === 'in_progress') return order.status !== 'delivered' && order.status !== 'cancelled';
+    return true;
+  }) || [];
+
+  // Calculate totals from filtered orders
+  const totals = filteredOrders.reduce((acc, order) => {
     const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0);
     
     return {
@@ -372,19 +421,7 @@ const AdminFinancials = () => {
     totalProfit: 0,
     orderCount: 0,
     deliveredCount: 0,
-  }) || {
-    totalRevenue: 0,
-    totalCustomerPaid: 0,
-    totalAdminPaid: 0,
-    totalRemaining: 0,
-    totalProductCost: 0,
-    totalShippingCost: 0,
-    totalOtherCosts: 0,
-    totalTax: 0,
-    totalProfit: 0,
-    orderCount: 0,
-    deliveredCount: 0,
-  };
+  });
 
   const totalCosts = totals.totalProductCost + totals.totalShippingCost + totals.totalOtherCosts;
   const calculatedProfit = totals.totalRevenue - totalCosts;
@@ -489,30 +526,123 @@ const AdminFinancials = () => {
 
       {/* Date Filter */}
       <AdminSection className="mt-6">
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="admin-form-group">
-            <Label>من تاريخ</Label>
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="w-40"
-            />
+        <div className="flex flex-col gap-4">
+          {/* Quick Filters */}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={quickFilter === '' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => { setQuickFilter(''); setDateFrom(''); setDateTo(''); }}
+            >
+              الكل
+            </Button>
+            <Button
+              variant={quickFilter === 'this_month' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => applyQuickFilter('this_month')}
+            >
+              هذا الشهر
+            </Button>
+            <Button
+              variant={quickFilter === 'last_month' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => applyQuickFilter('last_month')}
+            >
+              آخر شهر
+            </Button>
+            <Button
+              variant={quickFilter === 'last_3_months' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => applyQuickFilter('last_3_months')}
+            >
+              آخر 3 أشهر
+            </Button>
+            <Button
+              variant={quickFilter === 'last_6_months' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => applyQuickFilter('last_6_months')}
+            >
+              آخر 6 أشهر
+            </Button>
+            <Button
+              variant={quickFilter === 'last_year' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => applyQuickFilter('last_year')}
+            >
+              آخر سنة
+            </Button>
+            <Button
+              variant={quickFilter === 'this_year' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => applyQuickFilter('this_year')}
+            >
+              هذه السنة
+            </Button>
           </div>
-          <div className="admin-form-group">
-            <Label>إلى تاريخ</Label>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="w-40"
-            />
+          
+          {/* Custom Date Range */}
+          <div className="flex flex-wrap gap-4 items-end">
+            <div className="admin-form-group">
+              <Label>من تاريخ</Label>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => { setDateFrom(e.target.value); setQuickFilter(''); }}
+                className="w-40"
+              />
+            </div>
+            <div className="admin-form-group">
+              <Label>إلى تاريخ</Label>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => { setDateTo(e.target.value); setQuickFilter(''); }}
+                className="w-40"
+              />
+            </div>
+            
+            {/* Status Filter */}
+            <div className="admin-form-group">
+              <Label>حالة الطلب</Label>
+              <div className="flex gap-2">
+                <Button
+                  variant={statusFilter === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter('all')}
+                >
+                  الكل ({orders?.length || 0})
+                </Button>
+                <Button
+                  variant={statusFilter === 'delivered' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter('delivered')}
+                  className="text-green-600"
+                >
+                  مكتمل ({orders?.filter(o => o.status === 'delivered').length || 0})
+                </Button>
+                <Button
+                  variant={statusFilter === 'in_progress' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter('in_progress')}
+                >
+                  قيد التنفيذ ({orders?.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length || 0})
+                </Button>
+                <Button
+                  variant={statusFilter === 'cancelled' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter('cancelled')}
+                  className="text-red-600"
+                >
+                  ملغي ({orders?.filter(o => o.status === 'cancelled').length || 0})
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </AdminSection>
 
       {/* Orders Table */}
-      <AdminSection title="جميع الطلبات" className="mt-6">
+      <AdminSection title={`الطلبات (${filteredOrders.length})`} className="mt-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -536,8 +666,11 @@ const AdminFinancials = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orders?.map((order) => {
+                {filteredOrders.map((order) => {
                   const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0);
+                  const deliveredDate = order.status === 'delivered' && (order as any).delivered_at 
+                    ? format(new Date((order as any).delivered_at), 'dd/MM/yyyy', { locale: ar })
+                    : null;
                   
                   return (
                     <TableRow key={order.id}>
@@ -571,7 +704,12 @@ const AdminFinancials = () => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center text-sm text-muted-foreground">
-                        {format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}
+                        <div className="flex flex-col">
+                          <span>{format(new Date(order.created_at), 'dd/MM/yyyy', { locale: ar })}</span>
+                          {deliveredDate && (
+                            <span className="text-green-600 text-xs">تسليم: {deliveredDate}</span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="flex items-center justify-center gap-1">
