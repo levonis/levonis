@@ -351,8 +351,9 @@ export default function OfferPurchasesTab() {
               description="لم يتم العثور على مشتريات تطابق معايير البحث"
             />
           ) : (
-            <ScrollArea className="h-[500px]">
-              <Table>
+            <div className="overflow-x-auto">
+              <ScrollArea className="h-[500px]">
+                <Table className="min-w-[900px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="text-right">المستخدم</TableHead>
@@ -431,7 +432,8 @@ export default function OfferPurchasesTab() {
                   })}
                 </TableBody>
               </Table>
-            </ScrollArea>
+              </ScrollArea>
+            </div>
           )}
         </CardContent>
       </AdminCard>
