@@ -1113,7 +1113,7 @@ const Cart = () => {
                   )}
                   
                   {/* رصيد المحفظة المطلوب */}
-                  <div className={`py-3 px-4 rounded-lg border ${hasEnoughBalance ? 'bg-primary/5 border-primary/20' : 'bg-destructive/5 border-destructive/20'}`}>
+                  <div className={`py-3 px-4 rounded-lg border ${hasEnoughBalance ? 'bg-card border-primary/30' : 'bg-card border-destructive/30'}`}>
                     <div className="flex items-center gap-2 mb-2">
                       <Wallet className={`h-5 w-5 ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`} />
                       <span className={`font-bold ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`}>

@@ -244,76 +244,97 @@ export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
         })}
       </div>
       
-      {/* Estimated delivery date for pre-orders */}
+      {/* Estimated delivery date for pre-orders - always show if set */}
       {isPreOrder && order.estimated_delivery_date && (() => {
         const estimatedDate = new Date(order.estimated_delivery_date);
         const today = new Date();
         const daysRemaining = differenceInDays(estimatedDate, today);
         const isOverdue = isPast(estimatedDate) && !isToday(estimatedDate);
         const isDeliveryToday = isToday(estimatedDate);
+        const isDelivered = order.status === 'delivered';
         
         return (
           <div className="mt-6 pt-4 border-t border-border/50">
             <div className={`p-4 rounded-xl border ${
-              isOverdue 
-                ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' 
-                : isDeliveryToday 
-                  ? 'bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800'
-                  : 'bg-primary/5 border-primary/20'
+              isDelivered
+                ? 'bg-card border-primary/30'
+                : isOverdue 
+                  ? 'bg-destructive/10 border-destructive/30' 
+                  : isDeliveryToday 
+                    ? 'bg-card border-primary/30'
+                    : 'bg-card border-primary/20'
             }`}>
               <div className="flex items-start gap-3">
                 <div className={`p-2 rounded-lg ${
-                  isOverdue 
-                    ? 'bg-red-100 dark:bg-red-900/30' 
-                    : isDeliveryToday 
-                      ? 'bg-green-100 dark:bg-green-900/30'
-                      : 'bg-primary/10'
+                  isDelivered
+                    ? 'bg-primary/20'
+                    : isOverdue 
+                      ? 'bg-destructive/20' 
+                      : isDeliveryToday 
+                        ? 'bg-primary/20'
+                        : 'bg-primary/10'
                 }`}>
                   <Calendar className={`h-5 w-5 ${
-                    isOverdue 
-                      ? 'text-red-600 dark:text-red-400' 
-                      : isDeliveryToday 
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-primary'
+                    isDelivered
+                      ? 'text-primary'
+                      : isOverdue 
+                        ? 'text-destructive' 
+                        : isDeliveryToday 
+                          ? 'text-primary'
+                          : 'text-primary'
                   }`} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-foreground mb-1">التاريخ المتوقع للوصول</p>
+                  <p className="text-sm font-bold text-foreground mb-1">
+                    {isDelivered ? 'تاريخ التوصيل المتوقع (تم التوصيل)' : 'التاريخ المتوقع للوصول'}
+                  </p>
                   <p className={`text-lg font-bold ${
-                    isOverdue 
-                      ? 'text-red-600 dark:text-red-400' 
-                      : isDeliveryToday 
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-primary'
+                    isDelivered
+                      ? 'text-primary'
+                      : isOverdue 
+                        ? 'text-destructive' 
+                        : isDeliveryToday 
+                          ? 'text-primary'
+                          : 'text-primary'
                   }`}>
                     {format(estimatedDate, 'EEEE، d MMMM yyyy', { locale: ar })}
                   </p>
                   
-                  {/* Remaining days indicator */}
-                  <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
-                    isOverdue 
-                      ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300' 
-                      : isDeliveryToday 
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                        : daysRemaining <= 3
-                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                          : 'bg-primary/10 text-primary'
-                  }`}>
-                    <Timer className="h-3 w-3" />
-                    {isOverdue ? (
-                      <span>متأخر بـ {Math.abs(daysRemaining)} يوم</span>
-                    ) : isDeliveryToday ? (
-                      <span>متوقع الوصول اليوم!</span>
-                    ) : daysRemaining === 1 ? (
-                      <span>متبقي يوم واحد</span>
-                    ) : daysRemaining === 2 ? (
-                      <span>متبقي يومان</span>
-                    ) : daysRemaining <= 10 ? (
-                      <span>متبقي {daysRemaining} أيام</span>
-                    ) : (
-                      <span>متبقي {daysRemaining} يوم</span>
-                    )}
-                  </div>
+                  {/* Remaining days indicator - hide when delivered */}
+                  {!isDelivered && (
+                    <div className={`mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                      isOverdue 
+                        ? 'bg-destructive/20 text-destructive' 
+                        : isDeliveryToday 
+                          ? 'bg-primary/20 text-primary'
+                          : daysRemaining <= 3
+                            ? 'bg-accent/20 text-accent'
+                            : 'bg-primary/10 text-primary'
+                    }`}>
+                      <Timer className="h-3 w-3" />
+                      {isOverdue ? (
+                        <span>متأخر بـ {Math.abs(daysRemaining)} يوم</span>
+                      ) : isDeliveryToday ? (
+                        <span>متوقع الوصول اليوم!</span>
+                      ) : daysRemaining === 1 ? (
+                        <span>متبقي يوم واحد</span>
+                      ) : daysRemaining === 2 ? (
+                        <span>متبقي يومان</span>
+                      ) : daysRemaining <= 10 ? (
+                        <span>متبقي {daysRemaining} أيام</span>
+                      ) : (
+                        <span>متبقي {daysRemaining} يوم</span>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* Show delivered badge */}
+                  {isDelivered && (
+                    <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/20 text-primary">
+                      <CheckCircle2 className="h-3 w-3" />
+                      <span>تم التوصيل بنجاح</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
