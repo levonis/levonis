@@ -45,7 +45,7 @@ interface TimelineStep {
 
 export const OrderTimeline = ({ order, isPreOrder }: OrderTimelineProps) => {
   const getPreOrderSteps = (): TimelineStep[] => {
-    const statusOrder = ['pending', 'confirmed', 'processing', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'on_the_way', 'delivered'];
+    const statusOrder = ['pending', 'confirmed', 'purchased', 'arrived_warehouse', 'shipped', 'arrived_iraq', 'on_the_way', 'delivered'];
     const currentIndex = statusOrder.indexOf(order.status);
     
     return [
