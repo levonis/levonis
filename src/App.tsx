@@ -65,6 +65,9 @@ const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const MyPurchasedProducts = lazy(() => import("./pages/MyPurchasedProducts"));
 const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
 const AdminOfferPurchases = lazy(() => import("./pages/AdminOfferPurchases"));
+const MyPrinters = lazy(() => import("./pages/MyPrinters"));
+const PrinterProtection = lazy(() => import("./pages/PrinterProtection"));
+const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -139,6 +142,9 @@ function AppContent() {
             <Route path="/my-products" element={<MyPurchasedProducts />} />
             <Route path="/my-offer-purchases" element={<MyOfferPurchases />} />
             <Route path="/product-offers" element={<ProductOffersPage />} />
+            <Route path="/my-printers" element={<MyPrinters />} />
+            <Route path="/printer-protection" element={<PrinterProtection />} />
+            <Route path={`${ADMIN_BASE_PATH}/printer-protection`} element={<AdminRoute><AdminPrinterProtection /></AdminRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
