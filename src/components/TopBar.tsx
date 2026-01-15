@@ -2,7 +2,7 @@ import { memo, useState, useEffect, useCallback } from 'react';
 import logoNew from '@/assets/new-logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy, Shield } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -288,6 +288,10 @@ const TopBar = memo(() => {
                   <DropdownMenuItem onClick={() => navigate('/my-orders')}>
                     <Package className="ml-2 h-3.5 w-3.5" />
                     <span>طلباتي</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/my-printers')}>
+                    <Shield className="ml-2 h-3.5 w-3.5" />
+                    <span>حماية الطابعات</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-3.5 w-3.5" />
