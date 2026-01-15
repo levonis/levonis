@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { 
   Printer, Shield, Users, Search, Plus, Loader2, 
   ShieldCheck, ShieldX, Play, Pause, X, Edit, 
-  FileText, Calendar, Filter
+  FileText, Calendar, Filter, Package, CheckCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -84,6 +84,24 @@ interface SubscriptionWithDetails {
   };
 }
 
+interface DeliveredOrderItem {
+  id: string;
+  order_id: string;
+  product_name: string;
+  product_name_ar: string;
+  serial_number: string | null;
+  order: {
+    order_number: string;
+    delivered_at: string;
+    user_id: string;
+    profiles: {
+      username: string;
+      email: string;
+      full_name: string | null;
+    };
+  };
+}
+
 const AdminPrinterProtection = () => {
   const { user, isAdmin } = useAuth();
   const queryClient = useQueryClient();
@@ -92,6 +110,9 @@ const AdminPrinterProtection = () => {
   const [addPrinterDialogOpen, setAddPrinterDialogOpen] = useState(false);
   const [editSubscriptionDialogOpen, setEditSubscriptionDialogOpen] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionWithDetails | null>(null);
+  const [serialDialogOpen, setSerialDialogOpen] = useState(false);
+  const [selectedOrderItem, setSelectedOrderItem] = useState<DeliveredOrderItem | null>(null);
+  const [serialInput, setSerialInput] = useState('');
   
   // New printer form state
   const [newPrinter, setNewPrinter] = useState({
@@ -111,6 +132,50 @@ const AdminPrinterProtection = () => {
 
       if (error) throw error;
       return data as StorePrinter[];
+    },
+    enabled: isAdmin,
+  });
+
+  // Fetch delivered orders needing serial numbers
+  const { data: deliveredItems, isLoading: deliveredLoading } = useQuery({
+    queryKey: ['admin-delivered-printer-items'],
+    queryFn: async () => {
+      // Get order items from delivered orders
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          id,
+          order_id,
+          product_name,
+          product_name_ar,
+          serial_number,
+          orders!inner (
+            order_number,
+            delivered_at,
+            user_id,
+            status,
+            profiles (username, email, full_name)
+          )
+        `)
+        .eq('orders.status', 'delivered')
+        .order('orders(delivered_at)', { ascending: false });
+
+      if (error) throw error;
+      
+      // Transform data
+      return data?.map(item => ({
+        id: item.id,
+        order_id: item.order_id,
+        product_name: item.product_name,
+        product_name_ar: item.product_name_ar,
+        serial_number: item.serial_number,
+        order: {
+          order_number: (item.orders as any).order_number,
+          delivered_at: (item.orders as any).delivered_at,
+          user_id: (item.orders as any).user_id,
+          profiles: (item.orders as any).profiles
+        }
+      })) as DeliveredOrderItem[];
     },
     enabled: isAdmin,
   });
@@ -237,6 +302,58 @@ const AdminPrinterProtection = () => {
     },
   });
 
+  // Add serial number to order item mutation
+  const addSerialMutation = useMutation({
+    mutationFn: async ({ itemId, serialNumber, productNameAr }: { itemId: string; serialNumber: string; productNameAr: string }) => {
+      // First, check if serial exists in store_printers
+      const { data: existingPrinter } = await supabase
+        .from('store_printers')
+        .select('id')
+        .eq('serial_number', serialNumber)
+        .maybeSingle();
+
+      // If not exists, create it
+      if (!existingPrinter) {
+        const { error: insertError } = await supabase
+          .from('store_printers')
+          .insert({
+            serial_number: serialNumber,
+            model_name: productNameAr,
+            model_name_ar: productNameAr,
+          });
+        if (insertError) throw insertError;
+      }
+
+      // Update order item with serial number
+      const { error } = await supabase
+        .from('order_items')
+        .update({ serial_number: serialNumber })
+        .eq('id', itemId);
+
+      if (error) throw error;
+
+      // Log the action
+      await supabase.from('printer_protection_logs').insert({
+        admin_id: user?.id,
+        action: 'add_serial_number',
+        entity_type: 'order_item',
+        entity_id: itemId,
+        details: { serial_number: serialNumber },
+      });
+    },
+    onSuccess: () => {
+      toast.success('تم إضافة الرقم التسلسلي بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['admin-delivered-printer-items'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-store-printers'] });
+      setSerialDialogOpen(false);
+      setSelectedOrderItem(null);
+      setSerialInput('');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ');
+    },
+  });
+
   // Update subscription mutation
   const updateSubscriptionMutation = useMutation({
     mutationFn: async (updates: { id: string; status?: string; plan_id?: string; admin_notes?: string }) => {
@@ -302,10 +419,15 @@ const AdminPrinterProtection = () => {
     p.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Filter delivered items - those needing serial vs those with serial
+  const itemsNeedingSerial = deliveredItems?.filter(item => !item.serial_number) || [];
+  const itemsWithSerial = deliveredItems?.filter(item => item.serial_number) || [];
+
   // Stats
   const totalPrinters = storePrinters?.length || 0;
   const registeredCount = storePrinters?.filter(p => p.is_registered).length || 0;
   const activeSubscriptions = subscriptions?.filter(s => s.status === 'active').length || 0;
+  const pendingSerials = itemsNeedingSerial.length;
 
   return (
     <AdminLayout title="إدارة حماية الطابعات">
@@ -321,7 +443,7 @@ const AdminPrinterProtection = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -361,11 +483,24 @@ const AdminPrinterProtection = () => {
               </div>
             </CardContent>
           </Card>
-          <Card>
+          <Card className={pendingSerials > 0 ? 'border-amber-500/50' : ''}>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-amber-500/10 rounded-lg">
-                  <FileText className="w-5 h-5 text-amber-500" />
+                  <Package className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{pendingSerials}</p>
+                  <p className="text-sm text-muted-foreground">بانتظار السيريال</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gray-500/10 rounded-lg">
+                  <FileText className="w-5 h-5 text-gray-500" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold">{logs?.length || 0}</p>
@@ -377,13 +512,134 @@ const AdminPrinterProtection = () => {
         </div>
 
         {/* Tabs */}
-        <Tabs defaultValue="subscriptions" className="space-y-4">
+        <Tabs defaultValue="delivered-orders" className="space-y-4">
           <TabsList>
+            <TabsTrigger value="delivered-orders" className="relative">
+              طلبات مسلمة
+              {pendingSerials > 0 && (
+                <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {pendingSerials}
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="subscriptions">الاشتراكات</TabsTrigger>
             <TabsTrigger value="printers">الطابعات المسجلة</TabsTrigger>
             <TabsTrigger value="store-printers">طابعات المتجر</TabsTrigger>
             <TabsTrigger value="logs">سجل العمليات</TabsTrigger>
           </TabsList>
+
+          {/* Delivered Orders Tab - NEW */}
+          <TabsContent value="delivered-orders" className="space-y-6">
+            {/* Items needing serial */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Package className="w-5 h-5 text-amber-500" />
+                منتجات بحاجة لإضافة الرقم التسلسلي
+              </h3>
+              <Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>رقم الطلب</TableHead>
+                      <TableHead>العميل</TableHead>
+                      <TableHead>المنتج</TableHead>
+                      <TableHead>تاريخ التوصيل</TableHead>
+                      <TableHead>الإجراء</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {deliveredLoading ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8">
+                          <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                        </TableCell>
+                      </TableRow>
+                    ) : itemsNeedingSerial.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                          <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                          جميع المنتجات المسلمة لديها أرقام تسلسلية
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      itemsNeedingSerial.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-mono">{item.order.order_number}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{item.order.profiles?.full_name || item.order.profiles?.username}</p>
+                              <p className="text-xs text-muted-foreground">{item.order.profiles?.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{item.product_name_ar}</TableCell>
+                          <TableCell>
+                            {item.order.delivered_at ? format(new Date(item.order.delivered_at), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                setSelectedOrderItem(item);
+                                setSerialDialogOpen(true);
+                              }}
+                            >
+                              <Plus className="w-4 h-4 ml-1" />
+                              إضافة سيريال
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </Card>
+            </div>
+
+            {/* Items with serial */}
+            {itemsWithSerial.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-500" />
+                  منتجات بها رقم تسلسلي ({itemsWithSerial.length})
+                </h3>
+                <Card>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>رقم الطلب</TableHead>
+                        <TableHead>العميل</TableHead>
+                        <TableHead>المنتج</TableHead>
+                        <TableHead>الرقم التسلسلي</TableHead>
+                        <TableHead>تاريخ التوصيل</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {itemsWithSerial.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-mono">{item.order.order_number}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{item.order.profiles?.full_name || item.order.profiles?.username}</p>
+                              <p className="text-xs text-muted-foreground">{item.order.profiles?.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{item.product_name_ar}</TableCell>
+                          <TableCell className="font-mono text-xs" dir="ltr">
+                            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                              {item.serial_number}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {item.order.delivered_at ? format(new Date(item.order.delivered_at), 'dd/MM/yyyy', { locale: ar }) : '-'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
 
           {/* Subscriptions Tab */}
           <TabsContent value="subscriptions" className="space-y-4">
@@ -685,6 +941,62 @@ const AdminPrinterProtection = () => {
           </TabsContent>
         </Tabs>
 
+        {/* Add Serial Number Dialog */}
+        <Dialog open={serialDialogOpen} onOpenChange={setSerialDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>إضافة الرقم التسلسلي</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                <p><span className="text-muted-foreground">الطلب:</span> {selectedOrderItem?.order.order_number}</p>
+                <p><span className="text-muted-foreground">المنتج:</span> {selectedOrderItem?.product_name_ar}</p>
+                <p><span className="text-muted-foreground">العميل:</span> {selectedOrderItem?.order.profiles?.full_name || selectedOrderItem?.order.profiles?.username}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>الرقم التسلسلي (Serial Number)</Label>
+                <Input
+                  value={serialInput}
+                  onChange={(e) => setSerialInput(e.target.value)}
+                  placeholder="أدخل الرقم التسلسلي للطابعة"
+                  dir="ltr"
+                  className="text-left font-mono"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => {
+                setSerialDialogOpen(false);
+                setSelectedOrderItem(null);
+                setSerialInput('');
+              }}>
+                إلغاء
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedOrderItem && serialInput.trim()) {
+                    addSerialMutation.mutate({
+                      itemId: selectedOrderItem.id,
+                      serialNumber: serialInput.trim(),
+                      productNameAr: selectedOrderItem.product_name_ar,
+                    });
+                  }
+                }}
+                disabled={!serialInput.trim() || addSerialMutation.isPending}
+              >
+                {addSerialMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    جاري الحفظ...
+                  </>
+                ) : (
+                  'حفظ'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Add Printer Dialog */}
         <Dialog open={addPrinterDialogOpen} onOpenChange={setAddPrinterDialogOpen}>
           <DialogContent>
@@ -702,7 +1014,7 @@ const AdminPrinterProtection = () => {
                 />
               </div>
               <div className="space-y-2">
-                <Label>اسم الموديل (العربية)</Label>
+                <Label>اسم الموديل (عربي)</Label>
                 <Input
                   value={newPrinter.model_name_ar}
                   onChange={(e) => setNewPrinter(prev => ({ ...prev, model_name_ar: e.target.value }))}
@@ -716,6 +1028,7 @@ const AdminPrinterProtection = () => {
                   onChange={(e) => setNewPrinter(prev => ({ ...prev, serial_number: e.target.value }))}
                   placeholder="Serial Number"
                   dir="ltr"
+                  className="font-mono"
                 />
               </div>
             </div>
@@ -723,12 +1036,18 @@ const AdminPrinterProtection = () => {
               <Button variant="outline" onClick={() => setAddPrinterDialogOpen(false)}>
                 إلغاء
               </Button>
-              <Button 
+              <Button
                 onClick={() => addPrinterMutation.mutate()}
                 disabled={!newPrinter.model_name || !newPrinter.model_name_ar || !newPrinter.serial_number || addPrinterMutation.isPending}
               >
-                {addPrinterMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : null}
-                إضافة
+                {addPrinterMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    جاري الإضافة...
+                  </>
+                ) : (
+                  'إضافة'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -742,41 +1061,19 @@ const AdminPrinterProtection = () => {
             </DialogHeader>
             {selectedSubscription && (
               <div className="space-y-4 py-4">
-                <div className="p-3 bg-muted/50 rounded-lg text-sm space-y-1">
-                  <p><strong>المستخدم:</strong> {selectedSubscription.profiles?.username}</p>
-                  <p><strong>الطابعة:</strong> {selectedSubscription.user_printers?.store_printers?.model_name_ar}</p>
+                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
+                  <p><span className="text-muted-foreground">المستخدم:</span> {selectedSubscription.profiles?.username}</p>
+                  <p><span className="text-muted-foreground">الطابعة:</span> {selectedSubscription.user_printers?.store_printers?.model_name_ar}</p>
+                  <p className="font-mono text-sm" dir="ltr">
+                    <span className="text-muted-foreground">SN:</span> {selectedSubscription.user_printers?.store_printers?.serial_number}
+                  </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label>الباقة</Label>
-                  <Select 
-                    defaultValue={selectedSubscription.protection_plans?.id}
-                    onValueChange={(value) => updateSubscriptionMutation.mutate({ 
-                      id: selectedSubscription.id, 
-                      plan_id: value 
-                    })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {plans?.map((plan) => (
-                        <SelectItem key={plan.id} value={plan.id}>
-                          {plan.name_ar} - {plan.monthly_price.toLocaleString()} د.ع
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
                   <Label>الحالة</Label>
                   <Select 
-                    defaultValue={selectedSubscription.status}
-                    onValueChange={(value) => updateSubscriptionMutation.mutate({ 
-                      id: selectedSubscription.id, 
-                      status: value 
-                    })}
+                    value={selectedSubscription.status} 
+                    onValueChange={(value) => setSelectedSubscription(prev => prev ? { ...prev, status: value as any } : null)}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -791,25 +1088,71 @@ const AdminPrinterProtection = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>ملاحظات الإدارة</Label>
-                  <Textarea
-                    defaultValue={selectedSubscription.admin_notes || ''}
-                    placeholder="أضف ملاحظات..."
-                    onBlur={(e) => {
-                      if (e.target.value !== selectedSubscription.admin_notes) {
-                        updateSubscriptionMutation.mutate({ 
-                          id: selectedSubscription.id, 
-                          admin_notes: e.target.value 
-                        });
+                  <Label>الباقة</Label>
+                  <Select 
+                    value={selectedSubscription.protection_plans?.id}
+                    onValueChange={(value) => {
+                      const plan = plans?.find(p => p.id === value);
+                      if (plan) {
+                        setSelectedSubscription(prev => prev ? { 
+                          ...prev, 
+                          protection_plans: { ...prev.protection_plans, id: plan.id, name_ar: plan.name_ar }
+                        } : null);
                       }
                     }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plans?.map(plan => (
+                        <SelectItem key={plan.id} value={plan.id}>
+                          {plan.name_ar} - {plan.monthly_price.toLocaleString()} د.ع
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>ملاحظات الإدارة</Label>
+                  <Textarea
+                    value={selectedSubscription.admin_notes || ''}
+                    onChange={(e) => setSelectedSubscription(prev => prev ? { ...prev, admin_notes: e.target.value } : null)}
+                    placeholder="ملاحظات داخلية..."
+                    rows={3}
                   />
                 </div>
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => setEditSubscriptionDialogOpen(false)}>
-                إغلاق
+              <Button variant="outline" onClick={() => {
+                setEditSubscriptionDialogOpen(false);
+                setSelectedSubscription(null);
+              }}>
+                إلغاء
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedSubscription) {
+                    updateSubscriptionMutation.mutate({
+                      id: selectedSubscription.id,
+                      status: selectedSubscription.status,
+                      plan_id: selectedSubscription.protection_plans?.id,
+                      admin_notes: selectedSubscription.admin_notes || undefined,
+                    });
+                  }
+                }}
+                disabled={updateSubscriptionMutation.isPending}
+              >
+                {updateSubscriptionMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                    جاري الحفظ...
+                  </>
+                ) : (
+                  'حفظ التغييرات'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

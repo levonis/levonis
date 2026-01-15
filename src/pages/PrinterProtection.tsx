@@ -219,7 +219,7 @@ const PrinterProtection = () => {
 
   const openSubscribeDialog = (plan: ProtectionPlan) => {
     if (!availablePrinters || availablePrinters.length === 0) {
-      toast.error('لا توجد طابعات متاحة للاشتراك. قم بإضافة طابعة أولاً.');
+      toast.error('لا توجد طابعات متاحة للاشتراك. قم بتسجيل طابعة أولاً.');
       navigate('/my-printers');
       return;
     }
@@ -393,7 +393,7 @@ const PrinterProtection = () => {
                 </p>
                 <Button variant="outline" onClick={() => navigate('/my-printers')}>
                   <Printer className="w-4 h-4 ml-2" />
-                  إضافة طابعة أولاً
+                  عرض طابعاتي
                 </Button>
               </CardContent>
             </Card>

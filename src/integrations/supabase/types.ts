@@ -1444,6 +1444,7 @@ export type Database = {
           quantity: number
           selected_color: string | null
           selected_option: string | null
+          serial_number: string | null
           shipping_option_name_ar: string | null
           shipping_price_adjustment: number | null
           total_price: number
@@ -1463,6 +1464,7 @@ export type Database = {
           quantity?: number
           selected_color?: string | null
           selected_option?: string | null
+          serial_number?: string | null
           shipping_option_name_ar?: string | null
           shipping_price_adjustment?: number | null
           total_price: number
@@ -1482,6 +1484,7 @@ export type Database = {
           quantity?: number
           selected_color?: string | null
           selected_option?: string | null
+          serial_number?: string | null
           shipping_option_name_ar?: string | null
           shipping_price_adjustment?: number | null
           total_price?: number
@@ -2464,34 +2467,40 @@ export type Database = {
       }
       store_printers: {
         Row: {
+          buyer_user_id: string | null
           created_at: string | null
           id: string
           is_registered: boolean | null
           model_name: string
           model_name_ar: string
           order_id: string | null
+          order_item_id: string | null
           serial_number: string
           sold_at: string | null
           updated_at: string | null
         }
         Insert: {
+          buyer_user_id?: string | null
           created_at?: string | null
           id?: string
           is_registered?: boolean | null
           model_name: string
           model_name_ar: string
           order_id?: string | null
+          order_item_id?: string | null
           serial_number: string
           sold_at?: string | null
           updated_at?: string | null
         }
         Update: {
+          buyer_user_id?: string | null
           created_at?: string | null
           id?: string
           is_registered?: boolean | null
           model_name?: string
           model_name_ar?: string
           order_id?: string | null
+          order_item_id?: string | null
           serial_number?: string
           sold_at?: string | null
           updated_at?: string | null
@@ -2503,6 +2512,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "orders"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_printers_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_printers_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items_for_serial"
+            referencedColumns: ["order_item_id"]
           },
         ]
       }
@@ -2812,6 +2835,13 @@ export type Database = {
           verified_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "user_printers_store_printer_id_fkey"
+            columns: ["store_printer_id"]
+            isOneToOne: true
+            referencedRelation: "order_items_for_serial"
+            referencedColumns: ["store_printer_id"]
+          },
           {
             foreignKeyName: "user_printers_store_printer_id_fkey"
             columns: ["store_printer_id"]
@@ -3138,7 +3168,53 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      order_items_for_serial: {
+        Row: {
+          model_name: string | null
+          order_id: string | null
+          order_item_id: string | null
+          order_number: string | null
+          order_status: string | null
+          printer_model_ar: string | null
+          product_id: string | null
+          product_name: string | null
+          product_name_ar: string | null
+          quantity: number | null
+          serial_number: string | null
+          store_printer_id: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey_products"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_user_id_fkey_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       add_prize_as_product: {
@@ -3211,6 +3287,20 @@ export type Database = {
         | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       generate_ticket_number: { Args: { comp_id: string }; Returns: string }
+      get_user_delivered_printers: {
+        Args: { p_user_id: string }
+        Returns: {
+          delivered_at: string
+          is_registered: boolean
+          order_id: string
+          order_item_id: string
+          product_id: string
+          product_name: string
+          product_name_ar: string
+          serial_number: string
+          user_printer_id: string
+        }[]
+      }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
         Returns: boolean
@@ -3253,6 +3343,10 @@ export type Database = {
       redeem_letters_prize: {
         Args: { p_competition_id: string; p_word: string }
         Returns: Json
+      }
+      register_printer_from_order: {
+        Args: { p_serial_number: string; p_user_id: string }
+        Returns: string
       }
       register_user_printer: {
         Args: { p_serial_number: string; p_user_id: string }
