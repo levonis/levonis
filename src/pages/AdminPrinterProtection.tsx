@@ -274,7 +274,18 @@ const AdminPrinterProtection = () => {
 
   // Update plan mutation
   const updatePlanMutation = useMutation({
-    mutationFn: async (updates: Partial<ProtectionPlan> & { id: string }) => {
+    mutationFn: async (updates: { 
+      id: string; 
+      monthly_price?: number;
+      max_service_requests_per_month?: number;
+      maintenance_discount_percentage?: number;
+      parts_discount_percentage?: number;
+      waiting_period_days?: number;
+      priority_level?: number;
+      is_active?: boolean;
+      has_preventive_maintenance?: boolean;
+      badge_text?: string | null;
+    }) => {
       const { id, ...data } = updates;
       const { error } = await supabase
         .from('protection_plans')
@@ -1182,10 +1193,17 @@ const AdminPrinterProtection = () => {
               <Button
                 onClick={() => {
                   if (selectedPlan) {
-                    const { id, plan_type, name_ar, name_en, description_ar, features, icon_name, ...updateData } = selectedPlan;
                     updatePlanMutation.mutate({
                       id: selectedPlan.id,
-                      ...updateData,
+                      monthly_price: selectedPlan.monthly_price,
+                      max_service_requests_per_month: selectedPlan.max_service_requests_per_month,
+                      maintenance_discount_percentage: selectedPlan.maintenance_discount_percentage,
+                      parts_discount_percentage: selectedPlan.parts_discount_percentage,
+                      waiting_period_days: selectedPlan.waiting_period_days,
+                      priority_level: selectedPlan.priority_level,
+                      is_active: selectedPlan.is_active,
+                      has_preventive_maintenance: selectedPlan.has_preventive_maintenance,
+                      badge_text: selectedPlan.badge_text,
                     });
                   }
                 }}
