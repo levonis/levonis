@@ -1774,14 +1774,17 @@ export type Database = {
       printer_subscriptions: {
         Row: {
           admin_notes: string | null
+          auto_renew: boolean | null
           cancelled_at: string | null
           created_at: string | null
           end_date: string | null
           id: string
+          last_service_request_reset: string | null
           monthly_price: number
           next_billing_date: string | null
           paused_at: string | null
           plan_id: string
+          service_requests_this_month: number | null
           start_date: string
           status:
             | Database["public"]["Enums"]["printer_subscription_status"]
@@ -1789,17 +1792,21 @@ export type Database = {
           updated_at: string | null
           user_id: string
           user_printer_id: string
+          waiting_period_ends_at: string | null
         }
         Insert: {
           admin_notes?: string | null
+          auto_renew?: boolean | null
           cancelled_at?: string | null
           created_at?: string | null
           end_date?: string | null
           id?: string
+          last_service_request_reset?: string | null
           monthly_price: number
           next_billing_date?: string | null
           paused_at?: string | null
           plan_id: string
+          service_requests_this_month?: number | null
           start_date?: string
           status?:
             | Database["public"]["Enums"]["printer_subscription_status"]
@@ -1807,17 +1814,21 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           user_printer_id: string
+          waiting_period_ends_at?: string | null
         }
         Update: {
           admin_notes?: string | null
+          auto_renew?: boolean | null
           cancelled_at?: string | null
           created_at?: string | null
           end_date?: string | null
           id?: string
+          last_service_request_reset?: string | null
           monthly_price?: number
           next_billing_date?: string | null
           paused_at?: string | null
           plan_id?: string
+          service_requests_this_month?: number | null
           start_date?: string
           status?:
             | Database["public"]["Enums"]["printer_subscription_status"]
@@ -1825,6 +1836,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           user_printer_id?: string
+          waiting_period_ends_at?: string | null
         }
         Relationships: [
           {
@@ -2172,46 +2184,79 @@ export type Database = {
       }
       protection_plans: {
         Row: {
+          annual_coverage_cap: number | null
+          badge_text: string | null
           created_at: string | null
           description_ar: string | null
           description_en: string | null
           display_order: number | null
           features: Json | null
+          has_preventive_maintenance: boolean | null
+          has_replacement_printer: boolean | null
+          icon_name: string | null
           id: string
           is_active: boolean | null
+          maintenance_discount_percentage: number | null
+          max_service_requests_per_month: number | null
           monthly_price: number
           name_ar: string
           name_en: string
+          parts_discount_percentage: number | null
           plan_type: Database["public"]["Enums"]["protection_plan_type"]
+          preventive_maintenance_interval_months: number | null
+          priority_level: number | null
           updated_at: string | null
+          waiting_period_days: number | null
         }
         Insert: {
+          annual_coverage_cap?: number | null
+          badge_text?: string | null
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
           display_order?: number | null
           features?: Json | null
+          has_preventive_maintenance?: boolean | null
+          has_replacement_printer?: boolean | null
+          icon_name?: string | null
           id?: string
           is_active?: boolean | null
+          maintenance_discount_percentage?: number | null
+          max_service_requests_per_month?: number | null
           monthly_price: number
           name_ar: string
           name_en: string
+          parts_discount_percentage?: number | null
           plan_type: Database["public"]["Enums"]["protection_plan_type"]
+          preventive_maintenance_interval_months?: number | null
+          priority_level?: number | null
           updated_at?: string | null
+          waiting_period_days?: number | null
         }
         Update: {
+          annual_coverage_cap?: number | null
+          badge_text?: string | null
           created_at?: string | null
           description_ar?: string | null
           description_en?: string | null
           display_order?: number | null
           features?: Json | null
+          has_preventive_maintenance?: boolean | null
+          has_replacement_printer?: boolean | null
+          icon_name?: string | null
           id?: string
           is_active?: boolean | null
+          maintenance_discount_percentage?: number | null
+          max_service_requests_per_month?: number | null
           monthly_price?: number
           name_ar?: string
           name_en?: string
+          parts_discount_percentage?: number | null
           plan_type?: Database["public"]["Enums"]["protection_plan_type"]
+          preventive_maintenance_interval_months?: number | null
+          priority_level?: number | null
           updated_at?: string | null
+          waiting_period_days?: number | null
         }
         Relationships: []
       }
@@ -2378,6 +2423,60 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "user_listings"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      serial_number_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          order_item_id: string
+          product_name_ar: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          order_item_id: string
+          product_name_ar: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          order_item_id?: string
+          product_name_ar?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "serial_number_requests_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "serial_number_requests_order_item_id_fkey"
+            columns: ["order_item_id"]
+            isOneToOne: false
+            referencedRelation: "order_items_for_serial"
+            referencedColumns: ["order_item_id"]
           },
         ]
       }
@@ -3294,6 +3393,22 @@ export type Database = {
           is_registered: boolean
           order_id: string
           order_item_id: string
+          product_id: string
+          product_name: string
+          product_name_ar: string
+          serial_number: string
+          user_printer_id: string
+        }[]
+      }
+      get_user_eligible_printers: {
+        Args: { p_user_id: string }
+        Returns: {
+          delivered_at: string
+          has_active_subscription: boolean
+          is_registered: boolean
+          order_id: string
+          order_item_id: string
+          pending_serial_request: boolean
           product_id: string
           product_name: string
           product_name_ar: string

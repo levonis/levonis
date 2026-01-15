@@ -9,53 +9,40 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { 
-  Printer, Shield, Users, Search, Plus, Loader2, 
-  ShieldCheck, ShieldX, Play, Pause, X, Edit, 
-  FileText, Calendar, Filter, Package, CheckCircle
+  Shield, Users, Search, Loader2, ShieldCheck, Play, Pause, X, Edit, 
+  FileText, Calendar, Package, CheckCircle, Clock, AlertTriangle,
+  Crown, Star, Settings, History
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
-interface StorePrinter {
+interface ProtectionPlan {
   id: string;
-  model_name: string;
-  model_name_ar: string;
-  serial_number: string;
-  sold_at: string | null;
-  is_registered: boolean;
-  created_at: string;
-}
-
-interface UserPrinterWithDetails {
-  id: string;
-  user_id: string;
-  verification_status: string;
-  verified_at: string | null;
-  created_at: string;
-  store_printers: {
-    model_name_ar: string;
-    serial_number: string;
-  };
-  profiles: {
-    username: string;
-    email: string;
-  };
-  printer_subscriptions: Array<{
-    id: string;
-    status: string;
-    start_date: string;
-    monthly_price: number;
-    protection_plans: {
-      name_ar: string;
-      plan_type: string;
-    };
-  }>;
+  plan_type: string;
+  name_ar: string;
+  name_en: string;
+  description_ar: string;
+  monthly_price: number;
+  features: string[];
+  is_active: boolean;
+  max_service_requests_per_month: number;
+  maintenance_discount_percentage: number;
+  parts_discount_percentage: number;
+  waiting_period_days: number;
+  priority_level: number;
+  has_preventive_maintenance: boolean;
+  preventive_maintenance_interval_months: number | null;
+  has_replacement_printer: boolean;
+  icon_name: string;
+  badge_text: string | null;
+  annual_coverage_cap: number | null;
 }
 
 interface SubscriptionWithDetails {
@@ -67,6 +54,8 @@ interface SubscriptionWithDetails {
   next_billing_date: string | null;
   monthly_price: number;
   admin_notes: string | null;
+  auto_renew: boolean;
+  waiting_period_ends_at: string | null;
   user_printers: {
     store_printers: {
       model_name_ar: string;
@@ -78,6 +67,20 @@ interface SubscriptionWithDetails {
     name_ar: string;
     plan_type: string;
   };
+  profiles: {
+    username: string;
+    email: string;
+  };
+}
+
+interface SerialRequest {
+  id: string;
+  user_id: string;
+  order_item_id: string;
+  product_name_ar: string;
+  status: 'pending' | 'approved' | 'rejected';
+  admin_notes: string | null;
+  created_at: string;
   profiles: {
     username: string;
     email: string;
@@ -107,117 +110,35 @@ const AdminPrinterProtection = () => {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [addPrinterDialogOpen, setAddPrinterDialogOpen] = useState(false);
   const [editSubscriptionDialogOpen, setEditSubscriptionDialogOpen] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState<SubscriptionWithDetails | null>(null);
   const [serialDialogOpen, setSerialDialogOpen] = useState(false);
   const [selectedOrderItem, setSelectedOrderItem] = useState<DeliveredOrderItem | null>(null);
   const [serialInput, setSerialInput] = useState('');
-  
-  // New printer form state
-  const [newPrinter, setNewPrinter] = useState({
-    model_name: '',
-    model_name_ar: '',
-    serial_number: '',
-  });
+  const [editPlanDialogOpen, setEditPlanDialogOpen] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<ProtectionPlan | null>(null);
+  const [requestActionDialogOpen, setRequestActionDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<SerialRequest | null>(null);
+  const [requestAction, setRequestAction] = useState<'approve' | 'reject'>('approve');
+  const [adminNotes, setAdminNotes] = useState('');
 
-  // Fetch store printers
-  const { data: storePrinters, isLoading: printersLoading } = useQuery({
-    queryKey: ['admin-store-printers'],
+  // Fetch protection plans
+  const { data: plans, isLoading: plansLoading } = useQuery({
+    queryKey: ['admin-protection-plans'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('store_printers')
+        .from('protection_plans')
         .select('*')
-        .order('created_at', { ascending: false });
-
+        .order('display_order');
       if (error) throw error;
-      return data as StorePrinter[];
-    },
-    enabled: isAdmin,
-  });
-
-  // Fetch delivered orders needing serial numbers
-  const { data: deliveredItems, isLoading: deliveredLoading } = useQuery({
-    queryKey: ['admin-delivered-printer-items'],
-    queryFn: async () => {
-      // Get order items from delivered orders
-      const { data, error } = await supabase
-        .from('order_items')
-        .select(`
-          id,
-          order_id,
-          product_name,
-          product_name_ar,
-          serial_number,
-          orders!inner (
-            order_number,
-            delivered_at,
-            user_id,
-            status,
-            profiles (username, email, full_name)
-          )
-        `)
-        .eq('orders.status', 'delivered')
-        .order('orders(delivered_at)', { ascending: false });
-
-      if (error) throw error;
-      
-      // Transform data
-      return data?.map(item => ({
-        id: item.id,
-        order_id: item.order_id,
-        product_name: item.product_name,
-        product_name_ar: item.product_name_ar,
-        serial_number: item.serial_number,
-        order: {
-          order_number: (item.orders as any).order_number,
-          delivered_at: (item.orders as any).delivered_at,
-          user_id: (item.orders as any).user_id,
-          profiles: (item.orders as any).profiles
-        }
-      })) as DeliveredOrderItem[];
-    },
-    enabled: isAdmin,
-  });
-
-  // Fetch registered printers with user details
-  const { data: registeredPrinters, isLoading: registeredLoading } = useQuery({
-    queryKey: ['admin-registered-printers', searchTerm],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('user_printers')
-        .select(`
-          *,
-          store_printers (model_name_ar, serial_number),
-          printer_subscriptions (
-            id, status, start_date, monthly_price,
-            protection_plans (name_ar, plan_type)
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      
-      // Fetch profiles separately
-      const userIds = [...new Set(data?.map(p => p.user_id) || [])];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, username, email')
-        .in('id', userIds);
-      
-      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
-      
-      return data?.map(p => ({
-        ...p,
-        profiles: profileMap.get(p.user_id) || { username: 'غير معروف', email: '' }
-      })) as UserPrinterWithDetails[];
+      return data as ProtectionPlan[];
     },
     enabled: isAdmin,
   });
 
   // Fetch all subscriptions
   const { data: subscriptions, isLoading: subscriptionsLoading } = useQuery({
-    queryKey: ['admin-subscriptions', statusFilter],
+    queryKey: ['admin-subscriptions', statusFilter, searchTerm],
     queryFn: async () => {
       let query = supabase
         .from('printer_subscriptions')
@@ -246,26 +167,94 @@ const AdminPrinterProtection = () => {
       
       const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
       
-      return data?.map(s => ({
+      let result = data?.map(s => ({
         ...s,
         profiles: profileMap.get(s.user_id) || { username: 'غير معروف', email: '' }
       })) as SubscriptionWithDetails[];
+
+      // Filter by search term
+      if (searchTerm) {
+        result = result?.filter(s => 
+          s.profiles?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.user_printers?.store_printers?.serial_number?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+
+      return result;
     },
     enabled: isAdmin,
   });
 
-  // Fetch protection plans for editing
-  const { data: plans } = useQuery({
-    queryKey: ['protection-plans'],
+  // Fetch serial number requests
+  const { data: serialRequests, isLoading: requestsLoading } = useQuery({
+    queryKey: ['admin-serial-requests'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('protection_plans')
+        .from('serial_number_requests')
         .select('*')
-        .eq('is_active', true)
-        .order('display_order');
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
-      return data;
+
+      // Fetch profiles
+      const userIds = [...new Set(data?.map(r => r.user_id) || [])];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, email')
+        .in('id', userIds);
+      
+      const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+
+      return data?.map(r => ({
+        ...r,
+        profiles: profileMap.get(r.user_id) || { username: 'غير معروف', email: '' }
+      })) as SerialRequest[];
     },
+    enabled: isAdmin,
+  });
+
+  // Fetch delivered orders needing serial numbers
+  const { data: deliveredItems, isLoading: deliveredLoading } = useQuery({
+    queryKey: ['admin-delivered-printer-items'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('order_items')
+        .select(`
+          id,
+          order_id,
+          product_name,
+          product_name_ar,
+          serial_number,
+          orders!inner (
+            order_number,
+            delivered_at,
+            user_id,
+            status,
+            profiles (username, email, full_name)
+          )
+        `)
+        .eq('orders.status', 'delivered')
+        .is('serial_number', null)
+        .order('orders(delivered_at)', { ascending: false });
+
+      if (error) throw error;
+      
+      return data?.map(item => ({
+        id: item.id,
+        order_id: item.order_id,
+        product_name: item.product_name,
+        product_name_ar: item.product_name_ar,
+        serial_number: item.serial_number,
+        order: {
+          order_number: (item.orders as any).order_number,
+          delivered_at: (item.orders as any).delivered_at,
+          user_id: (item.orders as any).user_id,
+          profiles: (item.orders as any).profiles
+        }
+      })) as DeliveredOrderItem[];
+    },
+    enabled: isAdmin,
   });
 
   // Fetch logs
@@ -276,33 +265,35 @@ const AdminPrinterProtection = () => {
         .from('printer_protection_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(50);
       if (error) throw error;
       return data;
     },
     enabled: isAdmin,
   });
 
-  // Add store printer mutation
-  const addPrinterMutation = useMutation({
-    mutationFn: async () => {
+  // Update plan mutation
+  const updatePlanMutation = useMutation({
+    mutationFn: async (updates: Partial<ProtectionPlan> & { id: string }) => {
+      const { id, ...data } = updates;
       const { error } = await supabase
-        .from('store_printers')
-        .insert(newPrinter);
+        .from('protection_plans')
+        .update(data)
+        .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('تمت إضافة الطابعة بنجاح');
-      queryClient.invalidateQueries({ queryKey: ['admin-store-printers'] });
-      setAddPrinterDialogOpen(false);
-      setNewPrinter({ model_name: '', model_name_ar: '', serial_number: '' });
+      toast.success('تم تحديث الباقة بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['admin-protection-plans'] });
+      queryClient.invalidateQueries({ queryKey: ['protection-plans'] });
+      setEditPlanDialogOpen(false);
     },
     onError: (error: any) => {
       toast.error(error.message || 'حدث خطأ');
     },
   });
 
-  // Add serial number to order item mutation
+  // Add serial number mutation
   const addSerialMutation = useMutation({
     mutationFn: async ({ itemId, serialNumber, productNameAr }: { itemId: string; serialNumber: string; productNameAr: string }) => {
       // First, check if serial exists in store_printers
@@ -344,7 +335,7 @@ const AdminPrinterProtection = () => {
     onSuccess: () => {
       toast.success('تم إضافة الرقم التسلسلي بنجاح');
       queryClient.invalidateQueries({ queryKey: ['admin-delivered-printer-items'] });
-      queryClient.invalidateQueries({ queryKey: ['admin-store-printers'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-serial-requests'] });
       setSerialDialogOpen(false);
       setSelectedOrderItem(null);
       setSerialInput('');
@@ -397,6 +388,50 @@ const AdminPrinterProtection = () => {
     },
   });
 
+  // Handle serial request mutation
+  const handleRequestMutation = useMutation({
+    mutationFn: async ({ requestId, action, notes, orderItemId, serialNumber }: { 
+      requestId: string; 
+      action: 'approve' | 'reject'; 
+      notes: string;
+      orderItemId?: string;
+      serialNumber?: string;
+    }) => {
+      // Update request status
+      const { error } = await supabase
+        .from('serial_number_requests')
+        .update({
+          status: action === 'approve' ? 'approved' : 'rejected',
+          admin_notes: notes,
+          resolved_at: new Date().toISOString(),
+          resolved_by: user?.id,
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      // If approved and serial provided, add it to the order item
+      if (action === 'approve' && orderItemId && serialNumber) {
+        await addSerialMutation.mutateAsync({
+          itemId: orderItemId,
+          serialNumber,
+          productNameAr: selectedRequest?.product_name_ar || '',
+        });
+      }
+    },
+    onSuccess: () => {
+      toast.success(requestAction === 'approve' ? 'تمت الموافقة على الطلب' : 'تم رفض الطلب');
+      queryClient.invalidateQueries({ queryKey: ['admin-serial-requests'] });
+      setRequestActionDialogOpen(false);
+      setSelectedRequest(null);
+      setAdminNotes('');
+      setSerialInput('');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ');
+    },
+  });
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'active':
@@ -407,27 +442,34 @@ const AdminPrinterProtection = () => {
         return <Badge className="bg-destructive/20 text-destructive border-destructive/30">منتهي</Badge>;
       case 'cancelled':
         return <Badge className="bg-muted text-muted-foreground">ملغي</Badge>;
+      case 'pending':
+        return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">قيد الانتظار</Badge>;
+      case 'approved':
+        return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">تمت الموافقة</Badge>;
+      case 'rejected':
+        return <Badge className="bg-destructive/20 text-destructive border-destructive/30">مرفوض</Badge>;
       default:
         return null;
     }
   };
 
-  const filteredPrinters = registeredPrinters?.filter(p => 
-    p.store_printers?.serial_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.store_printers?.model_name_ar?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.profiles?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.profiles?.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Filter delivered items - those needing serial vs those with serial
-  const itemsNeedingSerial = deliveredItems?.filter(item => !item.serial_number) || [];
-  const itemsWithSerial = deliveredItems?.filter(item => item.serial_number) || [];
+  const getPlanIcon = (iconName: string) => {
+    switch (iconName) {
+      case 'shield':
+        return <Shield className="w-5 h-5" />;
+      case 'star':
+        return <Star className="w-5 h-5" />;
+      case 'crown':
+        return <Crown className="w-5 h-5" />;
+      default:
+        return <Shield className="w-5 h-5" />;
+    }
+  };
 
   // Stats
-  const totalPrinters = storePrinters?.length || 0;
-  const registeredCount = storePrinters?.filter(p => p.is_registered).length || 0;
+  const pendingRequests = serialRequests?.filter(r => r.status === 'pending').length || 0;
   const activeSubscriptions = subscriptions?.filter(s => s.status === 'active').length || 0;
-  const pendingSerials = itemsNeedingSerial.length;
+  const itemsNeedingSerial = deliveredItems?.length || 0;
 
   return (
     <AdminLayout title="إدارة حماية الطابعات">
@@ -438,25 +480,12 @@ const AdminPrinterProtection = () => {
               <Shield className="w-7 h-7 text-primary" />
               إدارة حماية الطابعات
             </h1>
-            <p className="text-muted-foreground mt-1">إدارة الطابعات والاشتراكات</p>
+            <p className="text-muted-foreground mt-1">إدارة الباقات والاشتراكات وطلبات الأرقام التسلسلية</p>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-5">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-500/10 rounded-lg">
-                  <Printer className="w-5 h-5 text-blue-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{totalPrinters}</p>
-                  <p className="text-sm text-muted-foreground">طابعات المتجر</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid gap-4 md:grid-cols-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center gap-3">
@@ -464,8 +493,34 @@ const AdminPrinterProtection = () => {
                   <ShieldCheck className="w-5 h-5 text-green-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{registeredCount}</p>
-                  <p className="text-sm text-muted-foreground">طابعات مسجلة</p>
+                  <p className="text-2xl font-bold">{activeSubscriptions}</p>
+                  <p className="text-sm text-muted-foreground">اشتراكات نشطة</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className={pendingRequests > 0 ? 'border-amber-500/50' : ''}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-amber-500/10 rounded-lg">
+                  <Clock className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{pendingRequests}</p>
+                  <p className="text-sm text-muted-foreground">طلبات سيريال معلقة</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className={itemsNeedingSerial > 0 ? 'border-orange-500/50' : ''}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-500/10 rounded-lg">
+                  <Package className="w-5 h-5 text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{itemsNeedingSerial}</p>
+                  <p className="text-sm text-muted-foreground">منتجات بدون سيريال</p>
                 </div>
               </div>
             </CardContent>
@@ -477,581 +532,434 @@ const AdminPrinterProtection = () => {
                   <Users className="w-5 h-5 text-purple-500" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{activeSubscriptions}</p>
-                  <p className="text-sm text-muted-foreground">اشتراكات نشطة</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className={pendingSerials > 0 ? 'border-amber-500/50' : ''}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-amber-500/10 rounded-lg">
-                  <Package className="w-5 h-5 text-amber-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{pendingSerials}</p>
-                  <p className="text-sm text-muted-foreground">بانتظار السيريال</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gray-500/10 rounded-lg">
-                  <FileText className="w-5 h-5 text-gray-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{logs?.length || 0}</p>
-                  <p className="text-sm text-muted-foreground">سجل العمليات</p>
+                  <p className="text-2xl font-bold">{subscriptions?.length || 0}</p>
+                  <p className="text-sm text-muted-foreground">إجمالي الاشتراكات</p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="delivered-orders" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="delivered-orders" className="relative">
-              طلبات مسلمة
-              {pendingSerials > 0 && (
-                <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {pendingSerials}
-                </span>
+        <Tabs defaultValue="subscriptions" className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="subscriptions">الاشتراكات</TabsTrigger>
+            <TabsTrigger value="plans">الباقات</TabsTrigger>
+            <TabsTrigger value="requests" className="relative">
+              طلبات السيريال
+              {pendingRequests > 0 && (
+                <Badge className="mr-2 bg-amber-500 text-white text-xs px-1.5">{pendingRequests}</Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="subscriptions">الاشتراكات</TabsTrigger>
-            <TabsTrigger value="printers">الطابعات المسجلة</TabsTrigger>
-            <TabsTrigger value="store-printers">طابعات المتجر</TabsTrigger>
-            <TabsTrigger value="logs">سجل العمليات</TabsTrigger>
+            <TabsTrigger value="delivered">الطلبات الموصلة</TabsTrigger>
+            <TabsTrigger value="logs">السجل</TabsTrigger>
           </TabsList>
 
-          {/* Delivered Orders Tab - NEW */}
-          <TabsContent value="delivered-orders" className="space-y-6">
-            {/* Items needing serial */}
-            <div>
-              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Package className="w-5 h-5 text-amber-500" />
-                منتجات بحاجة لإضافة الرقم التسلسلي
-              </h3>
-              <Card>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>رقم الطلب</TableHead>
-                      <TableHead>العميل</TableHead>
-                      <TableHead>المنتج</TableHead>
-                      <TableHead>تاريخ التوصيل</TableHead>
-                      <TableHead>الإجراء</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {deliveredLoading ? (
+          {/* Subscriptions Tab */}
+          <TabsContent value="subscriptions" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  إدارة الاشتراكات
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex gap-4 mb-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      placeholder="بحث بالاسم أو الإيميل أو السيريال..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pr-10"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue placeholder="الحالة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">الكل</SelectItem>
+                      <SelectItem value="active">نشط</SelectItem>
+                      <SelectItem value="paused">متوقف</SelectItem>
+                      <SelectItem value="expired">منتهي</SelectItem>
+                      <SelectItem value="cancelled">ملغي</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {subscriptionsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8">
-                          <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                        </TableCell>
+                        <TableHead>المستخدم</TableHead>
+                        <TableHead>الطابعة</TableHead>
+                        <TableHead>الباقة</TableHead>
+                        <TableHead>السعر</TableHead>
+                        <TableHead>الحالة</TableHead>
+                        <TableHead>تاريخ البدء</TableHead>
+                        <TableHead>إجراءات</TableHead>
                       </TableRow>
-                    ) : itemsNeedingSerial.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                          <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
-                          جميع المنتجات المسلمة لديها أرقام تسلسلية
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      itemsNeedingSerial.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-mono">{item.order.order_number}</TableCell>
+                    </TableHeader>
+                    <TableBody>
+                      {subscriptions?.map((sub) => (
+                        <TableRow key={sub.id}>
                           <TableCell>
                             <div>
-                              <p className="font-medium">{item.order.profiles?.full_name || item.order.profiles?.username}</p>
-                              <p className="text-xs text-muted-foreground">{item.order.profiles?.email}</p>
+                              <p className="font-medium">{sub.profiles?.username}</p>
+                              <p className="text-sm text-muted-foreground">{sub.profiles?.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{sub.user_printers?.store_printers?.model_name_ar}</p>
+                              <p className="text-xs font-mono text-muted-foreground" dir="ltr">
+                                {sub.user_printers?.store_printers?.serial_number}
+                              </p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{sub.protection_plans?.name_ar}</TableCell>
+                          <TableCell>{sub.monthly_price?.toLocaleString()} د.ع</TableCell>
+                          <TableCell>{getStatusBadge(sub.status)}</TableCell>
+                          <TableCell>{format(new Date(sub.start_date), 'dd/MM/yyyy')}</TableCell>
+                          <TableCell>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setSelectedSubscription(sub);
+                                  setEditSubscriptionDialogOpen(true);
+                                }}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              {sub.status === 'active' && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => updateSubscriptionMutation.mutate({ id: sub.id, status: 'paused' })}
+                                >
+                                  <Pause className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {sub.status === 'paused' && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => updateSubscriptionMutation.mutate({ id: sub.id, status: 'active' })}
+                                >
+                                  <Play className="w-4 h-4" />
+                                </Button>
+                              )}
+                              {(sub.status === 'active' || sub.status === 'paused') && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="text-destructive"
+                                  onClick={() => updateSubscriptionMutation.mutate({ id: sub.id, status: 'cancelled' })}
+                                >
+                                  <X className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {(!subscriptions || subscriptions.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                            لا توجد اشتراكات
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Plans Tab */}
+          <TabsContent value="plans" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="w-5 h-5" />
+                  إدارة الباقات
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {plansLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-3">
+                    {plans?.map((plan) => (
+                      <Card key={plan.id} className={!plan.is_active ? 'opacity-60' : ''}>
+                        <CardHeader className="pb-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`p-2 rounded-lg ${
+                                plan.plan_type === 'basic' ? 'bg-blue-500/10 text-blue-500' :
+                                plan.plan_type === 'standard' ? 'bg-purple-500/10 text-purple-500' :
+                                'bg-amber-500/10 text-amber-500'
+                              }`}>
+                                {getPlanIcon(plan.icon_name)}
+                              </div>
+                              <div>
+                                <CardTitle className="text-lg">{plan.name_ar}</CardTitle>
+                                <p className="text-sm text-muted-foreground">{plan.name_en}</p>
+                              </div>
+                            </div>
+                            <Badge variant={plan.is_active ? 'default' : 'secondary'}>
+                              {plan.is_active ? 'نشطة' : 'معطلة'}
+                            </Badge>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                          <div className="text-2xl font-bold">
+                            {plan.monthly_price.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">د.ع/شهر</span>
+                          </div>
+                          <div className="space-y-1 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">خصم الصيانة:</span>
+                              <span>{plan.maintenance_discount_percentage}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">خصم قطع الغيار:</span>
+                              <span>{plan.parts_discount_percentage}%</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">طلبات الخدمة/شهر:</span>
+                              <span>{plan.max_service_requests_per_month}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">فترة الانتظار:</span>
+                              <span>{plan.waiting_period_days} يوم</span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              setSelectedPlan(plan);
+                              setEditPlanDialogOpen(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4 ml-2" />
+                            تعديل
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Serial Requests Tab */}
+          <TabsContent value="requests" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  طلبات إضافة الرقم التسلسلي
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {requestsLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>المستخدم</TableHead>
+                        <TableHead>المنتج</TableHead>
+                        <TableHead>الحالة</TableHead>
+                        <TableHead>تاريخ الطلب</TableHead>
+                        <TableHead>إجراءات</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {serialRequests?.map((request) => (
+                        <TableRow key={request.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{request.profiles?.username}</p>
+                              <p className="text-sm text-muted-foreground">{request.profiles?.email}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell>{request.product_name_ar}</TableCell>
+                          <TableCell>{getStatusBadge(request.status)}</TableCell>
+                          <TableCell>{format(new Date(request.created_at), 'dd/MM/yyyy HH:mm')}</TableCell>
+                          <TableCell>
+                            {request.status === 'pending' && (
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-green-500"
+                                  onClick={() => {
+                                    setSelectedRequest(request);
+                                    setRequestAction('approve');
+                                    setRequestActionDialogOpen(true);
+                                  }}
+                                >
+                                  <CheckCircle className="w-4 h-4 ml-1" />
+                                  موافقة
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-destructive"
+                                  onClick={() => {
+                                    setSelectedRequest(request);
+                                    setRequestAction('reject');
+                                    setRequestActionDialogOpen(true);
+                                  }}
+                                >
+                                  <X className="w-4 h-4 ml-1" />
+                                  رفض
+                                </Button>
+                              </div>
+                            )}
+                            {request.admin_notes && (
+                              <p className="text-xs text-muted-foreground mt-1">{request.admin_notes}</p>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {(!serialRequests || serialRequests.length === 0) && (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                            لا توجد طلبات
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Delivered Orders Tab */}
+          <TabsContent value="delivered" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Package className="w-5 h-5" />
+                  الطلبات الموصلة بدون رقم تسلسلي
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {deliveredLoading ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                  </div>
+                ) : deliveredItems && deliveredItems.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>رقم الطلب</TableHead>
+                        <TableHead>المستخدم</TableHead>
+                        <TableHead>المنتج</TableHead>
+                        <TableHead>تاريخ التوصيل</TableHead>
+                        <TableHead>إجراءات</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {deliveredItems.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell className="font-mono">{item.order?.order_number}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{item.order?.profiles?.full_name || item.order?.profiles?.username}</p>
+                              <p className="text-sm text-muted-foreground">{item.order?.profiles?.email}</p>
                             </div>
                           </TableCell>
                           <TableCell>{item.product_name_ar}</TableCell>
-                          <TableCell>
-                            {item.order.delivered_at ? format(new Date(item.order.delivered_at), 'dd/MM/yyyy', { locale: ar }) : '-'}
-                          </TableCell>
+                          <TableCell>{item.order?.delivered_at ? format(new Date(item.order.delivered_at), 'dd/MM/yyyy') : '-'}</TableCell>
                           <TableCell>
                             <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => {
                                 setSelectedOrderItem(item);
                                 setSerialDialogOpen(true);
                               }}
                             >
-                              <Plus className="w-4 h-4 ml-1" />
                               إضافة سيريال
                             </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </Card>
-            </div>
-
-            {/* Items with serial */}
-            {itemsWithSerial.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-500" />
-                  منتجات بها رقم تسلسلي ({itemsWithSerial.length})
-                </h3>
-                <Card>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>رقم الطلب</TableHead>
-                        <TableHead>العميل</TableHead>
-                        <TableHead>المنتج</TableHead>
-                        <TableHead>الرقم التسلسلي</TableHead>
-                        <TableHead>تاريخ التوصيل</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {itemsWithSerial.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-mono">{item.order.order_number}</TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="font-medium">{item.order.profiles?.full_name || item.order.profiles?.username}</p>
-                              <p className="text-xs text-muted-foreground">{item.order.profiles?.email}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>{item.product_name_ar}</TableCell>
-                          <TableCell className="font-mono text-xs" dir="ltr">
-                            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
-                              {item.serial_number}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            {item.order.delivered_at ? format(new Date(item.order.delivered_at), 'dd/MM/yyyy', { locale: ar }) : '-'}
                           </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
                   </Table>
-                </Card>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Subscriptions Tab */}
-          <TabsContent value="subscriptions" className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-muted-foreground" />
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="الحالة" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">الكل</SelectItem>
-                    <SelectItem value="active">نشط</SelectItem>
-                    <SelectItem value="paused">متوقف</SelectItem>
-                    <SelectItem value="expired">منتهي</SelectItem>
-                    <SelectItem value="cancelled">ملغي</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>المستخدم</TableHead>
-                    <TableHead>الطابعة</TableHead>
-                    <TableHead>الرقم التسلسلي</TableHead>
-                    <TableHead>الباقة</TableHead>
-                    <TableHead>تاريخ البدء</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>الإجراءات</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subscriptionsLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                      </TableCell>
-                    </TableRow>
-                  ) : subscriptions?.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        لا توجد اشتراكات
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    subscriptions?.map((sub) => (
-                      <TableRow key={sub.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{sub.profiles?.username}</p>
-                            <p className="text-xs text-muted-foreground">{sub.profiles?.email}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>{sub.user_printers?.store_printers?.model_name_ar}</TableCell>
-                        <TableCell className="font-mono text-xs" dir="ltr">
-                          {sub.user_printers?.store_printers?.serial_number}
-                        </TableCell>
-                        <TableCell>{sub.protection_plans?.name_ar}</TableCell>
-                        <TableCell>
-                          {format(new Date(sub.start_date), 'dd/MM/yyyy', { locale: ar })}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(sub.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            {sub.status === 'active' && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => updateSubscriptionMutation.mutate({ id: sub.id, status: 'paused' })}
-                                title="إيقاف مؤقت"
-                              >
-                                <Pause className="w-4 h-4" />
-                              </Button>
-                            )}
-                            {sub.status === 'paused' && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                onClick={() => updateSubscriptionMutation.mutate({ id: sub.id, status: 'active' })}
-                                title="تفعيل"
-                              >
-                                <Play className="w-4 h-4" />
-                              </Button>
-                            )}
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                setSelectedSubscription(sub);
-                                setEditSubscriptionDialogOpen(true);
-                              }}
-                              title="تعديل"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            {sub.status !== 'cancelled' && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="text-destructive"
-                                onClick={() => updateSubscriptionMutation.mutate({ id: sub.id, status: 'cancelled' })}
-                                title="إلغاء"
-                              >
-                                <X className="w-4 h-4" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
-
-          {/* Registered Printers Tab */}
-          <TabsContent value="printers" className="space-y-4">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="بحث بالاسم، البريد، الرقم التسلسلي..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
-            </div>
-
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>المستخدم</TableHead>
-                    <TableHead>البريد الإلكتروني</TableHead>
-                    <TableHead>الموديل</TableHead>
-                    <TableHead>الرقم التسلسلي</TableHead>
-                    <TableHead>حالة التحقق</TableHead>
-                    <TableHead>الاشتراك</TableHead>
-                    <TableHead>تاريخ التسجيل</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {registeredLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                      </TableCell>
-                    </TableRow>
-                  ) : filteredPrinters?.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        لا توجد طابعات مسجلة
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredPrinters?.map((printer) => {
-                      const activeSubscription = printer.printer_subscriptions?.find(s => s.status === 'active');
-                      return (
-                        <TableRow key={printer.id}>
-                          <TableCell className="font-medium">{printer.profiles?.username}</TableCell>
-                          <TableCell>{printer.profiles?.email}</TableCell>
-                          <TableCell>{printer.store_printers?.model_name_ar}</TableCell>
-                          <TableCell className="font-mono text-xs" dir="ltr">
-                            {printer.store_printers?.serial_number}
-                          </TableCell>
-                          <TableCell>
-                            {printer.verification_status === 'verified' ? (
-                              <Badge className="bg-green-500/20 text-green-400 border-green-500/30">موثق</Badge>
-                            ) : (
-                              <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">قيد المراجعة</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {activeSubscription ? (
-                              <Badge className="bg-primary/20 text-primary border-primary/30">
-                                {activeSubscription.protection_plans?.name_ar}
-                              </Badge>
-                            ) : (
-                              <span className="text-muted-foreground text-sm">غير مشترك</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {format(new Date(printer.created_at), 'dd/MM/yyyy', { locale: ar })}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })
-                  )}
-                </TableBody>
-              </Table>
-            </Card>
-          </TabsContent>
-
-          {/* Store Printers Tab */}
-          <TabsContent value="store-printers" className="space-y-4">
-            <div className="flex justify-end">
-              <Button onClick={() => setAddPrinterDialogOpen(true)}>
-                <Plus className="w-4 h-4 ml-2" />
-                إضافة طابعة
-              </Button>
-            </div>
-
-            <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>الموديل (EN)</TableHead>
-                    <TableHead>الموديل (AR)</TableHead>
-                    <TableHead>الرقم التسلسلي</TableHead>
-                    <TableHead>تاريخ البيع</TableHead>
-                    <TableHead>الحالة</TableHead>
-                    <TableHead>تاريخ الإضافة</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {printersLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-                      </TableCell>
-                    </TableRow>
-                  ) : storePrinters?.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        لا توجد طابعات
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    storePrinters?.map((printer) => (
-                      <TableRow key={printer.id}>
-                        <TableCell>{printer.model_name}</TableCell>
-                        <TableCell>{printer.model_name_ar}</TableCell>
-                        <TableCell className="font-mono text-xs" dir="ltr">
-                          {printer.serial_number}
-                        </TableCell>
-                        <TableCell>
-                          {printer.sold_at 
-                            ? format(new Date(printer.sold_at), 'dd/MM/yyyy', { locale: ar })
-                            : '-'
-                          }
-                        </TableCell>
-                        <TableCell>
-                          {printer.is_registered ? (
-                            <Badge className="bg-green-500/20 text-green-400 border-green-500/30">مسجلة</Badge>
-                          ) : (
-                            <Badge className="bg-muted text-muted-foreground">غير مسجلة</Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(printer.created_at), 'dd/MM/yyyy', { locale: ar })}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-500" />
+                    <p>جميع الطلبات الموصلة لديها رقم تسلسلي</p>
+                  </div>
+                )}
+              </CardContent>
             </Card>
           </TabsContent>
 
           {/* Logs Tab */}
           <TabsContent value="logs" className="space-y-4">
             <Card>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>التاريخ</TableHead>
-                    <TableHead>الإجراء</TableHead>
-                    <TableHead>النوع</TableHead>
-                    <TableHead>التفاصيل</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {logs?.length === 0 ? (
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <History className="w-5 h-5" />
+                  سجل التغييرات
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        لا توجد سجلات
-                      </TableCell>
+                      <TableHead>الإجراء</TableHead>
+                      <TableHead>النوع</TableHead>
+                      <TableHead>التفاصيل</TableHead>
+                      <TableHead>التاريخ</TableHead>
                     </TableRow>
-                  ) : (
-                    logs?.map((log) => (
+                  </TableHeader>
+                  <TableBody>
+                    {logs?.map((log) => (
                       <TableRow key={log.id}>
                         <TableCell>
-                          {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm', { locale: ar })}
+                          <Badge variant="outline">{log.action}</Badge>
                         </TableCell>
-                        <TableCell>{log.action}</TableCell>
                         <TableCell>{log.entity_type}</TableCell>
                         <TableCell className="max-w-xs truncate">
                           {JSON.stringify(log.details)}
                         </TableCell>
+                        <TableCell>{format(new Date(log.created_at!), 'dd/MM/yyyy HH:mm')}</TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ))}
+                    {(!logs || logs.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                          لا توجد سجلات
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
-
-        {/* Add Serial Number Dialog */}
-        <Dialog open={serialDialogOpen} onOpenChange={setSerialDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>إضافة الرقم التسلسلي</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                <p><span className="text-muted-foreground">الطلب:</span> {selectedOrderItem?.order.order_number}</p>
-                <p><span className="text-muted-foreground">المنتج:</span> {selectedOrderItem?.product_name_ar}</p>
-                <p><span className="text-muted-foreground">العميل:</span> {selectedOrderItem?.order.profiles?.full_name || selectedOrderItem?.order.profiles?.username}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>الرقم التسلسلي (Serial Number)</Label>
-                <Input
-                  value={serialInput}
-                  onChange={(e) => setSerialInput(e.target.value)}
-                  placeholder="أدخل الرقم التسلسلي للطابعة"
-                  dir="ltr"
-                  className="text-left font-mono"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setSerialDialogOpen(false);
-                setSelectedOrderItem(null);
-                setSerialInput('');
-              }}>
-                إلغاء
-              </Button>
-              <Button
-                onClick={() => {
-                  if (selectedOrderItem && serialInput.trim()) {
-                    addSerialMutation.mutate({
-                      itemId: selectedOrderItem.id,
-                      serialNumber: serialInput.trim(),
-                      productNameAr: selectedOrderItem.product_name_ar,
-                    });
-                  }
-                }}
-                disabled={!serialInput.trim() || addSerialMutation.isPending}
-              >
-                {addSerialMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    جاري الحفظ...
-                  </>
-                ) : (
-                  'حفظ'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Add Printer Dialog */}
-        <Dialog open={addPrinterDialogOpen} onOpenChange={setAddPrinterDialogOpen}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>إضافة طابعة جديدة للمتجر</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>اسم الموديل (English)</Label>
-                <Input
-                  value={newPrinter.model_name}
-                  onChange={(e) => setNewPrinter(prev => ({ ...prev, model_name: e.target.value }))}
-                  placeholder="e.g., Creality Ender 3"
-                  dir="ltr"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>اسم الموديل (عربي)</Label>
-                <Input
-                  value={newPrinter.model_name_ar}
-                  onChange={(e) => setNewPrinter(prev => ({ ...prev, model_name_ar: e.target.value }))}
-                  placeholder="مثال: كريالتي إندر 3"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>الرقم التسلسلي</Label>
-                <Input
-                  value={newPrinter.serial_number}
-                  onChange={(e) => setNewPrinter(prev => ({ ...prev, serial_number: e.target.value }))}
-                  placeholder="Serial Number"
-                  dir="ltr"
-                  className="font-mono"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setAddPrinterDialogOpen(false)}>
-                إلغاء
-              </Button>
-              <Button
-                onClick={() => addPrinterMutation.mutate()}
-                disabled={!newPrinter.model_name || !newPrinter.model_name_ar || !newPrinter.serial_number || addPrinterMutation.isPending}
-              >
-                {addPrinterMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    جاري الإضافة...
-                  </>
-                ) : (
-                  'إضافة'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* Edit Subscription Dialog */}
         <Dialog open={editSubscriptionDialogOpen} onOpenChange={setEditSubscriptionDialogOpen}>
@@ -1061,51 +969,22 @@ const AdminPrinterProtection = () => {
             </DialogHeader>
             {selectedSubscription && (
               <div className="space-y-4 py-4">
-                <div className="p-4 bg-muted/50 rounded-lg space-y-2">
-                  <p><span className="text-muted-foreground">المستخدم:</span> {selectedSubscription.profiles?.username}</p>
-                  <p><span className="text-muted-foreground">الطابعة:</span> {selectedSubscription.user_printers?.store_printers?.model_name_ar}</p>
-                  <p className="font-mono text-sm" dir="ltr">
-                    <span className="text-muted-foreground">SN:</span> {selectedSubscription.user_printers?.store_printers?.serial_number}
-                  </p>
-                </div>
-                
                 <div className="space-y-2">
-                  <Label>الحالة</Label>
-                  <Select 
-                    value={selectedSubscription.status} 
-                    onValueChange={(value) => setSelectedSubscription(prev => prev ? { ...prev, status: value as any } : null)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">نشط</SelectItem>
-                      <SelectItem value="paused">متوقف</SelectItem>
-                      <SelectItem value="expired">منتهي</SelectItem>
-                      <SelectItem value="cancelled">ملغي</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>الباقة</Label>
-                  <Select 
-                    value={selectedSubscription.protection_plans?.id}
+                  <Label>تغيير الباقة</Label>
+                  <Select
+                    defaultValue={selectedSubscription.protection_plans?.id}
                     onValueChange={(value) => {
-                      const plan = plans?.find(p => p.id === value);
-                      if (plan) {
-                        setSelectedSubscription(prev => prev ? { 
-                          ...prev, 
-                          protection_plans: { ...prev.protection_plans, id: plan.id, name_ar: plan.name_ar }
-                        } : null);
-                      }
+                      updateSubscriptionMutation.mutate({
+                        id: selectedSubscription.id,
+                        plan_id: value,
+                      });
                     }}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {plans?.map(plan => (
+                      {plans?.filter(p => p.is_active).map((plan) => (
                         <SelectItem key={plan.id} value={plan.id}>
                           {plan.name_ar} - {plan.monthly_price.toLocaleString()} د.ع
                         </SelectItem>
@@ -1113,45 +992,274 @@ const AdminPrinterProtection = () => {
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
                   <Label>ملاحظات الإدارة</Label>
                   <Textarea
-                    value={selectedSubscription.admin_notes || ''}
-                    onChange={(e) => setSelectedSubscription(prev => prev ? { ...prev, admin_notes: e.target.value } : null)}
-                    placeholder="ملاحظات داخلية..."
-                    rows={3}
+                    defaultValue={selectedSubscription.admin_notes || ''}
+                    onChange={(e) => {
+                      // Save on blur
+                    }}
+                    onBlur={(e) => {
+                      if (e.target.value !== selectedSubscription.admin_notes) {
+                        updateSubscriptionMutation.mutate({
+                          id: selectedSubscription.id,
+                          admin_notes: e.target.value,
+                        });
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Serial Dialog */}
+        <Dialog open={serialDialogOpen} onOpenChange={setSerialDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>إضافة رقم تسلسلي</DialogTitle>
+              <DialogDescription>
+                أدخل الرقم التسلسلي للمنتج: {selectedOrderItem?.product_name_ar}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>الرقم التسلسلي</Label>
+                <Input
+                  value={serialInput}
+                  onChange={(e) => setSerialInput(e.target.value)}
+                  placeholder="مثال: SN-123456789"
+                  dir="ltr"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSerialDialogOpen(false)}>
+                إلغاء
+              </Button>
+              <Button
+                onClick={() => {
+                  if (!serialInput.trim()) {
+                    toast.error('الرجاء إدخال الرقم التسلسلي');
+                    return;
+                  }
+                  addSerialMutation.mutate({
+                    itemId: selectedOrderItem!.id,
+                    serialNumber: serialInput.trim(),
+                    productNameAr: selectedOrderItem!.product_name_ar,
+                  });
+                }}
+                disabled={addSerialMutation.isPending}
+              >
+                {addSerialMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  'حفظ'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Plan Dialog */}
+        <Dialog open={editPlanDialogOpen} onOpenChange={setEditPlanDialogOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>تعديل الباقة: {selectedPlan?.name_ar}</DialogTitle>
+            </DialogHeader>
+            {selectedPlan && (
+              <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>السعر الشهري (د.ع)</Label>
+                    <Input
+                      type="number"
+                      defaultValue={selectedPlan.monthly_price}
+                      onChange={(e) => setSelectedPlan({
+                        ...selectedPlan,
+                        monthly_price: Number(e.target.value),
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>طلبات الخدمة/شهر</Label>
+                    <Input
+                      type="number"
+                      defaultValue={selectedPlan.max_service_requests_per_month}
+                      onChange={(e) => setSelectedPlan({
+                        ...selectedPlan,
+                        max_service_requests_per_month: Number(e.target.value),
+                      })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>خصم الصيانة (%)</Label>
+                    <Input
+                      type="number"
+                      defaultValue={selectedPlan.maintenance_discount_percentage}
+                      onChange={(e) => setSelectedPlan({
+                        ...selectedPlan,
+                        maintenance_discount_percentage: Number(e.target.value),
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>خصم قطع الغيار (%)</Label>
+                    <Input
+                      type="number"
+                      defaultValue={selectedPlan.parts_discount_percentage}
+                      onChange={(e) => setSelectedPlan({
+                        ...selectedPlan,
+                        parts_discount_percentage: Number(e.target.value),
+                      })}
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>فترة الانتظار (أيام)</Label>
+                    <Input
+                      type="number"
+                      defaultValue={selectedPlan.waiting_period_days}
+                      onChange={(e) => setSelectedPlan({
+                        ...selectedPlan,
+                        waiting_period_days: Number(e.target.value),
+                      })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>مستوى الأولوية</Label>
+                    <Input
+                      type="number"
+                      defaultValue={selectedPlan.priority_level}
+                      onChange={(e) => setSelectedPlan({
+                        ...selectedPlan,
+                        priority_level: Number(e.target.value),
+                      })}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>الباقة نشطة</Label>
+                  <Switch
+                    checked={selectedPlan.is_active}
+                    onCheckedChange={(checked) => setSelectedPlan({
+                      ...selectedPlan,
+                      is_active: checked,
+                    })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label>صيانة وقائية</Label>
+                  <Switch
+                    checked={selectedPlan.has_preventive_maintenance}
+                    onCheckedChange={(checked) => setSelectedPlan({
+                      ...selectedPlan,
+                      has_preventive_maintenance: checked,
+                    })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>نص الشارة (مثل: الأكثر شعبية)</Label>
+                  <Input
+                    defaultValue={selectedPlan.badge_text || ''}
+                    onChange={(e) => setSelectedPlan({
+                      ...selectedPlan,
+                      badge_text: e.target.value || null,
+                    })}
+                    placeholder="اتركه فارغاً لإخفاء الشارة"
                   />
                 </div>
               </div>
             )}
             <DialogFooter>
-              <Button variant="outline" onClick={() => {
-                setEditSubscriptionDialogOpen(false);
-                setSelectedSubscription(null);
-              }}>
+              <Button variant="outline" onClick={() => setEditPlanDialogOpen(false)}>
                 إلغاء
               </Button>
               <Button
                 onClick={() => {
-                  if (selectedSubscription) {
-                    updateSubscriptionMutation.mutate({
-                      id: selectedSubscription.id,
-                      status: selectedSubscription.status,
-                      plan_id: selectedSubscription.protection_plans?.id,
-                      admin_notes: selectedSubscription.admin_notes || undefined,
+                  if (selectedPlan) {
+                    const { id, plan_type, name_ar, name_en, description_ar, features, icon_name, ...updateData } = selectedPlan;
+                    updatePlanMutation.mutate({
+                      id: selectedPlan.id,
+                      ...updateData,
                     });
                   }
                 }}
-                disabled={updateSubscriptionMutation.isPending}
+                disabled={updatePlanMutation.isPending}
               >
-                {updateSubscriptionMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 ml-2 animate-spin" />
-                    جاري الحفظ...
-                  </>
+                {updatePlanMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
                   'حفظ التغييرات'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Request Action Dialog */}
+        <Dialog open={requestActionDialogOpen} onOpenChange={setRequestActionDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {requestAction === 'approve' ? 'الموافقة على الطلب' : 'رفض الطلب'}
+              </DialogTitle>
+              <DialogDescription>
+                المنتج: {selectedRequest?.product_name_ar}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              {requestAction === 'approve' && (
+                <div className="space-y-2">
+                  <Label>الرقم التسلسلي</Label>
+                  <Input
+                    value={serialInput}
+                    onChange={(e) => setSerialInput(e.target.value)}
+                    placeholder="أدخل الرقم التسلسلي للطابعة"
+                    dir="ltr"
+                  />
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label>ملاحظات للمستخدم</Label>
+                <Textarea
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder={requestAction === 'approve' ? 'تم إضافة الرقم التسلسلي بنجاح' : 'سبب الرفض...'}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRequestActionDialogOpen(false)}>
+                إلغاء
+              </Button>
+              <Button
+                variant={requestAction === 'approve' ? 'default' : 'destructive'}
+                onClick={() => {
+                  if (requestAction === 'approve' && !serialInput.trim()) {
+                    toast.error('الرجاء إدخال الرقم التسلسلي');
+                    return;
+                  }
+                  handleRequestMutation.mutate({
+                    requestId: selectedRequest!.id,
+                    action: requestAction,
+                    notes: adminNotes,
+                    orderItemId: requestAction === 'approve' ? selectedRequest?.order_item_id : undefined,
+                    serialNumber: requestAction === 'approve' ? serialInput.trim() : undefined,
+                  });
+                }}
+                disabled={handleRequestMutation.isPending}
+              >
+                {handleRequestMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : requestAction === 'approve' ? (
+                  'موافقة وإضافة السيريال'
+                ) : (
+                  'رفض الطلب'
                 )}
               </Button>
             </DialogFooter>
