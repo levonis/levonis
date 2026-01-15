@@ -1705,6 +1705,101 @@ export type Database = {
           },
         ]
       }
+      parts_discount_requests: {
+        Row: {
+          admin_notes: string | null
+          approved_at: string | null
+          approved_by: string | null
+          category_id: string | null
+          created_at: string
+          defect_description: string
+          defect_images: string[] | null
+          discount_percentage: number
+          discounted_price: number
+          expires_at: string | null
+          id: string
+          order_id: string | null
+          original_price: number
+          product_id: string | null
+          status: string
+          subscription_id: string | null
+          updated_at: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          category_id?: string | null
+          created_at?: string
+          defect_description: string
+          defect_images?: string[] | null
+          discount_percentage: number
+          discounted_price: number
+          expires_at?: string | null
+          id?: string
+          order_id?: string | null
+          original_price: number
+          product_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          category_id?: string | null
+          created_at?: string
+          defect_description?: string
+          defect_images?: string[] | null
+          discount_percentage?: number
+          discounted_price?: number
+          expires_at?: string | null
+          id?: string
+          order_id?: string | null
+          original_price?: number
+          product_id?: string | null
+          status?: string
+          subscription_id?: string | null
+          updated_at?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parts_discount_requests_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_discount_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_discount_requests_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "parts_discount_requests_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "printer_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       points_transactions: {
         Row: {
           created_at: string
@@ -2206,10 +2301,12 @@ export type Database = {
           id: string
           is_active: boolean | null
           maintenance_discount_percentage: number | null
+          max_parts_discount_per_month: number | null
           max_service_requests_per_month: number | null
           monthly_price: number
           name_ar: string
           name_en: string
+          parts_discount_categories: string[] | null
           parts_discount_percentage: number | null
           plan_type: Database["public"]["Enums"]["protection_plan_type"]
           preventive_maintenance_interval_months: number | null
@@ -2231,10 +2328,12 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           maintenance_discount_percentage?: number | null
+          max_parts_discount_per_month?: number | null
           max_service_requests_per_month?: number | null
           monthly_price: number
           name_ar: string
           name_en: string
+          parts_discount_categories?: string[] | null
           parts_discount_percentage?: number | null
           plan_type: Database["public"]["Enums"]["protection_plan_type"]
           preventive_maintenance_interval_months?: number | null
@@ -2256,10 +2355,12 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           maintenance_discount_percentage?: number | null
+          max_parts_discount_per_month?: number | null
           max_service_requests_per_month?: number | null
           monthly_price?: number
           name_ar?: string
           name_en?: string
+          parts_discount_categories?: string[] | null
           parts_discount_percentage?: number | null
           plan_type?: Database["public"]["Enums"]["protection_plan_type"]
           preventive_maintenance_interval_months?: number | null
@@ -2578,6 +2679,7 @@ export type Database = {
           buyer_user_id: string | null
           created_at: string | null
           id: string
+          image_url: string | null
           is_registered: boolean | null
           model_name: string
           model_name_ar: string
@@ -2591,6 +2693,7 @@ export type Database = {
           buyer_user_id?: string | null
           created_at?: string | null
           id?: string
+          image_url?: string | null
           is_registered?: boolean | null
           model_name: string
           model_name_ar: string
@@ -2604,6 +2707,7 @@ export type Database = {
           buyer_user_id?: string | null
           created_at?: string | null
           id?: string
+          image_url?: string | null
           is_registered?: boolean | null
           model_name?: string
           model_name_ar?: string
@@ -2697,6 +2801,47 @@ export type Database = {
           },
           {
             foreignKeyName: "subscription_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "printer_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_usage_limits: {
+        Row: {
+          created_at: string
+          id: string
+          limit_type: string
+          max_count: number
+          reset_date: string
+          subscription_id: string
+          updated_at: string
+          used_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          limit_type: string
+          max_count: number
+          reset_date: string
+          subscription_id: string
+          updated_at?: string
+          used_count?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          limit_type?: string
+          max_count?: number
+          reset_date?: string
+          subscription_id?: string
+          updated_at?: string
+          used_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_usage_limits_subscription_id_fkey"
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "printer_subscriptions"

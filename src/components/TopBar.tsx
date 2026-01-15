@@ -138,11 +138,7 @@ const TopBar = memo(() => {
   }, []);
 
   return (
-    <div className={`sticky top-0 z-50 border-b overflow-hidden transition-all duration-500 ${
-      isScrolled 
-        ? 'bg-background/30 backdrop-blur-2xl border-border/20 shadow-2xl' 
-        : 'bg-background/95 backdrop-blur-3xl border-border/40 shadow-lg'
-    }`}>
+    <header className="fixed top-0 left-0 right-0 z-50 border-b overflow-hidden transition-all duration-300 bg-background/95 backdrop-blur-xl border-border/40 shadow-md">
       {/* Animated decorative line */}
       <div className="absolute top-0 left-0 w-full h-px overflow-hidden">
         <div className="h-full w-full bg-gradient-to-r from-transparent via-ring to-transparent animate-shimmer" 
@@ -347,7 +343,7 @@ const TopBar = memo(() => {
       </div>
 
       <WalletDialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen} />
-    </div>
+    </header>
   );
 });
 

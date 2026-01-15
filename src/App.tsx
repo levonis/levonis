@@ -85,7 +85,7 @@ function AppContent() {
       <DecorativeFrame />
       <AnnouncementBar />
       <Header />
-      <main>
+      <main className="pt-16">
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
