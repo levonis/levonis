@@ -1784,12 +1784,15 @@ export type Database = {
           next_billing_date: string | null
           paused_at: string | null
           plan_id: string
+          refund_amount: number | null
+          remaining_days: number | null
           service_requests_this_month: number | null
           start_date: string
           status:
             | Database["public"]["Enums"]["printer_subscription_status"]
             | null
           updated_at: string | null
+          used_days: number | null
           user_id: string
           user_printer_id: string
           waiting_period_ends_at: string | null
@@ -1806,12 +1809,15 @@ export type Database = {
           next_billing_date?: string | null
           paused_at?: string | null
           plan_id: string
+          refund_amount?: number | null
+          remaining_days?: number | null
           service_requests_this_month?: number | null
           start_date?: string
           status?:
             | Database["public"]["Enums"]["printer_subscription_status"]
             | null
           updated_at?: string | null
+          used_days?: number | null
           user_id: string
           user_printer_id: string
           waiting_period_ends_at?: string | null
@@ -1828,12 +1834,15 @@ export type Database = {
           next_billing_date?: string | null
           paused_at?: string | null
           plan_id?: string
+          refund_amount?: number | null
+          remaining_days?: number | null
           service_requests_this_month?: number | null
           start_date?: string
           status?:
             | Database["public"]["Enums"]["printer_subscription_status"]
             | null
           updated_at?: string | null
+          used_days?: number | null
           user_id?: string
           user_printer_id?: string
           waiting_period_ends_at?: string | null
@@ -2625,6 +2634,73 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "order_items_for_serial"
             referencedColumns: ["order_item_id"]
+          },
+        ]
+      }
+      subscription_payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          credit_amount: number | null
+          currency: string | null
+          days_remaining: number | null
+          id: string
+          new_plan_id: string | null
+          notes: string | null
+          old_plan_id: string | null
+          payment_type: string
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          credit_amount?: number | null
+          currency?: string | null
+          days_remaining?: number | null
+          id?: string
+          new_plan_id?: string | null
+          notes?: string | null
+          old_plan_id?: string | null
+          payment_type: string
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          credit_amount?: number | null
+          currency?: string | null
+          days_remaining?: number | null
+          id?: string
+          new_plan_id?: string | null
+          notes?: string | null
+          old_plan_id?: string | null
+          payment_type?: string
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_new_plan_id_fkey"
+            columns: ["new_plan_id"]
+            isOneToOne: false
+            referencedRelation: "protection_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_payments_old_plan_id_fkey"
+            columns: ["old_plan_id"]
+            isOneToOne: false
+            referencedRelation: "protection_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "printer_subscriptions"
+            referencedColumns: ["id"]
           },
         ]
       }
