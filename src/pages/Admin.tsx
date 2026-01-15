@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -1466,6 +1466,7 @@ const Admin = () => {
                 { icon: Percent, title: 'رسوم الدفع الجزئي', desc: 'إعداد رسوم دفع ربع المبلغ', path: ADMIN_ROUTES.partialPaymentSettings },
                 { icon: Trophy, title: 'المسابقات والعروض', desc: 'إدارة المسابقات وعروض المنتجات', path: ADMIN_ROUTES.competitions },
                 { icon: Package, title: 'سوق المستعمل', desc: 'إدارة منتجات البائعين', path: ADMIN_ROUTES.marketplace },
+                { icon: Shield, title: 'حماية الطابعات', desc: 'إدارة اشتراكات الحماية', path: ADMIN_ROUTES.printerProtection },
               ].map((item, idx) => (
                 <button
                   key={idx}

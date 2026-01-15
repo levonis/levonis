@@ -37,6 +37,7 @@ export const ADMIN_ROUTES = {
   ticketBundles: `${ADMIN_BASE_PATH}/ticket-bundles`,
   marketplace: `${ADMIN_BASE_PATH}/marketplace`,
   shipmentRequests: `${ADMIN_BASE_PATH}/shipment-requests`,
+  printerProtection: `${ADMIN_BASE_PATH}/printer-protection`,
 } as const;
 
 // Helper to check if a path is an admin path
