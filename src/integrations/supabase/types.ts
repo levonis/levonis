@@ -1735,6 +1735,111 @@ export type Database = {
         }
         Relationships: []
       }
+      printer_protection_logs: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string | null
+          details: Json | null
+          entity_id: string | null
+          entity_type: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      printer_subscriptions: {
+        Row: {
+          admin_notes: string | null
+          cancelled_at: string | null
+          created_at: string | null
+          end_date: string | null
+          id: string
+          monthly_price: number
+          next_billing_date: string | null
+          paused_at: string | null
+          plan_id: string
+          start_date: string
+          status:
+            | Database["public"]["Enums"]["printer_subscription_status"]
+            | null
+          updated_at: string | null
+          user_id: string
+          user_printer_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          cancelled_at?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          monthly_price: number
+          next_billing_date?: string | null
+          paused_at?: string | null
+          plan_id: string
+          start_date?: string
+          status?:
+            | Database["public"]["Enums"]["printer_subscription_status"]
+            | null
+          updated_at?: string | null
+          user_id: string
+          user_printer_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          cancelled_at?: string | null
+          created_at?: string | null
+          end_date?: string | null
+          id?: string
+          monthly_price?: number
+          next_billing_date?: string | null
+          paused_at?: string | null
+          plan_id?: string
+          start_date?: string
+          status?:
+            | Database["public"]["Enums"]["printer_subscription_status"]
+            | null
+          updated_at?: string | null
+          user_id?: string
+          user_printer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "printer_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "protection_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "printer_subscriptions_user_printer_id_fkey"
+            columns: ["user_printer_id"]
+            isOneToOne: false
+            referencedRelation: "user_printers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_offer_purchases: {
         Row: {
           created_at: string
@@ -2062,6 +2167,51 @@ export type Database = {
         }
         Relationships: []
       }
+      protection_plans: {
+        Row: {
+          created_at: string | null
+          description_ar: string | null
+          description_en: string | null
+          display_order: number | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          monthly_price: number
+          name_ar: string
+          name_en: string
+          plan_type: Database["public"]["Enums"]["protection_plan_type"]
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          monthly_price: number
+          name_ar: string
+          name_en: string
+          plan_type: Database["public"]["Enums"]["protection_plan_type"]
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description_ar?: string | null
+          description_en?: string | null
+          display_order?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          monthly_price?: number
+          name_ar?: string
+          name_en?: string
+          plan_type?: Database["public"]["Enums"]["protection_plan_type"]
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           comment: string | null
@@ -2311,6 +2461,50 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      store_printers: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_registered: boolean | null
+          model_name: string
+          model_name_ar: string
+          order_id: string | null
+          serial_number: string
+          sold_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_registered?: boolean | null
+          model_name: string
+          model_name_ar: string
+          order_id?: string | null
+          serial_number: string
+          sold_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_registered?: boolean | null
+          model_name?: string
+          model_name_ar?: string
+          order_id?: string | null
+          serial_number?: string
+          sold_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_printers_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       taobao_sync_logs: {
         Row: {
@@ -2579,6 +2773,53 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_printers: {
+        Row: {
+          created_at: string | null
+          id: string
+          notes: string | null
+          store_printer_id: string
+          updated_at: string | null
+          user_id: string
+          verification_status:
+            | Database["public"]["Enums"]["printer_verification_status"]
+            | null
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          store_printer_id: string
+          updated_at?: string | null
+          user_id: string
+          verification_status?:
+            | Database["public"]["Enums"]["printer_verification_status"]
+            | null
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          store_printer_id?: string
+          updated_at?: string | null
+          user_id?: string
+          verification_status?:
+            | Database["public"]["Enums"]["printer_verification_status"]
+            | null
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_printers_store_printer_id_fkey"
+            columns: ["store_printer_id"]
+            isOneToOne: true
+            referencedRelation: "store_printers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_purchased_products: {
         Row: {
@@ -3013,6 +3254,10 @@ export type Database = {
         Args: { p_competition_id: string; p_word: string }
         Returns: Json
       }
+      register_user_printer: {
+        Args: { p_serial_number: string; p_user_id: string }
+        Returns: string
+      }
       request_offer_shipment: {
         Args: { p_purchase_ids: string[] }
         Returns: Json
@@ -3029,6 +3274,15 @@ export type Database = {
       validate_coupon_with_rate_limit: {
         Args: { coupon_code: string }
         Returns: Json
+      }
+      verify_printer_serial: {
+        Args: { p_serial_number: string }
+        Returns: {
+          is_available: boolean
+          model_name: string
+          model_name_ar: string
+          store_printer_id: string
+        }[]
       }
     }
     Enums: {
@@ -3048,6 +3302,9 @@ export type Database = {
         | "flash_sale"
         | "growing_prize"
         | "collect_letters"
+      printer_subscription_status: "active" | "paused" | "expired" | "cancelled"
+      printer_verification_status: "pending" | "verified" | "rejected"
+      protection_plan_type: "basic" | "standard" | "comprehensive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3192,6 +3449,9 @@ export const Constants = {
         "growing_prize",
         "collect_letters",
       ],
+      printer_subscription_status: ["active", "paused", "expired", "cancelled"],
+      printer_verification_status: ["pending", "verified", "rejected"],
+      protection_plan_type: ["basic", "standard", "comprehensive"],
     },
   },
 } as const
