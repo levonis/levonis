@@ -162,15 +162,19 @@ function getFeatureIcon(text: string): string {
   return 'Check'; // Default icon
 }
 
-// Validate color name - must be a real color
+// Validate color name - accept any reasonable color name
 function isValidColorName(name: string): boolean {
   if (!name || typeof name !== 'string') return false;
   const nameLower = name.toLowerCase().trim();
-  if (nameLower.length < 2 || nameLower.length > 30) return false;
+  if (nameLower.length < 2 || nameLower.length > 50) return false;
   // Reject HTML/code
   if (/<|>|\[|\]|\{|\}|\\|http|class=|style=|function|var |const |let |import|export/.test(nameLower)) return false;
-  // Must contain a known color word
-  return Object.keys(COLOR_MAP).some(c => nameLower === c || nameLower.includes(c));
+  // Reject obvious non-color values
+  if (/^(select|choose|pick|اختر|option|default|standard|normal|none|null|undefined|\d+$)$/i.test(nameLower)) return false;
+  // Accept if it contains any known color word OR looks like a color name (not just numbers)
+  const hasKnownColor = Object.keys(COLOR_MAP).some(c => nameLower.includes(c));
+  const looksLikeColor = /[a-z\u0600-\u06FF]/.test(nameLower) && !/^\d+$/.test(nameLower);
+  return hasKnownColor || looksLikeColor;
 }
 
 // Validate option name - must be a valid product option
@@ -181,7 +185,7 @@ function isValidOptionName(name: string): boolean {
   // Reject HTML/code
   if (/<|>|\{|\}|\\|function|var |const |let /.test(nameTrimmed)) return false;
   // Reject generic labels
-  if (/^(select|choose|pick|اختر|option|color|اللون)$/i.test(nameTrimmed)) return false;
+  if (/^(select|choose|pick|اختر|option|color|اللون|please select|الرجاء الاختيار)$/i.test(nameTrimmed)) return false;
   return true;
 }
 
@@ -421,8 +425,8 @@ serve(async (req) => {
 
 الرابط: ${url}
 
-محتوى HTML (أول 25000 حرف):
-${pageContent.substring(0, 25000)}
+محتوى HTML (أول 35000 حرف):
+${pageContent.substring(0, 35000)}
 
 أرجع JSON بالشكل التالي بالضبط:
 {
@@ -439,53 +443,42 @@ ${pageContent.substring(0, 25000)}
   "features": [{"text": "Feature in English", "text_ar": "الميزة بالعربية"}]
 }
 
-===== قواعد استخراج الأسعار (مهم جداً) =====
+===== قواعد استخراج الألوان والخيارات (أولوية قصوى) =====
 
-1. price (السعر الحالي):
-   - السعر النهائي بعد الخصم
-   - السعر المعروض بشكل بارز للشراء
+ابحث في HTML عن:
+1. عناصر SKU/Variant: ابحث عن data-skuid, data-sku-id, sku-item, sku-prop
+2. خيارات اللون: ابحث عن color, لون, 颜色, colour, data-color
+3. خيارات الحجم/المقاس: ابحث عن size, مقاس, 尺寸, 尺码, capacity, variant
+4. الصور المرتبطة: ابحث عن data-img, data-image, data-thumb, background-image
 
-2. original_price (السعر الأصلي قبل الخصم):
-   - ابحث عن السعر المشطوب (strikethrough price)
-   - أو السعر الأعلى المعروض بجانب السعر الحالي
-   - أو "السعر الأصلي" / "قبل الخصم" / "was" / "regular price"
-   - إذا لم يوجد خصم: original_price = price
+مواقع شائعة للبحث:
+- Taobao/Tmall: ابحث في <div class="sku-item"> و data-value و data-pricepair
+- AliExpress: ابحث في sku-property-list و product-prop
+- JD: ابحث في chosen-items و item-selected
+- 1688: ابحث في obj-sku و sku-wrapper
 
-3. currency (العملة):
-   - حدد العملة المستخدمة في الصفحة
-   - USD, CNY, RMB, EUR, GBP, JPY, AED, SAR, etc.
+استخرج كل الألوان والخيارات حتى لو كانت كثيرة. لا تترك أي لون أو خيار.
 
-===== قواعد تصنيف الصور (مهم جداً جداً) =====
+===== قواعد استخراج الأسعار =====
 
-4. main_product_images (صور المنتج الرئيسية):
-   - فقط الصور العامة للمنتج التي تُظهر المنتج بشكل عام
-   - الصور من معرض الصور الرئيسي (main gallery)
-   - الصور التي تظهر المنتج من زوايا مختلفة
-   - لا تضع هنا أي صورة خاصة بلون أو خيار معين!
-   - لا تكرر الصور الموجودة في colors أو options!
+1. price: السعر النهائي بعد الخصم
+2. original_price: السعر المشطوب أو الأصلي قبل الخصم
+3. currency: العملة (CNY للمواقع الصينية، USD، EUR، إلخ)
 
-5. colors[].image_url (صور الألوان):
-   - الصورة الخاصة بكل لون على حدة
-   - ابحث عن data-color-image أو data-sku-image أو الصور المرتبطة بكل لون
-   - يجب أن تكون صورة مختلفة لكل لون
-   - هذه الصورة يجب ألا تكون في main_product_images!
+===== قواعد الصور =====
 
-6. options[].image_url (صور الخيارات):
-   - الصورة الخاصة بكل خيار/مقاس/نوع على حدة
-   - ابحث عن الصور المرتبطة بكل variant
-   - هذه الصورة يجب ألا تكون في main_product_images!
+4. main_product_images: صور المعرض الرئيسي فقط - لا تضع صور الألوان هنا!
+5. colors[].image_url: الصورة الخاصة بكل لون - استخرجها من data-img أو thumbnail
+6. options[].image_url: الصورة الخاصة بكل خيار إن وجدت
 
-===== قواعد أخرى =====
+===== قواعد مهمة =====
 
-7. colors: فقط أسماء ألوان حقيقية. مصفوفة فارغة [] إذا لم توجد ألوان.
+7. colors: استخرج كل الألوان المتاحة. كل لون يجب أن يحتوي على: name, name_ar, hex_code, image_url
+8. options: استخرج كل الخيارات (أحجام، مقاسات، أنواع). كل خيار يحتوي على: name, name_ar, image_url
+9. features: مميزات المنتج (3-6 مميزات)
+10. لا تتجاهل أي ألوان أو خيارات - استخرج الكل!
 
-8. options: خيارات المنتج مثل الأحجام أو المقاسات. مصفوفة فارغة [] إذا لم توجد.
-
-9. features: مميزات المنتج المهمة (3-6 مميزات).
-
-10. لا تضع صورة واحدة في أكثر من مكان. كل صورة تنتمي لفئة واحدة فقط.
-
-11. أرجع فقط كائن JSON بدون أي نص إضافي.`;
+أرجع فقط كائن JSON بدون أي نص إضافي.`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
