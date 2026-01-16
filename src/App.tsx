@@ -1,5 +1,5 @@
-// App component - main application entry point - v4
-import { Suspense, lazy, useState } from "react";
+// App component - main application entry point - v5
+import React, { Suspense, lazy, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
