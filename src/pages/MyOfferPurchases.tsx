@@ -286,10 +286,10 @@ export default function MyOfferPurchases() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-background w-full overflow-x-hidden" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b">
-        <div className="container mx-auto px-4 py-3">
+      <div className="sticky top-16 z-40 bg-card/95 backdrop-blur border-b w-full">
+        <div className="container mx-auto px-4 py-3 max-w-4xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
@@ -302,7 +302,7 @@ export default function MyOfferPurchases() {
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 py-6">
+      <main className="flex-1 container mx-auto px-4 py-6 max-w-4xl w-full">
         {/* Bulk Actions */}
         {totalAvailableForOrder > 0 && (
           <Card className="mb-4 border-primary/20 bg-primary/5">

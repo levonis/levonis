@@ -372,7 +372,7 @@ export default function OfferPurchasesTab() {
                     const StatusIcon = status.icon;
                     
                     return (
-                      <TableRow key={purchase.id}>
+                      <TableRow key={purchase.id} className={purchase.purchase_status === 'shipping_requested' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-r-4 border-r-yellow-500' : ''}>
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4 text-muted-foreground" />

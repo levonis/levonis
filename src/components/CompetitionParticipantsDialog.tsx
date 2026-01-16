@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -701,54 +701,58 @@ export default function CompetitionParticipantsDialog({
                 </div>
               </div>
 
-              <ScrollArea className="flex-1 min-h-0">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-background z-10">
-                    <TableRow>
-                      <TableHead className="text-right text-xs">#</TableHead>
-                      <TableHead className="text-right text-xs">المستخدم</TableHead>
-                      <TableHead className="text-right text-xs">التذاكر</TableHead>
-                      <TableHead className="text-right text-xs">الإنفاق</TableHead>
-                      <TableHead className="text-right text-xs">الحالة</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {groupedUsers.length === 0 ? (
+              {/* Horizontal Scrollable Table */}
+              <ScrollArea className="flex-1 min-h-0" dir="rtl">
+                <div className="min-w-[600px]">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-background z-10">
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-8 text-muted-foreground text-xs">
-                          لا توجد بيانات
-                        </TableCell>
+                        <TableHead className="text-right text-xs w-10">#</TableHead>
+                        <TableHead className="text-right text-xs min-w-[150px]">المستخدم</TableHead>
+                        <TableHead className="text-right text-xs">التذاكر</TableHead>
+                        <TableHead className="text-right text-xs">الإنفاق</TableHead>
+                        <TableHead className="text-right text-xs">الحالة</TableHead>
                       </TableRow>
-                    ) : (
-                      groupedUsers.map((user, index) => (
-                        <TableRow key={user.user_id}>
-                          <TableCell className="text-xs">{index + 1}</TableCell>
-                          <TableCell>
-                            <div className="text-xs">
-                              <div className="font-medium">{user.profile?.full_name || user.profile?.username || 'مجهول'}</div>
-                              {user.profile?.phone_number && (
-                                <div className="text-muted-foreground">{user.profile.phone_number}</div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs font-bold">{user.ticketCount}</TableCell>
-                          <TableCell className="text-xs font-bold text-green-600">
-                            {(user.ticketCount * requiredTickets * ticketPrice).toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            {user.tickets.some(t => t.is_winner) ? (
-                              <Badge className="bg-green-500 text-[10px]">فائز</Badge>
-                            ) : user.isNewAccount ? (
-                              <Badge variant="outline" className="text-[10px] text-orange-600">جديد</Badge>
-                            ) : (
-                              <Badge variant="secondary" className="text-[10px]">مشارك</Badge>
-                            )}
+                    </TableHeader>
+                    <TableBody>
+                      {groupedUsers.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={5} className="text-center py-8 text-muted-foreground text-xs">
+                            لا توجد بيانات
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+                      ) : (
+                        groupedUsers.map((user, index) => (
+                          <TableRow key={user.user_id}>
+                            <TableCell className="text-xs">{index + 1}</TableCell>
+                            <TableCell>
+                              <div className="text-xs">
+                                <div className="font-medium">{user.profile?.full_name || user.profile?.username || 'مجهول'}</div>
+                                {user.profile?.phone_number && (
+                                  <div className="text-muted-foreground">{user.profile.phone_number}</div>
+                                )}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-xs font-bold">{user.ticketCount}</TableCell>
+                            <TableCell className="text-xs font-bold text-green-600">
+                              {(user.ticketCount * requiredTickets * ticketPrice).toLocaleString()}
+                            </TableCell>
+                            <TableCell>
+                              {user.tickets.some(t => t.is_winner) ? (
+                                <Badge className="bg-green-500 text-[10px]">فائز</Badge>
+                              ) : user.isNewAccount ? (
+                                <Badge variant="outline" className="text-[10px] text-orange-600">جديد</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px]">مشارك</Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+                <ScrollBar orientation="horizontal" />
               </ScrollArea>
             </TabsContent>
 
