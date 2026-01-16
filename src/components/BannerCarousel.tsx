@@ -108,7 +108,7 @@ const BannerCarousel = () => {
 
   if (isLoading) {
     return (
-      <div className="w-full aspect-[21/9] md:aspect-[3/1] bg-muted/50 animate-pulse rounded-2xl mx-4 md:mx-8 my-4" />
+      <div className="w-full aspect-[21/9] md:aspect-[3/1] bg-muted/50 animate-pulse rounded-xl mx-3 md:mx-6" />
     );
   }
 
@@ -121,7 +121,7 @@ const BannerCarousel = () => {
   const renderActionButton = (banner: Banner) => {
     const buttonText = banner.button_text_ar || banner.button_text || 'عرض';
     
-    const buttonBaseClass = "inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5";
+    const buttonBaseClass = "inline-flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-medium text-xs md:text-sm transition-all duration-300 shadow-md hover:shadow-lg";
     
     switch (banner.action_type) {
       case 'product':
@@ -132,7 +132,7 @@ const BannerCarousel = () => {
             className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
           >
             {buttonText}
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
           </Link>
         );
       
@@ -144,7 +144,7 @@ const BannerCarousel = () => {
             className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
           >
             {buttonText}
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
           </Link>
         );
       
@@ -158,7 +158,7 @@ const BannerCarousel = () => {
             className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
           >
             {buttonText}
-            <ExternalLink className="w-4 h-4" />
+            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
           </a>
         );
       
@@ -167,16 +167,16 @@ const BannerCarousel = () => {
         return (
           <button
             onClick={() => handleCopyCoupon(banner.coupon_code!)}
-            className={cn(buttonBaseClass, "bg-accent text-accent-foreground hover:bg-accent/90")}
+            className={cn(buttonBaseClass, "bg-white/90 text-gray-800 hover:bg-white")}
           >
             {copiedCoupon === banner.coupon_code ? (
               <>
-                <Check className="w-4 h-4" />
+                <Check className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 تم النسخ!
               </>
             ) : (
               <>
-                <Copy className="w-4 h-4" />
+                <Copy className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 {banner.coupon_code}
               </>
             )}
@@ -189,19 +189,19 @@ const BannerCarousel = () => {
   };
 
   return (
-    <div className="px-4 md:px-8 py-4">
+    <div className="px-3 md:px-6 pt-1 pb-2">
       <div 
-        className="relative w-full overflow-hidden rounded-2xl bg-card/50 border border-border/30 shadow-xl"
+        className="relative w-full overflow-hidden rounded-xl bg-card/50 border border-border/20 shadow-lg"
         onMouseEnter={() => setIsAutoPlaying(false)}
         onMouseLeave={() => setIsAutoPlaying(true)}
       >
         {/* Banner Container */}
-        <div className="relative aspect-[21/9] md:aspect-[3/1] overflow-hidden">
+        <div className="relative aspect-[2/1] md:aspect-[3/1] overflow-hidden">
           {banners.map((banner, index) => (
             <div
               key={banner.id}
               className={cn(
-                "absolute inset-0 transition-all duration-700 ease-in-out",
+                "absolute inset-0 transition-all duration-500 ease-out",
                 index === currentIndex 
                   ? "opacity-100 translate-x-0" 
                   : index < currentIndex 
@@ -216,14 +216,14 @@ const BannerCarousel = () => {
                 loading={index === 0 ? 'eager' : 'lazy'}
               />
               
-              {/* Overlay Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              {/* Overlay Gradient - lighter */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
               
-              {/* Content */}
-              <div className="absolute bottom-0 right-0 left-0 p-6 md:p-8 flex items-end justify-between">
-                <div className="flex flex-col gap-3">
+              {/* Content - smaller and positioned better */}
+              <div className="absolute bottom-0 right-0 left-0 p-3 md:p-5 flex items-end justify-between">
+                <div className="flex flex-col gap-2">
                   {banner.title_ar && (
-                    <h3 className="text-white font-bold text-xl md:text-2xl lg:text-3xl drop-shadow-lg max-w-2xl">
+                    <h3 className="text-white font-bold text-sm md:text-lg lg:text-xl drop-shadow-md max-w-xl line-clamp-2">
                       {banner.title_ar}
                     </h3>
                   )}
@@ -234,29 +234,29 @@ const BannerCarousel = () => {
           ))}
         </div>
 
-        {/* Navigation Arrows */}
+        {/* Navigation Arrows - smaller */}
         {banners.length > 1 && (
           <>
             <button
               onClick={goToNext}
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/60 transition-all hover:scale-110"
+              className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-all"
               aria-label="السابق"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
             </button>
             <button
               onClick={goToPrevious}
-              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/60 transition-all hover:scale-110"
+              className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-all"
               aria-label="التالي"
             >
-              <ChevronRight className="w-6 h-6" />
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           </>
         )}
 
-        {/* Dots Indicator */}
+        {/* Dots Indicator - smaller */}
         {banners.length > 1 && (
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+          <div className="absolute bottom-2 md:bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
             {banners.map((_, index) => (
               <button
                 key={index}
@@ -266,10 +266,10 @@ const BannerCarousel = () => {
                   setTimeout(() => setIsAutoPlaying(true), 10000);
                 }}
                 className={cn(
-                  "h-2.5 rounded-full transition-all duration-300",
+                  "h-1.5 md:h-2 rounded-full transition-all duration-300",
                   index === currentIndex 
-                    ? "bg-white w-8" 
-                    : "bg-white/40 hover:bg-white/60 w-2.5"
+                    ? "bg-white w-5 md:w-6" 
+                    : "bg-white/40 hover:bg-white/60 w-1.5 md:w-2"
                 )}
                 aria-label={`الانتقال إلى البانر ${index + 1}`}
               />
