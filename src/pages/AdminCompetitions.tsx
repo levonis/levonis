@@ -154,7 +154,11 @@ export default function AdminCompetitions() {
         </TabsList>
 
         <TabsContent value="competitions" className="space-y-6">
-          <div className="flex justify-end mb-4">
+          <div className="flex justify-end mb-4 gap-2">
+            <Button variant="outline" onClick={() => setTicketsManagerOpen(true)} className="gap-2">
+              <Ticket className="h-4 w-4" />
+              <span className="hidden sm:inline">إدارة التذاكر</span>
+            </Button>
             <Button onClick={handleOpenCreateDialog} className="admin-btn-primary gap-2">
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">مسابقة جديدة</span>

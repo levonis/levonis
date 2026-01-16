@@ -286,11 +286,11 @@ export default function MyOfferPurchases() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background w-full overflow-x-hidden" dir="rtl">
+    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
       {/* Header */}
-      <div className="sticky top-16 z-40 bg-card/95 backdrop-blur border-b w-full">
-        <div className="container mx-auto px-4 py-3 max-w-4xl">
-          <div className="flex items-center justify-between">
+      <div className="sticky top-16 z-40 bg-card/95 backdrop-blur border-b">
+        <div className="container mx-auto px-4 py-3">
+          <div className="flex items-center justify-between max-w-4xl mx-auto">
             <div className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
               <h1 className="text-lg font-bold">مشترياتي</h1>
@@ -302,7 +302,7 @@ export default function MyOfferPurchases() {
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-4xl w-full">
+      <main className="flex-1 container mx-auto px-4 py-6">
         {/* Bulk Actions */}
         {totalAvailableForOrder > 0 && (
           <Card className="mb-4 border-primary/20 bg-primary/5">
@@ -522,6 +522,12 @@ export default function MyOfferPurchases() {
                                   <Badge variant="outline" className="text-[10px]">
                                     {sourceLabels[item.source_type]?.label}
                                   </Badge>
+                                  {item.gift_tickets > 0 && (
+                                    <Badge variant="secondary" className="text-[10px] gap-1">
+                                      <Gift className="h-3 w-3" />
+                                      {item.gift_tickets} تذكرة
+                                    </Badge>
+                                  )}
                                 </div>
                                 <div className="text-left">
                                   <p className="text-xs text-muted-foreground">
