@@ -3626,7 +3626,9 @@ export type Database = {
         Returns: {
           delivered_at: string
           has_active_subscription: boolean
+          image_url: string
           is_registered: boolean
+          is_verified: boolean
           order_id: string
           order_item_id: string
           pending_serial_request: boolean

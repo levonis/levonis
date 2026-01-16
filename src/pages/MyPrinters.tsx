@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { 
   Printer, Shield, ShieldCheck, Loader2, 
   CheckCircle, XCircle, Clock, MessageCircle, Crown, Star,
-  ArrowUp, Wrench, AlertCircle, Calendar, Timer
+  ArrowUp, Wrench, AlertCircle, Calendar, Timer, Package
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { format, differenceInDays, addDays } from 'date-fns';
@@ -54,6 +54,8 @@ interface ProtectionPlan {
   annual_coverage_cap: number | null;
   display_order: number | null;
   is_active: boolean | null;
+  max_parts_discount_per_month?: number | null;
+  parts_discount_categories?: string[] | null;
 }
 
 interface Subscription {
@@ -122,7 +124,7 @@ const MyPrinters = () => {
   });
 
   // Fetch user's subscriptions
-  const { data: subscriptions, isLoading: subscriptionsLoading } = useQuery({
+  const { data: subscriptions, isLoading: subscriptionsLoading, refetch: refetchSubscriptions } = useQuery({
     queryKey: ['user-subscriptions', user?.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -154,27 +156,69 @@ const MyPrinters = () => {
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'serial_number_requests',
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
           const newData = payload.new as any;
+          console.log('Serial request update:', newData);
+          
           if (newData.status === 'approved') {
-            toast.success('تم التحقق من الرقم التسلسلي بنجاح ✅', {
-              description: 'طابعتك الآن مؤهلة للاشتراك في خدمة الحماية',
-              duration: 5000,
+            toast.success('🎉 تم قبول طلبك!', {
+              description: 'الطابعة أصبحت مؤهلة للاشتراك في خدمة الحماية',
+              duration: 6000,
             });
-            // Refetch printers data
+          } else if (newData.status === 'rejected') {
+            toast.error('تم رفض الطلب', {
+              description: newData.admin_notes || 'تواصل مع الإدارة لمزيد من التفاصيل',
+              duration: 6000,
+            });
+          }
+          
+          // Always refetch on any change
+          setTimeout(() => {
             refetchPrinters();
             queryClient.invalidateQueries({ queryKey: ['eligible-printers'] });
-          } else if (newData.status === 'rejected') {
-            toast.error('تم رفض طلب التحقق ❌', {
-              description: newData.admin_notes || 'تواصل مع الإدارة لمزيد من المعلومات',
-              duration: 5000,
+          }, 500);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, refetchPrinters, queryClient]);
+
+  // Also listen for order_items updates (when admin adds serial number)
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('order-items-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'order_items',
+        },
+        (payload) => {
+          const newData = payload.new as any;
+          const oldData = payload.old as any;
+          
+          // Check if serial_number was added
+          if (!oldData.serial_number && newData.serial_number) {
+            toast.success('🎉 تم إضافة الرقم التسلسلي!', {
+              description: 'الطابعة أصبحت مؤهلة للاشتراك في خدمة الحماية',
+              duration: 6000,
             });
-            refetchPrinters();
+            
+            setTimeout(() => {
+              refetchPrinters();
+              queryClient.invalidateQueries({ queryKey: ['eligible-printers'] });
+            }, 500);
           }
         }
       )
@@ -199,16 +243,16 @@ const MyPrinters = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success('تم إرسال طلب إضافة الرقم التسلسلي ✅', {
+      toast.success('تم إرسال الطلب ✅', {
         description: 'سيتم مراجعة طلبك وإبلاغك بالنتيجة',
       });
       queryClient.invalidateQueries({ queryKey: ['eligible-printers'] });
     },
     onError: (error: any) => {
       if (error.message?.includes('duplicate')) {
-        toast.error('تم إرسال طلب مسبقاً لهذه الطابعة ❌');
+        toast.error('تم إرسال طلب مسبقاً لهذه الطابعة');
       } else {
-        toast.error(error.message || 'حدث خطأ ❌');
+        toast.error(error.message || 'حدث خطأ');
       }
     },
   });
@@ -238,6 +282,7 @@ const MyPrinters = () => {
             order_item_id: printer.order_item_id,
             buyer_user_id: user!.id,
             is_registered: true,
+            image_url: printer.image_url,
           })
           .select('id')
           .single();
@@ -305,7 +350,7 @@ const MyPrinters = () => {
       setSelectedPlan(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ أثناء الاشتراك ❌');
+      toast.error(error.message || 'حدث خطأ أثناء الاشتراك');
     },
   });
 
@@ -355,7 +400,7 @@ const MyPrinters = () => {
       setUpgradingSubscription(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ أثناء الترقية ❌');
+      toast.error(error.message || 'حدث خطأ أثناء الترقية');
     },
   });
 
@@ -410,7 +455,7 @@ const MyPrinters = () => {
       setCancellingSubscription(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ أثناء الإلغاء ❌');
+      toast.error(error.message || 'حدث خطأ أثناء الإلغاء');
     },
   });
 
@@ -439,30 +484,52 @@ const MyPrinters = () => {
     return plans.filter(p => (PLAN_ORDER[p.plan_type] || 0) > currentOrder);
   };
 
-  // Calculate remaining days
-  const getRemainingDays = (nextBillingDate: string | null) => {
-    if (!nextBillingDate) return 0;
-    const next = new Date(nextBillingDate);
+  // Calculate remaining days from start_date (30 day cycle)
+  const getRemainingDays = (startDate: string, nextBillingDate: string | null) => {
+    if (nextBillingDate) {
+      const next = new Date(nextBillingDate);
+      const now = new Date();
+      return Math.max(0, differenceInDays(next, now));
+    }
+    // Fallback: calculate from start_date
+    const start = new Date(startDate);
+    const endOfCycle = addDays(start, 30);
     const now = new Date();
-    return Math.max(0, differenceInDays(next, now));
+    return Math.max(0, differenceInDays(endOfCycle, now));
   };
 
-  // Get eligibility status
+  // Get eligibility status with clearer messages
   const getEligibilityStatus = (printer: EligiblePrinter) => {
     if (printer.has_active_subscription) {
-      return { label: 'محمية ✓', color: 'bg-green-500/20 text-green-600 border-green-500/30' };
+      return { 
+        label: 'محمية', 
+        icon: <ShieldCheck className="w-3 h-3" />,
+        color: 'bg-green-500/20 text-green-700 border-green-500/40' 
+      };
     }
     if (printer.serial_number) {
-      return { label: 'مؤهلة ✓', color: 'bg-blue-500/20 text-blue-600 border-blue-500/30' };
+      return { 
+        label: 'مؤهلة للاشتراك', 
+        icon: <CheckCircle className="w-3 h-3" />,
+        color: 'bg-blue-500/20 text-blue-700 border-blue-500/40' 
+      };
     }
     if (printer.pending_serial_request) {
-      return { label: 'قيد المراجعة', color: 'bg-amber-500/20 text-amber-600 border-amber-500/30' };
+      return { 
+        label: 'قيد المراجعة', 
+        icon: <Clock className="w-3 h-3" />,
+        color: 'bg-amber-500/20 text-amber-700 border-amber-500/40' 
+      };
     }
-    return { label: 'غير مؤهلة', color: 'bg-destructive/20 text-destructive border-destructive/30' };
+    return { 
+      label: 'تحتاج رقم تسلسلي', 
+      icon: <AlertCircle className="w-3 h-3" />,
+      color: 'bg-red-500/20 text-red-700 border-red-500/40' 
+    };
   };
 
   // Printer image component
-  const PrinterImage = ({ imageUrl, size = 44 }: { imageUrl?: string | null; size?: number }) => {
+  const PrinterImage = ({ imageUrl, size = 56 }: { imageUrl?: string | null; size?: number }) => {
     const [hasError, setHasError] = useState(false);
     
     if (imageUrl && !hasError) {
@@ -470,7 +537,7 @@ const MyPrinters = () => {
         <img 
           src={imageUrl} 
           alt="Printer" 
-          className="rounded-md object-cover bg-muted"
+          className="rounded-lg object-cover bg-muted border border-border/50"
           style={{ width: size, height: size }}
           onError={() => setHasError(true)}
         />
@@ -478,10 +545,10 @@ const MyPrinters = () => {
     }
     return (
       <div 
-        className="bg-muted rounded-md flex items-center justify-center"
+        className="bg-muted/50 rounded-lg flex items-center justify-center border border-border/50"
         style={{ width: size, height: size }}
       >
-        <Printer className="w-5 h-5 text-muted-foreground" />
+        <Printer className="w-6 h-6 text-muted-foreground/60" />
       </div>
     );
   };
@@ -491,7 +558,7 @@ const MyPrinters = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-5 h-5 animate-spin text-primary" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -505,119 +572,131 @@ const MyPrinters = () => {
 
   return (
     <>
-      <div className="container mx-auto px-3 py-3 max-w-5xl" dir="rtl">
-        {/* Page Header - More Compact */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 bg-primary/10 rounded-lg">
-            <Printer className="w-4 h-4 text-primary" />
+      <div className="container mx-auto px-4 py-4 max-w-6xl" dir="rtl">
+        {/* Page Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2 bg-primary/10 rounded-xl">
+            <Shield className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <h1 className="text-base font-bold text-foreground">طابعاتي</h1>
-            <p className="text-[10px] text-muted-foreground">إدارة الطابعات والاشتراكات</p>
+            <h1 className="text-lg font-bold">حماية الطابعات</h1>
+            <p className="text-xs text-muted-foreground">إدارة الاشتراكات وخدمات الحماية</p>
           </div>
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-6">
-            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
         ) : (
-          <div className="space-y-3">
-            {/* Section A: Printers Carousel */}
+          <div className="space-y-6">
+            {/* Section A: My Printers */}
             <section>
-              <h2 className="text-xs font-semibold mb-1.5 flex items-center gap-1">
-                <Printer className="w-3.5 h-3.5 text-primary" />
-                طابعاتي المشتراة
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold flex items-center gap-2">
+                  <Printer className="w-4 h-4 text-primary" />
+                  طابعاتي المشتراة
+                  <Badge variant="secondary" className="text-xs">{eligiblePrinters?.length || 0}</Badge>
+                </h2>
+              </div>
               
               {eligiblePrinters && eligiblePrinters.length > 0 ? (
-                <ScrollArea className="w-full whitespace-nowrap rounded-lg border bg-card/50 p-1.5">
-                  <div className="flex gap-1.5">
-                    {eligiblePrinters.map((printer) => {
-                      const isEligible = !!printer.serial_number;
-                      const hasSubscription = printer.has_active_subscription;
-                      const isSelected = selectedPrinter?.order_item_id === printer.order_item_id;
-                      const status = getEligibilityStatus(printer);
-                      
-                      return (
-                        <Card 
-                          key={printer.order_item_id} 
-                          className={`min-w-[180px] max-w-[200px] cursor-pointer transition-all border ${
-                            hasSubscription 
-                              ? 'border-green-500/40 bg-green-500/5' 
-                              : isEligible 
-                                ? isSelected
-                                  ? 'border-primary ring-1 ring-primary/50 bg-primary/5'
-                                  : 'border-blue-500/30 bg-card hover:border-primary/50'
-                                : 'border-muted bg-muted/30 cursor-not-allowed'
-                          }`}
-                          onClick={() => {
-                            if (isEligible && !hasSubscription) {
-                              setSelectedPrinter(isSelected ? null : printer);
-                            }
-                          }}
-                        >
-                          <CardContent className="p-2">
-                            <div className="flex gap-2">
-                              {/* Printer Image */}
-                              <PrinterImage imageUrl={printer.image_url} size={44} />
-                              
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-start justify-between gap-1">
-                                  <p className="text-[11px] font-medium truncate leading-tight">
-                                    {printer.product_name_ar}
-                                  </p>
-                                </div>
-                                
-                                <Badge 
-                                  variant="outline"
-                                  className={`text-[8px] px-1 py-0 mt-0.5 ${status.color}`}
-                                >
-                                  {status.label}
-                                </Badge>
-                                
-                                {printer.serial_number ? (
-                                  <p className="text-[9px] text-muted-foreground font-mono mt-0.5" dir="ltr">
-                                    SN: {printer.serial_number}
-                                  </p>
-                                ) : (
-                                  <div className="mt-1">
-                                    <p className="text-[9px] text-muted-foreground leading-tight mb-1">
-                                      تواصل لإضافة الرقم التسلسلي
-                                    </p>
-                                    {!printer.pending_serial_request && (
-                                      <Button
-                                        variant="outline"
-                                        size="sm"
-                                        className="h-5 text-[9px] px-1.5 w-full"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          requestSerialMutation.mutate(printer);
-                                        }}
-                                        disabled={requestSerialMutation.isPending}
-                                      >
-                                        <MessageCircle className="w-2.5 h-2.5 ml-0.5" />
-                                        طلب إضافة
-                                      </Button>
-                                    )}
-                                  </div>
-                                )}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {eligiblePrinters.map((printer) => {
+                    const isEligible = !!printer.serial_number;
+                    const hasSubscription = printer.has_active_subscription;
+                    const isSelected = selectedPrinter?.order_item_id === printer.order_item_id;
+                    const status = getEligibilityStatus(printer);
+                    
+                    return (
+                      <Card 
+                        key={printer.order_item_id} 
+                        className={`transition-all cursor-pointer ${
+                          hasSubscription 
+                            ? 'border-green-500/50 bg-green-500/5' 
+                            : isEligible 
+                              ? isSelected
+                                ? 'border-primary ring-2 ring-primary/30 bg-primary/5'
+                                : 'border-border hover:border-primary/50 hover:shadow-md'
+                              : 'border-muted bg-muted/20'
+                        }`}
+                        onClick={() => {
+                          if (isEligible && !hasSubscription) {
+                            setSelectedPrinter(isSelected ? null : printer);
+                          }
+                        }}
+                      >
+                        <CardContent className="p-3">
+                          <div className="flex gap-3">
+                            {/* Printer Image */}
+                            <PrinterImage imageUrl={printer.image_url} size={64} />
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <h3 className="text-sm font-medium line-clamp-2 leading-snug">
+                                  {printer.product_name_ar}
+                                </h3>
                               </div>
+                              
+                              {/* Status Badge */}
+                              <Badge 
+                                variant="outline"
+                                className={`text-[10px] px-1.5 py-0.5 gap-1 ${status.color}`}
+                              >
+                                {status.icon}
+                                {status.label}
+                              </Badge>
+                              
+                              {/* Serial Number or Request Button */}
+                              {printer.serial_number ? (
+                                <div className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+                                  <Package className="w-3 h-3" />
+                                  <span className="font-mono text-[11px]" dir="ltr">
+                                    SN: {printer.serial_number}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="mt-2">
+                                  {!printer.pending_serial_request ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="h-7 text-xs w-full"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        requestSerialMutation.mutate(printer);
+                                      }}
+                                      disabled={requestSerialMutation.isPending}
+                                    >
+                                      {requestSerialMutation.isPending ? (
+                                        <Loader2 className="w-3 h-3 animate-spin ml-1" />
+                                      ) : (
+                                        <MessageCircle className="w-3 h-3 ml-1" />
+                                      )}
+                                      طلب إضافة الرقم التسلسلي
+                                    </Button>
+                                  ) : (
+                                    <p className="text-[11px] text-amber-600 flex items-center gap-1">
+                                      <Clock className="w-3 h-3" />
+                                      في انتظار مراجعة الإدارة
+                                    </p>
+                                  )}
+                                </div>
+                              )}
                             </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                  <ScrollBar orientation="horizontal" />
-                </ScrollArea>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
               ) : (
-                <Card className="text-center py-4 bg-muted/20 border-dashed">
+                <Card className="text-center py-8 bg-muted/10 border-dashed">
                   <CardContent className="p-0">
-                    <Printer className="w-6 h-6 mx-auto text-muted-foreground mb-1" />
-                    <h3 className="text-xs font-medium">لا توجد طابعات</h3>
-                    <p className="text-[10px] text-muted-foreground">
-                      ستظهر هنا بعد توصيلها
+                    <Printer className="w-10 h-10 mx-auto text-muted-foreground/40 mb-2" />
+                    <h3 className="text-sm font-medium text-muted-foreground">لا توجد طابعات</h3>
+                    <p className="text-xs text-muted-foreground/70 mt-1">
+                      ستظهر هنا بعد توصيل طلباتك
                     </p>
                   </CardContent>
                 </Card>
@@ -627,102 +706,104 @@ const MyPrinters = () => {
             {/* Section B: Active Subscriptions */}
             {subscriptions && subscriptions.length > 0 && (
               <section>
-                <h2 className="text-xs font-semibold mb-1.5 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5 text-green-500" />
-                  اشتراكاتي المفعلة
+                <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-green-500" />
+                  اشتراكاتي النشطة
+                  <Badge variant="secondary" className="text-xs bg-green-500/10 text-green-600">{subscriptions.length}</Badge>
                 </h2>
-                <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {subscriptions.map((sub) => {
                     const availableUpgrades = getAvailableUpgrades(sub.protection_plans);
-                    const remainingDays = getRemainingDays(sub.next_billing_date);
+                    const remainingDays = getRemainingDays(sub.start_date, sub.next_billing_date);
                     const isWaiting = sub.waiting_period_ends_at && new Date(sub.waiting_period_ends_at) > new Date();
                     const waitingDaysLeft = isWaiting ? differenceInDays(new Date(sub.waiting_period_ends_at!), new Date()) : 0;
                     
-                    const statusColors: Record<string, string> = {
-                      active: 'bg-green-500/20 text-green-600 border-green-500/30',
-                      paused: 'bg-amber-500/20 text-amber-600 border-amber-500/30',
-                      expired: 'bg-destructive/20 text-destructive border-destructive/30',
+                    const statusConfig: Record<string, { label: string; color: string }> = {
+                      active: { label: 'نشط', color: 'bg-green-500/20 text-green-700 border-green-500/40' },
+                      paused: { label: 'متوقف', color: 'bg-amber-500/20 text-amber-700 border-amber-500/40' },
+                      expired: { label: 'منتهي', color: 'bg-red-500/20 text-red-700 border-red-500/40' },
                     };
+                    const statusInfo = statusConfig[sub.status] || statusConfig.active;
                     
                     return (
-                      <Card key={sub.id} className="border-primary/20 bg-card">
-                        <CardContent className="p-2">
-                          <div className="flex items-start gap-2">
-                            {/* Plan Icon */}
-                            <div className={`p-1.5 rounded-lg bg-gradient-to-br ${getPlanGradient(sub.protection_plans.plan_type)} text-white shrink-0`}>
-                              {getPlanIcon(sub.protection_plans.icon_name, 'w-3.5 h-3.5')}
+                      <Card key={sub.id} className="border-green-500/30 bg-gradient-to-br from-green-500/5 to-transparent">
+                        <CardContent className="p-4">
+                          {/* Header */}
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className={`p-2 rounded-xl bg-gradient-to-br ${getPlanGradient(sub.protection_plans.plan_type)} text-white shrink-0`}>
+                              {getPlanIcon(sub.protection_plans.icon_name, 'w-4 h-4')}
                             </div>
                             
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-1">
-                                <h3 className="text-[11px] font-medium truncate">
-                                  {sub.protection_plans.name_ar}
-                                </h3>
-                                <Badge 
-                                  variant="outline" 
-                                  className={`text-[8px] px-1 py-0 ${statusColors[sub.status] || statusColors.active}`}
-                                >
-                                  {sub.status === 'active' ? 'نشط' : sub.status === 'paused' ? 'متوقف' : 'منتهي'}
+                              <div className="flex items-center justify-between gap-2">
+                                <h3 className="text-sm font-semibold">{sub.protection_plans.name_ar}</h3>
+                                <Badge variant="outline" className={`text-[10px] ${statusInfo.color}`}>
+                                  {statusInfo.label}
                                 </Badge>
                               </div>
-                              <p className="text-[9px] text-muted-foreground truncate">
+                              <p className="text-xs text-muted-foreground truncate">
                                 {sub.user_printers?.store_printers?.model_name_ar}
                               </p>
-                              
-                              <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[9px]">
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">الشهري:</span>
-                                  <span className="font-medium">{sub.monthly_price?.toLocaleString()}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                  <span className="text-muted-foreground">التجديد:</span>
-                                  <span>{sub.next_billing_date ? format(new Date(sub.next_billing_date), 'dd/MM') : '-'}</span>
-                                </div>
-                              </div>
-                              
-                              {/* Remaining Days Counter */}
-                              <div className="mt-1 flex items-center gap-1.5">
-                                <div className="flex-1 flex items-center gap-1 text-[9px] bg-primary/10 text-primary rounded px-1.5 py-0.5">
-                                  <Timer className="w-2.5 h-2.5" />
-                                  <span className="font-medium">{remainingDays} يوم متبقي</span>
-                                </div>
-                                {isWaiting && (
-                                  <div className="flex items-center gap-0.5 text-[8px] text-amber-600 bg-amber-500/10 rounded px-1 py-0.5">
-                                    <Clock className="w-2 h-2" />
-                                    <span>انتظار {waitingDaysLeft} يوم</span>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Action Buttons */}
-                              <div className="flex gap-1 mt-1.5">
-                                {availableUpgrades.length > 0 && sub.status === 'active' && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="flex-1 h-6 text-[9px] px-1.5"
-                                    onClick={() => {
-                                      setUpgradingSubscription(sub);
-                                      setUpgradeDialogOpen(true);
-                                    }}
-                                  >
-                                    <ArrowUp className="w-2.5 h-2.5 ml-0.5" />
-                                    ترقية
-                                  </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-destructive hover:text-destructive h-6 text-[9px] px-1.5"
-                                  onClick={() => {
-                                    setCancellingSubscription(sub);
-                                    setCancelDialogOpen(true);
-                                  }}
-                                >
-                                  إلغاء
-                                </Button>
-                              </div>
                             </div>
+                          </div>
+                          
+                          {/* Remaining Days - PROMINENT */}
+                          <div className="bg-primary/10 rounded-lg p-3 mb-3">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                <Timer className="w-4 h-4 text-primary" />
+                                <span className="text-xs text-muted-foreground">الأيام المتبقية</span>
+                              </div>
+                              <span className="text-lg font-bold text-primary">{remainingDays}</span>
+                            </div>
+                            {isWaiting && (
+                              <div className="mt-2 flex items-center gap-1 text-[10px] text-amber-600">
+                                <Clock className="w-3 h-3" />
+                                <span>فترة الانتظار: {waitingDaysLeft} يوم متبقي</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Details */}
+                          <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                            <div className="flex justify-between bg-muted/30 rounded-lg px-2 py-1.5">
+                              <span className="text-muted-foreground">الشهري</span>
+                              <span className="font-medium">{sub.monthly_price?.toLocaleString()} د.ع</span>
+                            </div>
+                            <div className="flex justify-between bg-muted/30 rounded-lg px-2 py-1.5">
+                              <span className="text-muted-foreground">التجديد</span>
+                              <span>{sub.next_billing_date ? format(new Date(sub.next_billing_date), 'dd/MM') : '-'}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Action Buttons */}
+                          <div className="flex gap-2">
+                            {availableUpgrades.length > 0 && sub.status === 'active' && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                className="flex-1 h-8 text-xs"
+                                onClick={() => {
+                                  setUpgradingSubscription(sub);
+                                  setUpgradeDialogOpen(true);
+                                }}
+                              >
+                                <ArrowUp className="w-3 h-3 ml-1" />
+                                ترقية
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10 h-8 text-xs"
+                              onClick={() => {
+                                setCancellingSubscription(sub);
+                                setCancelDialogOpen(true);
+                              }}
+                            >
+                              إلغاء
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
@@ -734,23 +815,23 @@ const MyPrinters = () => {
 
             {/* Section C: Protection Plans */}
             <section>
-              <h2 className="text-xs font-semibold mb-1.5 flex items-center gap-1">
-                <Shield className="w-3.5 h-3.5 text-primary" />
-                خطط الاشتراك
+              <h2 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                <Shield className="w-4 h-4 text-primary" />
+                خطط الحماية المتاحة
               </h2>
               
               {selectedPrinter && (
-                <div className="mb-1.5 p-1.5 bg-primary/10 rounded-lg flex items-center justify-between">
-                  <div className="flex items-center gap-1">
-                    <CheckCircle className="w-3 h-3 text-primary" />
-                    <span className="text-[10px]">
-                      المحددة: <strong>{selectedPrinter.product_name_ar}</strong>
+                <div className="mb-3 p-3 bg-primary/10 rounded-xl flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-primary" />
+                    <span className="text-sm">
+                      الطابعة المختارة: <strong>{selectedPrinter.product_name_ar}</strong>
                     </span>
                   </div>
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    className="h-5 text-[9px] px-1.5"
+                    className="h-7 text-xs"
                     onClick={() => setSelectedPrinter(null)}
                   >
                     تغيير
@@ -758,78 +839,102 @@ const MyPrinters = () => {
                 </div>
               )}
               
-              <div className="grid gap-1.5 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {plans?.map((plan) => {
                   const isPopular = plan.plan_type === 'standard';
                   
                   return (
                     <Card 
                       key={plan.id} 
-                      className={`relative ${isPopular ? 'border-primary ring-1 ring-primary/50' : 'border-border'}`}
+                      className={`relative transition-all hover:shadow-lg ${
+                        isPopular 
+                          ? 'border-primary ring-2 ring-primary/20 shadow-md' 
+                          : 'border-border hover:border-primary/50'
+                      }`}
                     >
                       {isPopular && (
-                        <div className="absolute -top-2 left-1/2 -translate-x-1/2">
-                          <Badge className="bg-primary text-primary-foreground text-[8px] px-1.5 py-0">
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                          <Badge className="bg-primary text-primary-foreground text-xs px-3 shadow-sm">
                             الأكثر شيوعاً
                           </Badge>
                         </div>
                       )}
-                      <CardContent className="p-2 pt-3">
-                        <div className="text-center mb-2">
-                          <div className={`w-8 h-8 mx-auto rounded-full bg-gradient-to-br ${getPlanGradient(plan.plan_type)} flex items-center justify-center text-white mb-1`}>
-                            {getPlanIcon(plan.icon_name, 'w-4 h-4')}
+                      
+                      <CardContent className="p-4 pt-5">
+                        {/* Plan Header */}
+                        <div className="text-center mb-4">
+                          <div className={`w-12 h-12 mx-auto rounded-2xl bg-gradient-to-br ${getPlanGradient(plan.plan_type)} flex items-center justify-center text-white mb-2 shadow-lg`}>
+                            {getPlanIcon(plan.icon_name, 'w-6 h-6')}
                           </div>
-                          <h3 className="text-xs font-semibold">{plan.name_ar}</h3>
-                          <div className="text-sm font-bold text-primary">
-                            {plan.monthly_price?.toLocaleString()} <span className="text-[9px] font-normal">د.ع/شهر</span>
+                          <h3 className="text-base font-bold">{plan.name_ar}</h3>
+                          <div className="mt-1">
+                            <span className="text-2xl font-bold text-primary">{plan.monthly_price?.toLocaleString()}</span>
+                            <span className="text-xs text-muted-foreground mr-1">د.ع/شهر</span>
                           </div>
                         </div>
                         
-                        <ul className="space-y-0.5 text-[9px] mb-2">
+                        {/* Features */}
+                        <ul className="space-y-2 text-xs mb-4">
                           {plan.max_service_requests_per_month && (
-                            <li className="flex items-center gap-1">
-                              <CheckCircle className="w-2.5 h-2.5 text-green-500 shrink-0" />
-                              <span>{plan.max_service_requests_per_month} طلب/شهر</span>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                              <span>{plan.max_service_requests_per_month} طلب صيانة/شهر</span>
                             </li>
                           )}
                           {plan.maintenance_discount_percentage && (
-                            <li className="flex items-center gap-1">
-                              <CheckCircle className="w-2.5 h-2.5 text-green-500 shrink-0" />
-                              <span>خصم {plan.maintenance_discount_percentage}% صيانة</span>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                              <span>خصم {plan.maintenance_discount_percentage}% على الصيانة</span>
                             </li>
                           )}
                           {plan.parts_discount_percentage && (
-                            <li className="flex items-center gap-1">
-                              <CheckCircle className="w-2.5 h-2.5 text-green-500 shrink-0" />
-                              <span>خصم {plan.parts_discount_percentage}% قطع غيار</span>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                              <span>خصم {plan.parts_discount_percentage}% على قطع الغيار</span>
+                              {plan.max_parts_discount_per_month && (
+                                <Badge variant="secondary" className="text-[9px] px-1">
+                                  {plan.max_parts_discount_per_month} طلب/شهر
+                                </Badge>
+                              )}
                             </li>
                           )}
                           {plan.has_preventive_maintenance && (
-                            <li className="flex items-center gap-1">
-                              <CheckCircle className="w-2.5 h-2.5 text-green-500 shrink-0" />
-                              <span>صيانة وقائية</span>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                              <span>صيانة وقائية دورية</span>
                             </li>
                           )}
                           {plan.has_replacement_printer && (
-                            <li className="flex items-center gap-1">
-                              <CheckCircle className="w-2.5 h-2.5 text-green-500 shrink-0" />
-                              <span>طابعة بديلة</span>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
+                              <span>طابعة بديلة مؤقتة</span>
+                            </li>
+                          )}
+                          {plan.waiting_period_days && (
+                            <li className="flex items-center gap-2 text-muted-foreground">
+                              <Clock className="w-4 h-4 shrink-0" />
+                              <span>فترة انتظار: {plan.waiting_period_days} يوم</span>
                             </li>
                           )}
                         </ul>
                         
+                        {/* Subscribe Button */}
                         <Button
-                          className="w-full h-7 text-[10px]"
+                          className="w-full h-10"
                           variant={isPopular ? 'default' : 'outline'}
                           onClick={() => {
                             if (!selectedPrinter) {
-                              toast.error('اختر طابعة مؤهلة أولاً');
+                              if (eligibleForSubscription.length === 0) {
+                                toast.error('لا توجد طابعات مؤهلة للاشتراك');
+                              } else {
+                                toast.error('اختر طابعة مؤهلة أولاً');
+                              }
                               return;
                             }
                             setSelectedPlan(plan);
                             setSubscribeDialogOpen(true);
                           }}
-                          disabled={eligibleForSubscription.length === 0}
+                          disabled={eligibleForSubscription.length === 0 && !selectedPrinter}
                         >
                           اشترك الآن
                         </Button>
@@ -838,190 +943,175 @@ const MyPrinters = () => {
                   );
                 })}
               </div>
-              
-              {eligibleForSubscription.length === 0 && eligiblePrinters && eligiblePrinters.length > 0 && (
-                <div className="mt-1.5 p-2 bg-amber-500/10 rounded-lg flex items-start gap-1.5">
-                  <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
-                  <div className="text-[10px]">
-                    <p className="font-medium text-amber-600">لا توجد طابعات مؤهلة</p>
-                    <p className="text-muted-foreground">جميع طابعاتك محمية أو تحتاج رقم تسلسلي</p>
-                  </div>
-                </div>
-              )}
             </section>
           </div>
         )}
-
-        {/* Subscribe Dialog */}
-        <Dialog open={subscribeDialogOpen} onOpenChange={setSubscribeDialogOpen}>
-          <DialogContent className="max-w-xs">
-            <DialogHeader>
-              <DialogTitle className="text-sm">تأكيد الاشتراك</DialogTitle>
-            </DialogHeader>
-            
-            {selectedPrinter && selectedPlan && (
-              <div className="space-y-2">
-                <div className="p-2 bg-muted/50 rounded-lg space-y-1 text-[11px]">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">الطابعة:</span>
-                    <span className="font-medium truncate max-w-[120px]">{selectedPrinter.product_name_ar}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">SN:</span>
-                    <span className="font-mono text-[10px]" dir="ltr">{selectedPrinter.serial_number}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">الباقة:</span>
-                    <span className="font-medium">{selectedPlan.name_ar}</span>
-                  </div>
-                  <div className="flex justify-between text-primary font-medium">
-                    <span>السعر:</span>
-                    <span>{selectedPlan.monthly_price?.toLocaleString()} د.ع/شهر</span>
-                  </div>
-                </div>
-                
-                {selectedPlan.waiting_period_days && selectedPlan.waiting_period_days > 0 && (
-                  <div className="flex items-center gap-1 text-[10px] text-amber-600 bg-amber-500/10 p-1.5 rounded">
-                    <Clock className="w-2.5 h-2.5" />
-                    <span>فترة انتظار {selectedPlan.waiting_period_days} يوم</span>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            <DialogFooter className="gap-1.5">
-              <Button variant="outline" onClick={() => setSubscribeDialogOpen(false)} className="h-7 text-[10px]">
-                إلغاء
-              </Button>
-              <Button
-                onClick={() => {
-                  if (selectedPrinter && selectedPlan) {
-                    subscribeMutation.mutate({ printerId: selectedPrinter.order_item_id, planId: selectedPlan.id });
-                  }
-                }}
-                disabled={subscribeMutation.isPending}
-                className="h-7 text-[10px]"
-              >
-                {subscribeMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : 'تأكيد'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Upgrade Dialog */}
-        <Dialog open={upgradeDialogOpen} onOpenChange={setUpgradeDialogOpen}>
-          <DialogContent className="max-w-xs">
-            <DialogHeader>
-              <DialogTitle className="text-sm">ترقية الباقة</DialogTitle>
-            </DialogHeader>
-            
-            {upgradingSubscription && (
-              <div className="space-y-2">
-                <div className="p-2 bg-muted/50 rounded-lg text-[11px]">
-                  <p className="text-muted-foreground">الباقة الحالية:</p>
-                  <p className="font-medium">{upgradingSubscription.protection_plans.name_ar}</p>
-                </div>
-                
-                <div className="space-y-1">
-                  {getAvailableUpgrades(upgradingSubscription.protection_plans).map((plan) => {
-                    const daysRemaining = getRemainingDays(upgradingSubscription.next_billing_date);
-                    const creditAmount = (upgradingSubscription.monthly_price * daysRemaining) / 30;
-                    const amountDue = Math.max(0, plan.monthly_price - creditAmount);
-                    
-                    return (
-                      <Card 
-                        key={plan.id}
-                        className="cursor-pointer hover:border-primary transition-colors"
-                        onClick={() => upgradeMutation.mutate({ subscription: upgradingSubscription, newPlan: plan })}
-                      >
-                        <CardContent className="p-2">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1.5">
-                              <div className={`p-1 rounded bg-gradient-to-br ${getPlanGradient(plan.plan_type)} text-white`}>
-                                {getPlanIcon(plan.icon_name, 'w-3 h-3')}
-                              </div>
-                              <div>
-                                <p className="text-[10px] font-medium">{plan.name_ar}</p>
-                                <p className="text-[9px] text-muted-foreground">{plan.monthly_price?.toLocaleString()} د.ع</p>
-                              </div>
-                            </div>
-                            <div className="text-left">
-                              <p className="text-[10px] font-bold text-primary">{amountDue.toLocaleString()}</p>
-                              <p className="text-[8px] text-muted-foreground">رصيد: {Math.round(creditAmount).toLocaleString()}</p>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-                
-                {upgradeMutation.isPending && (
-                  <div className="flex items-center justify-center gap-1.5 text-[10px]">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    <span>جاري الترقية...</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Cancel Dialog */}
-        <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-          <DialogContent className="max-w-xs">
-            <DialogHeader>
-              <DialogTitle className="text-sm">إلغاء الاشتراك</DialogTitle>
-              <DialogDescription className="text-[10px]">
-                هل أنت متأكد؟
-              </DialogDescription>
-            </DialogHeader>
-            
-            {cancellingSubscription && (() => {
-              const daysRemaining = getRemainingDays(cancellingSubscription.next_billing_date);
-              const refundAmount = (cancellingSubscription.monthly_price * daysRemaining) / 30;
-              
-              return (
-                <div className="space-y-2">
-                  <div className="p-2 bg-muted/50 rounded-lg space-y-0.5 text-[11px]">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">الباقة:</span>
-                      <span>{cancellingSubscription.protection_plans.name_ar}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">المتبقي:</span>
-                      <span>{daysRemaining} يوم</span>
-                    </div>
-                    <div className="flex justify-between text-green-600 font-medium">
-                      <span>المسترد:</span>
-                      <span>{Math.round(refundAmount).toLocaleString()} د.ع</span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-start gap-1 text-[10px] text-destructive bg-destructive/10 p-1.5 rounded">
-                    <AlertCircle className="w-3 h-3 shrink-0 mt-0.5" />
-                    <span>ستفقد الحماية فوراً</span>
-                  </div>
-                </div>
-              );
-            })()}
-            
-            <DialogFooter className="gap-1.5">
-              <Button variant="outline" onClick={() => setCancelDialogOpen(false)} className="h-7 text-[10px]">
-                تراجع
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => cancellingSubscription && cancelMutation.mutate(cancellingSubscription)}
-                disabled={cancelMutation.isPending}
-                className="h-7 text-[10px]"
-              >
-                {cancelMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : 'تأكيد الإلغاء'}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
+
+      {/* Subscribe Dialog */}
+      <Dialog open={subscribeDialogOpen} onOpenChange={setSubscribeDialogOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>تأكيد الاشتراك</DialogTitle>
+            <DialogDescription>
+              أنت على وشك الاشتراك في خطة الحماية
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedPlan && selectedPrinter && (
+            <div className="space-y-4 py-4">
+              <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                <PrinterImage imageUrl={selectedPrinter.image_url} size={48} />
+                <div>
+                  <p className="font-medium text-sm">{selectedPrinter.product_name_ar}</p>
+                  <p className="text-xs text-muted-foreground font-mono" dir="ltr">
+                    SN: {selectedPrinter.serial_number}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 bg-primary/10 rounded-lg">
+                <div className={`p-2 rounded-lg bg-gradient-to-br ${getPlanGradient(selectedPlan.plan_type)} text-white`}>
+                  {getPlanIcon(selectedPlan.icon_name)}
+                </div>
+                <div>
+                  <p className="font-medium">{selectedPlan.name_ar}</p>
+                  <p className="text-sm text-primary font-bold">
+                    {selectedPlan.monthly_price?.toLocaleString()} د.ع/شهر
+                  </p>
+                </div>
+              </div>
+              
+              {selectedPlan.waiting_period_days && (
+                <div className="flex items-center gap-2 p-3 bg-amber-500/10 rounded-lg text-amber-700 text-sm">
+                  <Clock className="w-4 h-4" />
+                  <span>فترة انتظار: {selectedPlan.waiting_period_days} يوم قبل تفعيل التغطية</span>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setSubscribeDialogOpen(false)}>
+              إلغاء
+            </Button>
+            <Button 
+              onClick={() => {
+                if (selectedPrinter && selectedPlan) {
+                  subscribeMutation.mutate({
+                    printerId: selectedPrinter.order_item_id,
+                    planId: selectedPlan.id,
+                  });
+                }
+              }}
+              disabled={subscribeMutation.isPending}
+            >
+              {subscribeMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin ml-2" />
+              ) : null}
+              تأكيد الاشتراك
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade Dialog */}
+      <Dialog open={upgradeDialogOpen} onOpenChange={setUpgradeDialogOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>ترقية الاشتراك</DialogTitle>
+            <DialogDescription>
+              اختر الخطة التي تريد الترقية إليها
+            </DialogDescription>
+          </DialogHeader>
+          
+          {upgradingSubscription && (
+            <div className="space-y-3 py-4">
+              <p className="text-sm text-muted-foreground">
+                الخطة الحالية: <strong>{upgradingSubscription.protection_plans.name_ar}</strong>
+              </p>
+              
+              {getAvailableUpgrades(upgradingSubscription.protection_plans).map((plan) => {
+                const priceDiff = plan.monthly_price - upgradingSubscription.monthly_price;
+                
+                return (
+                  <Card 
+                    key={plan.id}
+                    className="cursor-pointer hover:border-primary transition-all"
+                    onClick={() => {
+                      upgradeMutation.mutate({
+                        subscription: upgradingSubscription,
+                        newPlan: plan,
+                      });
+                    }}
+                  >
+                    <CardContent className="p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg bg-gradient-to-br ${getPlanGradient(plan.plan_type)} text-white`}>
+                          {getPlanIcon(plan.icon_name)}
+                        </div>
+                        <div>
+                          <p className="font-medium">{plan.name_ar}</p>
+                          <p className="text-sm text-primary">{plan.monthly_price?.toLocaleString()} د.ع/شهر</p>
+                        </div>
+                      </div>
+                      <Badge variant="secondary">+{priceDiff.toLocaleString()}</Badge>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-destructive">إلغاء الاشتراك</DialogTitle>
+            <DialogDescription>
+              هل أنت متأكد من إلغاء اشتراكك؟
+            </DialogDescription>
+          </DialogHeader>
+          
+          {cancellingSubscription && (
+            <div className="py-4">
+              <div className="p-3 bg-destructive/10 rounded-lg text-destructive text-sm">
+                <p className="font-medium mb-2">تحذير:</p>
+                <p>سيتم إلغاء اشتراكك في خطة "{cancellingSubscription.protection_plans.name_ar}" وستفقد جميع مزايا الحماية.</p>
+              </div>
+              
+              {cancellingSubscription.next_billing_date && (
+                <div className="mt-3 p-3 bg-muted/50 rounded-lg text-sm">
+                  <p>سيتم حساب المبلغ المسترجع بناءً على الأيام المتبقية من دورة الفوترة الحالية.</p>
+                </div>
+              )}
+            </div>
+          )}
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>
+              تراجع
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={() => {
+                if (cancellingSubscription) {
+                  cancelMutation.mutate(cancellingSubscription);
+                }
+              }}
+              disabled={cancelMutation.isPending}
+            >
+              {cancelMutation.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin ml-2" />
+              ) : null}
+              تأكيد الإلغاء
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <Footer />
     </>
   );
