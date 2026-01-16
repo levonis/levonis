@@ -189,9 +189,9 @@ const BannerCarousel = () => {
   };
 
   return (
-    <div className="px-3 md:px-6 pt-1 pb-2">
+    <div className="px-1 md:px-2">
       <div 
-        className="relative w-full overflow-hidden rounded-xl bg-card/50 border border-border/20 shadow-lg"
+        className="relative w-full overflow-hidden rounded-lg md:rounded-xl bg-card/50 border border-border/20 shadow-lg"
         onMouseEnter={() => setIsAutoPlaying(false)}
         onMouseLeave={() => setIsAutoPlaying(true)}
       >
