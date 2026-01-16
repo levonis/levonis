@@ -87,7 +87,7 @@ function AppContent() {
       <DecorativeFrame />
       <AnnouncementBar onHeightChange={setAnnouncementHeight} />
       <Header announcementHeight={announcementHeight} />
-      <main style={{ paddingTop: `${64 + announcementHeight}px` }}>
+      <main style={{ paddingTop: `${68 + announcementHeight}px` }}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
