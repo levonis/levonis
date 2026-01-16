@@ -142,11 +142,9 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
   }, []);
 
   // Calculate top position:
-  // On homepage: starts below announcement bar, but when scrolled, moves to top (pushing announcement up)
+  // On homepage: always below announcement bar (announcement stays visible)
   // On other pages: always at top (0)
-  const topPosition = isHomePage 
-    ? (isScrolled ? 0 : announcementHeight)
-    : 0;
+  const topPosition = isHomePage ? announcementHeight : 0;
 
   return (
     <header 
