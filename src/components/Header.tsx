@@ -1,7 +1,11 @@
 import TopBar from './TopBar';
 
-const Header = () => {
-  return <TopBar />;
+interface HeaderProps {
+  announcementHeight?: number;
+}
+
+const Header = ({ announcementHeight = 0 }: HeaderProps) => {
+  return <TopBar announcementHeight={announcementHeight} />;
 };
 
 export default Header;

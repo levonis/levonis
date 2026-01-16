@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import SearchBar from '@/components/SearchBar';
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
+import BannerCarousel from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
 
 // Lazy load non-critical components
@@ -60,8 +61,13 @@ const Home = () => {
   return (
     <div className="min-h-screen relative overflow-hidden bg-transparent">
       <main className="relative z-10 pt-20">
+        {/* Banner Carousel */}
+        <section className="container mx-auto px-4 pt-4 pb-2">
+          <BannerCarousel />
+        </section>
+
         {/* Hero Section - Simplified for mobile */}
-        <section className="container mx-auto px-4 py-8 md:py-12 text-center">
+        <section className="container mx-auto px-4 py-6 md:py-10 text-center">
           <h1 className="text-3xl md:text-5xl font-black mb-3 text-gradient-gold">
             LEVONIS
           </h1>
