@@ -574,54 +574,55 @@ export default function CompetitionParticipantsDialog({
                         onOpenChange={() => toggleUserExpand(user.user_id)}
                       >
                         <div className="border rounded-lg overflow-hidden">
-                          <CollapsibleTrigger asChild>
-                            <div className="flex items-center justify-between p-2 sm:p-3 bg-muted/30 hover:bg-muted/50 cursor-pointer">
-                              <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                                <Checkbox
-                                  checked={user.tickets.filter(t => !t.is_winner).every(t => selectedTicketIds.has(t.id)) && user.tickets.some(t => !t.is_winner)}
-                                  onCheckedChange={(checked) => {
-                                    selectAllUserTickets(user, !!checked);
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  disabled={user.tickets.every(t => t.is_winner)}
-                                />
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="font-medium text-xs sm:text-sm truncate">
-                                      {user.profile?.full_name || user.profile?.username || 'مجهول'}
-                                    </span>
-                                    <Badge variant="secondary" className="text-[10px] sm:text-xs">
-                                      {user.ticketCount} تذكرة
+                          <div 
+                            className="flex items-center justify-between p-2 sm:p-3 bg-muted/30 hover:bg-muted/50 cursor-pointer"
+                            onClick={() => toggleUserExpand(user.user_id)}
+                          >
+                            <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
+                              <Checkbox
+                                checked={user.tickets.filter(t => !t.is_winner).every(t => selectedTicketIds.has(t.id)) && user.tickets.some(t => !t.is_winner)}
+                                onCheckedChange={(checked) => {
+                                  selectAllUserTickets(user, !!checked);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                disabled={user.tickets.every(t => t.is_winner)}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="font-medium text-xs sm:text-sm truncate">
+                                    {user.profile?.full_name || user.profile?.username || 'مجهول'}
+                                  </span>
+                                  <Badge variant="secondary" className="text-[10px] sm:text-xs">
+                                    {user.ticketCount} تذكرة
+                                  </Badge>
+                                  {user.isNewAccount && (
+                                    <Badge variant="outline" className="text-[10px] sm:text-xs text-orange-600">
+                                      جديد
                                     </Badge>
-                                    {user.isNewAccount && (
-                                      <Badge variant="outline" className="text-[10px] sm:text-xs text-orange-600">
-                                        جديد
-                                      </Badge>
-                                    )}
-                                    {user.tickets.some(t => t.is_winner) && (
-                                      <Badge className="bg-green-500 text-[10px] sm:text-xs">فائز 🎉</Badge>
-                                    )}
-                                  </div>
-                                  <div className="text-[10px] sm:text-xs text-muted-foreground flex flex-wrap gap-2 mt-0.5">
-                                    {user.profile?.phone_number && (
-                                      <span className="flex items-center gap-1">
-                                        <Phone className="h-3 w-3" />
-                                        {user.profile.phone_number}
-                                      </span>
-                                    )}
-                                    {user.profile?.governorate && (
-                                      <span>{user.profile.governorate}</span>
-                                    )}
-                                  </div>
+                                  )}
+                                  {user.tickets.some(t => t.is_winner) && (
+                                    <Badge className="bg-green-500 text-[10px] sm:text-xs">فائز 🎉</Badge>
+                                  )}
+                                </div>
+                                <div className="text-[10px] sm:text-xs text-muted-foreground flex flex-wrap gap-2 mt-0.5">
+                                  {user.profile?.phone_number && (
+                                    <span className="flex items-center gap-1">
+                                      <Phone className="h-3 w-3" />
+                                      {user.profile.phone_number}
+                                    </span>
+                                  )}
+                                  {user.profile?.governorate && (
+                                    <span>{user.profile.governorate}</span>
+                                  )}
                                 </div>
                               </div>
-                              {expandedUsers.has(user.user_id) ? (
-                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              )}
                             </div>
-                          </CollapsibleTrigger>
+                            {expandedUsers.has(user.user_id) ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
                           <CollapsibleContent>
                             <div className="border-t p-2 space-y-1 bg-background">
                               {user.tickets.map(ticket => (
