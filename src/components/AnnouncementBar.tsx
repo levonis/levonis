@@ -122,7 +122,7 @@ const AnnouncementBar = memo(({ onHeightChange }: AnnouncementBarProps) => {
   return (
     <div 
       ref={barRef}
-      className="fixed top-0 left-0 right-0 z-40 text-white py-2 px-3 overflow-hidden text-sm transition-transform duration-300"
+      className="fixed top-0 left-0 right-0 z-[45] text-white py-2 px-3 overflow-hidden text-sm"
       style={{ backgroundColor: bgColor }}
     >
       <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">

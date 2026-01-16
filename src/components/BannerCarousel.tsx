@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronLeft, ChevronRight, Copy, Check, ExternalLink } from 'lucide-react';
+import { Copy, Check, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -34,6 +34,10 @@ const BannerCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [progress, setProgress] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const { data: banners, isLoading } = useQuery({
     queryKey: ['active-banners'],
@@ -54,30 +58,59 @@ const BannerCarousel = () => {
     gcTime: 300000,
   });
 
-  // Auto-play functionality
+  // Auto-play with progress bar
   useEffect(() => {
     if (!banners || banners.length <= 1 || !isAutoPlaying) return;
 
-    const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % banners.length);
-    }, 5000);
+    const duration = 5000;
+    const interval = 50;
+    let elapsed = 0;
 
-    return () => clearInterval(interval);
-  }, [banners, isAutoPlaying]);
+    const timer = setInterval(() => {
+      elapsed += interval;
+      setProgress((elapsed / duration) * 100);
+      
+      if (elapsed >= duration) {
+        setCurrentIndex((prev) => (prev + 1) % banners.length);
+        elapsed = 0;
+        setProgress(0);
+      }
+    }, interval);
 
-  const goToPrevious = useCallback(() => {
-    if (!banners) return;
-    setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
-    setIsAutoPlaying(false);
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  }, [banners]);
+    return () => clearInterval(timer);
+  }, [banners, isAutoPlaying, currentIndex]);
 
-  const goToNext = useCallback(() => {
-    if (!banners) return;
-    setCurrentIndex((prev) => (prev + 1) % banners.length);
-    setIsAutoPlaying(false);
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  }, [banners]);
+  // Touch handlers for swipe
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current || !banners) return;
+    
+    const diff = touchStartX.current - touchEndX.current;
+    const threshold = 50;
+
+    if (Math.abs(diff) > threshold) {
+      if (diff > 0) {
+        // Swipe left - next (RTL: previous)
+        setCurrentIndex((prev) => (prev - 1 + banners.length) % banners.length);
+      } else {
+        // Swipe right - previous (RTL: next)
+        setCurrentIndex((prev) => (prev + 1) % banners.length);
+      }
+      setIsAutoPlaying(false);
+      setProgress(0);
+      setTimeout(() => setIsAutoPlaying(true), 10000);
+    }
+
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
 
   const handleCopyCoupon = async (code: string) => {
     try {
@@ -90,25 +123,9 @@ const BannerCarousel = () => {
     }
   };
 
-  const getCropStyle = (banner: Banner) => {
-    if (!banner.crop_settings || typeof banner.crop_settings !== 'object') {
-      return { objectFit: 'cover' as const, objectPosition: 'center' };
-    }
-    const settings = banner.crop_settings as unknown as CropSettings;
-    if (!settings.x || !settings.y || !settings.width || !settings.height) {
-      return { objectFit: 'cover' as const, objectPosition: 'center' };
-    }
-    return {
-      objectFit: 'none' as const,
-      objectPosition: `${-settings.x}px ${-settings.y}px`,
-      width: `${settings.width}px`,
-      height: `${settings.height}px`,
-    };
-  };
-
   if (isLoading) {
     return (
-      <div className="w-full aspect-[21/9] md:aspect-[3/1] bg-muted/50 animate-pulse rounded-xl mx-3 md:mx-6" />
+      <div className="w-full aspect-[2.5/1] md:aspect-[3/1] bg-muted/50 animate-pulse rounded-lg" />
     );
   }
 
@@ -121,7 +138,7 @@ const BannerCarousel = () => {
   const renderActionButton = (banner: Banner) => {
     const buttonText = banner.button_text_ar || banner.button_text || 'عرض';
     
-    const buttonBaseClass = "inline-flex items-center gap-1.5 px-3 py-1.5 md:px-4 md:py-2 rounded-lg font-medium text-xs md:text-sm transition-all duration-300 shadow-md hover:shadow-lg";
+    const buttonBaseClass = "inline-flex items-center gap-1 px-2.5 py-1 md:px-3 md:py-1.5 rounded-md font-medium text-[10px] md:text-xs transition-all duration-300 shadow-sm hover:shadow-md";
     
     switch (banner.action_type) {
       case 'product':
@@ -132,7 +149,7 @@ const BannerCarousel = () => {
             className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
           >
             {buttonText}
-            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <ExternalLink className="w-2.5 h-2.5 md:w-3 md:h-3" />
           </Link>
         );
       
@@ -144,7 +161,7 @@ const BannerCarousel = () => {
             className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
           >
             {buttonText}
-            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <ExternalLink className="w-2.5 h-2.5 md:w-3 md:h-3" />
           </Link>
         );
       
@@ -158,7 +175,7 @@ const BannerCarousel = () => {
             className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
           >
             {buttonText}
-            <ExternalLink className="w-3 h-3 md:w-3.5 md:h-3.5" />
+            <ExternalLink className="w-2.5 h-2.5 md:w-3 md:h-3" />
           </a>
         );
       
@@ -167,16 +184,16 @@ const BannerCarousel = () => {
         return (
           <button
             onClick={() => handleCopyCoupon(banner.coupon_code!)}
-            className={cn(buttonBaseClass, "bg-white/90 text-gray-800 hover:bg-white")}
+            className={cn(buttonBaseClass, "bg-white/95 text-gray-800 hover:bg-white border border-white/20")}
           >
             {copiedCoupon === banner.coupon_code ? (
               <>
-                <Check className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                <Check className="w-2.5 h-2.5 md:w-3 md:h-3" />
                 تم النسخ!
               </>
             ) : (
               <>
-                <Copy className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                <Copy className="w-2.5 h-2.5 md:w-3 md:h-3" />
                 {banner.coupon_code}
               </>
             )}
@@ -189,94 +206,87 @@ const BannerCarousel = () => {
   };
 
   return (
-    <div className="px-1 md:px-2">
-      <div 
-        className="relative w-full overflow-hidden rounded-lg md:rounded-xl bg-card/50 border border-border/20 shadow-lg"
-        onMouseEnter={() => setIsAutoPlaying(false)}
-        onMouseLeave={() => setIsAutoPlaying(true)}
-      >
-        {/* Banner Container */}
-        <div className="relative aspect-[2/1] md:aspect-[3/1] overflow-hidden">
-          {banners.map((banner, index) => (
-            <div
-              key={banner.id}
-              className={cn(
-                "absolute inset-0 transition-all duration-500 ease-out",
-                index === currentIndex 
-                  ? "opacity-100 translate-x-0" 
-                  : index < currentIndex 
-                    ? "opacity-0 -translate-x-full" 
-                    : "opacity-0 translate-x-full"
-              )}
-            >
-              <img
-                src={banner.image_url}
-                alt={banner.title_ar || banner.title}
-                className="w-full h-full object-cover"
-                loading={index === 0 ? 'eager' : 'lazy'}
-              />
-              
-              {/* Overlay Gradient - lighter */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-              
-              {/* Content - smaller and positioned better */}
-              <div className="absolute bottom-0 right-0 left-0 p-3 md:p-5 flex items-end justify-between">
-                <div className="flex flex-col gap-2">
-                  {banner.title_ar && (
-                    <h3 className="text-white font-bold text-sm md:text-lg lg:text-xl drop-shadow-md max-w-xl line-clamp-2">
-                      {banner.title_ar}
-                    </h3>
-                  )}
-                  {renderActionButton(banner)}
-                </div>
+    <div 
+      ref={containerRef}
+      className="relative w-full overflow-hidden rounded-lg bg-card/30 border border-border/10 shadow-md"
+      onMouseEnter={() => setIsAutoPlaying(false)}
+      onMouseLeave={() => setIsAutoPlaying(true)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Banner Container - Full width image */}
+      <div className="relative aspect-[2.5/1] md:aspect-[3/1] overflow-hidden">
+        {banners.map((banner, index) => (
+          <div
+            key={banner.id}
+            className={cn(
+              "absolute inset-0 transition-all duration-700 ease-out",
+              index === currentIndex 
+                ? "opacity-100 translate-x-0 scale-100" 
+                : index < currentIndex 
+                  ? "opacity-0 -translate-x-full scale-95" 
+                  : "opacity-0 translate-x-full scale-95"
+            )}
+          >
+            <img
+              src={banner.image_url}
+              alt={banner.title_ar || banner.title}
+              className="w-full h-full object-cover object-center"
+              loading={index === 0 ? 'eager' : 'lazy'}
+            />
+            
+            {/* Overlay Gradient - subtle */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+            
+            {/* Content - compact */}
+            <div className="absolute bottom-0 right-0 left-0 p-2 md:p-4 flex items-end justify-between">
+              <div className="flex flex-col gap-1.5">
+                {banner.title_ar && (
+                  <h3 className="text-white font-bold text-xs md:text-base lg:text-lg drop-shadow-lg max-w-md line-clamp-1">
+                    {banner.title_ar}
+                  </h3>
+                )}
+                {renderActionButton(banner)}
               </div>
             </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Progress Bar Indicator */}
+      {banners.length > 1 && (
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-white/20">
+          <div 
+            className="h-full bg-white/80 transition-all duration-50 ease-linear"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
+
+      {/* Dots Indicator - minimal */}
+      {banners.length > 1 && (
+        <div className="absolute bottom-1.5 md:bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          {banners.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => {
+                setCurrentIndex(index);
+                setIsAutoPlaying(false);
+                setProgress(0);
+                setTimeout(() => setIsAutoPlaying(true), 10000);
+              }}
+              className={cn(
+                "h-1 md:h-1.5 rounded-full transition-all duration-300",
+                index === currentIndex 
+                  ? "bg-white w-4 md:w-5" 
+                  : "bg-white/40 hover:bg-white/60 w-1 md:w-1.5"
+              )}
+              aria-label={`الانتقال إلى البانر ${index + 1}`}
+            />
           ))}
         </div>
-
-        {/* Navigation Arrows - smaller */}
-        {banners.length > 1 && (
-          <>
-            <button
-              onClick={goToNext}
-              className="absolute left-2 md:left-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-all"
-              aria-label="السابق"
-            >
-              <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-            <button
-              onClick={goToPrevious}
-              className="absolute right-2 md:right-3 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-all"
-              aria-label="التالي"
-            >
-              <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
-            </button>
-          </>
-        )}
-
-        {/* Dots Indicator - smaller */}
-        {banners.length > 1 && (
-          <div className="absolute bottom-2 md:bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-            {banners.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => {
-                  setCurrentIndex(index);
-                  setIsAutoPlaying(false);
-                  setTimeout(() => setIsAutoPlaying(true), 10000);
-                }}
-                className={cn(
-                  "h-1.5 md:h-2 rounded-full transition-all duration-300",
-                  index === currentIndex 
-                    ? "bg-white w-5 md:w-6" 
-                    : "bg-white/40 hover:bg-white/60 w-1.5 md:w-2"
-                )}
-                aria-label={`الانتقال إلى البانر ${index + 1}`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };
