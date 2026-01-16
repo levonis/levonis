@@ -15,7 +15,7 @@ import { Download, Search, AlertTriangle, Users, Ticket, Phone, Mail, Shield, Us
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import { exportToExcel as exportToExcelFile } from "@/lib/exportUtils";
 
 interface Participant {
   id: string;
@@ -303,16 +303,7 @@ export default function CompetitionParticipantsDialog({
       'فائز': user.tickets.some(t => t.is_winner) ? 'نعم' : 'لا'
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'المشاركين');
-
-    const maxWidths = Object.keys(exportData[0] || {}).map(key => ({
-      wch: Math.max(key.length, ...exportData.map(row => String((row as any)[key]).length)) + 2
-    }));
-    worksheet['!cols'] = maxWidths;
-
-    XLSX.writeFile(workbook, `مشاركين-${competitionTitle}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    exportToExcelFile(exportData, { filename: `مشاركين-${competitionTitle}-${format(new Date(), 'yyyy-MM-dd')}.csv` });
     toast.success('تم تصدير القائمة بنجاح');
   };
 
@@ -341,11 +332,7 @@ export default function CompetitionParticipantsDialog({
       return row;
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'الأحرف المجمعة');
-
-    XLSX.writeFile(workbook, `احرف-${competitionTitle}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    exportToExcelFile(exportData, { filename: `احرف-${competitionTitle}-${format(new Date(), 'yyyy-MM-dd')}.csv` });
     toast.success('تم تصدير تقرير الأحرف بنجاح');
   };
 
@@ -382,16 +369,7 @@ export default function CompetitionParticipantsDialog({
       'فائز': ''
     } as any);
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'التقرير المالي');
-
-    const maxWidths = Object.keys(exportData[0] || {}).map(key => ({
-      wch: Math.max(key.length, ...exportData.map(row => String((row as any)[key]).length)) + 2
-    }));
-    worksheet['!cols'] = maxWidths;
-
-    XLSX.writeFile(workbook, `تقرير-مالي-${competitionTitle}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    exportToExcelFile(exportData, { filename: `تقرير-مالي-${competitionTitle}-${format(new Date(), 'yyyy-MM-dd')}.csv` });
     toast.success('تم تصدير التقرير المالي بنجاح');
   };
 

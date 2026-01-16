@@ -15,7 +15,7 @@ import { Download, Search, Loader2, Gift, Ticket, Plus, Edit2, Trash2, Check, X,
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { toast } from "sonner";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "@/lib/exportUtils";
 
 interface AdminLettersPrizeManagerProps {
   open: boolean;
@@ -244,10 +244,7 @@ export default function AdminLettersPrizeManager({
       'تاريخ الاستخدام': c.used_at ? format(new Date(c.used_at), 'dd/MM/yyyy HH:mm') : '-',
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'القسائم');
-    XLSX.writeFile(workbook, `قسائم-${competitionTitle}-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    exportToExcel(exportData, { filename: `قسائم-${competitionTitle}-${format(new Date(), 'yyyy-MM-dd')}.csv` });
     toast.success('تم تصدير القسائم بنجاح');
   };
 

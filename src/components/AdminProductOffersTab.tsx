@@ -14,7 +14,7 @@ import { Plus, Gift, Loader2, Trash2, Upload, X, Edit, Package, DollarSign, Tick
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import * as XLSX from "xlsx";
+import { exportToExcel } from "@/lib/exportUtils";
 
 interface ProductOption {
   name_ar: string;
@@ -401,11 +401,7 @@ export default function AdminProductOffersTab() {
       'الربح': financialStats.netProfit,
     });
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'التقرير المالي');
-
-    XLSX.writeFile(workbook, `تقرير-عروض-المنتجات-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    exportToExcel(exportData, { filename: `تقرير-عروض-المنتجات-${format(new Date(), 'yyyy-MM-dd')}.csv` });
     toast.success('تم تصدير التقرير بنجاح');
   };
 
