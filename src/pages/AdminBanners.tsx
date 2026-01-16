@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Image, ExternalLink, Copy, FileText, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, Image, ExternalLink, Copy, FileText, GripVertical, Crop, Upload } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import BannerImageCropper, { CropSettings } from '@/components/admin/BannerImageCropper';
 
 interface BannerFormData {
   title: string;
@@ -28,6 +29,7 @@ interface BannerFormData {
   start_date: string | null;
   end_date: string | null;
   display_order: number;
+  crop_settings: CropSettings | null;
 }
 
 const initialFormData: BannerFormData = {
@@ -45,6 +47,7 @@ const initialFormData: BannerFormData = {
   start_date: null,
   end_date: null,
   display_order: 0,
+  crop_settings: null,
 };
 
 const AdminBanners = () => {
@@ -54,6 +57,8 @@ const AdminBanners = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<BannerFormData>(initialFormData);
   const [uploading, setUploading] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState<string>('');
 
   const { data: banners, isLoading } = useQuery({
     queryKey: ['admin-banners'],
@@ -71,9 +76,14 @@ const AdminBanners = () => {
 
   const createMutation = useMutation({
     mutationFn: async (data: BannerFormData) => {
+      const { crop_settings, ...rest } = data;
+      const insertData = {
+        ...rest,
+        crop_settings: crop_settings ? JSON.parse(JSON.stringify(crop_settings)) : null
+      };
       const { error } = await supabase
         .from('banners')
-        .insert([data]);
+        .insert([insertData]);
       
       if (error) throw error;
     },
@@ -91,9 +101,14 @@ const AdminBanners = () => {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: BannerFormData }) => {
+      const { crop_settings, ...rest } = data;
+      const updateData = {
+        ...rest,
+        crop_settings: crop_settings ? JSON.parse(JSON.stringify(crop_settings)) : null
+      };
       const { error } = await supabase
         .from('banners')
-        .update(data)
+        .update(updateData)
         .eq('id', id);
       
       if (error) throw error;
@@ -150,22 +165,10 @@ const AdminBanners = () => {
       start_date: banner.start_date,
       end_date: banner.end_date,
       display_order: banner.display_order || 0,
+      crop_settings: banner.crop_settings || null,
     });
     setEditingId(banner.id);
     setDialogOpen(true);
-  };
-
-  const handleSubmit = () => {
-    if (!formData.image_url) {
-      toast.error('الرجاء رفع صورة للبانر');
-      return;
-    }
-
-    if (editingId) {
-      updateMutation.mutate({ id: editingId, data: formData });
-    } else {
-      createMutation.mutate(formData);
-    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -188,12 +191,73 @@ const AdminBanners = () => {
         .from('uploads')
         .getPublicUrl(filePath);
 
-      setFormData({ ...formData, image_url: data.publicUrl });
-      toast.success('تم رفع الصورة بنجاح');
+      // Set temp image for cropping
+      setTempImageUrl(data.publicUrl);
+      setCropperOpen(true);
+      toast.success('تم رفع الصورة - يمكنك الآن قصها');
     } catch (error) {
       toast.error('فشل في رفع الصورة');
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleCropComplete = (croppedImageUrl: string, cropSettings: CropSettings) => {
+    // Upload cropped image
+    fetch(croppedImageUrl)
+      .then(res => res.blob())
+      .then(async (blob) => {
+        const fileExt = 'jpg';
+        const fileName = `${Date.now()}_cropped.${fileExt}`;
+        const filePath = `banners/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('uploads')
+          .upload(filePath, blob, { contentType: 'image/jpeg' });
+
+        if (uploadError) {
+          // If upload fails, use the original image with crop settings
+          setFormData({ 
+            ...formData, 
+            image_url: tempImageUrl,
+            crop_settings: cropSettings 
+          });
+          toast.info('تم حفظ إعدادات القص');
+          return;
+        }
+
+        const { data } = supabase.storage
+          .from('uploads')
+          .getPublicUrl(filePath);
+
+        setFormData({ 
+          ...formData, 
+          image_url: data.publicUrl,
+          crop_settings: cropSettings 
+        });
+        toast.success('تم قص الصورة بنجاح');
+      })
+      .catch(() => {
+        // Fallback: use original image with crop settings
+        setFormData({ 
+          ...formData, 
+          image_url: tempImageUrl,
+          crop_settings: cropSettings 
+        });
+        toast.info('تم حفظ إعدادات القص');
+      });
+  };
+
+  const handleSubmit = () => {
+    if (!formData.image_url) {
+      toast.error('الرجاء رفع صورة للبانر');
+      return;
+    }
+
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: formData });
+    } else {
+      createMutation.mutate(formData);
     }
   };
 
@@ -547,6 +611,15 @@ const AdminBanners = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Cropper Dialog */}
+      <BannerImageCropper
+        imageUrl={tempImageUrl}
+        open={cropperOpen}
+        onOpenChange={setCropperOpen}
+        onCropComplete={handleCropComplete}
+        initialCropSettings={formData.crop_settings}
+      />
     </AdminLayout>
   );
 };

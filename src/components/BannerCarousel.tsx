@@ -108,7 +108,7 @@ const BannerCarousel = () => {
 
   if (isLoading) {
     return (
-      <div className="w-full aspect-[3/1] md:aspect-[4/1] bg-muted/50 animate-pulse rounded-xl" />
+      <div className="w-full aspect-[21/9] md:aspect-[3/1] bg-muted/50 animate-pulse rounded-2xl mx-4 md:mx-8 my-4" />
     );
   }
 
@@ -121,13 +121,15 @@ const BannerCarousel = () => {
   const renderActionButton = (banner: Banner) => {
     const buttonText = banner.button_text_ar || banner.button_text || 'عرض';
     
+    const buttonBaseClass = "inline-flex items-center gap-2 px-6 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl hover:-translate-y-0.5";
+    
     switch (banner.action_type) {
       case 'product':
         if (!banner.product_id) return null;
         return (
           <Link
             to={`/product/${banner.product_id}`}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors shadow-lg"
+            className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
           >
             {buttonText}
             <ExternalLink className="w-4 h-4" />
@@ -139,7 +141,7 @@ const BannerCarousel = () => {
         return (
           <Link
             to={banner.page_url}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors shadow-lg"
+            className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
           >
             {buttonText}
             <ExternalLink className="w-4 h-4" />
@@ -153,7 +155,7 @@ const BannerCarousel = () => {
             href={banner.external_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors shadow-lg"
+            className={cn(buttonBaseClass, "bg-primary text-primary-foreground hover:bg-primary/90")}
           >
             {buttonText}
             <ExternalLink className="w-4 h-4" />
@@ -165,7 +167,7 @@ const BannerCarousel = () => {
         return (
           <button
             onClick={() => handleCopyCoupon(banner.coupon_code!)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-accent-foreground rounded-lg font-medium text-sm hover:bg-accent/90 transition-colors shadow-lg"
+            className={cn(buttonBaseClass, "bg-accent text-accent-foreground hover:bg-accent/90")}
           >
             {copiedCoupon === banner.coupon_code ? (
               <>
@@ -187,92 +189,94 @@ const BannerCarousel = () => {
   };
 
   return (
-    <div 
-      className="relative w-full overflow-hidden rounded-xl bg-card/50 border border-border/30"
-      onMouseEnter={() => setIsAutoPlaying(false)}
-      onMouseLeave={() => setIsAutoPlaying(true)}
-    >
-      {/* Banner Container */}
-      <div className="relative aspect-[3/1] md:aspect-[4/1] overflow-hidden">
-        {banners.map((banner, index) => (
-          <div
-            key={banner.id}
-            className={cn(
-              "absolute inset-0 transition-all duration-700 ease-in-out",
-              index === currentIndex 
-                ? "opacity-100 translate-x-0" 
-                : index < currentIndex 
-                  ? "opacity-0 -translate-x-full" 
-                  : "opacity-0 translate-x-full"
-            )}
-          >
-            <img
-              src={banner.image_url}
-              alt={banner.title_ar || banner.title}
-              className="w-full h-full object-cover"
-              loading={index === 0 ? 'eager' : 'lazy'}
-            />
-            
-            {/* Overlay Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            
-            {/* Content */}
-            <div className="absolute bottom-4 right-4 left-4 flex items-end justify-between">
-              <div className="flex flex-col gap-2">
-                {banner.title_ar && (
-                  <h3 className="text-white font-bold text-lg md:text-xl drop-shadow-lg">
-                    {banner.title_ar}
-                  </h3>
-                )}
-                {renderActionButton(banner)}
+    <div className="px-4 md:px-8 py-4">
+      <div 
+        className="relative w-full overflow-hidden rounded-2xl bg-card/50 border border-border/30 shadow-xl"
+        onMouseEnter={() => setIsAutoPlaying(false)}
+        onMouseLeave={() => setIsAutoPlaying(true)}
+      >
+        {/* Banner Container */}
+        <div className="relative aspect-[21/9] md:aspect-[3/1] overflow-hidden">
+          {banners.map((banner, index) => (
+            <div
+              key={banner.id}
+              className={cn(
+                "absolute inset-0 transition-all duration-700 ease-in-out",
+                index === currentIndex 
+                  ? "opacity-100 translate-x-0" 
+                  : index < currentIndex 
+                    ? "opacity-0 -translate-x-full" 
+                    : "opacity-0 translate-x-full"
+              )}
+            >
+              <img
+                src={banner.image_url}
+                alt={banner.title_ar || banner.title}
+                className="w-full h-full object-cover"
+                loading={index === 0 ? 'eager' : 'lazy'}
+              />
+              
+              {/* Overlay Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+              
+              {/* Content */}
+              <div className="absolute bottom-0 right-0 left-0 p-6 md:p-8 flex items-end justify-between">
+                <div className="flex flex-col gap-3">
+                  {banner.title_ar && (
+                    <h3 className="text-white font-bold text-xl md:text-2xl lg:text-3xl drop-shadow-lg max-w-2xl">
+                      {banner.title_ar}
+                    </h3>
+                  )}
+                  {renderActionButton(banner)}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Navigation Arrows */}
-      {banners.length > 1 && (
-        <>
-          <button
-            onClick={goToNext}
-            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-colors"
-            aria-label="السابق"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={goToPrevious}
-            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/30 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/50 transition-colors"
-            aria-label="التالي"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </>
-      )}
-
-      {/* Dots Indicator */}
-      {banners.length > 1 && (
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
-          {banners.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => {
-                setCurrentIndex(index);
-                setIsAutoPlaying(false);
-                setTimeout(() => setIsAutoPlaying(true), 10000);
-              }}
-              className={cn(
-                "w-2 h-2 rounded-full transition-all",
-                index === currentIndex 
-                  ? "bg-white w-6" 
-                  : "bg-white/40 hover:bg-white/60"
-              )}
-              aria-label={`الانتقال إلى البانر ${index + 1}`}
-            />
           ))}
         </div>
-      )}
+
+        {/* Navigation Arrows */}
+        {banners.length > 1 && (
+          <>
+            <button
+              onClick={goToNext}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/60 transition-all hover:scale-110"
+              aria-label="السابق"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <button
+              onClick={goToPrevious}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-black/40 backdrop-blur-sm text-white flex items-center justify-center hover:bg-black/60 transition-all hover:scale-110"
+              aria-label="التالي"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </>
+        )}
+
+        {/* Dots Indicator */}
+        {banners.length > 1 && (
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            {banners.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setCurrentIndex(index);
+                  setIsAutoPlaying(false);
+                  setTimeout(() => setIsAutoPlaying(true), 10000);
+                }}
+                className={cn(
+                  "h-2.5 rounded-full transition-all duration-300",
+                  index === currentIndex 
+                    ? "bg-white w-8" 
+                    : "bg-white/40 hover:bg-white/60 w-2.5"
+                )}
+                aria-label={`الانتقال إلى البانر ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
