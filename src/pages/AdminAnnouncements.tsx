@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Pencil, Trash2, Megaphone } from 'lucide-react';
+import { Plus, Pencil, Trash2, Megaphone, Image } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminLayout, { AdminSection, AdminCard, AdminCardContent, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
+import { ADMIN_ROUTES } from '@/config/adminConfig';
 
 const AdminAnnouncements = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
@@ -182,17 +183,24 @@ const AdminAnnouncements = () => {
   return (
     <AdminLayout
       title="إدارة الشريط الإخباري"
-      description="إدارة الإعلانات المتحركة في أعلى الموقع"
+      description="إدارة الإعلانات المتحركة والبانرات في أعلى الموقع"
       icon={<Megaphone className="h-5 w-5" />}
       actions={
-        <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
-          <DialogTrigger asChild>
-            <Button className="admin-btn-primary">
-              <Plus className="ml-2 h-4 w-4" />
-              إضافة إعلان
+        <div className="flex items-center gap-2">
+          <Link to={ADMIN_ROUTES.banners}>
+            <Button variant="outline">
+              <Image className="ml-2 h-4 w-4" />
+              البانرات الإعلانية
             </Button>
-          </DialogTrigger>
-          <DialogContent className="admin-dialog max-w-2xl max-h-[90vh] overflow-y-auto">
+          </Link>
+          <Dialog open={dialogOpen} onOpenChange={handleDialogChange}>
+            <DialogTrigger asChild>
+              <Button className="admin-btn-primary">
+                <Plus className="ml-2 h-4 w-4" />
+                إضافة إعلان
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="admin-dialog max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editing ? 'تعديل الإعلان' : 'إضافة إعلان جديد'}</DialogTitle>
             </DialogHeader>
@@ -354,6 +362,7 @@ const AdminAnnouncements = () => {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       }
     >
       <AdminSection>
