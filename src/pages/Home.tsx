@@ -62,7 +62,7 @@ const Home = () => {
     <div className="min-h-screen relative overflow-hidden bg-transparent">
       <main className="relative z-10 pt-20">
         {/* Banner Carousel */}
-        <section className="container mx-auto px-4 pt-4 pb-2">
+        <section className="container mx-auto px-1 md:px-2 pt-1 pb-1">
           <BannerCarousel />
         </section>
 
