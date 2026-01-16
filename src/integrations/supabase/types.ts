@@ -3549,6 +3549,14 @@ export type Database = {
         }
         Returns: string
       }
+      add_serial_number_to_order_item: {
+        Args: {
+          p_admin_id: string
+          p_order_item_id: string
+          p_serial_number: string
+        }
+        Returns: Json
+      }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_user_level: { Args: { points: number }; Returns: string }
       check_username_available: {

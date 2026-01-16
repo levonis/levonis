@@ -43,6 +43,8 @@ interface ProtectionPlan {
   icon_name: string;
   badge_text: string | null;
   annual_coverage_cap: number | null;
+  parts_discount_categories: string[] | null;
+  display_order: number;
 }
 
 interface SubscriptionWithDetails {
@@ -117,6 +119,25 @@ const AdminPrinterProtection = () => {
   const [serialInput, setSerialInput] = useState('');
   const [editPlanDialogOpen, setEditPlanDialogOpen] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<ProtectionPlan | null>(null);
+  const [addPlanDialogOpen, setAddPlanDialogOpen] = useState(false);
+  const [newPlan, setNewPlan] = useState<Partial<ProtectionPlan>>({
+    plan_type: 'basic',
+    name_ar: '',
+    name_en: '',
+    description_ar: '',
+    monthly_price: 0,
+    features: [],
+    is_active: true,
+    max_service_requests_per_month: 1,
+    maintenance_discount_percentage: 0,
+    parts_discount_percentage: 0,
+    waiting_period_days: 30,
+    priority_level: 1,
+    has_preventive_maintenance: false,
+    has_replacement_printer: false,
+    icon_name: 'shield',
+    parts_discount_categories: [],
+  });
   const [requestActionDialogOpen, setRequestActionDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SerialRequest | null>(null);
   const [requestAction, setRequestAction] = useState<'approve' | 'reject'>('approve');
@@ -132,6 +153,20 @@ const AdminPrinterProtection = () => {
         .order('display_order');
       if (error) throw error;
       return data as ProtectionPlan[];
+    },
+    enabled: isAdmin,
+  });
+
+  // Fetch categories for parts discount
+  const { data: categories } = useQuery({
+    queryKey: ['categories'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('categories')
+        .select('id, name, name_ar, slug')
+        .order('name_ar');
+      if (error) throw error;
+      return data;
     },
     enabled: isAdmin,
   });
@@ -274,19 +309,10 @@ const AdminPrinterProtection = () => {
 
   // Update plan mutation
   const updatePlanMutation = useMutation({
-    mutationFn: async (updates: { 
-      id: string; 
-      monthly_price?: number;
-      max_service_requests_per_month?: number;
-      maintenance_discount_percentage?: number;
-      parts_discount_percentage?: number;
-      waiting_period_days?: number;
-      priority_level?: number;
-      is_active?: boolean;
-      has_preventive_maintenance?: boolean;
-      badge_text?: string | null;
-    }) => {
-      const { id, ...data } = updates;
+    mutationFn: async (updates: Partial<ProtectionPlan> & { id: string }) => {
+      const { id, ...rest } = updates;
+      // Cast to any to allow dynamic updates
+      const data: any = { ...rest };
       const { error } = await supabase
         .from('protection_plans')
         .update(data)
@@ -304,49 +330,68 @@ const AdminPrinterProtection = () => {
     },
   });
 
-  // Add serial number mutation
-  const addSerialMutation = useMutation({
-    mutationFn: async ({ itemId, serialNumber, productNameAr }: { itemId: string; serialNumber: string; productNameAr: string }) => {
-      // First, check if serial exists in store_printers
-      const { data: existingPrinter } = await supabase
-        .from('store_printers')
-        .select('id')
-        .eq('serial_number', serialNumber)
-        .maybeSingle();
-
-      // If not exists, create it
-      if (!existingPrinter) {
-        const { error: insertError } = await supabase
-          .from('store_printers')
-          .insert({
-            serial_number: serialNumber,
-            model_name: productNameAr,
-            model_name_ar: productNameAr,
-          });
-        if (insertError) throw insertError;
-      }
-
-      // Update order item with serial number
+  // Add new plan mutation
+  const addPlanMutation = useMutation({
+    mutationFn: async (plan: Partial<ProtectionPlan>) => {
+      const maxOrder = plans?.reduce((max, p) => Math.max(max, p.display_order || 0), 0) || 0;
+      const insertData: any = {
+        ...plan,
+        display_order: maxOrder + 1,
+      };
       const { error } = await supabase
-        .from('order_items')
-        .update({ serial_number: serialNumber })
-        .eq('id', itemId);
+        .from('protection_plans')
+        .insert(insertData);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('تم إضافة الباقة بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['admin-protection-plans'] });
+      queryClient.invalidateQueries({ queryKey: ['protection-plans'] });
+      setAddPlanDialogOpen(false);
+      setNewPlan({
+        plan_type: 'basic',
+        name_ar: '',
+        name_en: '',
+        description_ar: '',
+        monthly_price: 0,
+        features: [],
+        is_active: true,
+        max_service_requests_per_month: 1,
+        maintenance_discount_percentage: 0,
+        parts_discount_percentage: 0,
+        waiting_period_days: 30,
+        priority_level: 1,
+        has_preventive_maintenance: false,
+        has_replacement_printer: false,
+        icon_name: 'shield',
+        parts_discount_categories: [],
+      });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ');
+    },
+  });
+
+  // Add serial number mutation - using RPC function
+  const addSerialMutation = useMutation({
+    mutationFn: async ({ itemId, serialNumber }: { itemId: string; serialNumber: string }) => {
+      const { data, error } = await supabase
+        .rpc('add_serial_number_to_order_item', {
+          p_order_item_id: itemId,
+          p_serial_number: serialNumber,
+          p_admin_id: user?.id,
+        });
 
       if (error) throw error;
-
-      // Log the action
-      await supabase.from('printer_protection_logs').insert({
-        admin_id: user?.id,
-        action: 'add_serial_number',
-        entity_type: 'order_item',
-        entity_id: itemId,
-        details: { serial_number: serialNumber },
-      });
+      const result = data as { success: boolean; error?: string };
+      if (result && !result.success) throw new Error(result.error || 'حدث خطأ');
+      return result;
     },
     onSuccess: () => {
       toast.success('تم إضافة الرقم التسلسلي بنجاح');
       queryClient.invalidateQueries({ queryKey: ['admin-delivered-printer-items'] });
       queryClient.invalidateQueries({ queryKey: ['admin-serial-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['eligible-printers'] });
       setSerialDialogOpen(false);
       setSelectedOrderItem(null);
       setSerialInput('');
@@ -408,31 +453,38 @@ const AdminPrinterProtection = () => {
       orderItemId?: string;
       serialNumber?: string;
     }) => {
-      // Update request status
-      const { error } = await supabase
-        .from('serial_number_requests')
-        .update({
-          status: action === 'approve' ? 'approved' : 'rejected',
-          admin_notes: notes,
-          resolved_at: new Date().toISOString(),
-          resolved_by: user?.id,
-        })
-        .eq('id', requestId);
-
-      if (error) throw error;
-
-      // If approved and serial provided, add it to the order item
+      // If approved and serial provided, use the RPC function which handles everything
       if (action === 'approve' && orderItemId && serialNumber) {
-        await addSerialMutation.mutateAsync({
-          itemId: orderItemId,
-          serialNumber,
-          productNameAr: selectedRequest?.product_name_ar || '',
-        });
+        const { data, error } = await supabase
+          .rpc('add_serial_number_to_order_item', {
+            p_order_item_id: orderItemId,
+            p_serial_number: serialNumber,
+            p_admin_id: user?.id,
+          });
+
+        if (error) throw error;
+        const result = data as { success: boolean; error?: string };
+        if (result && !result.success) throw new Error(result.error || 'حدث خطأ');
+      } else {
+        // Just update status for rejection
+        const { error } = await supabase
+          .from('serial_number_requests')
+          .update({
+            status: 'rejected',
+            admin_notes: notes,
+            resolved_at: new Date().toISOString(),
+            resolved_by: user?.id,
+          })
+          .eq('id', requestId);
+
+        if (error) throw error;
       }
     },
     onSuccess: () => {
-      toast.success(requestAction === 'approve' ? 'تمت الموافقة على الطلب' : 'تم رفض الطلب');
+      toast.success(requestAction === 'approve' ? 'تمت الموافقة وإضافة الرقم التسلسلي' : 'تم رفض الطلب');
       queryClient.invalidateQueries({ queryKey: ['admin-serial-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-delivered-printer-items'] });
+      queryClient.invalidateQueries({ queryKey: ['eligible-printers'] });
       setRequestActionDialogOpen(false);
       setSelectedRequest(null);
       setAdminNotes('');
@@ -698,11 +750,14 @@ const AdminPrinterProtection = () => {
           {/* Plans Tab */}
           <TabsContent value="plans" className="space-y-4">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <Settings className="w-5 h-5" />
                   إدارة الباقات
                 </CardTitle>
+                <Button onClick={() => setAddPlanDialogOpen(true)}>
+                  إضافة باقة جديدة
+                </Button>
               </CardHeader>
               <CardContent>
                 {plansLoading ? (
@@ -1058,7 +1113,6 @@ const AdminPrinterProtection = () => {
                   addSerialMutation.mutate({
                     itemId: selectedOrderItem!.id,
                     serialNumber: serialInput.trim(),
-                    productNameAr: selectedOrderItem!.product_name_ar,
                   });
                 }}
                 disabled={addSerialMutation.isPending}
@@ -1279,6 +1333,98 @@ const AdminPrinterProtection = () => {
                 ) : (
                   'رفض الطلب'
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Plan Dialog */}
+        <Dialog open={addPlanDialogOpen} onOpenChange={setAddPlanDialogOpen}>
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>إضافة باقة جديدة</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>اسم الباقة (عربي)</Label>
+                  <Input
+                    value={newPlan.name_ar || ''}
+                    onChange={(e) => setNewPlan({ ...newPlan, name_ar: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>اسم الباقة (إنجليزي)</Label>
+                  <Input
+                    value={newPlan.name_en || ''}
+                    onChange={(e) => setNewPlan({ ...newPlan, name_en: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>نوع الباقة</Label>
+                <Select
+                  value={newPlan.plan_type}
+                  onValueChange={(v) => setNewPlan({ ...newPlan, plan_type: v })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="basic">أساسية</SelectItem>
+                    <SelectItem value="standard">متوسطة</SelectItem>
+                    <SelectItem value="comprehensive">شاملة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>السعر الشهري (د.ع)</Label>
+                  <Input
+                    type="number"
+                    value={newPlan.monthly_price || 0}
+                    onChange={(e) => setNewPlan({ ...newPlan, monthly_price: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>فترة الانتظار (أيام)</Label>
+                  <Input
+                    type="number"
+                    value={newPlan.waiting_period_days || 30}
+                    onChange={(e) => setNewPlan({ ...newPlan, waiting_period_days: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>خصم الصيانة (%)</Label>
+                  <Input
+                    type="number"
+                    value={newPlan.maintenance_discount_percentage || 0}
+                    onChange={(e) => setNewPlan({ ...newPlan, maintenance_discount_percentage: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>خصم قطع الغيار (%)</Label>
+                  <Input
+                    type="number"
+                    value={newPlan.parts_discount_percentage || 0}
+                    onChange={(e) => setNewPlan({ ...newPlan, parts_discount_percentage: Number(e.target.value) })}
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setAddPlanDialogOpen(false)}>إلغاء</Button>
+              <Button
+                onClick={() => {
+                  if (!newPlan.name_ar || !newPlan.name_en) {
+                    toast.error('الرجاء إدخال اسم الباقة');
+                    return;
+                  }
+                  addPlanMutation.mutate(newPlan);
+                }}
+                disabled={addPlanMutation.isPending}
+              >
+                {addPlanMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'إضافة'}
               </Button>
             </DialogFooter>
           </DialogContent>
