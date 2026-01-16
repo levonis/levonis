@@ -10,7 +10,7 @@ import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditC
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
-import html2pdf from 'html2pdf.js';
+import generatePDF, { Margin, Resolution } from 'react-to-pdf';
 import { OrderInvoice } from '@/components/OrderInvoice';
 import CustomerChat from '@/components/CustomerChat';
 import { useState } from 'react';
@@ -126,16 +126,21 @@ const OrderDetail = () => {
         notes: null
       });
       
-      // Generate PDF
-      const options = {
-        margin: 10,
+      // Generate PDF using react-to-pdf
+      const getTargetElement = () => element;
+      await generatePDF(getTargetElement, {
         filename: `invoice-${order.order_number}.pdf`,
-        image: { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' as const }
-      };
-
-      await html2pdf().set(options).from(element).save();
+        resolution: Resolution.HIGH,
+        page: {
+          margin: Margin.SMALL,
+          format: 'A4',
+          orientation: 'portrait',
+        },
+        canvas: {
+          mimeType: 'image/jpeg',
+          qualityRatio: 0.98,
+        },
+      });
       toast.success('تم حفظ الفاتورة وتنزيلها بنجاح');
     } catch (error) {
       console.error('Error generating PDF:', error);
