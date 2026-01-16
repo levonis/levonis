@@ -19,6 +19,7 @@ export const ADMIN_ROUTES = {
   dashboard: ADMIN_BASE_PATH,
   notifications: `${ADMIN_BASE_PATH}/notifications`,
   announcements: `${ADMIN_BASE_PATH}/announcements`,
+  banners: `${ADMIN_BASE_PATH}/banners`,
   coupons: `${ADMIN_BASE_PATH}/coupons`,
   orders: `${ADMIN_BASE_PATH}/orders`,
   pointsSettings: `${ADMIN_BASE_PATH}/points-settings`,

@@ -38,9 +38,9 @@ export default function AdminLayout({
   const navigate = useNavigate();
 
   return (
-    <div className="admin-page" dir="rtl">
+    <div className="admin-page min-h-screen" dir="rtl">
       {/* Sticky Header */}
-      <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-lg border-b border-border/40">
+      <header className="sticky top-16 z-40 bg-card/95 backdrop-blur-lg border-b border-border/40">
         <div className={`container mx-auto px-4 md:px-6 ${maxWidthClasses[maxWidth]}`}>
           <div className="flex items-center justify-between h-16 md:h-18">
             {/* Left: Back button + Title */}
@@ -77,7 +77,7 @@ export default function AdminLayout({
       </header>
 
       {/* Main Content */}
-      <main className={`container mx-auto px-4 md:px-6 py-6 md:py-8 ${maxWidthClasses[maxWidth]}`}>
+      <main className={`container mx-auto px-4 md:px-6 py-6 md:py-8 pb-24 ${maxWidthClasses[maxWidth]}`}>
         {children}
       </main>
     </div>
