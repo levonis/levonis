@@ -19,7 +19,11 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 
-const TopBar = memo(() => {
+interface TopBarProps {
+  announcementHeight?: number;
+}
+
+const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
   const { user, isAdmin, signOut } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
@@ -137,8 +141,14 @@ const TopBar = memo(() => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Calculate top position based on scroll and announcement bar
+  const topPosition = isScrolled ? 0 : announcementHeight;
+
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b overflow-hidden transition-all duration-300 bg-background/95 backdrop-blur-xl border-border/40 shadow-md">
+    <header 
+      className="fixed left-0 right-0 z-50 border-b overflow-hidden transition-all duration-300 bg-background/95 backdrop-blur-xl border-border/40 shadow-md"
+      style={{ top: `${topPosition}px` }}
+    >
       {/* Animated decorative line */}
       <div className="absolute top-0 left-0 w-full h-px overflow-hidden">
         <div className="h-full w-full bg-gradient-to-r from-transparent via-ring to-transparent animate-shimmer" 

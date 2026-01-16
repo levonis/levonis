@@ -3,14 +3,21 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 
-const AnnouncementBar = memo(() => {
+interface AnnouncementBarProps {
+  onHeightChange?: (height: number) => void;
+}
+
+const AnnouncementBar = memo(({ onHeightChange }: AnnouncementBarProps) => {
   const [dismissed, setDismissed] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const unitRef = useRef<HTMLDivElement>(null);
-  const [repeats, setRepeats] = useState(4); // Reduced default
+  const barRef = useRef<HTMLDivElement>(null);
+  const [repeats, setRepeats] = useState(4);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const location = useLocation();
 
   const { data: announcements } = useQuery({
     queryKey: ['active-announcements'],
@@ -20,14 +27,28 @@ const AnnouncementBar = memo(() => {
         .select('*')
         .eq('active', true)
         .order('created_at', { ascending: false })
-        .limit(5); // Limit announcements
+        .limit(5);
       if (error) throw error;
       return data;
     },
-    refetchInterval: 120000, // Increased to 2 minutes
+    refetchInterval: 120000,
     staleTime: 60000,
     gcTime: 300000,
   });
+
+  // Report height changes
+  useEffect(() => {
+    if (!barRef.current || !onHeightChange) return;
+    
+    const updateHeight = () => {
+      const height = barRef.current?.offsetHeight || 0;
+      onHeightChange(dismissed ? 0 : height);
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, [dismissed, onHeightChange, announcements]);
 
   // Auto-rotate with cleanup
   useEffect(() => {
@@ -46,7 +67,7 @@ const AnnouncementBar = memo(() => {
     };
   }, [announcements, currentIndex]);
 
-  // Ensure the marquee repeats - optimized with debounce
+  // Ensure the marquee repeats
   useEffect(() => {
     const current = announcements?.[currentIndex];
     if (!current || !(current.always_move ?? false)) return;
@@ -56,7 +77,6 @@ const AnnouncementBar = memo(() => {
       const cw = containerRef.current?.offsetWidth || 0;
       const uw = unitRef.current?.scrollWidth || 0;
       if (cw && uw && uw > 0) {
-        // Reduced repeats for mobile performance
         const isMobile = window.innerWidth < 768;
         const needed = Math.ceil((cw * 2) / uw) + 1;
         setRepeats(Math.min(needed, isMobile ? 3 : 6));
@@ -76,7 +96,10 @@ const AnnouncementBar = memo(() => {
     };
   }, [announcements, currentIndex]);
 
-  if (!announcements || announcements.length === 0 || dismissed) {
+  // Only show on home page
+  const isHomePage = location.pathname === '/';
+  
+  if (!isHomePage || !announcements || announcements.length === 0 || dismissed) {
     return null;
   }
 
@@ -98,7 +121,8 @@ const AnnouncementBar = memo(() => {
 
   return (
     <div 
-      className="text-white py-2 px-4 relative overflow-hidden transition-colors duration-500 -z-10"
+      ref={barRef}
+      className="text-white py-2 px-4 relative overflow-hidden transition-colors duration-500"
       style={{ backgroundColor: bgColor }}
     >
       <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
@@ -125,7 +149,6 @@ const AnnouncementBar = memo(() => {
                     : `marquee-scroll-reverse ${speed}s linear infinite`,
                 }}
               >
-                {/* Single group of repeated messages */}
                 <div
                   className="flex items-center shrink-0"
                   style={{ gap: `${gap * 4}px` }}
@@ -138,7 +161,6 @@ const AnnouncementBar = memo(() => {
                     </React.Fragment>
                   ))}
                 </div>
-                {/* Duplicate for seamless loop */}
                 <div
                   className="flex items-center shrink-0"
                   style={{ gap: `${gap * 4}px`, marginRight: `${gap * 4}px` }}
@@ -151,7 +173,6 @@ const AnnouncementBar = memo(() => {
                   ))}
                 </div>
               </div>
-              {/* Fade effect on edges */}
               <div 
                 className="absolute inset-y-0 right-0 w-16 pointer-events-none z-10"
                 style={{
@@ -212,7 +233,6 @@ const AnnouncementBar = memo(() => {
           <X className="h-4 w-4" />
         </button>
       </div>
-      
     </div>
   );
 });

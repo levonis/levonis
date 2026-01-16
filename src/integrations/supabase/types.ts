@@ -97,6 +97,77 @@ export type Database = {
         }
         Relationships: []
       }
+      banners: {
+        Row: {
+          action_type: string
+          button_text: string | null
+          button_text_ar: string | null
+          coupon_code: string | null
+          created_at: string
+          crop_settings: Json | null
+          display_order: number
+          end_date: string | null
+          external_url: string | null
+          id: string
+          image_url: string
+          is_active: boolean
+          page_url: string | null
+          product_id: string | null
+          start_date: string | null
+          title: string
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          action_type?: string
+          button_text?: string | null
+          button_text_ar?: string | null
+          coupon_code?: string | null
+          created_at?: string
+          crop_settings?: Json | null
+          display_order?: number
+          end_date?: string | null
+          external_url?: string | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          page_url?: string | null
+          product_id?: string | null
+          start_date?: string | null
+          title: string
+          title_ar: string
+          updated_at?: string
+        }
+        Update: {
+          action_type?: string
+          button_text?: string | null
+          button_text_ar?: string | null
+          coupon_code?: string | null
+          created_at?: string
+          crop_settings?: Json | null
+          display_order?: number
+          end_date?: string | null
+          external_url?: string | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          page_url?: string | null
+          product_id?: string | null
+          start_date?: string | null
+          title?: string
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "banners_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cart_items: {
         Row: {
           color_image_url: string | null

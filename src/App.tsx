@@ -33,6 +33,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Admin = lazy(() => import("./pages/Admin"));
 const AdminNotifications = lazy(() => import("./pages/AdminNotifications"));
 const AdminAnnouncements = lazy(() => import("./pages/AdminAnnouncements"));
+const AdminBanners = lazy(() => import("./pages/AdminBanners"));
 const AdminCoupons = lazy(() => import("./pages/AdminCoupons"));
 const MyOrders = lazy(() => import("./pages/MyOrders"));
 const OrderDetail = lazy(() => import("./pages/OrderDetail"));
@@ -79,12 +80,13 @@ const PageLoader = () => (
 
 function AppContent() {
   useDailyLogin();
+  const [announcementHeight, setAnnouncementHeight] = useState(0);
   
   return (
     <>
       <DecorativeFrame />
-      <AnnouncementBar />
-      <Header />
+      <AnnouncementBar onHeightChange={setAnnouncementHeight} />
+      <Header announcementHeight={announcementHeight} />
       <main className="pt-16">
         <Suspense fallback={<PageLoader />}>
           <Routes>
@@ -108,6 +110,7 @@ function AppContent() {
             <Route path={ADMIN_BASE_PATH} element={<AdminRoute><Admin /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/notifications`} element={<AdminRoute><AdminNotifications /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/announcements`} element={<AdminRoute><AdminAnnouncements /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/banners`} element={<AdminRoute><AdminBanners /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/coupons`} element={<AdminRoute><AdminCoupons /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/orders`} element={<AdminRoute><AdminOrders /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/points-settings`} element={<AdminRoute><AdminPointsSettings /></AdminRoute>} />
