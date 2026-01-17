@@ -50,6 +50,7 @@ const AdminFinancials = lazy(() => import("./pages/AdminFinancials"));
 const AdminPartialPaymentSettings = lazy(() => import("./pages/AdminPartialPaymentSettings"));
 
 const MyPoints = lazy(() => import("./pages/MyPoints"));
+const RewardsHub = lazy(() => import("./pages/RewardsHub"));
 const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
 const Competitions = lazy(() => import("./pages/Competitions"));
 const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
@@ -138,6 +139,7 @@ function AppContent() {
             <Route path="/marketplace/:listingId" element={<Marketplace />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/my-points" element={<MyPoints />} />
+            <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/competitions" element={<Competitions />} />
             <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path="/shop" element={<ProductShop />} />
