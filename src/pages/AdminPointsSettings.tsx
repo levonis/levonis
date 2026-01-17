@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Settings, Save, Plus, Trash2, CheckSquare, Edit, Coins, Gift, LogIn, Share2, UserPlus, Star, ShoppingCart } from "lucide-react";
+import { Settings, Save, Plus, Trash2, CheckSquare, Edit, Coins, Gift, LogIn, Share2, UserPlus, Star, ShoppingCart, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -22,8 +22,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent, AdminLoading, AdminEmptyState } from "@/components/admin/AdminLayout";
+import AdminUsersPointsTab from "@/components/admin/AdminUsersPointsTab";
 
 const SYSTEM_EARNING_METHODS = [
+  { key: 'points_per_dinar', label: 'نقطة لكل X دينار من قيمة الطلب', icon: Coins, description: 'يحسب تلقائياً عند تسليم الطلب' },
   { key: 'points_per_order', label: 'نقاط ثابتة لكل طلب مكتمل', icon: ShoppingCart, description: 'يمنح تلقائياً عند تسليم الطلب' },
   { key: 'points_per_review', label: 'نقاط لكل تقييم', icon: Star, description: 'يمنح تلقائياً عند إضافة تقييم' },
   { key: 'points_per_verified_review', label: 'نقاط إضافية لتقييم الطلب المؤكد', icon: Star, description: 'يمنح للتقييمات على طلبات مؤكدة' },
@@ -34,6 +36,7 @@ export default function AdminPointsSettings() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const [pointsPerDinar, setPointsPerDinar] = useState("100");
   const [pointsPerOrder, setPointsPerOrder] = useState("10");
   const [pointsPerReview, setPointsPerReview] = useState("5");
   const [pointsPerVerifiedReview, setPointsPerVerifiedReview] = useState("10");
@@ -43,6 +46,10 @@ export default function AdminPointsSettings() {
   const [referrerPoints, setReferrerPoints] = useState("50");
   const [referredPoints, setReferredPoints] = useState("20");
   const [pointsStatus, setPointsStatus] = useState<'active' | 'maintenance' | 'disabled'>('active');
+  const [minCouponPoints, setMinCouponPoints] = useState("100");
+  const [maxDailyRedemption, setMaxDailyRedemption] = useState("1000");
+  const [ticketsPerPoint, setTicketsPerPoint] = useState("0.1");
+  const [minTicketsConversion, setMinTicketsConversion] = useState("10");
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any>(null);
@@ -122,6 +129,7 @@ export default function AdminPointsSettings() {
   useEffect(() => {
     if (pointsSettings?.setting_value) {
       const settings = pointsSettings.setting_value as any;
+      setPointsPerDinar(settings.points_per_dinar?.toString() || "100");
       setPointsPerOrder(settings.points_per_order?.toString() || "10");
       setPointsPerReview(settings.points_per_review?.toString() || "5");
       setPointsPerVerifiedReview(settings.points_per_verified_review?.toString() || "10");
@@ -129,6 +137,10 @@ export default function AdminPointsSettings() {
       setPointsToMoneyRate(settings.conversion_rate?.toString() || settings.points_to_money_rate?.toString() || "100");
       setPointsToCouponRate(settings.points_to_coupon_rate?.toString() || "50");
       setPointsStatus(settings.points_status || 'active');
+      setMinCouponPoints(settings.min_coupon_points?.toString() || "100");
+      setMaxDailyRedemption(settings.max_daily_redemption?.toString() || "1000");
+      setTicketsPerPoint(settings.tickets_per_point?.toString() || "0.1");
+      setMinTicketsConversion(settings.min_tickets_conversion?.toString() || "10");
     }
   }, [pointsSettings]);
 
@@ -144,6 +156,7 @@ export default function AdminPointsSettings() {
     mutationFn: async () => {
       const settingsValue = {
         points_status: pointsStatus,
+        points_per_dinar: parseFloat(pointsPerDinar),
         points_per_order: parseFloat(pointsPerOrder),
         points_per_review: parseFloat(pointsPerReview),
         points_per_verified_review: parseFloat(pointsPerVerifiedReview),
@@ -151,6 +164,10 @@ export default function AdminPointsSettings() {
         conversion_rate: parseFloat(pointsToMoneyRate),
         points_to_money_rate: parseFloat(pointsToMoneyRate),
         points_to_coupon_rate: parseFloat(pointsToCouponRate),
+        min_coupon_points: parseFloat(minCouponPoints),
+        max_daily_redemption: parseFloat(maxDailyRedemption),
+        tickets_per_point: parseFloat(ticketsPerPoint),
+        min_tickets_conversion: parseFloat(minTicketsConversion),
       };
 
       if (pointsSettings) {
@@ -340,6 +357,10 @@ export default function AdminPointsSettings() {
               <CheckSquare className="h-4 w-4" />
               المهام اليومية
             </TabsTrigger>
+            <TabsTrigger value="users" className="admin-tab flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              المستخدمين
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings" className="space-y-6">
@@ -395,17 +416,21 @@ export default function AdminPointsSettings() {
                           min="0"
                           className="w-24"
                           value={
+                            method.key === 'points_per_dinar' ? pointsPerDinar :
                             method.key === 'points_per_order' ? pointsPerOrder :
                             method.key === 'points_per_review' ? pointsPerReview :
                             pointsPerVerifiedReview
                           }
                           onChange={(e) => {
-                            if (method.key === 'points_per_order') setPointsPerOrder(e.target.value);
+                            if (method.key === 'points_per_dinar') setPointsPerDinar(e.target.value);
+                            else if (method.key === 'points_per_order') setPointsPerOrder(e.target.value);
                             else if (method.key === 'points_per_review') setPointsPerReview(e.target.value);
                             else setPointsPerVerifiedReview(e.target.value);
                           }}
                         />
-                        <span className="text-sm text-muted-foreground">نقطة</span>
+                        <span className="text-sm text-muted-foreground">
+                          {method.key === 'points_per_dinar' ? 'دينار لكل نقطة' : 'نقطة'}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -550,6 +575,10 @@ export default function AdminPointsSettings() {
                 </div>
               )}
             </AdminSection>
+          </TabsContent>
+
+          <TabsContent value="users" className="space-y-6">
+            <AdminUsersPointsTab />
           </TabsContent>
         </Tabs>
       )}
