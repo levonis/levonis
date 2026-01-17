@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CreditCard, Star, TrendingUp, Gift, ArrowLeft, Check } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
+import { LevelCardSkeleton } from "./SkeletonLoaders";
 
 interface CardsSectionProps {
   activeSubTab: SubTabId;
@@ -16,8 +17,10 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Fetch user points
-  const { data: userPoints } = useQuery({
+  // Only fetch when benefits or upgrade tab is active
+  const shouldFetchUserData = activeSubTab === 'benefits' || activeSubTab === 'upgrade';
+
+  const { data: userPoints, isLoading: loadingPoints } = useQuery({
     queryKey: ['user-points-cards', user?.id],
     queryFn: async () => {
       if (!user) return null;
@@ -29,11 +32,11 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
       if (error && error.code !== 'PGRST116') throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && shouldFetchUserData,
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch current loyalty level
-  const { data: currentLevel } = useQuery({
+  const { data: currentLevel, isLoading: loadingLevel } = useQuery({
     queryKey: ['current-loyalty-level', userPoints?.total_points],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -46,11 +49,12 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && shouldFetchUserData && userPoints !== undefined,
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch all loyalty levels
-  const { data: allLevels } = useQuery({
+  // Only fetch when upgrade tab is active
+  const { data: allLevels, isLoading: loadingAllLevels } = useQuery({
     queryKey: ['all-loyalty-levels'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -60,14 +64,20 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
       if (error) throw error;
       return data;
     },
+    enabled: activeSubTab === 'upgrade',
+    staleTime: 5 * 60 * 1000,
   });
 
   // Benefits sub-tab
   if (activeSubTab === 'benefits') {
+    const isLoading = loadingPoints || (userPoints && loadingLevel);
+
     return (
       <div className="space-y-4">
         {/* Current Card */}
-        {currentLevel ? (
+        {isLoading ? (
+          <LevelCardSkeleton />
+        ) : currentLevel ? (
           <Card 
             className="overflow-hidden"
             style={{ 
@@ -130,8 +140,17 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
 
   // Upgrade sub-tab
   if (activeSubTab === 'upgrade') {
+    const isLoading = loadingPoints || loadingAllLevels;
     const nextLevel = allLevels?.find(l => l.min_points > (userPoints?.total_points || 0));
     const pointsNeeded = nextLevel ? nextLevel.min_points - (userPoints?.total_points || 0) : 0;
+
+    if (isLoading) {
+      return (
+        <div className="space-y-4">
+          <LevelCardSkeleton />
+        </div>
+      );
+    }
 
     return (
       <div className="space-y-4">

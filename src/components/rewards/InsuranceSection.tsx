@@ -5,8 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, ShieldCheck, Printer, Wrench, ArrowLeft, Loader2 } from "lucide-react";
+import { Shield, ShieldCheck, Wrench, ArrowLeft } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
+import { PlansListSkeleton, LevelCardSkeleton } from "./SkeletonLoaders";
 
 interface InsuranceSectionProps {
   activeSubTab: SubTabId;
@@ -16,7 +17,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  // Fetch user's subscriptions
+  // Only fetch when status tab is active
   const { data: subscriptions, isLoading: loadingSubs } = useQuery({
     queryKey: ['my-printer-subscriptions', user?.id],
     queryFn: async () => {
@@ -35,10 +36,11 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       if (error) throw error;
       return data;
     },
-    enabled: !!user,
+    enabled: !!user && activeSubTab === 'status',
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch protection plans
+  // Only fetch when plans tab is active
   const { data: plans, isLoading: loadingPlans } = useQuery({
     queryKey: ['protection-plans-preview'],
     queryFn: async () => {
@@ -51,6 +53,8 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       if (error) throw error;
       return data;
     },
+    enabled: activeSubTab === 'plans',
+    staleTime: 5 * 60 * 1000,
   });
 
   const activeSubscriptions = subscriptions?.filter(s => s.status === 'active') || [];
@@ -67,9 +71,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
             </CardContent>
           </Card>
         ) : loadingSubs ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
+          <LevelCardSkeleton />
         ) : activeSubscriptions.length > 0 ? (
           <div className="space-y-3">
             {activeSubscriptions.map((sub: any) => (
@@ -125,9 +127,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     return (
       <div className="space-y-4">
         {loadingPlans ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
+          <PlansListSkeleton />
         ) : plans && plans.length > 0 ? (
           <div className="space-y-3">
             {plans.map((plan) => (
