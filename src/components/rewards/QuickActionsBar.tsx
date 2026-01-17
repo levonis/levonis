@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { CheckSquare, Ticket, Package, TrendingUp } from "lucide-react";
 import { MainTabId } from "./RewardsMainTabs";
 import { SubTabId } from "./RewardsSubTabs";
@@ -14,7 +13,9 @@ const quickActions = [
     icon: CheckSquare, 
     mainTab: 'points' as MainTabId, 
     subTab: 'daily-tasks' as SubTabId,
-    color: 'text-amber-500 bg-amber-500/10'
+    bgColor: 'bg-amber-500/10',
+    iconColor: 'text-amber-500',
+    borderColor: 'border-amber-500/20'
   },
   { 
     id: 'get-tickets', 
@@ -22,7 +23,9 @@ const quickActions = [
     icon: Ticket, 
     mainTab: 'competitions' as MainTabId, 
     subTab: 'get-tickets' as SubTabId,
-    color: 'text-purple-500 bg-purple-500/10'
+    bgColor: 'bg-purple-500/10',
+    iconColor: 'text-purple-500',
+    borderColor: 'border-purple-500/20'
   },
   { 
     id: 'storage', 
@@ -30,7 +33,9 @@ const quickActions = [
     icon: Package, 
     mainTab: 'competitions' as MainTabId, 
     subTab: 'storage' as SubTabId,
-    color: 'text-green-500 bg-green-500/10'
+    bgColor: 'bg-green-500/10',
+    iconColor: 'text-green-500',
+    borderColor: 'border-green-500/20'
   },
   { 
     id: 'upgrade', 
@@ -38,13 +43,15 @@ const quickActions = [
     icon: TrendingUp, 
     mainTab: 'cards' as MainTabId, 
     subTab: 'upgrade' as SubTabId,
-    color: 'text-blue-500 bg-blue-500/10'
+    bgColor: 'bg-blue-500/10',
+    iconColor: 'text-blue-500',
+    borderColor: 'border-blue-500/20'
   },
 ];
 
 export default function QuickActionsBar({ onNavigate }: QuickActionsBarProps) {
   return (
-    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+    <div className="flex gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
       {quickActions.map((action) => {
         const Icon = action.icon;
         
@@ -52,10 +59,10 @@ export default function QuickActionsBar({ onNavigate }: QuickActionsBarProps) {
           <button
             key={action.id}
             onClick={() => onNavigate(action.mainTab, action.subTab)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-card hover:shadow-sm transition-all min-w-fit ${action.color}`}
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${action.bgColor} ${action.borderColor} hover:shadow-sm transition-all min-w-fit active:scale-95`}
           >
-            <Icon className="h-4 w-4" />
-            <span className="text-xs font-medium whitespace-nowrap">{action.label}</span>
+            <Icon className={`h-3.5 w-3.5 ${action.iconColor}`} />
+            <span className="text-[10px] font-medium whitespace-nowrap text-foreground">{action.label}</span>
           </button>
         );
       })}
