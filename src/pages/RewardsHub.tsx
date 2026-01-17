@@ -4,10 +4,10 @@ import { useAuth } from "@/hooks/useAuth";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Sparkles } from "lucide-react";
+import { ArrowLeft, Sparkles, LogIn } from "lucide-react";
 
 import RewardsMainTabs, { MainTabId } from "@/components/rewards/RewardsMainTabs";
-import RewardsSubTabs, { SubTabId, subTabsConfig } from "@/components/rewards/RewardsSubTabs";
+import RewardsSubTabs, { SubTabId } from "@/components/rewards/RewardsSubTabs";
 import QuickActionsBar from "@/components/rewards/QuickActionsBar";
 import PointsSection from "@/components/rewards/PointsSection";
 import CompetitionsSection from "@/components/rewards/CompetitionsSection";
@@ -64,66 +64,64 @@ export default function RewardsHub() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      {/* Sticky Header + Tabs */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b shadow-sm">
-        <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-full bg-gradient-to-br from-primary to-accent">
-                <Sparkles className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold">مركز المكافآت</h1>
-                <p className="text-xs text-muted-foreground">نقاط • مسابقات • بطاقات • تأمين</p>
-              </div>
+      {/* Compact Sticky Header + Tabs */}
+      <div className="sticky top-0 z-50 bg-card/98 backdrop-blur-md border-b shadow-sm">
+        {/* Minimal Header */}
+        <div className="flex items-center justify-between px-3 py-2">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/80 to-accent/80">
+              <Sparkles className="h-4 w-4 text-primary-foreground" />
             </div>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
+            <h1 className="text-sm font-bold">مركز المكافآت</h1>
           </div>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate('/')}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </div>
 
-          {/* Main Tabs */}
-          <div className="pb-3">
-            <RewardsMainTabs 
-              activeTab={activeMainTab} 
-              onTabChange={handleMainTabChange} 
-            />
-          </div>
+        {/* Main Tabs - Always Visible */}
+        <div className="px-3 pb-2">
+          <RewardsMainTabs 
+            activeTab={activeMainTab} 
+            onTabChange={handleMainTabChange} 
+          />
+        </div>
 
-          {/* Sub Tabs */}
-          <div className="pb-3">
-            <RewardsSubTabs
-              mainTab={activeMainTab}
-              activeSubTab={activeSubTabs[activeMainTab]}
-              onSubTabChange={handleSubTabChange}
-            />
-          </div>
+        {/* Sub Tabs - Inline Switch */}
+        <div className="px-3 pb-2">
+          <RewardsSubTabs
+            mainTab={activeMainTab}
+            activeSubTab={activeSubTabs[activeMainTab]}
+            onSubTabChange={handleSubTabChange}
+          />
         </div>
       </div>
 
-      <main className="flex-1 container mx-auto px-4 py-4">
-        {/* Quick Actions Row */}
-        <div className="mb-4">
+      {/* Main Content Area - Single Dashboard Feel */}
+      <main className="flex-1 px-3 py-3">
+        {/* Quick Actions Row - Horizontal Scroll */}
+        <div className="mb-3">
           <QuickActionsBar onNavigate={handleQuickAction} />
         </div>
 
-        {/* Content Area */}
-        <div className="pb-6">
+        {/* Inline Content Panel */}
+        <div className="min-h-[50vh]">
           {renderContent()}
         </div>
 
-        {/* Not logged in prompt */}
+        {/* Login Prompt - Only if not logged in */}
         {!user && (
-          <Card className="border-primary/20 bg-primary/5">
-            <CardContent className="p-6 text-center">
-              <Sparkles className="h-12 w-12 mx-auto text-primary mb-4" />
-              <h3 className="font-bold text-lg mb-2">سجّل دخولك للاستفادة من المكافآت</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                اكسب النقاط، شارك في المسابقات، واستمتع بمزايا العضوية
-              </p>
-              <Button onClick={() => navigate('/auth')} className="gap-2">
-                تسجيل الدخول
+          <Card className="mt-4 border-primary/20 bg-gradient-to-br from-primary/5 to-accent/5">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10">
+                <LogIn className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium">سجّل دخولك للاستفادة الكاملة</p>
+                <p className="text-xs text-muted-foreground">نقاط • مسابقات • مزايا حصرية</p>
+              </div>
+              <Button size="sm" onClick={() => navigate('/auth')}>
+                دخول
               </Button>
             </CardContent>
           </Card>

@@ -46,7 +46,7 @@ export default function RewardsSubTabs({ mainTab, activeSubTab, onSubTabChange }
   const subTabs = subTabsConfig[mainTab];
   
   return (
-    <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
+    <div className="flex gap-1 overflow-x-auto scrollbar-hide">
       {subTabs.map((tab) => {
         const isActive = activeSubTab === tab.id;
         
@@ -55,10 +55,10 @@ export default function RewardsSubTabs({ mainTab, activeSubTab, onSubTabChange }
             key={tab.id}
             onClick={() => onSubTabChange(tab.id)}
             className={cn(
-              "px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all",
+              "px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all",
               isActive 
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "bg-muted/60 text-muted-foreground hover:bg-muted"
+                ? "bg-foreground text-background shadow-sm"
+                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
             {tab.label}
