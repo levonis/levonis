@@ -168,6 +168,59 @@ export type Database = {
           },
         ]
       }
+      card_exclusive_offers: {
+        Row: {
+          created_at: string
+          description_ar: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          min_card_level_id: string | null
+          offer_type: string
+          offer_value: number | null
+          title_ar: string
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          min_card_level_id?: string | null
+          offer_type?: string
+          offer_value?: number | null
+          title_ar: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          min_card_level_id?: string | null
+          offer_type?: string
+          offer_value?: number | null
+          title_ar?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "card_exclusive_offers_min_card_level_id_fkey"
+            columns: ["min_card_level_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cart_items: {
         Row: {
           color_image_url: string | null
@@ -695,6 +748,33 @@ export type Database = {
           status?: string
           suggested_price?: number | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      daily_redemption_log: {
+        Row: {
+          created_at: string
+          id: string
+          points_redeemed: number
+          redeemed_at: string
+          redemption_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_redeemed: number
+          redeemed_at?: string
+          redemption_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_redeemed?: number
+          redeemed_at?: string
+          redemption_type?: string
           user_id?: string
         }
         Relationships: []
@@ -1311,49 +1391,64 @@ export type Database = {
         Row: {
           benefits: Json
           bonus_points_percentage: number | null
+          card_discounts_enabled: boolean | null
           color: string
           created_at: string
           discount_percentage: number | null
           display_order: number
+          duration_days: number | null
           free_shipping: boolean | null
+          free_shipping_min_order: number | null
           icon: string | null
           id: string
+          is_purchasable: boolean | null
           level_key: string
           min_points: number
           name_ar: string
           name_en: string
+          purchase_price_points: number | null
           updated_at: string
         }
         Insert: {
           benefits?: Json
           bonus_points_percentage?: number | null
+          card_discounts_enabled?: boolean | null
           color: string
           created_at?: string
           discount_percentage?: number | null
           display_order: number
+          duration_days?: number | null
           free_shipping?: boolean | null
+          free_shipping_min_order?: number | null
           icon?: string | null
           id?: string
+          is_purchasable?: boolean | null
           level_key: string
           min_points?: number
           name_ar: string
           name_en: string
+          purchase_price_points?: number | null
           updated_at?: string
         }
         Update: {
           benefits?: Json
           bonus_points_percentage?: number | null
+          card_discounts_enabled?: boolean | null
           color?: string
           created_at?: string
           discount_percentage?: number | null
           display_order?: number
+          duration_days?: number | null
           free_shipping?: boolean | null
+          free_shipping_min_order?: number | null
           icon?: string | null
           id?: string
+          is_purchasable?: boolean | null
           level_key?: string
           min_points?: number
           name_ar?: string
           name_en?: string
+          purchase_price_points?: number | null
           updated_at?: string
         }
         Relationships: []
@@ -2030,6 +2125,48 @@ export type Database = {
           },
         ]
       }
+      product_card_discounts: {
+        Row: {
+          created_at: string
+          discount_percentage: number
+          id: string
+          is_active: boolean
+          level_id: string
+          product_id: string
+        }
+        Insert: {
+          created_at?: string
+          discount_percentage?: number
+          id?: string
+          is_active?: boolean
+          level_id: string
+          product_id: string
+        }
+        Update: {
+          created_at?: string
+          discount_percentage?: number
+          id?: string
+          is_active?: boolean
+          level_id?: string
+          product_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_card_discounts_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_levels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_card_discounts_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_offer_purchases: {
         Row: {
           created_at: string
@@ -2438,6 +2575,54 @@ export type Database = {
           priority_level?: number | null
           updated_at?: string | null
           waiting_period_days?: number | null
+        }
+        Relationships: []
+      }
+      redemption_settings: {
+        Row: {
+          created_at: string
+          description_ar: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          max_daily_points: number | null
+          min_points: number
+          name_ar: string
+          points_per_unit: number
+          redemption_type: string
+          unit_value: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          max_daily_points?: number | null
+          min_points?: number
+          name_ar: string
+          points_per_unit?: number
+          redemption_type: string
+          unit_value?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          max_daily_points?: number | null
+          min_points?: number
+          name_ar?: string
+          points_per_unit?: number
+          redemption_type?: string
+          unit_value?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3024,6 +3209,50 @@ export type Database = {
         }
         Relationships: []
       }
+      user_cards: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          level_id: string
+          points_spent: number
+          purchased_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          level_id: string
+          points_spent?: number
+          purchased_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          level_id?: string
+          points_spent?: number
+          purchased_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_cards_level_id_fkey"
+            columns: ["level_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_levels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_collected_letters: {
         Row: {
           collected_at: string | null
@@ -3065,6 +3294,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_coupons: {
+        Row: {
+          coupon_code: string
+          created_at: string
+          discount_type: string
+          discount_value: number
+          expires_at: string | null
+          id: string
+          is_used: boolean
+          source: string | null
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_code: string
+          created_at?: string
+          discount_type?: string
+          discount_value: number
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          source?: string | null
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_code?: string
+          created_at?: string
+          discount_type?: string
+          discount_value?: number
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean
+          source?: string | null
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_listings: {
         Row: {

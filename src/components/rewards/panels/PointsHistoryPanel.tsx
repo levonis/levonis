@@ -20,7 +20,7 @@ export default function PointsHistoryPanel() {
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(20);
+        .limit(10); // Limit to 10 transactions
       if (error) throw error;
       return data;
     },
@@ -50,30 +50,36 @@ export default function PointsHistoryPanel() {
 
   return (
     <div className="space-y-3">
-      {transactions.map((tx) => (
-        <Card key={tx.id}>
-          <CardContent className="p-3 flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-              tx.type === 'earn' ? 'bg-green-500/10' : 'bg-red-500/10'
-            }`}>
-              {tx.type === 'earn' ? (
-                <TrendingUp className="h-5 w-5 text-green-500" />
-              ) : (
-                <TrendingDown className="h-5 w-5 text-red-500" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium line-clamp-1">{tx.description || tx.source}</p>
-              <p className="text-xs text-muted-foreground">
-                {format(new Date(tx.created_at), 'dd MMM yyyy', { locale: ar })}
-              </p>
-            </div>
-            <Badge variant={tx.type === 'earn' ? 'default' : 'destructive'}>
-              {tx.type === 'earn' ? '+' : '-'}{tx.points}
-            </Badge>
-          </CardContent>
-        </Card>
-      ))}
+      {transactions.map((tx) => {
+        // Fix: Points are always positive in the DB, 'type' determines if earned or spent
+        const isEarned = tx.type === 'earned' || tx.type === 'earn';
+        const displayPoints = Math.abs(tx.points);
+        
+        return (
+          <Card key={tx.id}>
+            <CardContent className="p-3 flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                isEarned ? 'bg-green-500/10' : 'bg-red-500/10'
+              }`}>
+                {isEarned ? (
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                ) : (
+                  <TrendingDown className="h-5 w-5 text-red-500" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium line-clamp-1">{tx.description || tx.source}</p>
+                <p className="text-xs text-muted-foreground">
+                  {format(new Date(tx.created_at), 'dd MMM yyyy', { locale: ar })}
+                </p>
+              </div>
+              <Badge variant={isEarned ? 'default' : 'destructive'} className={isEarned ? 'bg-green-500' : ''}>
+                {isEarned ? '+' : '-'}{displayPoints}
+              </Badge>
+            </CardContent>
+          </Card>
+        );
+      })}
     </div>
   );
 }
