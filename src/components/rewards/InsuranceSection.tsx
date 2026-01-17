@@ -1,20 +1,19 @@
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, ShieldCheck, Wrench, ArrowLeft } from "lucide-react";
+import { Shield, ShieldCheck, Wrench } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
-import { PlansListSkeleton, LevelCardSkeleton } from "./SkeletonLoaders";
+import { LevelCardSkeleton } from "./SkeletonLoaders";
+import AllPlansPanel from "./panels/AllPlansPanel";
+import MyPrintersPanel from "./panels/MyPrintersPanel";
 
 interface InsuranceSectionProps {
   activeSubTab: SubTabId;
 }
 
 export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps) {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   // Only fetch when status tab is active
@@ -40,23 +39,6 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     staleTime: 5 * 60 * 1000,
   });
 
-  // Only fetch when plans tab is active
-  const { data: plans, isLoading: loadingPlans } = useQuery({
-    queryKey: ['protection-plans-preview'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('protection_plans')
-        .select('id, name_ar, plan_type, monthly_price, badge_text')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true })
-        .limit(3);
-      if (error) throw error;
-      return data;
-    },
-    enabled: activeSubTab === 'plans',
-    staleTime: 5 * 60 * 1000,
-  });
-
   const activeSubscriptions = subscriptions?.filter(s => s.status === 'active') || [];
 
   // Status sub-tab
@@ -66,8 +48,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
         {!user ? (
           <Card>
             <CardContent className="p-6 text-center">
-              <p className="text-muted-foreground mb-4">سجّل الدخول لعرض حالة التأمين</p>
-              <Button onClick={() => navigate('/auth')}>تسجيل الدخول</Button>
+              <p className="text-muted-foreground">سجّل الدخول لعرض حالة التأمين</p>
             </CardContent>
           </Card>
         ) : loadingSubs ? (
@@ -94,27 +75,15 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                 </CardContent>
               </Card>
             ))}
-            
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => navigate('/my-printers')}
-            >
-              إدارة الاشتراكات
-              <ArrowLeft className="h-4 w-4 mr-1" />
-            </Button>
           </div>
         ) : (
           <Card>
             <CardContent className="p-6 text-center">
               <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="font-medium mb-2">لا توجد اشتراكات نشطة</p>
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-sm text-muted-foreground">
                 احمِ طابعاتك مع باقات الحماية
               </p>
-              <Button onClick={() => navigate('/printer-protection')}>
-                استكشف الباقات
-              </Button>
             </CardContent>
           </Card>
         )}
@@ -122,81 +91,19 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     );
   }
 
-  // Plans sub-tab
+  // Plans sub-tab - Show all plans inline
   if (activeSubTab === 'plans') {
-    return (
-      <div className="space-y-4">
-        {loadingPlans ? (
-          <PlansListSkeleton />
-        ) : plans && plans.length > 0 ? (
-          <div className="space-y-3">
-            {plans.map((plan) => (
-              <Card 
-                key={plan.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => navigate('/printer-protection')}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center">
-                        <Shield className="h-5 w-5 text-green-500" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium">{plan.name_ar}</p>
-                          {plan.badge_text && (
-                            <Badge variant="secondary" className="text-[9px]">
-                              {plan.badge_text}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-primary font-bold">
-                          {plan.monthly_price?.toLocaleString()} د.ع/شهر
-                        </p>
-                      </div>
-                    </div>
-                    <ArrowLeft className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => navigate('/printer-protection')}
-            >
-              مقارنة جميع الباقات
-            </Button>
-          </div>
-        ) : (
-          <Card>
-            <CardContent className="p-6 text-center text-muted-foreground">
-              لا توجد باقات متاحة حالياً
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    );
+    return <AllPlansPanel />;
   }
 
-  // Maintenance sub-tab
+  // Maintenance sub-tab - Show printers management inline
   if (activeSubTab === 'maintenance') {
     return (
       <div className="space-y-4">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <Wrench className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <p className="font-medium mb-2">الصيانة والاستبدال</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              إدارة طلبات الصيانة واستبدال الطابعات
-            </p>
-            <Button variant="outline" onClick={() => navigate('/my-printers')}>
-              إدارة طابعاتي
-            </Button>
-          </CardContent>
-        </Card>
+        <p className="text-sm text-muted-foreground">
+          إدارة طابعاتك وطلبات الصيانة
+        </p>
+        <MyPrintersPanel />
       </div>
     );
   }

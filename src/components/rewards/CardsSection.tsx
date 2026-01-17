@@ -1,20 +1,19 @@
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Star, TrendingUp, Gift, ArrowLeft, Check } from "lucide-react";
+import { CreditCard, Star, TrendingUp, Gift, Check } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
 import { LevelCardSkeleton } from "./SkeletonLoaders";
+import LoyaltyLevelsPanel from "./panels/LoyaltyLevelsPanel";
 
 interface CardsSectionProps {
   activeSubTab: SubTabId;
 }
 
 export default function CardsSection({ activeSubTab }: CardsSectionProps) {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   // Only fetch when benefits or upgrade tab is active
@@ -124,77 +123,20 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
               </div>
             </CardContent>
           </Card>
-        ) : (
+        ) : !user ? (
           <Card>
             <CardContent className="p-6 text-center">
               <p className="text-muted-foreground">سجّل الدخول لعرض بطاقتك</p>
-              <Button className="mt-4" onClick={() => navigate('/auth')}>
-                تسجيل الدخول
-              </Button>
             </CardContent>
           </Card>
-        )}
+        ) : null}
       </div>
     );
   }
 
-  // Upgrade sub-tab
+  // Upgrade sub-tab - Show all levels inline
   if (activeSubTab === 'upgrade') {
-    const isLoading = loadingPoints || loadingAllLevels;
-    const nextLevel = allLevels?.find(l => l.min_points > (userPoints?.total_points || 0));
-    const pointsNeeded = nextLevel ? nextLevel.min_points - (userPoints?.total_points || 0) : 0;
-
-    if (isLoading) {
-      return (
-        <div className="space-y-4">
-          <LevelCardSkeleton />
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        {nextLevel ? (
-          <>
-            <Card className="border-primary/20">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  <p className="font-medium">المستوى التالي</p>
-                </div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-bold" style={{ color: nextLevel.color }}>
-                    {nextLevel.name_ar}
-                  </span>
-                  <Badge variant="outline">
-                    يتبقى {pointsNeeded.toLocaleString()} نقطة
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  اجمع {nextLevel.min_points.toLocaleString()} نقطة للترقية
-                </p>
-              </CardContent>
-            </Card>
-
-            <Button 
-              className="w-full" 
-              onClick={() => navigate('/my-points?tab=levels')}
-            >
-              عرض جميع المستويات
-              <ArrowLeft className="h-4 w-4 mr-1" />
-            </Button>
-          </>
-        ) : (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <Star className="h-12 w-12 mx-auto text-amber-500 mb-3" />
-              <p className="font-medium">أنت في أعلى مستوى!</p>
-              <p className="text-sm text-muted-foreground">تمتع بجميع المزايا الحصرية</p>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    );
+    return <LoyaltyLevelsPanel />;
   }
 
   // Exclusive Offers sub-tab
@@ -205,12 +147,9 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
           <CardContent className="p-6 text-center">
             <Gift className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
             <p className="font-medium mb-2">العروض الحصرية</p>
-            <p className="text-sm text-muted-foreground mb-4">
-              عروض خاصة لحاملي البطاقات المميزة
+            <p className="text-sm text-muted-foreground">
+              عروض خاصة لحاملي البطاقات المميزة - قريباً
             </p>
-            <Button variant="outline" onClick={() => navigate('/my-points')}>
-              استكشف العروض
-            </Button>
           </CardContent>
         </Card>
       </div>
