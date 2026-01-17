@@ -1,19 +1,19 @@
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Coins, History, ArrowLeft, TrendingUp, Gift } from "lucide-react";
+import { Coins, History, TrendingUp, Gift } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
 import { PointsBalanceSkeleton, LevelCardSkeleton } from "./SkeletonLoaders";
+import PointsHistoryPanel from "./panels/PointsHistoryPanel";
+import DailyTasksPanel from "./panels/DailyTasksPanel";
+import RedeemPointsPanel from "./panels/RedeemPointsPanel";
 
 interface PointsSectionProps {
   activeSubTab: SubTabId;
 }
 
 export default function PointsSection({ activeSubTab }: PointsSectionProps) {
-  const navigate = useNavigate();
   const { user } = useAuth();
 
   // Only fetch when summary tab is active
@@ -96,93 +96,37 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
                     style={{ backgroundColor: loyaltyLevel.color + '20' }}
                   >
                     <TrendingUp className="h-5 w-5" style={{ color: loyaltyLevel.color }} />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">مستواك الحالي</p>
-                    <p className="font-bold" style={{ color: loyaltyLevel.color }}>
-                      {loyaltyLevel.name_ar}
-                    </p>
-                  </div>
-                </div>
-                <Button variant="outline" size="sm" onClick={() => navigate('/my-points')}>
-                  تفاصيل
-                  <ArrowLeft className="h-4 w-4 mr-1" />
-                </Button>
               </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 gap-3">
-          <Button 
-            variant="outline" 
-            className="h-auto py-3 flex-col gap-1"
-            onClick={() => navigate('/my-points?tab=history')}
-          >
-            <History className="h-5 w-5 text-muted-foreground" />
-            <span className="text-xs">سجل النقاط</span>
-          </Button>
-          <Button 
-            variant="outline" 
-            className="h-auto py-3 flex-col gap-1"
-            onClick={() => navigate('/my-points?tab=earn')}
-          >
-            <Gift className="h-5 w-5 text-muted-foreground" />
-            <span className="text-xs">طرق الربح</span>
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // Daily Tasks sub-tab
-  if (activeSubTab === 'daily-tasks') {
-    return (
-      <div className="space-y-4">
-        <Card>
-          <CardContent className="p-6 text-center">
-            <p className="text-muted-foreground mb-4">أكمل المهام اليومية لربح نقاط إضافية</p>
-            <Button onClick={() => navigate('/my-points?tab=tasks')}>
-              عرض المهام
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Redeem sub-tab
-  if (activeSubTab === 'redeem') {
-    return (
-      <div className="space-y-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="font-medium mb-2">استبدال النقاط</p>
-            <p className="text-sm text-muted-foreground mb-4">حوّل نقاطك إلى كوبونات أو رصيد في المحفظة</p>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex-1"
-                onClick={() => navigate('/my-points?tab=redeem')}
-              >
-                كوبون
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="flex-1"
-                onClick={() => navigate('/my-points?tab=convert')}
-              >
-                محفظة
-              </Button>
+              <div>
+                <p className="text-xs text-muted-foreground">مستواك الحالي</p>
+                <p className="font-bold" style={{ color: loyaltyLevel.color }}>
+                  {loyaltyLevel.name_ar}
+                </p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+          </div>
+        </CardContent>
+      </Card>
+    )}
+
+    {/* Points History Inline */}
+    <div className="mt-4">
+      <p className="text-sm font-medium mb-3">آخر المعاملات</p>
+      <PointsHistoryPanel />
+    </div>
+  </div>
+);
   }
+
+// Daily Tasks sub-tab
+if (activeSubTab === 'daily-tasks') {
+  return <DailyTasksPanel />;
+}
+
+// Redeem sub-tab
+if (activeSubTab === 'redeem') {
+  return <RedeemPointsPanel />;
+}
 
   return null;
 }
