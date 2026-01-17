@@ -203,14 +203,14 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
 
           {/* Cart and User Actions */}
           <div className="flex items-center gap-3">
-            {/* Competitions Button */}
+            {/* Rewards Hub Button */}
             <Button
               variant="outline"
               size="icon"
-              onClick={() => navigate('/competitions')}
+              onClick={() => navigate('/rewards')}
               className="rounded-full border-primary/30 hover:border-primary"
-              title="المسابقات والعروض"
-              aria-label="المسابقات والعروض"
+              title="مركز المكافآت"
+              aria-label="مركز المكافآت"
             >
               <Trophy className="h-4 w-4" />
             </Button>
