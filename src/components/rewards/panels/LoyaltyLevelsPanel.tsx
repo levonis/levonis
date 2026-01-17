@@ -1,13 +1,29 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, CreditCard } from "lucide-react";
+import { Check, CreditCard, Loader2, Clock, ShoppingCart, Sparkles } from "lucide-react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function LoyaltyLevelsPanel() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
+  const [selectedLevel, setSelectedLevel] = useState<any>(null);
 
   const { data: userPoints } = useQuery({
     queryKey: ['user-points-levels', user?.id],
@@ -15,7 +31,7 @@ export default function LoyaltyLevelsPanel() {
       if (!user) return null;
       const { data, error } = await supabase
         .from('user_points')
-        .select('total_points')
+        .select('total_points, available_points')
         .eq('user_id', user.id)
         .maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
@@ -23,6 +39,27 @@ export default function LoyaltyLevelsPanel() {
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
+  });
+
+  const { data: userCard } = useQuery({
+    queryKey: ['user-active-card', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('user_cards')
+        .select(`
+          *,
+          loyalty_levels:level_id(*)
+        `)
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
   });
 
   const { data: levels, isLoading } = useQuery({
@@ -38,6 +75,69 @@ export default function LoyaltyLevelsPanel() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const purchaseCardMutation = useMutation({
+    mutationFn: async (level: any) => {
+      if (!user) throw new Error('يجب تسجيل الدخول');
+      
+      const availablePoints = userPoints?.available_points || 0;
+      if (availablePoints < level.purchase_price_points) {
+        throw new Error('نقاطك غير كافية لشراء هذه البطاقة');
+      }
+
+      // Deduct points
+      const { error: pointsError } = await supabase
+        .from('user_points')
+        .update({
+          available_points: availablePoints - level.purchase_price_points,
+        })
+        .eq('user_id', user.id);
+      if (pointsError) throw pointsError;
+
+      // Add points transaction
+      const { error: transError } = await supabase
+        .from('points_transactions')
+        .insert({
+          user_id: user.id,
+          points: -level.purchase_price_points,
+          type: 'spent',
+          source: 'card_purchase',
+          description: `شراء بطاقة ${level.name_ar}`,
+          related_id: level.id,
+        });
+      if (transError) throw transError;
+
+      // Calculate expiration date
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + (level.duration_days || 30));
+
+      // Create user card
+      const { error: cardError } = await supabase
+        .from('user_cards')
+        .insert({
+          user_id: user.id,
+          level_id: level.id,
+          expires_at: expiresAt.toISOString(),
+          points_paid: level.purchase_price_points,
+        });
+      if (cardError) throw cardError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-points'] });
+      queryClient.invalidateQueries({ queryKey: ['user-active-card'] });
+      queryClient.invalidateQueries({ queryKey: ['user-points-levels'] });
+      toast.success('تم شراء البطاقة بنجاح! 🎉');
+      setPurchaseDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ');
+    },
+  });
+
+  const handlePurchaseClick = (level: any) => {
+    setSelectedLevel(level);
+    setPurchaseDialogOpen(true);
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -48,74 +148,181 @@ export default function LoyaltyLevelsPanel() {
     );
   }
 
-  const userTotalPoints = userPoints?.total_points || 0;
+  const availablePoints = userPoints?.available_points || 0;
+  const currentCardLevel = userCard?.loyalty_levels;
+  const daysRemaining = userCard ? Math.max(0, Math.ceil((new Date(userCard.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
 
   return (
     <div className="space-y-4">
-      {levels?.map((level) => {
-        const isCurrentLevel = userTotalPoints >= level.min_points && 
-          (!levels.find(l => l.min_points > level.min_points && userTotalPoints >= l.min_points));
-        const isLocked = userTotalPoints < level.min_points;
-        
-        return (
-          <Card 
-            key={level.id}
-            className={`transition-all ${isCurrentLevel ? 'ring-2' : ''} ${isLocked ? 'opacity-50' : ''}`}
-            style={{ 
-              borderColor: level.color + '40',
-              ...(isCurrentLevel && { '--tw-ring-color': level.color } as any)
-            }}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3">
-                <div 
-                  className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: level.color + '20' }}
-                >
-                  <CreditCard className="h-6 w-6" style={{ color: level.color }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold" style={{ color: level.color }}>
-                      {level.name_ar}
-                    </p>
-                    {isCurrentLevel && (
-                      <Badge className="text-[9px]" style={{ backgroundColor: level.color }}>
-                        مستواك الحالي
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    يتطلب {level.min_points.toLocaleString()} نقطة
+      {/* Current Card Status */}
+      {userCard && currentCardLevel && (
+        <Card className="border-2" style={{ borderColor: currentCardLevel.color + '60' }}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div 
+                className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: currentCardLevel.color + '20' }}
+              >
+                <CreditCard className="h-7 w-7" style={{ color: currentCardLevel.color }} />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="font-bold text-lg" style={{ color: currentCardLevel.color }}>
+                    {currentCardLevel.name_ar}
                   </p>
-                  
-                  {/* Benefits */}
-                  <div className="mt-2 space-y-1">
-                    {level.discount_percentage && level.discount_percentage > 0 && (
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <Check className="h-3 w-3 text-green-500" />
-                        <span>خصم {level.discount_percentage}%</span>
-                      </div>
-                    )}
-                    {level.bonus_points_percentage && level.bonus_points_percentage > 0 && (
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <Check className="h-3 w-3 text-green-500" />
-                        <span>نقاط إضافية {level.bonus_points_percentage}%</span>
-                      </div>
-                    )}
-                    {level.free_shipping && (
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <Check className="h-3 w-3 text-green-500" />
-                        <span>شحن مجاني</span>
-                      </div>
-                    )}
-                  </div>
+                  <Badge className="text-[10px]" style={{ backgroundColor: currentCardLevel.color }}>
+                    بطاقتك الحالية
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-1 mt-1">
+                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">
+                    متبقي {daysRemaining} يوم
+                  </span>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        );
-      })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Available Cards */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground">البطاقات المتاحة</h3>
+        {levels?.map((level) => {
+          const isCurrentCard = currentCardLevel?.id === level.id;
+          const canPurchase = level.is_purchasable && availablePoints >= (level.purchase_price_points || 0);
+          const isPurchasable = level.is_purchasable;
+          
+          return (
+            <Card 
+              key={level.id}
+              className={`transition-all ${isCurrentCard ? 'ring-2 opacity-60' : ''}`}
+              style={{ 
+                borderColor: level.color + '40',
+                ...(isCurrentCard && { '--tw-ring-color': level.color } as any)
+              }}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div 
+                    className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
+                    style={{ backgroundColor: level.color + '20' }}
+                  >
+                    <CreditCard className="h-6 w-6" style={{ color: level.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-bold" style={{ color: level.color }}>
+                        {level.name_ar}
+                      </p>
+                      {isCurrentCard && (
+                        <Badge variant="outline" className="text-[9px]">
+                          بطاقتك الحالية
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {/* Price/Points requirement */}
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {isPurchasable ? (
+                        <span className="flex items-center gap-1">
+                          <ShoppingCart className="h-3 w-3" />
+                          {(level.purchase_price_points || 0).toLocaleString()} نقطة
+                        </span>
+                      ) : (
+                        <span>يتطلب {(level.min_points || 0).toLocaleString()} نقطة</span>
+                      )}
+                    </p>
+                    
+                    {/* Duration */}
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                      <Clock className="h-3 w-3" />
+                      صالحة لمدة {level.duration_days || 30} يوم
+                    </p>
+                    
+                    {/* Benefits */}
+                    <div className="mt-2 space-y-1">
+                      {level.discount_percentage && level.discount_percentage > 0 && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Check className="h-3 w-3 text-green-500" />
+                          <span>خصم {level.discount_percentage}%</span>
+                        </div>
+                      )}
+                      {level.bonus_points_percentage && level.bonus_points_percentage > 0 && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Check className="h-3 w-3 text-green-500" />
+                          <span>نقاط إضافية {level.bonus_points_percentage}%</span>
+                        </div>
+                      )}
+                      {level.free_shipping && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Check className="h-3 w-3 text-green-500" />
+                          <span>
+                            شحن مجاني
+                            {level.free_shipping_min_order > 0 && ` (طلبات أكثر من ${level.free_shipping_min_order.toLocaleString()} د.ع)`}
+                          </span>
+                        </div>
+                      )}
+                      {level.card_discounts_enabled && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Sparkles className="h-3 w-3 text-amber-500" />
+                          <span>خصومات حصرية على منتجات مختارة</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Purchase Button */}
+                  {isPurchasable && !isCurrentCard && (
+                    <Button
+                      size="sm"
+                      variant={canPurchase ? 'default' : 'outline'}
+                      className="shrink-0"
+                      disabled={!canPurchase || !user}
+                      onClick={() => handlePurchaseClick(level)}
+                    >
+                      {canPurchase ? 'شراء' : 'نقاط غير كافية'}
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Purchase Confirmation Dialog */}
+      <AlertDialog open={purchaseDialogOpen} onOpenChange={setPurchaseDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد شراء البطاقة</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                هل تريد شراء بطاقة <strong style={{ color: selectedLevel?.color }}>{selectedLevel?.name_ar}</strong>؟
+              </p>
+              <p className="text-sm">
+                سيتم خصم <strong>{(selectedLevel?.purchase_price_points || 0).toLocaleString()}</strong> نقطة من رصيدك.
+              </p>
+              <p className="text-sm">
+                البطاقة صالحة لمدة <strong>{selectedLevel?.duration_days || 30}</strong> يوم.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => selectedLevel && purchaseCardMutation.mutate(selectedLevel)}
+              disabled={purchaseCardMutation.isPending}
+            >
+              {purchaseCardMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
+              ) : null}
+              تأكيد الشراء
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

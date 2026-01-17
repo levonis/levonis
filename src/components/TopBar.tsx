@@ -299,10 +299,6 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
                     <Package className="ml-2 h-3.5 w-3.5" />
                     <span>طلباتي</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/my-printers')}>
-                    <Shield className="ml-2 h-3.5 w-3.5" />
-                    <span>حماية الطابعات</span>
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-3.5 w-3.5" />
                     <span>المفضلة</span>
