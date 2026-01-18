@@ -8,12 +8,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 import OptimizedImage from "@/components/OptimizedImage";
 import { useState } from "react";
 import { 
   X, Ticket, Trophy, Gift, Users, Calendar, 
   Zap, Sparkles, Package, Swords, TrendingUp, Timer, Loader2,
-  ChevronDown, ChevronUp, Star, Target, Check, Play
+  ChevronDown, ChevronUp, Star, Target, Check, Play, Minus, Plus
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, addHours } from "date-fns";
@@ -23,6 +24,7 @@ import BagOpenReveal from "@/components/BagOpenReveal";
 import LetterReveal from "@/components/LetterReveal";
 import InstantWinReveal from "@/components/InstantWinReveal";
 import MysteryBoxReveal from "@/components/MysteryBoxReveal";
+import CollectedLettersDisplay from "@/components/CollectedLettersDisplay";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 
@@ -79,6 +81,12 @@ interface RevealState {
   data: any;
 }
 
+interface LetterBagParticipation {
+  show: boolean;
+  competition: any;
+  quantity: number;
+}
+
 export default function AllCompetitionsPanel() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -86,6 +94,7 @@ export default function AllCompetitionsPanel() {
   const [expandedDesc, setExpandedDesc] = useState(false);
   const [expandedLetters, setExpandedLetters] = useState<string | null>(null);
   const [revealState, setRevealState] = useState<RevealState>({ show: false, type: null, data: null });
+  const [letterBagDialog, setLetterBagDialog] = useState<LetterBagParticipation>({ show: false, competition: null, quantity: 1 });
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['all-competitions-panel'],
@@ -253,6 +262,9 @@ export default function AllCompetitionsPanel() {
       case 'collect_letters': {
         const config = comp.letters_config as any;
         const letters = config?.letters || [];
+        const prizeWords = config?.prize_words || [];
+        
+        // Determine letter based on probabilities
         if (letters.length > 0) {
           const totalWeight = letters.reduce((sum: number, l: any) => sum + (l.probability || 1), 0);
           let random = Math.random() * totalWeight;
@@ -282,6 +294,87 @@ export default function AllCompetitionsPanel() {
         return { ticketNumber, isWinner: false };
     }
   };
+
+  // Multiple bags participation for letter competitions
+  const participateMultipleBagsMutation = useMutation({
+    mutationFn: async ({ comp, count }: { comp: any; count: number }) => {
+      if (!user) throw new Error('يجب تسجيل الدخول');
+      
+      const requiredTickets = (comp.required_tickets || 1) * count;
+      const currentBalance = userTickets || 0;
+      
+      if (currentBalance < requiredTickets) {
+        throw new Error('رصيد التذاكر غير كافٍ');
+      }
+
+      const results: { letter: string | null; isNew: boolean; ticketNumber: string }[] = [];
+      const existingLetters = [...(userLetters?.[comp.id] || [])];
+      
+      for (let i = 0; i < count; i++) {
+        const result = simulateResult(comp);
+        const letter = result.letter || null;
+        const isNew = letter ? !existingLetters.includes(letter) : false;
+        if (letter) existingLetters.push(letter);
+        results.push({ letter, isNew, ticketNumber: result.ticketNumber });
+      }
+
+      // Deduct tickets
+      const { error: updateError } = await supabase
+        .from('user_tickets')
+        .update({ ticket_count: currentBalance - requiredTickets })
+        .eq('user_id', user.id);
+      if (updateError) throw updateError;
+
+      // Insert all tickets
+      const ticketRecords = results.map(r => ({
+        user_id: user.id,
+        competition_id: comp.id,
+        ticket_number: r.ticketNumber,
+        is_winner: !!r.letter,
+        letter_awarded: r.letter,
+      }));
+
+      const { error: ticketError } = await supabase
+        .from('competition_tickets')
+        .insert(ticketRecords);
+      if (ticketError) throw ticketError;
+
+      const config = comp.letters_config as any;
+      return {
+        results,
+        competition: comp,
+        lettersConfig: {
+          target_word: config?.display_word || config?.prize_words?.[0]?.word || '',
+          prizes: config?.prize_words || []
+        },
+        collectedLetters: userLetters?.[comp.id] || []
+      };
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['user-tickets-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
+      queryClient.invalidateQueries({ queryKey: ['user-collected-letters'] });
+      queryClient.invalidateQueries({ queryKey: ['user-participations'] });
+      
+      // Show bag opening animation
+      setRevealState({
+        show: true,
+        type: 'bag',
+        data: {
+          results: data.results,
+          collectedLetters: data.collectedLetters,
+          lettersConfig: data.lettersConfig,
+          wonPrize: null
+        }
+      });
+      
+      setLetterBagDialog({ show: false, competition: null, quantity: 1 });
+      setSelectedCompetition(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ');
+    },
+  });
 
   const participateMutation = useMutation({
     mutationFn: async (comp: any) => {
@@ -349,11 +442,12 @@ export default function AllCompetitionsPanel() {
       if (type === 'collect_letters') {
         const collected = userLetters?.[data.competition.id] || [];
         const config = data.competition.letters_config as any;
+        // For single participation, show bag animation
         setRevealState({
           show: true,
-          type: 'letter',
+          type: 'bag',
           data: {
-            awardedLetter: data.letter || null,
+            results: [{ letter: data.letter || null, isNew: data.letter ? !collected.includes(data.letter) : false }],
             collectedLetters: collected,
             lettersConfig: {
               target_word: config?.display_word || config?.prize_words?.[0]?.word || '',
@@ -441,112 +535,56 @@ export default function AllCompetitionsPanel() {
         const displayWord = config?.display_word || prizeWords[0]?.word || '';
         const collected = userLetters?.[comp.id] || [];
         
+        // Count letters
+        const letterCounts: Record<string, number> = {};
+        collected.forEach((l: string) => {
+          letterCounts[l] = (letterCounts[l] || 0) + 1;
+        });
+        
         return (
-          <Collapsible 
-            open={expandedLetters === comp.id} 
-            onOpenChange={(open) => setExpandedLetters(open ? comp.id : null)}
-          >
-            <CollapsibleTrigger asChild>
-              <div className="cursor-pointer p-2 rounded-lg bg-violet-500/10 border border-violet-500/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-[10px] text-violet-600">
-                    <Sparkles className="h-2.5 w-2.5" />
-                    اجمع الأحرف واربح!
-                  </div>
-                  {expandedLetters === comp.id ? 
-                    <ChevronUp className="h-3 w-3 text-violet-600" /> : 
-                    <ChevronDown className="h-3 w-3 text-violet-600" />
-                  }
-                </div>
-                
-                {/* Display target word with collected progress */}
-                <div className="flex items-center gap-1 mt-2 justify-center flex-wrap">
-                  {displayWord.split('').map((letter: string, idx: number) => {
-                    const hasLetter = collected.includes(letter);
-                    return (
-                      <span 
-                        key={idx} 
-                        className={`w-6 h-6 flex items-center justify-center rounded text-xs font-bold ${
-                          hasLetter 
-                            ? 'bg-green-500 text-white' 
-                            : 'bg-violet-200 text-violet-400'
-                        }`}
-                      >
-                        {hasLetter ? letter : '?'}
-                      </span>
-                    );
-                  })}
-                </div>
-                
-                {collected.length > 0 && (
-                  <div className="flex items-center justify-center gap-1 mt-2 text-[10px] text-green-600">
-                    <Check className="h-2.5 w-2.5" />
-                    جمعت {collected.length} حرف
-                  </div>
-                )}
+          <div className="p-2.5 rounded-lg bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/20 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1 text-[10px] text-violet-600 font-medium">
+                <Sparkles className="h-3 w-3" />
+                اجمع الأحرف واربح!
               </div>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="mt-2 space-y-2">
-              {prizeWords.map((wordConfig: any, idx: number) => {
-                const word = wordConfig.word || '';
-                const wordLetters = word.split('');
-                const collectedSet = new Set(collected);
-                const completedLetters = wordLetters.filter((l: string) => collectedSet.has(l)).length;
-                const isComplete = completedLetters === wordLetters.length;
-                
+              {collected.length > 0 && (
+                <Badge variant="secondary" className="text-[9px] bg-violet-500/20 text-violet-700">
+                  {collected.length} حرف
+                </Badge>
+              )}
+            </div>
+            
+            {/* Display target word with collected progress */}
+            <div className="flex items-center gap-1 justify-center flex-wrap">
+              {displayWord.split('').map((letter: string, idx: number) => {
+                const hasLetter = (letterCounts[letter] || 0) > 0;
                 return (
-                  <div key={idx} className="p-2 rounded-lg bg-muted/50 border">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[10px] font-medium">
-                        {wordConfig.prize_name || wordConfig.prize_name_ar || `جائزة ${idx + 1}`}
-                      </span>
-                      {isComplete && (
-                        <Badge className="bg-green-500 text-[9px]">
-                          <Check className="h-2 w-2 ml-0.5" />
-                          مكتملة
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex gap-1 flex-wrap justify-center">
-                      {wordLetters.map((letter: string, letterIdx: number) => {
-                        const hasLetter = collectedSet.has(letter);
-                        return (
-                          <span 
-                            key={letterIdx} 
-                            className={`w-7 h-7 flex items-center justify-center rounded text-sm font-bold ${
-                              hasLetter 
-                                ? 'bg-green-500 text-white' 
-                                : 'bg-muted text-muted-foreground border'
-                            }`}
-                          >
-                            {hasLetter ? letter : '?'}
-                          </span>
-                        );
-                      })}
-                    </div>
-                    {wordConfig.prize_value && (
-                      <p className="text-[10px] text-center text-muted-foreground mt-2">
-                        القيمة: {wordConfig.prize_value?.toLocaleString()} د.ع
-                      </p>
-                    )}
-                    {isComplete && (
-                      <Button 
-                        size="sm" 
-                        className="w-full mt-2 h-7 text-[10px]"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toast.success('سيتم إضافة الجائزة لمخزنك!');
-                        }}
-                      >
-                        <Gift className="h-3 w-3 ml-1" />
-                        استبدل بالجائزة
-                      </Button>
-                    )}
-                  </div>
+                  <span 
+                    key={idx} 
+                    className={`w-7 h-7 flex items-center justify-center rounded-md text-xs font-bold transition-all ${
+                      hasLetter 
+                        ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-sm' 
+                        : 'bg-violet-100 text-violet-400 border border-violet-200'
+                    }`}
+                  >
+                    {hasLetter ? letter : '?'}
+                  </span>
                 );
               })}
-            </CollapsibleContent>
-          </Collapsible>
+            </div>
+            
+            {/* Show prize info */}
+            {prizeWords.length > 0 && (
+              <div className="text-[10px] text-center text-muted-foreground">
+                <Gift className="h-3 w-3 inline-block ml-1" />
+                {prizeWords[0]?.prize_name_ar || prizeWords[0]?.prize_name || 'جائزة'}
+                {prizeWords[0]?.stock !== undefined && (
+                  <span className="text-violet-600"> (متبقي: {prizeWords[0].stock})</span>
+                )}
+              </div>
+            )}
+          </div>
         );
       }
       
@@ -863,13 +901,15 @@ export default function AllCompetitionsPanel() {
                 {getTypeSpecificInfo(selectedCompetition)}
               </div>
 
-              {/* User's Previous Participations */}
-              {userParticipations?.[selectedCompetition.id] && userParticipations[selectedCompetition.id].length > 0 && (
+              {/* User's Previous Participations - hide for letter competitions */}
+              {selectedCompetition.competition_type !== 'collect_letters' && 
+               userParticipations?.[selectedCompetition.id] && 
+               userParticipations[selectedCompetition.id].length > 0 && (
                 <Card className="mb-4 border-green-200 bg-green-500/5">
                   <CardContent className="p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <Check className="h-4 w-4 text-green-500" />
-                      <span className="font-medium text-green-700">مشاركاتك السابقة ({userParticipations[selectedCompetition.id].length})</span>
+                      <span className="font-medium text-green-700">مشاركاتك ({userParticipations[selectedCompetition.id].length})</span>
                     </div>
                     <div className="space-y-1 max-h-32 overflow-y-auto">
                       {userParticipations[selectedCompetition.id].map((p: any) => (
@@ -878,19 +918,9 @@ export default function AllCompetitionsPanel() {
                             {formatBaghdadTime(p.purchased_at, 'dd/MM HH:mm')}
                           </span>
                           <div className="flex items-center gap-1">
-                            {p.letter_awarded && (
-                              <Badge className="bg-violet-500 text-[9px]">
-                                {p.letter_awarded}
-                              </Badge>
-                            )}
                             {p.team && (
                               <Badge variant="outline" className="text-[9px]">
                                 فريق {p.team === 'A' ? '🔵' : '🔴'}
-                              </Badge>
-                            )}
-                            {p.is_winner && (
-                              <Badge className="bg-amber-500 text-[9px]">
-                                فائز!
                               </Badge>
                             )}
                           </div>
@@ -899,6 +929,26 @@ export default function AllCompetitionsPanel() {
                     </div>
                   </CardContent>
                 </Card>
+              )}
+
+              {/* Letters Collection Display for letter competitions */}
+              {selectedCompetition.competition_type === 'collect_letters' && (
+                <div className="mb-4">
+                  <CollectedLettersDisplay
+                    collectedLetters={userLetters?.[selectedCompetition.id] || []}
+                    lettersConfig={{
+                      target_word: (selectedCompetition.letters_config as any)?.display_word || 
+                                   (selectedCompetition.letters_config as any)?.prize_words?.[0]?.word || '',
+                      display_word: (selectedCompetition.letters_config as any)?.display_word,
+                      prize_words: (selectedCompetition.letters_config as any)?.prize_words || []
+                    }}
+                    competitionId={selectedCompetition.id}
+                    onRedeemSuccess={() => {
+                      queryClient.invalidateQueries({ queryKey: ['user-collected-letters'] });
+                      queryClient.invalidateQueries({ queryKey: ['user-participations'] });
+                    }}
+                  />
+                </div>
               )}
 
               {/* Prize Card */}
@@ -1012,8 +1062,11 @@ export default function AllCompetitionsPanel() {
               {(() => {
                 const type = selectedCompetition.competition_type as CompetitionType;
                 const isFree = type === 'free';
+                const isLetterComp = type === 'collect_letters';
                 const participated = isFree && !canParticipateFree(selectedCompetition.id);
-                const hasEnoughTickets = isFree || (userTickets || 0) >= (selectedCompetition.required_tickets || 1);
+                const requiredPerBag = selectedCompetition.required_tickets || 1;
+                const hasEnoughTickets = isFree || (userTickets || 0) >= requiredPerBag;
+                const maxBags = Math.floor((userTickets || 0) / requiredPerBag);
                 
                 if (participated) {
                   return (
@@ -1021,6 +1074,72 @@ export default function AllCompetitionsPanel() {
                       <Check className="h-4 w-4 ml-2" />
                       شاركت بالفعل
                     </Button>
+                  );
+                }
+                
+                // For letter competitions, show bag quantity selection
+                if (isLetterComp && hasEnoughTickets) {
+                  return (
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between p-3 bg-violet-500/10 border border-violet-500/20 rounded-lg">
+                        <span className="text-sm font-medium">عدد الأكياس:</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setLetterBagDialog(prev => ({ ...prev, quantity: Math.max(1, prev.quantity - 1) }))}
+                            disabled={letterBagDialog.quantity <= 1}
+                          >
+                            <Minus className="h-4 w-4" />
+                          </Button>
+                          <Input
+                            type="number"
+                            min="1"
+                            max={maxBags}
+                            value={letterBagDialog.quantity}
+                            onChange={(e) => setLetterBagDialog(prev => ({ 
+                              ...prev, 
+                              quantity: Math.min(maxBags, Math.max(1, parseInt(e.target.value) || 1))
+                            }))}
+                            className="w-16 text-center h-8"
+                          />
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => setLetterBagDialog(prev => ({ ...prev, quantity: Math.min(maxBags, prev.quantity + 1) }))}
+                            disabled={letterBagDialog.quantity >= maxBags}
+                          >
+                            <Plus className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <p className="text-xs text-center text-muted-foreground">
+                        التكلفة: {(letterBagDialog.quantity * requiredPerBag).toLocaleString()} تذكرة
+                      </p>
+                      <Button 
+                        className="w-full bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600"
+                        size="lg"
+                        onClick={() => participateMultipleBagsMutation.mutate({ 
+                          comp: selectedCompetition, 
+                          count: letterBagDialog.quantity 
+                        })}
+                        disabled={!user || participateMultipleBagsMutation.isPending}
+                      >
+                        {participateMultipleBagsMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                            جاري فتح الأكياس...
+                          </>
+                        ) : (
+                          <>
+                            <Package className="h-4 w-4 ml-2" />
+                            افتح {letterBagDialog.quantity} كيس
+                          </>
+                        )}
+                      </Button>
+                    </div>
                   );
                 }
                 
@@ -1054,6 +1173,18 @@ export default function AllCompetitionsPanel() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Bag Open Reveal Animation for Letters */}
+      {revealState.type === 'bag' && (
+        <BagOpenReveal
+          isOpen={revealState.show}
+          onClose={() => setRevealState({ show: false, type: null, data: null })}
+          results={revealState.data.results}
+          collectedLetters={revealState.data.collectedLetters}
+          lettersConfig={revealState.data.lettersConfig}
+          wonPrize={revealState.data.wonPrize}
+        />
+      )}
 
       {/* Letter Reveal Animation */}
       {revealState.type === 'letter' && (
