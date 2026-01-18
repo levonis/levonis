@@ -9,14 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, CreditCard, Users, Gift, Settings, Tag } from "lucide-react";
+import { Plus, Pencil, Trash2, CreditCard, Users, Gift, Settings, Tag, Eye, Palette, Clock, Percent, Zap, Truck, Crown, Sparkles } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import AdminLayout, { AdminSection, AdminCard, AdminCardContent, AdminCardHeader, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
+import LoyaltyCardPreview from "@/components/admin/LoyaltyCardPreview";
 
 export default function AdminLoyaltyLevels() {
   const { user } = useAuth();
@@ -30,15 +32,16 @@ export default function AdminLoyaltyLevels() {
     name_ar: "",
     name_en: "",
     min_points: 0,
-    color: "#000000",
+    color: "#FFD700",
     discount_percentage: 0,
     bonus_points_percentage: 0,
     free_shipping: false,
     free_shipping_min_order: 0,
-    is_purchasable: false,
+    is_purchasable: true,
     purchase_price_points: 0,
     duration_days: 30,
     card_discounts_enabled: false,
+    icon: "crown",
   });
   const [benefits, setBenefits] = useState<Array<{ text_ar: string; text_en: string }>>([]);
 
@@ -124,6 +127,20 @@ export default function AdminLoyaltyLevels() {
     },
   });
 
+  const { data: stats } = useQuery({
+    queryKey: ["loyaltyStats"],
+    queryFn: async () => {
+      const [cardsRes, holdersRes] = await Promise.all([
+        supabase.from("loyalty_levels").select("id", { count: "exact" }),
+        supabase.from("user_cards").select("id", { count: "exact" }).eq("is_active", true),
+      ]);
+      return {
+        totalCards: cardsRes.count || 0,
+        activeHolders: holdersRes.count || 0,
+      };
+    },
+  });
+
   const saveMutation = useMutation({
     mutationFn: async () => {
       let displayOrder = 1;
@@ -156,6 +173,7 @@ export default function AdminLoyaltyLevels() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["loyaltyLevels"] });
+      queryClient.invalidateQueries({ queryKey: ["loyaltyStats"] });
       toast.success(editingLevel ? "تم تحديث البطاقة بنجاح" : "تم إضافة البطاقة بنجاح");
       setDialogOpen(false);
       resetForm();
@@ -176,6 +194,7 @@ export default function AdminLoyaltyLevels() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["loyaltyLevels"] });
+      queryClient.invalidateQueries({ queryKey: ["loyaltyStats"] });
       toast.success("تم حذف البطاقة بنجاح");
     },
     onError: (error: any) => {
@@ -234,15 +253,16 @@ export default function AdminLoyaltyLevels() {
       name_ar: "",
       name_en: "",
       min_points: 0,
-      color: "#000000",
+      color: "#FFD700",
       discount_percentage: 0,
       bonus_points_percentage: 0,
       free_shipping: false,
       free_shipping_min_order: 0,
-      is_purchasable: false,
+      is_purchasable: true,
       purchase_price_points: 0,
       duration_days: 30,
       card_discounts_enabled: false,
+      icon: "crown",
     });
     setBenefits([]);
     setEditingLevel(null);
@@ -272,10 +292,11 @@ export default function AdminLoyaltyLevels() {
       bonus_points_percentage: level.bonus_points_percentage || 0,
       free_shipping: level.free_shipping || false,
       free_shipping_min_order: level.free_shipping_min_order || 0,
-      is_purchasable: level.is_purchasable || false,
+      is_purchasable: level.is_purchasable ?? true,
       purchase_price_points: level.purchase_price_points || 0,
       duration_days: level.duration_days || 30,
       card_discounts_enabled: level.card_discounts_enabled || false,
+      icon: level.icon || "crown",
     });
     setBenefits(level.benefits || []);
     setDialogOpen(true);
@@ -308,6 +329,17 @@ export default function AdminLoyaltyLevels() {
     setBenefits(newBenefits);
   };
 
+  const COLOR_PRESETS = [
+    { name: "ذهبي", color: "#FFD700" },
+    { name: "بلاتيني", color: "#E5E4E2" },
+    { name: "فضي", color: "#C0C0C0" },
+    { name: "برونزي", color: "#CD7F32" },
+    { name: "الماسي", color: "#B9F2FF" },
+    { name: "ياقوتي", color: "#E0115F" },
+    { name: "زمردي", color: "#50C878" },
+    { name: "ملكي", color: "#4169E1" },
+  ];
+
   if (!user) return null;
 
   if (isLoading) {
@@ -316,10 +348,58 @@ export default function AdminLoyaltyLevels() {
 
   return (
     <AdminLayout
-      title="إدارة البطاقات"
-      description="إدارة البطاقات والمزايا والعروض الحصرية"
+      title="إدارة البطاقات والمكافآت"
+      description="إدارة بطاقات الولاء والمزايا والعروض الحصرية"
       icon={<CreditCard className="h-5 w-5" />}
     >
+      {/* Stats Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <Card className="bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border-amber-500/20">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-amber-500/20">
+              <CreditCard className="h-5 w-5 text-amber-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stats?.totalCards || 0}</p>
+              <p className="text-xs text-muted-foreground">البطاقات المتاحة</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-green-500/10 to-emerald-500/5 border-green-500/20">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-green-500/20">
+              <Users className="h-5 w-5 text-green-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{stats?.activeHolders || 0}</p>
+              <p className="text-xs text-muted-foreground">مشترك نشط</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-purple-500/10 to-violet-500/5 border-purple-500/20">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-purple-500/20">
+              <Gift className="h-5 w-5 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{exclusiveOffers?.length || 0}</p>
+              <p className="text-xs text-muted-foreground">عرض حصري</p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border-blue-500/20">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="p-3 rounded-xl bg-blue-500/20">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{cardHolders?.length || 0}</p>
+              <p className="text-xs text-muted-foreground">بطاقة نشطة</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Tabs defaultValue="cards" className="space-y-6">
         <TabsList className="admin-tabs">
           <TabsTrigger value="cards" className="admin-tab flex items-center gap-2">
@@ -334,11 +414,18 @@ export default function AdminLoyaltyLevels() {
             <Gift className="h-4 w-4" />
             العروض الحصرية
           </TabsTrigger>
+          <TabsTrigger value="settings" className="admin-tab flex items-center gap-2">
+            <Settings className="h-4 w-4" />
+            الإعدادات
+          </TabsTrigger>
         </TabsList>
 
         {/* Cards Tab */}
         <TabsContent value="cards" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              البطاقات المتاحة للمستخدمين للشراء أو الحصول عليها تلقائياً
+            </p>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="admin-btn-primary" onClick={resetForm}>
@@ -346,112 +433,168 @@ export default function AdminLoyaltyLevels() {
                   إضافة بطاقة جديدة
                 </Button>
               </DialogTrigger>
-              <DialogContent className="admin-dialog max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
+              <DialogContent className="admin-dialog max-w-4xl h-[90vh] p-0 flex flex-col">
+                <DialogHeader className="px-6 py-4 border-b shrink-0">
                   <DialogTitle>{editingLevel ? "تعديل البطاقة" : "إضافة بطاقة جديدة"}</DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-4">
-                  <div className="admin-form-group">
-                    <Label>مفتاح البطاقة (بالإنجليزي، بدون مسافات)</Label>
-                    <Input
-                      value={formData.level_key}
-                      onChange={(e) => setFormData({ ...formData, level_key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
-                      placeholder="مثال: gold, platinum"
-                      disabled={!!editingLevel}
-                    />
-                  </div>
-
-                  <div className="admin-form-row">
-                    <div className="admin-form-group">
-                      <Label>الاسم بالعربي</Label>
-                      <Input
-                        value={formData.name_ar}
-                        onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                <ScrollArea className="flex-1 overflow-y-auto">
+                  <div className="px-6 py-4 space-y-6">
+                    {/* Card Preview */}
+                    <div className="flex justify-center p-6 bg-gradient-to-br from-muted/50 to-muted/30 rounded-xl">
+                      <LoyaltyCardPreview
+                        name_ar={formData.name_ar || "اسم البطاقة"}
+                        name_en={formData.name_en || "Card Name"}
+                        color={formData.color}
+                        discount_percentage={formData.discount_percentage}
+                        bonus_points_percentage={formData.bonus_points_percentage}
+                        free_shipping={formData.free_shipping}
+                        duration_days={formData.duration_days}
+                        is_purchasable={formData.is_purchasable}
+                        purchase_price_points={formData.purchase_price_points}
+                        min_points={formData.min_points}
+                        size="lg"
                       />
                     </div>
-                    <div className="admin-form-group">
-                      <Label>الاسم بالإنجليزي</Label>
-                      <Input
-                        value={formData.name_en}
-                        onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="admin-form-row">
-                    <div className="admin-form-group">
-                      <Label>اللون</Label>
-                      <div className="flex gap-2">
-                        <Input
-                          type="color"
-                          value={formData.color}
-                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                          className="w-16 h-10"
-                        />
-                        <Input
-                          value={formData.color}
-                          onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    <div className="admin-form-group">
-                      <Label>مدة الصلاحية (أيام)</Label>
-                      <Input
-                        type="number"
-                        value={formData.duration_days}
-                        onChange={(e) => setFormData({ ...formData, duration_days: parseInt(e.target.value) })}
-                      />
-                    </div>
-                  </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Basic Info */}
+                      <AdminCard>
+                        <AdminCardHeader title="المعلومات الأساسية" icon={<Tag className="h-4 w-4" />} />
+                        <AdminCardContent>
+                          <div className="space-y-4">
+                            <div className="admin-form-group">
+                              <Label>مفتاح البطاقة (بالإنجليزي)</Label>
+                              <Input
+                                value={formData.level_key}
+                                onChange={(e) => setFormData({ ...formData, level_key: e.target.value.toLowerCase().replace(/\s+/g, '_') })}
+                                placeholder="gold, platinum, diamond"
+                                disabled={!!editingLevel}
+                              />
+                            </div>
 
-                  {/* Purchase Settings */}
-                  <AdminCard>
-                    <AdminCardHeader title="إعدادات الشراء" icon={<Tag className="h-4 w-4" />} />
-                    <AdminCardContent>
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                          <Switch
-                            checked={formData.is_purchasable}
-                            onCheckedChange={(checked) => setFormData({ ...formData, is_purchasable: checked })}
-                          />
-                          <Label>قابلة للشراء بالنقاط</Label>
-                        </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="admin-form-group">
+                                <Label>الاسم بالعربي</Label>
+                                <Input
+                                  value={formData.name_ar}
+                                  onChange={(e) => setFormData({ ...formData, name_ar: e.target.value })}
+                                  placeholder="الذهبية"
+                                />
+                              </div>
+                              <div className="admin-form-group">
+                                <Label>الاسم بالإنجليزي</Label>
+                                <Input
+                                  value={formData.name_en}
+                                  onChange={(e) => setFormData({ ...formData, name_en: e.target.value })}
+                                  placeholder="Gold"
+                                />
+                              </div>
+                            </div>
 
-                        {formData.is_purchasable && (
-                          <div className="admin-form-group">
-                            <Label>سعر البطاقة (نقاط)</Label>
-                            <Input
-                              type="number"
-                              value={formData.purchase_price_points}
-                              onChange={(e) => setFormData({ ...formData, purchase_price_points: parseInt(e.target.value) })}
-                            />
+                            <div className="admin-form-group">
+                              <Label className="flex items-center gap-2">
+                                <Palette className="h-4 w-4" />
+                                لون البطاقة
+                              </Label>
+                              <div className="flex gap-2 mb-2 flex-wrap">
+                                {COLOR_PRESETS.map((preset) => (
+                                  <button
+                                    key={preset.name}
+                                    type="button"
+                                    className={`w-8 h-8 rounded-lg border-2 transition-all ${formData.color === preset.color ? 'border-primary scale-110' : 'border-transparent'}`}
+                                    style={{ backgroundColor: preset.color }}
+                                    onClick={() => setFormData({ ...formData, color: preset.color })}
+                                    title={preset.name}
+                                  />
+                                ))}
+                              </div>
+                              <div className="flex gap-2">
+                                <Input
+                                  type="color"
+                                  value={formData.color}
+                                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                                  className="w-14 h-10 cursor-pointer"
+                                />
+                                <Input
+                                  value={formData.color}
+                                  onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                                  className="flex-1 font-mono"
+                                  placeholder="#FFD700"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="admin-form-group">
+                              <Label className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" />
+                                مدة الصلاحية (أيام)
+                              </Label>
+                              <Input
+                                type="number"
+                                value={formData.duration_days}
+                                onChange={(e) => setFormData({ ...formData, duration_days: parseInt(e.target.value) })}
+                              />
+                            </div>
                           </div>
-                        )}
+                        </AdminCardContent>
+                      </AdminCard>
 
-                        {!formData.is_purchasable && (
-                          <div className="admin-form-group">
-                            <Label>الحد الأدنى من النقاط للحصول عليها تلقائياً</Label>
-                            <Input
-                              type="number"
-                              value={formData.min_points}
-                              onChange={(e) => setFormData({ ...formData, min_points: parseFloat(e.target.value) })}
-                            />
+                      {/* Purchase Settings */}
+                      <AdminCard>
+                        <AdminCardHeader title="إعدادات الحصول على البطاقة" icon={<CreditCard className="h-4 w-4" />} />
+                        <AdminCardContent>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                              <Label className="font-medium">قابلة للشراء بالنقاط</Label>
+                              <Switch
+                                checked={formData.is_purchasable}
+                                onCheckedChange={(checked) => setFormData({ ...formData, is_purchasable: checked })}
+                              />
+                            </div>
+
+                            {formData.is_purchasable ? (
+                              <div className="admin-form-group">
+                                <Label>سعر البطاقة (نقاط)</Label>
+                                <Input
+                                  type="number"
+                                  value={formData.purchase_price_points}
+                                  onChange={(e) => setFormData({ ...formData, purchase_price_points: parseInt(e.target.value) })}
+                                  placeholder="1000"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  المستخدم يدفع هذا العدد من النقاط للحصول على البطاقة
+                                </p>
+                              </div>
+                            ) : (
+                              <div className="admin-form-group">
+                                <Label>الحد الأدنى من النقاط (تلقائي)</Label>
+                                <Input
+                                  type="number"
+                                  value={formData.min_points}
+                                  onChange={(e) => setFormData({ ...formData, min_points: parseFloat(e.target.value) })}
+                                  placeholder="5000"
+                                />
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  عند وصول المستخدم لهذا العدد يحصل على البطاقة تلقائياً
+                                </p>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                    </AdminCardContent>
-                  </AdminCard>
+                        </AdminCardContent>
+                      </AdminCard>
+                    </div>
 
-                  {/* Benefits Settings */}
-                  <AdminCard>
-                    <AdminCardHeader title="المميزات" icon={<Gift className="h-4 w-4" />} />
-                    <AdminCardContent>
-                      <div className="space-y-4">
-                        <div className="admin-form-row">
+                    {/* Benefits Settings */}
+                    <AdminCard>
+                      <AdminCardHeader title="المميزات والخصومات" icon={<Gift className="h-4 w-4" />} />
+                      <AdminCardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                           <div className="admin-form-group">
-                            <Label>نسبة الخصم (%)</Label>
+                            <Label className="flex items-center gap-2">
+                              <Percent className="h-4 w-4" />
+                              نسبة الخصم (%)
+                            </Label>
                             <Input
                               type="number"
                               min="0"
@@ -461,7 +604,10 @@ export default function AdminLoyaltyLevels() {
                             />
                           </div>
                           <div className="admin-form-group">
-                            <Label>نسبة النقاط الإضافية (%)</Label>
+                            <Label className="flex items-center gap-2">
+                              <Zap className="h-4 w-4" />
+                              نسبة النقاط الإضافية (%)
+                            </Label>
                             <Input
                               type="number"
                               min="0"
@@ -469,178 +615,163 @@ export default function AdminLoyaltyLevels() {
                               onChange={(e) => setFormData({ ...formData, bonus_points_percentage: parseFloat(e.target.value) })}
                             />
                           </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                          <Switch
-                            checked={formData.free_shipping}
-                            onCheckedChange={(checked) => setFormData({ ...formData, free_shipping: checked })}
-                          />
-                          <Label>شحن مجاني</Label>
-                        </div>
-
-                        {formData.free_shipping && (
                           <div className="admin-form-group">
-                            <Label>الحد الأدنى للطلب للشحن المجاني (دينار)</Label>
+                            <Label className="flex items-center gap-2">
+                              <Truck className="h-4 w-4" />
+                              الحد الأدنى للشحن المجاني
+                            </Label>
                             <Input
                               type="number"
                               value={formData.free_shipping_min_order}
                               onChange={(e) => setFormData({ ...formData, free_shipping_min_order: parseFloat(e.target.value) })}
+                              disabled={!formData.free_shipping}
                             />
                           </div>
-                        )}
-
-                        <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                          <Switch
-                            checked={formData.card_discounts_enabled}
-                            onCheckedChange={(checked) => setFormData({ ...formData, card_discounts_enabled: checked })}
-                          />
-                          <Label>تفعيل خصومات المنتجات الخاصة</Label>
                         </div>
-                      </div>
-                    </AdminCardContent>
-                  </AdminCard>
 
-                  {/* Custom Benefits */}
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <Label>مزايا إضافية</Label>
-                      <Button size="sm" variant="outline" onClick={handleAddBenefit}>
-                        <Plus className="ml-2 h-3 w-3" />
-                        إضافة ميزة
-                      </Button>
-                    </div>
-
-                    <div className="space-y-3">
-                      {benefits.map((benefit, index) => (
-                        <div key={index} className="admin-card p-3">
-                          <div className="flex gap-2">
-                            <div className="flex-1 space-y-2">
-                              <Input
-                                placeholder="النص بالعربي"
-                                value={benefit.text_ar}
-                                onChange={(e) => handleBenefitChange(index, "text_ar", e.target.value)}
-                              />
-                              <Input
-                                placeholder="النص بالإنجليزي"
-                                value={benefit.text_en}
-                                onChange={(e) => handleBenefitChange(index, "text_en", e.target.value)}
-                              />
-                            </div>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="shrink-0 text-destructive hover:text-destructive"
-                              onClick={() => handleRemoveBenefit(index)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <Label className="flex items-center gap-2">
+                              <Truck className="h-4 w-4" />
+                              شحن مجاني
+                            </Label>
+                            <Switch
+                              checked={formData.free_shipping}
+                              onCheckedChange={(checked) => setFormData({ ...formData, free_shipping: checked })}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <Label className="flex items-center gap-2">
+                              <Tag className="h-4 w-4" />
+                              خصومات منتجات خاصة
+                            </Label>
+                            <Switch
+                              checked={formData.card_discounts_enabled}
+                              onCheckedChange={(checked) => setFormData({ ...formData, card_discounts_enabled: checked })}
+                            />
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </AdminCardContent>
+                    </AdminCard>
 
-                  <div className="flex justify-end gap-2 pt-4 border-t">
-                    <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                      إلغاء
-                    </Button>
-                    <Button 
-                      className="admin-btn-primary"
-                      onClick={() => saveMutation.mutate()} 
-                      disabled={saveMutation.isPending}
-                    >
-                      {saveMutation.isPending ? "جاري الحفظ..." : "حفظ"}
-                    </Button>
+                    {/* Custom Benefits */}
+                    <AdminCard>
+                      <AdminCardHeader 
+                        title="مزايا إضافية مخصصة" 
+                        icon={<Sparkles className="h-4 w-4" />}
+                        actions={
+                          <Button size="sm" variant="outline" onClick={handleAddBenefit}>
+                            <Plus className="ml-2 h-3 w-3" />
+                            إضافة ميزة
+                          </Button>
+                        }
+                      />
+                      <AdminCardContent>
+                        {benefits.length === 0 ? (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <Sparkles className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                            <p>لا توجد مزايا إضافية</p>
+                            <p className="text-xs">اضغط على "إضافة ميزة" لإضافة مزايا مخصصة</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-3">
+                            {benefits.map((benefit, index) => (
+                              <div key={index} className="flex gap-2 items-start p-3 border rounded-lg bg-muted/30">
+                                <div className="flex-1 grid grid-cols-2 gap-2">
+                                  <Input
+                                    placeholder="النص بالعربي"
+                                    value={benefit.text_ar}
+                                    onChange={(e) => handleBenefitChange(index, "text_ar", e.target.value)}
+                                  />
+                                  <Input
+                                    placeholder="Text in English"
+                                    value={benefit.text_en}
+                                    onChange={(e) => handleBenefitChange(index, "text_en", e.target.value)}
+                                  />
+                                </div>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  onClick={() => handleRemoveBenefit(index)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </AdminCardContent>
+                    </AdminCard>
                   </div>
+                </ScrollArea>
+
+                <div className="flex justify-end gap-2 px-6 py-4 border-t shrink-0 bg-background">
+                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                    إلغاء
+                  </Button>
+                  <Button 
+                    className="admin-btn-primary"
+                    onClick={() => saveMutation.mutate()} 
+                    disabled={saveMutation.isPending}
+                  >
+                    {saveMutation.isPending ? "جاري الحفظ..." : "حفظ البطاقة"}
+                  </Button>
                 </div>
               </DialogContent>
             </Dialog>
           </div>
 
-          <AdminCard hover={false}>
-            <AdminCardContent noPadding>
-              {!levels || levels.length === 0 ? (
-                <AdminEmptyState
-                  icon={<CreditCard className="h-12 w-12" />}
-                  title="لا توجد بطاقات"
-                  description="قم بإضافة بطاقة جديدة لبرنامج المكافآت"
-                />
-              ) : (
-                <div className="admin-table-container">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="admin-table-header">
-                        <TableHead>البطاقة</TableHead>
-                        <TableHead>نوع الحصول</TableHead>
-                        <TableHead>المدة</TableHead>
-                        <TableHead>الخصم</TableHead>
-                        <TableHead>شحن مجاني</TableHead>
-                        <TableHead>الإجراءات</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {levels.map((level) => (
-                        <TableRow key={level.id} className="admin-table-row">
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-4 h-4 rounded-full"
-                                style={{ backgroundColor: level.color }}
-                              />
-                              <span className="font-medium">{level.name_ar}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {level.is_purchasable ? (
-                              <Badge variant="secondary">
-                                شراء: {level.purchase_price_points?.toLocaleString()} نقطة
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline">
-                                تلقائي: {level.min_points?.toLocaleString()} نقطة
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>{level.duration_days || 30} يوم</TableCell>
-                          <TableCell>{level.discount_percentage}%</TableCell>
-                          <TableCell>
-                            <span className={level.free_shipping ? 'admin-badge-success' : 'admin-badge'}>
-                              {level.free_shipping ? 'نعم' : 'لا'}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex gap-1">
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8"
-                                onClick={() => handleEdit(level)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-8 w-8 text-destructive hover:text-destructive"
-                                onClick={() => {
-                                  if (confirm("هل أنت متأكد من حذف هذه البطاقة؟")) {
-                                    deleteMutation.mutate(level.id);
-                                  }
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+          {/* Cards Grid */}
+          {!levels || levels.length === 0 ? (
+            <AdminEmptyState
+              icon={<CreditCard className="h-12 w-12" />}
+              title="لا توجد بطاقات"
+              description="قم بإضافة بطاقة جديدة لبرنامج المكافآت"
+            />
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {levels.map((level) => (
+                <div key={level.id} className="relative group">
+                  <LoyaltyCardPreview
+                    name_ar={level.name_ar}
+                    name_en={level.name_en}
+                    color={level.color}
+                    discount_percentage={level.discount_percentage}
+                    bonus_points_percentage={level.bonus_points_percentage}
+                    free_shipping={level.free_shipping}
+                    duration_days={level.duration_days}
+                    is_purchasable={level.is_purchasable}
+                    purchase_price_points={level.purchase_price_points}
+                    min_points={level.min_points}
+                    size="md"
+                  />
+                  <div className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => handleEdit(level)}
+                    >
+                      <Pencil className="h-4 w-4 ml-1" />
+                      تعديل
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => {
+                        if (confirm("هل أنت متأكد من حذف هذه البطاقة؟")) {
+                          deleteMutation.mutate(level.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 ml-1" />
+                      حذف
+                    </Button>
+                  </div>
                 </div>
-              )}
-            </AdminCardContent>
-          </AdminCard>
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* Card Holders Tab */}
@@ -702,7 +833,10 @@ export default function AdminLoyaltyLevels() {
 
         {/* Exclusive Offers Tab */}
         <TabsContent value="offers" className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-muted-foreground">
+              العروض الحصرية لحاملي البطاقات
+            </p>
             <Dialog open={offerDialogOpen} onOpenChange={setOfferDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="admin-btn-primary" onClick={resetOfferForm}>
@@ -750,7 +884,7 @@ export default function AdminLoyaltyLevels() {
                     </Select>
                   </div>
 
-                  <div className="admin-form-row">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="admin-form-group">
                       <Label>نوع العرض</Label>
                       <Select 
@@ -777,7 +911,7 @@ export default function AdminLoyaltyLevels() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
                     <Switch
                       checked={offerData.is_active}
                       onCheckedChange={(checked) => setOfferData({ ...offerData, is_active: checked })}
@@ -845,7 +979,7 @@ export default function AdminLoyaltyLevels() {
                             {offer.offer_type === 'free_product' && 'منتج مجاني'}
                           </TableCell>
                           <TableCell>
-                            {offer.offer_type === 'discount' ? `${offer.offer_value}%` : offer.offer_value?.toLocaleString()}
+                            {offer.offer_type === 'discount' ? `${offer.offer_value}%` : `${offer.offer_value} دينار`}
                           </TableCell>
                           <TableCell>
                             <Badge variant={offer.is_active ? 'default' : 'secondary'}>
@@ -884,6 +1018,118 @@ export default function AdminLoyaltyLevels() {
               )}
             </AdminCardContent>
           </AdminCard>
+        </TabsContent>
+
+        {/* Settings Tab */}
+        <TabsContent value="settings" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <AdminCard>
+              <AdminCardHeader 
+                title="إعدادات عامة" 
+                description="إعدادات نظام البطاقات والمكافآت"
+                icon={<Settings className="h-4 w-4" />}
+              />
+              <AdminCardContent>
+                <div className="space-y-4">
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <p className="text-sm font-medium mb-2">معلومة</p>
+                    <p className="text-xs text-muted-foreground">
+                      يمكنك التحكم في إعدادات النقاط والمهام اليومية من خلال صفحة 
+                      <a href="/cp-x9A3kL7m/points-settings" className="text-primary mr-1 hover:underline">
+                        إعدادات النقاط
+                      </a>
+                    </p>
+                  </div>
+                  
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="font-medium">البطاقات المتاحة</p>
+                        <p className="text-xs text-muted-foreground">عدد البطاقات في النظام</p>
+                      </div>
+                      <Badge variant="outline" className="text-lg px-3">
+                        {levels?.length || 0}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="font-medium">المشتركين النشطين</p>
+                        <p className="text-xs text-muted-foreground">عدد حاملي البطاقات النشطة</p>
+                      </div>
+                      <Badge variant="outline" className="text-lg px-3">
+                        {cardHolders?.length || 0}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="p-4 border rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <p className="font-medium">العروض الحصرية</p>
+                        <p className="text-xs text-muted-foreground">عدد العروض المتاحة</p>
+                      </div>
+                      <Badge variant="outline" className="text-lg px-3">
+                        {exclusiveOffers?.length || 0}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </AdminCardContent>
+            </AdminCard>
+
+            <AdminCard>
+              <AdminCardHeader 
+                title="روابط سريعة" 
+                description="الوصول السريع للإعدادات المرتبطة"
+                icon={<Zap className="h-4 w-4" />}
+              />
+              <AdminCardContent>
+                <div className="grid grid-cols-1 gap-3">
+                  <a 
+                    href="/cp-x9A3kL7m/points-settings" 
+                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="p-2 bg-amber-500/10 rounded-lg">
+                      <Crown className="h-5 w-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium">إعدادات النقاط والمهام</p>
+                      <p className="text-xs text-muted-foreground">تحكم في كسب واستبدال النقاط</p>
+                    </div>
+                  </a>
+                  
+                  <a 
+                    href="/cp-x9A3kL7m/coupons" 
+                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="p-2 bg-green-500/10 rounded-lg">
+                      <Tag className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium">إدارة الكوبونات</p>
+                      <p className="text-xs text-muted-foreground">إضافة وتعديل كوبونات الخصم</p>
+                    </div>
+                  </a>
+
+                  <a 
+                    href="/cp-x9A3kL7m/competitions" 
+                    className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="p-2 bg-purple-500/10 rounded-lg">
+                      <Gift className="h-5 w-5 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium">إدارة المسابقات</p>
+                      <p className="text-xs text-muted-foreground">إنشاء وإدارة المسابقات والجوائز</p>
+                    </div>
+                  </a>
+                </div>
+              </AdminCardContent>
+            </AdminCard>
+          </div>
         </TabsContent>
       </Tabs>
     </AdminLayout>
