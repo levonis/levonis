@@ -6,7 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,14 +21,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { 
   Shield, ShieldCheck, Printer, ChevronDown, ChevronUp, 
-  Calendar, Clock, X, Wrench, AlertTriangle, Check, Loader2,
+  Calendar, Clock, Wrench, AlertTriangle, Check, Loader2,
   ArrowUp, Sparkles
 } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
@@ -80,7 +79,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       if (error) throw error;
       return data;
     },
-    enabled: activeSubTab === 'plans',
+    enabled: activeSubTab === 'plans' || activeSubTab === 'status',
     staleTime: 5 * 60 * 1000,
   });
 
@@ -120,7 +119,6 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['my-printers-with-subs'] });
-      queryClient.invalidateQueries({ queryKey: ['user-wallet-insurance'] });
       toast.success(data.isUpgrade ? 'تم ترقية الاشتراك بنجاح!' : 'تم الاشتراك بنجاح!');
       setUpgradeDialogOpen(false);
       setSubscribeDialogOpen(false);
@@ -141,9 +139,11 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
   };
 
   const calculateUpgradeDiscount = (currentPlanPrice: number, newPlanPrice: number) => {
-    // Discount = current plan price (no additional days, just upgrade)
     return Math.min(currentPlanPrice, newPlanPrice);
   };
+
+  // Filter out printers without valid names
+  const validPrinters = printers?.filter((p: any) => p.printer_name && p.printer_name.trim() !== '') || [];
 
   // Status sub-tab - Show printers with their status
   if (activeSubTab === 'status') {
@@ -168,7 +168,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       );
     }
 
-    if (!printers || printers.length === 0) {
+    if (validPrinters.length === 0) {
       return (
         <Card>
           <CardContent className="p-8 text-center">
@@ -187,7 +187,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
 
     return (
       <div className="space-y-4">
-        {printers.map((printer: any) => {
+        {validPrinters.map((printer: any) => {
           const activeSub = getActiveSub(printer);
           const isExpanded = expandedPrinter === printer.id;
           
@@ -208,7 +208,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                           )}
                         </div>
                         <div>
-                          <p className="font-medium">{printer.printer_name || 'طابعة'}</p>
+                          <p className="font-medium">{printer.printer_name}</p>
                           <p className="text-xs text-muted-foreground">
                             {printer.serial_number || 'بدون رقم تسلسلي'}
                           </p>
@@ -388,83 +388,57 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
 
     return (
       <div className="space-y-4">
-        {plans.map((plan: any, index: number) => (
-          <Card 
-            key={plan.id}
-            className={`overflow-hidden ${index === plans.length - 1 ? 'ring-2 ring-primary/50 shadow-lg' : ''}`}
-          >
-            {index === plans.length - 1 && (
-              <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-xs font-bold px-3 py-1.5 flex items-center gap-1 justify-center">
-                <Sparkles className="h-3 w-3" />
-                الأفضل قيمة
-              </div>
-            )}
-            <CardContent className="p-4">
-              <div className="flex items-start gap-3 mb-3">
-                <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center shrink-0">
-                  <Shield className="h-6 w-6 text-green-500" />
+        {plans.map((plan: any, index: number) => {
+          const features = plan.features as any[] || [];
+          const isPopular = index === plans.length - 1;
+          
+          return (
+            <Card 
+              key={plan.id}
+              className={`overflow-hidden ${isPopular ? 'ring-2 ring-primary/50 shadow-lg' : ''}`}
+            >
+              {isPopular && (
+                <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-xs font-bold px-3 py-1.5 flex items-center gap-1 justify-center">
+                  <Sparkles className="h-3 w-3" />
+                  الأفضل قيمة
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-lg">{plan.name_ar}</p>
-                    {plan.badge_text && (
-                      <Badge variant="secondary" className="text-[10px]">
-                        {plan.badge_text}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-xl font-bold text-primary mt-1">
-                    {plan.monthly_price?.toLocaleString()} د.ع
-                    <span className="text-sm font-normal text-muted-foreground">/شهر</span>
-                  </p>
-                </div>
-              </div>
-
-              {plan.description_ar && (
-                <p className="text-sm text-muted-foreground mb-3">
-                  {plan.description_ar}
-                </p>
               )}
-
-              {/* Features */}
-              {plan.features && Array.isArray(plan.features) && (
-                <div className="space-y-1.5 mb-4">
-                  {(plan.features as string[]).map((feature, idx) => (
-                    <div key={idx} className="flex items-center gap-2 text-sm">
-                      <Check className="h-4 w-4 text-green-500 shrink-0" />
-                      <span>{feature}</span>
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-lg">{plan.name_ar}</h3>
+                      {plan.badge_text && (
+                        <Badge variant="secondary">{plan.badge_text}</Badge>
+                      )}
                     </div>
-                  ))}
+                    <p className="text-2xl font-bold text-primary mt-1">
+                      {plan.monthly_price?.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">د.ع/شهر</span>
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Shield className="h-6 w-6 text-primary" />
+                  </div>
                 </div>
-              )}
 
-              <Button 
-                className="w-full"
-                variant={index === plans.length - 1 ? 'default' : 'outline'}
-                onClick={() => {
-                  if (!user) {
-                    toast.error('سجّل الدخول أولاً');
-                    return;
-                  }
-                  if (!printers || printers.length === 0) {
-                    toast.error('أضف طابعة أولاً للاشتراك');
-                    return;
-                  }
-                  // Show printer selection if multiple
-                  if (printers.length === 1) {
-                    setSelectedPlan(plan);
-                    setSelectedPrinter(printers[0]);
-                    setSubscribeDialogOpen(true);
-                  } else {
-                    toast.info('اختر الطابعة من تبويب "حالة التأمين"');
-                  }
-                }}
-              >
-                اشترك الآن
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
+                {features.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    {features.map((feature: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 text-sm">
+                        <Check className="h-4 w-4 text-green-500 shrink-0" />
+                        <span>{typeof feature === 'string' ? feature : feature.text || feature.name_ar}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <Button className="w-full mt-4" variant={isPopular ? 'default' : 'outline'}>
+                  اختر هذه الباقة
+                </Button>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     );
   }
@@ -476,115 +450,137 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
         <Card>
           <CardContent className="p-6 text-center">
             <Wrench className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">سجّل الدخول لإدارة طابعاتك</p>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    if (loadingPrinters) {
-      return (
-        <div className="space-y-3">
-          {[1, 2].map(i => (
-            <Skeleton key={i} className="h-32 w-full rounded-xl" />
-          ))}
-        </div>
-      );
-    }
-
-    if (!printers || printers.length === 0) {
-      return (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Printer className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="font-medium text-lg">لا توجد طابعات مسجلة</p>
-            <p className="text-sm text-muted-foreground mt-2">
-              أضف طابعتك للاستفادة من خدمات الصيانة
-            </p>
-            <Button className="mt-4" onClick={() => toast.info('سيتم فتح نموذج إضافة الطابعة')}>
-              إضافة طابعة
-            </Button>
+            <p className="text-muted-foreground">سجّل الدخول لعرض طلبات الصيانة</p>
           </CardContent>
         </Card>
       );
     }
 
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          إدارة طابعاتك وطلبات الصيانة
-        </p>
-        
-        {printers.map((printer: any) => {
-          const activeSub = getActiveSub(printer);
-          
-          return (
-            <Card key={printer.id}>
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center shrink-0">
-                    <Printer className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <p className="font-medium">{printer.printer_name || 'طابعة'}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {printer.serial_number || 'بدون رقم تسلسلي'}
-                        </p>
-                      </div>
-                      {activeSub ? (
-                        <Badge className="bg-green-500 shrink-0">
-                          <ShieldCheck className="h-3 w-3 ml-1" />
-                          محمية
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="shrink-0">غير محمية</Badge>
-                      )}
-                    </div>
-
-                    {activeSub && (
-                      <div className="mt-2 p-2 rounded-lg bg-green-500/10 border border-green-500/20">
-                        <p className="text-xs font-medium text-green-700">
-                          {activeSub.protection_plans?.name_ar}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          متبقي {getDaysRemaining(activeSub.end_date)} يوم
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex gap-2 mt-3">
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="flex-1"
-                        onClick={() => toast.info('إعدادات الطابعة')}
-                      >
-                        إعدادات
-                      </Button>
-                      {activeSub && (
-                        <Button 
-                          size="sm" 
-                          className="flex-1"
-                          onClick={() => toast.info('سيتم فتح نموذج طلب الصيانة')}
-                        >
-                          <Wrench className="h-3.5 w-3.5 ml-1" />
-                          طلب صيانة
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <Card>
+        <CardContent className="p-8 text-center">
+          <Wrench className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
+          <p className="font-medium text-lg">طلبات الصيانة والاستبدال</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            هنا يمكنك متابعة طلبات الصيانة وطلب استبدال القطع
+          </p>
+          <Button className="mt-4" onClick={() => toast.info('سيتم فتح نموذج طلب الصيانة')}>
+            طلب صيانة جديد
+          </Button>
+        </CardContent>
+      </Card>
     );
   }
 
-  return null;
+  return (
+    <>
+      {/* Upgrade Dialog */}
+      <AlertDialog open={upgradeDialogOpen} onOpenChange={setUpgradeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الترقية</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedPlan && selectedPrinter && (
+                <div className="space-y-3 mt-3">
+                  <p>
+                    هل تريد ترقية اشتراك <strong>{selectedPrinter.printer_name}</strong> إلى باقة <strong>{selectedPlan.name_ar}</strong>؟
+                  </p>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>التكلفة بعد الخصم:</span>
+                      <span className="font-bold text-primary text-lg">
+                        {selectedPlan.upgradeCost?.toLocaleString()} د.ع
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-amber-600 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    الترقية لا تضيف أيام إضافية، فقط تغيير الباقة
+                  </p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedPlan && selectedPrinter) {
+                  subscribeMutation.mutate({
+                    printerId: selectedPrinter.id,
+                    planId: selectedPlan.id,
+                    price: selectedPlan.upgradeCost,
+                    isUpgrade: true,
+                    currentSubId: selectedPlan.currentSubId,
+                  });
+                }
+              }}
+              disabled={subscribeMutation.isPending}
+            >
+              {subscribeMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري الترقية...
+                </>
+              ) : (
+                'تأكيد الترقية'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-  // Dialogs (moved outside render for cleaner code)
+      {/* Subscribe Dialog */}
+      <AlertDialog open={subscribeDialogOpen} onOpenChange={setSubscribeDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>تأكيد الاشتراك</AlertDialogTitle>
+            <AlertDialogDescription>
+              {selectedPlan && selectedPrinter && (
+                <div className="space-y-3 mt-3">
+                  <p>
+                    هل تريد الاشتراك في باقة <strong>{selectedPlan.name_ar}</strong> لطابعة <strong>{selectedPrinter.printer_name}</strong>؟
+                  </p>
+                  <div className="p-3 rounded-lg bg-muted">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>التكلفة الشهرية:</span>
+                      <span className="font-bold text-primary text-lg">
+                        {selectedPlan.monthly_price?.toLocaleString()} د.ع
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedPlan && selectedPrinter) {
+                  subscribeMutation.mutate({
+                    printerId: selectedPrinter.id,
+                    planId: selectedPlan.id,
+                    price: selectedPlan.monthly_price,
+                    isUpgrade: false,
+                    currentSubId: null,
+                  });
+                }
+              }}
+              disabled={subscribeMutation.isPending}
+            >
+              {subscribeMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  جاري الاشتراك...
+                </>
+              ) : (
+                'تأكيد الاشتراك'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
 }

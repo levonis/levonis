@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CreditCard, Star, TrendingUp, Gift, Check } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { CreditCard, Star, TrendingUp, Gift, Check, ChevronDown, ChevronUp, TicketPercent, Copy } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
 import { LevelCardSkeleton } from "./SkeletonLoaders";
 import LoyaltyLevelsPanel from "./panels/LoyaltyLevelsPanel";
+import { toast } from "sonner";
 
 interface CardsSectionProps {
   activeSubTab: SubTabId;
@@ -15,6 +18,7 @@ interface CardsSectionProps {
 
 export default function CardsSection({ activeSubTab }: CardsSectionProps) {
   const { user } = useAuth();
+  const [expandedCoupons, setExpandedCoupons] = useState(false);
 
   // Only fetch when benefits or upgrade tab is active
   const shouldFetchUserData = activeSubTab === 'benefits' || activeSubTab === 'upgrade';
@@ -52,6 +56,24 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch user's coupons from letter prize redemptions
+  const { data: userCoupons, isLoading: loadingCoupons } = useQuery({
+    queryKey: ['user-coupons', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('letter_prize_coupons')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_used', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user && activeSubTab === 'benefits',
+    staleTime: 2 * 60 * 1000,
+  });
+
   // Only fetch when upgrade tab is active
   const { data: allLevels, isLoading: loadingAllLevels } = useQuery({
     queryKey: ['all-loyalty-levels'],
@@ -67,13 +89,19 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
     staleTime: 5 * 60 * 1000,
   });
 
+  const copyCouponCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    toast.success('تم نسخ الكود!');
+  };
+
   // Benefits sub-tab
   if (activeSubTab === 'benefits') {
     const isLoading = loadingPoints || (userPoints && loadingLevel);
+    const totalCouponValue = userCoupons?.reduce((sum, c) => sum + (c.prize_value || 0), 0) || 0;
 
     return (
       <div className="space-y-4">
-        {/* Current Card */}
+        {/* Membership Card */}
         {isLoading ? (
           <LevelCardSkeleton />
         ) : currentLevel ? (
@@ -87,15 +115,18 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
             <CardContent className="p-4">
               <div className="flex items-center gap-3 mb-4">
                 <div 
-                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  className="w-14 h-14 rounded-full flex items-center justify-center"
                   style={{ backgroundColor: currentLevel.color + '25' }}
                 >
-                  <CreditCard className="h-6 w-6" style={{ color: currentLevel.color }} />
+                  <CreditCard className="h-7 w-7" style={{ color: currentLevel.color }} />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">بطاقتك الحالية</p>
-                  <p className="text-lg font-bold" style={{ color: currentLevel.color }}>
+                  <p className="text-xs text-muted-foreground">بطاقة العضوية</p>
+                  <p className="text-xl font-bold" style={{ color: currentLevel.color }}>
                     {currentLevel.name_ar}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    نقاطك: {userPoints?.total_points?.toLocaleString() || 0}
                   </p>
                 </div>
               </div>
@@ -129,7 +160,89 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
               <p className="text-muted-foreground">سجّل الدخول لعرض بطاقتك</p>
             </CardContent>
           </Card>
-        ) : null}
+        ) : (
+          <Card>
+            <CardContent className="p-6 text-center">
+              <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="font-medium">لا توجد بطاقة عضوية بعد</p>
+              <p className="text-sm text-muted-foreground mt-1">اجمع النقاط للحصول على بطاقتك الأولى</p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* User Coupons - Collapsible List */}
+        {user && (
+          <Card>
+            <Collapsible open={expandedCoupons} onOpenChange={setExpandedCoupons}>
+              <CollapsibleTrigger asChild>
+                <CardContent className="p-4 cursor-pointer hover:bg-muted/30 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center">
+                        <TicketPercent className="h-5 w-5 text-amber-500" />
+                      </div>
+                      <div>
+                        <p className="font-medium">كوبوناتي</p>
+                        <p className="text-xs text-muted-foreground">
+                          {loadingCoupons ? 'جاري التحميل...' : 
+                            userCoupons?.length ? `${userCoupons.length} كوبون متاح` : 'لا يوجد كوبونات'
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {totalCouponValue > 0 && (
+                        <Badge className="bg-amber-500">
+                          {totalCouponValue.toLocaleString()} د.ع
+                        </Badge>
+                      )}
+                      {expandedCoupons ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </div>
+                  </div>
+                </CardContent>
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent>
+                <div className="px-4 pb-4 border-t pt-3 space-y-2 max-h-64 overflow-y-auto">
+                  {loadingCoupons ? (
+                    <div className="text-center py-4 text-sm text-muted-foreground">جاري التحميل...</div>
+                  ) : userCoupons?.length === 0 ? (
+                    <div className="text-center py-4">
+                      <TicketPercent className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                      <p className="text-sm text-muted-foreground">لا توجد كوبونات متاحة</p>
+                      <p className="text-xs text-muted-foreground mt-1">شارك في مسابقات جمع الأحرف للحصول على كوبونات</p>
+                    </div>
+                  ) : (
+                    userCoupons?.map((coupon) => (
+                      <div 
+                        key={coupon.id} 
+                        className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{coupon.prize_name_ar}</p>
+                          <p className="text-xs text-muted-foreground font-mono">{coupon.coupon_code}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="shrink-0">
+                            {coupon.prize_value?.toLocaleString()} د.ع
+                          </Badge>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 w-8 p-0"
+                            onClick={() => copyCouponCode(coupon.coupon_code)}
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </Card>
+        )}
       </div>
     );
   }
