@@ -44,6 +44,7 @@ export default function AllStoragePanel() {
         .from('product_offer_purchases')
         .select('*, product_offers(id, title_ar, image_url, images, description_ar, price, currency)')
         .eq('user_id', user.id)
+        .in('purchase_status', ['pending', 'purchased', 'shipping_requested', 'shipped', 'delivered'])
         .order('created_at', { ascending: false });
       if (error) throw error;
       return data;
@@ -143,8 +144,8 @@ export default function AllStoragePanel() {
     );
   }
 
-  // Group by status
-  const pendingPurchases = purchases.filter(p => p.purchase_status === 'pending');
+  // Group by status - include 'purchased' as pending
+  const pendingPurchases = purchases.filter(p => ['pending', 'purchased'].includes(p.purchase_status));
   const processingPurchases = purchases.filter(p => ['shipping_requested', 'shipped'].includes(p.purchase_status));
   const deliveredPurchases = purchases.filter(p => p.purchase_status === 'delivered');
 

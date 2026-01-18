@@ -19,6 +19,10 @@ import { toast } from "sonner";
 import { format, addHours } from "date-fns";
 import { ar } from "date-fns/locale";
 import CountdownTimer from "@/components/CountdownTimer";
+import BagOpenReveal from "@/components/BagOpenReveal";
+import LetterReveal from "@/components/LetterReveal";
+import InstantWinReveal from "@/components/InstantWinReveal";
+import MysteryBoxReveal from "@/components/MysteryBoxReveal";
 
 type CompetitionType = 'ticket_count' | 'all_tickets_sold' | 'timed' | 'free' | 'instant_winner' | 'everyone_wins' | 'escalating_price' | 'mystery_box' | 'hidden_winner' | 'team_battle' | 'flash_sale' | 'growing_prize' | 'collect_letters';
 
@@ -69,12 +73,19 @@ interface ParticipationResult {
   competitionType?: CompetitionType;
 }
 
+interface RevealState {
+  show: boolean;
+  type: 'letter' | 'instant' | 'mystery' | 'bag' | null;
+  data: any;
+}
+
 export default function AllCompetitionsPanel() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [selectedCompetition, setSelectedCompetition] = useState<any>(null);
   const [expandedDesc, setExpandedDesc] = useState(false);
   const [expandedLetters, setExpandedLetters] = useState<string | null>(null);
+  const [revealState, setRevealState] = useState<RevealState>({ show: false, type: null, data: null });
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['all-competitions-panel'],
@@ -108,7 +119,6 @@ export default function AllCompetitionsPanel() {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Get ticket counts per competition
   const { data: ticketCounts } = useQuery({
     queryKey: ['competition-ticket-counts'],
     queryFn: async () => {
@@ -132,7 +142,6 @@ export default function AllCompetitionsPanel() {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Get user's participation per competition (for free competitions - check if already participated)
   const { data: userParticipations } = useQuery({
     queryKey: ['user-participations', user?.id],
     queryFn: async () => {
@@ -159,7 +168,6 @@ export default function AllCompetitionsPanel() {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Get user's collected letters for collect_letters competitions
   const { data: userLetters } = useQuery({
     queryKey: ['user-collected-letters', user?.id],
     queryFn: async () => {
@@ -187,13 +195,11 @@ export default function AllCompetitionsPanel() {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Check if user can participate in free competition
   const canParticipateFree = (compId: string) => {
     const participations = userParticipations?.[compId] || [];
-    return participations.length === 0; // Only one participation allowed for free
+    return participations.length === 0;
   };
 
-  // Simulate competition logic based on type
   const simulateResult = (comp: any): ParticipationResult => {
     const type = comp.competition_type as CompetitionType;
     const ticketNumber = `T-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
@@ -285,20 +291,16 @@ export default function AllCompetitionsPanel() {
       const requiredTickets = type === 'free' ? 0 : (comp.required_tickets || 1);
       const currentBalance = userTickets || 0;
       
-      // Check if already participated in free competition
       if (type === 'free' && !canParticipateFree(comp.id)) {
         throw new Error('لقد شاركت بالفعل في هذه المسابقة المجانية');
       }
       
-      // Check ticket balance for non-free competitions
       if (requiredTickets > 0 && currentBalance < requiredTickets) {
         throw new Error('رصيد التذاكر غير كافٍ');
       }
 
-      // Simulate result based on competition type
       const result = simulateResult(comp);
 
-      // Deduct tickets (unless free)
       if (requiredTickets > 0) {
         const { error: updateError } = await supabase
           .from('user_tickets')
@@ -307,7 +309,6 @@ export default function AllCompetitionsPanel() {
         if (updateError) throw updateError;
       }
 
-      // Build ticket record
       const ticketRecord: any = {
         user_id: user.id,
         competition_id: comp.id,
@@ -315,18 +316,15 @@ export default function AllCompetitionsPanel() {
         is_winner: result.isWinner || false,
       };
 
-      // Add type-specific fields
       if (result.letter) ticketRecord.letter_awarded = result.letter;
       if (result.team) ticketRecord.team = result.team;
       if (result.prize) ticketRecord.prize_won = result.prize;
 
-      // Insert competition ticket
       const { error: ticketError } = await supabase
         .from('competition_tickets')
         .insert(ticketRecord);
       if (ticketError) throw ticketError;
 
-      // Update team counts for team_battle
       if (type === 'team_battle' && result.team) {
         const updateField = result.team === 'A' ? 'team_a_count' : 'team_b_count';
         const currentCount = result.team === 'A' ? (comp.team_a_count || 0) : (comp.team_b_count || 0);
@@ -336,7 +334,7 @@ export default function AllCompetitionsPanel() {
           .eq('id', comp.id);
       }
 
-      return { ...result, competitionType: type };
+      return { ...result, competitionType: type, competition: comp, boxes: comp.mystery_boxes || [] };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['user-tickets-balance'] });
@@ -347,22 +345,48 @@ export default function AllCompetitionsPanel() {
       
       const type = data.competitionType;
       
-      if (type === 'instant_winner') {
-        if (data.isWinner) {
-          toast.success(`🎉 مبروك! أنت فائز! ${data.prize?.name_ar || ''}`);
-        } else {
-          toast.info(`حظاً أوفر! رقم تذكرتك: ${data.ticketNumber}`);
-        }
-      } else if (type === 'collect_letters' && data.letter) {
-        toast.success(`🔤 حصلت على الحرف: ${data.letter}`);
+      // Show reveal animations based on type
+      if (type === 'collect_letters') {
+        const collected = userLetters?.[data.competition.id] || [];
+        const config = data.competition.letters_config as any;
+        setRevealState({
+          show: true,
+          type: 'letter',
+          data: {
+            awardedLetter: data.letter || null,
+            collectedLetters: collected,
+            lettersConfig: {
+              target_word: config?.display_word || config?.prize_words?.[0]?.word || '',
+              prizes: config?.prize_words || []
+            },
+            wonPrize: null
+          }
+        });
+      } else if (type === 'instant_winner') {
+        setRevealState({
+          show: true,
+          type: 'instant',
+          data: {
+            isWinner: data.isWinner,
+            prize: data.prize ? { name_ar: data.prize.name_ar || data.prize.prize_name_ar } : null,
+            competitionType: type
+          }
+        });
+      } else if (type === 'mystery_box') {
+        setRevealState({
+          show: true,
+          type: 'mystery',
+          data: {
+            prize: data.prize,
+            competitionType: type
+          }
+        });
       } else if (type === 'everyone_wins' && data.prize) {
         toast.success(`🎁 مبروك! ربحت: ${data.prize.name_ar || 'جائزة'}`);
-      } else if (type === 'mystery_box' && data.prize) {
-        toast.success(`📦 مبروك! ربحت: ${data.prize.name_ar || 'جائزة'}`);
       } else if (type === 'team_battle' && data.team) {
         toast.success(`⚔️ انضممت للفريق ${data.team === 'A' ? 'الأزرق 🔵' : 'الأحمر 🔴'}!`);
       } else {
-        toast.success(`✅ تم تسجيلك بنجاح! رقم تذكرتك: ${data.ticketNumber}`);
+        toast.success(`✅ تم تسجيلك بنجاح!`);
       }
       
       setSelectedCompetition(null);
@@ -414,6 +438,7 @@ export default function AllCompetitionsPanel() {
       case 'collect_letters': {
         const config = comp.letters_config as any;
         const prizeWords = config?.prize_words || [];
+        const displayWord = config?.display_word || prizeWords[0]?.word || '';
         const collected = userLetters?.[comp.id] || [];
         
         return (
@@ -433,16 +458,30 @@ export default function AllCompetitionsPanel() {
                     <ChevronDown className="h-3 w-3 text-violet-600" />
                   }
                 </div>
+                
+                {/* Display target word with collected progress */}
+                <div className="flex items-center gap-1 mt-2 justify-center flex-wrap">
+                  {displayWord.split('').map((letter: string, idx: number) => {
+                    const hasLetter = collected.includes(letter);
+                    return (
+                      <span 
+                        key={idx} 
+                        className={`w-6 h-6 flex items-center justify-center rounded text-xs font-bold ${
+                          hasLetter 
+                            ? 'bg-green-500 text-white' 
+                            : 'bg-violet-200 text-violet-400'
+                        }`}
+                      >
+                        {hasLetter ? letter : '?'}
+                      </span>
+                    );
+                  })}
+                </div>
+                
                 {collected.length > 0 && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="text-[10px] text-green-600">حروفك:</span>
-                    <div className="flex gap-0.5">
-                      {collected.map((letter, idx) => (
-                        <span key={idx} className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
-                          {letter}
-                        </span>
-                      ))}
-                    </div>
+                  <div className="flex items-center justify-center gap-1 mt-2 text-[10px] text-green-600">
+                    <Check className="h-2.5 w-2.5" />
+                    جمعت {collected.length} حرف
                   </div>
                 )}
               </div>
@@ -459,7 +498,7 @@ export default function AllCompetitionsPanel() {
                   <div key={idx} className="p-2 rounded-lg bg-muted/50 border">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] font-medium">
-                        {wordConfig.prize_name_ar || `جائزة ${idx + 1}`}
+                        {wordConfig.prize_name || wordConfig.prize_name_ar || `جائزة ${idx + 1}`}
                       </span>
                       {isComplete && (
                         <Badge className="bg-green-500 text-[9px]">
@@ -468,13 +507,13 @@ export default function AllCompetitionsPanel() {
                         </Badge>
                       )}
                     </div>
-                    <div className="flex gap-1 flex-wrap">
+                    <div className="flex gap-1 flex-wrap justify-center">
                       {wordLetters.map((letter: string, letterIdx: number) => {
                         const hasLetter = collectedSet.has(letter);
                         return (
                           <span 
                             key={letterIdx} 
-                            className={`w-6 h-6 flex items-center justify-center rounded text-xs font-bold ${
+                            className={`w-7 h-7 flex items-center justify-center rounded text-sm font-bold ${
                               hasLetter 
                                 ? 'bg-green-500 text-white' 
                                 : 'bg-muted text-muted-foreground border'
@@ -486,9 +525,22 @@ export default function AllCompetitionsPanel() {
                       })}
                     </div>
                     {wordConfig.prize_value && (
-                      <p className="text-[10px] text-muted-foreground mt-1">
+                      <p className="text-[10px] text-center text-muted-foreground mt-2">
                         القيمة: {wordConfig.prize_value?.toLocaleString()} د.ع
                       </p>
+                    )}
+                    {isComplete && (
+                      <Button 
+                        size="sm" 
+                        className="w-full mt-2 h-7 text-[10px]"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toast.success('سيتم إضافة الجائزة لمخزنك!');
+                        }}
+                      >
+                        <Gift className="h-3 w-3 ml-1" />
+                        استبدل بالجائزة
+                      </Button>
                     )}
                   </div>
                 );
@@ -605,7 +657,7 @@ export default function AllCompetitionsPanel() {
     return (
       <Button
         size="sm"
-        className="absolute bottom-2 left-2 h-7 text-[10px] shadow-lg"
+        className="h-7 text-[10px] shadow-lg"
         onClick={(e) => {
           e.stopPropagation();
           quickParticipateMutation.mutate(comp);
@@ -704,10 +756,7 @@ export default function AllCompetitionsPanel() {
                   )}
                 </Badge>
                 
-                {/* Quick action button */}
-                {getQuickActionButton(comp)}
-                
-                {/* User participated indicator */}
+                {/* User participated indicator - BOTTOM RIGHT */}
                 {userParticipation && userParticipation.length > 0 && (
                   <div className="absolute bottom-2 right-2">
                     <Badge className="bg-green-500/90 text-[9px]">
@@ -719,7 +768,11 @@ export default function AllCompetitionsPanel() {
               </div>
               
               <CardContent className="p-2.5 space-y-1.5">
-                <p className="text-xs font-bold line-clamp-1">{comp.title_ar}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-bold line-clamp-1 flex-1">{comp.title_ar}</p>
+                  {/* Quick action button moved here */}
+                  {getQuickActionButton(comp)}
+                </div>
                 
                 {/* Type-specific info */}
                 {getTypeSpecificInfo(comp)}
@@ -790,20 +843,20 @@ export default function AllCompetitionsPanel() {
                   alt={selectedCompetition.title_ar}
                   className="w-full h-full object-cover"
                 />
-                {/* Type badge on image */}
-                <div className="absolute top-3 left-3">
-                  {getTypeBadge(selectedCompetition)}
-                </div>
-                {selectedCompetition.is_featured && (
-                  <Badge className="absolute top-3 right-3 bg-gradient-to-r from-primary to-primary/80">
-                    <Sparkles className="h-3 w-3 ml-1" />
-                    مميزة
-                  </Badge>
-                )}
               </div>
 
-              {/* Title */}
-              <h2 className="text-lg font-bold mb-3">{selectedCompetition.title_ar}</h2>
+              {/* Title & Type Badge */}
+              <div className="flex items-center justify-between gap-2 mb-3">
+                <h2 className="text-lg font-bold">{selectedCompetition.title_ar}</h2>
+                {getTypeBadge(selectedCompetition)}
+              </div>
+              
+              {selectedCompetition.is_featured && (
+                <Badge className="mb-3 bg-gradient-to-r from-primary to-primary/80">
+                  <Sparkles className="h-3 w-3 ml-1" />
+                  مميزة
+                </Badge>
+              )}
               
               {/* Type-specific info */}
               <div className="mb-4">
@@ -816,21 +869,23 @@ export default function AllCompetitionsPanel() {
                   <CardContent className="p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <Check className="h-4 w-4 text-green-500" />
-                      <span className="font-medium text-green-700">مشاركاتك السابقة</span>
+                      <span className="font-medium text-green-700">مشاركاتك السابقة ({userParticipations[selectedCompetition.id].length})</span>
                     </div>
                     <div className="space-y-1 max-h-32 overflow-y-auto">
-                      {userParticipations[selectedCompetition.id].map((p: any, idx: number) => (
+                      {userParticipations[selectedCompetition.id].map((p: any) => (
                         <div key={p.id} className="flex items-center justify-between text-xs p-1.5 bg-background rounded">
-                          <span className="font-mono">{p.ticket_number}</span>
+                          <span className="text-muted-foreground">
+                            {formatBaghdadTime(p.purchased_at, 'dd/MM HH:mm')}
+                          </span>
                           <div className="flex items-center gap-1">
                             {p.letter_awarded && (
-                              <Badge variant="outline" className="text-[9px]">
-                                حرف: {p.letter_awarded}
+                              <Badge className="bg-violet-500 text-[9px]">
+                                {p.letter_awarded}
                               </Badge>
                             )}
                             {p.team && (
                               <Badge variant="outline" className="text-[9px]">
-                                فريق {p.team}
+                                فريق {p.team === 'A' ? '🔵' : '🔴'}
                               </Badge>
                             )}
                             {p.is_winner && (
@@ -999,6 +1054,39 @@ export default function AllCompetitionsPanel() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Letter Reveal Animation */}
+      {revealState.type === 'letter' && (
+        <LetterReveal
+          isOpen={revealState.show}
+          onClose={() => setRevealState({ show: false, type: null, data: null })}
+          awardedLetter={revealState.data.awardedLetter}
+          collectedLetters={revealState.data.collectedLetters}
+          lettersConfig={revealState.data.lettersConfig}
+          wonPrize={revealState.data.wonPrize}
+        />
+      )}
+
+      {/* Instant Win Reveal Animation */}
+      {revealState.type === 'instant' && (
+        <InstantWinReveal
+          isOpen={revealState.show}
+          onClose={() => setRevealState({ show: false, type: null, data: null })}
+          isWinner={revealState.data.isWinner}
+          prize={revealState.data.prize}
+          competitionType={revealState.data.competitionType}
+        />
+      )}
+
+      {/* Mystery Box Reveal Animation */}
+      {revealState.type === 'mystery' && (
+        <MysteryBoxReveal
+          isOpen={revealState.show}
+          onClose={() => setRevealState({ show: false, type: null, data: null })}
+          boxes={revealState.data.boxes || []}
+          wonPrize={revealState.data.prize}
+        />
+      )}
     </>
   );
 }
