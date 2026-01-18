@@ -1,4 +1,4 @@
-import { CheckSquare, Ticket, Package, TrendingUp } from "lucide-react";
+import { ListChecks, Ticket, Package, Crown, Gift, Trophy } from "lucide-react";
 import { MainTabId } from "./RewardsMainTabs";
 import { SubTabId } from "./RewardsSubTabs";
 
@@ -9,13 +9,23 @@ interface QuickActionsBarProps {
 const quickActions = [
   { 
     id: 'daily-tasks', 
-    label: 'مهام اليوم', 
-    icon: CheckSquare, 
+    label: 'المهام اليومية', 
+    icon: ListChecks, 
     mainTab: 'points' as MainTabId, 
     subTab: 'daily-tasks' as SubTabId,
-    bgColor: 'bg-amber-500/10',
-    iconColor: 'text-amber-500',
-    borderColor: 'border-amber-500/20'
+    bgColor: 'bg-amber-500/15',
+    iconColor: 'text-amber-600',
+    borderColor: 'border-amber-500/30'
+  },
+  { 
+    id: 'competitions', 
+    label: 'المسابقات', 
+    icon: Trophy, 
+    mainTab: 'competitions' as MainTabId, 
+    subTab: 'competitions' as SubTabId,
+    bgColor: 'bg-purple-500/15',
+    iconColor: 'text-purple-600',
+    borderColor: 'border-purple-500/30'
   },
   { 
     id: 'get-tickets', 
@@ -23,9 +33,9 @@ const quickActions = [
     icon: Ticket, 
     mainTab: 'competitions' as MainTabId, 
     subTab: 'get-tickets' as SubTabId,
-    bgColor: 'bg-purple-500/10',
-    iconColor: 'text-purple-500',
-    borderColor: 'border-purple-500/20'
+    bgColor: 'bg-rose-500/15',
+    iconColor: 'text-rose-600',
+    borderColor: 'border-rose-500/30'
   },
   { 
     id: 'storage', 
@@ -33,25 +43,35 @@ const quickActions = [
     icon: Package, 
     mainTab: 'competitions' as MainTabId, 
     subTab: 'storage' as SubTabId,
-    bgColor: 'bg-green-500/10',
-    iconColor: 'text-green-500',
-    borderColor: 'border-green-500/20'
+    bgColor: 'bg-green-500/15',
+    iconColor: 'text-green-600',
+    borderColor: 'border-green-500/30'
+  },
+  { 
+    id: 'redeem', 
+    label: 'متجر النقاط', 
+    icon: Gift, 
+    mainTab: 'points' as MainTabId, 
+    subTab: 'redeem' as SubTabId,
+    bgColor: 'bg-cyan-500/15',
+    iconColor: 'text-cyan-600',
+    borderColor: 'border-cyan-500/30'
   },
   { 
     id: 'upgrade', 
-    label: 'ترقية البطاقة', 
-    icon: TrendingUp, 
+    label: 'بطاقة العضوية', 
+    icon: Crown, 
     mainTab: 'cards' as MainTabId, 
-    subTab: 'upgrade' as SubTabId,
-    bgColor: 'bg-blue-500/10',
-    iconColor: 'text-blue-500',
-    borderColor: 'border-blue-500/20'
+    subTab: 'benefits' as SubTabId,
+    bgColor: 'bg-blue-500/15',
+    iconColor: 'text-blue-600',
+    borderColor: 'border-blue-500/30'
   },
 ];
 
 export default function QuickActionsBar({ onNavigate }: QuickActionsBarProps) {
   return (
-    <div className="flex gap-1.5 overflow-x-auto scrollbar-hide py-0.5">
+    <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1 -mx-1 px-1">
       {quickActions.map((action) => {
         const Icon = action.icon;
         
@@ -59,10 +79,10 @@ export default function QuickActionsBar({ onNavigate }: QuickActionsBarProps) {
           <button
             key={action.id}
             onClick={() => onNavigate(action.mainTab, action.subTab)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border ${action.bgColor} ${action.borderColor} hover:shadow-sm transition-all min-w-fit active:scale-95`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border ${action.bgColor} ${action.borderColor} hover:shadow-md transition-all min-w-fit active:scale-95`}
           >
-            <Icon className={`h-3.5 w-3.5 ${action.iconColor}`} />
-            <span className="text-[10px] font-medium whitespace-nowrap text-foreground">{action.label}</span>
+            <Icon className={`h-4 w-4 ${action.iconColor}`} strokeWidth={2} />
+            <span className="text-[11px] font-medium whitespace-nowrap text-foreground">{action.label}</span>
           </button>
         );
       })}

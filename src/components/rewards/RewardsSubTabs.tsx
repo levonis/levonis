@@ -16,23 +16,23 @@ interface SubTabConfig {
 const subTabsConfig: Record<MainTabId, SubTabConfig[]> = {
   points: [
     { id: 'summary', label: 'ملخص' },
-    { id: 'daily-tasks', label: 'مهام اليوم' },
-    { id: 'redeem', label: 'استبدال' },
+    { id: 'daily-tasks', label: 'المهام' },
+    { id: 'redeem', label: 'متجر النقاط' },
   ],
   competitions: [
     { id: 'competitions', label: 'المسابقات' },
-    { id: 'get-tickets', label: 'احصل على تذاكر' },
+    { id: 'get-tickets', label: 'التذاكر' },
     { id: 'storage', label: 'مخزني' },
   ],
   cards: [
-    { id: 'benefits', label: 'مميزاتي' },
-    { id: 'upgrade', label: 'ترقية البطاقة' },
-    { id: 'exclusive-offers', label: 'العروض الحصرية' },
+    { id: 'benefits', label: 'بطاقتي' },
+    { id: 'upgrade', label: 'الترقية' },
+    { id: 'exclusive-offers', label: 'عروض حصرية' },
   ],
   insurance: [
-    { id: 'status', label: 'حالتي' },
+    { id: 'status', label: 'طابعاتي' },
     { id: 'plans', label: 'الباقات' },
-    { id: 'maintenance', label: 'الصيانة/الاستبدال' },
+    { id: 'maintenance', label: 'الصيانة' },
   ],
 };
 
@@ -46,7 +46,7 @@ export default function RewardsSubTabs({ mainTab, activeSubTab, onSubTabChange }
   const subTabs = subTabsConfig[mainTab];
   
   return (
-    <div className="flex gap-1 overflow-x-auto scrollbar-hide">
+    <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
       {subTabs.map((tab) => {
         const isActive = activeSubTab === tab.id;
         
@@ -55,10 +55,10 @@ export default function RewardsSubTabs({ mainTab, activeSubTab, onSubTabChange }
             key={tab.id}
             onClick={() => onSubTabChange(tab.id)}
             className={cn(
-              "px-3 py-1.5 rounded-full text-[11px] font-medium whitespace-nowrap transition-all",
+              "px-4 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
               isActive 
                 ? "bg-foreground text-background shadow-sm"
-                : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
             {tab.label}

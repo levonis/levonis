@@ -7,12 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Progress } from "@/components/ui/progress";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import OptimizedImage from "@/components/OptimizedImage";
 import { useState } from "react";
 import { 
   X, Ticket, Trophy, Gift, Users, Calendar, 
   Zap, Sparkles, Package, Swords, TrendingUp, Timer, Loader2,
-  ChevronDown, ChevronUp, Star, Target
+  ChevronDown, ChevronUp, Star, Target, Check, Play
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, addHours } from "date-fns";
@@ -73,6 +74,7 @@ export default function AllCompetitionsPanel() {
   const queryClient = useQueryClient();
   const [selectedCompetition, setSelectedCompetition] = useState<any>(null);
   const [expandedDesc, setExpandedDesc] = useState(false);
+  const [expandedLetters, setExpandedLetters] = useState<string | null>(null);
 
   const { data: competitions, isLoading } = useQuery({
     queryKey: ['all-competitions-panel'],
@@ -130,6 +132,33 @@ export default function AllCompetitionsPanel() {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Get user's participation per competition (for free competitions - check if already participated)
+  const { data: userParticipations } = useQuery({
+    queryKey: ['user-participations', user?.id],
+    queryFn: async () => {
+      if (!user) return {};
+      const compIds = competitions?.map(c => c.id) || [];
+      if (compIds.length === 0) return {};
+      
+      const { data, error } = await supabase
+        .from('competition_tickets')
+        .select('competition_id, id, ticket_number, is_winner, letter_awarded, team, prize_won, purchased_at')
+        .eq('user_id', user.id)
+        .in('competition_id', compIds);
+      
+      if (error) throw error;
+      
+      const participations: Record<string, any[]> = {};
+      data.forEach(t => {
+        if (!participations[t.competition_id]) participations[t.competition_id] = [];
+        participations[t.competition_id].push(t);
+      });
+      return participations;
+    },
+    enabled: !!user && !!competitions,
+    staleTime: 2 * 60 * 1000,
+  });
+
   // Get user's collected letters for collect_letters competitions
   const { data: userLetters } = useQuery({
     queryKey: ['user-collected-letters', user?.id],
@@ -158,6 +187,12 @@ export default function AllCompetitionsPanel() {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Check if user can participate in free competition
+  const canParticipateFree = (compId: string) => {
+    const participations = userParticipations?.[compId] || [];
+    return participations.length === 0; // Only one participation allowed for free
+  };
+
   // Simulate competition logic based on type
   const simulateResult = (comp: any): ParticipationResult => {
     const type = comp.competition_type as CompetitionType;
@@ -170,19 +205,16 @@ export default function AllCompetitionsPanel() {
         let prize = null;
         if (isWinner && comp.prize_tiers) {
           const tiers = comp.prize_tiers as any[];
-          // Simple random selection from tiers
           prize = tiers[Math.floor(Math.random() * tiers.length)];
         }
         return { ticketNumber, isWinner, prize };
       }
       
       case 'everyone_wins': {
-        // Everyone wins something
         let prize = null;
         if (comp.prize_tiers) {
           const tiers = (comp.prize_tiers as any[]).filter(t => t.remaining_quantity > 0);
           if (tiers.length > 0) {
-            // Weighted random selection
             const totalWeight = tiers.reduce((sum, t) => sum + (t.probability || 1), 0);
             let random = Math.random() * totalWeight;
             for (const tier of tiers) {
@@ -216,7 +248,6 @@ export default function AllCompetitionsPanel() {
         const config = comp.letters_config as any;
         const letters = config?.letters || [];
         if (letters.length > 0) {
-          // Weighted random letter selection
           const totalWeight = letters.reduce((sum: number, l: any) => sum + (l.probability || 1), 0);
           let random = Math.random() * totalWeight;
           for (const letterConfig of letters) {
@@ -230,13 +261,11 @@ export default function AllCompetitionsPanel() {
       }
       
       case 'team_battle': {
-        // Randomly assign to a team
         const team = Math.random() < 0.5 ? 'A' : 'B';
         return { ticketNumber, isWinner: false, team };
       }
       
       case 'hidden_winner': {
-        // Check if this is the hidden trigger ticket
         const currentCount = ticketCounts?.[comp.id] || 0;
         const triggerTicket = comp.hidden_winner_trigger_ticket;
         const isWinner = triggerTicket && currentCount + 1 === triggerTicket;
@@ -244,7 +273,6 @@ export default function AllCompetitionsPanel() {
       }
       
       default:
-        // Regular competitions - just register participation
         return { ticketNumber, isWinner: false };
     }
   };
@@ -256,6 +284,11 @@ export default function AllCompetitionsPanel() {
       const type = comp.competition_type as CompetitionType;
       const requiredTickets = type === 'free' ? 0 : (comp.required_tickets || 1);
       const currentBalance = userTickets || 0;
+      
+      // Check if already participated in free competition
+      if (type === 'free' && !canParticipateFree(comp.id)) {
+        throw new Error('لقد شاركت بالفعل في هذه المسابقة المجانية');
+      }
       
       // Check ticket balance for non-free competitions
       if (requiredTickets > 0 && currentBalance < requiredTickets) {
@@ -309,9 +342,9 @@ export default function AllCompetitionsPanel() {
       queryClient.invalidateQueries({ queryKey: ['user-tickets-balance'] });
       queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
       queryClient.invalidateQueries({ queryKey: ['user-collected-letters'] });
+      queryClient.invalidateQueries({ queryKey: ['user-participations'] });
       queryClient.invalidateQueries({ queryKey: ['all-competitions-panel'] });
       
-      // Show appropriate message based on result
       const type = data.competitionType;
       
       if (type === 'instant_winner') {
@@ -339,6 +372,12 @@ export default function AllCompetitionsPanel() {
     },
   });
 
+  const quickParticipateMutation = useMutation({
+    mutationFn: async (comp: any) => {
+      return participateMutation.mutateAsync(comp);
+    },
+  });
+
   const getTypeBadge = (comp: any) => {
     const type = comp.competition_type as CompetitionType;
     const icon = competitionTypeIcons[type] || <Ticket className="h-3 w-3" />;
@@ -354,7 +393,7 @@ export default function AllCompetitionsPanel() {
     }
     
     return (
-      <Badge variant="secondary" className="text-[9px] gap-0.5">
+      <Badge variant="secondary" className="text-[9px] gap-0.5 bg-black/60 text-white backdrop-blur-sm">
         {icon} {label}
       </Badge>
     );
@@ -374,38 +413,108 @@ export default function AllCompetitionsPanel() {
       
       case 'collect_letters': {
         const config = comp.letters_config as any;
-        const words = config?.prize_words || [];
-        const targetWord = words.length > 0 
-          ? words.reduce((p: any, c: any) => (c.word?.length || 0) > (p.word?.length || 0) ? c : p, words[0])?.word
-          : config?.target_word || '';
-        
-        // Show user's collected letters progress
+        const prizeWords = config?.prize_words || [];
         const collected = userLetters?.[comp.id] || [];
         
         return (
-          <div className="space-y-1">
-            {targetWord && (
-              <div className="flex items-center gap-1 text-[10px] text-violet-600 bg-violet-500/10 px-2 py-0.5 rounded">
-                <Sparkles className="h-2.5 w-2.5" />
-                اجمع: {targetWord}
+          <Collapsible 
+            open={expandedLetters === comp.id} 
+            onOpenChange={(open) => setExpandedLetters(open ? comp.id : null)}
+          >
+            <CollapsibleTrigger asChild>
+              <div className="cursor-pointer p-2 rounded-lg bg-violet-500/10 border border-violet-500/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1 text-[10px] text-violet-600">
+                    <Sparkles className="h-2.5 w-2.5" />
+                    اجمع الأحرف واربح!
+                  </div>
+                  {expandedLetters === comp.id ? 
+                    <ChevronUp className="h-3 w-3 text-violet-600" /> : 
+                    <ChevronDown className="h-3 w-3 text-violet-600" />
+                  }
+                </div>
+                {collected.length > 0 && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <span className="text-[10px] text-green-600">حروفك:</span>
+                    <div className="flex gap-0.5">
+                      {collected.map((letter, idx) => (
+                        <span key={idx} className="bg-green-500 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">
+                          {letter}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-            {collected.length > 0 && (
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2 space-y-2">
+              {prizeWords.map((wordConfig: any, idx: number) => {
+                const word = wordConfig.word || '';
+                const wordLetters = word.split('');
+                const collectedSet = new Set(collected);
+                const completedLetters = wordLetters.filter((l: string) => collectedSet.has(l)).length;
+                const isComplete = completedLetters === wordLetters.length;
+                
+                return (
+                  <div key={idx} className="p-2 rounded-lg bg-muted/50 border">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-medium">
+                        {wordConfig.prize_name_ar || `جائزة ${idx + 1}`}
+                      </span>
+                      {isComplete && (
+                        <Badge className="bg-green-500 text-[9px]">
+                          <Check className="h-2 w-2 ml-0.5" />
+                          مكتملة
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-1 flex-wrap">
+                      {wordLetters.map((letter: string, letterIdx: number) => {
+                        const hasLetter = collectedSet.has(letter);
+                        return (
+                          <span 
+                            key={letterIdx} 
+                            className={`w-6 h-6 flex items-center justify-center rounded text-xs font-bold ${
+                              hasLetter 
+                                ? 'bg-green-500 text-white' 
+                                : 'bg-muted text-muted-foreground border'
+                            }`}
+                          >
+                            {hasLetter ? letter : '?'}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    {wordConfig.prize_value && (
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        القيمة: {wordConfig.prize_value?.toLocaleString()} د.ع
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </CollapsibleContent>
+          </Collapsible>
+        );
+      }
+      
+      case 'team_battle': {
+        const userTeam = userParticipations?.[comp.id]?.[0]?.team;
+        return (
+          <div className="space-y-1">
+            <div className="flex items-center gap-1 text-[10px] text-cyan-600 bg-cyan-500/10 px-2 py-0.5 rounded">
+              <Swords className="h-2.5 w-2.5" />
+              🔵 {comp.team_a_count || 0} - {comp.team_b_count || 0} 🔴
+            </div>
+            {userTeam && (
               <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-500/10 px-2 py-0.5 rounded">
-                حروفك: {collected.join(' ')}
+                <Check className="h-2.5 w-2.5" />
+                أنت في الفريق {userTeam === 'A' ? 'الأزرق 🔵' : 'الأحمر 🔴'}
               </div>
             )}
           </div>
         );
       }
-      
-      case 'team_battle':
-        return (
-          <div className="flex items-center gap-1 text-[10px] text-cyan-600 bg-cyan-500/10 px-2 py-0.5 rounded">
-            <Swords className="h-2.5 w-2.5" />
-            🔵 {comp.team_a_count || 0} - {comp.team_b_count || 0} 🔴
-          </div>
-        );
       
       case 'mystery_box': {
         const boxes = comp.mystery_boxes as any[] || [];
@@ -462,9 +571,57 @@ export default function AllCompetitionsPanel() {
           </div>
         );
       
+      case 'free': {
+        const participated = !canParticipateFree(comp.id);
+        return participated ? (
+          <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-500/10 px-2 py-0.5 rounded">
+            <Check className="h-2.5 w-2.5" />
+            شاركت بالفعل
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 text-[10px] text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded">
+            <Gift className="h-2.5 w-2.5" />
+            مشاركة واحدة مجانية
+          </div>
+        );
+      }
+      
       default:
         return null;
     }
+  };
+
+  const getQuickActionButton = (comp: any) => {
+    const type = comp.competition_type as CompetitionType;
+    const isFree = type === 'free';
+    const requiredTickets = comp.required_tickets || 1;
+    const participated = isFree && !canParticipateFree(comp.id);
+    const hasEnoughTickets = isFree || (userTickets || 0) >= requiredTickets;
+    
+    if (!user) return null;
+    if (participated) return null;
+    if (!hasEnoughTickets) return null;
+    
+    return (
+      <Button
+        size="sm"
+        className="absolute bottom-2 left-2 h-7 text-[10px] shadow-lg"
+        onClick={(e) => {
+          e.stopPropagation();
+          quickParticipateMutation.mutate(comp);
+        }}
+        disabled={quickParticipateMutation.isPending}
+      >
+        {quickParticipateMutation.isPending ? (
+          <Loader2 className="h-3 w-3 animate-spin" />
+        ) : (
+          <>
+            <Play className="h-3 w-3 ml-1" />
+            شارك
+          </>
+        )}
+      </Button>
+    );
   };
 
   if (isLoading) {
@@ -498,6 +655,7 @@ export default function AllCompetitionsPanel() {
           const requiredTickets = comp.required_tickets || 1;
           const progress = comp.max_tickets ? (count / comp.max_tickets) * 100 : 
                           comp.target_participants ? (count / comp.target_participants) * 100 : 0;
+          const userParticipation = userParticipations?.[comp.id];
           
           return (
             <Card 
@@ -522,7 +680,12 @@ export default function AllCompetitionsPanel() {
                   className="w-full h-full object-cover"
                 />
                 
-                {/* Required tickets badge */}
+                {/* Competition type badge - TOP LEFT */}
+                <div className="absolute top-2 left-2">
+                  {getTypeBadge(comp)}
+                </div>
+                
+                {/* Required tickets badge - TOP RIGHT */}
                 <Badge 
                   className={`absolute top-2 right-2 text-[9px] ${
                     isFree ? 'bg-green-500' : 'bg-primary'
@@ -541,10 +704,18 @@ export default function AllCompetitionsPanel() {
                   )}
                 </Badge>
                 
-                {/* Competition type badge */}
-                <div className="absolute top-2 left-2">
-                  {getTypeBadge(comp)}
-                </div>
+                {/* Quick action button */}
+                {getQuickActionButton(comp)}
+                
+                {/* User participated indicator */}
+                {userParticipation && userParticipation.length > 0 && (
+                  <div className="absolute bottom-2 right-2">
+                    <Badge className="bg-green-500/90 text-[9px]">
+                      <Check className="h-2 w-2 ml-0.5" />
+                      {userParticipation.length} مشاركة
+                    </Badge>
+                  </div>
+                )}
               </div>
               
               <CardContent className="p-2.5 space-y-1.5">
@@ -619,24 +790,61 @@ export default function AllCompetitionsPanel() {
                   alt={selectedCompetition.title_ar}
                   className="w-full h-full object-cover"
                 />
+                {/* Type badge on image */}
+                <div className="absolute top-3 left-3">
+                  {getTypeBadge(selectedCompetition)}
+                </div>
                 {selectedCompetition.is_featured && (
-                  <Badge className="absolute top-2 left-2 bg-gradient-to-r from-primary to-primary/80">
+                  <Badge className="absolute top-3 right-3 bg-gradient-to-r from-primary to-primary/80">
                     <Sparkles className="h-3 w-3 ml-1" />
                     مميزة
                   </Badge>
                 )}
               </div>
 
-              {/* Title & Type */}
-              <div className="flex items-start justify-between gap-2 mb-3">
-                <h2 className="text-lg font-bold flex-1">{selectedCompetition.title_ar}</h2>
-                {getTypeBadge(selectedCompetition)}
-              </div>
+              {/* Title */}
+              <h2 className="text-lg font-bold mb-3">{selectedCompetition.title_ar}</h2>
               
               {/* Type-specific info */}
               <div className="mb-4">
                 {getTypeSpecificInfo(selectedCompetition)}
               </div>
+
+              {/* User's Previous Participations */}
+              {userParticipations?.[selectedCompetition.id] && userParticipations[selectedCompetition.id].length > 0 && (
+                <Card className="mb-4 border-green-200 bg-green-500/5">
+                  <CardContent className="p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Check className="h-4 w-4 text-green-500" />
+                      <span className="font-medium text-green-700">مشاركاتك السابقة</span>
+                    </div>
+                    <div className="space-y-1 max-h-32 overflow-y-auto">
+                      {userParticipations[selectedCompetition.id].map((p: any, idx: number) => (
+                        <div key={p.id} className="flex items-center justify-between text-xs p-1.5 bg-background rounded">
+                          <span className="font-mono">{p.ticket_number}</span>
+                          <div className="flex items-center gap-1">
+                            {p.letter_awarded && (
+                              <Badge variant="outline" className="text-[9px]">
+                                حرف: {p.letter_awarded}
+                              </Badge>
+                            )}
+                            {p.team && (
+                              <Badge variant="outline" className="text-[9px]">
+                                فريق {p.team}
+                              </Badge>
+                            )}
+                            {p.is_winner && (
+                              <Badge className="bg-amber-500 text-[9px]">
+                                فائز!
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Prize Card */}
               <Card className="my-4 bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
@@ -746,27 +954,41 @@ export default function AllCompetitionsPanel() {
               </Card>
 
               {/* Participate Button */}
-              <Button 
-                className="w-full"
-                size="lg"
-                onClick={() => participateMutation.mutate(selectedCompetition)}
-                disabled={
-                  !user || 
-                  participateMutation.isPending ||
-                  (selectedCompetition.competition_type !== 'free' && (userTickets || 0) < (selectedCompetition.required_tickets || 1))
+              {(() => {
+                const type = selectedCompetition.competition_type as CompetitionType;
+                const isFree = type === 'free';
+                const participated = isFree && !canParticipateFree(selectedCompetition.id);
+                const hasEnoughTickets = isFree || (userTickets || 0) >= (selectedCompetition.required_tickets || 1);
+                
+                if (participated) {
+                  return (
+                    <Button className="w-full" size="lg" disabled>
+                      <Check className="h-4 w-4 ml-2" />
+                      شاركت بالفعل
+                    </Button>
+                  );
                 }
-              >
-                {participateMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                    جاري التسجيل...
-                  </>
-                ) : selectedCompetition.competition_type === 'free' ? (
-                  'شارك مجاناً'
-                ) : (
-                  'شارك الآن'
-                )}
-              </Button>
+                
+                return (
+                  <Button 
+                    className="w-full"
+                    size="lg"
+                    onClick={() => participateMutation.mutate(selectedCompetition)}
+                    disabled={!user || participateMutation.isPending || !hasEnoughTickets}
+                  >
+                    {participateMutation.isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                        جاري التسجيل...
+                      </>
+                    ) : isFree ? (
+                      'شارك مجاناً'
+                    ) : (
+                      'شارك الآن'
+                    )}
+                  </Button>
+                );
+              })()}
 
               {!user && (
                 <p className="text-xs text-center text-muted-foreground mt-2">
