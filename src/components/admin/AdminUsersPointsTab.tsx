@@ -3,11 +3,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
-import { Search, Plus, Minus, Download, Coins, User } from "lucide-react";
+import { 
+  Search, Plus, Minus, Download, Coins, User, TrendingUp, 
+  Calendar, ArrowUpRight, ArrowDownRight, History, Crown
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -31,11 +35,12 @@ export default function AdminUsersPointsTab() {
     user: null, 
     type: 'add' 
   });
+  const [historyDialog, setHistoryDialog] = useState<{ open: boolean; user: any }>({ open: false, user: null });
   const [adjustAmount, setAdjustAmount] = useState("");
   const [adjustReason, setAdjustReason] = useState("");
   const [exportingUser, setExportingUser] = useState<string | null>(null);
 
-  const ITEMS_PER_PAGE = 15;
+  const ITEMS_PER_PAGE = 12;
 
   const { data: usersWithPoints, isLoading } = useQuery({
     queryKey: ['admin-users-points', searchQuery, currentPage],
@@ -44,7 +49,7 @@ export default function AdminUsersPointsTab() {
         .from('user_points')
         .select(`
           *,
-          profiles!inner(id, username, full_name, email)
+          profiles!inner(id, username, full_name, email, avatar_url)
         `, { count: 'exact' })
         .order('total_points', { ascending: false });
 
@@ -63,12 +68,27 @@ export default function AdminUsersPointsTab() {
     staleTime: 30 * 1000,
   });
 
+  const { data: userTransactions, isLoading: loadingTransactions } = useQuery({
+    queryKey: ['user-transactions', historyDialog.user?.user_id],
+    queryFn: async () => {
+      if (!historyDialog.user?.user_id) return [];
+      const { data, error } = await supabase
+        .from('points_transactions')
+        .select('*')
+        .eq('user_id', historyDialog.user.user_id)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!historyDialog.user?.user_id,
+  });
+
   const adjustPoints = useMutation({
     mutationFn: async ({ userId, amount, type, reason }: { userId: string; amount: number; type: 'add' | 'subtract'; reason: string }) => {
       const pointsChange = type === 'add' ? amount : -amount;
       const transactionType = type === 'add' ? 'earn' : 'redeem';
       
-      // Add transaction record
       const { error: transactionError } = await supabase
         .from('points_transactions')
         .insert({
@@ -81,7 +101,6 @@ export default function AdminUsersPointsTab() {
       
       if (transactionError) throw transactionError;
 
-      // Update user points
       const { data: currentPoints, error: getError } = await supabase
         .from('user_points')
         .select('total_points')
@@ -101,6 +120,7 @@ export default function AdminUsersPointsTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users-points'] });
+      queryClient.invalidateQueries({ queryKey: ['points-stats'] });
       toast.success(adjustDialog.type === 'add' ? 'تمت إضافة النقاط بنجاح' : 'تم خصم النقاط بنجاح');
       setAdjustDialog({ open: false, user: null, type: 'add' });
       setAdjustAmount("");
@@ -127,7 +147,6 @@ export default function AdminUsersPointsTab() {
         return;
       }
 
-      // Create CSV content
       const headers = ['التاريخ', 'النوع', 'المصدر', 'النقاط', 'الوصف'];
       const rows = transactions.map((t: any) => [
         format(new Date(t.created_at), 'yyyy-MM-dd HH:mm', { locale: ar }),
@@ -142,7 +161,6 @@ export default function AdminUsersPointsTab() {
         ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
       ].join('\n');
 
-      // Add BOM for Arabic support
       const BOM = '\uFEFF';
       const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
@@ -174,6 +192,9 @@ export default function AdminUsersPointsTab() {
       'wallet_conversion': 'تحويل للمحفظة',
       'admin_adjustment': 'تعديل الإدارة',
       'tickets_conversion': 'تحويل لتذاكر',
+      'welcome_bonus': 'مكافأة ترحيب',
+      'birthday_bonus': 'مكافأة عيد ميلاد',
+      'streak_bonus': 'مكافأة تسلسل',
     };
     return labels[source] || source;
   };
@@ -194,11 +215,30 @@ export default function AdminUsersPointsTab() {
 
   const totalPages = Math.ceil((usersWithPoints?.totalCount || 0) / ITEMS_PER_PAGE);
 
+  // Get rank badge
+  const getRankBadge = (index: number) => {
+    const rank = (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
+    if (rank === 1) return <Crown className="h-4 w-4 text-yellow-500" />;
+    if (rank === 2) return <Crown className="h-4 w-4 text-gray-400" />;
+    if (rank === 3) return <Crown className="h-4 w-4 text-amber-700" />;
+    return <span className="text-xs text-muted-foreground">#{rank}</span>;
+  };
+
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="h-16 bg-muted/50 rounded animate-pulse" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3, 4, 5, 6].map(i => (
+          <Card key={i} className="animate-pulse">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-muted" />
+                <div className="flex-1 space-y-2">
+                  <div className="h-4 bg-muted rounded w-2/3" />
+                  <div className="h-3 bg-muted rounded w-1/2" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     );
@@ -206,17 +246,6 @@ export default function AdminUsersPointsTab() {
 
   return (
     <div className="space-y-4">
-      {/* Stats Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <Coins className="h-8 w-8 mx-auto text-primary mb-2" />
-            <p className="text-2xl font-bold">{usersWithPoints?.totalCount || 0}</p>
-            <p className="text-xs text-muted-foreground">مستخدم لديهم نقاط</p>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Search */}
       <div className="flex gap-3">
         <div className="relative flex-1">
@@ -233,7 +262,7 @@ export default function AdminUsersPointsTab() {
         </div>
       </div>
 
-      {/* Users Table */}
+      {/* Users Grid */}
       {!usersWithPoints?.users || usersWithPoints.users.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
@@ -243,66 +272,80 @@ export default function AdminUsersPointsTab() {
           </CardContent>
         </Card>
       ) : (
-        <div className="border rounded-lg overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>المستخدم</TableHead>
-                <TableHead>اليوزر</TableHead>
-                <TableHead>النقاط</TableHead>
-                <TableHead>الإجراءات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {usersWithPoints.users.map((up: any) => (
-                <TableRow key={up.user_id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{up.profiles?.full_name || 'بدون اسم'}</p>
-                      <p className="text-xs text-muted-foreground">{up.profiles?.email}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {usersWithPoints.users.map((up: any, idx: number) => (
+            <Card key={up.user_id} className="hover:border-primary/50 transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <Avatar className="h-12 w-12 border-2 border-primary/20">
+                        <AvatarImage src={up.profiles?.avatar_url} />
+                        <AvatarFallback className="bg-primary/10 text-primary">
+                          {up.profiles?.full_name?.charAt(0) || up.profiles?.username?.charAt(0) || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="absolute -bottom-1 -right-1 bg-background rounded-full p-0.5">
+                        {getRankBadge(idx)}
+                      </div>
                     </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">@{up.profiles?.username || '-'}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500">
-                      <Coins className="h-3 w-3 ml-1" />
-                      {up.total_points?.toLocaleString() || 0}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1.5">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-green-600"
-                        onClick={() => setAdjustDialog({ open: true, user: up, type: 'add' })}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-600"
-                        onClick={() => setAdjustDialog({ open: true, user: up, type: 'subtract' })}
-                      >
-                        <Minus className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleExportTransactions(up.user_id, up.profiles?.username || up.user_id)}
-                        disabled={exportingUser === up.user_id}
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                      </Button>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{up.profiles?.full_name || 'بدون اسم'}</p>
+                      <p className="text-xs text-muted-foreground truncate">@{up.profiles?.username || '-'}</p>
                     </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mb-3">
+                  <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white px-3 py-1">
+                    <Coins className="h-3.5 w-3.5 ml-1" />
+                    {up.total_points?.toLocaleString() || 0}
+                  </Badge>
+                  {up.available_points !== undefined && up.available_points !== up.total_points && (
+                    <span className="text-xs text-muted-foreground">
+                      متاح: {up.available_points?.toLocaleString()}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 text-green-600 hover:text-green-700 hover:bg-green-500/10"
+                    onClick={() => setAdjustDialog({ open: true, user: up, type: 'add' })}
+                  >
+                    <Plus className="h-4 w-4 ml-1" />
+                    إضافة
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1 text-red-600 hover:text-red-700 hover:bg-red-500/10"
+                    onClick={() => setAdjustDialog({ open: true, user: up, type: 'subtract' })}
+                  >
+                    <Minus className="h-4 w-4 ml-1" />
+                    خصم
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setHistoryDialog({ open: true, user: up })}
+                  >
+                    <History className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleExportTransactions(up.user_id, up.profiles?.username || up.user_id)}
+                    disabled={exportingUser === up.user_id}
+                  >
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
 
@@ -324,17 +367,28 @@ export default function AdminUsersPointsTab() {
       <Dialog open={adjustDialog.open} onOpenChange={(open) => !open && setAdjustDialog({ open: false, user: null, type: 'add' })}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              {adjustDialog.type === 'add' ? 'إضافة نقاط' : 'خصم نقاط'}
+            <DialogTitle className="flex items-center gap-2">
+              {adjustDialog.type === 'add' ? (
+                <><Plus className="h-5 w-5 text-green-500" /> إضافة نقاط</>
+              ) : (
+                <><Minus className="h-5 w-5 text-red-500" /> خصم نقاط</>
+              )}
             </DialogTitle>
             <DialogDescription>
-              {adjustDialog.user?.profiles?.full_name || adjustDialog.user?.profiles?.username}
-              <br />
-              الرصيد الحالي: {adjustDialog.user?.total_points?.toLocaleString() || 0} نقطة
+              <div className="flex items-center gap-3 mt-2">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={adjustDialog.user?.profiles?.avatar_url} />
+                  <AvatarFallback>{adjustDialog.user?.profiles?.full_name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium">{adjustDialog.user?.profiles?.full_name || adjustDialog.user?.profiles?.username}</p>
+                  <p className="text-xs">الرصيد الحالي: {adjustDialog.user?.total_points?.toLocaleString() || 0} نقطة</p>
+                </div>
+              </div>
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
               <Label>عدد النقاط</Label>
               <Input
                 type="number"
@@ -344,7 +398,7 @@ export default function AdminUsersPointsTab() {
                 placeholder="أدخل عدد النقاط"
               />
             </div>
-            <div>
+            <div className="space-y-2">
               <Label>السبب (اختياري)</Label>
               <Textarea
                 value={adjustReason}
@@ -366,6 +420,70 @@ export default function AdminUsersPointsTab() {
               {adjustPoints.isPending ? 'جاري...' : adjustDialog.type === 'add' ? 'إضافة' : 'خصم'}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* History Dialog */}
+      <Dialog open={historyDialog.open} onOpenChange={(open) => !open && setHistoryDialog({ open: false, user: null })}>
+        <DialogContent className="max-w-lg max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              سجل النقاط
+            </DialogTitle>
+            <DialogDescription>
+              {historyDialog.user?.profiles?.full_name || historyDialog.user?.profiles?.username}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[400px] pr-4">
+            {loadingTransactions ? (
+              <div className="space-y-3">
+                {[1,2,3,4,5].map(i => (
+                  <div key={i} className="h-16 bg-muted/50 rounded animate-pulse" />
+                ))}
+              </div>
+            ) : !userTransactions || userTransactions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                لا توجد معاملات
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {userTransactions.map((t: any) => (
+                  <Card key={t.id} className="overflow-hidden">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${
+                            t.type === 'earn' ? 'bg-green-500/20' : 'bg-red-500/20'
+                          }`}>
+                            {t.type === 'earn' ? (
+                              <ArrowUpRight className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <ArrowDownRight className="h-4 w-4 text-red-500" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{getSourceLabel(t.source)}</p>
+                            <p className="text-xs text-muted-foreground line-clamp-1">
+                              {t.description || '-'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-left">
+                          <p className={`font-bold ${t.type === 'earn' ? 'text-green-500' : 'text-red-500'}`}>
+                            {t.type === 'earn' ? '+' : '-'}{t.points}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">
+                            {format(new Date(t.created_at), 'dd MMM yyyy', { locale: ar })}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
         </DialogContent>
       </Dialog>
     </div>
