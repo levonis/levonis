@@ -49,11 +49,8 @@ const AdminSavedInvoices = lazy(() => import("./pages/AdminSavedInvoices"));
 const AdminFinancials = lazy(() => import("./pages/AdminFinancials"));
 const AdminPartialPaymentSettings = lazy(() => import("./pages/AdminPartialPaymentSettings"));
 
-const MyPoints = lazy(() => import("./pages/MyPoints"));
 const RewardsHub = lazy(() => import("./pages/RewardsHub"));
 const ConfirmDelivery = lazy(() => import("./pages/ConfirmDelivery"));
-const Competitions = lazy(() => import("./pages/Competitions"));
-const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
 const ProductShop = lazy(() => import("./pages/ProductShop"));
 const ProductsWithGifts = lazy(() => import("./pages/ProductsWithGifts"));
 const ProductOffersPage = lazy(() => import("./pages/ProductOffersPage"));
@@ -67,9 +64,6 @@ const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const MyPurchasedProducts = lazy(() => import("./pages/MyPurchasedProducts"));
 const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
 const AdminOfferPurchases = lazy(() => import("./pages/AdminOfferPurchases"));
-const MyPrinters = lazy(() => import("./pages/MyPrinters"));
-const PrinterProtection = lazy(() => import("./pages/PrinterProtection"));
-const AdminPrinterProtection = lazy(() => import("./pages/AdminPrinterProtection"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -138,18 +132,20 @@ function AppContent() {
             <Route path="/marketplace" element={<Marketplace />} />
             <Route path="/marketplace/:listingId" element={<Marketplace />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
-            <Route path="/my-points" element={<MyPoints />} />
             <Route path="/rewards" element={<RewardsHub />} />
-            <Route path="/competitions" element={<Competitions />} />
-            <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
             <Route path="/my-products" element={<MyPurchasedProducts />} />
             <Route path="/my-offer-purchases" element={<MyOfferPurchases />} />
             <Route path="/product-offers" element={<ProductOffersPage />} />
-            <Route path="/my-printers" element={<MyPrinters />} />
-            <Route path="/printer-protection" element={<PrinterProtection />} />
-            <Route path={`${ADMIN_BASE_PATH}/printer-protection`} element={<AdminRoute><AdminPrinterProtection /></AdminRoute>} />
+            
+            {/* Redirect old routes to rewards hub */}
+            <Route path="/my-points" element={<Navigate to="/rewards" replace />} />
+            <Route path="/competitions" element={<Navigate to="/rewards" replace />} />
+            <Route path="/competitions/history" element={<Navigate to="/rewards" replace />} />
+            <Route path="/printer-protection" element={<Navigate to="/rewards" replace />} />
+            <Route path="/my-printers" element={<Navigate to="/rewards" replace />} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
