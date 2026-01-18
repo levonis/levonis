@@ -64,15 +64,15 @@ export default function RewardsHub() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      {/* Compact Sticky Header + Tabs */}
-      <div className="sticky top-0 z-50 bg-card/98 backdrop-blur-md border-b shadow-sm">
+      {/* Compact Sticky Header + Tabs - Fixed, doesn't scroll */}
+      <div className="sticky top-0 z-50 bg-card border-b shadow-sm">
         {/* Minimal Header */}
         <div className="flex items-center justify-between px-3 py-2">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary/80 to-accent/80">
+            <div className="p-1.5 rounded-lg bg-gradient-to-br from-primary to-primary/80">
               <Sparkles className="h-4 w-4 text-primary-foreground" />
             </div>
-            <h1 className="text-sm font-bold">مركز المكافآت</h1>
+            <h1 className="text-sm font-bold text-foreground">مركز المكافآت</h1>
           </div>
           <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate('/')}>
             <ArrowLeft className="h-4 w-4" />
@@ -97,8 +97,8 @@ export default function RewardsHub() {
         </div>
       </div>
 
-      {/* Main Content Area - Single Dashboard Feel */}
-      <main className="flex-1 px-3 py-3">
+      {/* Main Content Area - Scrollable independently */}
+      <main className="flex-1 overflow-y-auto px-3 py-3">
         {/* Quick Actions Row - Horizontal Scroll */}
         <div className="mb-3">
           <QuickActionsBar onNavigate={handleQuickAction} />
