@@ -10,9 +10,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/comp
 import OptimizedImage from "@/components/OptimizedImage";
 import { useState } from "react";
 import { 
-  X, Ticket, Trophy, Gift, Users, Calendar, Crown, 
+  X, Ticket, Trophy, Gift, Users, Calendar, 
   Zap, Sparkles, Package, Swords, TrendingUp, Timer, Loader2,
-  ChevronDown, ChevronUp
+  ChevronDown, ChevronUp, Star, Target
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, addHours } from "date-fns";
@@ -33,24 +33,24 @@ const competitionTypeLabels: Record<CompetitionType, string> = {
   hidden_winner: 'رابح مخفي',
   team_battle: 'فريق ضد فريق',
   flash_sale: 'عرض سريع',
-  growing_prize: 'جائزة متحولة',
+  growing_prize: 'جائزة متنامية',
   collect_letters: 'جمع الأحرف'
 };
 
-const competitionTypeIcons: Record<CompetitionType, string> = {
-  ticket_count: '🎯',
-  all_tickets_sold: '🎫',
-  timed: '⏰',
-  free: '🆓',
-  instant_winner: '⚡',
-  everyone_wins: '🎁',
-  escalating_price: '📈',
-  mystery_box: '📦',
-  hidden_winner: '🎯',
-  team_battle: '⚔️',
-  flash_sale: '🔥',
-  growing_prize: '📊',
-  collect_letters: '🔤'
+const competitionTypeIcons: Record<CompetitionType, React.ReactNode> = {
+  ticket_count: <Target className="h-3 w-3" />,
+  all_tickets_sold: <Ticket className="h-3 w-3" />,
+  timed: <Timer className="h-3 w-3" />,
+  free: <Gift className="h-3 w-3" />,
+  instant_winner: <Zap className="h-3 w-3" />,
+  everyone_wins: <Star className="h-3 w-3" />,
+  escalating_price: <TrendingUp className="h-3 w-3" />,
+  mystery_box: <Package className="h-3 w-3" />,
+  hidden_winner: <Target className="h-3 w-3" />,
+  team_battle: <Swords className="h-3 w-3" />,
+  flash_sale: <Zap className="h-3 w-3" />,
+  growing_prize: <TrendingUp className="h-3 w-3" />,
+  collect_letters: <Sparkles className="h-3 w-3" />
 };
 
 const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy') => {
@@ -58,6 +58,15 @@ const formatBaghdadTime = (dateString: string, formatStr: string = 'dd MMM yyyy'
   const baghdadDate = addHours(date, 3);
   return format(baghdadDate, formatStr, { locale: ar });
 };
+
+interface ParticipationResult {
+  ticketNumber: string;
+  isWinner?: boolean;
+  prize?: any;
+  letter?: string;
+  team?: string;
+  competitionType?: CompetitionType;
+}
 
 export default function AllCompetitionsPanel() {
   const { user } = useAuth();
@@ -121,19 +130,143 @@ export default function AllCompetitionsPanel() {
     staleTime: 2 * 60 * 1000,
   });
 
+  // Get user's collected letters for collect_letters competitions
+  const { data: userLetters } = useQuery({
+    queryKey: ['user-collected-letters', user?.id],
+    queryFn: async () => {
+      if (!user) return {};
+      const letterComps = competitions?.filter(c => c.competition_type === 'collect_letters') || [];
+      if (letterComps.length === 0) return {};
+      
+      const { data, error } = await supabase
+        .from('competition_tickets')
+        .select('competition_id, letter_awarded')
+        .eq('user_id', user.id)
+        .in('competition_id', letterComps.map(c => c.id))
+        .not('letter_awarded', 'is', null);
+      
+      if (error) throw error;
+      
+      const lettersByComp: Record<string, string[]> = {};
+      data.forEach(t => {
+        if (!lettersByComp[t.competition_id]) lettersByComp[t.competition_id] = [];
+        if (t.letter_awarded) lettersByComp[t.competition_id].push(t.letter_awarded);
+      });
+      return lettersByComp;
+    },
+    enabled: !!user && !!competitions,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  // Simulate competition logic based on type
+  const simulateResult = (comp: any): ParticipationResult => {
+    const type = comp.competition_type as CompetitionType;
+    const ticketNumber = `T-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+    
+    switch (type) {
+      case 'instant_winner': {
+        const winProbability = comp.win_probability || 10;
+        const isWinner = Math.random() * 100 < winProbability;
+        let prize = null;
+        if (isWinner && comp.prize_tiers) {
+          const tiers = comp.prize_tiers as any[];
+          // Simple random selection from tiers
+          prize = tiers[Math.floor(Math.random() * tiers.length)];
+        }
+        return { ticketNumber, isWinner, prize };
+      }
+      
+      case 'everyone_wins': {
+        // Everyone wins something
+        let prize = null;
+        if (comp.prize_tiers) {
+          const tiers = (comp.prize_tiers as any[]).filter(t => t.remaining_quantity > 0);
+          if (tiers.length > 0) {
+            // Weighted random selection
+            const totalWeight = tiers.reduce((sum, t) => sum + (t.probability || 1), 0);
+            let random = Math.random() * totalWeight;
+            for (const tier of tiers) {
+              random -= (tier.probability || 1);
+              if (random <= 0) {
+                prize = tier;
+                break;
+              }
+            }
+          }
+        }
+        return { ticketNumber, isWinner: true, prize };
+      }
+      
+      case 'mystery_box': {
+        const boxes = comp.mystery_boxes as any[] || [];
+        if (boxes.length > 0) {
+          const totalWeight = boxes.reduce((sum, b) => sum + (b.probability || 1), 0);
+          let random = Math.random() * totalWeight;
+          for (const box of boxes) {
+            random -= (box.probability || 1);
+            if (random <= 0) {
+              return { ticketNumber, isWinner: true, prize: box };
+            }
+          }
+        }
+        return { ticketNumber, isWinner: false };
+      }
+      
+      case 'collect_letters': {
+        const config = comp.letters_config as any;
+        const letters = config?.letters || [];
+        if (letters.length > 0) {
+          // Weighted random letter selection
+          const totalWeight = letters.reduce((sum: number, l: any) => sum + (l.probability || 1), 0);
+          let random = Math.random() * totalWeight;
+          for (const letterConfig of letters) {
+            random -= (letterConfig.probability || 1);
+            if (random <= 0) {
+              return { ticketNumber, isWinner: true, letter: letterConfig.letter };
+            }
+          }
+        }
+        return { ticketNumber, isWinner: false };
+      }
+      
+      case 'team_battle': {
+        // Randomly assign to a team
+        const team = Math.random() < 0.5 ? 'A' : 'B';
+        return { ticketNumber, isWinner: false, team };
+      }
+      
+      case 'hidden_winner': {
+        // Check if this is the hidden trigger ticket
+        const currentCount = ticketCounts?.[comp.id] || 0;
+        const triggerTicket = comp.hidden_winner_trigger_ticket;
+        const isWinner = triggerTicket && currentCount + 1 === triggerTicket;
+        return { ticketNumber, isWinner };
+      }
+      
+      default:
+        // Regular competitions - just register participation
+        return { ticketNumber, isWinner: false };
+    }
+  };
+
   const participateMutation = useMutation({
     mutationFn: async (comp: any) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
       
-      const requiredTickets = comp.required_tickets || 1;
+      const type = comp.competition_type as CompetitionType;
+      const requiredTickets = type === 'free' ? 0 : (comp.required_tickets || 1);
       const currentBalance = userTickets || 0;
       
-      if (comp.competition_type !== 'free' && currentBalance < requiredTickets) {
+      // Check ticket balance for non-free competitions
+      if (requiredTickets > 0 && currentBalance < requiredTickets) {
         throw new Error('رصيد التذاكر غير كافٍ');
       }
 
+      // Simulate result based on competition type
+      const result = simulateResult(comp);
+
       // Deduct tickets (unless free)
-      if (comp.competition_type !== 'free') {
+      if (requiredTickets > 0) {
         const { error: updateError } = await supabase
           .from('user_tickets')
           .update({ ticket_count: currentBalance - requiredTickets })
@@ -141,25 +274,64 @@ export default function AllCompetitionsPanel() {
         if (updateError) throw updateError;
       }
 
-      // Generate ticket number
-      const ticketNumber = `T-${Date.now()}-${Math.random().toString(36).substr(2, 6).toUpperCase()}`;
+      // Build ticket record
+      const ticketRecord: any = {
+        user_id: user.id,
+        competition_id: comp.id,
+        ticket_number: result.ticketNumber,
+        is_winner: result.isWinner || false,
+      };
+
+      // Add type-specific fields
+      if (result.letter) ticketRecord.letter_awarded = result.letter;
+      if (result.team) ticketRecord.team = result.team;
+      if (result.prize) ticketRecord.prize_won = result.prize;
 
       // Insert competition ticket
       const { error: ticketError } = await supabase
         .from('competition_tickets')
-        .insert({
-          user_id: user.id,
-          competition_id: comp.id,
-          ticket_number: ticketNumber,
-        });
+        .insert(ticketRecord);
       if (ticketError) throw ticketError;
 
-      return { ticketNumber };
+      // Update team counts for team_battle
+      if (type === 'team_battle' && result.team) {
+        const updateField = result.team === 'A' ? 'team_a_count' : 'team_b_count';
+        const currentCount = result.team === 'A' ? (comp.team_a_count || 0) : (comp.team_b_count || 0);
+        await supabase
+          .from('competitions')
+          .update({ [updateField]: currentCount + 1 })
+          .eq('id', comp.id);
+      }
+
+      return { ...result, competitionType: type };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['user-tickets-balance'] });
       queryClient.invalidateQueries({ queryKey: ['competition-ticket-counts'] });
-      toast.success(`تم تسجيلك بنجاح! رقم تذكرتك: ${data.ticketNumber}`);
+      queryClient.invalidateQueries({ queryKey: ['user-collected-letters'] });
+      queryClient.invalidateQueries({ queryKey: ['all-competitions-panel'] });
+      
+      // Show appropriate message based on result
+      const type = data.competitionType;
+      
+      if (type === 'instant_winner') {
+        if (data.isWinner) {
+          toast.success(`🎉 مبروك! أنت فائز! ${data.prize?.name_ar || ''}`);
+        } else {
+          toast.info(`حظاً أوفر! رقم تذكرتك: ${data.ticketNumber}`);
+        }
+      } else if (type === 'collect_letters' && data.letter) {
+        toast.success(`🔤 حصلت على الحرف: ${data.letter}`);
+      } else if (type === 'everyone_wins' && data.prize) {
+        toast.success(`🎁 مبروك! ربحت: ${data.prize.name_ar || 'جائزة'}`);
+      } else if (type === 'mystery_box' && data.prize) {
+        toast.success(`📦 مبروك! ربحت: ${data.prize.name_ar || 'جائزة'}`);
+      } else if (type === 'team_battle' && data.team) {
+        toast.success(`⚔️ انضممت للفريق ${data.team === 'A' ? 'الأزرق 🔵' : 'الأحمر 🔴'}!`);
+      } else {
+        toast.success(`✅ تم تسجيلك بنجاح! رقم تذكرتك: ${data.ticketNumber}`);
+      }
+      
       setSelectedCompetition(null);
     },
     onError: (error: any) => {
@@ -169,20 +341,20 @@ export default function AllCompetitionsPanel() {
 
   const getTypeBadge = (comp: any) => {
     const type = comp.competition_type as CompetitionType;
-    const icon = competitionTypeIcons[type] || '🎫';
+    const icon = competitionTypeIcons[type] || <Ticket className="h-3 w-3" />;
     const label = competitionTypeLabels[type] || 'مسابقة';
     
     if (comp.is_flash || type === 'flash_sale') {
       return (
-        <Badge className="bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[9px] animate-pulse">
-          <Zap className="h-2.5 w-2.5 ml-0.5" />
+        <Badge className="bg-gradient-to-r from-rose-500 to-pink-500 text-white text-[9px] animate-pulse gap-0.5">
+          <Zap className="h-2.5 w-2.5" />
           {comp.flash_badge_text || label}
         </Badge>
       );
     }
     
     return (
-      <Badge variant="secondary" className="text-[9px]">
+      <Badge variant="secondary" className="text-[9px] gap-0.5">
         {icon} {label}
       </Badge>
     );
@@ -200,17 +372,32 @@ export default function AllCompetitionsPanel() {
           </div>
         ) : null;
       
-      case 'collect_letters':
-        const words = (comp.letters_config as any)?.prize_words || [];
+      case 'collect_letters': {
+        const config = comp.letters_config as any;
+        const words = config?.prize_words || [];
         const targetWord = words.length > 0 
           ? words.reduce((p: any, c: any) => (c.word?.length || 0) > (p.word?.length || 0) ? c : p, words[0])?.word
-          : (comp.letters_config as any)?.target_word || '';
-        return targetWord ? (
-          <div className="flex items-center gap-1 text-[10px] text-violet-600 bg-violet-500/10 px-2 py-0.5 rounded">
-            <Sparkles className="h-2.5 w-2.5" />
-            اجمع: {targetWord}
+          : config?.target_word || '';
+        
+        // Show user's collected letters progress
+        const collected = userLetters?.[comp.id] || [];
+        
+        return (
+          <div className="space-y-1">
+            {targetWord && (
+              <div className="flex items-center gap-1 text-[10px] text-violet-600 bg-violet-500/10 px-2 py-0.5 rounded">
+                <Sparkles className="h-2.5 w-2.5" />
+                اجمع: {targetWord}
+              </div>
+            )}
+            {collected.length > 0 && (
+              <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-500/10 px-2 py-0.5 rounded">
+                حروفك: {collected.join(' ')}
+              </div>
+            )}
           </div>
-        ) : null;
+        );
+      }
       
       case 'team_battle':
         return (
@@ -220,35 +407,58 @@ export default function AllCompetitionsPanel() {
           </div>
         );
       
-      case 'mystery_box':
+      case 'mystery_box': {
+        const boxes = comp.mystery_boxes as any[] || [];
         return (
           <div className="flex items-center gap-1 text-[10px] text-purple-600 bg-purple-500/10 px-2 py-0.5 rounded">
             <Package className="h-2.5 w-2.5" />
-            افتح صندوقك!
+            {boxes.length} صناديق مختلفة
           </div>
         );
+      }
       
-      case 'everyone_wins':
+      case 'everyone_wins': {
+        const tiers = comp.prize_tiers as any[] || [];
+        const available = tiers.filter(t => t.remaining_quantity > 0).length;
         return (
           <div className="flex items-center gap-1 text-[10px] text-green-600 bg-green-500/10 px-2 py-0.5 rounded">
             <Gift className="h-2.5 w-2.5" />
-            الكل فائز!
+            {available} جوائز متاحة - الكل رابح!
           </div>
         );
+      }
       
-      case 'escalating_price':
-        return (
+      case 'escalating_price': {
+        const tiers = comp.price_tiers as any[] || [];
+        const currentTier = tiers.find(t => {
+          const count = ticketCounts?.[comp.id] || 0;
+          return count >= (t.from_ticket || 0) && count < (t.to_ticket || Infinity);
+        });
+        return currentTier ? (
           <div className="flex items-center gap-1 text-[10px] text-orange-600 bg-orange-500/10 px-2 py-0.5 rounded">
             <TrendingUp className="h-2.5 w-2.5" />
-            السعر الحالي: {comp.ticket_price?.toLocaleString()}
+            السعر الحالي: {currentTier.price?.toLocaleString()} تذكرة
           </div>
-        );
+        ) : null;
+      }
       
-      case 'growing_prize':
+      case 'growing_prize': {
+        const config = comp.growing_prize_config as any;
+        const count = ticketCounts?.[comp.id] || 0;
+        const currentPrize = (config?.base_prize || 0) + (count * (config?.increment_per_ticket || 0));
         return (
           <div className="flex items-center gap-1 text-[10px] text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded">
             <Trophy className="h-2.5 w-2.5" />
-            جائزة تنمو!
+            الجائزة الحالية: {currentPrize.toLocaleString()}
+          </div>
+        );
+      }
+      
+      case 'hidden_winner':
+        return (
+          <div className="flex items-center gap-1 text-[10px] text-slate-600 bg-slate-500/10 px-2 py-0.5 rounded">
+            <Target className="h-2.5 w-2.5" />
+            الفائز مخفي حتى الإعلان
           </div>
         );
       
@@ -283,7 +493,8 @@ export default function AllCompetitionsPanel() {
       <div className="grid grid-cols-2 gap-3">
         {competitions.map((comp) => {
           const count = ticketCounts?.[comp.id] || 0;
-          const isFree = comp.competition_type === 'free';
+          const type = comp.competition_type as CompetitionType;
+          const isFree = type === 'free';
           const requiredTickets = comp.required_tickets || 1;
           const progress = comp.max_tickets ? (count / comp.max_tickets) * 100 : 
                           comp.target_participants ? (count / comp.target_participants) * 100 : 0;
@@ -367,7 +578,7 @@ export default function AllCompetitionsPanel() {
                 {/* End date or countdown */}
                 {comp.end_date && (
                   <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-                    {comp.competition_type === 'timed' || comp.is_flash ? (
+                    {type === 'timed' || comp.is_flash ? (
                       <div className="w-full">
                         <CountdownTimer endDate={comp.end_date} />
                       </div>
@@ -423,7 +634,9 @@ export default function AllCompetitionsPanel() {
               </div>
               
               {/* Type-specific info */}
-              {getTypeSpecificInfo(selectedCompetition)}
+              <div className="mb-4">
+                {getTypeSpecificInfo(selectedCompetition)}
+              </div>
 
               {/* Prize Card */}
               <Card className="my-4 bg-gradient-to-br from-purple-500/10 to-purple-500/5 border-purple-500/20">
