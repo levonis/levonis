@@ -106,6 +106,8 @@ export default function AllOffersPanel() {
     mutationFn: async ({ offer, qty }: { offer: any; qty: number }) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
       
+      const totalPrice = offer.price * qty;
+      
       // Check stock
       if (offer.stock_quantity !== null && offer.stock_quantity < qty) {
         throw new Error('الكمية المطلوبة غير متوفرة');
@@ -160,7 +162,7 @@ export default function AllOffersPanel() {
       return { totalPrice, tickets: (offer.gift_tickets || 0) * qty };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['user-points-offers'] });
       queryClient.invalidateQueries({ queryKey: ['user-tickets'] });
       queryClient.invalidateQueries({ queryKey: ['all-storage-panel'] });
       queryClient.invalidateQueries({ queryKey: ['all-product-offers-panel-infinite'] });
@@ -401,16 +403,6 @@ export default function AllOffersPanel() {
                 </CardContent>
               </Card>
 
-              {/* Wallet balance */}
-              {user && (
-                <Card className="mb-4 bg-muted/50">
-                  <CardContent className="p-3 flex items-center justify-between">
-                    <span className="text-sm">رصيد المحفظة:</span>
-                    <span className="font-bold">{(userWallet?.balance || 0).toLocaleString()} د.ع</span>
-                  </CardContent>
-                </Card>
-              )}
-
               {/* Purchase Button */}
               <Button 
                 className="w-full"
@@ -418,8 +410,7 @@ export default function AllOffersPanel() {
                 onClick={handlePurchase}
                 disabled={
                   !user || 
-                  (selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity < quantity) ||
-                  (userWallet?.balance || 0) < (selectedOffer.price * quantity)
+                  (selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity < quantity)
                 }
               >
                 <ShoppingCart className="h-4 w-4 ml-2" />

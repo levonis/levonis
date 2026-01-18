@@ -84,39 +84,10 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch user wallet
-  const { data: userWallet } = useQuery({
-    queryKey: ['user-wallet-insurance', user?.id],
-    queryFn: async () => {
-      if (!user) return null;
-      const { data, error } = await supabase
-        .from('user_wallet')
-        .select('balance')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (error && error.code !== 'PGRST116') throw error;
-      return data;
-    },
-    enabled: !!user,
-    staleTime: 2 * 60 * 1000,
-  });
-
   // Subscribe mutation
   const subscribeMutation = useMutation({
     mutationFn: async ({ printerId, planId, price, isUpgrade, currentSubId }: any) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
-      
-      const balance = userWallet?.balance || 0;
-      if (balance < price) {
-        throw new Error('رصيد المحفظة غير كافٍ');
-      }
-
-      // Deduct from wallet
-      const { error: walletError } = await supabase
-        .from('user_wallet')
-        .update({ balance: balance - price })
-        .eq('user_id', user.id);
-      if (walletError) throw walletError;
 
       if (isUpgrade && currentSubId) {
         // Cancel old subscription

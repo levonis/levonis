@@ -457,7 +457,7 @@ export default function AllStoragePanel() {
                       <div>
                         <p className="text-sm font-medium">عنوان الشحن</p>
                         <p className="text-xs text-muted-foreground">
-                          {userAddresses[0].address_line}, {userAddresses[0].city}
+                          {userAddresses[0].area}, {userAddresses[0].neighborhood}, {userAddresses[0].governorate}
                         </p>
                       </div>
                     </div>
