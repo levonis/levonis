@@ -10,6 +10,7 @@ import { CreditCard, Star, TrendingUp, Gift, Check, ChevronDown, ChevronUp, Tick
 import { SubTabId } from "./RewardsSubTabs";
 import { LevelCardSkeleton } from "./SkeletonLoaders";
 import LoyaltyLevelsPanel from "./panels/LoyaltyLevelsPanel";
+import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import { toast } from "sonner";
 
 interface CardsSectionProps {
@@ -101,62 +102,36 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
 
     return (
       <div className="space-y-4">
-        {/* Membership Card */}
+        {/* Membership Card - Professional Design */}
         {isLoading ? (
           <LevelCardSkeleton />
         ) : currentLevel ? (
-          <Card 
-            className="overflow-hidden"
-            style={{ 
-              background: `linear-gradient(135deg, ${currentLevel.color}15, ${currentLevel.color}05)`,
-              borderColor: currentLevel.color + '40'
+          <UserLoyaltyCard 
+            level={{
+              id: currentLevel.id,
+              name_ar: currentLevel.name_ar,
+              name_en: currentLevel.name_en,
+              color: currentLevel.color,
+              discount_percentage: currentLevel.discount_percentage,
+              bonus_points_percentage: currentLevel.bonus_points_percentage,
+              free_shipping: currentLevel.free_shipping,
+              free_shipping_min_order: currentLevel.free_shipping_min_order,
+              duration_days: currentLevel.duration_days,
+              vip_support: currentLevel.vip_support,
+              priority_shipping: currentLevel.priority_shipping,
+              early_access: currentLevel.early_access,
+              exclusive_products: currentLevel.exclusive_products,
+              special_name_style: currentLevel.special_name_style as any,
+              profile_effects: currentLevel.profile_effects as any,
+              benefits: currentLevel.benefits as any,
             }}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3 mb-4">
-                <div 
-                  className="w-14 h-14 rounded-full flex items-center justify-center"
-                  style={{ backgroundColor: currentLevel.color + '25' }}
-                >
-                  <CreditCard className="h-7 w-7" style={{ color: currentLevel.color }} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">بطاقة العضوية</p>
-                  <p className="text-xl font-bold" style={{ color: currentLevel.color }}>
-                    {currentLevel.name_ar}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    نقاطك: {userPoints?.total_points?.toLocaleString() || 0}
-                  </p>
-                </div>
-              </div>
-
-              {/* Benefits */}
-              <div className="space-y-2">
-                {currentLevel.discount_percentage && currentLevel.discount_percentage > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>خصم {currentLevel.discount_percentage}% على المشتريات</span>
-                  </div>
-                )}
-                {currentLevel.bonus_points_percentage && currentLevel.bonus_points_percentage > 0 && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>نقاط إضافية {currentLevel.bonus_points_percentage}%</span>
-                  </div>
-                )}
-                {currentLevel.free_shipping && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-500" />
-                    <span>شحن مجاني</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+            isActive={true}
+            showDetails={true}
+          />
         ) : !user ? (
           <Card>
             <CardContent className="p-6 text-center">
+              <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
               <p className="text-muted-foreground">سجّل الدخول لعرض بطاقتك</p>
             </CardContent>
           </Card>
