@@ -13,9 +13,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Package, Loader2, X, Ship, Plane, Calculator, Globe, Sparkles } from 'lucide-react';
+import { Package, Loader2, X, Ship, Plane, Globe, Sparkles, ChevronDown, ChevronUp, Calculator } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost, type SourceCountry, type ShippingType, type ProductDimensions } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 
 const customProductSchema = z.object({
   product_link: z.string().url({ message: 'الرجاء إدخال رابط صحيح' }).min(1, 'رابط المنتج مطلوب'),
@@ -30,6 +31,16 @@ interface CustomProductRequestDialogProps {
   children: React.ReactNode;
 }
 
+interface AICalculationResult {
+  dimensions: ProductDimensions | null;
+  weight: number | null;
+  priceUsd: number | null;
+  priceIqd: number | null;
+  source: string;
+  estimated: boolean;
+  notes: string | null;
+}
+
 const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProps) => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -41,13 +52,11 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
   // Shipping options
   const [sourceCountry, setSourceCountry] = useState<SourceCountry>('china');
   const [shippingType, setShippingType] = useState<ShippingType>('sea');
-  const [dimensions, setDimensions] = useState<ProductDimensions>({ length: 0, width: 0, height: 0 });
-  const [weight, setWeight] = useState<number>(0);
-  const [showShippingCalculator, setShowShippingCalculator] = useState(false);
+  
+  // AI Calculation state
   const [isCalculatingAI, setIsCalculatingAI] = useState(false);
-  const [aiSpecsSource, setAiSpecsSource] = useState<string | null>(null);
-  const [productPriceIqd, setProductPriceIqd] = useState<number | null>(null);
-  const [productPriceUsd, setProductPriceUsd] = useState<number | null>(null);
+  const [aiResult, setAiResult] = useState<AICalculationResult | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
   
   const { data: shippingSettings } = useShippingSettings();
 
@@ -68,11 +77,20 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
     }
   }, [sourceCountry, shippingType]);
 
-  const shippingCalculation = shippingSettings && (dimensions.length > 0 || weight > 0)
-    ? calculateShippingCost(sourceCountry, shippingType, dimensions.length > 0 ? dimensions : null, weight > 0 ? weight : null, shippingSettings)
+  // Calculate shipping based on AI result
+  const shippingCalculation = shippingSettings && aiResult && (
+    (aiResult.dimensions && aiResult.dimensions.length > 0) || (aiResult.weight && aiResult.weight > 0)
+  )
+    ? calculateShippingCost(
+        sourceCountry, 
+        shippingType, 
+        aiResult.dimensions, 
+        aiResult.weight, 
+        shippingSettings
+      )
     : null;
 
-  // AI-powered shipping calculation
+  // AI-powered calculation
   const handleAICalculate = async () => {
     const productName = form.getValues('product_name');
     const productLink = form.getValues('product_link');
@@ -83,7 +101,7 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
     }
     
     setIsCalculatingAI(true);
-    setAiSpecsSource(null);
+    setAiResult(null);
     
     try {
       const { data, error } = await supabase.functions.invoke('calculate-shipping-ai', {
@@ -100,42 +118,24 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
       if (data?.success && data?.data) {
         const specs = data.data;
         
-        if (specs.dimensions) {
-          setDimensions({
-            length: specs.dimensions.length || 0,
-            width: specs.dimensions.width || 0,
-            height: specs.dimensions.height || 0
-          });
-        }
+        setAiResult({
+          dimensions: specs.dimensions || null,
+          weight: specs.weight || null,
+          priceUsd: specs.price_usd || null,
+          priceIqd: specs.price_iqd || null,
+          source: specs.source || '',
+          estimated: specs.estimated ?? true,
+          notes: specs.notes || null
+        });
         
-        if (specs.weight) {
-          setWeight(specs.weight);
-        }
-        
-        // Set product price
-        if (specs.price_iqd) {
-          setProductPriceIqd(specs.price_iqd);
-        }
-        if (specs.price_usd) {
-          setProductPriceUsd(specs.price_usd);
-        }
-        
-        setAiSpecsSource(specs.estimated 
-          ? `تقدير: ${specs.source || 'بناءً على منتجات مشابهة'}`
-          : `مواصفات دقيقة${specs.source ? ': ' + specs.source : ''}`
-        );
-        
-        if (specs.notes) {
-          toast.info(specs.notes);
-        }
-        
-        toast.success('تم حساب المواصفات بنجاح');
+        setShowDetails(true);
+        toast.success('تم حساب التكلفة التقديرية بنجاح');
       } else {
-        toast.error(data?.error || 'لم يتم العثور على مواصفات');
+        toast.error(data?.error || 'لم يتم العثور على مواصفات المنتج');
       }
     } catch (error) {
       console.error('AI calculation error:', error);
-      toast.error('حدث خطأ في حساب المواصفات');
+      toast.error('حدث خطأ في حساب التكلفة');
     } finally {
       setIsCalculatingAI(false);
     }
@@ -200,9 +200,6 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
         imageUrl = await uploadImage();
       }
 
-      const productDimensions = dimensions.length > 0 ? dimensions : null;
-      const productWeight = weight > 0 ? weight : null;
-
       const insertData: any = {
         user_id: user.id,
         product_link: data.product_link,
@@ -212,8 +209,8 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
         description: data.description || null,
         source_country: sourceCountry,
         shipping_type: shippingType,
-        product_dimensions: productDimensions,
-        product_weight: productWeight,
+        product_dimensions: aiResult?.dimensions || null,
+        product_weight: aiResult?.weight || null,
         estimated_shipping_cost: shippingCalculation?.totalCost || null,
         shipping_notes: shippingCalculation?.notes?.join(' | ') || null,
       };
@@ -236,7 +233,7 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
         
         await supabase.functions.invoke('send-telegram-notification', {
           body: {
-            message: `📦 <b>طلب منتج مخصص جديد</b>\n\n👤 المستخدم: ${userName}\n📝 المنتج: ${data.product_name}\n🔢 الكمية: ${data.quantity}\n🌍 الدولة: ${countryLabel}\n🚚 نوع الشحن: ${shippingLabel}\n💰 تكلفة الشحن التقديرية: ${shippingCalculation?.totalCost ? formatPrice(shippingCalculation.totalCost) : 'غير محسوبة'}\n🔗 الرابط: ${data.product_link}`,
+            message: `📦 <b>طلب منتج مخصص جديد</b>\n\n👤 المستخدم: ${userName}\n📝 المنتج: ${data.product_name}\n🔢 الكمية: ${data.quantity}\n🌍 الدولة: ${countryLabel}\n🚚 نوع الشحن: ${shippingLabel}\n💰 سعر المنتج التقديري: ${aiResult?.priceIqd ? formatPrice(aiResult.priceIqd) : 'غير محسوب'}\n📦 تكلفة الشحن التقديرية: ${shippingCalculation?.shippingCost ? formatPrice(shippingCalculation.shippingCost) : 'غير محسوبة'}\n💵 عمولتنا: ${shippingCalculation?.commission ? formatPrice(shippingCalculation.commission) : '-'}\n🔗 الرابط: ${data.product_link}`,
           },
         });
       } catch (telegramError) {
@@ -246,17 +243,7 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
       toast.success('تم إرسال طلبك بنجاح! سنتواصل معك قريباً');
       queryClient.invalidateQueries({ queryKey: ['pending-requests-count'] });
       queryClient.invalidateQueries({ queryKey: ['custom-requests'] });
-      form.reset();
-      setSelectedImage(null);
-      setImagePreview(null);
-      setSourceCountry('china');
-      setShippingType('sea');
-      setDimensions({ length: 0, width: 0, height: 0 });
-      setWeight(0);
-      setShowShippingCalculator(false);
-      setAiSpecsSource(null);
-      setProductPriceIqd(null);
-      setProductPriceUsd(null);
+      resetForm();
       setOpen(false);
     } catch (error) {
       console.error('Error submitting custom product request:', error);
@@ -266,8 +253,21 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
     }
   };
 
+  const resetForm = () => {
+    form.reset();
+    setSelectedImage(null);
+    setImagePreview(null);
+    setSourceCountry('china');
+    setShippingType('sea');
+    setAiResult(null);
+    setShowDetails(false);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (!isOpen) resetForm();
+    }}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -276,7 +276,7 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
             طلب منتج مخصص
           </DialogTitle>
           <DialogDescription>
-            أدخل تفاصيل المنتج الذي ترغب في طلبه وسنتواصل معك
+            أدخل تفاصيل المنتج الذي ترغب في طلبه وسنحسب لك التكلفة التقديرية
           </DialogDescription>
         </DialogHeader>
 
@@ -341,7 +341,10 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
                   <Globe className="h-4 w-4" />
                   دولة الشحن
                 </Label>
-                <Select value={sourceCountry} onValueChange={(v) => setSourceCountry(v as SourceCountry)}>
+                <Select value={sourceCountry} onValueChange={(v) => {
+                  setSourceCountry(v as SourceCountry);
+                  setAiResult(null); // Reset AI result when country changes
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -357,7 +360,10 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
                   {shippingType === 'sea' ? <Ship className="h-4 w-4" /> : <Plane className="h-4 w-4" />}
                   نوع الشحن
                 </Label>
-                <Select value={shippingType} onValueChange={(v) => setShippingType(v as ShippingType)}>
+                <Select value={shippingType} onValueChange={(v) => {
+                  setShippingType(v as ShippingType);
+                  setAiResult(null); // Reset AI result when type changes
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -381,142 +387,131 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
               </div>
             </div>
 
-            {/* Shipping Calculator Toggle */}
+            {/* AI Calculate Button */}
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowShippingCalculator(!showShippingCalculator)}
-              className="w-full gap-2"
+              onClick={handleAICalculate}
+              disabled={isCalculatingAI}
+              className="w-full gap-2 bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 border-primary/30"
             >
-              <Calculator className="h-4 w-4" />
-              {showShippingCalculator ? 'إخفاء حاسبة الشحن' : 'حساب تكلفة الشحن التقديرية'}
+              {isCalculatingAI ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  جاري حساب التكلفة التقديرية...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-5 w-5" />
+                  حساب التكلفة التقديرية بالذكاء الاصطناعي
+                </>
+              )}
             </Button>
 
-            {/* Shipping Calculator */}
-            {showShippingCalculator && (
-              <div className="space-y-4 p-4 bg-accent/10 rounded-lg border border-accent/30">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold text-sm flex items-center gap-2">
-                    <Calculator className="h-4 w-4" />
-                    حاسبة تكلفة الشحن
-                  </h4>
+            {/* AI Calculation Results */}
+            {aiResult && (
+              <div className="space-y-3 p-4 bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg border border-primary/20">
+                {/* Main Price Summary */}
+                <div className="text-center space-y-2">
+                  {aiResult.priceIqd && (
+                    <div className="p-3 bg-background rounded-lg">
+                      <p className="text-xs text-muted-foreground mb-1">سعر المنتج التقديري</p>
+                      <p className="text-2xl font-bold text-primary">{formatPrice(aiResult.priceIqd)}</p>
+                      {aiResult.priceUsd && (
+                        <p className="text-xs text-muted-foreground">${aiResult.priceUsd.toFixed(2)} USD</p>
+                      )}
+                    </div>
+                  )}
                   
-                  {/* AI Calculate Button */}
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={handleAICalculate}
-                    disabled={isCalculatingAI}
-                    className="gap-2"
-                  >
-                    {isCalculatingAI ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Sparkles className="h-4 w-4" />
+                  {shippingCalculation && shippingCalculation.totalCost > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="p-3 bg-background rounded-lg">
+                        <p className="text-xs text-muted-foreground mb-1">تكلفة الشحن</p>
+                        <p className="text-lg font-bold">{formatPrice(shippingCalculation.shippingCost)}</p>
+                      </div>
+                      <div className="p-3 bg-background rounded-lg">
+                        <p className="text-xs text-muted-foreground mb-1">عمولتنا</p>
+                        <p className="text-lg font-bold">{formatPrice(shippingCalculation.commission)}</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Total Estimate */}
+                  {aiResult.priceIqd && shippingCalculation && (
+                    <div className="p-3 bg-primary/10 rounded-lg border border-primary/30">
+                      <p className="text-xs text-muted-foreground mb-1">الإجمالي التقديري (منتج + شحن + عمولة)</p>
+                      <p className="text-2xl font-bold text-primary">
+                        {formatPrice(aiResult.priceIqd + shippingCalculation.totalCost)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Source info */}
+                <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                  <Sparkles className="h-3 w-3" />
+                  {aiResult.estimated ? 'تقدير بالذكاء الاصطناعي' : 'مواصفات دقيقة'}
+                  {aiResult.source && ` - ${aiResult.source}`}
+                </div>
+
+                {/* Collapsible Details */}
+                <Collapsible open={showDetails} onOpenChange={setShowDetails}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="w-full gap-2">
+                      <Calculator className="h-4 w-4" />
+                      {showDetails ? 'إخفاء التفاصيل' : 'عرض التفاصيل'}
+                      {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="mt-2 space-y-2">
+                    {/* Dimensions & Weight */}
+                    {aiResult.dimensions && (
+                      <div className="p-2 bg-background rounded text-sm">
+                        <span className="text-muted-foreground">الأبعاد: </span>
+                        <span className="font-medium">
+                          {aiResult.dimensions.length} × {aiResult.dimensions.width} × {aiResult.dimensions.height} سم
+                        </span>
+                      </div>
                     )}
-                    {isCalculatingAI ? 'جاري الحساب...' : 'حساب تلقائي بالذكاء الاصطناعي'}
-                  </Button>
-                </div>
-                
-                {/* AI Source Info */}
-                {aiSpecsSource && (
-                  <div className="text-xs text-muted-foreground bg-primary/10 p-2 rounded flex items-center gap-2">
-                    <Sparkles className="h-3 w-3 text-primary" />
-                    {aiSpecsSource}
-                  </div>
-                )}
-                
-                {/* Dimensions */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">أبعاد المنتج (سم) - يمكن ملؤها يدوياً أو بالذكاء الاصطناعي</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div>
-                      <Input
-                        type="number"
-                        placeholder="الطول"
-                        value={dimensions.length || ''}
-                        onChange={(e) => setDimensions({ ...dimensions, length: Number(e.target.value) || 0 })}
-                        min={0}
-                      />
-                      <span className="text-xs text-muted-foreground">طول</span>
-                    </div>
-                    <div>
-                      <Input
-                        type="number"
-                        placeholder="العرض"
-                        value={dimensions.width || ''}
-                        onChange={(e) => setDimensions({ ...dimensions, width: Number(e.target.value) || 0 })}
-                        min={0}
-                      />
-                      <span className="text-xs text-muted-foreground">عرض</span>
-                    </div>
-                    <div>
-                      <Input
-                        type="number"
-                        placeholder="الارتفاع"
-                        value={dimensions.height || ''}
-                        onChange={(e) => setDimensions({ ...dimensions, height: Number(e.target.value) || 0 })}
-                        min={0}
-                      />
-                      <span className="text-xs text-muted-foreground">ارتفاع</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Weight - always show for air shipping */}
-                {shippingType === 'air' && (
-                  <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">
-                      وزن المنتج (كغ) {sourceCountry === 'china' && '- يستخدم الأكبر بين الوزن الحجمي والفعلي'}
-                    </Label>
-                    <Input
-                      type="number"
-                      placeholder="الوزن بالكيلوغرام"
-                      value={weight || ''}
-                      onChange={(e) => setWeight(Number(e.target.value) || 0)}
-                      min={0}
-                      step={0.1}
-                    />
-                  </div>
-                )}
-                
-                {/* Product Price from AI */}
-                {productPriceIqd && (
-                  <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                    <h5 className="font-medium text-sm text-green-800 dark:text-green-200 mb-2">سعر المنتج (تقديري)</h5>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-green-700 dark:text-green-300">
-                        ${productPriceUsd?.toFixed(2)} دولار
-                      </span>
-                      <span className="font-bold text-green-800 dark:text-green-200">
-                        {formatPrice(productPriceIqd)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Calculation Result */}
-                {shippingCalculation && shippingCalculation.totalCost > 0 && (
-                  <div className="mt-4 p-3 bg-background rounded-lg border space-y-2">
-                    <h5 className="font-medium text-sm">تفاصيل التكلفة التقديرية:</h5>
-                    <div className="space-y-1 text-sm">
-                      {shippingCalculation.breakdown.map((item, idx) => (
-                        <div key={idx} className="flex justify-between">
-                          <span className="text-muted-foreground">{item.label}:</span>
-                          <span className={item.label === 'الإجمالي' ? 'font-bold text-primary' : ''}>
-                            {typeof item.value === 'number' && item.label !== 'الحجم CBM' && item.label !== 'المقسوم عليه'
-                              ? formatPrice(item.value) 
-                              : item.value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    {shippingCalculation.notes.map((note, idx) => (
-                      <p key={idx} className="text-xs text-amber-600 mt-2">⚠️ {note}</p>
+                    {aiResult.weight && (
+                      <div className="p-2 bg-background rounded text-sm">
+                        <span className="text-muted-foreground">الوزن: </span>
+                        <span className="font-medium">{aiResult.weight} كغ</span>
+                      </div>
+                    )}
+                    
+                    {/* Shipping Breakdown */}
+                    {shippingCalculation && shippingCalculation.breakdown.length > 0 && (
+                      <div className="p-2 bg-background rounded space-y-1">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">تفاصيل حساب الشحن:</p>
+                        {shippingCalculation.breakdown.map((item, idx) => (
+                          <div key={idx} className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">{item.label}:</span>
+                            <span className={item.label === 'الإجمالي' ? 'font-bold text-primary' : ''}>
+                              {typeof item.value === 'number' && 
+                               !item.label.includes('CBM') && 
+                               !item.label.includes('المقسوم') &&
+                               !item.label.includes('كغ')
+                                ? formatPrice(item.value as number) 
+                                : item.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Notes */}
+                    {aiResult.notes && (
+                      <p className="text-xs text-amber-600 p-2 bg-amber-50 dark:bg-amber-950/30 rounded">
+                        💡 {aiResult.notes}
+                      </p>
+                    )}
+                    
+                    {shippingCalculation?.notes.map((note, idx) => (
+                      <p key={idx} className="text-xs text-muted-foreground">⚠️ {note}</p>
                     ))}
-                  </div>
-                )}
+                  </CollapsibleContent>
+                </Collapsible>
               </div>
             )}
 
