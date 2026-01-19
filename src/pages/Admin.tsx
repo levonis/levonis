@@ -157,6 +157,20 @@ const Admin = () => {
     }
   });
 
+  // Fetch loyalty levels for card discount selection
+  const { data: loyaltyLevels } = useQuery({
+    queryKey: ['loyalty-levels-admin'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('loyalty_levels')
+        .select('id, name_ar, level_key, color')
+        .order('display_order', { ascending: true });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
   // Ensure product options, colors, and features load reliably when opening the editor
   useEffect(() => {
     if (productDialogOpen && editingProduct) {
@@ -1167,6 +1181,16 @@ const Admin = () => {
         features: validFeatures.length > 0 ? validFeatures : [],
         // Taobao sync fields
         taobao_url: (formData.get('taobao_url') as string)?.trim() || null,
+        // Product rewards and card discount
+        points_reward: formData.get('points_reward') && formData.get('points_reward') !== '' 
+          ? Number(formData.get('points_reward')) 
+          : 0,
+        card_discount_level_id: formData.get('card_discount_level_id') && formData.get('card_discount_level_id') !== '' 
+          ? formData.get('card_discount_level_id') as string
+          : null,
+        card_discount_percentage: formData.get('card_discount_percentage') && formData.get('card_discount_percentage') !== '' 
+          ? Number(formData.get('card_discount_percentage')) 
+          : 0,
       };
 
       // Validate with zod
@@ -1930,6 +1954,62 @@ const Admin = () => {
                           defaultValue={editingProduct?.currency || defaultSettings?.currency || 'دينار عراقي'}
                           placeholder="دينار عراقي"
                         />
+                      </div>
+                    </div>
+
+                    {/* Product Rewards & Card Discount Section */}
+                    <div className="space-y-4 border-t pt-4">
+                      <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                        <Coins className="h-4 w-4" />
+                        <span>مكافآت المنتج وخصم البطاقات</span>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-primary/20 rounded-lg bg-primary/5">
+                        <div className="space-y-2">
+                          <Label htmlFor="points_reward">نقاط المكافأة</Label>
+                          <Input 
+                            id="points_reward" 
+                            name="points_reward"
+                            type="number"
+                            min="0"
+                            defaultValue={editingProduct?.points_reward || 0}
+                            placeholder="0"
+                          />
+                          <p className="text-xs text-muted-foreground">النقاط التي يحصل عليها الزبون عند الشراء</p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="card_discount_level_id">بطاقة الخصم المطلوبة</Label>
+                          <select
+                            id="card_discount_level_id"
+                            name="card_discount_level_id"
+                            defaultValue={editingProduct?.card_discount_level_id || ''}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                          >
+                            <option value="">بدون خصم بطاقة</option>
+                            {loyaltyLevels?.map((level) => (
+                              <option key={level.id} value={level.id}>
+                                {level.name_ar}
+                              </option>
+                            ))}
+                          </select>
+                          <p className="text-xs text-muted-foreground">البطاقة المطلوبة للحصول على الخصم</p>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="card_discount_percentage">نسبة خصم البطاقة %</Label>
+                          <Input 
+                            id="card_discount_percentage" 
+                            name="card_discount_percentage"
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            defaultValue={editingProduct?.card_discount_percentage || 0}
+                            placeholder="0"
+                          />
+                          <p className="text-xs text-muted-foreground">نسبة الخصم لحاملي البطاقة</p>
+                        </div>
                       </div>
                     </div>
 

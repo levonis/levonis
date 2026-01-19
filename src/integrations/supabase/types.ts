@@ -2471,6 +2471,8 @@ export type Database = {
       products: {
         Row: {
           availability_type: string
+          card_discount_level_id: string | null
+          card_discount_percentage: number | null
           category_id: string | null
           colors: Json | null
           cost_price: number | null
@@ -2489,6 +2491,7 @@ export type Database = {
           name: string
           name_ar: string
           original_price: number | null
+          points_reward: number | null
           pre_order_fast_shipping_price: number | null
           pre_order_free_shipping_price: number | null
           pre_order_shipping_options: Json | null
@@ -2503,6 +2506,8 @@ export type Database = {
         }
         Insert: {
           availability_type?: string
+          card_discount_level_id?: string | null
+          card_discount_percentage?: number | null
           category_id?: string | null
           colors?: Json | null
           cost_price?: number | null
@@ -2521,6 +2526,7 @@ export type Database = {
           name: string
           name_ar: string
           original_price?: number | null
+          points_reward?: number | null
           pre_order_fast_shipping_price?: number | null
           pre_order_free_shipping_price?: number | null
           pre_order_shipping_options?: Json | null
@@ -2535,6 +2541,8 @@ export type Database = {
         }
         Update: {
           availability_type?: string
+          card_discount_level_id?: string | null
+          card_discount_percentage?: number | null
           category_id?: string | null
           colors?: Json | null
           cost_price?: number | null
@@ -2553,6 +2561,7 @@ export type Database = {
           name?: string
           name_ar?: string
           original_price?: number | null
+          points_reward?: number | null
           pre_order_fast_shipping_price?: number | null
           pre_order_free_shipping_price?: number | null
           pre_order_shipping_options?: Json | null
@@ -2566,6 +2575,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "products_card_discount_level_id_fkey"
+            columns: ["card_discount_level_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_levels"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
