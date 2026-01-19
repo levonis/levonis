@@ -136,9 +136,9 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
     const isLoading = loadingPoints || (userPoints && loadingLevel);
     const totalCouponValue = userCoupons?.reduce((sum, c) => sum + (c.prize_value || 0), 0) || 0;
     
-    // Use active card level if available, otherwise use points-based level
+    // Only show purchased cards - NOT points-based levels
     const activeCardLevel = userCard?.loyalty_levels;
-    const displayLevel = activeCardLevel || currentLevel;
+    const displayLevel = activeCardLevel; // Only show if user has an actual purchased card
     const userName = userProfile?.full_name || userProfile?.username || '';
 
     return (
