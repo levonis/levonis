@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -465,7 +466,47 @@ const CURRENCY_TO_USD: Record<string, number> = {
   'KWD': 3.26,
 };
 
-const USD_TO_IQD = 1400;
+let USD_TO_IQD = 1410;
+
+// Air shipping settings for China
+interface AirShippingSettings {
+  air_china_volumetric_price: number;
+  air_china_volumetric_divider: number;
+  air_china_weight_safety_margin: number;
+  sea_padding_cm: number;
+}
+
+// Calculate air shipping cost from China (same logic as useShippingCalculator)
+function calculateAirShippingCost(
+  dimensions: { length: number; width: number; height: number } | null,
+  weight: number | null,
+  settings: AirShippingSettings
+): number {
+  const padding = settings.sea_padding_cm || 5;
+  let volumetricWeight = 0;
+  let actualWeight = weight || 0;
+
+  // Calculate volumetric weight if dimensions provided
+  if (dimensions && dimensions.length > 0) {
+    const length = dimensions.length + padding;
+    const width = dimensions.width + padding;
+    const height = dimensions.height + padding;
+    volumetricWeight = (length * width * height) / settings.air_china_volumetric_divider;
+  }
+
+  // Use the greater weight
+  if (volumetricWeight > 0 || actualWeight > 0) {
+    const usedWeight = Math.max(volumetricWeight, actualWeight);
+    
+    // Add safety margin
+    const safetyMargin = settings.air_china_weight_safety_margin / 100;
+    const weightWithSafety = usedWeight * (1 + safetyMargin);
+    
+    return Math.round(weightWithSafety * settings.air_china_volumetric_price);
+  }
+
+  return 0;
+}
 
 function convertToIQD(price: number, currency: string): number {
   const currencyUpper = currency.toUpperCase();
@@ -594,6 +635,43 @@ serve(async (req) => {
     console.log('Direct extraction - images:', directImages.length, 'price:', directPrice);
     console.log('Direct SKU extraction - colors:', directSkuData.colors.length, 'options:', directSkuData.options.length);
 
+    // Fetch shipping settings from database
+    let shippingSettings: AirShippingSettings = {
+      air_china_volumetric_price: 15000,
+      air_china_volumetric_divider: 5000,
+      air_china_weight_safety_margin: 20,
+      sea_padding_cm: 5,
+    };
+    
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { data: settingsData } = await supabase
+        .from('shipping_settings')
+        .select('setting_key, setting_value');
+      
+      if (settingsData) {
+        for (const item of settingsData) {
+          if (item.setting_key === 'air_china_volumetric_price') {
+            shippingSettings.air_china_volumetric_price = Number(item.setting_value);
+          } else if (item.setting_key === 'air_china_volumetric_divider') {
+            shippingSettings.air_china_volumetric_divider = Number(item.setting_value);
+          } else if (item.setting_key === 'air_china_weight_safety_margin') {
+            shippingSettings.air_china_weight_safety_margin = Number(item.setting_value);
+          } else if (item.setting_key === 'sea_padding_cm') {
+            shippingSettings.sea_padding_cm = Number(item.setting_value);
+          } else if (item.setting_key === 'usd_to_iqd_rate') {
+            USD_TO_IQD = Number(item.setting_value);
+          }
+        }
+      }
+      console.log('Loaded shipping settings:', shippingSettings, 'USD_TO_IQD:', USD_TO_IQD);
+    } catch (e) {
+      console.log('Could not fetch shipping settings, using defaults:', e);
+    }
+
     // AI extraction with enhanced prompt for Chinese sites
     console.log('Using AI for extraction...');
 
@@ -615,11 +693,27 @@ ${pageContent.substring(0, 100000)}
   "price": 29.99,
   "original_price": 39.99,
   "currency": "CNY",
+  "dimensions": {
+    "length": 30,
+    "width": 20,
+    "height": 10
+  },
+  "weight": 1.5,
   "main_product_images": ["https://صورة-المنتج-الرئيسية.jpg"],
   "colors": [{"name": "Black", "name_ar": "أسود", "hex_code": "#000000", "image_url": "https://صورة-خاصة-بهذا-اللون.jpg"}],
   "options": [{"name": "0.4mm Nozzle", "name_ar": "فوهة 0.4 ملم", "image_url": "https://صورة-خاصة-بهذا-الخيار.jpg"}],
   "features": [{"text": "Feature in English", "text_ar": "الميزة بالعربية"}]
 }
+
+===== قواعد استخراج الأبعاد والوزن (مهم جداً) =====
+
+1. الأبعاد: ابحث عن dimensions, size, 尺寸, 大小, 规格 واستخرج الطول×العرض×الارتفاع بالسنتيمتر
+   - إذا وجدت الأبعاد بالإنش، حولها للسم (1 inch = 2.54 cm)
+   - dimensions.length = الطول، dimensions.width = العرض، dimensions.height = الارتفاع
+
+2. الوزن: ابحث عن weight, 重量, 净重, 毛重 واستخرج الوزن بالكيلوغرام
+   - إذا وجدت الوزن بالباوند، حوله للكيلو (1 lb = 0.453592 kg)
+   - إذا وجدت الوزن بالجرام، حوله للكيلو (÷ 1000)
 
 ===== قواعد استخراج الألوان (مهم جداً) =====
 
@@ -652,7 +746,7 @@ ${pageContent.substring(0, 100000)}
 - main_product_images = صور المعرض الرئيسي فقط (لا تضع صور الألوان/الخيارات هنا)
 - إذا وجدت صورة للون/خيار، ضعها في image_url
 
-أرجع JSON فقط بدون أي نص إضافي. استخرج كل الألوان والخيارات بدون استثناء!`;
+أرجع JSON فقط بدون أي نص إضافي. استخرج كل الألوان والخيارات والأبعاد والوزن بدون استثناء!`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -663,7 +757,7 @@ ${pageContent.substring(0, 100000)}
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'أنت مستخرج بيانات منتجات خبير. مهمتك الأساسية: استخراج كل الألوان والخيارات المتاحة في المنتج بدون استثناء - حتى لو كانت 50 أو 100 عنصر. لكل لون/خيار استخرج صورته. أرجع JSON صحيح فقط.' },
+          { role: 'system', content: 'أنت مستخرج بيانات منتجات خبير. مهمتك الأساسية: استخراج كل الألوان والخيارات والأبعاد والوزن المتاحة في المنتج بدون استثناء. لكل لون/خيار استخرج صورته. أرجع JSON صحيح فقط.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.05,
@@ -683,7 +777,11 @@ ${pageContent.substring(0, 100000)}
       colors: [],
       options: [],
       features: [],
-      points_reward: 0
+      points_reward: 0,
+      dimensions: null,
+      weight: null,
+      air_shipping_cost: null,
+      pre_order_shipping_options: []
     };
     
     const variantImageUrls = new Set<string>();
@@ -802,6 +900,51 @@ ${pageContent.substring(0, 100000)}
               }
             }
           }
+
+          // Extract dimensions and weight
+          if (ai.dimensions && typeof ai.dimensions === 'object') {
+            const dims = ai.dimensions;
+            if (dims.length > 0 || dims.width > 0 || dims.height > 0) {
+              productInfo.dimensions = {
+                length: parseFloat(dims.length) || 0,
+                width: parseFloat(dims.width) || 0,
+                height: parseFloat(dims.height) || 0
+              };
+            }
+          }
+          
+          if (ai.weight && parseFloat(ai.weight) > 0) {
+            productInfo.weight = parseFloat(ai.weight);
+          }
+
+          // Calculate air shipping cost from China if we have dimensions or weight
+          if (productInfo.dimensions || productInfo.weight) {
+            const airShippingCost = calculateAirShippingCost(
+              productInfo.dimensions,
+              productInfo.weight,
+              shippingSettings
+            );
+            
+            if (airShippingCost > 0) {
+              productInfo.air_shipping_cost = airShippingCost;
+              
+              // Add "Fast Shipping" option to pre_order_shipping_options
+              productInfo.pre_order_shipping_options = [
+                {
+                  name: 'Free Shipping (45 days)',
+                  name_ar: 'شحن مجاني (45 يومًا)',
+                  price_adjustment: 0
+                },
+                {
+                  name: 'Fast Shipping (Air)',
+                  name_ar: 'الشحن السريع (جوي)',
+                  price_adjustment: airShippingCost
+                }
+              ];
+              
+              console.log('Calculated air shipping cost:', airShippingCost, 'IQD');
+            }
+          }
         }
       } catch (e) {
         console.error('Parse error:', e);
@@ -879,6 +1022,10 @@ ${pageContent.substring(0, 100000)}
     console.log('Colors:', productInfo.colors.length);
     console.log('Options:', productInfo.options.length);
     console.log('Features:', productInfo.features.length);
+    console.log('Dimensions:', productInfo.dimensions);
+    console.log('Weight:', productInfo.weight);
+    console.log('Air Shipping Cost:', productInfo.air_shipping_cost);
+    console.log('Pre-order Shipping Options:', productInfo.pre_order_shipping_options?.length);
 
     return new Response(
       JSON.stringify({

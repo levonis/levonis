@@ -906,6 +906,15 @@ const Admin = () => {
       if (pointsInput) pointsInput.value = String(productInfo.points_reward);
     }
 
+    // Set pre-order shipping options with air shipping cost (Fast Shipping)
+    if (productInfo.pre_order_shipping_options && Array.isArray(productInfo.pre_order_shipping_options) && productInfo.pre_order_shipping_options.length > 0) {
+      setPreOrderShippingOptions(productInfo.pre_order_shipping_options.map((opt: any) => ({
+        name: opt.name || '',
+        name_ar: opt.name_ar || '',
+        price_adjustment: opt.price_adjustment || 0
+      })));
+    }
+
     // Hide manual input if it was shown
     setShowManualInput(false);
 
@@ -913,7 +922,13 @@ const Admin = () => {
     const optionsCount = optionsData.length || 0;
     const featuresCount = productInfo.features?.length || 0;
     const pointsReward = productInfo.points_reward || 0;
-    toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات، ${pointsReward} نقاط)`);
+    const shippingCost = productInfo.air_shipping_cost || 0;
+    
+    let successMessage = `تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات، ${pointsReward} نقاط)`;
+    if (shippingCost > 0) {
+      successMessage += ` - تكلفة الشحن السريع: ${formatPrice(shippingCost)}`;
+    }
+    toast.success(successMessage);
   };
 
   // Re-extract images only for a product using AI
