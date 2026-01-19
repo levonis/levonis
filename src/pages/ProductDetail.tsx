@@ -39,12 +39,26 @@ const ProductDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, categories(name_ar, name), loyalty_levels:card_discount_level_id(id, name_ar, color, level_key, display_order)')
+        .select('*, categories(name_ar, name)')
         .eq('slug', slug)
         .maybeSingle();
       
       if (error) throw error;
       if (!data) throw new Error('Product not found');
+      return data;
+    }
+  });
+
+  // Fetch all loyalty levels for card discounts display
+  const { data: allLoyaltyLevels } = useQuery({
+    queryKey: ['loyalty-levels-for-discounts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('loyalty_levels')
+        .select('id, name_ar, color, level_key, display_order')
+        .order('display_order', { ascending: true });
+      
+      if (error) throw error;
       return data;
     }
   });
@@ -805,16 +819,14 @@ const ProductDetail = () => {
               </div>
 
               {/* Product Rewards Section */}
-              {(Number((product as any).points_reward) > 0 || Number((product as any).card_discount_percentage) > 0) && (
+              {(Number((product as any).points_reward) > 0 || (Array.isArray((product as any).card_discounts) && (product as any).card_discounts.length > 0)) && allLoyaltyLevels && (
                 <div className="mb-4">
                   <ProductRewardsSection
                     pointsReward={Number((product as any).points_reward) || 0}
-                    cardDiscountPercentage={Number((product as any).card_discount_percentage) || 0}
-                    cardDiscountLevelName={(product as any).loyalty_levels?.name_ar}
-                    cardDiscountLevelColor={(product as any).loyalty_levels?.color}
-                    cardDiscountLevelOrder={(product as any).loyalty_levels?.display_order}
+                    cardDiscounts={Array.isArray((product as any).card_discounts) ? (product as any).card_discounts : []}
+                    loyaltyLevels={allLoyaltyLevels || []}
                     userHasCard={!!userCard}
-                    userCardLevel={userCard?.loyalty_levels?.name_ar}
+                    userCardLevelId={userCard?.level_id}
                     userCardLevelOrder={userCard?.loyalty_levels?.display_order}
                     productPrice={finalPrice}
                     currency={currency}
