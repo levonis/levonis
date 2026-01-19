@@ -911,8 +911,13 @@ const Admin = () => {
       if (pointsInput) pointsInput.value = String(productInfo.points_reward);
     }
 
-    // Calculate air shipping cost from China and apply to fast shipping option
-    if (productInfo.dimensions || productInfo.weight_kg) {
+    // Apply estimated air shipping cost if calculated by AI, or calculate locally
+    if (productInfo.estimated_air_shipping_cost && productInfo.estimated_air_shipping_cost > 0) {
+      // Use the pre-calculated shipping cost from AI
+      console.log('[AI Shipping] Using pre-calculated air shipping cost:', productInfo.estimated_air_shipping_cost);
+      applyAirShippingCost(productInfo.estimated_air_shipping_cost);
+    } else if (productInfo.dimensions || productInfo.weight_kg) {
+      // Fall back to local calculation
       calculateAndApplyAirShipping(productInfo.dimensions, productInfo.weight_kg);
     }
 
@@ -925,6 +930,39 @@ const Admin = () => {
     const pointsReward = productInfo.points_reward || 0;
     const hasShippingCalc = productInfo.dimensions || productInfo.weight_kg;
     toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات${hasShippingCalc ? '، + سعر الشحن' : ''})`);
+  };
+
+  // Apply air shipping cost directly (when calculated by AI)
+  const applyAirShippingCost = (shippingCost: number) => {
+    console.log('[AI Shipping] Applying pre-calculated air shipping cost:', shippingCost);
+    
+    // Update the fast shipping option in preOrderShippingOptions
+    setPreOrderShippingOptions(prevOptions => {
+      // Find fast shipping option (usually the second one with "سريع" in name)
+      const updatedOptions = prevOptions.map((opt, index) => {
+        if (opt.name_ar?.includes('سريع') || opt.name?.toLowerCase().includes('fast') || index === 1) {
+          return { ...opt, price_adjustment: shippingCost };
+        }
+        return opt;
+      });
+      
+      // If no fast shipping option found, add one
+      const hasFastShipping = updatedOptions.some(
+        opt => opt.name_ar?.includes('سريع') || opt.name?.toLowerCase().includes('fast')
+      );
+      
+      if (!hasFastShipping && shippingCost > 0) {
+        updatedOptions.push({
+          name: 'Fast shipping (15 days)',
+          name_ar: 'شحن سريع (15 يومًا)',
+          price_adjustment: shippingCost
+        });
+      }
+      
+      return updatedOptions;
+    });
+    
+    toast.info(`تم حساب سعر الشحن السريع: ${shippingCost.toLocaleString()} دينار`);
   };
 
   // Calculate air shipping cost from China and apply to fast shipping option
