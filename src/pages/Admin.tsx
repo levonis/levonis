@@ -1504,6 +1504,7 @@ const Admin = () => {
                 { icon: Trophy, title: 'المسابقات والعروض', desc: 'إدارة المسابقات وعروض المنتجات', path: ADMIN_ROUTES.competitions },
                 { icon: Package, title: 'سوق المستعمل', desc: 'إدارة منتجات البائعين', path: ADMIN_ROUTES.marketplace },
                 { icon: Shield, title: 'حماية الطابعات', desc: 'إدارة اشتراكات الحماية', path: ADMIN_ROUTES.printerProtection },
+                { icon: Truck, title: 'إعدادات الشحن', desc: 'أسعار وحساب تكلفة الشحن', path: ADMIN_ROUTES.shippingSettings },
               ].map((item, idx) => (
                 <button
                   key={idx}

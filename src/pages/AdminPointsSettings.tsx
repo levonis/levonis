@@ -73,8 +73,7 @@ export default function AdminPointsSettings() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // System settings
-  const [pointsPerDinar, setPointsPerDinar] = useState("100");
+  // System settings - Removed pointsPerDinar as each product now has its own points
   const [pointsPerReview, setPointsPerReview] = useState("5");
   const [pointsPerInstagramShare, setPointsPerInstagramShare] = useState("50");
   const [referrerPoints, setReferrerPoints] = useState("50");
@@ -264,7 +263,7 @@ export default function AdminPointsSettings() {
   useEffect(() => {
     if (pointsSettings?.setting_value) {
       const s = pointsSettings.setting_value as any;
-      setPointsPerDinar(s.points_per_dinar?.toString() || "100");
+      // Removed pointsPerDinar - each product has its own points now
       setPointsPerReview(s.points_per_review?.toString() || "5");
       setPointsPerInstagramShare(s.points_per_instagram_share?.toString() || "50");
       setPointsStatus(s.points_status || 'active');
@@ -305,7 +304,7 @@ export default function AdminPointsSettings() {
     mutationFn: async () => {
       const settingsValue = {
         points_status: pointsStatus,
-        points_per_dinar: parseFloat(pointsPerDinar),
+        // Removed points_per_dinar - each product now has its own points (points_reward field)
         points_per_review: parseFloat(pointsPerReview),
         points_per_instagram_share: parseFloat(pointsPerInstagramShare),
         
@@ -755,33 +754,25 @@ export default function AdminPointsSettings() {
 
             {/* Earning Tab */}
             <TabsContent value="earning" className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {/* نقاط لكل دينار */}
-                <Card className="bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border-primary/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-lg bg-amber-500/20">
-                          <Coins className="h-5 w-5 text-amber-500" />
-                        </div>
-                        <div>
-                          <h4 className="font-medium">نقاط لكل X دينار</h4>
-                          <p className="text-xs text-muted-foreground mt-0.5">كل X دينار = 1 نقطة</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          type="number"
-                          min="1"
-                          className="w-24 h-9 text-center"
-                          value={pointsPerDinar}
-                          onChange={(e) => setPointsPerDinar(e.target.value)}
-                        />
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">دينار/نقطة</span>
-                      </div>
+              {/* Info about new points system */}
+              <Card className="bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border-primary/20">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 rounded-lg bg-amber-500/20">
+                      <Coins className="h-5 w-5 text-amber-500" />
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <h4 className="font-medium">نقاط المنتجات</h4>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        يتم تحديد النقاط لكل منتج بشكل منفصل من صفحة تعديل المنتج. 
+                        يتم حساب النقاط تلقائياً (1 نقطة لكل 1000 دينار) عند استخراج المنتج بالذكاء الاصطناعي، ويمكن للأدمن تعديلها.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
                 {/* نقاط للتقييم */}
                 <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/5 border-primary/20">
