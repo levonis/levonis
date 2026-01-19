@@ -49,21 +49,31 @@ serve(async (req) => {
       console.log('Could not fetch USD rate, using default:', e);
     }
 
-    console.log('Searching for product specs:', productName, 'USD rate:', usdToIqdRate);
+    console.log('Searching for product specs:', productName, productUrl, 'USD rate:', usdToIqdRate);
 
-    const prompt = `ابحث عن مواصفات المنتج التالي واستخرج الأبعاد والوزن والسعر بدقة.
+    const prompt = `أنت خبير في استخراج معلومات المنتجات من المتاجر الإلكترونية.
+
+المطلوب: استخراج معلومات المنتج التالي بدقة عالية جداً.
 
 اسم المنتج: ${productName}
 ${optionName ? `الخيار المحدد: ${optionName}` : ''}
 ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
 
-أحتاج منك:
-1. البحث عن أبعاد المنتج الدقيقة (الطول × العرض × الارتفاع) بالسنتيمتر
-2. البحث عن وزن المنتج بالكيلوغرام
-3. البحث عن سعر المنتج بالدولار الأمريكي (USD)
-4. إذا لم تجد معلومات دقيقة، قدّر بناءً على نوع المنتج
+تعليمات مهمة جداً:
+1. السعر: ابحث عن السعر الفعلي للمنتج بالدولار الأمريكي (USD). 
+   - إذا كان الرابط من Taobao أو 1688 أو JD، السعر سيكون بالـ Yuan الصيني (CNY/RMB/¥) - قم بتحويله للدولار (1 USD ≈ 7.2 CNY)
+   - إذا كان من Amazon أو eBay، السعر بالدولار مباشرة
+   - استخرج السعر الدقيق كما هو مكتوب في الصفحة، لا تقربه أو تغيره
+   - مثال: إذا كان السعر 94.95$ أرجع 94.95 وليس 95 أو 100
 
-أرجع JSON فقط بالشكل التالي:
+2. الأبعاد: استخرج أبعاد المنتج الدقيقة (الطول × العرض × الارتفاع) بالسنتيمتر
+   - إذا وجدت الأبعاد بالإنش، حولها للسم (1 inch = 2.54 cm)
+
+3. الوزن: استخرج وزن المنتج بالكيلوغرام
+   - إذا وجدت الوزن بالباوند، حوله للكيلو (1 lb = 0.453592 kg)
+   - إذا وجدت الوزن بالجرام، حوله للكيلو (÷ 1000)
+
+أرجع JSON فقط بالشكل التالي (بدون أي نص آخر):
 {
   "dimensions": {
     "length": 30,
@@ -71,20 +81,23 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
     "height": 10
   },
   "weight": 1.5,
-  "price_usd": 150,
-  "estimated": true,
-  "source": "تقدير بناءً على منتجات مشابهة",
-  "notes": "ملاحظات إضافية"
+  "price_usd": 94.95,
+  "original_currency": "USD",
+  "original_price": 94.95,
+  "estimated": false,
+  "source": "من صفحة المنتج",
+  "notes": "ملاحظات إضافية إن وجدت"
 }
 
 ملاحظات:
 - الأبعاد بالسنتيمتر (cm)
 - الوزن بالكيلوغرام (kg)
-- السعر بالدولار الأمريكي (USD)
-- estimated = true إذا كانت قيم تقديرية، false إذا كانت دقيقة
-- أضف ملاحظات مفيدة عن التغليف المتوقع
+- السعر بالدولار الأمريكي (USD) - تأكد من دقة السعر
+- estimated = false إذا وجدت القيم في صفحة المنتج، true فقط إذا كانت تقديرية
+- original_currency = العملة الأصلية (USD, CNY, EUR, etc.)
+- original_price = السعر بالعملة الأصلية
 
-أرجع JSON فقط بدون أي نص إضافي.`;
+أرجع JSON صحيح فقط.`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -97,11 +110,11 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
         messages: [
           { 
             role: 'system', 
-            content: 'أنت خبير في مواصفات المنتجات والشحن الدولي. ابحث عن أبعاد ووزن وسعر المنتجات بدقة عالية. إذا لم تجد معلومات دقيقة، قدم تقديراً معقولاً بناءً على نوع المنتج. أرجع JSON صحيح فقط.' 
+            content: 'أنت خبير في استخراج معلومات المنتجات من المتاجر الإلكترونية. مهمتك استخراج السعر والأبعاد والوزن بدقة عالية جداً من صفحات المنتجات. لا تقرب الأسعار أو تخمنها - استخرج القيمة الدقيقة. أرجع JSON صحيح فقط.' 
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.2,
+        temperature: 0.1, // Lower temperature for more accurate extraction
       }),
     });
 
@@ -148,6 +161,8 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
           weight: specs.weight,
           price_usd: specs.price_usd,
           price_iqd: priceIqd,
+          original_currency: specs.original_currency,
+          original_price: specs.original_price,
           usd_to_iqd_rate: usdToIqdRate,
           estimated: specs.estimated ?? true,
           source: specs.source,

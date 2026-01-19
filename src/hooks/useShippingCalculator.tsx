@@ -110,9 +110,7 @@ export const calculateShippingCost = (
       cbm = length * width * height;
       shippingCost = cbm * settings.sea_cbm_price;
       
-      breakdown.push({ label: 'الأبعاد مع الهامش (متر)', value: `${length.toFixed(2)} × ${width.toFixed(2)} × ${height.toFixed(2)}` });
       breakdown.push({ label: 'الحجم CBM', value: cbm.toFixed(4) });
-      breakdown.push({ label: 'سعر CBM الواحد', value: settings.sea_cbm_price });
       breakdown.push({ label: 'تكلفة الشحن البحري', value: Math.round(shippingCost) });
     }
     notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
@@ -124,9 +122,8 @@ export const calculateShippingCost = (
         actualWeight = weight * (1 + bufferPercent);
         shippingCost = actualWeight * settings.air_usa_kg_price;
         
-        breakdown.push({ label: 'الوزن الأصلي (كغ)', value: weight });
-        breakdown.push({ label: `الوزن مع التغليف (+${settings.air_usa_weight_buffer_percent}%)`, value: Number(actualWeight.toFixed(2)) });
-        breakdown.push({ label: 'سعر الكيلو (جوي أمريكا)', value: settings.air_usa_kg_price });
+        // Only show final weight with packaging
+        breakdown.push({ label: 'الوزن مع التغليف', value: `${actualWeight.toFixed(2)} كغ` });
         breakdown.push({ label: 'تكلفة الشحن الجوي', value: Math.round(shippingCost) });
       }
       notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
@@ -140,16 +137,11 @@ export const calculateShippingCost = (
         const width = dimensions.width + padding;
         const height = dimensions.height + padding;
         volumetricWeight = (length * width * height) / settings.air_china_volumetric_divider;
-        
-        breakdown.push({ label: 'الأبعاد مع الهامش (سم)', value: `${length} × ${width} × ${height}` });
-        breakdown.push({ label: 'المقسوم عليه', value: settings.air_china_volumetric_divider });
-        breakdown.push({ label: 'الوزن الحجمي (كغ)', value: Number(volumetricWeight.toFixed(2)) });
       }
       
       // Actual weight
       if (weight && weight > 0) {
         actualWeight = weight;
-        breakdown.push({ label: 'الوزن الفعلي (كغ)', value: Number(weight.toFixed(2)) });
       }
       
       // Use the greater weight
@@ -159,20 +151,12 @@ export const calculateShippingCost = (
       if (volWeight > 0 || actWeight > 0) {
         usedWeight = Math.max(volWeight, actWeight);
         
-        if (volWeight > 0 && actWeight > 0) {
-          if (volWeight > actWeight) {
-            breakdown.push({ label: 'الوزن المستخدم (الأكبر)', value: `${usedWeight.toFixed(2)} كغ (الحجمي)` });
-          } else {
-            breakdown.push({ label: 'الوزن المستخدم (الأكبر)', value: `${usedWeight.toFixed(2)} كغ (الفعلي)` });
-          }
-        }
-        
         // Add safety margin
         const safetyMargin = settings.air_china_weight_safety_margin / 100;
         const weightWithSafety = usedWeight * (1 + safetyMargin);
         
-        breakdown.push({ label: `الوزن مع الاحتياط (+${settings.air_china_weight_safety_margin}%)`, value: Number(weightWithSafety.toFixed(2)) });
-        breakdown.push({ label: 'سعر الكيلو (جوي الصين)', value: settings.air_china_volumetric_price });
+        // Only show final weight with packaging (which includes safety margin)
+        breakdown.push({ label: 'الوزن مع التغليف', value: `${weightWithSafety.toFixed(2)} كغ` });
         
         shippingCost = weightWithSafety * settings.air_china_volumetric_price;
         breakdown.push({ label: 'تكلفة الشحن الجوي', value: Math.round(shippingCost) });
@@ -188,7 +172,7 @@ export const calculateShippingCost = (
   
   // Total = shipping cost + commission (but we keep them separate for display)
   const totalCost = Math.round(shippingCost) + commission;
-  breakdown.push({ label: 'الإجمالي', value: totalCost });
+  breakdown.push({ label: 'إجمالي الشحن', value: totalCost });
 
   return {
     shippingCost: Math.round(shippingCost),
