@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Check, CreditCard, Loader2, Clock, ShoppingCart, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +61,22 @@ export default function LoyaltyLevelsPanel() {
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
+  });
+
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile-name-panel', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!user,
+    staleTime: 10 * 60 * 1000,
   });
 
   const { data: levels, isLoading } = useQuery({
@@ -151,39 +168,39 @@ export default function LoyaltyLevelsPanel() {
   const availablePoints = userPoints?.available_points || 0;
   const currentCardLevel = userCard?.loyalty_levels;
   const daysRemaining = userCard ? Math.max(0, Math.ceil((new Date(userCard.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
+  const userName = userProfile?.full_name || userProfile?.username || '';
 
   return (
     <div className="space-y-4">
-      {/* Current Card Status */}
+      {/* Current Card Status - Professional Design */}
       {userCard && currentCardLevel && (
-        <Card className="border-2" style={{ borderColor: currentCardLevel.color + '60' }}>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div 
-                className="w-14 h-14 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: currentCardLevel.color + '20' }}
-              >
-                <CreditCard className="h-7 w-7" style={{ color: currentCardLevel.color }} />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="font-bold text-lg" style={{ color: currentCardLevel.color }}>
-                    {currentCardLevel.name_ar}
-                  </p>
-                  <Badge className="text-[10px]" style={{ backgroundColor: currentCardLevel.color }}>
-                    بطاقتك الحالية
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-1 mt-1">
-                  <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    متبقي {daysRemaining} يوم
-                  </span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-muted-foreground">بطاقتك الحالية</h3>
+          <UserLoyaltyCard
+            level={{
+              id: currentCardLevel.id,
+              name_ar: currentCardLevel.name_ar,
+              name_en: currentCardLevel.name_en,
+              color: currentCardLevel.color,
+              discount_percentage: currentCardLevel.discount_percentage,
+              bonus_points_percentage: currentCardLevel.bonus_points_percentage,
+              free_shipping: currentCardLevel.free_shipping,
+              free_shipping_min_order: currentCardLevel.free_shipping_min_order,
+              duration_days: currentCardLevel.duration_days,
+              vip_support: currentCardLevel.vip_support,
+              priority_shipping: currentCardLevel.priority_shipping,
+              early_access: currentCardLevel.early_access,
+              exclusive_products: currentCardLevel.exclusive_products,
+              special_name_style: currentCardLevel.special_name_style as any,
+              profile_effects: currentCardLevel.profile_effects as any,
+              benefits: currentCardLevel.benefits as any,
+            }}
+            userName={userName}
+            expiresAt={userCard.expires_at}
+            isActive={true}
+            showDetails={false}
+          />
+        </div>
       )}
 
       {/* Available Cards */}

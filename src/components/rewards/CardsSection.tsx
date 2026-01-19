@@ -40,6 +40,42 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch user profile for name
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile-name', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('full_name, username')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!user && shouldFetchUserData,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Fetch active user card with expiration
+  const { data: userCard } = useQuery({
+    queryKey: ['user-active-card-benefits', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data, error } = await supabase
+        .from('user_cards')
+        .select(`*, loyalty_levels:level_id(*)`)
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!user && shouldFetchUserData,
+    staleTime: 2 * 60 * 1000,
+  });
+
   const { data: currentLevel, isLoading: loadingLevel } = useQuery({
     queryKey: ['current-loyalty-level', userPoints?.total_points],
     queryFn: async () => {
@@ -99,32 +135,39 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
   if (activeSubTab === 'benefits') {
     const isLoading = loadingPoints || (userPoints && loadingLevel);
     const totalCouponValue = userCoupons?.reduce((sum, c) => sum + (c.prize_value || 0), 0) || 0;
+    
+    // Use active card level if available, otherwise use points-based level
+    const activeCardLevel = userCard?.loyalty_levels;
+    const displayLevel = activeCardLevel || currentLevel;
+    const userName = userProfile?.full_name || userProfile?.username || '';
 
     return (
       <div className="space-y-4">
         {/* Membership Card - Professional Design */}
         {isLoading ? (
           <LevelCardSkeleton />
-        ) : currentLevel ? (
+        ) : displayLevel ? (
           <UserLoyaltyCard 
             level={{
-              id: currentLevel.id,
-              name_ar: currentLevel.name_ar,
-              name_en: currentLevel.name_en,
-              color: currentLevel.color,
-              discount_percentage: currentLevel.discount_percentage,
-              bonus_points_percentage: currentLevel.bonus_points_percentage,
-              free_shipping: currentLevel.free_shipping,
-              free_shipping_min_order: currentLevel.free_shipping_min_order,
-              duration_days: currentLevel.duration_days,
-              vip_support: currentLevel.vip_support,
-              priority_shipping: currentLevel.priority_shipping,
-              early_access: currentLevel.early_access,
-              exclusive_products: currentLevel.exclusive_products,
-              special_name_style: currentLevel.special_name_style as any,
-              profile_effects: currentLevel.profile_effects as any,
-              benefits: currentLevel.benefits as any,
+              id: displayLevel.id,
+              name_ar: displayLevel.name_ar,
+              name_en: displayLevel.name_en,
+              color: displayLevel.color,
+              discount_percentage: displayLevel.discount_percentage,
+              bonus_points_percentage: displayLevel.bonus_points_percentage,
+              free_shipping: displayLevel.free_shipping,
+              free_shipping_min_order: displayLevel.free_shipping_min_order,
+              duration_days: displayLevel.duration_days,
+              vip_support: displayLevel.vip_support,
+              priority_shipping: displayLevel.priority_shipping,
+              early_access: displayLevel.early_access,
+              exclusive_products: displayLevel.exclusive_products,
+              special_name_style: displayLevel.special_name_style as any,
+              profile_effects: displayLevel.profile_effects as any,
+              benefits: displayLevel.benefits as any,
             }}
+            userName={userName}
+            expiresAt={userCard?.expires_at}
             isActive={true}
             showDetails={true}
           />
