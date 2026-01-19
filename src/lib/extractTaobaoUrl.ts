@@ -7,13 +7,14 @@ export interface ExtractedUrlInfo {
   url: string | null;
   itemId: string | null;
   platform: 'taobao' | 'jd' | 'tmall' | '1688' | null;
+  isShortUrl?: boolean;
 }
 
 // Short URL patterns that need expansion
 const SHORT_URL_PATTERNS = [
-  /https?:\/\/e\.tb\.cn\/[^\s]+/i,
-  /https?:\/\/m\.tb\.cn\/[^\s]+/i,
-  /https?:\/\/s\.click\.taobao\.com\/[^\s]+/i,
+  /https?:\/\/e\.tb\.cn\/[^\s」】\]]+/i,
+  /https?:\/\/m\.tb\.cn\/[^\s」】\]]+/i,
+  /https?:\/\/s\.click\.taobao\.com\/[^\s」】\]]+/i,
 ];
 
 // Direct URL patterns
@@ -77,6 +78,13 @@ export function buildCanonicalUrl(itemId: string, platform: ExtractedUrlInfo['pl
 }
 
 /**
+ * Check if a URL is a short URL that needs to be followed
+ */
+export function isShortUrl(url: string): boolean {
+  return SHORT_URL_PATTERNS.some(pattern => pattern.test(url));
+}
+
+/**
  * Extract URL from messy text containing Taobao/JD links
  */
 export function extractUrlFromText(text: string): ExtractedUrlInfo {
@@ -88,12 +96,13 @@ export function extractUrlFromText(text: string): ExtractedUrlInfo {
   for (const pattern of SHORT_URL_PATTERNS) {
     const match = text.match(pattern);
     if (match) {
-      // Return the short URL - it will redirect to the actual product page
-      // Can't extract ID from short URL without following redirect
+      const shortUrl = match[0].trim().replace(/[」】\]]+$/, '');
+      // Return the short URL - the edge function will follow it to get the real URL
       return { 
-        url: match[0].trim(), 
+        url: shortUrl, 
         itemId: null,
-        platform: 'taobao' 
+        platform: 'taobao',
+        isShortUrl: true
       };
     }
   }
@@ -102,16 +111,16 @@ export function extractUrlFromText(text: string): ExtractedUrlInfo {
   for (const { pattern, platform } of DIRECT_URL_PATTERNS) {
     const match = text.match(pattern);
     if (match) {
-      const url = match[0].trim();
+      const url = match[0].trim().replace(/[」】\]]+$/, '');
       const { itemId } = extractItemId(url);
       // If we have an itemId, build the canonical URL
       const canonicalUrl = itemId ? buildCanonicalUrl(itemId, platform) : url;
-      return { url: canonicalUrl, itemId, platform };
+      return { url: canonicalUrl, itemId, platform, isShortUrl: false };
     }
   }
 
   // Try to find any URL that looks like it could be a product link
-  const generalUrlPattern = /https?:\/\/[^\s\u4e00-\u9fff」】]+/gi;
+  const generalUrlPattern = /https?:\/\/[^\s\u4e00-\u9fff」】\]]+/gi;
   const urls = text.match(generalUrlPattern);
   
   if (urls) {
@@ -122,10 +131,12 @@ export function extractUrlFromText(text: string): ExtractedUrlInfo {
         const { itemId, platform } = extractItemId(cleanUrl);
         // If we have an itemId, build the canonical URL
         const canonicalUrl = itemId ? buildCanonicalUrl(itemId, platform || 'taobao') : cleanUrl;
+        const isShort = isShortUrl(cleanUrl);
         return { 
           url: canonicalUrl, 
           itemId, 
-          platform: platform || 'taobao' 
+          platform: platform || 'taobao',
+          isShortUrl: isShort
         };
       }
     }
