@@ -2,9 +2,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
-import { Coins, History, TrendingUp, Wallet, Ticket } from "lucide-react";
+import { Coins, TrendingUp, Wallet, Ticket } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
-import { PointsBalanceSkeleton, LevelCardSkeleton } from "./SkeletonLoaders";
+import { PointsBalanceSkeleton } from "./SkeletonLoaders";
 import PointsHistoryPanel from "./panels/PointsHistoryPanel";
 import DailyTasksPanel from "./panels/DailyTasksPanel";
 import RedeemPointsPanel from "./panels/RedeemPointsPanel";
@@ -66,22 +66,6 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { data: loyaltyLevel, isLoading: loadingLevel } = useQuery({
-    queryKey: ['user-loyalty-level-full', userPoints?.total_points],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('loyalty_levels')
-        .select('*')
-        .lte('min_points', userPoints?.total_points || 0)
-        .order('min_points', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user && activeSubTab === 'summary' && userPoints !== undefined,
-    staleTime: 5 * 60 * 1000,
-  });
 
   const { data: userCard } = useQuery({
     queryKey: ['user-active-card', user?.id],
@@ -134,26 +118,24 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
           </div>
         )}
 
-        {/* Current Level */}
-        {loadingLevel ? (
-          <LevelCardSkeleton />
-        ) : loyaltyLevel && (
+        {/* Current Card - Only show if user has purchased a card */}
+        {userCard?.loyalty_levels && (
           <Card className="border-primary/20">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div 
                     className="w-10 h-10 rounded-full flex items-center justify-center"
-                    style={{ backgroundColor: loyaltyLevel.color + '20' }}
+                    style={{ backgroundColor: (userCard.loyalty_levels as any).color + '20' }}
                   >
-                    <TrendingUp className="h-5 w-5" style={{ color: loyaltyLevel.color }} />
+                    <TrendingUp className="h-5 w-5" style={{ color: (userCard.loyalty_levels as any).color }} />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">مستواك الحالي</p>
-                    <p className="font-bold" style={{ color: loyaltyLevel.color }}>
-                      {loyaltyLevel.name_ar}
+                    <p className="text-xs text-muted-foreground">بطاقتك الحالية</p>
+                    <p className="font-bold" style={{ color: (userCard.loyalty_levels as any).color }}>
+                      {(userCard.loyalty_levels as any).name_ar}
                     </p>
-                    {userCard?.expires_at && (
+                    {userCard.expires_at && (
                       <p className="text-[10px] text-muted-foreground">
                         متبقي {Math.ceil((new Date(userCard.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} يوم
                       </p>
