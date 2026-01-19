@@ -2231,6 +2231,94 @@ const Admin = () => {
                            <span>خيارات الشحن للطلب المسبق (مخصصة)</span>
                          </div>
 
+                         {/* Air Shipping Calculator */}
+                         <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
+                           <div className="flex items-center gap-2 mb-3">
+                             <Truck className="h-4 w-4 text-amber-600" />
+                             <Label className="text-sm font-medium text-amber-700">حاسبة الشحن السريع (جوي من الصين)</Label>
+                           </div>
+                           <p className="text-xs text-muted-foreground mb-3">
+                             أدخل الوزن و/أو الأبعاد لحساب سعر الشحن الجوي تلقائياً وإضافته للشحن السريع
+                           </p>
+                           <div className="grid grid-cols-4 gap-2 mb-3">
+                             <div>
+                               <Label className="text-xs">الوزن (كغ)</Label>
+                               <Input
+                                 type="number"
+                                 step="0.1"
+                                 min="0"
+                                 id="calc_weight"
+                                 placeholder="1.5"
+                                 className="h-8 text-sm"
+                               />
+                             </div>
+                             <div>
+                               <Label className="text-xs">الطول (سم)</Label>
+                               <Input
+                                 type="number"
+                                 step="1"
+                                 min="0"
+                                 id="calc_length"
+                                 placeholder="30"
+                                 className="h-8 text-sm"
+                               />
+                             </div>
+                             <div>
+                               <Label className="text-xs">العرض (سم)</Label>
+                               <Input
+                                 type="number"
+                                 step="1"
+                                 min="0"
+                                 id="calc_width"
+                                 placeholder="20"
+                                 className="h-8 text-sm"
+                               />
+                             </div>
+                             <div>
+                               <Label className="text-xs">الارتفاع (سم)</Label>
+                               <Input
+                                 type="number"
+                                 step="1"
+                                 min="0"
+                                 id="calc_height"
+                                 placeholder="15"
+                                 className="h-8 text-sm"
+                               />
+                             </div>
+                           </div>
+                           <Button
+                             type="button"
+                             size="sm"
+                             variant="outline"
+                             className="w-full bg-amber-500/20 border-amber-500/50 hover:bg-amber-500/30"
+                             onClick={async () => {
+                               const weightInput = document.getElementById('calc_weight') as HTMLInputElement;
+                               const lengthInput = document.getElementById('calc_length') as HTMLInputElement;
+                               const widthInput = document.getElementById('calc_width') as HTMLInputElement;
+                               const heightInput = document.getElementById('calc_height') as HTMLInputElement;
+                               
+                               const weight = parseFloat(weightInput?.value) || 0;
+                               const length = parseFloat(lengthInput?.value) || 0;
+                               const width = parseFloat(widthInput?.value) || 0;
+                               const height = parseFloat(heightInput?.value) || 0;
+                               
+                               if (weight <= 0 && (length <= 0 || width <= 0 || height <= 0)) {
+                                 toast.error('أدخل الوزن أو الأبعاد لحساب الشحن');
+                                 return;
+                               }
+                               
+                               const dimensions = length > 0 && width > 0 && height > 0 
+                                 ? { length_cm: length, width_cm: width, height_cm: height }
+                                 : null;
+                               
+                               await calculateAndApplyAirShipping(dimensions, weight > 0 ? weight : null);
+                             }}
+                           >
+                             <Zap className="ml-1 h-3 w-3" />
+                             حساب وتطبيق على الشحن السريع
+                           </Button>
+                         </div>
+
                          <div className="bg-card/50 border border-border rounded-lg p-4 mb-4">
                            <div className="flex items-center justify-between mb-3">
                              <Label className="text-sm font-medium">خيارات الشحن المخصصة</Label>
