@@ -173,18 +173,21 @@ export default function UserLoyaltyCard({
             </div>
           </div>
 
-          {/* User name - engraved style */}
+          {/* User name - engraved style (right side) */}
           {userName && (
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-              <p 
-                className="text-lg font-bold tracking-wide opacity-90"
-                style={{ 
-                  color: textColor,
-                  textShadow: `0 1px 2px ${textColor === "#ffffff" ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)"}`,
-                }}
-              >
-                {userName}
-              </p>
+            <div className="absolute right-5 top-1/2 -translate-y-1/2">
+              <div className="flex items-center gap-2">
+                <User className="h-4 w-4 opacity-60" style={{ color: textColor }} />
+                <p 
+                  className="text-base font-bold tracking-wide opacity-90"
+                  style={{ 
+                    color: textColor,
+                    textShadow: `0 1px 2px ${textColor === "#ffffff" ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)"}`,
+                  }}
+                >
+                  {userName}
+                </p>
+              </div>
             </div>
           )}
 
