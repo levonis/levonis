@@ -260,8 +260,14 @@ export default function LoyaltyLevelsPanel() {
                           <Check className="h-3 w-3 text-green-500" />
                           <span>
                             شحن مجاني
-                            {level.free_shipping_min_order > 0 && ` (طلبات أكثر من ${level.free_shipping_min_order.toLocaleString()} د.ع)`}
+                            {level.free_shipping_min_order && level.free_shipping_min_order > 0 && ` (طلبات أكثر من ${level.free_shipping_min_order.toLocaleString()} د.ع)`}
                           </span>
+                        </div>
+                      )}
+                      {level.vip_support && (
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <Sparkles className="h-3 w-3 text-amber-500" />
+                          <span>دعم عملاء VIP مميز</span>
                         </div>
                       )}
                       {level.card_discounts_enabled && (

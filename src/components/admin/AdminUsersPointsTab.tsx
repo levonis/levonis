@@ -47,25 +47,59 @@ export default function AdminUsersPointsTab() {
   const { data: usersWithPoints, isLoading } = useQuery({
     queryKey: ['admin-users-points', searchQuery, currentPage],
     queryFn: async () => {
-      let query = supabase
-        .from('user_points')
-        .select(`
-          *,
-          profiles!inner(id, username, full_name, email, avatar_url)
-        `, { count: 'exact' })
-        .order('total_points', { ascending: false });
-
-      if (searchQuery) {
-        query = query.or(`profiles.username.ilike.%${searchQuery}%,profiles.full_name.ilike.%${searchQuery}%,profiles.email.ilike.%${searchQuery}%`);
-      }
-
+      // First get user_points ordered by total_points
       const from = (currentPage - 1) * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
-      
-      const { data, error, count } = await query.range(from, to);
-      if (error) throw error;
-      
-      return { users: data, totalCount: count || 0 };
+
+      let pointsQuery = supabase
+        .from('user_points')
+        .select('*', { count: 'exact' })
+        .order('total_points', { ascending: false });
+
+      const { data: pointsData, error: pointsError, count } = await pointsQuery.range(from, to);
+      if (pointsError) throw pointsError;
+
+      if (!pointsData || pointsData.length === 0) {
+        return { users: [], totalCount: count || 0 };
+      }
+
+      // Get all user_ids from pointsData
+      const userIds = pointsData.map(p => p.user_id);
+
+      // Fetch profiles for these users
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, email, avatar_url')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of profiles by id
+      const profilesMap = new Map(profilesData?.map(p => [p.id, p]) || []);
+
+      // Combine data
+      let combinedData = pointsData.map(up => ({
+        ...up,
+        profiles: profilesMap.get(up.user_id) || { 
+          id: up.user_id, 
+          username: null, 
+          full_name: null, 
+          email: null, 
+          avatar_url: null 
+        }
+      }));
+
+      // Filter by search query if provided
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        combinedData = combinedData.filter(up => 
+          up.profiles?.username?.toLowerCase().includes(query) ||
+          up.profiles?.full_name?.toLowerCase().includes(query) ||
+          up.profiles?.email?.toLowerCase().includes(query)
+        );
+      }
+
+      return { users: combinedData, totalCount: count || 0 };
     },
     staleTime: 30 * 1000,
   });

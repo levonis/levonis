@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, CreditCard, Users, Gift, Settings, Tag, Eye, Palette, Clock, Percent, Zap, Truck, Crown, Sparkles } from "lucide-react";
+import { Plus, Pencil, Trash2, CreditCard, Users, Gift, Settings, Tag, Eye, Palette, Clock, Percent, Zap, Truck, Crown, Sparkles, User, Headphones } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -42,6 +42,14 @@ export default function AdminLoyaltyLevels() {
     duration_days: 30,
     card_discounts_enabled: false,
     icon: "crown",
+    // New features
+    vip_support: false,
+    priority_shipping: false,
+    early_access: false,
+    exclusive_products: false,
+    monthly_free_shipping: 0,
+    special_name_style: { enabled: false, color: null as string | null, glow: false, badge_icon: null as string | null },
+    profile_effects: { enabled: false, border_color: null as string | null, background_glow: false, avatar_frame: null as string | null },
   });
   const [benefits, setBenefits] = useState<Array<{ text_ar: string; text_en: string }>>([]);
 
@@ -263,6 +271,13 @@ export default function AdminLoyaltyLevels() {
       duration_days: 30,
       card_discounts_enabled: false,
       icon: "crown",
+      vip_support: false,
+      priority_shipping: false,
+      early_access: false,
+      exclusive_products: false,
+      monthly_free_shipping: 0,
+      special_name_style: { enabled: false, color: null, glow: false, badge_icon: null },
+      profile_effects: { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
     });
     setBenefits([]);
     setEditingLevel(null);
@@ -297,6 +312,13 @@ export default function AdminLoyaltyLevels() {
       duration_days: level.duration_days || 30,
       card_discounts_enabled: level.card_discounts_enabled || false,
       icon: level.icon || "crown",
+      vip_support: level.vip_support || false,
+      priority_shipping: level.priority_shipping || false,
+      early_access: level.early_access || false,
+      exclusive_products: level.exclusive_products || false,
+      monthly_free_shipping: level.monthly_free_shipping || 0,
+      special_name_style: level.special_name_style || { enabled: false, color: null, glow: false, badge_icon: null },
+      profile_effects: level.profile_effects || { enabled: false, border_color: null, background_glow: false, avatar_frame: null },
     });
     setBenefits(level.benefits || []);
     setDialogOpen(true);
@@ -449,10 +471,14 @@ export default function AdminLoyaltyLevels() {
                         discount_percentage={formData.discount_percentage}
                         bonus_points_percentage={formData.bonus_points_percentage}
                         free_shipping={formData.free_shipping}
+                        free_shipping_min_order={formData.free_shipping_min_order}
                         duration_days={formData.duration_days}
                         is_purchasable={formData.is_purchasable}
                         purchase_price_points={formData.purchase_price_points}
                         min_points={formData.min_points}
+                        vip_support={formData.vip_support}
+                        special_name_style={formData.special_name_style}
+                        profile_effects={formData.profile_effects}
                         size="lg"
                       />
                     </div>
@@ -602,6 +628,9 @@ export default function AdminLoyaltyLevels() {
                               value={formData.discount_percentage}
                               onChange={(e) => setFormData({ ...formData, discount_percentage: parseFloat(e.target.value) })}
                             />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              يظهر للمستخدمين غير الحاملين: "خصم X% مع بطاقة {formData.name_ar}"
+                            </p>
                           </div>
                           <div className="admin-form-group">
                             <Label className="flex items-center gap-2">
@@ -618,20 +647,26 @@ export default function AdminLoyaltyLevels() {
                           <div className="admin-form-group">
                             <Label className="flex items-center gap-2">
                               <Truck className="h-4 w-4" />
-                              الحد الأدنى للشحن المجاني
+                              الحد الأدنى للشحن المجاني (د.ع)
                             </Label>
                             <Input
                               type="number"
                               value={formData.free_shipping_min_order}
                               onChange={(e) => setFormData({ ...formData, free_shipping_min_order: parseFloat(e.target.value) })}
                               disabled={!formData.free_shipping}
+                              placeholder="مثال: 250000"
                             />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {formData.free_shipping && formData.free_shipping_min_order > 0 
+                                ? `شحن مجاني للطلبات أكثر من ${formData.free_shipping_min_order.toLocaleString()} د.ع`
+                                : 'شحن مجاني على كل الطلبات'}
+                            </p>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <Label className="flex items-center gap-2">
+                            <Label className="flex items-center gap-2 text-sm">
                               <Truck className="h-4 w-4" />
                               شحن مجاني
                             </Label>
@@ -641,14 +676,175 @@ export default function AdminLoyaltyLevels() {
                             />
                           </div>
                           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                            <Label className="flex items-center gap-2">
+                            <Label className="flex items-center gap-2 text-sm">
                               <Tag className="h-4 w-4" />
-                              خصومات منتجات خاصة
+                              خصومات منتجات
                             </Label>
                             <Switch
                               checked={formData.card_discounts_enabled}
                               onCheckedChange={(checked) => setFormData({ ...formData, card_discounts_enabled: checked })}
                             />
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                            <Label className="flex items-center gap-2 text-sm">
+                              <Crown className="h-4 w-4 text-amber-600" />
+                              دعم VIP
+                            </Label>
+                            <Switch
+                              checked={formData.vip_support}
+                              onCheckedChange={(checked) => setFormData({ ...formData, vip_support: checked })}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <Label className="flex items-center gap-2 text-sm">
+                              <Truck className="h-4 w-4" />
+                              أولوية الشحن
+                            </Label>
+                            <Switch
+                              checked={formData.priority_shipping}
+                              onCheckedChange={(checked) => setFormData({ ...formData, priority_shipping: checked })}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <Label className="flex items-center gap-2 text-sm">
+                              <Sparkles className="h-4 w-4" />
+                              وصول مبكر
+                            </Label>
+                            <Switch
+                              checked={formData.early_access}
+                              onCheckedChange={(checked) => setFormData({ ...formData, early_access: checked })}
+                            />
+                          </div>
+                          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                            <Label className="flex items-center gap-2 text-sm">
+                              <Gift className="h-4 w-4" />
+                              منتجات حصرية
+                            </Label>
+                            <Switch
+                              checked={formData.exclusive_products}
+                              onCheckedChange={(checked) => setFormData({ ...formData, exclusive_products: checked })}
+                            />
+                          </div>
+                          <div className="admin-form-group">
+                            <Label className="text-xs">شحن مجاني شهرياً</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              value={formData.monthly_free_shipping}
+                              onChange={(e) => setFormData({ ...formData, monthly_free_shipping: parseInt(e.target.value) || 0 })}
+                              placeholder="0"
+                            />
+                          </div>
+                        </div>
+                      </AdminCardContent>
+                    </AdminCard>
+
+                    {/* Special Name Style */}
+                    <AdminCard>
+                      <AdminCardHeader title="تأثيرات الاسم والبروفايل" icon={<User className="h-4 w-4" />} />
+                      <AdminCardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Name Style */}
+                          <div className="space-y-4 p-4 border rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <Label className="font-medium">اسم مميز للمستخدم</Label>
+                              <Switch
+                                checked={formData.special_name_style?.enabled || false}
+                                onCheckedChange={(checked) => setFormData({ 
+                                  ...formData, 
+                                  special_name_style: { ...formData.special_name_style, enabled: checked } 
+                                })}
+                              />
+                            </div>
+                            {formData.special_name_style?.enabled && (
+                              <div className="space-y-3">
+                                <div className="admin-form-group">
+                                  <Label className="text-xs">لون الاسم</Label>
+                                  <div className="flex gap-2">
+                                    <Input
+                                      type="color"
+                                      value={formData.special_name_style?.color || formData.color}
+                                      onChange={(e) => setFormData({ 
+                                        ...formData, 
+                                        special_name_style: { ...formData.special_name_style, color: e.target.value } 
+                                      })}
+                                      className="w-12 h-9 cursor-pointer"
+                                    />
+                                    <Input
+                                      value={formData.special_name_style?.color || formData.color}
+                                      onChange={(e) => setFormData({ 
+                                        ...formData, 
+                                        special_name_style: { ...formData.special_name_style, color: e.target.value } 
+                                      })}
+                                      className="flex-1 font-mono text-xs"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                                  <Label className="text-xs">تأثير توهج</Label>
+                                  <Switch
+                                    checked={formData.special_name_style?.glow || false}
+                                    onCheckedChange={(checked) => setFormData({ 
+                                      ...formData, 
+                                      special_name_style: { ...formData.special_name_style, glow: checked } 
+                                    })}
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Profile Effects */}
+                          <div className="space-y-4 p-4 border rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <Label className="font-medium">تأثيرات البروفايل</Label>
+                              <Switch
+                                checked={formData.profile_effects?.enabled || false}
+                                onCheckedChange={(checked) => setFormData({ 
+                                  ...formData, 
+                                  profile_effects: { ...formData.profile_effects, enabled: checked } 
+                                })}
+                              />
+                            </div>
+                            {formData.profile_effects?.enabled && (
+                              <div className="space-y-3">
+                                <div className="admin-form-group">
+                                  <Label className="text-xs">لون الإطار</Label>
+                                  <div className="flex gap-2">
+                                    <Input
+                                      type="color"
+                                      value={formData.profile_effects?.border_color || formData.color}
+                                      onChange={(e) => setFormData({ 
+                                        ...formData, 
+                                        profile_effects: { ...formData.profile_effects, border_color: e.target.value } 
+                                      })}
+                                      className="w-12 h-9 cursor-pointer"
+                                    />
+                                    <Input
+                                      value={formData.profile_effects?.border_color || formData.color}
+                                      onChange={(e) => setFormData({ 
+                                        ...formData, 
+                                        profile_effects: { ...formData.profile_effects, border_color: e.target.value } 
+                                      })}
+                                      className="flex-1 font-mono text-xs"
+                                    />
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between p-2 bg-muted/50 rounded">
+                                  <Label className="text-xs">توهج الخلفية</Label>
+                                  <Switch
+                                    checked={formData.profile_effects?.background_glow || false}
+                                    onCheckedChange={(checked) => setFormData({ 
+                                      ...formData, 
+                                      profile_effects: { ...formData.profile_effects, background_glow: checked } 
+                                    })}
+                                  />
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </AdminCardContent>
@@ -740,10 +936,12 @@ export default function AdminLoyaltyLevels() {
                     discount_percentage={level.discount_percentage}
                     bonus_points_percentage={level.bonus_points_percentage}
                     free_shipping={level.free_shipping}
+                    free_shipping_min_order={level.free_shipping_min_order}
                     duration_days={level.duration_days}
                     is_purchasable={level.is_purchasable}
                     purchase_price_points={level.purchase_price_points}
                     min_points={level.min_points}
+                    vip_support={level.vip_support}
                     size="md"
                   />
                   <div className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
