@@ -12,12 +12,13 @@ interface ShippingCalculation {
   cbm?: number;
   volumetricWeight?: number;
   actualWeight?: number;
+  usedWeight?: number; // The weight used for calculation (max of volumetric/actual)
   commission: number;
   totalCost: number;
   notes: string[];
   breakdown: {
     label: string;
-    value: number;
+    value: number | string;
   }[];
 }
 
@@ -31,9 +32,11 @@ interface ShippingSettings {
   air_usa_weight_buffer_percent: number;
   air_china_volumetric_price: number;
   air_china_volumetric_divider: number;
+  air_china_weight_safety_margin: number;
   commission_fee: number;
   local_delivery_baghdad: number;
   local_delivery_provinces: number;
+  usd_to_iqd_rate: number;
 }
 
 export const useShippingSettings = () => {
@@ -53,9 +56,11 @@ export const useShippingSettings = () => {
         air_usa_weight_buffer_percent: 20,
         air_china_volumetric_price: 15000,
         air_china_volumetric_divider: 5000,
+        air_china_weight_safety_margin: 20,
         commission_fee: 1000,
         local_delivery_baghdad: 6000,
         local_delivery_provinces: 5000,
+        usd_to_iqd_rate: 1410,
       };
 
       data?.forEach((item) => {
@@ -77,11 +82,12 @@ export const calculateShippingCost = (
   settings: ShippingSettings
 ): ShippingCalculation => {
   const notes: string[] = [];
-  const breakdown: { label: string; value: number }[] = [];
+  const breakdown: { label: string; value: number | string }[] = [];
   let shippingCost = 0;
   let cbm: number | undefined;
   let volumetricWeight: number | undefined;
   let actualWeight: number | undefined;
+  let usedWeight: number | undefined;
 
   // Sea shipping is only available from China
   if (shippingType === 'sea' && sourceCountry === 'usa') {
@@ -104,8 +110,8 @@ export const calculateShippingCost = (
       cbm = length * width * height;
       shippingCost = cbm * settings.sea_cbm_price;
       
-      breakdown.push({ label: 'الأبعاد مع الهامش (متر)', value: Number((length).toFixed(3)) });
-      breakdown.push({ label: 'الحجم CBM', value: Number(cbm.toFixed(4)) });
+      breakdown.push({ label: 'الأبعاد مع الهامش (متر)', value: `${length.toFixed(2)} × ${width.toFixed(2)} × ${height.toFixed(2)}` });
+      breakdown.push({ label: 'الحجم CBM', value: cbm.toFixed(4) });
       breakdown.push({ label: 'سعر CBM الواحد', value: settings.sea_cbm_price });
       breakdown.push({ label: 'تكلفة الشحن البحري', value: Math.round(shippingCost) });
     }
@@ -125,28 +131,62 @@ export const calculateShippingCost = (
       }
       notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
     } else if (sourceCountry === 'china') {
-      // Air shipping from China - volumetric weight
-      if (dimensions) {
-        const padding = settings.sea_padding_cm;
+      // Air shipping from China - use the GREATER of volumetric weight or actual weight
+      const padding = settings.sea_padding_cm;
+      
+      // Calculate volumetric weight if dimensions provided
+      if (dimensions && dimensions.length > 0) {
         const length = dimensions.length + padding;
         const width = dimensions.width + padding;
         const height = dimensions.height + padding;
         volumetricWeight = (length * width * height) / settings.air_china_volumetric_divider;
-        shippingCost = volumetricWeight * settings.air_china_volumetric_price;
         
-        breakdown.push({ label: 'الأبعاد مع الهامش (سم)', value: `${length} x ${width} x ${height}` as any });
+        breakdown.push({ label: 'الأبعاد مع الهامش (سم)', value: `${length} × ${width} × ${height}` });
         breakdown.push({ label: 'المقسوم عليه', value: settings.air_china_volumetric_divider });
         breakdown.push({ label: 'الوزن الحجمي (كغ)', value: Number(volumetricWeight.toFixed(2)) });
+      }
+      
+      // Actual weight
+      if (weight && weight > 0) {
+        actualWeight = weight;
+        breakdown.push({ label: 'الوزن الفعلي (كغ)', value: Number(weight.toFixed(2)) });
+      }
+      
+      // Use the greater weight
+      const volWeight = volumetricWeight || 0;
+      const actWeight = actualWeight || 0;
+      
+      if (volWeight > 0 || actWeight > 0) {
+        usedWeight = Math.max(volWeight, actWeight);
+        
+        if (volWeight > 0 && actWeight > 0) {
+          if (volWeight > actWeight) {
+            breakdown.push({ label: 'الوزن المستخدم (الأكبر)', value: `${usedWeight.toFixed(2)} كغ (الحجمي)` });
+          } else {
+            breakdown.push({ label: 'الوزن المستخدم (الأكبر)', value: `${usedWeight.toFixed(2)} كغ (الفعلي)` });
+          }
+        }
+        
+        // Add safety margin
+        const safetyMargin = settings.air_china_weight_safety_margin / 100;
+        const weightWithSafety = usedWeight * (1 + safetyMargin);
+        
+        breakdown.push({ label: `الوزن مع الاحتياط (+${settings.air_china_weight_safety_margin}%)`, value: Number(weightWithSafety.toFixed(2)) });
         breakdown.push({ label: 'سعر الكيلو (جوي الصين)', value: settings.air_china_volumetric_price });
+        
+        shippingCost = weightWithSafety * settings.air_china_volumetric_price;
         breakdown.push({ label: 'تكلفة الشحن الجوي', value: Math.round(shippingCost) });
       }
+      
       notes.push('تضاف تكلفة الشحن الداخلي إن وجدت لاحقاً');
     }
   }
 
+  // Commission is separate - show it as "عمولتنا"
   const commission = settings.commission_fee;
-  breakdown.push({ label: 'العمولة', value: commission });
+  breakdown.push({ label: 'عمولتنا', value: commission });
   
+  // Total = shipping cost + commission (but we keep them separate for display)
   const totalCost = Math.round(shippingCost) + commission;
   breakdown.push({ label: 'الإجمالي', value: totalCost });
 
@@ -155,6 +195,7 @@ export const calculateShippingCost = (
     cbm,
     volumetricWeight,
     actualWeight,
+    usedWeight,
     commission,
     totalCost,
     notes,
