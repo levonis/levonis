@@ -98,17 +98,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // Delete cart request
   const deleteCartRequest = async () => {
-    if (!user || !pendingCartRequest) return;
+    if (!user) return;
 
     try {
-      await supabase
+      // First fetch the latest pending request to ensure we have the correct ID
+      const { data: latestRequest } = await supabase
         .from('cart_requests')
-        .delete()
-        .eq('id', pendingCartRequest.id);
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      setPendingCartRequest(null);
+      if (latestRequest) {
+        const { error } = await supabase
+          .from('cart_requests')
+          .delete()
+          .eq('id', latestRequest.id);
+
+        if (error) throw error;
+        
+        setPendingCartRequest(null);
+        toast.success('تم حذف رمز السلة والسعر المعدل');
+      }
     } catch (error) {
       console.error('Error deleting cart request:', error);
+      toast.error('حدث خطأ في حذف رمز السلة');
     }
   };
 
@@ -424,6 +440,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return sum;
   }, 0);
 
+  // Combined refresh function
+  const refreshAll = async () => {
+    await fetchCart();
+    await fetchPendingCartRequest();
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -437,7 +459,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         updateQuantity,
         removeFromCart,
         clearCart,
-        refreshCart: fetchCart,
+        refreshCart: refreshAll,
         deleteCartRequest,
         checkAndWarnCartRequest,
       }}

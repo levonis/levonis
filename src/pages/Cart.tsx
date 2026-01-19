@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
 import { formatPrice } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -20,7 +20,7 @@ import WalletDialog from '@/components/WalletDialog';
 import CartRequestDialog from '@/components/CartRequestDialog';
 
 const Cart = () => {
-  const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest } = useCart();
+  const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -35,6 +35,11 @@ const Cart = () => {
   const [showCartRequestDialog, setShowCartRequestDialog] = useState(false);
   const [showCartChangeWarning, setShowCartChangeWarning] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
+
+  // Refresh cart data on mount to get latest pendingCartRequest
+  useEffect(() => {
+    refreshCart();
+  }, []);
 
   // التحقق من وجود منتجات طلب مسبق
   const hasPreOrderItems = items.some((item: any) => 
@@ -286,12 +291,12 @@ const Cart = () => {
   };
 
   const handleConfirmCartChange = async () => {
+    setShowCartChangeWarning(false);
     if (pendingAction) {
       await deleteCartRequest();
       await pendingAction();
       setPendingAction(null);
     }
-    setShowCartChangeWarning(false);
   };
 
   // Wrapped cart actions
