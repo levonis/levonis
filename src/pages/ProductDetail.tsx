@@ -17,6 +17,7 @@ import { formatPrice } from '@/lib/utils';
 import ProductCard from '@/components/ProductCard';
 import ProductReviews from '@/components/ProductReviews';
 import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
+import ProductRewardsSection from '@/components/ProductRewardsSection';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -38,7 +39,7 @@ const ProductDetail = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('products')
-        .select('*, categories(name_ar, name)')
+        .select('*, categories(name_ar, name), loyalty_levels:card_discount_level_id(id, name_ar, color, level_key, display_order)')
         .eq('slug', slug)
         .maybeSingle();
       
@@ -46,6 +47,30 @@ const ProductDetail = () => {
       if (!data) throw new Error('Product not found');
       return data;
     }
+  });
+
+  // Fetch user's active loyalty card
+  const { data: userCard } = useQuery({
+    queryKey: ['user-card', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from('user_cards')
+        .select('*, loyalty_levels:level_id(id, name_ar, display_order)')
+        .eq('user_id', user.id)
+        .gt('expires_at', new Date().toISOString())
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error fetching user card:', error);
+        return null;
+      }
+      return data;
+    },
+    enabled: !!user
   });
 
   const { data: productOptions } = useQuery({
@@ -779,7 +804,23 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Quantity Selector */}
+              {/* Product Rewards Section */}
+              {(Number((product as any).points_reward) > 0 || Number((product as any).card_discount_percentage) > 0) && (
+                <div className="mb-4">
+                  <ProductRewardsSection
+                    pointsReward={Number((product as any).points_reward) || 0}
+                    cardDiscountPercentage={Number((product as any).card_discount_percentage) || 0}
+                    cardDiscountLevelName={(product as any).loyalty_levels?.name_ar}
+                    cardDiscountLevelColor={(product as any).loyalty_levels?.color}
+                    cardDiscountLevelOrder={(product as any).loyalty_levels?.display_order}
+                    userHasCard={!!userCard}
+                    userCardLevel={userCard?.loyalty_levels?.name_ar}
+                    userCardLevelOrder={userCard?.loyalty_levels?.display_order}
+                    productPrice={finalPrice}
+                    currency={currency}
+                  />
+                </div>
+              )}
               {product.in_stock && (
                 <div className="border-t border-border/30 pt-6 mb-6">
                   <label className="text-sm font-medium text-foreground mb-2 block">الكمية</label>
