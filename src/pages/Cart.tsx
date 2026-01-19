@@ -8,7 +8,7 @@ import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Walle
 import GroupedCartItem from '@/components/GroupedCartItem';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatPrice } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ const Cart = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponLoading, setCouponLoading] = useState(false);
@@ -308,6 +309,8 @@ const Cart = () => {
       setPendingAction(null);
       // Refresh cart to update pendingCartRequest state
       await refreshCart();
+      // Invalidate the cart-request query cache to update CartRequestDialog
+      queryClient.invalidateQueries({ queryKey: ['cart-request', user?.id] });
     }
   };
 
