@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Check, CreditCard, Loader2, Clock, ShoppingCart, Sparkles } from "lucide-react";
+import { Check, CreditCard, Loader2, Clock, ShoppingCart, Sparkles, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import {
@@ -26,20 +26,21 @@ export default function LoyaltyLevelsPanel() {
   const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
   const [selectedLevel, setSelectedLevel] = useState<any>(null);
 
-  const { data: userPoints } = useQuery({
-    queryKey: ['user-points-levels', user?.id],
+  // Fetch wallet balance
+  const { data: walletBalance } = useQuery({
+    queryKey: ['wallet-balance-loyalty', user?.id],
     queryFn: async () => {
-      if (!user) return null;
+      if (!user) return 0;
       const { data, error } = await supabase
-        .from('user_points')
-        .select('total_points, available_points')
+        .from('user_wallets')
+        .select('balance')
         .eq('user_id', user.id)
         .maybeSingle();
       if (error && error.code !== 'PGRST116') throw error;
-      return data;
+      return data?.balance || 0;
     },
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
   const { data: userCard } = useQuery({
@@ -92,34 +93,50 @@ export default function LoyaltyLevelsPanel() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch wallet settings to get card prices
+  const { data: walletSettings } = useQuery({
+    queryKey: ['wallet-settings-cards'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('default_settings')
+        .select('setting_value')
+        .eq('setting_key', 'loyalty_card_prices')
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data?.setting_value as Record<string, number> | null;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const purchaseCardMutation = useMutation({
     mutationFn: async (level: any) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
       
-      const availablePoints = userPoints?.available_points || 0;
-      if (availablePoints < level.purchase_price_points) {
-        throw new Error('نقاطك غير كافية لشراء هذه البطاقة');
+      // Get price from settings or use default
+      const cardPrice = walletSettings?.[level.id] || (level.purchase_price_points || 0) * 10; // Convert points to dinars as fallback
+      
+      if ((walletBalance || 0) < cardPrice) {
+        throw new Error('رصيد المحفظة غير كافٍ لشراء هذه البطاقة');
       }
 
-      // Deduct points
-      const { error: pointsError } = await supabase
-        .from('user_points')
+      // Deduct from wallet
+      const { error: walletError } = await supabase
+        .from('user_wallets')
         .update({
-          available_points: availablePoints - level.purchase_price_points,
+          balance: (walletBalance || 0) - cardPrice,
         })
         .eq('user_id', user.id);
-      if (pointsError) throw pointsError;
+      if (walletError) throw walletError;
 
-      // Add points transaction
+      // Add wallet transaction
       const { error: transError } = await supabase
-        .from('points_transactions')
+        .from('wallet_transactions')
         .insert({
           user_id: user.id,
-          points: -level.purchase_price_points,
-          type: 'spent',
-          source: 'card_purchase',
-          description: `شراء بطاقة ${level.name_ar}`,
-          related_id: level.id,
+          amount: -cardPrice,
+          type: 'purchase',
+          status: 'completed',
+          admin_notes: `شراء بطاقة ${level.name_ar}`,
         });
       if (transError) throw transError;
 
@@ -134,14 +151,15 @@ export default function LoyaltyLevelsPanel() {
           user_id: user.id,
           level_id: level.id,
           expires_at: expiresAt.toISOString(),
-          points_paid: level.purchase_price_points,
+          points_paid: 0, // No points used anymore
         });
       if (cardError) throw cardError;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-points'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balance-loyalty'] });
       queryClient.invalidateQueries({ queryKey: ['user-active-card'] });
-      queryClient.invalidateQueries({ queryKey: ['user-points-levels'] });
       toast.success('تم شراء البطاقة بنجاح! 🎉');
       setPurchaseDialogOpen(false);
     },
@@ -155,6 +173,10 @@ export default function LoyaltyLevelsPanel() {
     setPurchaseDialogOpen(true);
   };
 
+  const getCardPrice = (level: any) => {
+    return walletSettings?.[level.id] || (level.purchase_price_points || 0) * 10;
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -165,14 +187,25 @@ export default function LoyaltyLevelsPanel() {
     );
   }
 
-  const availablePoints = userPoints?.available_points || 0;
   const currentCardLevel = userCard?.loyalty_levels;
-  const daysRemaining = userCard ? Math.max(0, Math.ceil((new Date(userCard.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0;
   const userName = userProfile?.full_name || userProfile?.username || '';
 
   return (
     <div className="space-y-4">
-      {/* Current Card Status - Professional Design */}
+      {/* Wallet Balance Display */}
+      <Card className="bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+        <CardContent className="p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center">
+            <Wallet className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">رصيد المحفظة</p>
+            <p className="text-xl font-bold">{(walletBalance || 0).toLocaleString()} د.ع</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Current Card Status */}
       {userCard && currentCardLevel && (
         <div className="space-y-2">
           <h3 className="text-sm font-semibold text-muted-foreground">بطاقتك الحالية</h3>
@@ -203,13 +236,14 @@ export default function LoyaltyLevelsPanel() {
         </div>
       )}
 
-      {/* Available Cards - Professional Design with separation */}
+      {/* Available Cards */}
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-muted-foreground">البطاقات المتاحة للشراء</h3>
         <div className="grid gap-6">
           {levels?.filter(level => level.is_purchasable).map((level) => {
             const isCurrentCard = currentCardLevel?.id === level.id;
-            const canPurchase = availablePoints >= (level.purchase_price_points || 0);
+            const cardPrice = getCardPrice(level);
+            const canPurchase = (walletBalance || 0) >= cardPrice;
             
             if (isCurrentCard) return null;
             
@@ -250,11 +284,11 @@ export default function LoyaltyLevelsPanel() {
                 >
                   {canPurchase ? (
                     <>
-                      <ShoppingCart className="h-4 w-4 ml-2" />
-                      شراء بـ {(level.purchase_price_points || 0).toLocaleString()} نقطة
+                      <Wallet className="h-4 w-4 ml-2" />
+                      شراء بـ {cardPrice.toLocaleString()} د.ع
                     </>
                   ) : (
-                    `تحتاج ${((level.purchase_price_points || 0) - availablePoints).toLocaleString()} نقطة إضافية`
+                    `تحتاج ${(cardPrice - (walletBalance || 0)).toLocaleString()} د.ع إضافية`
                   )}
                 </Button>
               </div>
@@ -273,7 +307,7 @@ export default function LoyaltyLevelsPanel() {
                 هل تريد شراء بطاقة <strong style={{ color: selectedLevel?.color }}>{selectedLevel?.name_ar}</strong>؟
               </p>
               <p className="text-sm">
-                سيتم خصم <strong>{(selectedLevel?.purchase_price_points || 0).toLocaleString()}</strong> نقطة من رصيدك.
+                سيتم خصم <strong>{getCardPrice(selectedLevel).toLocaleString()}</strong> د.ع من محفظتك.
               </p>
               <p className="text-sm">
                 البطاقة صالحة لمدة <strong>{selectedLevel?.duration_days || 30}</strong> يوم.

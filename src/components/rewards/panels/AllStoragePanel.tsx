@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Package, Truck, X, Calendar, Ticket, MapPin, Loader2, CheckCircle, Clock, Ship } from "lucide-react";
+import { Package, Truck, X, Calendar, Ticket, MapPin, Loader2, CheckCircle, Clock, Ship, Trophy, Gift } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -30,14 +30,32 @@ const statusConfig: Record<string, { label: string; color: string; icon: any }> 
   delivered: { label: 'تم التسليم', color: 'bg-green-500', icon: CheckCircle },
 };
 
+interface StorageItem {
+  id: string;
+  title: string;
+  image_url: string | null;
+  quantity: number;
+  status: string;
+  source: 'offer' | 'competition';
+  source_type?: string;
+  created_at: string;
+  shipping_requested_at?: string | null;
+  shipped_at?: string | null;
+  delivered_at?: string | null;
+  unit_price?: number;
+  total_price?: number;
+  gift_tickets_awarded?: number;
+}
+
 export default function AllStoragePanel() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedPurchase, setSelectedPurchase] = useState<any>(null);
+  const [selectedItem, setSelectedItem] = useState<StorageItem | null>(null);
   const [shippingDialogOpen, setShippingDialogOpen] = useState(false);
 
-  const { data: purchases, isLoading } = useQuery({
-    queryKey: ['all-storage-panel', user?.id],
+  // Fetch product offer purchases
+  const { data: offerPurchases, isLoading: isLoadingOffers } = useQuery({
+    queryKey: ['storage-offer-purchases', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await supabase
@@ -47,7 +65,26 @@ export default function AllStoragePanel() {
         .in('purchase_status', ['pending', 'purchased', 'shipping_requested', 'shipped', 'delivered'])
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  // Fetch competition prizes (physical items only, not tickets or better_luck)
+  const { data: competitionPrizes, isLoading: isLoadingPrizes } = useQuery({
+    queryKey: ['storage-competition-prizes', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('competition_prizes')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('prize_type', 'physical')
+        .in('status', ['pending', 'shipping_requested', 'shipped', 'delivered'])
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
@@ -69,7 +106,8 @@ export default function AllStoragePanel() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const requestShippingMutation = useMutation({
+  // Request shipping mutation for offers
+  const requestOfferShippingMutation = useMutation({
     mutationFn: async (purchaseId: string) => {
       const defaultAddress = userAddresses?.find(a => a.is_default) || userAddresses?.[0];
       
@@ -88,15 +126,91 @@ export default function AllStoragePanel() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-storage-panel'] });
+      queryClient.invalidateQueries({ queryKey: ['storage-offer-purchases'] });
       toast.success('تم تقديم طلب الشحن بنجاح! سيتم التواصل معك قريباً');
       setShippingDialogOpen(false);
-      setSelectedPurchase(null);
+      setSelectedItem(null);
     },
     onError: (error: any) => {
       toast.error(error.message || 'حدث خطأ');
     },
   });
+
+  // Request shipping mutation for prizes
+  const requestPrizeShippingMutation = useMutation({
+    mutationFn: async (prizeId: string) => {
+      const defaultAddress = userAddresses?.find(a => a.is_default) || userAddresses?.[0];
+      
+      if (!defaultAddress) {
+        throw new Error('يرجى إضافة عنوان للشحن أولاً');
+      }
+
+      const { error } = await supabase
+        .from('competition_prizes')
+        .update({ 
+          status: 'shipping_requested',
+          shipping_requested_at: new Date().toISOString()
+        })
+        .eq('id', prizeId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['storage-competition-prizes'] });
+      toast.success('تم تقديم طلب الشحن بنجاح! سيتم التواصل معك قريباً');
+      setShippingDialogOpen(false);
+      setSelectedItem(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ');
+    },
+  });
+
+  // Transform data to unified format
+  const transformToStorageItems = (): StorageItem[] => {
+    const items: StorageItem[] = [];
+    
+    // Transform offer purchases
+    offerPurchases?.forEach((purchase: any) => {
+      items.push({
+        id: purchase.id,
+        title: purchase.product_offers?.title_ar || 'منتج',
+        image_url: purchase.product_offers?.image_url,
+        quantity: purchase.quantity,
+        status: purchase.purchase_status === 'purchased' ? 'pending' : purchase.purchase_status,
+        source: 'offer',
+        created_at: purchase.created_at,
+        shipping_requested_at: purchase.shipping_requested_at,
+        shipped_at: purchase.shipped_at,
+        delivered_at: purchase.delivered_at,
+        unit_price: purchase.unit_price,
+        total_price: purchase.total_price,
+        gift_tickets_awarded: purchase.gift_tickets_awarded,
+      });
+    });
+    
+    // Transform competition prizes
+    competitionPrizes?.forEach((prize: any) => {
+      items.push({
+        id: prize.id,
+        title: prize.prize_name_ar,
+        image_url: prize.prize_image_url,
+        quantity: 1,
+        status: prize.status,
+        source: 'competition',
+        source_type: prize.source_type,
+        created_at: prize.created_at,
+        shipping_requested_at: prize.shipping_requested_at,
+        shipped_at: prize.shipped_at,
+        delivered_at: prize.delivered_at,
+      });
+    });
+    
+    // Sort by created_at desc
+    items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    
+    return items;
+  };
 
   const getStatusBadge = (status: string) => {
     const config = statusConfig[status] || statusConfig.pending;
@@ -108,6 +222,33 @@ export default function AllStoragePanel() {
       </Badge>
     );
   };
+
+  const getSourceBadge = (item: StorageItem) => {
+    if (item.source === 'competition') {
+      return (
+        <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 gap-1">
+          <Trophy className="h-3 w-3" />
+          جائزة مسابقة
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="outline" className="text-blue-600 border-blue-300 bg-blue-50 gap-1">
+        <Gift className="h-3 w-3" />
+        عرض
+      </Badge>
+    );
+  };
+
+  const handleRequestShipping = (item: StorageItem) => {
+    if (item.source === 'offer') {
+      requestOfferShippingMutation.mutate(item.id);
+    } else {
+      requestPrizeShippingMutation.mutate(item.id);
+    }
+  };
+
+  const isLoading = isLoadingOffers || isLoadingPrizes;
 
   if (!user) {
     return (
@@ -130,169 +271,143 @@ export default function AllStoragePanel() {
     );
   }
 
-  if (!purchases || purchases.length === 0) {
+  const allItems = transformToStorageItems();
+
+  if (allItems.length === 0) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
           <Package className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
           <p className="font-medium text-lg">مخزنك فارغ</p>
           <p className="text-sm text-muted-foreground mt-2">
-            اشترِ باقات التذاكر وستظهر هنا في انتظار طلب الشحن
+            جوائز المسابقات والمنتجات المشتراة ستظهر هنا
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  // Group by status - include 'purchased' as pending
-  const pendingPurchases = purchases.filter(p => ['pending', 'purchased'].includes(p.purchase_status));
-  const processingPurchases = purchases.filter(p => ['shipping_requested', 'shipped'].includes(p.purchase_status));
-  const deliveredPurchases = purchases.filter(p => p.purchase_status === 'delivered');
+  // Group by status
+  const pendingItems = allItems.filter(p => p.status === 'pending');
+  const processingItems = allItems.filter(p => ['shipping_requested', 'shipped'].includes(p.status));
+  const deliveredItems = allItems.filter(p => p.status === 'delivered');
+
+  const renderItemCard = (item: StorageItem, borderColor: string) => (
+    <Card 
+      key={item.id} 
+      className={`cursor-pointer hover:shadow-md transition-shadow ${borderColor}`}
+      onClick={() => setSelectedItem(item)}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-muted">
+            <OptimizedImage
+              src={item.image_url || '/placeholder.svg'}
+              alt={item.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2 flex-wrap">
+              <p className="font-medium line-clamp-1">{item.title}</p>
+              {getStatusBadge(item.status)}
+            </div>
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
+              {getSourceBadge(item)}
+              {item.quantity > 1 && (
+                <span className="text-xs text-muted-foreground">الكمية: {item.quantity}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+              <span className="flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {format(new Date(item.created_at), 'dd MMM yyyy', { locale: ar })}
+              </span>
+            </div>
+            {item.gift_tickets_awarded && item.gift_tickets_awarded > 0 && (
+              <div className="flex items-center gap-1 text-xs text-green-600 mt-1">
+                <Ticket className="h-3 w-3" />
+                حصلت على {item.gift_tickets_awarded} تذكرة
+              </div>
+            )}
+            
+            {item.status === 'pending' && (
+              <Button 
+                size="sm" 
+                className="mt-2"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedItem(item);
+                  setShippingDialogOpen(true);
+                }}
+              >
+                <Truck className="h-3.5 w-3.5 ml-1" />
+                طلب الشحن
+              </Button>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <>
       <div className="space-y-6">
         {/* Pending (In Storage) */}
-        {pendingPurchases.length > 0 && (
+        {pendingItems.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Package className="h-4 w-4 text-blue-500" />
-              <h3 className="text-sm font-semibold">في المخزن ({pendingPurchases.length})</h3>
+              <h3 className="text-sm font-semibold">في المخزن ({pendingItems.length})</h3>
             </div>
-            {pendingPurchases.map((purchase: any) => (
-              <Card 
-                key={purchase.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow border-blue-200"
-                onClick={() => setSelectedPurchase(purchase)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-muted">
-                      <OptimizedImage
-                        src={purchase.product_offers?.image_url || '/placeholder.svg'}
-                        alt={purchase.product_offers?.title_ar || ''}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-medium line-clamp-1">
-                          {purchase.product_offers?.title_ar}
-                        </p>
-                        {getStatusBadge(purchase.purchase_status)}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                        <span>الكمية: {purchase.quantity}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(purchase.created_at), 'dd MMM yyyy', { locale: ar })}
-                        </span>
-                      </div>
-                      {purchase.gift_tickets_awarded > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-green-600 mt-1">
-                          <Ticket className="h-3 w-3" />
-                          حصلت على {purchase.gift_tickets_awarded} تذكرة
-                        </div>
-                      )}
-                      
-                      <Button 
-                        size="sm" 
-                        className="mt-2"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedPurchase(purchase);
-                          setShippingDialogOpen(true);
-                        }}
-                      >
-                        <Truck className="h-3.5 w-3.5 ml-1" />
-                        طلب الشحن
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {pendingItems.map((item) => renderItemCard(item, 'border-blue-200'))}
           </div>
         )}
 
         {/* Processing (Shipping Requested / Shipped) */}
-        {processingPurchases.length > 0 && (
+        {processingItems.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Truck className="h-4 w-4 text-orange-500" />
-              <h3 className="text-sm font-semibold">قيد المعالجة ({processingPurchases.length})</h3>
+              <h3 className="text-sm font-semibold">قيد المعالجة ({processingItems.length})</h3>
             </div>
-            {processingPurchases.map((purchase: any) => (
-              <Card 
-                key={purchase.id} 
-                className="cursor-pointer hover:shadow-md transition-shadow border-orange-200"
-                onClick={() => setSelectedPurchase(purchase)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 bg-muted">
-                      <OptimizedImage
-                        src={purchase.product_offers?.image_url || '/placeholder.svg'}
-                        alt={purchase.product_offers?.title_ar || ''}
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-medium line-clamp-1">
-                          {purchase.product_offers?.title_ar}
-                        </p>
-                        {getStatusBadge(purchase.purchase_status)}
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                        <span>الكمية: {purchase.quantity}</span>
-                      </div>
-                      {purchase.shipping_requested_at && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          طلب الشحن: {format(new Date(purchase.shipping_requested_at), 'dd MMM yyyy', { locale: ar })}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {processingItems.map((item) => renderItemCard(item, 'border-orange-200'))}
           </div>
         )}
 
         {/* Delivered */}
-        {deliveredPurchases.length > 0 && (
+        {deliveredItems.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-4 w-4 text-green-500" />
-              <h3 className="text-sm font-semibold">تم التسليم ({deliveredPurchases.length})</h3>
+              <h3 className="text-sm font-semibold">تم التسليم ({deliveredItems.length})</h3>
             </div>
-            {deliveredPurchases.map((purchase: any) => (
+            {deliveredItems.map((item) => (
               <Card 
-                key={purchase.id} 
-                className="opacity-75 border-green-200"
-                onClick={() => setSelectedPurchase(purchase)}
+                key={item.id} 
+                className="opacity-75 border-green-200 cursor-pointer"
+                onClick={() => setSelectedItem(item)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-muted">
                       <OptimizedImage
-                        src={purchase.product_offers?.image_url || '/placeholder.svg'}
-                        alt={purchase.product_offers?.title_ar || ''}
+                        src={item.image_url || '/placeholder.svg'}
+                        alt={item.title}
                         className="w-full h-full object-cover"
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-medium text-sm line-clamp-1">
-                          {purchase.product_offers?.title_ar}
-                        </p>
-                        {getStatusBadge(purchase.purchase_status)}
+                      <div className="flex items-start justify-between gap-2 flex-wrap">
+                        <p className="font-medium text-sm line-clamp-1">{item.title}</p>
+                        {getStatusBadge(item.status)}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        {getSourceBadge(item)}
                       </div>
                       <p className="text-xs text-muted-foreground mt-1">
-                        الكمية: {purchase.quantity} • 
-                        {purchase.delivered_at && format(new Date(purchase.delivered_at), ' dd MMM yyyy', { locale: ar })}
+                        {item.delivered_at && format(new Date(item.delivered_at), 'dd MMM yyyy', { locale: ar })}
                       </p>
                     </div>
                   </div>
@@ -303,12 +418,12 @@ export default function AllStoragePanel() {
         )}
       </div>
 
-      {/* Purchase Detail Sheet */}
-      <Sheet open={!!selectedPurchase && !shippingDialogOpen} onOpenChange={(open) => !open && setSelectedPurchase(null)}>
+      {/* Item Detail Sheet */}
+      <Sheet open={!!selectedItem && !shippingDialogOpen} onOpenChange={(open) => !open && setSelectedItem(null)}>
         <SheetContent side="bottom" className="h-[70vh] rounded-t-2xl px-0 pb-0">
           <SheetHeader className="sticky top-0 z-10 bg-background px-4 pb-3 border-b">
             <div className="flex items-center justify-between">
-              <SheetTitle className="text-base">تفاصيل الطلب</SheetTitle>
+              <SheetTitle className="text-base">تفاصيل العنصر</SheetTitle>
               <SheetClose asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                   <X className="h-4 w-4" />
@@ -317,22 +432,23 @@ export default function AllStoragePanel() {
             </div>
           </SheetHeader>
           
-          {selectedPurchase && (
+          {selectedItem && (
             <div className="overflow-y-auto h-full px-4 py-4 pb-24">
-              {/* Product Image */}
+              {/* Item Image */}
               <div className="aspect-video rounded-xl overflow-hidden mb-4 bg-muted">
                 <OptimizedImage
-                  src={selectedPurchase.product_offers?.image_url || '/placeholder.svg'}
-                  alt={selectedPurchase.product_offers?.title_ar || ''}
+                  src={selectedItem.image_url || '/placeholder.svg'}
+                  alt={selectedItem.title}
                   className="w-full h-full object-cover"
                 />
               </div>
 
-              {/* Product Info */}
-              <h2 className="text-lg font-bold mb-2">{selectedPurchase.product_offers?.title_ar}</h2>
+              {/* Item Info */}
+              <h2 className="text-lg font-bold mb-2">{selectedItem.title}</h2>
               
-              <div className="mb-4">
-                {getStatusBadge(selectedPurchase.purchase_status)}
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
+                {getStatusBadge(selectedItem.status)}
+                {getSourceBadge(selectedItem)}
               </div>
 
               {/* Details Card */}
@@ -340,22 +456,26 @@ export default function AllStoragePanel() {
                 <CardContent className="p-4 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">الكمية</span>
-                    <span className="font-medium">{selectedPurchase.quantity}</span>
+                    <span className="font-medium">{selectedItem.quantity}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">سعر الوحدة</span>
-                    <span className="font-medium">{selectedPurchase.unit_price?.toLocaleString()} د.ع</span>
-                  </div>
-                  <div className="flex justify-between text-sm border-t pt-2">
-                    <span className="text-muted-foreground">المجموع</span>
-                    <span className="font-bold text-primary">{selectedPurchase.total_price?.toLocaleString()} د.ع</span>
-                  </div>
-                  {selectedPurchase.gift_tickets_awarded > 0 && (
+                  {selectedItem.unit_price !== undefined && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">سعر الوحدة</span>
+                      <span className="font-medium">{selectedItem.unit_price?.toLocaleString()} د.ع</span>
+                    </div>
+                  )}
+                  {selectedItem.total_price !== undefined && (
+                    <div className="flex justify-between text-sm border-t pt-2">
+                      <span className="text-muted-foreground">المجموع</span>
+                      <span className="font-bold text-primary">{selectedItem.total_price?.toLocaleString()} د.ع</span>
+                    </div>
+                  )}
+                  {selectedItem.gift_tickets_awarded && selectedItem.gift_tickets_awarded > 0 && (
                     <div className="flex justify-between text-sm text-green-600">
                       <span>التذاكر المكتسبة</span>
                       <span className="flex items-center gap-1">
                         <Ticket className="h-3 w-3" />
-                        {selectedPurchase.gift_tickets_awarded}
+                        {selectedItem.gift_tickets_awarded}
                       </span>
                     </div>
                   )}
@@ -365,21 +485,23 @@ export default function AllStoragePanel() {
               {/* Timeline */}
               <Card className="mb-4">
                 <CardContent className="p-4">
-                  <h4 className="font-medium mb-3 text-sm">سجل الطلب</h4>
+                  <h4 className="font-medium mb-3 text-sm">سجل العنصر</h4>
                   <div className="space-y-3">
                     <div className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
                         <CheckCircle className="h-3 w-3 text-green-500" />
                       </div>
                       <div>
-                        <p className="text-sm font-medium">تم الشراء</p>
+                        <p className="text-sm font-medium">
+                          {selectedItem.source === 'competition' ? 'تم الفوز' : 'تم الشراء'}
+                        </p>
                         <p className="text-xs text-muted-foreground">
-                          {format(new Date(selectedPurchase.created_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                          {format(new Date(selectedItem.created_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
                         </p>
                       </div>
                     </div>
                     
-                    {selectedPurchase.shipping_requested_at && (
+                    {selectedItem.shipping_requested_at && (
                       <div className="flex items-start gap-3">
                         <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
                           <Clock className="h-3 w-3 text-amber-500" />
@@ -387,13 +509,13 @@ export default function AllStoragePanel() {
                         <div>
                           <p className="text-sm font-medium">طلب الشحن</p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(selectedPurchase.shipping_requested_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                            {format(new Date(selectedItem.shipping_requested_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
                           </p>
                         </div>
                       </div>
                     )}
                     
-                    {selectedPurchase.shipped_at && (
+                    {selectedItem.shipped_at && (
                       <div className="flex items-start gap-3">
                         <div className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center shrink-0">
                           <Truck className="h-3 w-3 text-orange-500" />
@@ -401,13 +523,13 @@ export default function AllStoragePanel() {
                         <div>
                           <p className="text-sm font-medium">تم الشحن</p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(selectedPurchase.shipped_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                            {format(new Date(selectedItem.shipped_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
                           </p>
                         </div>
                       </div>
                     )}
                     
-                    {selectedPurchase.delivered_at && (
+                    {selectedItem.delivered_at && (
                       <div className="flex items-start gap-3">
                         <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center shrink-0">
                           <CheckCircle className="h-3 w-3 text-green-500" />
@@ -415,7 +537,7 @@ export default function AllStoragePanel() {
                         <div>
                           <p className="text-sm font-medium">تم التسليم</p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(selectedPurchase.delivered_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                            {format(new Date(selectedItem.delivered_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
                           </p>
                         </div>
                       </div>
@@ -425,7 +547,7 @@ export default function AllStoragePanel() {
               </Card>
 
               {/* Request Shipping Button (if pending) */}
-              {selectedPurchase.purchase_status === 'pending' && (
+              {selectedItem.status === 'pending' && (
                 <Button 
                   className="w-full"
                   size="lg"
@@ -447,7 +569,7 @@ export default function AllStoragePanel() {
             <AlertDialogTitle>تأكيد طلب الشحن</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               <p>
-                هل تريد طلب شحن <strong>{selectedPurchase?.product_offers?.title_ar}</strong>؟
+                هل تريد طلب شحن <strong>{selectedItem?.title}</strong>؟
               </p>
               
               {userAddresses && userAddresses.length > 0 ? (
@@ -478,10 +600,10 @@ export default function AllStoragePanel() {
           <AlertDialogFooter>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => selectedPurchase && requestShippingMutation.mutate(selectedPurchase.id)}
-              disabled={requestShippingMutation.isPending || !userAddresses || userAddresses.length === 0}
+              onClick={() => selectedItem && handleRequestShipping(selectedItem)}
+              disabled={(requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending) || !userAddresses || userAddresses.length === 0}
             >
-              {requestShippingMutation.isPending ? (
+              {(requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending) ? (
                 <Loader2 className="h-4 w-4 animate-spin ml-2" />
               ) : null}
               تأكيد الطلب
