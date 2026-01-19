@@ -335,6 +335,91 @@ export type Database = {
           },
         ]
       }
+      competition_prizes: {
+        Row: {
+          competition_id: string | null
+          competition_ticket_id: string | null
+          coupon_code: string | null
+          coupon_used: boolean | null
+          created_at: string
+          delivered_at: string | null
+          id: string
+          prize_image_url: string | null
+          prize_name_ar: string
+          prize_type: string
+          prize_value: number | null
+          product_id: string | null
+          shipped_at: string | null
+          shipping_requested_at: string | null
+          source_type: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          competition_id?: string | null
+          competition_ticket_id?: string | null
+          coupon_code?: string | null
+          coupon_used?: boolean | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          prize_image_url?: string | null
+          prize_name_ar: string
+          prize_type?: string
+          prize_value?: number | null
+          product_id?: string | null
+          shipped_at?: string | null
+          shipping_requested_at?: string | null
+          source_type: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          competition_id?: string | null
+          competition_ticket_id?: string | null
+          coupon_code?: string | null
+          coupon_used?: boolean | null
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          prize_image_url?: string | null
+          prize_name_ar?: string
+          prize_type?: string
+          prize_value?: number | null
+          product_id?: string | null
+          shipped_at?: string | null
+          shipping_requested_at?: string | null
+          source_type?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "competition_prizes_competition_id_fkey"
+            columns: ["competition_id"]
+            isOneToOne: false
+            referencedRelation: "competitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_prizes_competition_ticket_id_fkey"
+            columns: ["competition_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "competition_tickets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "competition_prizes_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       competition_tickets: {
         Row: {
           competition_id: string | null
