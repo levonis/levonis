@@ -1312,13 +1312,13 @@ export default function AdminPointsSettings() {
 
           {/* Task Dialog */}
           <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
-            <DialogContent className="max-w-lg max-h-[90vh]">
-              <DialogHeader>
+            <DialogContent className="max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle>
                   {editingTask ? "تعديل المهمة" : "إضافة مهمة جديدة"}
                 </DialogTitle>
               </DialogHeader>
-              <ScrollArea className="max-h-[60vh] pr-4">
+              <ScrollArea className="flex-1 min-h-0 pr-4">
                 <div className="space-y-4 py-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -1464,7 +1464,7 @@ export default function AdminPointsSettings() {
                   </div>
                 </div>
               </ScrollArea>
-              <DialogFooter>
+              <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
                 <Button variant="outline" onClick={handleCloseTaskDialog}>
                   إلغاء
                 </Button>
@@ -1477,13 +1477,13 @@ export default function AdminPointsSettings() {
 
           {/* Product Dialog */}
           <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
-            <DialogContent className="max-w-lg max-h-[90vh]">
-              <DialogHeader>
+            <DialogContent className="max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle>
                   {editingProduct ? "تعديل العرض" : "إضافة عرض جديد"}
                 </DialogTitle>
               </DialogHeader>
-              <ScrollArea className="max-h-[60vh] pr-4">
+              <ScrollArea className="flex-1 min-h-0 pr-4">
                 <div className="space-y-4 py-4">
                   <div className="space-y-2">
                     <Label>نوع العرض</Label>
@@ -1576,7 +1576,7 @@ export default function AdminPointsSettings() {
                   </div>
                 </div>
               </ScrollArea>
-              <DialogFooter>
+              <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4">
                 <Button variant="outline" onClick={handleCloseProductDialog}>
                   إلغاء
                 </Button>
