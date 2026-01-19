@@ -597,6 +597,7 @@ serve(async (req) => {
     // AI extraction with enhanced prompt for Chinese sites
     console.log('Using AI for extraction...');
 
+    // First AI call: Extract product info from the page
     const prompt = `استخرج معلومات المنتج من صفحة الويب هذه وأرجعها بصيغة JSON فقط.
 
 الرابط: ${url}
@@ -843,6 +844,158 @@ ${pageContent.substring(0, 100000)}
       }
     }
 
+    // ===== STEP: Search web for dimensions and weight if not found =====
+    const needsDimensionsSearch = !productInfo.dimensions || 
+      (!productInfo.dimensions.length_cm && !productInfo.dimensions.width_cm && !productInfo.dimensions.height_cm);
+    const needsWeightSearch = !productInfo.weight_kg;
+    
+    if (needsDimensionsSearch || needsWeightSearch) {
+      console.log('Dimensions/weight not found in page, searching web...');
+      
+      const searchQuery = `${productInfo.name} package dimensions weight cm kg specifications`;
+      console.log('Search query:', searchQuery);
+      
+      try {
+        const searchPrompt = `You are a product specifications expert. Search for and provide the packaging dimensions and weight for this product:
+
+Product Name: ${productInfo.name}
+Product URL: ${url}
+
+Your task:
+1. Based on your knowledge, estimate the PACKAGING dimensions (not just the product dimensions) for this type of product
+2. Consider that packaging adds extra space around the product (typically 5-15% larger)
+3. For electronics, consider protective packaging materials
+4. Provide weight including packaging
+
+IMPORTANT RULES:
+- If this is a printer (like Bambu Lab, Creality, etc.), typical packaging is: 50-70cm length, 40-55cm width, 40-60cm height, weight 15-35kg
+- If this is a laptop, typical packaging is: 45-55cm length, 30-40cm width, 10-15cm height, weight 3-5kg
+- If this is a phone, typical packaging is: 18-22cm length, 10-14cm width, 6-10cm height, weight 0.3-0.6kg
+- For other products, estimate based on the product type
+
+Return JSON ONLY:
+{
+  "dimensions": {
+    "length_cm": number,
+    "width_cm": number,
+    "height_cm": number
+  },
+  "weight_kg": number,
+  "confidence": "high" | "medium" | "low",
+  "source": "estimated based on product type"
+}`;
+
+        const searchResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${lovableApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash',
+            messages: [
+              { role: 'system', content: 'You are a product specifications expert. Estimate packaging dimensions and weight accurately.' },
+              { role: 'user', content: searchPrompt }
+            ],
+            temperature: 0.1,
+            max_tokens: 1000,
+          }),
+        });
+
+        if (searchResponse.ok) {
+          const searchData = await searchResponse.json();
+          const searchText = searchData.choices[0]?.message?.content || '';
+          console.log('Web search AI response:', searchText);
+          
+          const searchJsonMatch = searchText.match(/\{[\s\S]*\}/);
+          if (searchJsonMatch) {
+            const searchResult = JSON.parse(searchJsonMatch[0]);
+            
+            // Update dimensions if not found
+            if (needsDimensionsSearch && searchResult.dimensions) {
+              productInfo.dimensions = {
+                length_cm: parseFloat(searchResult.dimensions.length_cm) || null,
+                width_cm: parseFloat(searchResult.dimensions.width_cm) || null,
+                height_cm: parseFloat(searchResult.dimensions.height_cm) || null
+              };
+              console.log('Updated dimensions from web search:', productInfo.dimensions);
+            }
+            
+            // Update weight if not found
+            if (needsWeightSearch && searchResult.weight_kg) {
+              productInfo.weight_kg = parseFloat(searchResult.weight_kg) || null;
+              console.log('Updated weight from web search:', productInfo.weight_kg);
+            }
+          }
+        }
+      } catch (searchError) {
+        console.error('Web search error:', searchError);
+      }
+    }
+
+    // ===== STEP: Calculate air shipping cost =====
+    let estimatedAirShippingCost: number | null = null;
+    
+    if (productInfo.dimensions || productInfo.weight_kg) {
+      console.log('Calculating air shipping cost...');
+      
+      // Fetch shipping settings from database
+      let kgPrice = 6000; // Default: 6000 IQD per kg
+      let safetyMargin = 0.20; // Default: 20%
+      
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+        const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+        
+        if (supabaseUrl && supabaseKey) {
+          const settingsResponse = await fetch(
+            `${supabaseUrl}/rest/v1/shipping_settings?select=china_air_kg_price,air_safety_margin`,
+            {
+              headers: {
+                'apikey': supabaseKey,
+                'Authorization': `Bearer ${supabaseKey}`,
+              }
+            }
+          );
+          
+          if (settingsResponse.ok) {
+            const settings = await settingsResponse.json();
+            if (settings && settings.length > 0) {
+              kgPrice = settings[0].china_air_kg_price || 6000;
+              safetyMargin = (settings[0].air_safety_margin || 20) / 100;
+              console.log('Shipping settings loaded:', { kgPrice, safetyMargin });
+            }
+          }
+        }
+      } catch (e) {
+        console.log('Could not fetch shipping settings, using defaults');
+      }
+      
+      // Calculate volumetric weight (L × W × H / 5000)
+      let volumetricWeight = 0;
+      if (productInfo.dimensions) {
+        const { length_cm, width_cm, height_cm } = productInfo.dimensions;
+        if (length_cm && width_cm && height_cm) {
+          volumetricWeight = (length_cm * width_cm * height_cm) / 5000;
+          console.log('Volumetric weight:', volumetricWeight, 'kg');
+        }
+      }
+      
+      // Use the greater of actual weight or volumetric weight
+      const actualWeight = productInfo.weight_kg || 0;
+      const chargeableWeight = Math.max(actualWeight, volumetricWeight);
+      console.log('Actual weight:', actualWeight, 'Volumetric:', volumetricWeight, 'Chargeable:', chargeableWeight);
+      
+      if (chargeableWeight > 0) {
+        // Add safety margin
+        const weightWithMargin = chargeableWeight * (1 + safetyMargin);
+        estimatedAirShippingCost = Math.ceil(weightWithMargin * kgPrice);
+        // Round to nearest 500
+        estimatedAirShippingCost = Math.ceil(estimatedAirShippingCost / 500) * 500;
+        console.log('Estimated air shipping cost:', estimatedAirShippingCost, 'IQD');
+      }
+    }
+
     // Merge direct SKU data if AI didn't find enough
     if (productInfo.colors.length === 0 && directSkuData.colors.length > 0) {
       console.log('Using direct SKU colors...');
@@ -901,6 +1054,9 @@ ${pageContent.substring(0, 100000)}
     }
     productInfo.images = finalImages.slice(0, 10);
 
+    // Add estimated air shipping cost to product info
+    (productInfo as any).estimated_air_shipping_cost = estimatedAirShippingCost;
+
     console.log('=== FINAL EXTRACTION RESULT ===');
     console.log('Main product images:', productInfo.images.length);
     console.log('Colors:', productInfo.colors.length);
@@ -908,6 +1064,7 @@ ${pageContent.substring(0, 100000)}
     console.log('Features:', productInfo.features.length);
     console.log('Dimensions:', JSON.stringify(productInfo.dimensions));
     console.log('Weight (kg):', productInfo.weight_kg);
+    console.log('Estimated air shipping cost:', estimatedAirShippingCost);
 
     return new Response(
       JSON.stringify({
