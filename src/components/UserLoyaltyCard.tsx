@@ -147,41 +147,6 @@ export default function UserLoyaltyCard({
           style={{ backgroundColor: textColor }}
         />
 
-        {/* User name - engraved style - positioned on card level */}
-        {userName && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <p 
-              className="text-lg font-bold tracking-wide opacity-90 text-center px-4"
-              style={{ 
-                color: textColor,
-                textShadow: `0 1px 2px ${textColor === "#ffffff" ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)"}`,
-              }}
-            >
-              {userName}
-            </p>
-          </div>
-        )}
-
-        {/* Purchase info for store cards */}
-        {showPurchaseInfo && level.purchase_price_points && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="text-center">
-              <p 
-                className="text-2xl font-bold"
-                style={{ color: textColor }}
-              >
-                {level.purchase_price_points.toLocaleString()}
-              </p>
-              <p 
-                className="text-xs opacity-75"
-                style={{ color: secondaryTextColor }}
-              >
-                نقطة
-              </p>
-            </div>
-          </div>
-        )}
-
         {/* Content */}
         <div className="relative h-full flex flex-col justify-between p-5">
           {/* Header */}
@@ -207,6 +172,39 @@ export default function UserLoyaltyCard({
               {getCardIcon(level.name_en, "h-7 w-7")}
             </div>
           </div>
+
+          {/* User name - engraved style */}
+          {userName && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <p 
+                className="text-lg font-bold tracking-wide opacity-90"
+                style={{ 
+                  color: textColor,
+                  textShadow: `0 1px 2px ${textColor === "#ffffff" ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)"}`,
+                }}
+              >
+                {userName}
+              </p>
+            </div>
+          )}
+
+          {/* Purchase info for store cards */}
+          {showPurchaseInfo && level.purchase_price_points && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+              <p 
+                className="text-2xl font-bold"
+                style={{ color: textColor }}
+              >
+                {level.purchase_price_points.toLocaleString()}
+              </p>
+              <p 
+                className="text-xs opacity-75"
+                style={{ color: secondaryTextColor }}
+              >
+                نقطة
+              </p>
+            </div>
+          )}
 
           {/* Status badges */}
           <div className="flex flex-wrap gap-1.5 items-end justify-between mt-auto">
