@@ -5,7 +5,51 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Detect platform from URL
+// Short URL patterns that need to be followed to get the real URL
+const SHORT_URL_PATTERNS = [
+  /https?:\/\/e\.tb\.cn\/[^\s]+/i,
+  /https?:\/\/m\.tb\.cn\/[^\s]+/i,
+  /https?:\/\/s\.click\.taobao\.com\/[^\s]+/i,
+];
+
+// Follow short URL to get the real URL with item ID
+async function followShortUrl(url: string): Promise<string> {
+  try {
+    console.log('Following short URL:', url);
+    const response = await fetch(url, {
+      method: 'HEAD',
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      }
+    });
+    const finalUrl = response.url;
+    console.log('Resolved to:', finalUrl);
+    return finalUrl;
+  } catch (e) {
+    console.log('Error following short URL, trying GET:', e);
+    // Try with GET request
+    try {
+      const response = await fetch(url, {
+        redirect: 'follow',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        }
+      });
+      return response.url;
+    } catch (e2) {
+      console.log('GET also failed:', e2);
+      return url;
+    }
+  }
+}
+
+// Check if URL is a short URL that needs to be followed
+function isShortUrl(url: string): boolean {
+  return SHORT_URL_PATTERNS.some(pattern => pattern.test(url));
+}
+
+// Detect platform from URL and extract item ID
 function detectPlatform(url: string): { platform: string; itemId: string | null } {
   const urlLower = url.toLowerCase();
   
@@ -55,6 +99,22 @@ function detectPlatform(url: string): { platform: string; itemId: string | null 
   return { platform: 'other', itemId: null };
 }
 
+// Build canonical URL from item ID and platform
+function buildCanonicalUrl(itemId: string, platform: string): string {
+  switch (platform) {
+    case 'taobao':
+      return `https://item.taobao.com/item.htm?id=${itemId}`;
+    case 'tmall':
+      return `https://detail.tmall.com/item.htm?id=${itemId}`;
+    case 'jd':
+      return `https://item.jd.com/${itemId}.html`;
+    case '1688':
+      return `https://detail.1688.com/offer/${itemId}.html`;
+    default:
+      return `https://item.taobao.com/item.htm?id=${itemId}`;
+  }
+}
+
 // Color mapping with more colors
 const COLOR_MAP: Record<string, { ar: string; hex: string }> = {
   'black': { ar: 'أسود', hex: '#000000' },
@@ -97,57 +157,58 @@ const COLOR_MAP: Record<string, { ar: string; hex: string }> = {
   'midnight': { ar: 'أزرق داكن', hex: '#191970' },
 };
 
+// Chinese color names mapping
+const CHINESE_COLOR_MAP: Record<string, { en: string; ar: string; hex: string }> = {
+  '黑色': { en: 'Black', ar: 'أسود', hex: '#000000' },
+  '白色': { en: 'White', ar: 'أبيض', hex: '#FFFFFF' },
+  '红色': { en: 'Red', ar: 'أحمر', hex: '#FF0000' },
+  '蓝色': { en: 'Blue', ar: 'أزرق', hex: '#0000FF' },
+  '绿色': { en: 'Green', ar: 'أخضر', hex: '#008000' },
+  '黄色': { en: 'Yellow', ar: 'أصفر', hex: '#FFFF00' },
+  '粉色': { en: 'Pink', ar: 'وردي', hex: '#FFC0CB' },
+  '粉红': { en: 'Pink', ar: 'وردي', hex: '#FFC0CB' },
+  '紫色': { en: 'Purple', ar: 'بنفسجي', hex: '#800080' },
+  '橙色': { en: 'Orange', ar: 'برتقالي', hex: '#FFA500' },
+  '灰色': { en: 'Gray', ar: 'رمادي', hex: '#808080' },
+  '棕色': { en: 'Brown', ar: 'بني', hex: '#A52A2A' },
+  '金色': { en: 'Gold', ar: 'ذهبي', hex: '#FFD700' },
+  '银色': { en: 'Silver', ar: 'فضي', hex: '#C0C0C0' },
+  '深蓝': { en: 'Navy', ar: 'كحلي', hex: '#000080' },
+  '米色': { en: 'Beige', ar: 'بيج', hex: '#F5F5DC' },
+  '卡其': { en: 'Khaki', ar: 'كاكي', hex: '#F0E68C' },
+  '驼色': { en: 'Camel', ar: 'جملي', hex: '#C19A6B' },
+  '酒红': { en: 'Wine Red', ar: 'خمري', hex: '#800000' },
+  '藏青': { en: 'Navy Blue', ar: 'أزرق داكن', hex: '#000080' },
+  '深灰': { en: 'Dark Gray', ar: 'رمادي غامق', hex: '#404040' },
+  '浅灰': { en: 'Light Gray', ar: 'رمادي فاتح', hex: '#C0C0C0' },
+  '墨绿': { en: 'Dark Green', ar: 'أخضر غامق', hex: '#004400' },
+  '天蓝': { en: 'Sky Blue', ar: 'سماوي', hex: '#87CEEB' },
+  '玫红': { en: 'Rose', ar: 'وردي', hex: '#FF007F' },
+  '透明': { en: 'Transparent', ar: 'شفاف', hex: '#FFFFFF' },
+  '彩色': { en: 'Colorful', ar: 'متعدد الألوان', hex: '#FF00FF' },
+  '原色': { en: 'Natural', ar: 'طبيعي', hex: '#E8D4A8' },
+};
+
 // Feature icon mapping based on keywords
 const FEATURE_ICON_MAP: Array<[string, string]> = [
-  // Performance & Speed
   ['fast', 'Zap'], ['speed', 'Zap'], ['quick', 'Zap'], ['سريع', 'Zap'], ['سرعة', 'Zap'],
   ['performance', 'TrendingUp'], ['أداء', 'TrendingUp'],
-  
-  // Quality & Premium
   ['quality', 'Award'], ['premium', 'Crown'], ['جودة', 'Award'], ['ممتاز', 'Crown'], ['فاخر', 'Crown'],
   ['original', 'Shield'], ['أصلي', 'Shield'], ['genuine', 'Shield'],
-  
-  // Memory & Storage
   ['memory', 'Cpu'], ['ram', 'Cpu'], ['ذاكرة', 'Cpu'], ['storage', 'Disc'], ['تخزين', 'Disc'],
   ['gb', 'Cpu'], ['tb', 'Disc'], ['ssd', 'Disc'], ['hdd', 'Disc'],
-  
-  // Battery & Power
   ['battery', 'Battery'], ['بطارية', 'Battery'], ['power', 'Battery'], ['طاقة', 'Battery'], ['mah', 'Battery'], ['charge', 'Battery'],
-  
-  // Display & Screen
   ['display', 'Monitor'], ['screen', 'Monitor'], ['شاشة', 'Monitor'], ['amoled', 'Monitor'], ['lcd', 'Monitor'], ['oled', 'Monitor'], ['hd', 'Monitor'], ['4k', 'Monitor'],
-  
-  // Camera & Photography
   ['camera', 'Camera'], ['كاميرا', 'Camera'], ['photo', 'Image'], ['صورة', 'Image'], ['megapixel', 'Camera'], ['lens', 'Camera'], ['عدسة', 'Camera'],
-  
-  // Connectivity
   ['wifi', 'Wifi'], ['bluetooth', 'Wifi'], ['واي فاي', 'Wifi'], ['wireless', 'Wifi'], ['لاسلكي', 'Wifi'], ['5g', 'Wifi'], ['4g', 'Wifi'], ['lte', 'Wifi'],
-  
-  // Audio
   ['audio', 'Volume2'], ['sound', 'Volume2'], ['صوت', 'Volume2'], ['speaker', 'Volume2'], ['سماعة', 'Headphones'], ['headphone', 'Headphones'], ['music', 'Music'], ['موسيقى', 'Music'],
-  
-  // Protection & Security
   ['protect', 'Shield'], ['حماية', 'Shield'], ['secure', 'Lock'], ['آمن', 'Lock'], ['waterproof', 'Droplet'], ['مقاوم', 'Shield'], ['water', 'Droplet'], ['ماء', 'Droplet'],
-  
-  // Shipping & Delivery
   ['shipping', 'Truck'], ['delivery', 'Truck'], ['توصيل', 'Truck'], ['free_shipping', 'Truck'],
-  
-  // Warranty & Guarantee
   ['warranty', 'Shield'], ['ضمان', 'Shield'], ['guarantee', 'Shield'], ['كفالة', 'Shield'],
-  
-  // Weight & Size
   ['weight', 'Feather'], ['وزن', 'Feather'], ['light', 'Feather'], ['خفيف', 'Feather'], ['size', 'Package'], ['حجم', 'Package'], ['dimension', 'Package'],
-  
-  // Material
   ['metal', 'Gem'], ['معدن', 'Gem'], ['aluminum', 'Gem'], ['ألومنيوم', 'Gem'], ['steel', 'Gem'], ['فولاذ', 'Gem'], ['leather', 'Sparkles'], ['جلد', 'Sparkles'],
-  
-  // Technology
   ['smart', 'Sparkles'], ['ذكي', 'Sparkles'], ['ai', 'Sparkles'], ['intelligent', 'Sparkles'], ['tech', 'Cpu'], ['تقنية', 'Cpu'],
-  
-  // Nozzle (for 3D printers)
   ['nozzle', 'Target'], ['mm', 'Target'], ['فوهة', 'Target'],
-  
-  // Default
   ['feature', 'Check'], ['ميزة', 'Check'],
 ];
 
@@ -159,32 +220,25 @@ function getFeatureIcon(text: string): string {
       return icon;
     }
   }
-  return 'Check'; // Default icon
+  return 'Check';
 }
 
-// Validate color name - accept any reasonable color name
+// Validate color name
 function isValidColorName(name: string): boolean {
   if (!name || typeof name !== 'string') return false;
   const nameLower = name.toLowerCase().trim();
-  if (nameLower.length < 2 || nameLower.length > 50) return false;
-  // Reject HTML/code
+  if (nameLower.length < 1 || nameLower.length > 50) return false;
   if (/<|>|\[|\]|\{|\}|\\|http|class=|style=|function|var |const |let |import|export/.test(nameLower)) return false;
-  // Reject obvious non-color values
-  if (/^(select|choose|pick|اختر|option|default|standard|normal|none|null|undefined|\d+$)$/i.test(nameLower)) return false;
-  // Accept if it contains any known color word OR looks like a color name (not just numbers)
-  const hasKnownColor = Object.keys(COLOR_MAP).some(c => nameLower.includes(c));
-  const looksLikeColor = /[a-z\u0600-\u06FF]/.test(nameLower) && !/^\d+$/.test(nameLower);
-  return hasKnownColor || looksLikeColor;
+  if (/^(select|choose|pick|اختر|option|default|standard|normal|none|null|undefined)$/i.test(nameLower)) return false;
+  return true;
 }
 
-// Validate option name - must be a valid product option
+// Validate option name
 function isValidOptionName(name: string): boolean {
   if (!name || typeof name !== 'string') return false;
   const nameTrimmed = name.trim();
   if (nameTrimmed.length < 1 || nameTrimmed.length > 50) return false;
-  // Reject HTML/code
   if (/<|>|\{|\}|\\|function|var |const |let /.test(nameTrimmed)) return false;
-  // Reject generic labels
   if (/^(select|choose|pick|اختر|option|color|اللون|please select|الرجاء الاختيار)$/i.test(nameTrimmed)) return false;
   return true;
 }
@@ -193,10 +247,8 @@ function isValidOptionName(name: string): boolean {
 function normalizeImageUrl(url: string): string {
   let cleanUrl = url.trim();
   if (cleanUrl.startsWith('//')) cleanUrl = 'https:' + cleanUrl;
-  // Remove query parameters that cause duplicates
   try {
     const urlObj = new URL(cleanUrl);
-    // Keep only essential params, remove cache-busting etc
     const essentialParams = ['id', 'format', 'w', 'h', 'width', 'height'];
     const newParams = new URLSearchParams();
     for (const key of essentialParams) {
@@ -215,14 +267,13 @@ function normalizeImageUrl(url: string): string {
 function getImageBaseUrl(url: string): string {
   try {
     const urlObj = new URL(url);
-    // Remove all query params for comparison
     return urlObj.origin + urlObj.pathname;
   } catch {
     return url;
   }
 }
 
-// Extract product images with better deduplication - ONLY MAIN PRODUCT IMAGES
+// Extract product images
 function extractImages(html: string): string[] {
   const seenBases = new Set<string>();
   const images: string[] = [];
@@ -231,27 +282,18 @@ function extractImages(html: string): string[] {
     if (!url) return;
     let cleanUrl = normalizeImageUrl(url);
     if (!cleanUrl.startsWith('http')) return;
-    
-    // Skip non-product images
     if (/data:image|placeholder|icon|logo|avatar|consent|trustarc|\.svg|favicon|pixel|tracking|badge|button|banner-ad|sprite/i.test(cleanUrl)) return;
     if (cleanUrl.length < 30) return;
-    
-    // Check for size - skip tiny images
     if (/\b(16|24|32|48|64)x\1\b/.test(cleanUrl)) return;
-    
-    // Deduplicate by base URL
     const base = getImageBaseUrl(cleanUrl);
     if (seenBases.has(base)) return;
     seenBases.add(base);
-    
     images.push(cleanUrl);
   };
 
-  // OG image (highest priority)
   const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i);
   if (ogMatch) addImage(ogMatch[1]);
 
-  // JSON-LD images - only from main product, not variants
   const jsonLdMatches = html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
   for (const match of jsonLdMatches) {
     try {
@@ -263,7 +305,6 @@ function extractImages(html: string): string[] {
     } catch {}
   }
 
-  // Product gallery images - main gallery only
   const galleryPatterns = [
     /data-(?:large-)?src=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi,
     /data-zoom-image=["']([^"']+\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi,
@@ -279,6 +320,138 @@ function extractImages(html: string): string[] {
   return images.slice(0, 10);
 }
 
+// Extract SKU data from Chinese e-commerce pages (Taobao, 1688, JD, Tmall)
+function extractSkuData(html: string): { colors: any[], options: any[] } {
+  const colors: any[] = [];
+  const options: any[] = [];
+  const seenColors = new Set<string>();
+  const seenOptions = new Set<string>();
+
+  // Method 1: Look for SKU property data in script tags
+  const skuPatterns = [
+    // Taobao/Tmall pattern
+    /"skuProps":\s*(\[[\s\S]*?\])/g,
+    /skuList\s*[=:]\s*(\[[\s\S]*?\])/g,
+    /"propertyType"\s*:\s*"color"[\s\S]*?"values"\s*:\s*(\[[\s\S]*?\])/g,
+    // 1688 pattern
+    /"skuProps"\s*:\s*(\{[\s\S]*?\})/g,
+    /skuInfoMap\s*[=:]\s*(\{[\s\S]*?\})/g,
+    // General patterns
+    /"sku"\s*:\s*(\[[\s\S]*?\])/g,
+    /propertyMeaning\s*[=:]\s*(\{[\s\S]*?\})/g,
+  ];
+
+  for (const pattern of skuPatterns) {
+    const matches = html.matchAll(pattern);
+    for (const match of matches) {
+      try {
+        const data = JSON.parse(match[1]);
+        if (Array.isArray(data)) {
+          for (const item of data) {
+            // Check if it's a color property
+            if (item.prop === '颜色' || item.prop === '颜色分类' || item.name?.includes('颜色') || item.label?.includes('Color')) {
+              const values = item.values || item.value || [];
+              for (const v of values) {
+                const name = v.name || v.text || v.value || '';
+                if (name && !seenColors.has(name.toLowerCase())) {
+                  seenColors.add(name.toLowerCase());
+                  const chineseInfo = CHINESE_COLOR_MAP[name] || null;
+                  const englishInfo = Object.entries(COLOR_MAP).find(([k]) => name.toLowerCase().includes(k));
+                  colors.push({
+                    name: chineseInfo?.en || englishInfo?.[0] || name,
+                    name_ar: chineseInfo?.ar || englishInfo?.[1]?.ar || name,
+                    hex_code: chineseInfo?.hex || englishInfo?.[1]?.hex || '#808080',
+                    image_url: v.image || v.img || v.imageUrl || null,
+                  });
+                }
+              }
+            }
+            // Check if it's a size/option property
+            else if (item.prop === '尺寸' || item.prop === '规格' || item.prop === '型号' || item.name?.includes('尺') || item.name?.includes('规格')) {
+              const values = item.values || item.value || [];
+              for (const v of values) {
+                const name = v.name || v.text || v.value || '';
+                if (name && !seenOptions.has(name.toLowerCase())) {
+                  seenOptions.add(name.toLowerCase());
+                  options.push({
+                    name: name,
+                    name_ar: name,
+                    image_url: v.image || v.img || v.imageUrl || null,
+                  });
+                }
+              }
+            }
+          }
+        }
+      } catch {}
+    }
+  }
+
+  // Method 2: Look for SKU items in HTML
+  const skuItemPattern = /<(?:li|div|span)[^>]*(?:class|data)[^>]*(?:sku|color|variant|option)[^>]*>[\s\S]*?<\/(?:li|div|span)>/gi;
+  const skuItems = html.matchAll(skuItemPattern);
+  for (const item of skuItems) {
+    const itemHtml = item[0];
+    
+    // Extract image
+    const imgMatch = itemHtml.match(/(?:data-)?(?:img|image|src)=["']([^"']+)["']/i);
+    const imageUrl = imgMatch ? normalizeImageUrl(imgMatch[1]) : null;
+    
+    // Extract name
+    const nameMatch = itemHtml.match(/(?:title|alt|data-name|data-value)=["']([^"']+)["']/i);
+    const name = nameMatch ? nameMatch[1].trim() : null;
+    
+    if (name && isValidColorName(name)) {
+      // Check if it looks like a color
+      const chineseInfo = CHINESE_COLOR_MAP[name] || null;
+      const englishInfo = Object.entries(COLOR_MAP).find(([k]) => name.toLowerCase().includes(k));
+      const isColor = chineseInfo || englishInfo || /color|颜色|色/i.test(itemHtml);
+      
+      if (isColor && !seenColors.has(name.toLowerCase())) {
+        seenColors.add(name.toLowerCase());
+        colors.push({
+          name: chineseInfo?.en || englishInfo?.[0] || name,
+          name_ar: chineseInfo?.ar || englishInfo?.[1]?.ar || name,
+          hex_code: chineseInfo?.hex || englishInfo?.[1]?.hex || '#808080',
+          image_url: imageUrl,
+        });
+      } else if (!isColor && !seenOptions.has(name.toLowerCase())) {
+        seenOptions.add(name.toLowerCase());
+        options.push({
+          name: name,
+          name_ar: name,
+          image_url: imageUrl,
+        });
+      }
+    }
+  }
+
+  // Method 3: Look for data-value or data-skuid attributes
+  const dataValuePattern = /data-(?:value|sku(?:id)?|prop)=["']([^"']+)["'][^>]*(?:data-img|style[^>]*url\()=?["']?([^"')\s]+)/gi;
+  const dataValueItems = html.matchAll(dataValuePattern);
+  for (const item of dataValueItems) {
+    const name = item[1].trim();
+    const imageUrl = normalizeImageUrl(item[2]);
+    
+    if (name && isValidColorName(name) && !seenColors.has(name.toLowerCase())) {
+      const chineseInfo = CHINESE_COLOR_MAP[name] || null;
+      const englishInfo = Object.entries(COLOR_MAP).find(([k]) => name.toLowerCase().includes(k));
+      if (chineseInfo || englishInfo) {
+        seenColors.add(name.toLowerCase());
+        colors.push({
+          name: chineseInfo?.en || englishInfo?.[0] || name,
+          name_ar: chineseInfo?.ar || englishInfo?.[1]?.ar || name,
+          hex_code: chineseInfo?.hex || englishInfo?.[1]?.hex || '#808080',
+          image_url: imageUrl.startsWith('http') ? imageUrl : null,
+        });
+      }
+    }
+  }
+
+  console.log(`Direct SKU extraction: ${colors.length} colors, ${options.length} options`);
+  return { colors, options };
+}
+
 // Currency conversion rates to USD
 const CURRENCY_TO_USD: Record<string, number> = {
   'USD': 1,
@@ -292,45 +465,29 @@ const CURRENCY_TO_USD: Record<string, number> = {
   'KWD': 3.26,
 };
 
-// USD to IQD conversion rate
 const USD_TO_IQD = 1400;
 
-// Convert price to IQD
 function convertToIQD(price: number, currency: string): number {
   const currencyUpper = currency.toUpperCase();
-  
-  // If already IQD, return as is
-  if (currencyUpper === 'IQD') {
-    return price;
-  }
-  
-  // Get USD rate for the currency
+  if (currencyUpper === 'IQD') return price;
   const toUsdRate = CURRENCY_TO_USD[currencyUpper] || 1;
-  
-  // Convert to USD first, then to IQD
   const priceInUsd = price * toUsdRate;
-  const priceInIqd = priceInUsd * USD_TO_IQD;
-  
-  return priceInIqd;
+  return priceInUsd * USD_TO_IQD;
 }
 
-// Round price to nearest 500 or 1000 IQD
 function roundPrice(price: number): number {
   if (price <= 0) return 0;
-  
-  // Round to nearest 500
-  const rounded = Math.round(price / 500) * 500;
-  
-  return Math.floor(rounded); // Ensure integer
+  return Math.floor(Math.round(price / 500) * 500);
 }
 
-// Extract price from HTML
 function extractPrice(html: string): number | null {
   const patterns = [
     /"price"\s*:\s*"?(\d+(?:\.\d{1,2})?)"?/gi,
     /data-price=["'](\d+(?:\.\d{1,2})?)["']/gi,
     /\$(\d+(?:\.\d{2})?)\s*(?:USD)?/gi,
     /class=["'][^"']*price[^"']*["'][^>]*>[\s\S]*?(\d+(?:\.\d{2})?)/gi,
+    /¥\s*(\d+(?:\.\d{2})?)/gi,
+    /￥\s*(\d+(?:\.\d{2})?)/gi,
   ];
 
   for (const pattern of patterns) {
@@ -349,7 +506,7 @@ serve(async (req) => {
   }
 
   try {
-    const { url } = await req.json();
+    let { url } = await req.json();
     
     if (!url) {
       return new Response(
@@ -358,10 +515,24 @@ serve(async (req) => {
       );
     }
 
-    console.log('Extracting product info from URL:', url);
+    console.log('Original URL:', url);
 
-    const { platform, itemId } = detectPlatform(url);
+    // STEP 1: If URL is a short URL, follow it to get the real URL
+    if (isShortUrl(url)) {
+      console.log('Detected short URL, following redirects...');
+      url = await followShortUrl(url);
+      console.log('Resolved URL:', url);
+    }
+
+    let { platform, itemId } = detectPlatform(url);
     console.log('Detected platform:', platform, 'Item ID:', itemId);
+
+    // STEP 2: Build canonical URL if we have an item ID
+    let canonicalUrl = url;
+    if (itemId && (platform === 'taobao' || platform === 'tmall' || platform === 'jd' || platform === '1688')) {
+      canonicalUrl = buildCanonicalUrl(itemId, platform);
+      console.log('Canonical URL:', canonicalUrl);
+    }
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
@@ -371,6 +542,7 @@ serve(async (req) => {
           requiresManualInput: true,
           item_id: itemId,
           platform: platform,
+          canonical_url: canonicalUrl,
           message: 'يرجى إدخال البيانات يدوياً'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -387,7 +559,8 @@ serve(async (req) => {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9,ar;q=0.8',
+          'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8,ar;q=0.7',
+          'Referer': 'https://www.taobao.com/',
         }
       });
 
@@ -407,26 +580,31 @@ serve(async (req) => {
           requiresManualInput: true,
           item_id: itemId,
           platform: platform,
+          canonical_url: canonicalUrl,
           message: 'لا يمكن الوصول للصفحة - يرجى إدخال البيانات يدوياً'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Direct extraction - main product images only
+    // Direct extraction
     const directImages = extractImages(pageContent);
     const directPrice = extractPrice(pageContent);
+    const directSkuData = extractSkuData(pageContent);
     console.log('Direct extraction - images:', directImages.length, 'price:', directPrice);
+    console.log('Direct SKU extraction - colors:', directSkuData.colors.length, 'options:', directSkuData.options.length);
 
-    // AI extraction with STRICT image classification rules
-    console.log('Using AI for extraction with strict image classification...');
+    // AI extraction with enhanced prompt for Chinese sites
+    console.log('Using AI for extraction...');
 
     const prompt = `استخرج معلومات المنتج من صفحة الويب هذه وأرجعها بصيغة JSON فقط.
 
 الرابط: ${url}
+المنصة: ${platform}
+رقم المنتج: ${itemId || 'غير معروف'}
 
-محتوى HTML (أول 35000 حرف):
-${pageContent.substring(0, 35000)}
+محتوى HTML (أول 40000 حرف):
+${pageContent.substring(0, 40000)}
 
 أرجع JSON بالشكل التالي بالضبط:
 {
@@ -436,7 +614,7 @@ ${pageContent.substring(0, 35000)}
   "description_ar": "وصف قصير بالعربية",
   "price": 29.99,
   "original_price": 39.99,
-  "currency": "USD",
+  "currency": "CNY",
   "main_product_images": ["https://صورة-المنتج-الرئيسية.jpg"],
   "colors": [{"name": "Black", "name_ar": "أسود", "hex_code": "#000000", "image_url": "https://صورة-خاصة-بهذا-اللون.jpg"}],
   "options": [{"name": "0.4mm", "name_ar": "0.4 ملم", "image_url": "https://صورة-خاصة-بهذا-الخيار.jpg"}],
@@ -445,40 +623,33 @@ ${pageContent.substring(0, 35000)}
 
 ===== قواعد استخراج الألوان والخيارات (أولوية قصوى) =====
 
-ابحث في HTML عن:
-1. عناصر SKU/Variant: ابحث عن data-skuid, data-sku-id, sku-item, sku-prop
-2. خيارات اللون: ابحث عن color, لون, 颜色, colour, data-color
-3. خيارات الحجم/المقاس: ابحث عن size, مقاس, 尺寸, 尺码, capacity, variant
-4. الصور المرتبطة: ابحث عن data-img, data-image, data-thumb, background-image
+للمواقع الصينية (Taobao, Tmall, 1688, JD):
+1. ابحث عن: skuProps, skuList, skuInfoMap, propertyMeaning
+2. ابحث عن العناصر التي تحتوي على: data-skuid, data-value, sku-item
+3. الألوان بالصينية: 颜色, 颜色分类, 色
+4. الخيارات: 尺寸, 规格, 型号, 尺码
 
-مواقع شائعة للبحث:
-- Taobao/Tmall: ابحث في <div class="sku-item"> و data-value و data-pricepair
-- AliExpress: ابحث في sku-property-list و product-prop
-- JD: ابحث في chosen-items و item-selected
-- 1688: ابحث في obj-sku و sku-wrapper
+ترجمة الألوان الصينية:
+- 黑色 = Black/أسود
+- 白色 = White/أبيض
+- 红色 = Red/أحمر
+- 蓝色 = Blue/أزرق
+- 绿色 = Green/أخضر
+- 黄色 = Yellow/أصفر
+- 粉色/粉红 = Pink/وردي
+- 紫色 = Purple/بنفسجي
+- 灰色 = Gray/رمادي
+- 棕色 = Brown/بني
+- 金色 = Gold/ذهبي
+- 银色 = Silver/فضي
 
-استخرج كل الألوان والخيارات حتى لو كانت كثيرة. لا تترك أي لون أو خيار.
+مهم جداً:
+- استخرج كل الألوان والخيارات المتاحة - لا تترك أي واحد
+- لكل لون/خيار استخرج الصورة المرتبطة به من data-img أو background-image
+- main_product_images = صور المعرض الرئيسي فقط (لا تضع صور الألوان هنا)
+- colors[].image_url = الصورة الخاصة بكل لون
 
-===== قواعد استخراج الأسعار =====
-
-1. price: السعر النهائي بعد الخصم
-2. original_price: السعر المشطوب أو الأصلي قبل الخصم
-3. currency: العملة (CNY للمواقع الصينية، USD، EUR، إلخ)
-
-===== قواعد الصور =====
-
-4. main_product_images: صور المعرض الرئيسي فقط - لا تضع صور الألوان هنا!
-5. colors[].image_url: الصورة الخاصة بكل لون - استخرجها من data-img أو thumbnail
-6. options[].image_url: الصورة الخاصة بكل خيار إن وجدت
-
-===== قواعد مهمة =====
-
-7. colors: استخرج كل الألوان المتاحة. كل لون يجب أن يحتوي على: name, name_ar, hex_code, image_url
-8. options: استخرج كل الخيارات (أحجام، مقاسات، أنواع). كل خيار يحتوي على: name, name_ar, image_url
-9. features: مميزات المنتج (3-6 مميزات)
-10. لا تتجاهل أي ألوان أو خيارات - استخرج الكل!
-
-أرجع فقط كائن JSON بدون أي نص إضافي.`;
+أرجع JSON فقط بدون أي نص إضافي.`;
 
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -489,7 +660,7 @@ ${pageContent.substring(0, 35000)}
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'أنت مستخرج بيانات منتجات خبير. مهمتك الأساسية هي فصل صور المنتج الرئيسية عن صور الألوان والخيارات بشكل صحيح. لا تخلط أبداً بين أنواع الصور. أرجع JSON صحيح فقط.' },
+          { role: 'system', content: 'أنت مستخرج بيانات منتجات خبير متخصص في المواقع الصينية. استخرج كل الألوان والخيارات بدقة. أرجع JSON صحيح فقط.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.1,
@@ -510,7 +681,6 @@ ${pageContent.substring(0, 35000)}
       features: []
     };
     
-    // Collect option/color image URLs for exclusion from main images
     const variantImageUrls = new Set<string>();
     
     if (aiResponse.ok) {
@@ -528,45 +698,22 @@ ${pageContent.substring(0, 35000)}
           productInfo.description = ai.description || '';
           productInfo.description_ar = ai.description_ar || '';
           
-          // ===== قاعدة استخراج السعر =====
-          // السعر المستخرج من الرابط = السعر الأصلي قبل التخفيض فقط
-          // السعر الحالي = فارغ (يُحدد يدوياً لاحقاً)
-          
-          const extractedCurrency = ai.currency || 'USD';
-          
-          // Get all available prices
+          const extractedCurrency = ai.currency || 'CNY';
           const aiPrice = parseFloat(ai.price) || 0;
           const aiOriginalPrice = parseFloat(ai.original_price) || 0;
           const directPriceNum = directPrice || 0;
           
           console.log('All prices found - AI price:', aiPrice, 'AI original:', aiOriginalPrice, 'Direct:', directPriceNum, 'Currency:', extractedCurrency);
           
-          // Use the HIGHEST price found as original_price (before discount)
-          // This ensures we capture the original price, not a discounted one
           const extractedOriginalPrice = Math.max(aiPrice, aiOriginalPrice, directPriceNum);
-          
-          console.log('Using highest price as original_price:', extractedOriginalPrice);
-          
-          // Convert original_price to IQD
           let originalPriceInIqd = convertToIQD(extractedOriginalPrice, extractedCurrency);
-          
-          console.log('Converted to IQD:', originalPriceInIqd);
-          
-          // Round price to nearest 500
           originalPriceInIqd = roundPrice(originalPriceInIqd);
           
-          console.log('Rounded original_price:', originalPriceInIqd);
-          
-          // Set prices:
-          // price = null (0) - to be set manually later
-          // original_price = highest extracted price from link
           productInfo.price = null;
           productInfo.original_price = originalPriceInIqd > 0 ? originalPriceInIqd : null;
           productInfo.currency = 'IQD';
           
-          console.log('Final prices - price:', productInfo.price, 'original_price:', productInfo.original_price);
-          
-          // STEP 1: First, collect ALL color image URLs
+          // Process colors from AI
           if (ai.colors && Array.isArray(ai.colors)) {
             for (const c of ai.colors) {
               if (c.name && isValidColorName(c.name)) {
@@ -576,7 +723,6 @@ ${pageContent.substring(0, 35000)}
                 let colorImageUrl = null;
                 if (c.image_url && c.image_url.startsWith('http')) {
                   colorImageUrl = normalizeImageUrl(c.image_url);
-                  // Add to variant images set for exclusion
                   variantImageUrls.add(getImageBaseUrl(colorImageUrl));
                 }
                 
@@ -593,14 +739,13 @@ ${pageContent.substring(0, 35000)}
             }
           }
           
-          // STEP 2: Collect ALL option image URLs
+          // Process options from AI
           if (ai.options && Array.isArray(ai.options)) {
             for (const o of ai.options) {
               if (o.name && isValidOptionName(o.name)) {
                 let optionImageUrl = null;
                 if (o.image_url && o.image_url.startsWith('http')) {
                   optionImageUrl = normalizeImageUrl(o.image_url);
-                  // Add to variant images set for exclusion
                   variantImageUrls.add(getImageBaseUrl(optionImageUrl));
                 }
                 
@@ -617,9 +762,7 @@ ${pageContent.substring(0, 35000)}
             }
           }
           
-          console.log('Variant images collected for exclusion:', variantImageUrls.size);
-          
-          // STEP 3: Process main product images - EXCLUDE any variant images
+          // Process main images
           const mainProductImages = ai.main_product_images || ai.images || [];
           if (Array.isArray(mainProductImages)) {
             const seenBases = new Set<string>();
@@ -627,23 +770,15 @@ ${pageContent.substring(0, 35000)}
               if (img?.startsWith('http') && !/\.svg/i.test(img)) {
                 const normalizedImg = normalizeImageUrl(img);
                 const base = getImageBaseUrl(normalizedImg);
-                
-                // Skip if this is a variant image
-                if (variantImageUrls.has(base)) {
-                  console.log('Skipping variant image from main:', base);
-                  continue;
-                }
-                
-                // Skip duplicates
+                if (variantImageUrls.has(base)) continue;
                 if (seenBases.has(base)) continue;
                 seenBases.add(base);
-                
                 productInfo.images.push(normalizedImg);
               }
             }
           }
           
-          // Add features with appropriate icons
+          // Add features
           if (ai.features && Array.isArray(ai.features)) {
             for (const f of ai.features) {
               if (f.text || f.text_ar) {
@@ -671,32 +806,57 @@ ${pageContent.substring(0, 35000)}
       }
     }
 
-    // STEP 4: If no AI images, use direct extraction but still exclude variant images
+    // Merge direct SKU data if AI didn't find enough
+    if (productInfo.colors.length === 0 && directSkuData.colors.length > 0) {
+      console.log('Using direct SKU colors...');
+      for (const c of directSkuData.colors) {
+        if (c.image_url) {
+          variantImageUrls.add(getImageBaseUrl(c.image_url));
+        }
+        productInfo.colors.push({
+          ...c,
+          in_stock: true,
+          available_for_direct_sale: true,
+          available_for_pre_order: false
+        });
+      }
+    }
+    
+    if (productInfo.options.length === 0 && directSkuData.options.length > 0) {
+      console.log('Using direct SKU options...');
+      for (const o of directSkuData.options) {
+        if (o.image_url) {
+          variantImageUrls.add(getImageBaseUrl(o.image_url));
+        }
+        productInfo.options.push({
+          ...o,
+          price_adjustment: 0,
+          in_stock: true,
+          available_for_direct_sale: true,
+          available_for_pre_order: false
+        });
+      }
+    }
+
+    // Use direct images if none from AI
     if (productInfo.images.length === 0 && directImages.length > 0) {
-      console.log('Using direct extraction images with variant exclusion...');
+      console.log('Using direct extraction images...');
       const seenBases = new Set<string>();
       for (const img of directImages) {
         const base = getImageBaseUrl(img);
-        if (variantImageUrls.has(base)) {
-          console.log('Skipping direct variant image:', base);
-          continue;
-        }
+        if (variantImageUrls.has(base)) continue;
         if (seenBases.has(base)) continue;
         seenBases.add(base);
         productInfo.images.push(img);
       }
     }
 
-    // STEP 5: Final cleanup - ensure no variant images in main product images
+    // Final cleanup
     const finalImages: string[] = [];
     const finalBases = new Set<string>();
     for (const img of productInfo.images) {
       const base = getImageBaseUrl(img);
-      // Double-check exclusion
-      if (variantImageUrls.has(base)) {
-        console.log('Final cleanup - removing variant image:', base);
-        continue;
-      }
+      if (variantImageUrls.has(base)) continue;
       if (!finalBases.has(base) && !/\.svg/i.test(img)) {
         finalBases.add(base);
         finalImages.push(img);
@@ -706,17 +866,17 @@ ${pageContent.substring(0, 35000)}
 
     console.log('=== FINAL EXTRACTION RESULT ===');
     console.log('Main product images:', productInfo.images.length);
-    console.log('Colors with images:', productInfo.colors.filter((c: any) => c.image_url).length, '/', productInfo.colors.length);
-    console.log('Options with images:', productInfo.options.filter((o: any) => o.image_url).length, '/', productInfo.options.length);
+    console.log('Colors:', productInfo.colors.length);
+    console.log('Options:', productInfo.options.length);
     console.log('Features:', productInfo.features.length);
-    console.log('Variant images excluded:', variantImageUrls.size);
 
     return new Response(
       JSON.stringify({
         success: true,
         productInfo,
         platform,
-        item_id: itemId
+        item_id: itemId,
+        canonical_url: canonicalUrl
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
