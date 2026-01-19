@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { 
   Search, Plus, Minus, Download, Coins, User, TrendingUp, 
-  Calendar, ArrowUpRight, ArrowDownRight, History, Crown
+  Calendar, ArrowUpRight, ArrowDownRight, History, Crown, Bell
 } from "lucide-react";
 import {
   Dialog,
@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import AdminPagination from "./AdminPagination";
@@ -38,6 +39,7 @@ export default function AdminUsersPointsTab() {
   const [historyDialog, setHistoryDialog] = useState<{ open: boolean; user: any }>({ open: false, user: null });
   const [adjustAmount, setAdjustAmount] = useState("");
   const [adjustReason, setAdjustReason] = useState("");
+  const [sendNotification, setSendNotification] = useState(true);
   const [exportingUser, setExportingUser] = useState<string | null>(null);
 
   const ITEMS_PER_PAGE = 12;
@@ -85,10 +87,12 @@ export default function AdminUsersPointsTab() {
   });
 
   const adjustPoints = useMutation({
-    mutationFn: async ({ userId, amount, type, reason }: { userId: string; amount: number; type: 'add' | 'subtract'; reason: string }) => {
+    mutationFn: async ({ userId, amount, type, reason, notify }: { userId: string; amount: number; type: 'add' | 'subtract'; reason: string; notify: boolean }) => {
       const pointsChange = type === 'add' ? amount : -amount;
       const transactionType = type === 'add' ? 'earn' : 'redeem';
+      const description = reason || (type === 'add' ? 'إضافة نقاط من الإدارة' : 'خصم نقاط من الإدارة');
       
+      // إضافة معاملة النقاط
       const { error: transactionError } = await supabase
         .from('points_transactions')
         .insert({
@@ -96,11 +100,12 @@ export default function AdminUsersPointsTab() {
           points: Math.abs(amount),
           type: transactionType,
           source: 'admin_adjustment',
-          description: reason || (type === 'add' ? 'إضافة نقاط من الإدارة' : 'خصم نقاط من الإدارة'),
+          description,
         });
       
       if (transactionError) throw transactionError;
 
+      // تحديث رصيد النقاط
       const { data: currentPoints, error: getError } = await supabase
         .from('user_points')
         .select('total_points')
@@ -117,14 +122,38 @@ export default function AdminUsersPointsTab() {
         .eq('user_id', userId);
       
       if (updateError) throw updateError;
+
+      // إرسال إشعار للمستخدم
+      if (notify) {
+        const notificationTitle = type === 'add' ? '🎉 تم إضافة نقاط لحسابك' : '📢 تعديل على رصيد نقاطك';
+        const notificationMessage = type === 'add' 
+          ? `تمت إضافة ${amount.toLocaleString()} نقطة إلى رصيدك. ${reason ? `السبب: ${reason}` : ''}`
+          : `تم خصم ${amount.toLocaleString()} نقطة من رصيدك. ${reason ? `السبب: ${reason}` : ''}`;
+
+        const { error: notifyError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: userId,
+            title: notificationTitle,
+            message: notificationMessage,
+            type: 'points',
+            is_general: false,
+          });
+
+        if (notifyError) console.error('Failed to send notification:', notifyError);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-users-points'] });
       queryClient.invalidateQueries({ queryKey: ['points-stats'] });
       toast.success(adjustDialog.type === 'add' ? 'تمت إضافة النقاط بنجاح' : 'تم خصم النقاط بنجاح');
+      if (sendNotification) {
+        toast.success('تم إرسال إشعار للمستخدم');
+      }
       setAdjustDialog({ open: false, user: null, type: 'add' });
       setAdjustAmount("");
       setAdjustReason("");
+      setSendNotification(true);
     },
     onError: (error: any) => {
       toast.error(error.message || 'حدث خطأ');
@@ -195,6 +224,8 @@ export default function AdminUsersPointsTab() {
       'welcome_bonus': 'مكافأة ترحيب',
       'birthday_bonus': 'مكافأة عيد ميلاد',
       'streak_bonus': 'مكافأة تسلسل',
+      'instagram_share': 'مشاركة انستجرام',
+      'product_redemption': 'استبدال قسيمة',
     };
     return labels[source] || source;
   };
@@ -210,6 +241,7 @@ export default function AdminUsersPointsTab() {
       amount,
       type: adjustDialog.type,
       reason: adjustReason,
+      notify: sendNotification,
     });
   };
 
@@ -399,13 +431,20 @@ export default function AdminUsersPointsTab() {
               />
             </div>
             <div className="space-y-2">
-              <Label>السبب (اختياري)</Label>
+              <Label>السبب <span className="text-muted-foreground">(يظهر للمستخدم)</span></Label>
               <Textarea
                 value={adjustReason}
                 onChange={(e) => setAdjustReason(e.target.value)}
-                placeholder="سبب التعديل..."
+                placeholder={adjustDialog.type === 'add' ? 'مثال: مكافأة لمشاركتك الفعالة' : 'مثال: تصحيح خطأ في النظام'}
                 rows={2}
               />
+            </div>
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                <Label className="text-sm">إرسال إشعار للمستخدم</Label>
+              </div>
+              <Switch checked={sendNotification} onCheckedChange={setSendNotification} />
             </div>
           </div>
           <DialogFooter>
@@ -438,43 +477,40 @@ export default function AdminUsersPointsTab() {
           <ScrollArea className="h-[400px] pr-4">
             {loadingTransactions ? (
               <div className="space-y-3">
-                {[1,2,3,4,5].map(i => (
-                  <div key={i} className="h-16 bg-muted/50 rounded animate-pulse" />
+                {[1, 2, 3, 4, 5].map(i => (
+                  <div key={i} className="h-16 bg-muted animate-pulse rounded-lg" />
                 ))}
               </div>
             ) : !userTransactions || userTransactions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                لا توجد معاملات
+                <History className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>لا توجد معاملات</p>
               </div>
             ) : (
               <div className="space-y-2">
-                {userTransactions.map((t: any) => (
-                  <Card key={t.id} className="overflow-hidden">
+                {userTransactions.map((tx: any) => (
+                  <Card key={tx.id}>
                     <CardContent className="p-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-full ${
-                            t.type === 'earn' ? 'bg-green-500/20' : 'bg-red-500/20'
-                          }`}>
-                            {t.type === 'earn' ? (
+                          <div className={`p-2 rounded-full ${tx.type === 'earn' ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
+                            {tx.type === 'earn' ? (
                               <ArrowUpRight className="h-4 w-4 text-green-500" />
                             ) : (
                               <ArrowDownRight className="h-4 w-4 text-red-500" />
                             )}
                           </div>
                           <div>
-                            <p className="text-sm font-medium">{getSourceLabel(t.source)}</p>
-                            <p className="text-xs text-muted-foreground line-clamp-1">
-                              {t.description || '-'}
-                            </p>
+                            <p className="text-sm font-medium">{getSourceLabel(tx.source)}</p>
+                            <p className="text-xs text-muted-foreground">{tx.description}</p>
                           </div>
                         </div>
                         <div className="text-left">
-                          <p className={`font-bold ${t.type === 'earn' ? 'text-green-500' : 'text-red-500'}`}>
-                            {t.type === 'earn' ? '+' : '-'}{t.points}
+                          <p className={`font-bold ${tx.type === 'earn' ? 'text-green-500' : 'text-red-500'}`}>
+                            {tx.type === 'earn' ? '+' : '-'}{tx.points}
                           </p>
-                          <p className="text-[10px] text-muted-foreground">
-                            {format(new Date(t.created_at), 'dd MMM yyyy', { locale: ar })}
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(tx.created_at), 'dd/MM', { locale: ar })}
                           </p>
                         </div>
                       </div>

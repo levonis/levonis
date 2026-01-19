@@ -781,39 +781,54 @@ export type Database = {
       }
       daily_tasks: {
         Row: {
+          confirmation_type: string | null
           created_at: string
           description_ar: string
           display_order: number
           icon: string
           id: string
           is_active: boolean
+          max_streak_days: number | null
           points_reward: number
+          requires_confirmation: boolean | null
+          streak_bonus_enabled: boolean | null
+          streak_bonus_per_day: number | null
           task_key: string
           task_type: string
           title_ar: string
           updated_at: string
         }
         Insert: {
+          confirmation_type?: string | null
           created_at?: string
           description_ar: string
           display_order?: number
           icon: string
           id?: string
           is_active?: boolean
+          max_streak_days?: number | null
           points_reward?: number
+          requires_confirmation?: boolean | null
+          streak_bonus_enabled?: boolean | null
+          streak_bonus_per_day?: number | null
           task_key: string
           task_type: string
           title_ar: string
           updated_at?: string
         }
         Update: {
+          confirmation_type?: string | null
           created_at?: string
           description_ar?: string
           display_order?: number
           icon?: string
           id?: string
           is_active?: boolean
+          max_streak_days?: number | null
           points_reward?: number
+          requires_confirmation?: boolean | null
+          streak_bonus_enabled?: boolean | null
+          streak_bonus_per_day?: number | null
           task_key?: string
           task_type?: string
           title_ar?: string
@@ -966,6 +981,48 @@ export type Database = {
           title?: string
           title_ar?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      instagram_share_submissions: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          id: string
+          image_url: string
+          instagram_username: string | null
+          points_awarded: number | null
+          product_id: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          instagram_username?: string | null
+          points_awarded?: number | null
+          product_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          instagram_username?: string | null
+          points_awarded?: number | null
+          product_id?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -1965,6 +2022,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      points_redeemable_products: {
+        Row: {
+          created_at: string
+          description_ar: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          max_per_user: number | null
+          points_cost: number
+          product_type: string
+          stock_quantity: number | null
+          title_ar: string
+          updated_at: string
+          valid_days: number | null
+          value_amount: number
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          max_per_user?: number | null
+          points_cost: number
+          product_type?: string
+          stock_quantity?: number | null
+          title_ar: string
+          updated_at?: string
+          valid_days?: number | null
+          value_amount?: number
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          max_per_user?: number | null
+          points_cost?: number
+          product_type?: string
+          stock_quantity?: number | null
+          title_ar?: string
+          updated_at?: string
+          valid_days?: number | null
+          value_amount?: number
+        }
+        Relationships: []
       }
       points_transactions: {
         Row: {
@@ -3617,6 +3722,50 @@ export type Database = {
             columns: ["shipment_request_id"]
             isOneToOne: false
             referencedRelation: "shipment_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_redeemed_products: {
+        Row: {
+          coupon_code: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_used: boolean | null
+          points_spent: number
+          product_id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          coupon_code: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean | null
+          points_spent: number
+          product_id: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          coupon_code?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_used?: boolean | null
+          points_spent?: number
+          product_id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_redeemed_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "points_redeemable_products"
             referencedColumns: ["id"]
           },
         ]
