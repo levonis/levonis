@@ -832,7 +832,8 @@ const Admin = () => {
       }
     }
 
-    // Set images - remove duplicates by base URL and exclude option/color images
+    // Set images - remove duplicates by base URL
+    // Note: We no longer exclude option/color images because they might be the only product images available
     if (productInfo.images && Array.isArray(productInfo.images) && productInfo.images.length > 0) {
       const seenBases = new Set<string>();
       const uniqueImages: string[] = [];
@@ -843,10 +844,7 @@ const Admin = () => {
           const urlObj = new URL(img);
           base = urlObj.origin + urlObj.pathname;
         } catch {}
-        // Skip if this image belongs to an option or color
-        if (optionColorImageUrls.has(base)) {
-          continue;
-        }
+        // Only skip duplicates, don't skip option/color images
         if (!seenBases.has(base)) {
           seenBases.add(base);
           uniqueImages.push(img);
