@@ -731,6 +731,11 @@ const Admin = () => {
       }
 
       // Fill form with extracted data
+      console.log('[AI Extract] Product info received:', {
+        dimensions: productInfo.dimensions,
+        weight_kg: productInfo.weight_kg,
+        name: productInfo.name
+      });
       applyProductInfo(productInfo);
       
     } catch (error) {
