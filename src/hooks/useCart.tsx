@@ -144,8 +144,22 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // Check and warn about cart request deletion
   const checkAndWarnCartRequest = async (): Promise<boolean> => {
-    await fetchPendingCartRequest();
-    return !!pendingCartRequest;
+    if (!user) return false;
+    
+    // Fetch directly from database to get latest state
+    const { data } = await supabase
+      .from('cart_requests')
+      .select('id, cart_code, adjusted_total, admin_notes, status')
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    
+    // Update state with latest data
+    setPendingCartRequest(data as PendingCartRequest | null);
+    
+    return !!data;
   };
 
   const fetchCart = async () => {
