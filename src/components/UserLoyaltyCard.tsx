@@ -1,4 +1,4 @@
-import { Crown, Gem, Star, Award, Shield, Zap, Sparkles, Percent, Truck, Headphones, Check, Clock } from "lucide-react";
+import { Crown, Gem, Star, Award, Shield, Zap, Sparkles, Percent, Truck, Headphones, Check, Clock, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -20,10 +20,13 @@ interface UserLoyaltyCardProps {
     priority_shipping?: boolean;
     early_access?: boolean;
     exclusive_products?: boolean;
+    purchase_price_points?: number;
   };
+  userName?: string;
   expiresAt?: string;
   isActive?: boolean;
   showDetails?: boolean;
+  showPurchaseInfo?: boolean;
   className?: string;
 }
 
@@ -82,9 +85,11 @@ const getTextColor = (color: string) => {
 
 export default function UserLoyaltyCard({
   level,
+  userName,
   expiresAt,
   isActive = true,
   showDetails = true,
+  showPurchaseInfo = false,
   className,
 }: UserLoyaltyCardProps) {
   const gradientStyle = getGradientStyle(level.color);
@@ -167,6 +172,39 @@ export default function UserLoyaltyCard({
               {getCardIcon(level.name_en, "h-7 w-7")}
             </div>
           </div>
+
+          {/* User name - engraved style */}
+          {userName && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <p 
+                className="text-lg font-bold tracking-wide opacity-90"
+                style={{ 
+                  color: textColor,
+                  textShadow: `0 1px 2px ${textColor === "#ffffff" ? "rgba(0,0,0,0.3)" : "rgba(255,255,255,0.3)"}`,
+                }}
+              >
+                {userName}
+              </p>
+            </div>
+          )}
+
+          {/* Purchase info for store cards */}
+          {showPurchaseInfo && level.purchase_price_points && (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
+              <p 
+                className="text-2xl font-bold"
+                style={{ color: textColor }}
+              >
+                {level.purchase_price_points.toLocaleString()}
+              </p>
+              <p 
+                className="text-xs opacity-75"
+                style={{ color: secondaryTextColor }}
+              >
+                نقطة
+              </p>
+            </div>
+          )}
 
           {/* Status badges */}
           <div className="flex flex-wrap gap-1.5 items-end justify-between mt-auto">
