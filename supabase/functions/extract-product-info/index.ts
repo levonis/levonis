@@ -603,8 +603,8 @@ serve(async (req) => {
 المنصة: ${platform}
 رقم المنتج: ${itemId || 'غير معروف'}
 
-محتوى HTML (أول 40000 حرف):
-${pageContent.substring(0, 40000)}
+محتوى HTML (أول 80000 حرف):
+${pageContent.substring(0, 80000)}
 
 أرجع JSON بالشكل التالي بالضبط:
 {
@@ -621,33 +621,35 @@ ${pageContent.substring(0, 40000)}
   "features": [{"text": "Feature in English", "text_ar": "الميزة بالعربية"}]
 }
 
-===== قواعد استخراج الألوان والخيارات (أولوية قصوى) =====
+===== قواعد استخراج الألوان والخيارات (أولوية قصوى - استخرج الكل) =====
+
+مهم جداً جداً: استخرج جميع الألوان والخيارات المتاحة حتى لو كانت أكثر من 50 لون أو خيار!
 
 للمواقع الصينية (Taobao, Tmall, 1688, JD):
-1. ابحث عن: skuProps, skuList, skuInfoMap, propertyMeaning
-2. ابحث عن العناصر التي تحتوي على: data-skuid, data-value, sku-item
-3. الألوان بالصينية: 颜色, 颜色分类, 色
-4. الخيارات: 尺寸, 规格, 型号, 尺码
+1. ابحث عن: skuProps, skuList, skuInfoMap, propertyMeaning, skuMap, sku-prop
+2. ابحث عن العناصر التي تحتوي على: data-skuid, data-value, sku-item, prop-item, j-sku-item
+3. ابحث عن data-pv وdata-pvs لمعرفة قيم الألوان
+4. الألوان بالصينية: 颜色, 颜色分类, 色, 顏色
+5. الخيارات: 尺寸, 规格, 型号, 尺码, 容量, 版本
 
-ترجمة الألوان الصينية:
-- 黑色 = Black/أسود
-- 白色 = White/أبيض
-- 红色 = Red/أحمر
-- 蓝色 = Blue/أزرق
-- 绿色 = Green/أخضر
-- 黄色 = Yellow/أصفر
-- 粉色/粉红 = Pink/وردي
-- 紫色 = Purple/بنفسجي
-- 灰色 = Gray/رمادي
-- 棕色 = Brown/بني
-- 金色 = Gold/ذهبي
-- 银色 = Silver/فضي
+ترجمة الألوان الصينية الشائعة:
+黑色=Black/أسود, 白色=White/أبيض, 红色=Red/أحمر, 蓝色=Blue/أزرق, 绿色=Green/أخضر
+黄色=Yellow/أصفر, 粉色/粉红=Pink/وردي, 紫色=Purple/بنفسجي, 灰色=Gray/رمادي
+棕色=Brown/بني, 金色=Gold/ذهبي, 银色=Silver/فضي, 橙色=Orange/برتقالي
+深蓝=Navy/كحلي, 米色=Beige/بيج, 卡其=Khaki/كاكي, 驼色=Camel/جملي
+酒红=Wine Red/خمري, 藏青=Dark Blue/أزرق داكن, 天蓝=Sky Blue/سماوي
+玫红=Rose/وردي, 透明=Transparent/شفاف, 彩色=Colorful/متعدد الألوان
+原色/本色=Natural/طبيعي, 军绿=Army Green/أخضر عسكري, 墨绿=Dark Green/أخضر غامق
+浅蓝=Light Blue/أزرق فاتح, 深灰=Dark Gray/رمادي غامق, 浅灰=Light Gray/رمادي فاتح
+杏色=Apricot/مشمشي, 咖啡=Coffee/بني قهوة, 卡其色=Khaki/كاكي, 奶白=Cream/كريمي
 
-مهم جداً:
-- استخرج كل الألوان والخيارات المتاحة - لا تترك أي واحد
-- لكل لون/خيار استخرج الصورة المرتبطة به من data-img أو background-image
-- main_product_images = صور المعرض الرئيسي فقط (لا تضع صور الألوان هنا)
-- colors[].image_url = الصورة الخاصة بكل لون
+قواعد صارمة:
+1. استخرج كل الألوان بدون استثناء - حتى لو كانت 20 أو 30 أو 50 لون
+2. لكل لون استخرج الصورة المرتبطة به من data-img أو background-image أو style
+3. main_product_images = صور المعرض الرئيسي فقط (لا تضع صور الألوان هنا)
+4. colors[].image_url = الصورة الخاصة بكل لون (ابحث عنها في data-img, data-bigpic, background-image)
+5. إذا كان اللون بالصينية فقط، ترجمه للإنجليزية والعربية
+6. أي لون لم تعرفه، اتركه كما هو مع اسم عربي مشابه
 
 أرجع JSON فقط بدون أي نص إضافي.`;
 
@@ -660,10 +662,11 @@ ${pageContent.substring(0, 40000)}
       body: JSON.stringify({
         model: 'google/gemini-2.5-flash',
         messages: [
-          { role: 'system', content: 'أنت مستخرج بيانات منتجات خبير متخصص في المواقع الصينية. استخرج كل الألوان والخيارات بدقة. أرجع JSON صحيح فقط.' },
+          { role: 'system', content: 'أنت مستخرج بيانات منتجات خبير متخصص في المواقع الصينية. مهمتك استخراج كل الألوان والخيارات بدون استثناء - حتى لو كانت عشرات الألوان. أرجع JSON صحيح فقط.' },
           { role: 'user', content: prompt }
         ],
         temperature: 0.1,
+        max_tokens: 16000, // Increase to allow more colors in response
       }),
     });
 

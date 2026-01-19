@@ -106,7 +106,7 @@ const Admin = () => {
   }>>([]);
   const [productCardDiscounts, setProductCardDiscounts] = useState<Array<{
     level_id: string;
-    discount_percentage: number;
+    discount_amount: number; // Amount in IQD
   }>>([]);
   const [preOrderShippingOptions, setPreOrderShippingOptions] = useState<Array<{
     name: string;
@@ -1202,7 +1202,7 @@ const Admin = () => {
           ? Number(formData.get('points_reward')) 
           : 0,
         // Multiple card discounts as JSON array
-        card_discounts: productCardDiscounts.filter(d => d.level_id && d.discount_percentage > 0),
+        card_discounts: productCardDiscounts.filter(d => d.level_id && d.discount_amount > 0),
       };
 
       // Validate with zod
@@ -1996,18 +1996,18 @@ const Admin = () => {
                         {/* Multiple Card Discounts */}
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <Label>خصومات البطاقات</Label>
+                            <Label>خصومات البطاقات (بالدينار)</Label>
                             <Button
                               type="button"
                               size="sm"
                               variant="outline"
-                              onClick={() => setProductCardDiscounts([...productCardDiscounts, { level_id: '', discount_percentage: 0 }])}
+                              onClick={() => setProductCardDiscounts([...productCardDiscounts, { level_id: '', discount_amount: 0 }])}
                             >
                               <Plus className="ml-1 h-3 w-3" />
                               إضافة خصم بطاقة
                             </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground">أضف خصومات مختلفة لكل نوع بطاقة</p>
+                          <p className="text-xs text-muted-foreground">أضف خصومات مختلفة لكل نوع بطاقة (المبلغ بالدينار - يظهر للزبون كنسبة مئوية)</p>
                           
                           {productCardDiscounts.length > 0 && (
                             <div className="space-y-2">
@@ -2031,23 +2031,22 @@ const Admin = () => {
                                       ))}
                                     </select>
                                   </div>
-                                  <div className="w-24">
+                                  <div className="w-32">
                                     <Input
                                       type="number"
                                       min="0"
-                                      max="100"
-                                      step="0.01"
-                                      value={discount.discount_percentage}
+                                      step="500"
+                                      value={discount.discount_amount}
                                       onChange={(e) => {
                                         const updated = [...productCardDiscounts];
-                                        updated[index] = { ...updated[index], discount_percentage: Number(e.target.value) };
+                                        updated[index] = { ...updated[index], discount_amount: Number(e.target.value) };
                                         setProductCardDiscounts(updated);
                                       }}
-                                      placeholder="%"
+                                      placeholder="مبلغ الخصم"
                                       className="h-9"
                                     />
                                   </div>
-                                  <span className="text-sm text-muted-foreground">%</span>
+                                  <span className="text-sm text-muted-foreground">د.ع</span>
                                   <Button
                                     type="button"
                                     size="sm"
