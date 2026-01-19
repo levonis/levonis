@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -24,6 +24,7 @@ import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent
 import AdminPagination from '@/components/admin/AdminPagination';
 import { usePagination } from '@/hooks/usePagination';
 import OfferPurchasesTab from '@/components/admin/OfferPurchasesTab';
+import AdminMessageDialog from '@/components/admin/AdminMessageDialog';
 
 const statusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
@@ -46,6 +47,8 @@ const AdminOrders = () => {
   const [editingOrder, setEditingOrder] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [selectedOrderForMessage, setSelectedOrderForMessage] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchParams] = useSearchParams();
@@ -835,6 +838,18 @@ const AdminOrders = () => {
                               >
                                 <Pencil className="h-4 w-4" />
                               </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 text-primary hover:text-primary"
+                                onClick={() => {
+                                  setSelectedOrderForMessage(order);
+                                  setMessageDialogOpen(true);
+                                }}
+                                title="إرسال رسالة للزبون"
+                              >
+                                <MessageCircle className="h-4 w-4" />
+                              </Button>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
                                   <Button
@@ -1191,6 +1206,21 @@ const AdminOrders = () => {
           <OfferPurchasesTab />
         </TabsContent>
       </Tabs>
+
+      {/* Admin Message Dialog */}
+      {selectedOrderForMessage && (
+        <AdminMessageDialog
+          open={messageDialogOpen}
+          onOpenChange={(open) => {
+            setMessageDialogOpen(open);
+            if (!open) setSelectedOrderForMessage(null);
+          }}
+          orderId={selectedOrderForMessage.id}
+          orderNumber={selectedOrderForMessage.order_number}
+          userId={selectedOrderForMessage.user_id}
+          customerName={selectedOrderForMessage.profiles?.full_name || selectedOrderForMessage.profiles?.username || 'زبون'}
+        />
+      )}
     </AdminLayout>
   );
 };
