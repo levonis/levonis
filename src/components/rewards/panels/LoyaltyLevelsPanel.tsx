@@ -203,59 +203,64 @@ export default function LoyaltyLevelsPanel() {
         </div>
       )}
 
-      {/* Available Cards - Professional Design */}
-      <div className="space-y-6">
+      {/* Available Cards - Professional Design with separation */}
+      <div className="space-y-3">
         <h3 className="text-sm font-semibold text-muted-foreground">البطاقات المتاحة للشراء</h3>
-        {levels?.filter(level => level.is_purchasable).map((level) => {
-          const isCurrentCard = currentCardLevel?.id === level.id;
-          const canPurchase = availablePoints >= (level.purchase_price_points || 0);
-          
-          if (isCurrentCard) return null;
-          
-          return (
-            <div key={level.id} className="space-y-3">
-              <UserLoyaltyCard
-                level={{
-                  id: level.id,
-                  name_ar: level.name_ar,
-                  name_en: level.name_en,
-                  color: level.color,
-                  discount_percentage: level.discount_percentage,
-                  bonus_points_percentage: level.bonus_points_percentage,
-                  free_shipping: level.free_shipping,
-                  free_shipping_min_order: level.free_shipping_min_order,
-                  duration_days: level.duration_days,
-                  vip_support: level.vip_support,
-                  priority_shipping: level.priority_shipping,
-                  early_access: level.early_access,
-                  exclusive_products: level.exclusive_products,
-                  special_name_style: level.special_name_style as any,
-                  profile_effects: level.profile_effects as any,
-                  benefits: level.benefits as any,
-                  purchase_price_points: level.purchase_price_points,
-                }}
-                isActive={false}
-                showDetails={true}
-                showPurchaseInfo={true}
-              />
-              <Button
-                className="w-full"
-                variant={canPurchase ? 'default' : 'outline'}
-                disabled={!canPurchase || !user}
-                onClick={() => handlePurchaseClick(level)}
+        <div className="grid gap-6">
+          {levels?.filter(level => level.is_purchasable).map((level) => {
+            const isCurrentCard = currentCardLevel?.id === level.id;
+            const canPurchase = availablePoints >= (level.purchase_price_points || 0);
+            
+            if (isCurrentCard) return null;
+            
+            return (
+              <div 
+                key={level.id} 
+                className="p-4 rounded-xl bg-card border border-border/50 shadow-sm space-y-4"
               >
-                {canPurchase ? (
-                  <>
-                    <ShoppingCart className="h-4 w-4 ml-2" />
-                    شراء بـ {(level.purchase_price_points || 0).toLocaleString()} نقطة
-                  </>
-                ) : (
-                  `تحتاج ${((level.purchase_price_points || 0) - availablePoints).toLocaleString()} نقطة إضافية`
-                )}
-              </Button>
-            </div>
-          );
-        })}
+                <UserLoyaltyCard
+                  level={{
+                    id: level.id,
+                    name_ar: level.name_ar,
+                    name_en: level.name_en,
+                    color: level.color,
+                    discount_percentage: level.discount_percentage,
+                    bonus_points_percentage: level.bonus_points_percentage,
+                    free_shipping: level.free_shipping,
+                    free_shipping_min_order: level.free_shipping_min_order,
+                    duration_days: level.duration_days,
+                    vip_support: level.vip_support,
+                    priority_shipping: level.priority_shipping,
+                    early_access: level.early_access,
+                    exclusive_products: level.exclusive_products,
+                    special_name_style: level.special_name_style as any,
+                    profile_effects: level.profile_effects as any,
+                    benefits: level.benefits as any,
+                    purchase_price_points: level.purchase_price_points,
+                  }}
+                  isActive={false}
+                  showDetails={true}
+                  showPurchaseInfo={true}
+                />
+                <Button
+                  className="w-full"
+                  variant={canPurchase ? 'default' : 'outline'}
+                  disabled={!canPurchase || !user}
+                  onClick={() => handlePurchaseClick(level)}
+                >
+                  {canPurchase ? (
+                    <>
+                      <ShoppingCart className="h-4 w-4 ml-2" />
+                      شراء بـ {(level.purchase_price_points || 0).toLocaleString()} نقطة
+                    </>
+                  ) : (
+                    `تحتاج ${((level.purchase_price_points || 0) - availablePoints).toLocaleString()} نقطة إضافية`
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Purchase Confirmation Dialog */}

@@ -253,26 +253,18 @@ export default function UserLoyaltyCard({
         </div>
       </div>
 
-      {/* Benefits list */}
+      {/* Benefits list - Compact horizontal layout */}
       {showDetails && benefits.length > 0 && (
-        <div className="space-y-2 px-1">
-          <h4 className="text-sm font-semibold text-muted-foreground">مزايا البطاقة</h4>
-          <div className="grid gap-2">
-            {benefits.map((benefit, idx) => (
-              <div 
-                key={idx}
-                className="flex items-start gap-2.5 p-2.5 rounded-lg bg-muted/50"
-              >
-                <div 
-                  className="p-1.5 rounded-md shrink-0"
-                  style={{ backgroundColor: `${level.color}20` }}
-                >
-                  <benefit.icon className="h-3.5 w-3.5" style={{ color: level.color }} />
-                </div>
-                <span className="text-sm">{benefit.text}</span>
-              </div>
-            ))}
-          </div>
+        <div className="flex flex-wrap gap-2 px-1 pt-2">
+          {benefits.map((benefit, idx) => (
+            <div 
+              key={idx}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/60 border border-border/50"
+            >
+              <benefit.icon className="h-3.5 w-3.5 shrink-0" style={{ color: level.color }} />
+              <span className="text-xs whitespace-nowrap">{benefit.text}</span>
+            </div>
+          ))}
         </div>
       )}
     </div>
