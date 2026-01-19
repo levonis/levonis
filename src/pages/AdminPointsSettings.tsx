@@ -9,8 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -18,7 +17,8 @@ import {
   Settings, Save, Plus, Trash2, CheckSquare, Edit, Coins, Gift, LogIn, 
   Share2, UserPlus, Star, ShoppingCart, Users, Zap, Target, TrendingUp,
   Clock, Calendar, Award, Sparkles, RefreshCw, Shield, Percent, ArrowUpRight,
-  Package, Activity, ChevronLeft, ChevronRight, Eye, EyeOff, Wallet
+  Package, Activity, ChevronLeft, ChevronRight, Eye, EyeOff, Wallet, Instagram,
+  Image, Ticket, Tag, Box, Flame, Camera
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -45,13 +45,26 @@ const TASK_ICONS = [
   { name: 'Sparkles', icon: Sparkles, label: 'لمعان' },
   { name: 'Target', icon: Target, label: 'هدف' },
   { name: 'Zap', icon: Zap, label: 'سريع' },
+  { name: 'Instagram', icon: Instagram, label: 'انستجرام' },
+  { name: 'Camera', icon: Camera, label: 'كاميرا' },
+  { name: 'Flame', icon: Flame, label: 'نار' },
 ];
 
-const SYSTEM_EARNING_METHODS = [
-  { key: 'points_per_dinar', label: 'نقاط لكل X دينار', icon: Coins, description: 'كل X دينار = 1 نقطة', color: 'from-amber-500/20 to-yellow-500/20' },
-  { key: 'points_per_order', label: 'نقاط لكل طلب مكتمل', icon: ShoppingCart, description: 'نقاط ثابتة عند التسليم', color: 'from-green-500/20 to-emerald-500/20' },
-  { key: 'points_per_review', label: 'نقاط لكل تقييم', icon: Star, description: 'عند إضافة تقييم منتج', color: 'from-purple-500/20 to-pink-500/20' },
-  { key: 'points_per_verified_review', label: 'نقاط للتقييم المؤكد', icon: Shield, description: 'تقييم على طلب مؤكد', color: 'from-blue-500/20 to-cyan-500/20' },
+// مهام جاهزة للإضافة السريعة
+const PRESET_TASKS = [
+  { task_key: 'daily_login', title_ar: 'تسجيل الدخول اليومي', description_ar: 'سجل دخولك يومياً للحصول على نقاط', icon: 'LogIn', points_reward: 5, task_type: 'daily', streak_bonus_enabled: true },
+  { task_key: 'weekly_purchase', title_ar: 'اشترِ منتج هذا الأسبوع', description_ar: 'قم بشراء أي منتج للحصول على نقاط إضافية', icon: 'ShoppingCart', points_reward: 20, task_type: 'weekly', streak_bonus_enabled: true },
+  { task_key: 'instagram_share', title_ar: 'شارك على انستجرام', description_ar: 'شارك منتجاتنا على انستجرام مع تاغ صفحتنا', icon: 'Instagram', points_reward: 50, task_type: 'once', requires_confirmation: true, confirmation_type: 'image_upload' },
+  { task_key: 'invite_friend', title_ar: 'ادعُ صديق', description_ar: 'ادعُ صديقاً للتسجيل واحصل على نقاط', icon: 'UserPlus', points_reward: 30, task_type: 'unlimited' },
+  { task_key: 'first_review', title_ar: 'أضف تقييمك الأول', description_ar: 'قيّم أول منتج اشتريته', icon: 'Star', points_reward: 15, task_type: 'once' },
+  { task_key: 'complete_profile', title_ar: 'أكمل ملفك الشخصي', description_ar: 'أضف صورة وبياناتك الكاملة', icon: 'Award', points_reward: 25, task_type: 'once' },
+];
+
+// أنواع القسائم
+const PRODUCT_TYPES = [
+  { value: 'coupon', label: 'كوبون خصم', icon: Tag },
+  { value: 'free_shipping', label: 'توصيل مجاني', icon: Package },
+  { value: 'discount', label: 'خصم مباشر', icon: Percent },
 ];
 
 export default function AdminPointsSettings() {
@@ -61,24 +74,27 @@ export default function AdminPointsSettings() {
 
   // System settings
   const [pointsPerDinar, setPointsPerDinar] = useState("100");
-  const [pointsPerOrder, setPointsPerOrder] = useState("10");
   const [pointsPerReview, setPointsPerReview] = useState("5");
-  const [pointsPerVerifiedReview, setPointsPerVerifiedReview] = useState("10");
-  const [orderValueMultiplier, setOrderValueMultiplier] = useState("0");
-  const [pointsToMoneyRate, setPointsToMoneyRate] = useState("100");
-  const [pointsToCouponRate, setPointsToCouponRate] = useState("50");
+  const [pointsPerInstagramShare, setPointsPerInstagramShare] = useState("50");
   const [referrerPoints, setReferrerPoints] = useState("50");
   const [referredPoints, setReferredPoints] = useState("20");
   const [pointsStatus, setPointsStatus] = useState<'active' | 'maintenance' | 'disabled'>('active');
+  
+  // Redemption settings - wallet
+  const [walletDinarsPerPoint, setWalletDinarsPerPoint] = useState("1");
+  const [minWalletRedeemPoints, setMinWalletRedeemPoints] = useState("100");
+  
+  // Redemption settings - coupons
+  const [couponDinarsPerPoint, setCouponDinarsPerPoint] = useState("2.67"); // 2000 / 750 = 2.67
   const [minCouponPoints, setMinCouponPoints] = useState("100");
-  const [maxDailyRedemption, setMaxDailyRedemption] = useState("1000");
-  const [ticketsPerPoint, setTicketsPerPoint] = useState("0.1");
-  const [minTicketsConversion, setMinTicketsConversion] = useState("10");
+  
+  // Redemption settings - tickets
+  const [pointsPerTicket, setPointsPerTicket] = useState("100");
   
   // Additional settings
+  const [maxDailyRedemption, setMaxDailyRedemption] = useState("1000");
   const [pointsExpireDays, setPointsExpireDays] = useState("365");
   const [enablePointsExpiry, setEnablePointsExpiry] = useState(false);
-  const [minRedeemPoints, setMinRedeemPoints] = useState("100");
   const [bonusMultiplier, setBonusMultiplier] = useState("1");
   const [welcomeBonus, setWelcomeBonus] = useState("0");
   const [birthdayBonus, setBirthdayBonus] = useState("0");
@@ -87,7 +103,7 @@ export default function AdminPointsSettings() {
   const [maxStreakDays, setMaxStreakDays] = useState("7");
 
   // Task dialog
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<any>(null);
   const [taskKey, setTaskKey] = useState("");
   const [titleAr, setTitleAr] = useState("");
@@ -97,8 +113,24 @@ export default function AdminPointsSettings() {
   const [taskType, setTaskType] = useState("daily");
   const [isActive, setIsActive] = useState(true);
   const [displayOrder, setDisplayOrder] = useState("0");
-  const [maxCompletionsPerDay, setMaxCompletionsPerDay] = useState("1");
-  const [cooldownHours, setCooldownHours] = useState("24");
+  const [streakBonusEnabled, setStreakBonusEnabled] = useState(false);
+  const [taskStreakBonus, setTaskStreakBonus] = useState("2");
+  const [taskMaxStreak, setTaskMaxStreak] = useState("7");
+  const [requiresConfirmation, setRequiresConfirmation] = useState(false);
+  const [confirmationType, setConfirmationType] = useState("auto");
+
+  // Redeemable product dialog
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [productTitleAr, setProductTitleAr] = useState("");
+  const [productDescriptionAr, setProductDescriptionAr] = useState("");
+  const [productType, setProductType] = useState("coupon");
+  const [productValue, setProductValue] = useState("0");
+  const [productPointsCost, setProductPointsCost] = useState("100");
+  const [productStock, setProductStock] = useState("5");
+  const [productMaxPerUser, setProductMaxPerUser] = useState("1");
+  const [productValidDays, setProductValidDays] = useState("30");
+  const [productIsActive, setProductIsActive] = useState(true);
 
   useEffect(() => {
     const checkAdmin = async () => {
@@ -159,6 +191,18 @@ export default function AdminPointsSettings() {
     },
   });
 
+  const { data: redeemableProducts, isLoading: isLoadingProducts } = useQuery({
+    queryKey: ["redeemableProducts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("points_redeemable_products")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   // Stats queries
   const { data: stats } = useQuery({
     queryKey: ["points-stats"],
@@ -203,25 +247,41 @@ export default function AdminPointsSettings() {
     staleTime: 60 * 1000,
   });
 
+  const { data: pendingInstagramSubmissions } = useQuery({
+    queryKey: ["pending-instagram-submissions"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from('instagram_share_submissions')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      return count || 0;
+    },
+    staleTime: 60 * 1000,
+  });
+
   // Load settings
   useEffect(() => {
     if (pointsSettings?.setting_value) {
       const s = pointsSettings.setting_value as any;
       setPointsPerDinar(s.points_per_dinar?.toString() || "100");
-      setPointsPerOrder(s.points_per_order?.toString() || "10");
       setPointsPerReview(s.points_per_review?.toString() || "5");
-      setPointsPerVerifiedReview(s.points_per_verified_review?.toString() || "10");
-      setOrderValueMultiplier(s.order_value_multiplier?.toString() || "0");
-      setPointsToMoneyRate(s.conversion_rate?.toString() || s.points_to_money_rate?.toString() || "100");
-      setPointsToCouponRate(s.points_to_coupon_rate?.toString() || "50");
+      setPointsPerInstagramShare(s.points_per_instagram_share?.toString() || "50");
       setPointsStatus(s.points_status || 'active');
+      
+      // Wallet conversion
+      setWalletDinarsPerPoint(s.wallet_dinars_per_point?.toString() || "1");
+      setMinWalletRedeemPoints(s.min_wallet_redeem_points?.toString() || "100");
+      
+      // Coupon conversion
+      setCouponDinarsPerPoint(s.coupon_dinars_per_point?.toString() || "2.67");
       setMinCouponPoints(s.min_coupon_points?.toString() || "100");
+      
+      // Tickets
+      setPointsPerTicket(s.points_per_ticket?.toString() || "100");
+      
       setMaxDailyRedemption(s.max_daily_redemption?.toString() || "1000");
-      setTicketsPerPoint(s.tickets_per_point?.toString() || "0.1");
-      setMinTicketsConversion(s.min_tickets_conversion?.toString() || "10");
       setPointsExpireDays(s.points_expire_days?.toString() || "365");
       setEnablePointsExpiry(s.enable_points_expiry || false);
-      setMinRedeemPoints(s.min_redeem_points?.toString() || "100");
       setBonusMultiplier(s.bonus_multiplier?.toString() || "1");
       setWelcomeBonus(s.welcome_bonus?.toString() || "0");
       setBirthdayBonus(s.birthday_bonus?.toString() || "0");
@@ -245,20 +305,23 @@ export default function AdminPointsSettings() {
       const settingsValue = {
         points_status: pointsStatus,
         points_per_dinar: parseFloat(pointsPerDinar),
-        points_per_order: parseFloat(pointsPerOrder),
         points_per_review: parseFloat(pointsPerReview),
-        points_per_verified_review: parseFloat(pointsPerVerifiedReview),
-        order_value_multiplier: parseFloat(orderValueMultiplier),
-        conversion_rate: parseFloat(pointsToMoneyRate),
-        points_to_money_rate: parseFloat(pointsToMoneyRate),
-        points_to_coupon_rate: parseFloat(pointsToCouponRate),
+        points_per_instagram_share: parseFloat(pointsPerInstagramShare),
+        
+        // Wallet
+        wallet_dinars_per_point: parseFloat(walletDinarsPerPoint),
+        min_wallet_redeem_points: parseFloat(minWalletRedeemPoints),
+        
+        // Coupon
+        coupon_dinars_per_point: parseFloat(couponDinarsPerPoint),
         min_coupon_points: parseFloat(minCouponPoints),
+        
+        // Tickets
+        points_per_ticket: parseFloat(pointsPerTicket),
+        
         max_daily_redemption: parseFloat(maxDailyRedemption),
-        tickets_per_point: parseFloat(ticketsPerPoint),
-        min_tickets_conversion: parseFloat(minTicketsConversion),
         points_expire_days: parseInt(pointsExpireDays),
         enable_points_expiry: enablePointsExpiry,
-        min_redeem_points: parseFloat(minRedeemPoints),
         bonus_multiplier: parseFloat(bonusMultiplier),
         welcome_bonus: parseFloat(welcomeBonus),
         birthday_bonus: parseFloat(birthdayBonus),
@@ -334,6 +397,11 @@ export default function AdminPointsSettings() {
         task_type: taskType,
         is_active: isActive,
         display_order: parseInt(displayOrder),
+        streak_bonus_enabled: streakBonusEnabled,
+        streak_bonus_per_day: parseFloat(taskStreakBonus),
+        max_streak_days: parseInt(taskMaxStreak),
+        requires_confirmation: requiresConfirmation,
+        confirmation_type: confirmationType,
       };
 
       if (editingTask) {
@@ -347,18 +415,61 @@ export default function AdminPointsSettings() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["dailyTasks"] });
       toast.success(editingTask ? "تم تحديث المهمة بنجاح" : "تم إضافة المهمة بنجاح");
-      handleCloseDialog();
+      handleCloseTaskDialog();
     },
     onError: (error: any) => {
       toast.error(error.message || "حدث خطأ");
     },
   });
 
-  const handleSaveSettings = () => {
-    saveSettings.mutate();
-  };
+  // Redeemable product mutations
+  const saveProduct = useMutation({
+    mutationFn: async () => {
+      const productData = {
+        title_ar: productTitleAr,
+        description_ar: productDescriptionAr,
+        product_type: productType,
+        value_amount: parseFloat(productValue),
+        points_cost: parseInt(productPointsCost),
+        stock_quantity: parseInt(productStock),
+        max_per_user: parseInt(productMaxPerUser),
+        valid_days: parseInt(productValidDays),
+        is_active: productIsActive,
+      };
 
-  const handleOpenDialog = (task?: any) => {
+      if (editingProduct) {
+        const { error } = await supabase.from("points_redeemable_products").update(productData).eq("id", editingProduct.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("points_redeemable_products").insert(productData);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["redeemableProducts"] });
+      toast.success(editingProduct ? "تم تحديث العرض بنجاح" : "تم إضافة العرض بنجاح");
+      handleCloseProductDialog();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "حدث خطأ");
+    },
+  });
+
+  const deleteProduct = useMutation({
+    mutationFn: async (productId: string) => {
+      const { error } = await supabase.from("points_redeemable_products").delete().eq("id", productId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["redeemableProducts"] });
+      toast.success("تم حذف العرض بنجاح");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "حدث خطأ أثناء حذف العرض");
+    },
+  });
+
+  const handleOpenTaskDialog = (task?: any) => {
     if (task) {
       setEditingTask(task);
       setTaskKey(task.task_key);
@@ -369,6 +480,11 @@ export default function AdminPointsSettings() {
       setTaskType(task.task_type);
       setIsActive(task.is_active);
       setDisplayOrder(task.display_order.toString());
+      setStreakBonusEnabled(task.streak_bonus_enabled || false);
+      setTaskStreakBonus(task.streak_bonus_per_day?.toString() || "2");
+      setTaskMaxStreak(task.max_streak_days?.toString() || "7");
+      setRequiresConfirmation(task.requires_confirmation || false);
+      setConfirmationType(task.confirmation_type || "auto");
     } else {
       setEditingTask(null);
       setTaskKey("");
@@ -379,21 +495,68 @@ export default function AdminPointsSettings() {
       setTaskType("daily");
       setIsActive(true);
       setDisplayOrder((tasks?.length || 0).toString());
+      setStreakBonusEnabled(false);
+      setTaskStreakBonus("2");
+      setTaskMaxStreak("7");
+      setRequiresConfirmation(false);
+      setConfirmationType("auto");
     }
-    setIsDialogOpen(true);
+    setIsTaskDialogOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
+  const handleCloseTaskDialog = () => {
+    setIsTaskDialogOpen(false);
     setEditingTask(null);
   };
 
-  const handleSaveTask = () => {
-    if (!taskKey || !titleAr || !descriptionAr) {
-      toast.error("الرجاء ملء جميع الحقول المطلوبة");
-      return;
+  const handleAddPresetTask = (preset: any) => {
+    setEditingTask(null);
+    setTaskKey(preset.task_key);
+    setTitleAr(preset.title_ar);
+    setDescriptionAr(preset.description_ar);
+    setIcon(preset.icon);
+    setPointsReward(preset.points_reward.toString());
+    setTaskType(preset.task_type);
+    setIsActive(true);
+    setDisplayOrder((tasks?.length || 0).toString());
+    setStreakBonusEnabled(preset.streak_bonus_enabled || false);
+    setTaskStreakBonus("2");
+    setTaskMaxStreak("7");
+    setRequiresConfirmation(preset.requires_confirmation || false);
+    setConfirmationType(preset.confirmation_type || "auto");
+    setIsTaskDialogOpen(true);
+  };
+
+  const handleOpenProductDialog = (product?: any) => {
+    if (product) {
+      setEditingProduct(product);
+      setProductTitleAr(product.title_ar);
+      setProductDescriptionAr(product.description_ar || "");
+      setProductType(product.product_type);
+      setProductValue(product.value_amount.toString());
+      setProductPointsCost(product.points_cost.toString());
+      setProductStock(product.stock_quantity.toString());
+      setProductMaxPerUser(product.max_per_user.toString());
+      setProductValidDays(product.valid_days.toString());
+      setProductIsActive(product.is_active);
+    } else {
+      setEditingProduct(null);
+      setProductTitleAr("");
+      setProductDescriptionAr("");
+      setProductType("coupon");
+      setProductValue("0");
+      setProductPointsCost("100");
+      setProductStock("5");
+      setProductMaxPerUser("1");
+      setProductValidDays("30");
+      setProductIsActive(true);
     }
-    saveTask.mutate();
+    setIsProductDialogOpen(true);
+  };
+
+  const handleCloseProductDialog = () => {
+    setIsProductDialogOpen(false);
+    setEditingProduct(null);
   };
 
   const getIconComponent = (iconName: string, size = "h-5 w-5") => {
@@ -402,9 +565,13 @@ export default function AdminPointsSettings() {
     return <IconComponent className={size} />;
   };
 
+  const getProductTypeInfo = (type: string) => {
+    return PRODUCT_TYPES.find(t => t.value === type) || PRODUCT_TYPES[0];
+  };
+
   if (!user) return null;
 
-  const isLoading = isLoadingSettings || isLoadingTasks;
+  const isLoading = isLoadingSettings || isLoadingTasks || isLoadingProducts;
 
   return (
     <AdminLayout
@@ -412,7 +579,7 @@ export default function AdminPointsSettings() {
       icon={<Coins className="h-5 w-5" />}
       description="إعدادات شاملة للنقاط والمهام اليومية ومكافآت الولاء"
       actions={
-        <Button onClick={handleSaveSettings} disabled={saveSettings.isPending} className="gap-2">
+        <Button onClick={() => saveSettings.mutate()} disabled={saveSettings.isPending} className="gap-2">
           <Save className="h-4 w-4" />
           {saveSettings.isPending ? 'جاري الحفظ...' : 'حفظ جميع الإعدادات'}
         </Button>
@@ -423,7 +590,7 @@ export default function AdminPointsSettings() {
       ) : (
         <div className="space-y-6">
           {/* Stats Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
             <Card className="bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border-amber-500/20">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -488,7 +655,21 @@ export default function AdminPointsSettings() {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">{taskCompletions || 0}</p>
-                    <p className="text-xs text-muted-foreground">مهمة مكتملة اليوم</p>
+                    <p className="text-xs text-muted-foreground">مهمة مكتملة</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-pink-500/10 to-rose-500/5 border-pink-500/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-pink-500/20">
+                    <Instagram className="h-5 w-5 text-pink-500" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{pendingInstagramSubmissions || 0}</p>
+                    <p className="text-xs text-muted-foreground">طلب انستجرام</p>
                   </div>
                 </div>
               </CardContent>
@@ -570,45 +751,92 @@ export default function AdminPointsSettings() {
             {/* Earning Tab */}
             <TabsContent value="earning" className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                {SYSTEM_EARNING_METHODS.map((method) => (
-                  <Card key={method.key} className={`bg-gradient-to-br ${method.color} border-primary/20`}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-primary/20">
-                            <method.icon className="h-5 w-5 text-primary" />
-                          </div>
-                          <div>
-                            <h4 className="font-medium">{method.label}</h4>
-                            <p className="text-xs text-muted-foreground mt-0.5">{method.description}</p>
-                          </div>
+                {/* نقاط لكل دينار */}
+                <Card className="bg-gradient-to-br from-amber-500/10 to-yellow-500/5 border-primary/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-amber-500/20">
+                          <Coins className="h-5 w-5 text-amber-500" />
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Input
-                            type="number"
-                            min="0"
-                            className="w-20 h-9 text-center"
-                            value={
-                              method.key === 'points_per_dinar' ? pointsPerDinar :
-                              method.key === 'points_per_order' ? pointsPerOrder :
-                              method.key === 'points_per_review' ? pointsPerReview :
-                              pointsPerVerifiedReview
-                            }
-                            onChange={(e) => {
-                              if (method.key === 'points_per_dinar') setPointsPerDinar(e.target.value);
-                              else if (method.key === 'points_per_order') setPointsPerOrder(e.target.value);
-                              else if (method.key === 'points_per_review') setPointsPerReview(e.target.value);
-                              else setPointsPerVerifiedReview(e.target.value);
-                            }}
-                          />
-                          <span className="text-xs text-muted-foreground whitespace-nowrap">
-                            {method.key === 'points_per_dinar' ? 'دينار/نقطة' : 'نقطة'}
-                          </span>
+                        <div>
+                          <h4 className="font-medium">نقاط لكل X دينار</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">كل X دينار = 1 نقطة</p>
                         </div>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          className="w-24 h-9 text-center"
+                          value={pointsPerDinar}
+                          onChange={(e) => setPointsPerDinar(e.target.value)}
+                        />
+                        <span className="text-xs text-muted-foreground whitespace-nowrap">دينار/نقطة</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* نقاط للتقييم */}
+                <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/5 border-primary/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-purple-500/20">
+                          <Star className="h-5 w-5 text-purple-500" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium">نقاط لكل تقييم</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">عند إضافة تقييم منتج</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          className="w-24 h-9 text-center"
+                          value={pointsPerReview}
+                          onChange={(e) => setPointsPerReview(e.target.value)}
+                        />
+                        <span className="text-xs text-muted-foreground">نقطة</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* نقاط لمشاركة انستجرام */}
+                <Card className="bg-gradient-to-br from-pink-500/10 to-rose-500/5 border-primary/20">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-pink-500/20">
+                          <Instagram className="h-5 w-5 text-pink-500" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium">نقاط مشاركة انستجرام</h4>
+                          <p className="text-xs text-muted-foreground mt-0.5">مشاركة منتج مع تاغ الصفحة</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          className="w-24 h-9 text-center"
+                          value={pointsPerInstagramShare}
+                          onChange={(e) => setPointsPerInstagramShare(e.target.value)}
+                        />
+                        <span className="text-xs text-muted-foreground">نقطة</span>
+                      </div>
+                    </div>
+                    <div className="mt-3 p-2 bg-muted/50 rounded-lg">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1">
+                        <Camera className="h-3 w-3" />
+                        يتطلب رفع صورة للتأكيد من قبل الإدارة
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Referral Settings */}
@@ -655,117 +883,117 @@ export default function AdminPointsSettings() {
 
             {/* Redemption Tab */}
             <TabsContent value="redemption" className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Conversion Rates */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* تحويل للمحفظة */}
                 <Card>
-                  <CardContent className="p-4 space-y-4">
-                    <div className="flex items-center gap-3">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
                       <div className="p-2 rounded-lg bg-green-500/20">
-                        <Wallet className="h-5 w-5 text-green-500" />
+                        <Wallet className="h-4 w-4 text-green-500" />
                       </div>
-                      <h4 className="font-medium">التحويل للمحفظة</h4>
+                      التحويل للمحفظة
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm">كم دينار تساوي نقطة واحدة</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={walletDinarsPerPoint}
+                        onChange={(e) => setWalletDinarsPerPoint(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        مثال: 1000 نقطة = {(1000 * parseFloat(walletDinarsPerPoint || "1")).toLocaleString()} دينار
+                      </p>
                     </div>
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label className="text-sm">كل نقطة = كم دينار</Label>
-                        <Input
-                          type="number"
-                          value={pointsToMoneyRate}
-                          onChange={(e) => setPointsToMoneyRate(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">الحد الأدنى للاستبدال</Label>
-                        <Input
-                          type="number"
-                          value={minRedeemPoints}
-                          onChange={(e) => setMinRedeemPoints(e.target.value)}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">الحد الأدنى للتحويل</Label>
+                      <Input
+                        type="number"
+                        value={minWalletRedeemPoints}
+                        onChange={(e) => setMinWalletRedeemPoints(e.target.value)}
+                      />
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* تحويل لكوبون */}
                 <Card>
-                  <CardContent className="p-4 space-y-4">
-                    <div className="flex items-center gap-3">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
                       <div className="p-2 rounded-lg bg-purple-500/20">
-                        <Percent className="h-5 w-5 text-purple-500" />
+                        <Percent className="h-4 w-4 text-purple-500" />
                       </div>
-                      <h4 className="font-medium">التحويل لكوبون</h4>
+                      التحويل لكوبون
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm">كم دينار تساوي نقطة واحدة</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={couponDinarsPerPoint}
+                        onChange={(e) => setCouponDinarsPerPoint(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        مثال: 750 نقطة = كوبون {(750 * parseFloat(couponDinarsPerPoint || "2.67")).toLocaleString()} دينار
+                      </p>
                     </div>
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label className="text-sm">كل نقطة = كم خصم</Label>
-                        <Input
-                          type="number"
-                          value={pointsToCouponRate}
-                          onChange={(e) => setPointsToCouponRate(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">الحد الأدنى للكوبون</Label>
-                        <Input
-                          type="number"
-                          value={minCouponPoints}
-                          onChange={(e) => setMinCouponPoints(e.target.value)}
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">الحد الأدنى للكوبون</Label>
+                      <Input
+                        type="number"
+                        value={minCouponPoints}
+                        onChange={(e) => setMinCouponPoints(e.target.value)}
+                      />
                     </div>
                   </CardContent>
                 </Card>
 
+                {/* تحويل لتذاكر */}
                 <Card>
-                  <CardContent className="p-4 space-y-4">
-                    <div className="flex items-center gap-3">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
                       <div className="p-2 rounded-lg bg-orange-500/20">
-                        <Target className="h-5 w-5 text-orange-500" />
+                        <Ticket className="h-4 w-4 text-orange-500" />
                       </div>
-                      <h4 className="font-medium">التحويل لتذاكر</h4>
-                    </div>
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label className="text-sm">كل نقطة = كم تذكرة</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={ticketsPerPoint}
-                          onChange={(e) => setTicketsPerPoint(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm">الحد الأدنى للتحويل</Label>
-                        <Input
-                          type="number"
-                          value={minTicketsConversion}
-                          onChange={(e) => setMinTicketsConversion(e.target.value)}
-                        />
-                      </div>
+                      التحويل لتذاكر
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm">كم نقطة تساوي تذكرة واحدة</Label>
+                      <Input
+                        type="number"
+                        value={pointsPerTicket}
+                        onChange={(e) => setPointsPerTicket(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        مثال: {pointsPerTicket} نقطة = 1 تذكرة
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
+              </div>
 
-                <Card>
-                  <CardContent className="p-4 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-red-500/20">
-                        <Shield className="h-5 w-5 text-red-500" />
-                      </div>
-                      <h4 className="font-medium">حدود الاستبدال</h4>
+              {/* Limits */}
+              <Card>
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm">الحد اليومي للاستبدال</Label>
+                      <Input
+                        type="number"
+                        value={maxDailyRedemption}
+                        onChange={(e) => setMaxDailyRedemption(e.target.value)}
+                      />
                     </div>
-                    <div className="space-y-3">
-                      <div className="space-y-2">
-                        <Label className="text-sm">الحد اليومي للاستبدال</Label>
-                        <Input
-                          type="number"
-                          value={maxDailyRedemption}
-                          onChange={(e) => setMaxDailyRedemption(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between pt-2">
-                        <div>
-                          <Label className="text-sm">انتهاء صلاحية النقاط</Label>
-                          <p className="text-xs text-muted-foreground">بعد {pointsExpireDays} يوم</p>
-                        </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm">انتهاء صلاحية النقاط</Label>
                         <Switch checked={enablePointsExpiry} onCheckedChange={setEnablePointsExpiry} />
                       </div>
                       {enablePointsExpiry && (
@@ -777,167 +1005,252 @@ export default function AdminPointsSettings() {
                         />
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Redeemable Products */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Box className="h-5 w-5" />
+                      قسائم ومنتجات قابلة للشراء بالنقاط
+                    </CardTitle>
+                    <Button onClick={() => handleOpenProductDialog()} size="sm" className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      إضافة عرض
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {!redeemableProducts || redeemableProducts.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Box className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>لا توجد عروض حالياً</p>
+                      <p className="text-sm">أضف قسائم ومنتجات يمكن للمستخدمين شراؤها بالنقاط</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {redeemableProducts.map((product: any) => {
+                        const typeInfo = getProductTypeInfo(product.product_type);
+                        const TypeIcon = typeInfo.icon;
+                        return (
+                          <Card key={product.id} className={`relative ${!product.is_active ? 'opacity-60' : ''}`}>
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="p-2 rounded-lg bg-primary/10">
+                                    <TypeIcon className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-medium text-sm">{product.title_ar}</h4>
+                                    <Badge variant="outline" className="text-xs mt-1">
+                                      {typeInfo.label}
+                                    </Badge>
+                                  </div>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleOpenProductDialog(product)}>
+                                    <Edit className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => deleteProduct.mutate(product.id)}>
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">القيمة:</span>
+                                  <span className="font-medium">{product.value_amount.toLocaleString()} دينار</span>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">السعر:</span>
+                                  <Badge className="bg-amber-500/20 text-amber-700">
+                                    <Coins className="h-3 w-3 ml-1" />
+                                    {product.points_cost.toLocaleString()}
+                                  </Badge>
+                                </div>
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-muted-foreground">المخزون:</span>
+                                  <Badge variant={product.stock_quantity > 0 ? "default" : "destructive"}>
+                                    {product.stock_quantity} متاح
+                                  </Badge>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Tasks Tab */}
             <TabsContent value="tasks" className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold">المهام اليومية</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {tasks?.length || 0} مهمة • {tasks?.filter((t: any) => t.is_active).length || 0} مفعّلة
-                  </p>
-                </div>
-                <Button onClick={() => handleOpenDialog()} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  إضافة مهمة
-                </Button>
-              </div>
+              {/* Preset Tasks */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">مهام جاهزة للإضافة السريعة</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {PRESET_TASKS.map((preset) => {
+                      const isAdded = tasks?.some((t: any) => t.task_key === preset.task_key);
+                      return (
+                        <Button
+                          key={preset.task_key}
+                          variant={isAdded ? "secondary" : "outline"}
+                          size="sm"
+                          disabled={isAdded}
+                          onClick={() => handleAddPresetTask(preset)}
+                          className="gap-2"
+                        >
+                          {getIconComponent(preset.icon, "h-4 w-4")}
+                          {preset.title_ar}
+                          {isAdded && <CheckSquare className="h-3 w-3 text-green-500" />}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
 
-              {!tasks || tasks.length === 0 ? (
-                <AdminEmptyState
-                  icon={<CheckSquare className="h-12 w-12" />}
-                  title="لا توجد مهام"
-                  description="ابدأ بإضافة مهمة جديدة للمستخدمين"
-                  action={
-                    <Button onClick={() => handleOpenDialog()} className="gap-2">
+              {/* Tasks List */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base">المهام اليومية</CardTitle>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {tasks?.length || 0} مهمة • {tasks?.filter((t: any) => t.is_active).length || 0} مفعّلة
+                      </p>
+                    </div>
+                    <Button onClick={() => handleOpenTaskDialog()} className="gap-2">
                       <Plus className="h-4 w-4" />
-                      إضافة مهمة
+                      مهمة جديدة
                     </Button>
-                  }
-                />
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {tasks.map((task: any, idx: number) => (
-                    <Card key={task.id} className={`relative overflow-hidden ${!task.is_active && 'opacity-60'}`}>
-                      <div className={`absolute top-0 left-0 right-0 h-1 ${
-                        task.is_active ? 'bg-gradient-to-r from-primary to-primary/50' : 'bg-muted'
-                      }`} />
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3">
-                            <div className={`p-2.5 rounded-xl ${
-                              task.is_active ? 'bg-primary/20' : 'bg-muted'
-                            }`}>
-                              {getIconComponent(task.icon)}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <h4 className="font-medium">{task.title_ar}</h4>
-                                {task.task_type === 'daily' ? (
-                                  <Badge variant="outline" className="text-[10px]">
-                                    <Clock className="h-3 w-3 ml-1" />
-                                    يومي
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {!tasks || tasks.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <CheckSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>لا توجد مهام حالياً</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {tasks.map((task: any) => (
+                        <Card key={task.id} className={`${!task.is_active ? 'opacity-60' : ''}`}>
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-lg ${task.is_active ? 'bg-primary/10' : 'bg-muted'}`}>
+                                  {getIconComponent(task.icon)}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <h4 className="font-medium">{task.title_ar}</h4>
+                                    {task.streak_bonus_enabled && (
+                                      <Badge variant="outline" className="text-xs gap-1">
+                                        <Flame className="h-3 w-3 text-orange-500" />
+                                        ستريك
+                                      </Badge>
+                                    )}
+                                    {task.requires_confirmation && (
+                                      <Badge variant="outline" className="text-xs gap-1">
+                                        <Camera className="h-3 w-3" />
+                                        تأكيد
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground">{task.description_ar}</p>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <div className="text-left">
+                                  <Badge className="bg-amber-500/20 text-amber-700">
+                                    <Coins className="h-3 w-3 ml-1" />
+                                    {task.points_reward}
                                   </Badge>
-                                ) : (
-                                  <Badge variant="secondary" className="text-[10px]">مرة واحدة</Badge>
-                                )}
-                              </div>
-                              <p className="text-xs text-muted-foreground line-clamp-1">{task.description_ar}</p>
-                              <div className="flex items-center gap-2 mt-2">
-                                <Badge className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white">
-                                  <Coins className="h-3 w-3 ml-1" />
-                                  {task.points_reward} نقطة
-                                </Badge>
-                                <span className="text-[10px] text-muted-foreground">#{idx + 1}</span>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    {task.task_type === 'daily' ? 'يومي' : 
+                                     task.task_type === 'weekly' ? 'أسبوعي' : 
+                                     task.task_type === 'once' ? 'مرة واحدة' : 'غير محدود'}
+                                  </p>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => handleOpenTaskDialog(task)}>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => deleteTask.mutate(task.id)}>
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex flex-col gap-1">
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7"
-                              onClick={() => handleOpenDialog(task)}
-                            >
-                              <Edit className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => {
-                                if (confirm('هل أنت متأكد من حذف هذه المهمة؟')) {
-                                  deleteTask.mutate(task.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             </TabsContent>
 
             {/* Bonuses Tab */}
             <TabsContent value="bonuses" className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Welcome Bonus */}
                 <Card>
                   <CardContent className="p-4 space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-green-500/20">
-                        <UserPlus className="h-5 w-5 text-green-500" />
+                        <Gift className="h-5 w-5 text-green-500" />
                       </div>
-                      <div>
-                        <h4 className="font-medium">مكافأة الترحيب</h4>
-                        <p className="text-xs text-muted-foreground">للمستخدمين الجدد</p>
-                      </div>
+                      <h4 className="font-medium">مكافأة الترحيب</h4>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm">نقاط الترحيب</Label>
+                      <Label className="text-sm">نقاط عند التسجيل الجديد</Label>
                       <Input
                         type="number"
                         value={welcomeBonus}
                         onChange={(e) => setWelcomeBonus(e.target.value)}
-                        placeholder="0 = معطّل"
                       />
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Birthday Bonus */}
                 <Card>
                   <CardContent className="p-4 space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-pink-500/20">
-                        <Gift className="h-5 w-5 text-pink-500" />
+                        <Calendar className="h-5 w-5 text-pink-500" />
                       </div>
-                      <div>
-                        <h4 className="font-medium">مكافأة عيد الميلاد</h4>
-                        <p className="text-xs text-muted-foreground">تلقائياً في يوم الميلاد</p>
-                      </div>
+                      <h4 className="font-medium">مكافأة عيد الميلاد</h4>
                     </div>
                     <div className="space-y-2">
-                      <Label className="text-sm">نقاط عيد الميلاد</Label>
+                      <Label className="text-sm">نقاط في يوم ميلاد المستخدم</Label>
                       <Input
                         type="number"
                         value={birthdayBonus}
                         onChange={(e) => setBirthdayBonus(e.target.value)}
-                        placeholder="0 = معطّل"
                       />
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Streak Bonus */}
                 <Card className="md:col-span-2">
                   <CardContent className="p-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-orange-500/20">
-                          <Zap className="h-5 w-5 text-orange-500" />
+                          <Flame className="h-5 w-5 text-orange-500" />
                         </div>
                         <div>
-                          <h4 className="font-medium">مكافأة التسلسل اليومي</h4>
-                          <p className="text-xs text-muted-foreground">نقاط إضافية للدخول المتتالي</p>
+                          <h4 className="font-medium">نظام الستريك</h4>
+                          <p className="text-xs text-muted-foreground">مكافأة إضافية للدخول المتواصل</p>
                         </div>
                       </div>
                       <Switch checked={enableDailyStreak} onCheckedChange={setEnableDailyStreak} />
@@ -945,7 +1258,7 @@ export default function AdminPointsSettings() {
                     {enableDailyStreak && (
                       <div className="grid grid-cols-2 gap-4 pt-2">
                         <div className="space-y-2">
-                          <Label className="text-sm">نقاط إضافية لكل يوم</Label>
+                          <Label className="text-sm">نقاط إضافية لكل يوم متواصل</Label>
                           <Input
                             type="number"
                             value={streakBonusPerDay}
@@ -953,7 +1266,7 @@ export default function AdminPointsSettings() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-sm">الحد الأقصى للأيام</Label>
+                          <Label className="text-sm">الحد الأقصى للستريك (أيام)</Label>
                           <Input
                             type="number"
                             value={maxStreakDays}
@@ -965,31 +1278,26 @@ export default function AdminPointsSettings() {
                   </CardContent>
                 </Card>
 
-                {/* Bonus Multiplier */}
                 <Card className="md:col-span-2">
                   <CardContent className="p-4 space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-purple-500/20">
                         <Sparkles className="h-5 w-5 text-purple-500" />
                       </div>
-                      <div>
-                        <h4 className="font-medium">مضاعف النقاط العام</h4>
-                        <p className="text-xs text-muted-foreground">لمناسبات وعروض خاصة (1 = عادي، 2 = ضعف)</p>
-                      </div>
+                      <h4 className="font-medium">مضاعف النقاط</h4>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm">معامل مضاعفة النقاط (1 = عادي، 2 = ضعف)</Label>
                       <Input
                         type="number"
                         step="0.1"
                         min="1"
                         value={bonusMultiplier}
                         onChange={(e) => setBonusMultiplier(e.target.value)}
-                        className="w-24"
                       />
-                      <span className="text-lg font-bold text-primary">x{bonusMultiplier}</span>
-                      <div className="flex-1">
-                        <Progress value={parseFloat(bonusMultiplier) * 20} className="h-2" />
-                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        يمكن استخدامه في المناسبات لمضاعفة النقاط
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
@@ -997,127 +1305,289 @@ export default function AdminPointsSettings() {
             </TabsContent>
 
             {/* Users Tab */}
-            <TabsContent value="users" className="space-y-4">
+            <TabsContent value="users">
               <AdminUsersPointsTab />
             </TabsContent>
           </Tabs>
+
+          {/* Task Dialog */}
+          <Dialog open={isTaskDialogOpen} onOpenChange={setIsTaskDialogOpen}>
+            <DialogContent className="max-w-lg max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingTask ? "تعديل المهمة" : "إضافة مهمة جديدة"}
+                </DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="max-h-[60vh] pr-4">
+                <div className="space-y-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>معرّف المهمة</Label>
+                      <Input
+                        value={taskKey}
+                        onChange={(e) => setTaskKey(e.target.value)}
+                        placeholder="daily_login"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>نوع المهمة</Label>
+                      <Select value={taskType} onValueChange={setTaskType}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="daily">يومي</SelectItem>
+                          <SelectItem value="weekly">أسبوعي</SelectItem>
+                          <SelectItem value="once">مرة واحدة</SelectItem>
+                          <SelectItem value="unlimited">غير محدود</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>العنوان بالعربية</Label>
+                    <Input
+                      value={titleAr}
+                      onChange={(e) => setTitleAr(e.target.value)}
+                      placeholder="تسجيل الدخول اليومي"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>الوصف بالعربية</Label>
+                    <Textarea
+                      value={descriptionAr}
+                      onChange={(e) => setDescriptionAr(e.target.value)}
+                      placeholder="سجل دخولك يومياً للحصول على نقاط"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>الأيقونة</Label>
+                      <Select value={icon} onValueChange={setIcon}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {TASK_ICONS.map((i) => (
+                            <SelectItem key={i.name} value={i.name}>
+                              <span className="flex items-center gap-2">
+                                <i.icon className="h-4 w-4" />
+                                {i.label}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>النقاط</Label>
+                      <Input
+                        type="number"
+                        value={pointsReward}
+                        onChange={(e) => setPointsReward(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>الترتيب</Label>
+                      <Input
+                        type="number"
+                        value={displayOrder}
+                        onChange={(e) => setDisplayOrder(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <Label>مفعّلة</Label>
+                    <Switch checked={isActive} onCheckedChange={setIsActive} />
+                  </div>
+
+                  {/* Streak Settings */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Flame className="h-4 w-4 text-orange-500" />
+                        <Label>نظام الستريك</Label>
+                      </div>
+                      <Switch checked={streakBonusEnabled} onCheckedChange={setStreakBonusEnabled} />
+                    </div>
+                    {streakBonusEnabled && (
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label className="text-sm">نقاط إضافية/يوم</Label>
+                          <Input
+                            type="number"
+                            value={taskStreakBonus}
+                            onChange={(e) => setTaskStreakBonus(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm">أقصى عدد أيام</Label>
+                          <Input
+                            type="number"
+                            value={taskMaxStreak}
+                            onChange={(e) => setTaskMaxStreak(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Confirmation Settings */}
+                  <div className="border rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Camera className="h-4 w-4" />
+                        <Label>يتطلب تأكيد</Label>
+                      </div>
+                      <Switch checked={requiresConfirmation} onCheckedChange={setRequiresConfirmation} />
+                    </div>
+                    {requiresConfirmation && (
+                      <div className="space-y-2">
+                        <Label className="text-sm">نوع التأكيد</Label>
+                        <Select value={confirmationType} onValueChange={setConfirmationType}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="auto">تلقائي</SelectItem>
+                            <SelectItem value="image_upload">رفع صورة</SelectItem>
+                            <SelectItem value="admin_approval">موافقة الإدارة</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </ScrollArea>
+              <DialogFooter>
+                <Button variant="outline" onClick={handleCloseTaskDialog}>
+                  إلغاء
+                </Button>
+                <Button onClick={() => saveTask.mutate()} disabled={saveTask.isPending}>
+                  {saveTask.isPending ? "جاري الحفظ..." : editingTask ? "تحديث" : "إضافة"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Product Dialog */}
+          <Dialog open={isProductDialogOpen} onOpenChange={setIsProductDialogOpen}>
+            <DialogContent className="max-w-lg max-h-[90vh]">
+              <DialogHeader>
+                <DialogTitle>
+                  {editingProduct ? "تعديل العرض" : "إضافة عرض جديد"}
+                </DialogTitle>
+              </DialogHeader>
+              <ScrollArea className="max-h-[60vh] pr-4">
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label>نوع العرض</Label>
+                    <Select value={productType} onValueChange={setProductType}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRODUCT_TYPES.map((type) => (
+                          <SelectItem key={type.value} value={type.value}>
+                            <span className="flex items-center gap-2">
+                              <type.icon className="h-4 w-4" />
+                              {type.label}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>العنوان بالعربية</Label>
+                    <Input
+                      value={productTitleAr}
+                      onChange={(e) => setProductTitleAr(e.target.value)}
+                      placeholder="كوبون توصيل مجاني"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>الوصف بالعربية (اختياري)</Label>
+                    <Textarea
+                      value={productDescriptionAr}
+                      onChange={(e) => setProductDescriptionAr(e.target.value)}
+                      placeholder="احصل على توصيل مجاني لطلبك القادم"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>قيمة الخصم (دينار)</Label>
+                      <Input
+                        type="number"
+                        value={productValue}
+                        onChange={(e) => setProductValue(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>السعر بالنقاط</Label>
+                      <Input
+                        type="number"
+                        value={productPointsCost}
+                        onChange={(e) => setProductPointsCost(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>المخزون المتاح</Label>
+                      <Input
+                        type="number"
+                        value={productStock}
+                        onChange={(e) => setProductStock(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>الحد لكل مستخدم</Label>
+                      <Input
+                        type="number"
+                        value={productMaxPerUser}
+                        onChange={(e) => setProductMaxPerUser(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>صلاحية القسيمة (أيام)</Label>
+                    <Input
+                      type="number"
+                      value={productValidDays}
+                      onChange={(e) => setProductValidDays(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <Label>مفعّل</Label>
+                    <Switch checked={productIsActive} onCheckedChange={setProductIsActive} />
+                  </div>
+                </div>
+              </ScrollArea>
+              <DialogFooter>
+                <Button variant="outline" onClick={handleCloseProductDialog}>
+                  إلغاء
+                </Button>
+                <Button onClick={() => saveProduct.mutate()} disabled={saveProduct.isPending}>
+                  {saveProduct.isPending ? "جاري الحفظ..." : editingProduct ? "تحديث" : "إضافة"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       )}
-
-      {/* Task Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle>{editingTask ? 'تعديل المهمة' : 'إضافة مهمة جديدة'}</DialogTitle>
-            <DialogDescription>
-              {editingTask ? 'قم بتعديل تفاصيل المهمة' : 'أدخل تفاصيل المهمة الجديدة'}
-            </DialogDescription>
-          </DialogHeader>
-          <ScrollArea className="max-h-[60vh] pr-4">
-            <div className="space-y-4">
-              {/* Icon Selection */}
-              <div className="space-y-2">
-                <Label>الأيقونة</Label>
-                <div className="grid grid-cols-6 gap-2">
-                  {TASK_ICONS.map((iconData) => (
-                    <button
-                      key={iconData.name}
-                      type="button"
-                      onClick={() => setIcon(iconData.name)}
-                      className={`p-3 rounded-lg border-2 transition-all ${
-                        icon === iconData.name
-                          ? 'border-primary bg-primary/20'
-                          : 'border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <iconData.icon className="h-5 w-5 mx-auto" />
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>مفتاح المهمة (فريد)</Label>
-                <Input
-                  value={taskKey}
-                  onChange={(e) => setTaskKey(e.target.value)}
-                  placeholder="daily_login"
-                  className="font-mono text-sm"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>العنوان</Label>
-                <Input
-                  value={titleAr}
-                  onChange={(e) => setTitleAr(e.target.value)}
-                  placeholder="تسجيل الدخول اليومي"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label>الوصف</Label>
-                <Textarea
-                  value={descriptionAr}
-                  onChange={(e) => setDescriptionAr(e.target.value)}
-                  placeholder="سجل دخولك يومياً لكسب النقاط"
-                  rows={2}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label>النقاط</Label>
-                  <Input
-                    type="number"
-                    value={pointsReward}
-                    onChange={(e) => setPointsReward(e.target.value)}
-                    placeholder="5"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>النوع</Label>
-                  <Select value={taskType} onValueChange={setTaskType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">يومي</SelectItem>
-                      <SelectItem value="one_time">لمرة واحدة</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>الترتيب</Label>
-                <Input
-                  type="number"
-                  value={displayOrder}
-                  onChange={(e) => setDisplayOrder(e.target.value)}
-                  placeholder="0"
-                />
-              </div>
-
-              <div className="flex items-center justify-between py-2">
-                <div>
-                  <Label>حالة المهمة</Label>
-                  <p className="text-xs text-muted-foreground">
-                    {isActive ? 'المهمة مفعّلة وتظهر للمستخدمين' : 'المهمة معطّلة ومخفية'}
-                  </p>
-                </div>
-                <Switch checked={isActive} onCheckedChange={setIsActive} />
-              </div>
-            </div>
-          </ScrollArea>
-          <DialogFooter>
-            <Button variant="outline" onClick={handleCloseDialog}>إلغاء</Button>
-            <Button onClick={handleSaveTask} disabled={saveTask.isPending}>
-              {saveTask.isPending ? 'جاري الحفظ...' : editingTask ? 'تحديث' : 'إضافة'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </AdminLayout>
   );
 }
