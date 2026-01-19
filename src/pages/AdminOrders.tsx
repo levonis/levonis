@@ -51,6 +51,8 @@ const AdminOrders = () => {
   const [selectedOrderForMessage, setSelectedOrderForMessage] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [shippingTypeFilter, setShippingTypeFilter] = useState<string>('all');
+  const [orderTypeFilter, setOrderTypeFilter] = useState<string>('all');
   const [searchParams] = useSearchParams();
   const [uploadingImage, setUploadingImage] = useState(false);
   const [serialImageFile, setSerialImageFile] = useState<File | null>(null);
@@ -85,8 +87,10 @@ const AdminOrders = () => {
     }
   }, [taxPercentage, subtotalAmount]);
   
-  // Calculate profit dynamically
-  const calculatedProfit = totalAmount - adminProductCost - adminShippingCost - adminOtherCosts + taxAmount;
+  // Calculate profit dynamically - exclude local delivery costs (5000 or 6000)
+  // Profit = total_amount - admin_product_cost - admin_shipping_cost - admin_other_costs
+  // Note: delivery cost is NOT deducted from profit as per user request
+  const calculatedProfit = totalAmount - adminProductCost - adminShippingCost - adminOtherCosts;
   
   useEffect(() => {
     const status = searchParams.get('status');
@@ -610,8 +614,23 @@ const AdminOrders = () => {
       order.phone_number?.includes(searchTerm);
 
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    
+    // Shipping type filter
+    const shippingInfo = getShippingInfo(order.order_items || []);
+    const isAirShipping = shippingInfo.isFast;
+    const matchesShippingType = 
+      shippingTypeFilter === 'all' || 
+      (shippingTypeFilter === 'air' && isAirShipping) ||
+      (shippingTypeFilter === 'sea' && !isAirShipping);
+    
+    // Order type filter
+    const isPreOrder = checkIfPreOrder(order.order_items || []);
+    const matchesOrderType = 
+      orderTypeFilter === 'all' || 
+      (orderTypeFilter === 'preorder' && isPreOrder) ||
+      (orderTypeFilter === 'direct' && !isPreOrder);
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesShippingType && matchesOrderType;
   }) || [];
 
   // Pagination
@@ -693,19 +712,58 @@ const AdminOrders = () => {
       <AdminSection className="mt-6">
         <AdminCard>
           <AdminCardContent>
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1 relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="بحث بالرقم، الاسم، أو الهاتف..."
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    pagination.resetPage();
-                  }}
-                  className="pr-10"
-                />
+            <div className="flex flex-col gap-4">
+              {/* Search */}
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1 relative">
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="بحث بالرقم، الاسم، أو الهاتف..."
+                    value={searchTerm}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      pagination.resetPage();
+                    }}
+                    className="pr-10"
+                  />
+                </div>
+                
+                {/* Shipping Type Filter */}
+                <Select value={shippingTypeFilter} onValueChange={(v) => { setShippingTypeFilter(v); pagination.resetPage(); }}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="نوع الشحن" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">كل الشحنات</SelectItem>
+                    <SelectItem value="air">
+                      <span className="flex items-center gap-2">
+                        <Plane className="h-4 w-4" />
+                        شحن جوي
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="sea">
+                      <span className="flex items-center gap-2">
+                        <Ship className="h-4 w-4" />
+                        شحن بحري
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {/* Order Type Filter */}
+                <Select value={orderTypeFilter} onValueChange={(v) => { setOrderTypeFilter(v); pagination.resetPage(); }}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="نوع الطلب" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">كل الطلبات</SelectItem>
+                    <SelectItem value="preorder">طلب مسبق</SelectItem>
+                    <SelectItem value="direct">طلب مباشر</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+              
+              {/* Status Filters */}
               <div className="flex gap-2 flex-wrap">
                 <Button
                   variant={statusFilter === 'all' ? 'default' : 'outline'}
@@ -722,6 +780,20 @@ const AdminOrders = () => {
                   قيد الانتظار ({statusCounts['pending'] || 0})
                 </Button>
                 <Button
+                  variant={statusFilter === 'confirmed' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => { setStatusFilter('confirmed'); pagination.resetPage(); }}
+                >
+                  تم التأكيد ({statusCounts['confirmed'] || 0})
+                </Button>
+                <Button
+                  variant={statusFilter === 'processing' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => { setStatusFilter('processing'); pagination.resetPage(); }}
+                >
+                  قيد المعالجة ({statusCounts['processing'] || 0})
+                </Button>
+                <Button
                   variant={statusFilter === 'shipped' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => { setStatusFilter('shipped'); pagination.resetPage(); }}
@@ -734,6 +806,14 @@ const AdminOrders = () => {
                   onClick={() => { setStatusFilter('delivered'); pagination.resetPage(); }}
                 >
                   تم التوصيل ({statusCounts['delivered'] || 0})
+                </Button>
+                <Button
+                  variant={statusFilter === 'cancelled' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => { setStatusFilter('cancelled'); pagination.resetPage(); }}
+                  className="text-destructive"
+                >
+                  ملغي ({statusCounts['cancelled'] || 0})
                 </Button>
               </div>
             </div>

@@ -707,12 +707,18 @@ export type Database = {
           code: string | null
           created_at: string
           description: string | null
+          estimated_shipping_cost: number | null
           id: string
           image_url: string | null
+          product_dimensions: Json | null
           product_link: string
           product_name: string
+          product_weight: number | null
           quantity: number
           shipping_from: string | null
+          shipping_notes: string | null
+          shipping_type: string | null
+          source_country: string | null
           status: string
           suggested_price: number | null
           updated_at: string
@@ -723,12 +729,18 @@ export type Database = {
           code?: string | null
           created_at?: string
           description?: string | null
+          estimated_shipping_cost?: number | null
           id?: string
           image_url?: string | null
+          product_dimensions?: Json | null
           product_link: string
           product_name: string
+          product_weight?: number | null
           quantity?: number
           shipping_from?: string | null
+          shipping_notes?: string | null
+          shipping_type?: string | null
+          source_country?: string | null
           status?: string
           suggested_price?: number | null
           updated_at?: string
@@ -739,12 +751,18 @@ export type Database = {
           code?: string | null
           created_at?: string
           description?: string | null
+          estimated_shipping_cost?: number | null
           id?: string
           image_url?: string | null
+          product_dimensions?: Json | null
           product_link?: string
           product_name?: string
+          product_weight?: number | null
           quantity?: number
           shipping_from?: string | null
+          shipping_notes?: string | null
+          shipping_type?: string | null
+          source_country?: string | null
           status?: string
           suggested_price?: number | null
           updated_at?: string
@@ -3059,6 +3077,33 @@ export type Database = {
           tracking_number?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      shipping_settings: {
+        Row: {
+          created_at: string
+          description_ar: string | null
+          id: string
+          setting_key: string
+          setting_value: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string | null
+          id?: string
+          setting_key: string
+          setting_value: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: number
+          updated_at?: string
         }
         Relationships: []
       }

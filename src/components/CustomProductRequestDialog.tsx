@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
@@ -9,10 +9,13 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from './ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Package, Loader2, X } from 'lucide-react';
+import { Package, Loader2, X, Ship, Plane, Calculator, Globe } from 'lucide-react';
+import { useShippingSettings, calculateShippingCost, type SourceCountry, type ShippingType, type ProductDimensions } from '@/hooks/useShippingCalculator';
+import { formatPrice } from '@/lib/utils';
 
 const customProductSchema = z.object({
   product_link: z.string().url({ message: 'الرجاء إدخال رابط صحيح' }).min(1, 'رابط المنتج مطلوب'),
@@ -34,6 +37,15 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { user } = useAuth();
+  
+  // Shipping options
+  const [sourceCountry, setSourceCountry] = useState<SourceCountry>('china');
+  const [shippingType, setShippingType] = useState<ShippingType>('sea');
+  const [dimensions, setDimensions] = useState<ProductDimensions>({ length: 0, width: 0, height: 0 });
+  const [weight, setWeight] = useState<number>(0);
+  const [showShippingCalculator, setShowShippingCalculator] = useState(false);
+  
+  const { data: shippingSettings } = useShippingSettings();
 
   const form = useForm<CustomProductFormData>({
     resolver: zodResolver(customProductSchema),
@@ -44,6 +56,17 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
       description: '',
     },
   });
+
+  // Reset shipping type if sea is selected for USA
+  useEffect(() => {
+    if (sourceCountry === 'usa' && shippingType === 'sea') {
+      setShippingType('air');
+    }
+  }, [sourceCountry, shippingType]);
+
+  const shippingCalculation = shippingSettings && (dimensions.length > 0 || weight > 0)
+    ? calculateShippingCost(sourceCountry, shippingType, dimensions.length > 0 ? dimensions : null, weight > 0 ? weight : null, shippingSettings)
+    : null;
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -100,23 +123,33 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
     try {
       let imageUrl: string | null = null;
       
-      // Upload image if selected
       if (selectedImage) {
         imageUrl = await uploadImage();
       }
 
-      const { error } = await supabase.from('custom_product_requests').insert({
+      const productDimensions = dimensions.length > 0 ? dimensions : null;
+      const productWeight = weight > 0 ? weight : null;
+
+      const insertData: any = {
         user_id: user.id,
         product_link: data.product_link,
         product_name: data.product_name,
         quantity: data.quantity,
         image_url: imageUrl,
         description: data.description || null,
-      });
+        source_country: sourceCountry,
+        shipping_type: shippingType,
+        product_dimensions: productDimensions,
+        product_weight: productWeight,
+        estimated_shipping_cost: shippingCalculation?.totalCost || null,
+        shipping_notes: shippingCalculation?.notes?.join(' | ') || null,
+      };
+
+      const { error } = await supabase.from('custom_product_requests').insert(insertData);
 
       if (error) throw error;
 
-      // إرسال إشعار للتيليجرام
+      // Send Telegram notification
       try {
         const { data: profile } = await supabase
           .from('profiles')
@@ -125,10 +158,12 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
           .single();
         
         const userName = profile?.full_name || profile?.username || 'مستخدم';
+        const countryLabel = sourceCountry === 'china' ? 'الصين' : 'أمريكا';
+        const shippingLabel = shippingType === 'sea' ? 'بحري' : 'جوي';
         
         await supabase.functions.invoke('send-telegram-notification', {
           body: {
-            message: `📦 <b>طلب منتج مخصص جديد</b>\n\n👤 المستخدم: ${userName}\n📝 المنتج: ${data.product_name}\n🔢 الكمية: ${data.quantity}\n🔗 الرابط: ${data.product_link}`,
+            message: `📦 <b>طلب منتج مخصص جديد</b>\n\n👤 المستخدم: ${userName}\n📝 المنتج: ${data.product_name}\n🔢 الكمية: ${data.quantity}\n🌍 الدولة: ${countryLabel}\n🚚 نوع الشحن: ${shippingLabel}\n💰 تكلفة الشحن التقديرية: ${shippingCalculation?.totalCost ? formatPrice(shippingCalculation.totalCost) : 'غير محسوبة'}\n🔗 الرابط: ${data.product_link}`,
           },
         });
       } catch (telegramError) {
@@ -141,6 +176,11 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
       form.reset();
       setSelectedImage(null);
       setImagePreview(null);
+      setSourceCountry('china');
+      setShippingType('sea');
+      setDimensions({ length: 0, width: 0, height: 0 });
+      setWeight(0);
+      setShowShippingCalculator(false);
       setOpen(false);
     } catch (error) {
       console.error('Error submitting custom product request:', error);
@@ -153,7 +193,7 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold text-primary flex items-center gap-2">
             <Package className="w-6 h-6" />
@@ -218,6 +258,149 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
               )}
             />
 
+            {/* Country & Shipping Type Selection */}
+            <div className="grid grid-cols-2 gap-4 p-4 bg-muted/30 rounded-lg border border-border/50">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Globe className="h-4 w-4" />
+                  دولة الشحن
+                </Label>
+                <Select value={sourceCountry} onValueChange={(v) => setSourceCountry(v as SourceCountry)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="china">🇨🇳 الصين</SelectItem>
+                    <SelectItem value="usa">🇺🇸 أمريكا</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  {shippingType === 'sea' ? <Ship className="h-4 w-4" /> : <Plane className="h-4 w-4" />}
+                  نوع الشحن
+                </Label>
+                <Select value={shippingType} onValueChange={(v) => setShippingType(v as ShippingType)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sourceCountry === 'china' && (
+                      <SelectItem value="sea">
+                        <span className="flex items-center gap-2">
+                          <Ship className="h-4 w-4" />
+                          شحن بحري
+                        </span>
+                      </SelectItem>
+                    )}
+                    <SelectItem value="air">
+                      <span className="flex items-center gap-2">
+                        <Plane className="h-4 w-4" />
+                        شحن جوي
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Shipping Calculator Toggle */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowShippingCalculator(!showShippingCalculator)}
+              className="w-full gap-2"
+            >
+              <Calculator className="h-4 w-4" />
+              {showShippingCalculator ? 'إخفاء حاسبة الشحن' : 'حساب تكلفة الشحن التقديرية'}
+            </Button>
+
+            {/* Shipping Calculator */}
+            {showShippingCalculator && (
+              <div className="space-y-4 p-4 bg-accent/10 rounded-lg border border-accent/30">
+                <h4 className="font-semibold text-sm flex items-center gap-2">
+                  <Calculator className="h-4 w-4" />
+                  حاسبة تكلفة الشحن
+                </h4>
+                
+                {/* Dimensions */}
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">أبعاد المنتج (سم) - اختياري</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div>
+                      <Input
+                        type="number"
+                        placeholder="الطول"
+                        value={dimensions.length || ''}
+                        onChange={(e) => setDimensions({ ...dimensions, length: Number(e.target.value) || 0 })}
+                        min={0}
+                      />
+                      <span className="text-xs text-muted-foreground">طول</span>
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        placeholder="العرض"
+                        value={dimensions.width || ''}
+                        onChange={(e) => setDimensions({ ...dimensions, width: Number(e.target.value) || 0 })}
+                        min={0}
+                      />
+                      <span className="text-xs text-muted-foreground">عرض</span>
+                    </div>
+                    <div>
+                      <Input
+                        type="number"
+                        placeholder="الارتفاع"
+                        value={dimensions.height || ''}
+                        onChange={(e) => setDimensions({ ...dimensions, height: Number(e.target.value) || 0 })}
+                        min={0}
+                      />
+                      <span className="text-xs text-muted-foreground">ارتفاع</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Weight (for USA air shipping) */}
+                {sourceCountry === 'usa' && shippingType === 'air' && (
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">وزن المنتج (كغ)</Label>
+                    <Input
+                      type="number"
+                      placeholder="الوزن بالكيلوغرام"
+                      value={weight || ''}
+                      onChange={(e) => setWeight(Number(e.target.value) || 0)}
+                      min={0}
+                      step={0.1}
+                    />
+                  </div>
+                )}
+                
+                {/* Calculation Result */}
+                {shippingCalculation && shippingCalculation.totalCost > 0 && (
+                  <div className="mt-4 p-3 bg-background rounded-lg border space-y-2">
+                    <h5 className="font-medium text-sm">تفاصيل التكلفة التقديرية:</h5>
+                    <div className="space-y-1 text-sm">
+                      {shippingCalculation.breakdown.map((item, idx) => (
+                        <div key={idx} className="flex justify-between">
+                          <span className="text-muted-foreground">{item.label}:</span>
+                          <span className={item.label === 'الإجمالي' ? 'font-bold text-primary' : ''}>
+                            {typeof item.value === 'number' && item.label !== 'الحجم CBM' && item.label !== 'المقسوم عليه'
+                              ? formatPrice(item.value) 
+                              : item.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {shippingCalculation.notes.map((note, idx) => (
+                      <p key={idx} className="text-xs text-amber-600 mt-2">⚠️ {note}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Image Upload */}
             <div className="space-y-2">
               <Label htmlFor="image">صورة المنتج (اختياري)</Label>
               <Input
