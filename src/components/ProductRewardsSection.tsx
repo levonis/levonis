@@ -3,14 +3,24 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Coins, CreditCard, Sparkles, Gift } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 
+interface CardDiscount {
+  level_id: string;
+  discount_percentage: number;
+}
+
+interface LoyaltyLevel {
+  id: string;
+  name_ar: string;
+  color: string;
+  display_order: number;
+}
+
 interface ProductRewardsSectionProps {
   pointsReward: number;
-  cardDiscountPercentage: number;
-  cardDiscountLevelName?: string;
-  cardDiscountLevelColor?: string;
-  cardDiscountLevelOrder?: number;
+  cardDiscounts: CardDiscount[];
+  loyaltyLevels: LoyaltyLevel[];
   userHasCard?: boolean;
-  userCardLevel?: string;
+  userCardLevelId?: string;
   userCardLevelOrder?: number;
   productPrice: number;
   currency: string;
@@ -18,29 +28,42 @@ interface ProductRewardsSectionProps {
 
 const ProductRewardsSection = ({
   pointsReward,
-  cardDiscountPercentage,
-  cardDiscountLevelName,
-  cardDiscountLevelColor,
-  cardDiscountLevelOrder,
+  cardDiscounts,
+  loyaltyLevels,
   userHasCard,
-  userCardLevel,
+  userCardLevelId,
   userCardLevelOrder,
   productPrice,
   currency
 }: ProductRewardsSectionProps) => {
-  // Check if user qualifies for card discount based on card level order
-  // User qualifies if they have a card with equal or higher order (higher order = better card)
-  const qualifiesForDiscount = userHasCard && 
-    cardDiscountPercentage > 0 && 
-    userCardLevelOrder !== undefined && 
-    cardDiscountLevelOrder !== undefined &&
-    userCardLevelOrder >= cardDiscountLevelOrder;
-    
-  const discountedPrice = qualifiesForDiscount 
-    ? productPrice * (1 - cardDiscountPercentage / 100) 
+  // Build a map of level_id to level info
+  const levelMap = new Map(loyaltyLevels.map(l => [l.id, l]));
+  
+  // Filter valid discounts and get level info
+  const validDiscounts = cardDiscounts
+    .filter(d => d.level_id && d.discount_percentage > 0 && levelMap.has(d.level_id))
+    .map(d => ({
+      ...d,
+      level: levelMap.get(d.level_id)!
+    }))
+    .sort((a, b) => a.level.display_order - b.level.display_order);
+
+  // Find the best discount the user qualifies for
+  const qualifyingDiscounts = validDiscounts.filter(d => 
+    userHasCard && 
+    userCardLevelOrder !== undefined &&
+    userCardLevelOrder >= d.level.display_order
+  );
+  
+  const bestUserDiscount = qualifyingDiscounts.length > 0 
+    ? qualifyingDiscounts.reduce((best, curr) => curr.discount_percentage > best.discount_percentage ? curr : best)
     : null;
 
-  if (pointsReward <= 0 && cardDiscountPercentage <= 0) {
+  const discountedPrice = bestUserDiscount 
+    ? productPrice * (1 - bestUserDiscount.discount_percentage / 100) 
+    : null;
+
+  if (pointsReward <= 0 && validDiscounts.length === 0) {
     return null;
   }
 
@@ -71,8 +94,8 @@ const ProductRewardsSection = ({
             </div>
           )}
 
-          {/* Card Discount - User has qualifying card */}
-          {qualifiesForDiscount && discountedPrice && (
+          {/* User's Qualifying Discount */}
+          {bestUserDiscount && discountedPrice && (
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-sm">
@@ -86,38 +109,69 @@ const ProductRewardsSection = ({
                 </div>
               </div>
               <Badge className="bg-gradient-to-r from-emerald-500 to-green-500 text-white border-0 text-sm px-3 py-1">
-                خصم {cardDiscountPercentage}%
+                خصم {bestUserDiscount.discount_percentage}%
               </Badge>
             </div>
           )}
 
-          {/* Card Discount Promotion - User doesn't have card */}
-          {cardDiscountPercentage > 0 && !userHasCard && cardDiscountLevelName && (
-            <div className="flex items-center justify-between p-2.5 rounded-lg bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 border-dashed">
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm"
-                  style={{ 
-                    background: `linear-gradient(135deg, ${cardDiscountLevelColor || '#8B5CF6'}, ${cardDiscountLevelColor || '#8B5CF6'}dd)` 
-                  }}
-                >
+          {/* Card Discounts Promotion - Show all available discounts for non-cardholders */}
+          {validDiscounts.length > 0 && !userHasCard && (
+            <div className="p-2.5 rounded-lg bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 border-dashed">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-indigo-500 flex items-center justify-center shadow-sm">
                   <Sparkles className="h-4 w-4 text-white" />
                 </div>
                 <div>
-                  <span className="font-medium text-sm">عرض خاص لحاملي البطاقات</span>
-                  <p className="text-xs text-muted-foreground">
-                    احصل على بطاقة <span className="font-semibold" style={{ color: cardDiscountLevelColor }}>{cardDiscountLevelName}</span> للحصول على الخصم
-                  </p>
+                  <span className="font-medium text-sm">خصومات حصرية لحاملي البطاقات</span>
+                  <p className="text-xs text-muted-foreground">احصل على بطاقة للحصول على خصم</p>
                 </div>
               </div>
-              <Badge 
-                variant="outline" 
-                className="text-sm px-3 py-1 border-purple-500/30"
-                style={{ color: cardDiscountLevelColor }}
-              >
-                خصم {cardDiscountPercentage}%
-              </Badge>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {validDiscounts.map((discount, index) => (
+                  <Badge 
+                    key={index}
+                    variant="outline" 
+                    className="text-xs px-2 py-1"
+                    style={{ 
+                      borderColor: discount.level.color + '50',
+                      color: discount.level.color 
+                    }}
+                  >
+                    {discount.level.name_ar}: {discount.discount_percentage}%
+                  </Badge>
+                ))}
+              </div>
             </div>
+          )}
+
+          {/* Show other available discounts for cardholders who might upgrade */}
+          {userHasCard && validDiscounts.length > 0 && (
+            <>
+              {validDiscounts.filter(d => 
+                userCardLevelOrder !== undefined && d.level.display_order > userCardLevelOrder
+              ).length > 0 && (
+                <div className="p-2.5 rounded-lg bg-muted/50 border border-border/50">
+                  <p className="text-xs text-muted-foreground mb-2">خصومات إضافية عند ترقية البطاقة:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {validDiscounts
+                      .filter(d => userCardLevelOrder !== undefined && d.level.display_order > userCardLevelOrder)
+                      .map((discount, index) => (
+                        <Badge 
+                          key={index}
+                          variant="outline" 
+                          className="text-xs px-2 py-1"
+                          style={{ 
+                            borderColor: discount.level.color + '50',
+                            color: discount.level.color 
+                          }}
+                        >
+                          {discount.level.name_ar}: {discount.discount_percentage}%
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </CardContent>

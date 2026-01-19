@@ -104,6 +104,10 @@ const Admin = () => {
     text: string;
     icon?: string;
   }>>([]);
+  const [productCardDiscounts, setProductCardDiscounts] = useState<Array<{
+    level_id: string;
+    discount_percentage: number;
+  }>>([]);
   const [preOrderShippingOptions, setPreOrderShippingOptions] = useState<Array<{
     name: string;
     name_ar: string;
@@ -181,6 +185,10 @@ const Admin = () => {
       setProductColors(colorsWithStock);
       setProductFeatures(Array.isArray(editingProduct.features) ? editingProduct.features : []);
       setPreOrderShippingOptions(Array.isArray(editingProduct.pre_order_shipping_options) ? editingProduct.pre_order_shipping_options : []);
+      
+      // Load card discounts from product
+      const cardDiscounts = Array.isArray(editingProduct.card_discounts) ? editingProduct.card_discounts : [];
+      setProductCardDiscounts(cardDiscounts);
 
       // Load options from the database ONLY if editing an existing product (has id)
       // For duplicated products (no id), options are already set by handleDuplicateProduct
@@ -211,6 +219,7 @@ const Admin = () => {
       setProductOptions([]);
       setProductColors([]);
       setProductFeatures([]);
+      setProductCardDiscounts([]);
       setProductUrl(''); // Clear URL when opening for new product
       setFormKey(prev => prev + 1); // Force form to re-render with correct defaults
       
@@ -891,13 +900,20 @@ const Admin = () => {
       })));
     }
 
+    // Set points_reward if extracted
+    if (productInfo.points_reward && productInfo.points_reward > 0) {
+      const pointsInput = form.querySelector('#points_reward') as HTMLInputElement;
+      if (pointsInput) pointsInput.value = String(productInfo.points_reward);
+    }
+
     // Hide manual input if it was shown
     setShowManualInput(false);
 
     const colorsCount = productInfo.colors?.length || 0;
     const optionsCount = optionsData.length || 0;
     const featuresCount = productInfo.features?.length || 0;
-    toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات)`);
+    const pointsReward = productInfo.points_reward || 0;
+    toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات، ${pointsReward} نقاط)`);
   };
 
   // Re-extract images only for a product using AI
@@ -1181,16 +1197,12 @@ const Admin = () => {
         features: validFeatures.length > 0 ? validFeatures : [],
         // Taobao sync fields
         taobao_url: (formData.get('taobao_url') as string)?.trim() || null,
-        // Product rewards and card discount
+        // Product rewards - points from form (can be auto-calculated or manually set)
         points_reward: formData.get('points_reward') && formData.get('points_reward') !== '' 
           ? Number(formData.get('points_reward')) 
           : 0,
-        card_discount_level_id: formData.get('card_discount_level_id') && formData.get('card_discount_level_id') !== '' 
-          ? formData.get('card_discount_level_id') as string
-          : null,
-        card_discount_percentage: formData.get('card_discount_percentage') && formData.get('card_discount_percentage') !== '' 
-          ? Number(formData.get('card_discount_percentage')) 
-          : 0,
+        // Multiple card discounts as JSON array
+        card_discounts: productCardDiscounts.filter(d => d.level_id && d.discount_percentage > 0),
       };
 
       // Validate with zod
@@ -1266,6 +1278,7 @@ const Admin = () => {
       setProductOptions([]);
       setProductColors([]);
       setProductFeatures([]);
+      setProductCardDiscounts([]);
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -1957,14 +1970,15 @@ const Admin = () => {
                       </div>
                     </div>
 
-                    {/* Product Rewards & Card Discount Section */}
+                    {/* Product Rewards & Card Discounts Section */}
                     <div className="space-y-4 border-t pt-4">
                       <div className="flex items-center gap-2 text-sm font-medium text-primary">
                         <Coins className="h-4 w-4" />
                         <span>مكافآت المنتج وخصم البطاقات</span>
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 border border-primary/20 rounded-lg bg-primary/5">
+                      <div className="p-4 border border-primary/20 rounded-lg bg-primary/5 space-y-4">
+                        {/* Points Reward */}
                         <div className="space-y-2">
                           <Label htmlFor="points_reward">نقاط المكافأة</Label>
                           <Input 
@@ -1975,40 +1989,78 @@ const Admin = () => {
                             defaultValue={editingProduct?.points_reward || 0}
                             placeholder="0"
                           />
-                          <p className="text-xs text-muted-foreground">النقاط التي يحصل عليها الزبون عند الشراء</p>
+                          <p className="text-xs text-muted-foreground">النقاط التي يحصل عليها الزبون عند الشراء (تحسب تلقائياً: 1 نقطة لكل 1000 دينار)</p>
                         </div>
                         
-                        <div className="space-y-2">
-                          <Label htmlFor="card_discount_level_id">بطاقة الخصم المطلوبة</Label>
-                          <select
-                            id="card_discount_level_id"
-                            name="card_discount_level_id"
-                            defaultValue={editingProduct?.card_discount_level_id || ''}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <option value="">بدون خصم بطاقة</option>
-                            {loyaltyLevels?.map((level) => (
-                              <option key={level.id} value={level.id}>
-                                {level.name_ar}
-                              </option>
-                            ))}
-                          </select>
-                          <p className="text-xs text-muted-foreground">البطاقة المطلوبة للحصول على الخصم</p>
-                        </div>
-                        
-                        <div className="space-y-2">
-                          <Label htmlFor="card_discount_percentage">نسبة خصم البطاقة %</Label>
-                          <Input 
-                            id="card_discount_percentage" 
-                            name="card_discount_percentage"
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            defaultValue={editingProduct?.card_discount_percentage || 0}
-                            placeholder="0"
-                          />
-                          <p className="text-xs text-muted-foreground">نسبة الخصم لحاملي البطاقة</p>
+                        {/* Multiple Card Discounts */}
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <Label>خصومات البطاقات</Label>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setProductCardDiscounts([...productCardDiscounts, { level_id: '', discount_percentage: 0 }])}
+                            >
+                              <Plus className="ml-1 h-3 w-3" />
+                              إضافة خصم بطاقة
+                            </Button>
+                          </div>
+                          <p className="text-xs text-muted-foreground">أضف خصومات مختلفة لكل نوع بطاقة</p>
+                          
+                          {productCardDiscounts.length > 0 && (
+                            <div className="space-y-2">
+                              {productCardDiscounts.map((discount, index) => (
+                                <div key={index} className="flex items-center gap-3 p-3 bg-background/50 rounded-lg border border-border">
+                                  <div className="flex-1">
+                                    <select
+                                      value={discount.level_id}
+                                      onChange={(e) => {
+                                        const updated = [...productCardDiscounts];
+                                        updated[index] = { ...updated[index], level_id: e.target.value };
+                                        setProductCardDiscounts(updated);
+                                      }}
+                                      className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
+                                    >
+                                      <option value="">اختر البطاقة</option>
+                                      {loyaltyLevels?.map((level) => (
+                                        <option key={level.id} value={level.id}>
+                                          {level.name_ar}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  <div className="w-24">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      step="0.01"
+                                      value={discount.discount_percentage}
+                                      onChange={(e) => {
+                                        const updated = [...productCardDiscounts];
+                                        updated[index] = { ...updated[index], discount_percentage: Number(e.target.value) };
+                                        setProductCardDiscounts(updated);
+                                      }}
+                                      placeholder="%"
+                                      className="h-9"
+                                    />
+                                  </div>
+                                  <span className="text-sm text-muted-foreground">%</span>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setProductCardDiscounts(productCardDiscounts.filter((_, i) => i !== index));
+                                    }}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

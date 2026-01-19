@@ -2471,8 +2471,7 @@ export type Database = {
       products: {
         Row: {
           availability_type: string
-          card_discount_level_id: string | null
-          card_discount_percentage: number | null
+          card_discounts: Json | null
           category_id: string | null
           colors: Json | null
           cost_price: number | null
@@ -2506,8 +2505,7 @@ export type Database = {
         }
         Insert: {
           availability_type?: string
-          card_discount_level_id?: string | null
-          card_discount_percentage?: number | null
+          card_discounts?: Json | null
           category_id?: string | null
           colors?: Json | null
           cost_price?: number | null
@@ -2541,8 +2539,7 @@ export type Database = {
         }
         Update: {
           availability_type?: string
-          card_discount_level_id?: string | null
-          card_discount_percentage?: number | null
+          card_discounts?: Json | null
           category_id?: string | null
           colors?: Json | null
           cost_price?: number | null
@@ -2575,13 +2572,6 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
-          {
-            foreignKeyName: "products_card_discount_level_id_fkey"
-            columns: ["card_discount_level_id"]
-            isOneToOne: false
-            referencedRelation: "loyalty_levels"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]

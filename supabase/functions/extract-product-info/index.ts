@@ -678,7 +678,8 @@ ${pageContent.substring(0, 40000)}
       images: [],
       colors: [],
       options: [],
-      features: []
+      features: [],
+      points_reward: 0
     };
     
     const variantImageUrls = new Set<string>();
@@ -712,6 +713,11 @@ ${pageContent.substring(0, 40000)}
           productInfo.price = null;
           productInfo.original_price = originalPriceInIqd > 0 ? originalPriceInIqd : null;
           productInfo.currency = 'IQD';
+          
+          // Calculate points reward: 1 point per 1000 IQD (based on original price before discount)
+          if (originalPriceInIqd > 0) {
+            productInfo.points_reward = Math.floor(originalPriceInIqd / 1000);
+          }
           
           // Process colors from AI
           if (ai.colors && Array.isArray(ai.colors)) {
