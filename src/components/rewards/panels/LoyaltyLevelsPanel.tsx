@@ -203,114 +203,57 @@ export default function LoyaltyLevelsPanel() {
         </div>
       )}
 
-      {/* Available Cards */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-muted-foreground">البطاقات المتاحة</h3>
-        {levels?.map((level) => {
+      {/* Available Cards - Professional Design */}
+      <div className="space-y-6">
+        <h3 className="text-sm font-semibold text-muted-foreground">البطاقات المتاحة للشراء</h3>
+        {levels?.filter(level => level.is_purchasable).map((level) => {
           const isCurrentCard = currentCardLevel?.id === level.id;
-          const canPurchase = level.is_purchasable && availablePoints >= (level.purchase_price_points || 0);
-          const isPurchasable = level.is_purchasable;
+          const canPurchase = availablePoints >= (level.purchase_price_points || 0);
+          
+          if (isCurrentCard) return null;
           
           return (
-            <Card 
-              key={level.id}
-              className={`transition-all ${isCurrentCard ? 'ring-2 opacity-60' : ''}`}
-              style={{ 
-                borderColor: level.color + '40',
-                ...(isCurrentCard && { '--tw-ring-color': level.color } as any)
-              }}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div 
-                    className="w-12 h-12 rounded-full flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: level.color + '20' }}
-                  >
-                    <CreditCard className="h-6 w-6" style={{ color: level.color }} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-bold" style={{ color: level.color }}>
-                        {level.name_ar}
-                      </p>
-                      {isCurrentCard && (
-                        <Badge variant="outline" className="text-[9px]">
-                          بطاقتك الحالية
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    {/* Price/Points requirement */}
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {isPurchasable ? (
-                        <span className="flex items-center gap-1">
-                          <ShoppingCart className="h-3 w-3" />
-                          {(level.purchase_price_points || 0).toLocaleString()} نقطة
-                        </span>
-                      ) : (
-                        <span>يتطلب {(level.min_points || 0).toLocaleString()} نقطة</span>
-                      )}
-                    </p>
-                    
-                    {/* Duration */}
-                    <p className="text-[10px] text-muted-foreground flex items-center gap-1 mt-0.5">
-                      <Clock className="h-3 w-3" />
-                      صالحة لمدة {level.duration_days || 30} يوم
-                    </p>
-                    
-                    {/* Benefits */}
-                    <div className="mt-2 space-y-1">
-                      {level.discount_percentage && level.discount_percentage > 0 && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Check className="h-3 w-3 text-green-500" />
-                          <span>خصم {level.discount_percentage}%</span>
-                        </div>
-                      )}
-                      {level.bonus_points_percentage && level.bonus_points_percentage > 0 && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Check className="h-3 w-3 text-green-500" />
-                          <span>نقاط إضافية {level.bonus_points_percentage}%</span>
-                        </div>
-                      )}
-                      {level.free_shipping && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Check className="h-3 w-3 text-green-500" />
-                          <span>
-                            شحن مجاني
-                            {level.free_shipping_min_order && level.free_shipping_min_order > 0 && ` (طلبات أكثر من ${level.free_shipping_min_order.toLocaleString()} د.ع)`}
-                          </span>
-                        </div>
-                      )}
-                      {level.vip_support && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Sparkles className="h-3 w-3 text-amber-500" />
-                          <span>دعم عملاء VIP مميز</span>
-                        </div>
-                      )}
-                      {level.card_discounts_enabled && (
-                        <div className="flex items-center gap-1.5 text-xs">
-                          <Sparkles className="h-3 w-3 text-amber-500" />
-                          <span>خصومات حصرية على منتجات مختارة</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Purchase Button */}
-                  {isPurchasable && !isCurrentCard && (
-                    <Button
-                      size="sm"
-                      variant={canPurchase ? 'default' : 'outline'}
-                      className="shrink-0"
-                      disabled={!canPurchase || !user}
-                      onClick={() => handlePurchaseClick(level)}
-                    >
-                      {canPurchase ? 'شراء' : 'نقاط غير كافية'}
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <div key={level.id} className="space-y-3">
+              <UserLoyaltyCard
+                level={{
+                  id: level.id,
+                  name_ar: level.name_ar,
+                  name_en: level.name_en,
+                  color: level.color,
+                  discount_percentage: level.discount_percentage,
+                  bonus_points_percentage: level.bonus_points_percentage,
+                  free_shipping: level.free_shipping,
+                  free_shipping_min_order: level.free_shipping_min_order,
+                  duration_days: level.duration_days,
+                  vip_support: level.vip_support,
+                  priority_shipping: level.priority_shipping,
+                  early_access: level.early_access,
+                  exclusive_products: level.exclusive_products,
+                  special_name_style: level.special_name_style as any,
+                  profile_effects: level.profile_effects as any,
+                  benefits: level.benefits as any,
+                  purchase_price_points: level.purchase_price_points,
+                }}
+                isActive={false}
+                showDetails={true}
+                showPurchaseInfo={true}
+              />
+              <Button
+                className="w-full"
+                variant={canPurchase ? 'default' : 'outline'}
+                disabled={!canPurchase || !user}
+                onClick={() => handlePurchaseClick(level)}
+              >
+                {canPurchase ? (
+                  <>
+                    <ShoppingCart className="h-4 w-4 ml-2" />
+                    شراء بـ {(level.purchase_price_points || 0).toLocaleString()} نقطة
+                  </>
+                ) : (
+                  `تحتاج ${((level.purchase_price_points || 0) - availablePoints).toLocaleString()} نقطة إضافية`
+                )}
+              </Button>
+            </div>
           );
         })}
       </div>
