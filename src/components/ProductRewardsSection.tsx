@@ -5,7 +5,7 @@ import { formatPrice } from '@/lib/utils';
 
 interface CardDiscount {
   level_id: string;
-  discount_percentage: number;
+  discount_amount: number; // Amount in IQD
 }
 
 interface LoyaltyLevel {
@@ -39,13 +39,19 @@ const ProductRewardsSection = ({
   // Build a map of level_id to level info
   const levelMap = new Map(loyaltyLevels.map(l => [l.id, l]));
   
-  // Filter valid discounts and get level info
+  // Filter valid discounts and get level info (discount_amount > 0)
   const validDiscounts = cardDiscounts
-    .filter(d => d.level_id && d.discount_percentage > 0 && levelMap.has(d.level_id))
-    .map(d => ({
-      ...d,
-      level: levelMap.get(d.level_id)!
-    }))
+    .filter(d => d.level_id && d.discount_amount > 0 && levelMap.has(d.level_id))
+    .map(d => {
+      const level = levelMap.get(d.level_id)!;
+      // Calculate percentage for display
+      const percentage = productPrice > 0 ? (d.discount_amount / productPrice) * 100 : 0;
+      return {
+        ...d,
+        level,
+        displayPercentage: Math.round(percentage * 10) / 10 // Round to 1 decimal
+      };
+    })
     .sort((a, b) => a.level.display_order - b.level.display_order);
 
   // Find the best discount the user qualifies for
@@ -56,11 +62,11 @@ const ProductRewardsSection = ({
   );
   
   const bestUserDiscount = qualifyingDiscounts.length > 0 
-    ? qualifyingDiscounts.reduce((best, curr) => curr.discount_percentage > best.discount_percentage ? curr : best)
+    ? qualifyingDiscounts.reduce((best, curr) => curr.discount_amount > best.discount_amount ? curr : best)
     : null;
 
   const discountedPrice = bestUserDiscount 
-    ? productPrice * (1 - bestUserDiscount.discount_percentage / 100) 
+    ? productPrice - bestUserDiscount.discount_amount
     : null;
 
   if (pointsReward <= 0 && validDiscounts.length === 0) {
@@ -94,8 +100,8 @@ const ProductRewardsSection = ({
             </div>
           )}
 
-          {/* User's Qualifying Discount */}
-          {bestUserDiscount && discountedPrice && (
+          {/* User's Qualifying Discount - Show discounted price */}
+          {bestUserDiscount && discountedPrice !== null && discountedPrice > 0 && (
             <div className="flex items-center justify-between p-2.5 rounded-lg bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/20">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shadow-sm">
@@ -108,13 +114,18 @@ const ProductRewardsSection = ({
                   </p>
                 </div>
               </div>
-              <Badge className="bg-gradient-to-r from-emerald-500 to-green-500 text-white border-0 text-sm px-3 py-1">
-                خصم {bestUserDiscount.discount_percentage}%
-              </Badge>
+              <div className="text-left">
+                <Badge className="bg-gradient-to-r from-emerald-500 to-green-500 text-white border-0 text-sm px-3 py-1">
+                  خصم {bestUserDiscount.displayPercentage}%
+                </Badge>
+                <p className="text-xs text-muted-foreground mt-1">
+                  وفرت {formatPrice(bestUserDiscount.discount_amount)} {currency}
+                </p>
+              </div>
             </div>
           )}
 
-          {/* Card Discounts Promotion - Show all available discounts for non-cardholders */}
+          {/* Card Discounts Promotion - Show for non-cardholders as note only */}
           {validDiscounts.length > 0 && !userHasCard && (
             <div className="p-2.5 rounded-lg bg-gradient-to-r from-purple-500/10 to-indigo-500/10 border border-purple-500/20 border-dashed">
               <div className="flex items-center gap-2 mb-2">
@@ -137,7 +148,7 @@ const ProductRewardsSection = ({
                       color: discount.level.color 
                     }}
                   >
-                    {discount.level.name_ar}: {discount.discount_percentage}%
+                    {discount.level.name_ar}: خصم {discount.displayPercentage}%
                   </Badge>
                 ))}
               </div>
@@ -165,7 +176,7 @@ const ProductRewardsSection = ({
                             color: discount.level.color 
                           }}
                         >
-                          {discount.level.name_ar}: {discount.discount_percentage}%
+                          {discount.level.name_ar}: خصم {discount.displayPercentage}%
                         </Badge>
                       ))}
                   </div>
