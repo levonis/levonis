@@ -7,6 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   MessageCircle, 
   Send, 
@@ -17,7 +27,8 @@ import {
   CheckCheck,
   Package,
   Search,
-  ShoppingBag
+  ShoppingBag,
+  ShoppingCart
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -63,6 +74,8 @@ export default function CustomerChat({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
+  const [showCartConfirm, setShowCartConfirm] = useState(false);
+  const [cartMessageSent, setCartMessageSent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -81,7 +94,8 @@ export default function CustomerChat({
         .from('products')
         .select('id, name_ar, image_url, price')
         .eq('status', 'published')
-        .limit(100);
+        .ilike('name_ar', `%${productSearchQuery}%`)
+        .limit(50);
       
       if (data) {
         const mapped: Product[] = data.map((p: any) => ({
@@ -95,13 +109,11 @@ export default function CustomerChat({
     };
     
     loadProducts();
-  }, [showProductSearch]);
+  }, [showProductSearch, productSearchQuery]);
   
   const products = chatProducts;
 
-  const filteredProducts = products.filter(p => 
-    p.name_ar.toLowerCase().includes(productSearchQuery.toLowerCase())
-  ).slice(0, 10);
+  const filteredProducts = products.slice(0, 10);
 
   // Get or create conversation
   const { data: conversation, isLoading: conversationLoading } = useQuery({
@@ -243,20 +255,19 @@ export default function CustomerChat({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Send initial cart request message
+  // Show cart confirmation dialog when opening with cart request code
   useEffect(() => {
-    if (cartRequestCode && conversation && isOpen) {
+    if (cartRequestCode && conversation && isOpen && !cartMessageSent) {
       const hasCartMessage = messages.some(m => 
         m.content.includes(cartRequestCode) && m.sender_id === user?.id
       );
       
-      if (!hasCartMessage && messages.length === 0) {
-        // Send automatic message about cart request
-        const autoMessage = `🛒 مرحباً، أريد الاستفسار عن سلة التسوق\n\nرمز السلة: ${cartRequestCode}`;
-        sendMessageMutation.mutate({ content: autoMessage });
+      if (!hasCartMessage) {
+        // Show confirmation dialog
+        setShowCartConfirm(true);
       }
     }
-  }, [cartRequestCode, conversation, isOpen, messages]);
+  }, [cartRequestCode, conversation, isOpen, messages, user?.id, cartMessageSent]);
 
   // Handle image selection
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -327,6 +338,17 @@ export default function CustomerChat({
     },
   });
 
+  // Send cart request confirmation
+  const handleConfirmCartMessage = async () => {
+    if (!cartRequestCode) return;
+    
+    const autoMessage = `🛒 مرحباً، أريد الاستفسار عن سلة التسوق\n\n📋 رمز السلة: ${cartRequestCode}\n\nأرجو تعديل السعر أو الإجابة على استفساري`;
+    await sendMessageMutation.mutateAsync({ content: autoMessage });
+    setCartMessageSent(true);
+    setShowCartConfirm(false);
+    toast.success('تم إرسال طلب السلة للإدارة');
+  };
+
   // Send product as message
   const sendProductMessage = (product: Product) => {
     const productMessage = `📦 منتج: ${product.name_ar}\n💰 السعر: ${formatPrice(product.price)} د.ع\n🔗 /product/${product.id}`;
@@ -377,14 +399,40 @@ export default function CustomerChat({
 
   return (
     <>
+      {/* Cart Confirmation Dialog */}
+      <AlertDialog open={showCartConfirm} onOpenChange={setShowCartConfirm}>
+        <AlertDialogContent dir="rtl" className="bg-card border-primary/30">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+              <ShoppingCart className="h-5 w-5 text-primary" />
+              إرسال طلب السلة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground">
+              هل تريد إرسال رمز السلة <span className="font-bold text-primary">{cartRequestCode}</span> إلى الإدارة للتعديل أو الاستفسار؟
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction 
+              onClick={handleConfirmCartMessage}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              نعم، إرسال
+            </AlertDialogAction>
+            <AlertDialogCancel className="bg-muted text-foreground hover:bg-muted/80">
+              لا، إلغاء
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Chat Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 left-4 sm:left-6 h-14 w-14 rounded-full shadow-xl z-50 bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 border-2 border-primary-foreground/20"
+        className="fixed bottom-6 left-4 sm:left-6 h-14 w-14 rounded-full shadow-xl z-50 bg-primary hover:bg-primary/90 border-2 border-primary-foreground/20"
         size="icon"
       >
         <div className="relative">
-          <MessageCircle className="h-6 w-6" />
+          <MessageCircle className="h-6 w-6 text-primary-foreground" />
           {unreadCount > 0 && (
             <span className="absolute -top-3 -right-3 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold animate-pulse">
               {unreadCount > 9 ? '9+' : unreadCount}
@@ -395,16 +443,16 @@ export default function CustomerChat({
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 left-4 right-4 sm:left-6 sm:right-auto sm:w-[400px] h-[550px] max-h-[75vh] shadow-2xl z-50 flex flex-col overflow-hidden border-2 border-primary/20">
+        <Card className="fixed bottom-24 left-4 right-4 sm:left-6 sm:right-auto sm:w-[400px] h-[550px] max-h-[75vh] shadow-2xl z-50 flex flex-col overflow-hidden border-2 border-primary/40 bg-background">
           {/* Header */}
-          <CardHeader className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground p-4 flex-shrink-0">
+          <CardHeader className="bg-primary p-4 flex-shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center">
-                  <MessageCircle className="h-5 w-5" />
+                  <MessageCircle className="h-5 w-5 text-primary-foreground" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-bold">الدعم الفني</CardTitle>
+                  <CardTitle className="text-lg font-bold text-primary-foreground">الدعم الفني</CardTitle>
                   <p className="text-xs text-primary-foreground/80">
                     {orderId ? `طلب #${orderId.slice(0, 8)}` : 'نحن هنا لمساعدتك'}
                   </p>
@@ -423,11 +471,7 @@ export default function CustomerChat({
 
           {/* Messages Area */}
           <CardContent 
-            className="flex-1 overflow-y-auto p-0 relative"
-            style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-              backgroundColor: 'hsl(var(--muted)/0.3)',
-            }}
+            className="flex-1 overflow-y-auto p-0 relative bg-background-2"
           >
             <ScrollArea className="h-full">
               <div className="p-4 space-y-3">
@@ -435,17 +479,17 @@ export default function CustomerChat({
                   <div className="flex items-center justify-center h-48">
                     <div className="text-center">
                       <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto mb-3" />
-                      <p className="text-sm text-muted-foreground">جاري تحميل المحادثة...</p>
+                      <p className="text-sm text-foreground/70">جاري تحميل المحادثة...</p>
                     </div>
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="flex items-center justify-center h-48">
-                    <div className="text-center p-6 bg-card/80 backdrop-blur-sm rounded-xl border border-border/50">
-                      <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                    <div className="text-center p-6 bg-card rounded-xl border border-border/50">
+                      <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
                         <MessageCircle className="h-8 w-8 text-primary" />
                       </div>
-                      <h3 className="font-semibold mb-2">مرحباً بك!</h3>
-                      <p className="text-sm text-muted-foreground">ابدأ المحادثة مع فريق الدعم</p>
+                      <h3 className="font-semibold mb-2 text-foreground">مرحباً بك!</h3>
+                      <p className="text-sm text-foreground/70">ابدأ المحادثة مع فريق الدعم</p>
                     </div>
                   </div>
                 ) : (
@@ -459,17 +503,17 @@ export default function CustomerChat({
                         className={`flex ${isOwn ? 'justify-start' : 'justify-end'}`}
                       >
                         <div
-                          className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
+                          className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-md ${
                             isOwn
                               ? 'bg-primary text-primary-foreground rounded-tl-sm'
-                              : 'bg-card border border-border rounded-tr-sm'
+                              : 'bg-card border border-border text-foreground rounded-tr-sm'
                           }`}
                         >
                           {/* Product Card in Message */}
                           {productId && msg.image_url && (
                             <div 
                               className={`mb-2 rounded-xl overflow-hidden border cursor-pointer ${
-                                isOwn ? 'border-primary-foreground/20' : 'border-border'
+                                isOwn ? 'border-primary-foreground/30' : 'border-border'
                               }`}
                               onClick={() => window.open(`/product/${productId}`, '_blank')}
                             >
@@ -493,7 +537,7 @@ export default function CustomerChat({
                           
                           {/* Message Content */}
                           <p className={`text-sm break-words whitespace-pre-wrap ${
-                            isOwn ? '' : 'text-foreground'
+                            isOwn ? 'text-primary-foreground' : 'text-foreground'
                           }`}>
                             {msg.content}
                           </p>
@@ -503,7 +547,7 @@ export default function CustomerChat({
                             isOwn ? 'justify-start' : 'justify-end'
                           }`}>
                             <span className={`text-[10px] ${
-                              isOwn ? 'text-primary-foreground/60' : 'text-muted-foreground'
+                              isOwn ? 'text-primary-foreground/70' : 'text-foreground/60'
                             }`}>
                               {formatDistanceToNow(new Date(msg.created_at), {
                                 addSuffix: true,
@@ -511,7 +555,7 @@ export default function CustomerChat({
                               })}
                             </span>
                             {isOwn && (
-                              <span className={`${msg.is_read ? 'text-blue-400' : 'text-primary-foreground/60'}`}>
+                              <span className={`${msg.is_read ? 'text-blue-400' : 'text-primary-foreground/70'}`}>
                                 {msg.is_read ? (
                                   <CheckCheck className="h-3.5 w-3.5" />
                                 ) : (
@@ -532,14 +576,14 @@ export default function CustomerChat({
 
           {/* Product Search Panel */}
           {showProductSearch && (
-            <div className="border-t bg-card p-3 max-h-64 overflow-hidden">
+            <div className="border-t border-border bg-card p-3 max-h-64 overflow-hidden">
               <div className="relative mb-2">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/50" />
                 <Input
                   placeholder="ابحث عن منتج..."
                   value={productSearchQuery}
                   onChange={(e) => setProductSearchQuery(e.target.value)}
-                  className="pr-10"
+                  className="pr-10 bg-background border-border text-foreground placeholder:text-foreground/50"
                   autoFocus
                 />
               </div>
@@ -549,7 +593,7 @@ export default function CustomerChat({
                     <button
                       key={product.id}
                       onClick={() => sendProductMessage(product)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors text-right"
+                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-primary/10 transition-colors text-right"
                     >
                       {product.image_url ? (
                         <OptimizedImage
@@ -558,18 +602,18 @@ export default function CustomerChat({
                           className="w-10 h-10 rounded-lg object-cover"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                          <Package className="h-5 w-5 text-muted-foreground" />
+                        <div className="w-10 h-10 rounded-lg bg-muted/30 flex items-center justify-center">
+                          <Package className="h-5 w-5 text-foreground/50" />
                         </div>
                       )}
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{product.name_ar}</p>
+                        <p className="text-sm font-medium truncate text-foreground">{product.name_ar}</p>
                         <p className="text-xs text-primary font-bold">{formatPrice(product.price)} د.ع</p>
                       </div>
                     </button>
                   ))}
                   {filteredProducts.length === 0 && productSearchQuery && (
-                    <p className="text-sm text-muted-foreground text-center py-4">لا توجد منتجات مطابقة</p>
+                    <p className="text-sm text-foreground/60 text-center py-4">لا توجد منتجات مطابقة</p>
                   )}
                 </div>
               </ScrollArea>
@@ -577,7 +621,7 @@ export default function CustomerChat({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowProductSearch(false)}
-                className="w-full mt-2"
+                className="w-full mt-2 text-foreground hover:bg-muted/30"
               >
                 إغلاق
               </Button>
@@ -585,13 +629,13 @@ export default function CustomerChat({
           )}
 
           {/* Input Area */}
-          <div className="border-t bg-card/95 backdrop-blur-sm p-3 flex-shrink-0">
+          <div className="border-t border-border bg-card p-3 flex-shrink-0">
             {imagePreview && (
               <div className="mb-3 relative inline-block">
                 <img
                   src={imagePreview}
                   alt="معاينة"
-                  className="h-20 w-20 object-cover rounded-xl border-2 border-primary/30"
+                  className="h-20 w-20 object-cover rounded-xl border-2 border-primary/50"
                 />
                 <Button
                   variant="destructive"
@@ -624,18 +668,18 @@ export default function CustomerChat({
                   size="icon"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingImage || sendMessageMutation.isPending}
-                  className="h-10 w-10 rounded-full hover:bg-primary/10"
+                  className="h-10 w-10 rounded-full hover:bg-primary/20 text-foreground/70"
                 >
-                  <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                  <ImageIcon className="h-5 w-5" />
                 </Button>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => setShowProductSearch(!showProductSearch)}
                   disabled={uploadingImage || sendMessageMutation.isPending}
-                  className={`h-10 w-10 rounded-full hover:bg-primary/10 ${showProductSearch ? 'bg-primary/10 text-primary' : ''}`}
+                  className={`h-10 w-10 rounded-full hover:bg-primary/20 ${showProductSearch ? 'bg-primary/20 text-primary' : 'text-foreground/70'}`}
                 >
-                  <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                  <ShoppingBag className="h-5 w-5" />
                 </Button>
               </div>
               
@@ -646,7 +690,7 @@ export default function CustomerChat({
                 onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                 placeholder="اكتب رسالتك..."
                 disabled={uploadingImage || sendMessageMutation.isPending}
-                className="flex-1 rounded-full border-muted-foreground/20 bg-muted/50 focus:bg-background"
+                className="flex-1 rounded-full border-border bg-background text-foreground placeholder:text-foreground/50 focus:border-primary"
               />
               
               {/* Send Button */}
@@ -654,7 +698,7 @@ export default function CustomerChat({
                 onClick={handleSend}
                 disabled={(!message.trim() && !selectedImage) || uploadingImage || sendMessageMutation.isPending}
                 size="icon"
-                className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 shadow-lg"
+                className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
               >
                 {uploadingImage || sendMessageMutation.isPending ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
