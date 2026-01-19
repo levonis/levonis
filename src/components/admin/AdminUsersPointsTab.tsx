@@ -139,28 +139,53 @@ export default function AdminUsersPointsTab() {
       
       if (transactionError) throw transactionError;
 
-      // تحديث رصيد النقاط - استخدام upsert لضمان إنشاء الصف إذا لم يكن موجوداً
+      // إعادة حساب رصيد النقاط من المعاملات مباشرة لضمان الدقة
+      const { data: transactionsSum } = await supabase
+        .from('points_transactions')
+        .select('type, points')
+        .eq('user_id', userId);
+      
+      let calculatedBalance = 0;
+      if (transactionsSum) {
+        for (const tx of transactionsSum) {
+          if (tx.type === 'earn' || tx.type === 'earned') {
+            calculatedBalance += tx.points;
+          } else {
+            calculatedBalance -= tx.points;
+          }
+        }
+      }
+      
       const { data: currentPoints } = await supabase
         .from('user_points')
-        .select('total_points, available_points')
+        .select('id')
         .eq('user_id', userId)
         .maybeSingle();
       
-      const currentTotal = currentPoints?.total_points || 0;
-      const currentAvailable = currentPoints?.available_points || 0;
-      const newTotal = Math.max(0, currentTotal + pointsChange);
-      const newAvailable = Math.max(0, currentAvailable + pointsChange);
-      
-      const { error: updateError } = await supabase
-        .from('user_points')
-        .upsert({
-          user_id: userId,
-          total_points: newTotal,
-          available_points: newAvailable,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
-      
-      if (updateError) throw updateError;
+      if (currentPoints) {
+        // تحديث الصف الموجود
+        const { error: updateError } = await supabase
+          .from('user_points')
+          .update({
+            total_points: calculatedBalance,
+            available_points: calculatedBalance,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+        
+        if (updateError) throw updateError;
+      } else {
+        // إنشاء صف جديد
+        const { error: insertError } = await supabase
+          .from('user_points')
+          .insert({
+            user_id: userId,
+            total_points: calculatedBalance,
+            available_points: calculatedBalance,
+          });
+        
+        if (insertError) throw insertError;
+      }
 
       // إرسال إشعار للمستخدم
       if (notify) {
