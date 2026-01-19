@@ -40,17 +40,28 @@ export interface CartItem {
   };
 }
 
+export interface PendingCartRequest {
+  id: string;
+  cart_code: string;
+  adjusted_total: number | null;
+  admin_notes: string | null;
+  status: string;
+}
+
 interface CartContextType {
   items: CartItem[];
   loading: boolean;
   itemCount: number;
   total: number;
+  pendingCartRequest: PendingCartRequest | null;
   addToCart: (productId: string, optionId?: string, color?: string, quantity?: number, shippingInfo?: { index: number; name_ar: string }) => Promise<void>;
   addCustomRequestToCart: (customRequestId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
   refreshCart: () => Promise<void>;
+  deleteCartRequest: () => Promise<void>;
+  checkAndWarnCartRequest: () => Promise<boolean>;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -58,7 +69,54 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingCartRequest, setPendingCartRequest] = useState<PendingCartRequest | null>(null);
   const { user } = useAuth();
+
+  // Fetch pending cart request
+  const fetchPendingCartRequest = async () => {
+    if (!user) {
+      setPendingCartRequest(null);
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('cart_requests')
+        .select('id, cart_code, adjusted_total, admin_notes, status')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      setPendingCartRequest(data as PendingCartRequest | null);
+    } catch (error) {
+      console.error('Error fetching cart request:', error);
+    }
+  };
+
+  // Delete cart request
+  const deleteCartRequest = async () => {
+    if (!user || !pendingCartRequest) return;
+
+    try {
+      await supabase
+        .from('cart_requests')
+        .delete()
+        .eq('id', pendingCartRequest.id);
+
+      setPendingCartRequest(null);
+    } catch (error) {
+      console.error('Error deleting cart request:', error);
+    }
+  };
+
+  // Check and warn about cart request deletion
+  const checkAndWarnCartRequest = async (): Promise<boolean> => {
+    await fetchPendingCartRequest();
+    return !!pendingCartRequest;
+  };
 
   const fetchCart = async () => {
     if (!user) {
@@ -126,6 +184,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     fetchCart();
+    fetchPendingCartRequest();
   }, [user]);
 
   const addToCart = async (productId: string, optionId?: string, color?: string, quantity: number = 1, shippingInfo?: { index: number; name_ar: string }) => {
@@ -372,12 +431,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         loading,
         itemCount,
         total,
+        pendingCartRequest,
         addToCart,
         addCustomRequestToCart,
         updateQuantity,
         removeFromCart,
         clearCart,
         refreshCart: fetchCart,
+        deleteCartRequest,
+        checkAndWarnCartRequest,
       }}
     >
       {children}

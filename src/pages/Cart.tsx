@@ -20,7 +20,7 @@ import WalletDialog from '@/components/WalletDialog';
 import CartRequestDialog from '@/components/CartRequestDialog';
 
 const Cart = () => {
-  const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
+  const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -33,6 +33,8 @@ const Cart = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showWalletDialog, setShowWalletDialog] = useState(false);
   const [showCartRequestDialog, setShowCartRequestDialog] = useState(false);
+  const [showCartChangeWarning, setShowCartChangeWarning] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
 
   // التحقق من وجود منتجات طلب مسبق
   const hasPreOrderItems = items.some((item: any) => 
@@ -271,6 +273,38 @@ const Cart = () => {
       title: "تم إزالة الكوبون",
       description: "تم إزالة الكوبون من طلبك",
     });
+  };
+
+  // Helper to wrap cart-changing actions with cart request warning
+  const wrapWithCartRequestCheck = (action: () => Promise<void>) => {
+    if (pendingCartRequest) {
+      setPendingAction(() => action);
+      setShowCartChangeWarning(true);
+    } else {
+      action();
+    }
+  };
+
+  const handleConfirmCartChange = async () => {
+    if (pendingAction) {
+      await deleteCartRequest();
+      await pendingAction();
+      setPendingAction(null);
+    }
+    setShowCartChangeWarning(false);
+  };
+
+  // Wrapped cart actions
+  const handleUpdateQuantity = (itemId: string, quantity: number) => {
+    wrapWithCartRequestCheck(() => updateQuantity(itemId, quantity));
+  };
+
+  const handleRemoveFromCart = (itemId: string) => {
+    wrapWithCartRequestCheck(() => removeFromCart(itemId));
+  };
+
+  const handleClearCart = () => {
+    wrapWithCartRequestCheck(() => clearCart());
   };
 
   // حساب المبلغ المطلوب دفعه الآن
@@ -914,7 +948,7 @@ const Cart = () => {
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      updateQuantity(item.id, item.quantity - 1);
+                                      handleUpdateQuantity(item.id, item.quantity - 1);
                                     }}
                                     disabled={item.quantity <= 1}
                                     aria-label="تقليل الكمية"
@@ -934,7 +968,7 @@ const Cart = () => {
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      updateQuantity(item.id, item.quantity + 1);
+                                      handleUpdateQuantity(item.id, item.quantity + 1);
                                     }}
                                     aria-label="زيادة الكمية"
                                   >
@@ -950,7 +984,7 @@ const Cart = () => {
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    removeFromCart(item.id);
+                                    handleRemoveFromCart(item.id);
                                   }}
                                   aria-label="حذف المنتج"
                                 >
@@ -978,8 +1012,8 @@ const Cart = () => {
                       key={group.key}
                       productId={group.items[0].product_id || ''}
                       items={group.items}
-                      updateQuantity={updateQuantity}
-                      removeFromCart={removeFromCart}
+                      updateQuantity={handleUpdateQuantity}
+                      removeFromCart={handleRemoveFromCart}
                       formatPrice={formatPrice}
                     />
                   );
@@ -1009,7 +1043,7 @@ const Cart = () => {
                 <Button
                   variant="outline"
                   className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive"
-                  onClick={clearCart}
+                  onClick={handleClearCart}
                 >
                   <Trash2 className="ml-2 h-4 w-4" />
                   تفريغ السلة
@@ -1268,6 +1302,39 @@ const Cart = () => {
               تأكيد الطلب
             </AlertDialogAction>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Cart Change Warning Dialog */}
+      <AlertDialog open={showCartChangeWarning} onOpenChange={setShowCartChangeWarning}>
+        <AlertDialogContent dir="rtl" className="bg-card border-destructive/30">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              تحذير: سيتم حذف رمز السلة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-foreground/70 space-y-2">
+              <p>لديك رمز سلة موجود: <span className="font-bold text-primary">{pendingCartRequest?.cart_code}</span></p>
+              {pendingCartRequest?.adjusted_total && (
+                <p className="text-orange-500">السعر المعدل من الإدارة ({formatPrice(pendingCartRequest.adjusted_total)} د.ع) لن يكون متوفراً بعد الآن.</p>
+              )}
+              <p>هل أنت متأكد من تغيير السلة؟</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction 
+              onClick={handleConfirmCartChange}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              نعم، تغيير السلة
+            </AlertDialogAction>
+            <AlertDialogCancel 
+              onClick={() => setPendingAction(null)}
+              className="bg-muted text-foreground hover:bg-muted/80"
+            >
+              إلغاء
+            </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

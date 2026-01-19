@@ -6,17 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Badge } from '@/components/ui/badge';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { 
   MessageCircle, 
   Send, 
@@ -74,7 +63,7 @@ export default function CustomerChat({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
-  const [showCartConfirm, setShowCartConfirm] = useState(false);
+  const [showCartConfirmInChat, setShowCartConfirmInChat] = useState(false);
   const [cartMessageSent, setCartMessageSent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -263,8 +252,8 @@ export default function CustomerChat({
       );
       
       if (!hasCartMessage) {
-        // Show confirmation dialog
-        setShowCartConfirm(true);
+        // Show in-chat confirmation message
+        setShowCartConfirmInChat(true);
       }
     }
   }, [cartRequestCode, conversation, isOpen, messages, user?.id, cartMessageSent]);
@@ -345,7 +334,7 @@ export default function CustomerChat({
     const autoMessage = `🛒 مرحباً، أريد الاستفسار عن سلة التسوق\n\n📋 رمز السلة: ${cartRequestCode}\n\nأرجو تعديل السعر أو الإجابة على استفساري`;
     await sendMessageMutation.mutateAsync({ content: autoMessage });
     setCartMessageSent(true);
-    setShowCartConfirm(false);
+    setShowCartConfirmInChat(false);
     toast.success('تم إرسال طلب السلة للإدارة');
   };
 
@@ -399,32 +388,6 @@ export default function CustomerChat({
 
   return (
     <>
-      {/* Cart Confirmation Dialog */}
-      <AlertDialog open={showCartConfirm} onOpenChange={setShowCartConfirm}>
-        <AlertDialogContent dir="rtl" className="bg-card border-primary/30">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2 text-foreground">
-              <ShoppingCart className="h-5 w-5 text-primary" />
-              إرسال طلب السلة
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-muted-foreground">
-              هل تريد إرسال رمز السلة <span className="font-bold text-primary">{cartRequestCode}</span> إلى الإدارة للتعديل أو الاستفسار؟
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row-reverse gap-2">
-            <AlertDialogAction 
-              onClick={handleConfirmCartMessage}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              نعم، إرسال
-            </AlertDialogAction>
-            <AlertDialogCancel className="bg-muted text-foreground hover:bg-muted/80">
-              لا، إلغاء
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       {/* Chat Button */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
@@ -475,6 +438,43 @@ export default function CustomerChat({
           >
             <ScrollArea className="h-full">
               <div className="p-4 space-y-3">
+                {/* In-Chat Cart Confirmation Message */}
+                {showCartConfirmInChat && cartRequestCode && (
+                  <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl p-4 border-2 border-primary/40 shadow-lg animate-in slide-in-from-top-2">
+                    <div className="flex items-center gap-2 mb-3">
+                      <ShoppingCart className="h-5 w-5 text-primary" />
+                      <span className="font-bold text-foreground">إرسال طلب السلة</span>
+                    </div>
+                    <p className="text-sm text-foreground/80 mb-3">
+                      هل تريد إرسال رمز السلة <span className="font-bold text-primary">{cartRequestCode}</span> إلى الإدارة للتعديل أو الاستفسار؟
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleConfirmCartMessage}
+                        className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                        disabled={sendMessageMutation.isPending}
+                      >
+                        {sendMessageMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                        ) : (
+                          <Check className="h-4 w-4 ml-1" />
+                        )}
+                        نعم، إرسال
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setShowCartConfirmInChat(false)}
+                        className="flex-1 border-border text-foreground hover:bg-muted"
+                      >
+                        <X className="h-4 w-4 ml-1" />
+                        إلغاء
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
                 {conversationLoading || messagesLoading ? (
                   <div className="flex items-center justify-center h-48">
                     <div className="text-center">
@@ -482,7 +482,7 @@ export default function CustomerChat({
                       <p className="text-sm text-foreground/70">جاري تحميل المحادثة...</p>
                     </div>
                   </div>
-                ) : messages.length === 0 ? (
+                ) : messages.length === 0 && !showCartConfirmInChat ? (
                   <div className="flex items-center justify-center h-48">
                     <div className="text-center p-6 bg-card rounded-xl border border-border/50">
                       <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
