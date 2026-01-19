@@ -1029,15 +1029,13 @@ Return JSON ONLY:
     }
 
     // Use direct images if none from AI
+    // Note: For direct images, we DON'T exclude variant images because they might be the only product images available
     if (productInfo.images.length === 0 && directImages.length > 0) {
       console.log('Using direct extraction images...', directImages.length, 'images');
       console.log('Direct images:', directImages);
-      console.log('Variant image URLs to exclude:', Array.from(variantImageUrls));
       const seenBases = new Set<string>();
       for (const img of directImages) {
         const base = getImageBaseUrl(img);
-        console.log('Checking image:', img, 'base:', base, 'in variants:', variantImageUrls.has(base));
-        if (variantImageUrls.has(base)) continue;
         if (seenBases.has(base)) continue;
         seenBases.add(base);
         productInfo.images.push(img);
@@ -1045,19 +1043,15 @@ Return JSON ONLY:
       console.log('Images after direct extraction:', productInfo.images.length);
     }
 
-    // Final cleanup
+    // Final cleanup - only remove duplicates and SVGs, don't exclude variant images
     console.log('Before final cleanup:', productInfo.images.length, 'images');
     const finalImages: string[] = [];
     const finalBases = new Set<string>();
     for (const img of productInfo.images) {
       const base = getImageBaseUrl(img);
-      const isVariant = variantImageUrls.has(base);
       const isSvg = /\.svg/i.test(img);
       const isDupe = finalBases.has(base);
-      console.log('Final cleanup check:', img.substring(0, 50), 'variant:', isVariant, 'svg:', isSvg, 'dupe:', isDupe);
-      if (isVariant) continue;
-      if (isDupe) continue;
-      if (isSvg) continue;
+      if (isDupe || isSvg) continue;
       finalBases.add(base);
       finalImages.push(img);
     }
