@@ -293,9 +293,12 @@ const Cart = () => {
   const handleConfirmCartChange = async () => {
     setShowCartChangeWarning(false);
     if (pendingAction) {
-      await deleteCartRequest();
+      const deleted = await deleteCartRequest();
+      console.log('Cart request deleted:', deleted);
       await pendingAction();
       setPendingAction(null);
+      // Refresh cart to update pendingCartRequest state
+      await refreshCart();
     }
   };
 
