@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { MainTabId } from "./RewardsMainTabs";
 
-export type PointsSubTab = 'summary' | 'daily-tasks' | 'redeem';
+export type PointsSubTab = 'summary' | 'daily-tasks' | 'redeem' | 'store';
 export type CompetitionsSubTab = 'competitions' | 'get-tickets' | 'storage';
 export type CardsSubTab = 'benefits' | 'upgrade' | 'exclusive-offers';
 export type InsuranceSubTab = 'status' | 'plans' | 'maintenance';
@@ -17,7 +17,8 @@ const subTabsConfig: Record<MainTabId, SubTabConfig[]> = {
   points: [
     { id: 'summary', label: 'ملخص' },
     { id: 'daily-tasks', label: 'المهام' },
-    { id: 'redeem', label: 'متجر النقاط' },
+    { id: 'redeem', label: 'استبدال' },
+    { id: 'store', label: 'متجر النقاط' },
   ],
   competitions: [
     { id: 'competitions', label: 'المسابقات' },
