@@ -906,6 +906,8 @@ ${pageContent.substring(0, 100000)}
     console.log('Colors:', productInfo.colors.length);
     console.log('Options:', productInfo.options.length);
     console.log('Features:', productInfo.features.length);
+    console.log('Dimensions:', JSON.stringify(productInfo.dimensions));
+    console.log('Weight (kg):', productInfo.weight_kg);
 
     return new Response(
       JSON.stringify({
