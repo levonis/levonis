@@ -1454,6 +1454,8 @@ export type Database = {
           discount_percentage: number | null
           display_order: number
           duration_days: number | null
+          early_access: boolean | null
+          exclusive_products: boolean | null
           free_shipping: boolean | null
           free_shipping_min_order: number | null
           icon: string | null
@@ -1461,10 +1463,15 @@ export type Database = {
           is_purchasable: boolean | null
           level_key: string
           min_points: number
+          monthly_free_shipping: number | null
           name_ar: string
           name_en: string
+          priority_shipping: boolean | null
+          profile_effects: Json | null
           purchase_price_points: number | null
+          special_name_style: Json | null
           updated_at: string
+          vip_support: boolean | null
         }
         Insert: {
           benefits?: Json
@@ -1475,6 +1482,8 @@ export type Database = {
           discount_percentage?: number | null
           display_order: number
           duration_days?: number | null
+          early_access?: boolean | null
+          exclusive_products?: boolean | null
           free_shipping?: boolean | null
           free_shipping_min_order?: number | null
           icon?: string | null
@@ -1482,10 +1491,15 @@ export type Database = {
           is_purchasable?: boolean | null
           level_key: string
           min_points?: number
+          monthly_free_shipping?: number | null
           name_ar: string
           name_en: string
+          priority_shipping?: boolean | null
+          profile_effects?: Json | null
           purchase_price_points?: number | null
+          special_name_style?: Json | null
           updated_at?: string
+          vip_support?: boolean | null
         }
         Update: {
           benefits?: Json
@@ -1496,6 +1510,8 @@ export type Database = {
           discount_percentage?: number | null
           display_order?: number
           duration_days?: number | null
+          early_access?: boolean | null
+          exclusive_products?: boolean | null
           free_shipping?: boolean | null
           free_shipping_min_order?: number | null
           icon?: string | null
@@ -1503,10 +1519,15 @@ export type Database = {
           is_purchasable?: boolean | null
           level_key?: string
           min_points?: number
+          monthly_free_shipping?: number | null
           name_ar?: string
           name_en?: string
+          priority_shipping?: boolean | null
+          profile_effects?: Json | null
           purchase_price_points?: number | null
+          special_name_style?: Json | null
           updated_at?: string
+          vip_support?: boolean | null
         }
         Relationships: []
       }
