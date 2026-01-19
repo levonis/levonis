@@ -60,7 +60,7 @@ interface CartContextType {
   removeFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
   refreshCart: () => Promise<void>;
-  deleteCartRequest: () => Promise<void>;
+  deleteCartRequest: () => Promise<boolean>;
   checkAndWarnCartRequest: () => Promise<boolean>;
 }
 
@@ -97,12 +97,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   // Delete cart request
-  const deleteCartRequest = async () => {
-    if (!user) return;
+  const deleteCartRequest = async (): Promise<boolean> => {
+    if (!user) return false;
 
     try {
       // First fetch the latest pending request to ensure we have the correct ID
-      const { data: latestRequest } = await supabase
+      const { data: latestRequest, error: fetchError } = await supabase
         .from('cart_requests')
         .select('id')
         .eq('user_id', user.id)
@@ -111,20 +111,34 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .limit(1)
         .maybeSingle();
 
+      if (fetchError) {
+        console.error('Error fetching cart request for deletion:', fetchError);
+        throw fetchError;
+      }
+
       if (latestRequest) {
-        const { error } = await supabase
+        console.log('Deleting cart request:', latestRequest.id);
+        
+        const { error: deleteError } = await supabase
           .from('cart_requests')
           .delete()
-          .eq('id', latestRequest.id);
+          .eq('id', latestRequest.id)
+          .eq('user_id', user.id); // Extra safety check
 
-        if (error) throw error;
+        if (deleteError) {
+          console.error('Delete error:', deleteError);
+          throw deleteError;
+        }
         
         setPendingCartRequest(null);
         toast.success('تم حذف رمز السلة والسعر المعدل');
+        return true;
       }
+      return false;
     } catch (error) {
       console.error('Error deleting cart request:', error);
       toast.error('حدث خطأ في حذف رمز السلة');
+      return false;
     }
   };
 
