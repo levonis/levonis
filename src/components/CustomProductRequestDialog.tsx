@@ -46,6 +46,8 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
   const [showShippingCalculator, setShowShippingCalculator] = useState(false);
   const [isCalculatingAI, setIsCalculatingAI] = useState(false);
   const [aiSpecsSource, setAiSpecsSource] = useState<string | null>(null);
+  const [productPriceIqd, setProductPriceIqd] = useState<number | null>(null);
+  const [productPriceUsd, setProductPriceUsd] = useState<number | null>(null);
   
   const { data: shippingSettings } = useShippingSettings();
 
@@ -108,6 +110,14 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
         
         if (specs.weight) {
           setWeight(specs.weight);
+        }
+        
+        // Set product price
+        if (specs.price_iqd) {
+          setProductPriceIqd(specs.price_iqd);
+        }
+        if (specs.price_usd) {
+          setProductPriceUsd(specs.price_usd);
         }
         
         setAiSpecsSource(specs.estimated 
@@ -245,6 +255,8 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
       setWeight(0);
       setShowShippingCalculator(false);
       setAiSpecsSource(null);
+      setProductPriceIqd(null);
+      setProductPriceUsd(null);
       setOpen(false);
     } catch (error) {
       console.error('Error submitting custom product request:', error);
@@ -452,10 +464,12 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
                   </div>
                 </div>
                 
-                {/* Weight (for USA air shipping) */}
-                {sourceCountry === 'usa' && shippingType === 'air' && (
+                {/* Weight - always show for air shipping */}
+                {shippingType === 'air' && (
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">وزن المنتج (كغ)</Label>
+                    <Label className="text-xs text-muted-foreground">
+                      وزن المنتج (كغ) {sourceCountry === 'china' && '- يستخدم الأكبر بين الوزن الحجمي والفعلي'}
+                    </Label>
                     <Input
                       type="number"
                       placeholder="الوزن بالكيلوغرام"
@@ -464,6 +478,21 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
                       min={0}
                       step={0.1}
                     />
+                  </div>
+                )}
+                
+                {/* Product Price from AI */}
+                {productPriceIqd && (
+                  <div className="mt-3 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                    <h5 className="font-medium text-sm text-green-800 dark:text-green-200 mb-2">سعر المنتج (تقديري)</h5>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-green-700 dark:text-green-300">
+                        ${productPriceUsd?.toFixed(2)} دولار
+                      </span>
+                      <span className="font-bold text-green-800 dark:text-green-200">
+                        {formatPrice(productPriceIqd)}
+                      </span>
+                    </div>
                   </div>
                 )}
                 

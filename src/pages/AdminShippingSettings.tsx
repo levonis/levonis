@@ -32,9 +32,11 @@ export default function AdminShippingSettings() {
     air_usa_weight_buffer_percent: 20,
     air_china_volumetric_price: 15000,
     air_china_volumetric_divider: 5000,
+    air_china_weight_safety_margin: 20,
     commission_fee: 1000,
     local_delivery_baghdad: 6000,
     local_delivery_provinces: 5000,
+    usd_to_iqd_rate: 1410,
   });
 
   useEffect(() => {
@@ -220,14 +222,14 @@ export default function AdminShippingSettings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-orange-500">
                 <Plane className="h-5 w-5" />
-                الشحن الجوي من الصين (الوزن الحجمي)
+                الشحن الجوي من الصين
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
-                  سعر الوزن الحجمي
+                  سعر الكيلو
                 </Label>
                 <Input
                   type="number"
@@ -235,7 +237,7 @@ export default function AdminShippingSettings() {
                   onChange={(e) => updateSetting("air_china_volumetric_price", Number(e.target.value))}
                 />
                 <p className="text-xs text-muted-foreground">
-                  السعر الحالي: {settings.air_china_volumetric_price.toLocaleString()} دينار عراقي/كغ حجمي
+                  السعر: {settings.air_china_volumetric_price.toLocaleString()} دينار/كغ
                 </p>
               </div>
               <div className="space-y-2">
@@ -249,7 +251,56 @@ export default function AdminShippingSettings() {
                   onChange={(e) => updateSetting("air_china_volumetric_divider", Number(e.target.value))}
                 />
                 <p className="text-xs text-muted-foreground">
-                  الوزن الحجمي = (الطول × العرض × الارتفاع) ÷ {settings.air_china_volumetric_divider}
+                  الوزن الحجمي = (ط × ع × ا) ÷ {settings.air_china_volumetric_divider}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Percent className="h-4 w-4" />
+                  نسبة الاحتياط (%)
+                </Label>
+                <Input
+                  type="number"
+                  value={settings.air_china_weight_safety_margin}
+                  onChange={(e) => updateSetting("air_china_weight_safety_margin", Number(e.target.value))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  يضاف {settings.air_china_weight_safety_margin}% للوزن المستخدم
+                </p>
+              </div>
+            </CardContent>
+            <div className="px-6 pb-4">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800 text-sm">
+                <p className="text-amber-800 dark:text-amber-200">
+                  <strong>ملاحظة:</strong> يتم استخدام الوزن الأكبر (الحجمي أو الفعلي) ثم يضاف إليه نسبة الاحتياط
+                </p>
+              </div>
+            </div>
+          </Card>
+        </AdminSection>
+
+        {/* Currency Settings */}
+        <AdminSection>
+          <Card className="border-green-500/20 bg-gradient-to-br from-green-500/5 to-emerald-500/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-green-500">
+                <DollarSign className="h-5 w-5" />
+                إعدادات العملة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 max-w-md">
+                <Label className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  سعر الدولار بالدينار العراقي
+                </Label>
+                <Input
+                  type="number"
+                  value={settings.usd_to_iqd_rate}
+                  onChange={(e) => updateSetting("usd_to_iqd_rate", Number(e.target.value))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  1 دولار = {settings.usd_to_iqd_rate.toLocaleString()} دينار عراقي (يستخدم في حساب سعر المنتج بالذكاء الاصطناعي)
                 </p>
               </div>
             </CardContent>
@@ -267,14 +318,14 @@ export default function AdminShippingSettings() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <Label>عمولة الخدمة</Label>
+                <Label>عمولتنا (تظهر منفصلة للزبون)</Label>
                 <Input
                   type="number"
                   value={settings.commission_fee}
                   onChange={(e) => updateSetting("commission_fee", Number(e.target.value))}
                 />
                 <p className="text-xs text-muted-foreground">
-                  تضاف للزبون كعمولة ثابتة
+                  تظهر منفصلة عن تكلفة الشحن باسم "عمولتنا"
                 </p>
               </div>
               <div className="space-y-2">
@@ -340,7 +391,22 @@ export default function AdminShippingSettings() {
                 <code className="text-xs block bg-muted p-2 rounded">
                   الوزن الحجمي = ((الطول + {settings.sea_padding_cm}) × (العرض + {settings.sea_padding_cm}) × (الارتفاع + {settings.sea_padding_cm})) ÷ {settings.air_china_volumetric_divider}
                   <br />
-                  تكلفة الشحن = الوزن الحجمي × {settings.air_china_volumetric_price.toLocaleString()} + {settings.commission_fee.toLocaleString()} عمولة
+                  الوزن المستخدم = الأكبر من (الوزن الحجمي، الوزن الفعلي)
+                  <br />
+                  الوزن مع الاحتياط = الوزن المستخدم × (1 + {settings.air_china_weight_safety_margin}%)
+                  <br />
+                  تكلفة الشحن = الوزن مع الاحتياط × {settings.air_china_volumetric_price.toLocaleString()}
+                  <br />
+                  <span className="text-primary">+ عمولتنا: {settings.commission_fee.toLocaleString()} دينار (منفصلة)</span>
+                </code>
+              </div>
+              <div className="p-3 rounded-lg bg-background border">
+                <h4 className="font-medium mb-2 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4 text-green-500" />
+                  تحويل سعر المنتج (الذكاء الاصطناعي)
+                </h4>
+                <code className="text-xs block bg-muted p-2 rounded">
+                  سعر المنتج بالدينار = سعر المنتج بالدولار × {settings.usd_to_iqd_rate.toLocaleString()}
                 </code>
               </div>
             </CardContent>

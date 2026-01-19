@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,14 +29,29 @@ serve(async (req) => {
       );
     }
 
-    // Build search query
-    const searchQuery = optionName 
-      ? `${productName} ${optionName} dimensions weight specifications`
-      : `${productName} dimensions weight specifications`;
+    // Fetch USD to IQD rate from settings
+    let usdToIqdRate = 1410;
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { data: settingData } = await supabase
+        .from('shipping_settings')
+        .select('setting_value')
+        .eq('setting_key', 'usd_to_iqd_rate')
+        .single();
+      
+      if (settingData?.setting_value) {
+        usdToIqdRate = Number(settingData.setting_value);
+      }
+    } catch (e) {
+      console.log('Could not fetch USD rate, using default:', e);
+    }
 
-    console.log('Searching for product specs:', searchQuery);
+    console.log('Searching for product specs:', productName, 'USD rate:', usdToIqdRate);
 
-    const prompt = `ابحث عن مواصفات المنتج التالي واستخرج الأبعاد والوزن بدقة.
+    const prompt = `ابحث عن مواصفات المنتج التالي واستخرج الأبعاد والوزن والسعر بدقة.
 
 اسم المنتج: ${productName}
 ${optionName ? `الخيار المحدد: ${optionName}` : ''}
@@ -44,7 +60,8 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
 أحتاج منك:
 1. البحث عن أبعاد المنتج الدقيقة (الطول × العرض × الارتفاع) بالسنتيمتر
 2. البحث عن وزن المنتج بالكيلوغرام
-3. إذا لم تجد أبعاد دقيقة، قدّر الأبعاد بناءً على نوع المنتج
+3. البحث عن سعر المنتج بالدولار الأمريكي (USD)
+4. إذا لم تجد معلومات دقيقة، قدّر بناءً على نوع المنتج
 
 أرجع JSON فقط بالشكل التالي:
 {
@@ -54,6 +71,7 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
     "height": 10
   },
   "weight": 1.5,
+  "price_usd": 150,
   "estimated": true,
   "source": "تقدير بناءً على منتجات مشابهة",
   "notes": "ملاحظات إضافية"
@@ -62,6 +80,7 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
 ملاحظات:
 - الأبعاد بالسنتيمتر (cm)
 - الوزن بالكيلوغرام (kg)
+- السعر بالدولار الأمريكي (USD)
 - estimated = true إذا كانت قيم تقديرية، false إذا كانت دقيقة
 - أضف ملاحظات مفيدة عن التغليف المتوقع
 
@@ -78,7 +97,7 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
         messages: [
           { 
             role: 'system', 
-            content: 'أنت خبير في مواصفات المنتجات والشحن الدولي. ابحث عن أبعاد ووزن المنتجات بدقة عالية. إذا لم تجد معلومات دقيقة، قدم تقديراً معقولاً بناءً على نوع المنتج. أرجع JSON صحيح فقط.' 
+            content: 'أنت خبير في مواصفات المنتجات والشحن الدولي. ابحث عن أبعاد ووزن وسعر المنتجات بدقة عالية. إذا لم تجد معلومات دقيقة، قدم تقديراً معقولاً بناءً على نوع المنتج. أرجع JSON صحيح فقط.' 
           },
           { role: 'user', content: prompt }
         ],
@@ -114,6 +133,12 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
     }
 
     const specs = JSON.parse(jsonMatch[0]);
+    
+    // Calculate price in IQD
+    let priceIqd: number | null = null;
+    if (specs.price_usd && specs.price_usd > 0) {
+      priceIqd = Math.round(specs.price_usd * usdToIqdRate);
+    }
 
     return new Response(
       JSON.stringify({ 
@@ -121,6 +146,9 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
         data: {
           dimensions: specs.dimensions,
           weight: specs.weight,
+          price_usd: specs.price_usd,
+          price_iqd: priceIqd,
+          usd_to_iqd_rate: usdToIqdRate,
           estimated: specs.estimated ?? true,
           source: specs.source,
           notes: specs.notes
