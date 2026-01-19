@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Package, Loader2, X, Ship, Plane, Calculator, Globe } from 'lucide-react';
+import { Package, Loader2, X, Ship, Plane, Calculator, Globe, Sparkles } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost, type SourceCountry, type ShippingType, type ProductDimensions } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
 
@@ -44,6 +44,8 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
   const [dimensions, setDimensions] = useState<ProductDimensions>({ length: 0, width: 0, height: 0 });
   const [weight, setWeight] = useState<number>(0);
   const [showShippingCalculator, setShowShippingCalculator] = useState(false);
+  const [isCalculatingAI, setIsCalculatingAI] = useState(false);
+  const [aiSpecsSource, setAiSpecsSource] = useState<string | null>(null);
   
   const { data: shippingSettings } = useShippingSettings();
 
@@ -67,6 +69,67 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
   const shippingCalculation = shippingSettings && (dimensions.length > 0 || weight > 0)
     ? calculateShippingCost(sourceCountry, shippingType, dimensions.length > 0 ? dimensions : null, weight > 0 ? weight : null, shippingSettings)
     : null;
+
+  // AI-powered shipping calculation
+  const handleAICalculate = async () => {
+    const productName = form.getValues('product_name');
+    const productLink = form.getValues('product_link');
+    
+    if (!productName && !productLink) {
+      toast.error('يرجى إدخال اسم المنتج أو الرابط أولاً');
+      return;
+    }
+    
+    setIsCalculatingAI(true);
+    setAiSpecsSource(null);
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('calculate-shipping-ai', {
+        body: { 
+          productName, 
+          productUrl: productLink,
+          sourceCountry,
+          shippingType 
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data?.success && data?.data) {
+        const specs = data.data;
+        
+        if (specs.dimensions) {
+          setDimensions({
+            length: specs.dimensions.length || 0,
+            width: specs.dimensions.width || 0,
+            height: specs.dimensions.height || 0
+          });
+        }
+        
+        if (specs.weight) {
+          setWeight(specs.weight);
+        }
+        
+        setAiSpecsSource(specs.estimated 
+          ? `تقدير: ${specs.source || 'بناءً على منتجات مشابهة'}`
+          : `مواصفات دقيقة${specs.source ? ': ' + specs.source : ''}`
+        );
+        
+        if (specs.notes) {
+          toast.info(specs.notes);
+        }
+        
+        toast.success('تم حساب المواصفات بنجاح');
+      } else {
+        toast.error(data?.error || 'لم يتم العثور على مواصفات');
+      }
+    } catch (error) {
+      console.error('AI calculation error:', error);
+      toast.error('حدث خطأ في حساب المواصفات');
+    } finally {
+      setIsCalculatingAI(false);
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -181,6 +244,7 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
       setDimensions({ length: 0, width: 0, height: 0 });
       setWeight(0);
       setShowShippingCalculator(false);
+      setAiSpecsSource(null);
       setOpen(false);
     } catch (error) {
       console.error('Error submitting custom product request:', error);
@@ -319,14 +383,41 @@ const CustomProductRequestDialog = ({ children }: CustomProductRequestDialogProp
             {/* Shipping Calculator */}
             {showShippingCalculator && (
               <div className="space-y-4 p-4 bg-accent/10 rounded-lg border border-accent/30">
-                <h4 className="font-semibold text-sm flex items-center gap-2">
-                  <Calculator className="h-4 w-4" />
-                  حاسبة تكلفة الشحن
-                </h4>
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    <Calculator className="h-4 w-4" />
+                    حاسبة تكلفة الشحن
+                  </h4>
+                  
+                  {/* AI Calculate Button */}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleAICalculate}
+                    disabled={isCalculatingAI}
+                    className="gap-2"
+                  >
+                    {isCalculatingAI ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    {isCalculatingAI ? 'جاري الحساب...' : 'حساب تلقائي بالذكاء الاصطناعي'}
+                  </Button>
+                </div>
+                
+                {/* AI Source Info */}
+                {aiSpecsSource && (
+                  <div className="text-xs text-muted-foreground bg-primary/10 p-2 rounded flex items-center gap-2">
+                    <Sparkles className="h-3 w-3 text-primary" />
+                    {aiSpecsSource}
+                  </div>
+                )}
                 
                 {/* Dimensions */}
                 <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">أبعاد المنتج (سم) - اختياري</Label>
+                  <Label className="text-xs text-muted-foreground">أبعاد المنتج (سم) - يمكن ملؤها يدوياً أو بالذكاء الاصطناعي</Label>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
                       <Input
