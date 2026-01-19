@@ -44,7 +44,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);
 
-  // Fetch user's printers with subscriptions
+  // Fetch user's printers with subscriptions (joined with store_printers for name)
   const { data: printers, isLoading: loadingPrinters } = useQuery({
     queryKey: ['my-printers-with-subs', user?.id],
     queryFn: async () => {
@@ -53,6 +53,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
         .from('user_printers')
         .select(`
           *,
+          store_printers:store_printer_id(model_name_ar, serial_number, image_url),
           printer_subscriptions(
             id, status, monthly_price, start_date, end_date,
             protection_plans(id, name_ar, plan_type, monthly_price, features, badge_text)
@@ -142,8 +143,8 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     return Math.min(currentPlanPrice, newPlanPrice);
   };
 
-  // Filter out printers without valid names
-  const validPrinters = printers?.filter((p: any) => p.printer_name && p.printer_name.trim() !== '') || [];
+  // Filter out printers without valid names - use store_printers join
+  const validPrinters = printers?.filter((p: any) => p.store_printers?.model_name_ar && p.store_printers.model_name_ar.trim() !== '') || [];
 
   // Status sub-tab - Show printers with their status
   if (activeSubTab === 'status') {
@@ -208,9 +209,9 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                           )}
                         </div>
                         <div>
-                          <p className="font-medium">{printer.printer_name}</p>
+                          <p className="font-medium">{printer.store_printers?.model_name_ar || 'طابعة غير معروفة'}</p>
                           <p className="text-xs text-muted-foreground">
-                            {printer.serial_number || 'بدون رقم تسلسلي'}
+                            {printer.store_printers?.serial_number || 'بدون رقم تسلسلي'}
                           </p>
                         </div>
                       </div>
@@ -483,7 +484,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
               {selectedPlan && selectedPrinter && (
                 <div className="space-y-3 mt-3">
                   <p>
-                    هل تريد ترقية اشتراك <strong>{selectedPrinter.printer_name}</strong> إلى باقة <strong>{selectedPlan.name_ar}</strong>؟
+                    هل تريد ترقية اشتراك <strong>{selectedPrinter.store_printers?.model_name_ar || 'الطابعة'}</strong> إلى باقة <strong>{selectedPlan.name_ar}</strong>؟
                   </p>
                   <div className="p-3 rounded-lg bg-muted">
                     <div className="flex items-center justify-between text-sm">
@@ -539,7 +540,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
               {selectedPlan && selectedPrinter && (
                 <div className="space-y-3 mt-3">
                   <p>
-                    هل تريد الاشتراك في باقة <strong>{selectedPlan.name_ar}</strong> لطابعة <strong>{selectedPrinter.printer_name}</strong>؟
+                    هل تريد الاشتراك في باقة <strong>{selectedPlan.name_ar}</strong> لطابعة <strong>{selectedPrinter.store_printers?.model_name_ar || 'الطابعة'}</strong>؟
                   </p>
                   <div className="p-3 rounded-lg bg-muted">
                     <div className="flex items-center justify-between text-sm">

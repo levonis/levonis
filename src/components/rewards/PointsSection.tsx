@@ -8,6 +8,7 @@ import { PointsBalanceSkeleton } from "./SkeletonLoaders";
 import PointsHistoryPanel from "./panels/PointsHistoryPanel";
 import DailyTasksPanel from "./panels/DailyTasksPanel";
 import RedeemPointsPanel from "./panels/RedeemPointsPanel";
+import PointsStorePanel from "./panels/PointsStorePanel";
 
 interface PointsSectionProps {
   activeSubTab: SubTabId;
@@ -184,6 +185,11 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
   // Redeem sub-tab
   if (activeSubTab === 'redeem') {
     return <RedeemPointsPanel />;
+  }
+
+  // Store sub-tab
+  if (activeSubTab === 'store') {
+    return <PointsStorePanel />;
   }
 
   return null;

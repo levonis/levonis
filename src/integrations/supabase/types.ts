@@ -2062,6 +2062,41 @@ export type Database = {
           },
         ]
       }
+      points_product_redemptions: {
+        Row: {
+          created_at: string
+          id: string
+          points_spent: number
+          product_id: string
+          redeemed_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          points_spent: number
+          product_id: string
+          redeemed_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          points_spent?: number
+          product_id?: string
+          redeemed_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_product_redemptions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "points_redeemable_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       points_redeemable_products: {
         Row: {
           created_at: string

@@ -19,6 +19,7 @@ export default function MyPrintersPanel() {
         .from('user_printers')
         .select(`
           *,
+          store_printers:store_printer_id(model_name_ar, serial_number, image_url),
           printer_subscriptions(
             id, 
             status, 
@@ -87,9 +88,9 @@ export default function MyPrintersPanel() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-medium">{printer.printer_name || 'طابعة'}</p>
+                      <p className="font-medium">{printer.store_printers?.model_name_ar || 'طابعة غير معروفة'}</p>
                       <p className="text-xs text-muted-foreground">
-                        {printer.serial_number || 'بدون رقم تسلسلي'}
+                        {printer.store_printers?.serial_number || 'بدون رقم تسلسلي'}
                       </p>
                     </div>
                     {activeSub ? (
