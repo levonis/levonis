@@ -291,6 +291,59 @@ export type Database = {
           },
         ]
       }
+      cart_requests: {
+        Row: {
+          adjusted_total: number | null
+          admin_notes: string | null
+          cart_code: string
+          cart_items: Json
+          conversation_id: string | null
+          created_at: string
+          id: string
+          original_total: number
+          status: string
+          updated_at: string
+          user_id: string
+          user_notes: string | null
+        }
+        Insert: {
+          adjusted_total?: number | null
+          admin_notes?: string | null
+          cart_code: string
+          cart_items?: Json
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          original_total?: number
+          status?: string
+          updated_at?: string
+          user_id: string
+          user_notes?: string | null
+        }
+        Update: {
+          adjusted_total?: number | null
+          admin_notes?: string | null
+          cart_code?: string
+          cart_items?: Json
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          original_total?: number
+          status?: string
+          updated_at?: string
+          user_id?: string
+          user_notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cart_requests_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string | null
@@ -4287,6 +4340,7 @@ export type Database = {
         Args: { comp_id: string }
         Returns: Json
       }
+      generate_cart_code: { Args: never; Returns: string }
       generate_conversation_code: { Args: never; Returns: string }
       generate_listing_code: { Args: never; Returns: string }
       generate_order_number: { Args: never; Returns: string }

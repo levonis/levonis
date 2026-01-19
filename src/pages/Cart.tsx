@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 import WalletDialog from '@/components/WalletDialog';
+import CartRequestDialog from '@/components/CartRequestDialog';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount } = useCart();
@@ -31,6 +32,7 @@ const Cart = () => {
   const [preOrderPaymentOption, setPreOrderPaymentOption] = useState<'full' | 'quarter'>('full');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showWalletDialog, setShowWalletDialog] = useState(false);
+  const [showCartRequestDialog, setShowCartRequestDialog] = useState(false);
 
   // التحقق من وجود منتجات طلب مسبق
   const hasPreOrderItems = items.some((item: any) => 
@@ -984,15 +986,35 @@ const Cart = () => {
                 });
               })()}
 
-              {/* Clear Cart Button */}
-              <Button
-                variant="outline"
-                className="w-full border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive"
-                onClick={clearCart}
-              >
-                <Trash2 className="ml-2 h-4 w-4" />
-                تفريغ السلة
-              </Button>
+              {/* Cart Actions */}
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 border-primary/30 text-primary hover:bg-primary/10"
+                  onClick={() => {
+                    if (!user) {
+                      toast({
+                        title: "يجب تسجيل الدخول",
+                        description: "الرجاء تسجيل الدخول أولاً",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setShowCartRequestDialog(true);
+                  }}
+                >
+                  <Hash className="ml-2 h-4 w-4" />
+                  رمز السلة
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive"
+                  onClick={clearCart}
+                >
+                  <Trash2 className="ml-2 h-4 w-4" />
+                  تفريغ السلة
+                </Button>
+              </div>
             </div>
 
             {/* Order Summary */}
@@ -1252,6 +1274,14 @@ const Cart = () => {
 
       {/* Wallet Dialog */}
       <WalletDialog open={showWalletDialog} onOpenChange={setShowWalletDialog} />
+
+      {/* Cart Request Dialog */}
+      <CartRequestDialog 
+        open={showCartRequestDialog} 
+        onOpenChange={setShowCartRequestDialog}
+        cartItems={items}
+        total={total}
+      />
     </div>
   );
 };
