@@ -139,21 +139,26 @@ export default function AdminUsersPointsTab() {
       
       if (transactionError) throw transactionError;
 
-      // تحديث رصيد النقاط
-      const { data: currentPoints, error: getError } = await supabase
+      // تحديث رصيد النقاط - استخدام upsert لضمان إنشاء الصف إذا لم يكن موجوداً
+      const { data: currentPoints } = await supabase
         .from('user_points')
-        .select('total_points')
+        .select('total_points, available_points')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
       
-      if (getError) throw getError;
-      
-      const newTotal = Math.max(0, (currentPoints?.total_points || 0) + pointsChange);
+      const currentTotal = currentPoints?.total_points || 0;
+      const currentAvailable = currentPoints?.available_points || 0;
+      const newTotal = Math.max(0, currentTotal + pointsChange);
+      const newAvailable = Math.max(0, currentAvailable + pointsChange);
       
       const { error: updateError } = await supabase
         .from('user_points')
-        .update({ total_points: newTotal, updated_at: new Date().toISOString() })
-        .eq('user_id', userId);
+        .upsert({
+          user_id: userId,
+          total_points: newTotal,
+          available_points: newAvailable,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'user_id' });
       
       if (updateError) throw updateError;
 
