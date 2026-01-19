@@ -281,8 +281,17 @@ const Cart = () => {
   };
 
   // Helper to wrap cart-changing actions with cart request warning
-  const wrapWithCartRequestCheck = (action: () => Promise<void>) => {
-    if (pendingCartRequest) {
+  const wrapWithCartRequestCheck = async (action: () => Promise<void>) => {
+    // Always check database for latest pending cart request
+    const { data } = await supabase
+      .from('cart_requests')
+      .select('id, cart_code')
+      .eq('user_id', user?.id)
+      .eq('status', 'pending')
+      .limit(1)
+      .maybeSingle();
+    
+    if (data) {
       setPendingAction(() => action);
       setShowCartChangeWarning(true);
     } else {
