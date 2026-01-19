@@ -1030,29 +1030,39 @@ Return JSON ONLY:
 
     // Use direct images if none from AI
     if (productInfo.images.length === 0 && directImages.length > 0) {
-      console.log('Using direct extraction images...');
+      console.log('Using direct extraction images...', directImages.length, 'images');
+      console.log('Direct images:', directImages);
+      console.log('Variant image URLs to exclude:', Array.from(variantImageUrls));
       const seenBases = new Set<string>();
       for (const img of directImages) {
         const base = getImageBaseUrl(img);
+        console.log('Checking image:', img, 'base:', base, 'in variants:', variantImageUrls.has(base));
         if (variantImageUrls.has(base)) continue;
         if (seenBases.has(base)) continue;
         seenBases.add(base);
         productInfo.images.push(img);
       }
+      console.log('Images after direct extraction:', productInfo.images.length);
     }
 
     // Final cleanup
+    console.log('Before final cleanup:', productInfo.images.length, 'images');
     const finalImages: string[] = [];
     const finalBases = new Set<string>();
     for (const img of productInfo.images) {
       const base = getImageBaseUrl(img);
-      if (variantImageUrls.has(base)) continue;
-      if (!finalBases.has(base) && !/\.svg/i.test(img)) {
-        finalBases.add(base);
-        finalImages.push(img);
-      }
+      const isVariant = variantImageUrls.has(base);
+      const isSvg = /\.svg/i.test(img);
+      const isDupe = finalBases.has(base);
+      console.log('Final cleanup check:', img.substring(0, 50), 'variant:', isVariant, 'svg:', isSvg, 'dupe:', isDupe);
+      if (isVariant) continue;
+      if (isDupe) continue;
+      if (isSvg) continue;
+      finalBases.add(base);
+      finalImages.push(img);
     }
     productInfo.images = finalImages.slice(0, 10);
+    console.log('After final cleanup:', productInfo.images.length, 'images');
 
     // Add estimated air shipping cost to product info
     (productInfo as any).estimated_air_shipping_cost = estimatedAirShippingCost;
