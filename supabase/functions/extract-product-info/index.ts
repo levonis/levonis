@@ -615,11 +615,24 @@ ${pageContent.substring(0, 100000)}
   "price": 29.99,
   "original_price": 39.99,
   "currency": "CNY",
+  "dimensions": {"length_cm": 30, "width_cm": 20, "height_cm": 15},
+  "weight_kg": 1.5,
   "main_product_images": ["https://صورة-المنتج-الرئيسية.jpg"],
   "colors": [{"name": "Black", "name_ar": "أسود", "hex_code": "#000000", "image_url": "https://صورة-خاصة-بهذا-اللون.jpg"}],
   "options": [{"name": "0.4mm Nozzle", "name_ar": "فوهة 0.4 ملم", "image_url": "https://صورة-خاصة-بهذا-الخيار.jpg"}],
   "features": [{"text": "Feature in English", "text_ar": "الميزة بالعربية"}]
 }
+
+===== قواعد استخراج الأبعاد والوزن (مهم جداً) =====
+
+مطلوب: استخرج أبعاد المنتج ووزنه بدقة!
+
+أماكن البحث:
+1. ابحث عن: 尺寸, 规格, 重量, weight, dimensions, size, cm, kg, mm, g, lb, inch
+2. حول الوحدات: inch → cm (×2.54)، mm → cm (÷10)، g → kg (÷1000)، lb → kg (×0.453)
+3. إذا لم تجد الأبعاد، قدّر بناءً على نوع المنتج أو اترك null
+4. dimensions.length_cm, dimensions.width_cm, dimensions.height_cm بالسنتيمتر
+5. weight_kg بالكيلوغرام
 
 ===== قواعد استخراج الألوان (مهم جداً) =====
 
@@ -683,7 +696,9 @@ ${pageContent.substring(0, 100000)}
       colors: [],
       options: [],
       features: [],
-      points_reward: 0
+      points_reward: 0,
+      dimensions: null,
+      weight_kg: null
     };
     
     const variantImageUrls = new Set<string>();
@@ -721,6 +736,18 @@ ${pageContent.substring(0, 100000)}
           // Calculate points reward: 1 point per 1000 IQD (based on original price before discount)
           if (originalPriceInIqd > 0) {
             productInfo.points_reward = Math.floor(originalPriceInIqd / 1000);
+          }
+          
+          // Extract dimensions and weight
+          if (ai.dimensions) {
+            productInfo.dimensions = {
+              length_cm: parseFloat(ai.dimensions.length_cm) || null,
+              width_cm: parseFloat(ai.dimensions.width_cm) || null,
+              height_cm: parseFloat(ai.dimensions.height_cm) || null
+            };
+          }
+          if (ai.weight_kg) {
+            productInfo.weight_kg = parseFloat(ai.weight_kg) || null;
           }
           
           // Process colors from AI
