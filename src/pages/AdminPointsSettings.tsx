@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent, AdminLoading, AdminEmptyState } from "@/components/admin/AdminLayout";
 import AdminUsersPointsTab from "@/components/admin/AdminUsersPointsTab";
+import AdminPointsAuditTab from "@/components/admin/AdminPointsAuditTab";
 
 const TASK_ICONS = [
   { name: 'Gift', icon: Gift, label: 'هدية' },
@@ -725,7 +726,7 @@ export default function AdminPointsSettings() {
 
           {/* Main Tabs */}
           <Tabs defaultValue="earning" className="space-y-4">
-            <TabsList className="grid grid-cols-5 w-full">
+            <TabsList className="grid grid-cols-6 w-full">
               <TabsTrigger value="earning" className="flex items-center gap-2">
                 <Coins className="h-4 w-4" />
                 <span className="hidden sm:inline">كسب النقاط</span>
@@ -745,6 +746,10 @@ export default function AdminPointsSettings() {
               <TabsTrigger value="users" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">المستخدمين</span>
+              </TabsTrigger>
+              <TabsTrigger value="audit" className="flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                <span className="hidden sm:inline">المراجعة</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1307,6 +1312,11 @@ export default function AdminPointsSettings() {
             {/* Users Tab */}
             <TabsContent value="users">
               <AdminUsersPointsTab />
+            </TabsContent>
+
+            {/* Audit Tab */}
+            <TabsContent value="audit">
+              <AdminPointsAuditTab />
             </TabsContent>
           </Tabs>
 
