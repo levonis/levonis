@@ -906,6 +906,11 @@ const Admin = () => {
       if (pointsInput) pointsInput.value = String(productInfo.points_reward);
     }
 
+    // Calculate air shipping cost from China and apply to fast shipping option
+    if (productInfo.dimensions || productInfo.weight_kg) {
+      calculateAndApplyAirShipping(productInfo.dimensions, productInfo.weight_kg);
+    }
+
     // Hide manual input if it was shown
     setShowManualInput(false);
 
@@ -913,7 +918,100 @@ const Admin = () => {
     const optionsCount = optionsData.length || 0;
     const featuresCount = productInfo.features?.length || 0;
     const pointsReward = productInfo.points_reward || 0;
-    toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات، ${pointsReward} نقاط)`);
+    const hasShippingCalc = productInfo.dimensions || productInfo.weight_kg;
+    toast.success(`تم استخراج المعلومات! (${colorsCount} ألوان، ${optionsCount} خيارات، ${featuresCount} مميزات${hasShippingCalc ? '، + سعر الشحن' : ''})`);
+  };
+
+  // Calculate air shipping cost from China and apply to fast shipping option
+  const calculateAndApplyAirShipping = async (dimensions: any, weightKg: number | null) => {
+    try {
+      // Fetch shipping settings
+      const { data: settingsData, error } = await supabase
+        .from('shipping_settings')
+        .select('setting_key, setting_value');
+      
+      if (error) {
+        console.error('Error fetching shipping settings:', error);
+        return;
+      }
+
+      // Build settings object
+      const settings: Record<string, number> = {
+        sea_padding_cm: 5,
+        air_china_volumetric_price: 15000,
+        air_china_volumetric_divider: 5000,
+        air_china_weight_safety_margin: 20,
+      };
+
+      settingsData?.forEach((item) => {
+        settings[item.setting_key] = Number(item.setting_value);
+      });
+
+      let shippingCost = 0;
+      const padding = settings.sea_padding_cm;
+      
+      // Calculate volumetric weight if dimensions provided
+      let volumetricWeight = 0;
+      if (dimensions && dimensions.length_cm && dimensions.width_cm && dimensions.height_cm) {
+        const length = (dimensions.length_cm || 0) + padding;
+        const width = (dimensions.width_cm || 0) + padding;
+        const height = (dimensions.height_cm || 0) + padding;
+        volumetricWeight = (length * width * height) / settings.air_china_volumetric_divider;
+      }
+      
+      // Use the greater weight (volumetric or actual)
+      const actualWeight = weightKg || 0;
+      const usedWeight = Math.max(volumetricWeight, actualWeight);
+      
+      if (usedWeight > 0) {
+        // Add safety margin
+        const safetyMargin = settings.air_china_weight_safety_margin / 100;
+        const weightWithSafety = usedWeight * (1 + safetyMargin);
+        
+        // Calculate cost
+        shippingCost = Math.round(weightWithSafety * settings.air_china_volumetric_price);
+        
+        console.log('[AI Shipping] Calculated air shipping:', {
+          dimensions,
+          weightKg,
+          volumetricWeight,
+          actualWeight,
+          usedWeight,
+          weightWithSafety,
+          shippingCost
+        });
+        
+        // Update the fast shipping option in preOrderShippingOptions
+        setPreOrderShippingOptions(prevOptions => {
+          // Find fast shipping option (usually the second one with "سريع" in name)
+          const updatedOptions = prevOptions.map((opt, index) => {
+            if (opt.name_ar?.includes('سريع') || opt.name?.toLowerCase().includes('fast') || index === 1) {
+              return { ...opt, price_adjustment: shippingCost };
+            }
+            return opt;
+          });
+          
+          // If no fast shipping option found, add one
+          const hasFastShipping = updatedOptions.some(
+            opt => opt.name_ar?.includes('سريع') || opt.name?.toLowerCase().includes('fast')
+          );
+          
+          if (!hasFastShipping && shippingCost > 0) {
+            updatedOptions.push({
+              name: 'Fast shipping (15 days)',
+              name_ar: 'شحن سريع (15 يومًا)',
+              price_adjustment: shippingCost
+            });
+          }
+          
+          return updatedOptions;
+        });
+        
+        toast.info(`تم حساب سعر الشحن السريع: ${shippingCost.toLocaleString()} دينار`);
+      }
+    } catch (err) {
+      console.error('Error calculating air shipping:', err);
+    }
   };
 
   // Re-extract images only for a product using AI
