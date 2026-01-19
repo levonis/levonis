@@ -1,5 +1,5 @@
 import { Badge } from '@/components/ui/badge';
-import { Coins, CreditCard, Sparkles } from 'lucide-react';
+import { Coins, CreditCard, Crown, TrendingUp } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 
 interface CardDiscount {
@@ -69,47 +69,51 @@ const ProductRewardsSection = ({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {/* Points Reward - Compact Badge */}
+    <div className="flex flex-wrap items-center gap-1.5">
+      {/* Points Reward */}
       {pointsReward > 0 && (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/30 border border-amber-200/60 dark:border-amber-800/40">
-          <Coins className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-          <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
-            +{pointsReward.toLocaleString()} نقطة
-          </span>
-        </div>
+        <Badge 
+          variant="secondary" 
+          className="gap-1 px-2 py-0.5 text-[11px] font-medium bg-primary/8 text-primary border-primary/15 hover:bg-primary/12"
+        >
+          <Coins className="h-3 w-3" />
+          +{pointsReward.toLocaleString()}
+        </Badge>
       )}
 
       {/* User's Qualifying Discount */}
       {bestUserDiscount && discountedPrice !== null && discountedPrice > 0 && (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40">
-          <CreditCard className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-            خصم {bestUserDiscount.displayPercentage}% • {formatPrice(discountedPrice)} {currency}
-          </span>
-        </div>
+        <Badge 
+          variant="secondary"
+          className="gap-1 px-2 py-0.5 text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/15"
+        >
+          <CreditCard className="h-3 w-3" />
+          -{bestUserDiscount.displayPercentage}%
+        </Badge>
       )}
 
       {/* Card Discounts Promotion for non-cardholders */}
       {validDiscounts.length > 0 && !userHasCard && (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/50 border-dashed">
-          <Sparkles className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
-          <span className="text-xs text-slate-600 dark:text-slate-400">
-            خصم حتى {Math.max(...validDiscounts.map(d => d.displayPercentage))}% لحاملي البطاقات
-          </span>
-        </div>
+        <Badge 
+          variant="outline"
+          className="gap-1 px-2 py-0.5 text-[11px] font-normal text-muted-foreground border-dashed"
+        >
+          <Crown className="h-3 w-3" />
+          حتى {Math.max(...validDiscounts.map(d => d.displayPercentage))}% للأعضاء
+        </Badge>
       )}
 
       {/* Upgrade hints for cardholders */}
       {userHasCard && validDiscounts.filter(d => 
         userCardLevelOrder !== undefined && d.level.display_order > userCardLevelOrder
       ).length > 0 && (
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200/60 dark:border-slate-700/50">
-          <Sparkles className="h-3 w-3 text-slate-400" />
-          <span className="text-[11px] text-slate-500 dark:text-slate-400">
-            خصم أكبر عند الترقية
-          </span>
-        </div>
+        <Badge 
+          variant="outline"
+          className="gap-1 px-2 py-0.5 text-[11px] font-normal text-muted-foreground"
+        >
+          <TrendingUp className="h-3 w-3" />
+          ترقية = خصم أكبر
+        </Badge>
       )}
     </div>
   );
