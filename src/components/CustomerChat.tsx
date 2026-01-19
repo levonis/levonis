@@ -438,43 +438,6 @@ export default function CustomerChat({
           >
             <ScrollArea className="h-full">
               <div className="p-4 space-y-3">
-                {/* In-Chat Cart Confirmation Message */}
-                {showCartConfirmInChat && cartRequestCode && (
-                  <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl p-4 border-2 border-primary/40 shadow-lg animate-in slide-in-from-top-2">
-                    <div className="flex items-center gap-2 mb-3">
-                      <ShoppingCart className="h-5 w-5 text-primary" />
-                      <span className="font-bold text-foreground">إرسال طلب السلة</span>
-                    </div>
-                    <p className="text-sm text-foreground/80 mb-3">
-                      هل تريد إرسال رمز السلة <span className="font-bold text-primary">{cartRequestCode}</span> إلى الإدارة للتعديل أو الاستفسار؟
-                    </p>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={handleConfirmCartMessage}
-                        className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                        disabled={sendMessageMutation.isPending}
-                      >
-                        {sendMessageMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 animate-spin ml-1" />
-                        ) : (
-                          <Check className="h-4 w-4 ml-1" />
-                        )}
-                        نعم، إرسال
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setShowCartConfirmInChat(false)}
-                        className="flex-1 border-border text-foreground hover:bg-muted"
-                      >
-                        <X className="h-4 w-4 ml-1" />
-                        إلغاء
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
                 {conversationLoading || messagesLoading ? (
                   <div className="flex items-center justify-center h-48">
                     <div className="text-center">
@@ -493,81 +456,120 @@ export default function CustomerChat({
                     </div>
                   </div>
                 ) : (
-                  messages.map((msg) => {
-                    const isOwn = msg.sender_id === user.id;
-                    const productId = isProductMessage(msg.content) ? extractProductId(msg.content) : null;
-                    
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex ${isOwn ? 'justify-start' : 'justify-end'}`}
-                      >
+                  <>
+                    {messages.map((msg) => {
+                      const isOwn = msg.sender_id === user.id;
+                      const productId = isProductMessage(msg.content) ? extractProductId(msg.content) : null;
+                      
+                      return (
                         <div
-                          className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-md ${
-                            isOwn
-                              ? 'bg-primary text-primary-foreground rounded-tl-sm'
-                              : 'bg-card border border-border text-foreground rounded-tr-sm'
-                          }`}
+                          key={msg.id}
+                          className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
                         >
-                          {/* Product Card in Message */}
-                          {productId && msg.image_url && (
-                            <div 
-                              className={`mb-2 rounded-xl overflow-hidden border cursor-pointer ${
-                                isOwn ? 'border-primary-foreground/30' : 'border-border'
-                              }`}
-                              onClick={() => window.open(`/product/${productId}`, '_blank')}
-                            >
-                              <img 
-                                src={msg.image_url} 
-                                alt="منتج" 
-                                className="w-full h-32 object-cover"
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Regular Image */}
-                          {msg.image_url && !productId && (
-                            <img
-                              src={msg.image_url}
-                              alt="صورة"
-                              className="rounded-xl mb-2 max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                              onClick={() => window.open(msg.image_url, '_blank')}
-                            />
-                          )}
-                          
-                          {/* Message Content */}
-                          <p className={`text-sm break-words whitespace-pre-wrap ${
-                            isOwn ? 'text-primary-foreground' : 'text-foreground'
-                          }`}>
-                            {msg.content}
-                          </p>
-                          
-                          {/* Time and Read Status */}
-                          <div className={`flex items-center gap-1 mt-1.5 ${
-                            isOwn ? 'justify-start' : 'justify-end'
-                          }`}>
-                            <span className={`text-[10px] ${
-                              isOwn ? 'text-primary-foreground/70' : 'text-foreground/60'
-                            }`}>
-                              {formatDistanceToNow(new Date(msg.created_at), {
-                                addSuffix: true,
-                                locale: ar,
-                              })}
-                            </span>
-                            {isOwn && (
-                              <span className={`${msg.is_read ? 'text-blue-400' : 'text-primary-foreground/70'}`}>
-                                {msg.is_read ? (
-                                  <CheckCheck className="h-3.5 w-3.5" />
-                                ) : (
-                                  <Check className="h-3.5 w-3.5" />
-                                )}
-                              </span>
+                          <div
+                            className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-md ${
+                              isOwn
+                                ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                                : 'bg-card border border-border text-foreground rounded-tl-sm'
+                            }`}
+                          >
+                            {/* Product Card in Message */}
+                            {productId && msg.image_url && (
+                              <div 
+                                className={`mb-2 rounded-xl overflow-hidden border cursor-pointer ${
+                                  isOwn ? 'border-primary-foreground/30' : 'border-border'
+                                }`}
+                                onClick={() => window.open(`/product/${productId}`, '_blank')}
+                              >
+                                <img 
+                                  src={msg.image_url} 
+                                  alt="منتج" 
+                                  className="w-full h-32 object-cover"
+                                />
+                              </div>
                             )}
+                            
+                            {/* Regular Image */}
+                            {msg.image_url && !productId && (
+                              <img
+                                src={msg.image_url}
+                                alt="صورة"
+                                className="rounded-xl mb-2 max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                                onClick={() => window.open(msg.image_url, '_blank')}
+                              />
+                            )}
+                            
+                            {/* Message Content */}
+                            <p className={`text-sm break-words whitespace-pre-wrap ${
+                              isOwn ? 'text-primary-foreground' : 'text-foreground'
+                            }`}>
+                              {msg.content}
+                            </p>
+                            
+                            {/* Time and Read Status */}
+                            <div className={`flex items-center gap-1 mt-1.5 ${
+                              isOwn ? 'justify-end' : 'justify-start'
+                            }`}>
+                              <span className={`text-[10px] ${
+                                isOwn ? 'text-primary-foreground/70' : 'text-foreground/60'
+                              }`}>
+                                {formatDistanceToNow(new Date(msg.created_at), {
+                                  addSuffix: true,
+                                  locale: ar,
+                                })}
+                              </span>
+                              {isOwn && (
+                                <span className={`${msg.is_read ? 'text-blue-400' : 'text-primary-foreground/70'}`}>
+                                  {msg.is_read ? (
+                                    <CheckCheck className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <Check className="h-3.5 w-3.5" />
+                                  )}
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
+                      );
+                    })}
+                    
+                    {/* In-Chat Cart Confirmation Message - Now at the bottom */}
+                    {showCartConfirmInChat && cartRequestCode && (
+                      <div className="bg-gradient-to-br from-primary/20 to-primary/10 rounded-2xl p-4 border-2 border-primary/40 shadow-lg animate-in slide-in-from-bottom-2">
+                        <div className="flex items-center gap-2 mb-3">
+                          <ShoppingCart className="h-5 w-5 text-primary" />
+                          <span className="font-bold text-foreground">إرسال طلب السلة</span>
+                        </div>
+                        <p className="text-sm text-foreground/80 mb-3">
+                          هل تريد إرسال رمز السلة <span className="font-bold text-primary">{cartRequestCode}</span> إلى الإدارة للتعديل أو الاستفسار؟
+                        </p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleConfirmCartMessage}
+                            className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                            disabled={sendMessageMutation.isPending}
+                          >
+                            {sendMessageMutation.isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin ml-1" />
+                            ) : (
+                              <Check className="h-4 w-4 ml-1" />
+                            )}
+                            نعم، إرسال
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setShowCartConfirmInChat(false)}
+                            className="flex-1 border-border text-foreground hover:bg-muted"
+                          >
+                            <X className="h-4 w-4 ml-1" />
+                            إلغاء
+                          </Button>
+                        </div>
                       </div>
-                    );
-                  })
+                    )}
+                  </>
                 )}
                 <div ref={messagesEndRef} />
               </div>
