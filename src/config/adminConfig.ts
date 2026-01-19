@@ -39,6 +39,7 @@ export const ADMIN_ROUTES = {
   marketplace: `${ADMIN_BASE_PATH}/marketplace`,
   shipmentRequests: `${ADMIN_BASE_PATH}/shipment-requests`,
   printerProtection: `${ADMIN_BASE_PATH}/printer-protection`,
+  shippingSettings: `${ADMIN_BASE_PATH}/shipping-settings`,
 } as const;
 
 // Helper to check if a path is an admin path
