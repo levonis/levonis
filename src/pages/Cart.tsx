@@ -286,13 +286,15 @@ const Cart = () => {
     // Always check database for latest pending cart request
     const { data } = await supabase
       .from('cart_requests')
-      .select('id, cart_code')
+      .select('id, cart_code, adjusted_total, admin_notes, status')
       .eq('user_id', user?.id)
       .eq('status', 'pending')
       .limit(1)
       .maybeSingle();
     
     if (data) {
+      // Update local state to show correct cart code in warning dialog
+      await refreshCart();
       setPendingAction(() => action);
       setShowCartChangeWarning(true);
     } else {
