@@ -14,7 +14,7 @@ import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Package, Loader2, X, Ship, Plane, Globe, Sparkles, ChevronDown, ChevronUp, Upload, Store, ExternalLink, ArrowRight } from 'lucide-react';
+import { Package, Loader2, X, Ship, Plane, Globe, Sparkles, ChevronDown, ChevronUp, Upload, Store, ExternalLink, ArrowRight, Link as LinkIcon } from 'lucide-react';
 import { useShippingSettings, calculateShippingCost, type SourceCountry, type ShippingType, type ProductDimensions } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -79,10 +79,13 @@ export default function CustomProductRequest() {
   // Embedded store state
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   
+  // Collapsible form state
+  const [isFormExpanded, setIsFormExpanded] = useState(false);
+  
   const { data: shippingSettings } = useShippingSettings();
 
   // Fetch store settings
-  const { data: storeSettings } = useQuery({
+  const { data: storeSettings, isLoading: storeSettingsLoading } = useQuery({
     queryKey: ['external-store-addresses'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -91,9 +94,13 @@ export default function CustomProductRequest() {
         .eq('setting_key', 'external_store_addresses')
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching store settings:', error);
+        return null;
+      }
       return data?.setting_value as unknown as StoreSettings;
-    }
+    },
+    retry: 2
   });
 
   const form = useForm<CustomProductFormData>({
@@ -334,20 +341,31 @@ export default function CustomProductRequest() {
           <p className="text-muted-foreground mt-2">أدخل رابط المنتج أو تصفح المتاجر الشهيرة</p>
         </div>
 
-        {/* Manual Request Form */}
+        {/* Manual Request Form - Collapsible */}
         <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="w-5 h-5" />
-              إرسال رابط المنتج
-            </CardTitle>
-            <CardDescription>
-              أدخل رابط المنتج من أي متجر وسنحسب لك التكلفة التقديرية
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <Collapsible open={isFormExpanded} onOpenChange={setIsFormExpanded}>
+            <CollapsibleTrigger asChild>
+              <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <LinkIcon className="w-5 h-5" />
+                    <CardTitle className="text-lg">إرسال رابط المنتج</CardTitle>
+                  </div>
+                  {isFormExpanded ? (
+                    <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                  )}
+                </div>
+                <CardDescription className="text-right">
+                  {isFormExpanded ? 'أدخل رابط المنتج من أي متجر وسنحسب لك التكلفة التقديرية' : 'اضغط للتوسيع وإرسال رابط المنتج'}
+                </CardDescription>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent>
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
                   name="product_link"
@@ -624,9 +642,11 @@ export default function CustomProductRequest() {
                     </>
                   )}
                 </Button>
-              </form>
-            </Form>
-          </CardContent>
+                  </form>
+                </Form>
+              </CardContent>
+            </CollapsibleContent>
+          </Collapsible>
         </Card>
 
         {/* Separator */}
@@ -650,29 +670,40 @@ export default function CustomProductRequest() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {storeSettings && Object.entries(storeSettings).map(([key, store]) => (
-                <button
-                  key={key}
-                  onClick={() => setSelectedStore(key)}
-                  className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                >
-                  <div className="w-20 h-12 flex items-center justify-center">
-                    <img 
-                      src={store.logo_url} 
-                      alt={store.name_ar}
-                      className="max-w-full max-h-full object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = '/placeholder.svg';
-                      }}
-                    />
-                  </div>
-                  <span className="font-medium">{store.name_ar}</span>
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
-                    تصفح المنتجات
-                    <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </button>
-              ))}
+              {storeSettingsLoading ? (
+                <div className="col-span-3 flex items-center justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                </div>
+              ) : storeSettings ? (
+                Object.entries(storeSettings).map(([key, store]) => (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedStore(key)}
+                    className="flex flex-col items-center gap-3 p-6 rounded-xl border-2 border-border hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                  >
+                    <div className="w-20 h-12 flex items-center justify-center">
+                      <img 
+                        src={store.logo_url} 
+                        alt={store.name_ar}
+                        className="max-w-full max-h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.svg';
+                        }}
+                      />
+                    </div>
+                    <span className="font-medium">{store.name_ar}</span>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      تصفح المنتجات
+                      <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
+                    </span>
+                  </button>
+                ))
+              ) : (
+                <div className="col-span-3 text-center py-8 text-muted-foreground">
+                  <Package className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>لا توجد متاجر متاحة حالياً</p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

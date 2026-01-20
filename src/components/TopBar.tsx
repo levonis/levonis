@@ -3,7 +3,7 @@ import logoNew from '@/assets/new-logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy, Shield } from 'lucide-react';
-import CustomProductRequestDialog from './CustomProductRequestDialog';
+
 import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
@@ -216,17 +216,16 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
             </Button>
 
             {/* Custom Product Request Button */}
-            <CustomProductRequestDialog>
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-full border-primary/30 hover:border-primary"
-                title="طلب منتج مخصص"
-                aria-label="طلب منتج مخصص"
-              >
-                <Package className="h-4 w-4" />
-              </Button>
-            </CustomProductRequestDialog>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => navigate('/custom-request')}
+              className="rounded-full border-primary/30 hover:border-primary"
+              title="طلب منتج مخصص"
+              aria-label="طلب منتج مخصص"
+            >
+              <Package className="h-4 w-4" />
+            </Button>
 
             {/* Cart Button */}
             <Button
