@@ -122,16 +122,18 @@ export default function CostBreakdownCard({
         )}
         
         {/* Estimation Warning */}
-        {breakdown.isEstimated && breakdown.estimationReason && (
+        {breakdown.isEstimated && breakdown.estimationReasons && breakdown.estimationReasons.length > 0 && (
           <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
             <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
                 تنبيه: تكلفة تقديرية
               </p>
-              <p className="text-xs text-amber-600 dark:text-amber-500">
-                {breakdown.estimationReason}
-              </p>
+              <ul className="text-xs text-amber-600 dark:text-amber-500 list-disc list-inside">
+                {breakdown.estimationReasons.map((reason, idx) => (
+                  <li key={idx}>{reason}</li>
+                ))}
+              </ul>
             </div>
           </div>
         )}

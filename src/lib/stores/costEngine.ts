@@ -3,11 +3,13 @@
  * 
  * يحسب:
  * - سعر المنتج (USD + IQD)
- * - الشحن الداخلي من المتجر (إن وجد)
- * - الضريبة (إن وجدت)
+ * - الشحن الداخلي من المتجر (إن وجد) - Actual/Estimated
+ * - الضريبة (إن وجدت) - Actual/Estimated
  * - تكلفة الشحن الجوي/البحري
  * - العمولة
  * - الإجمالي
+ * 
+ * مع تمييز واضح بين القيم الفعلية والتقديرية
  */
 
 import type { ShippingSettings, ShippingType, SourceCountry, ProductDimensions } from '@/hooks/useShippingCalculator';
@@ -40,10 +42,12 @@ export interface CostBreakdown {
   // Internal shipping (from store)
   internalShippingUsd: number;
   internalShippingIqd: number;
+  internalShippingEstimated: boolean;
   
   // Tax
   taxUsd: number;
   taxIqd: number;
+  taxEstimated: boolean;
   
   // Subtotal before international shipping
   subtotalUsd: number;
@@ -57,6 +61,7 @@ export interface CostBreakdown {
     usedWeight?: number;
     weightWithPackaging?: number;
     cbm?: number;
+    bufferPercent?: number;
   };
   
   // Commission
@@ -68,7 +73,7 @@ export interface CostBreakdown {
   
   // Meta
   isEstimated: boolean;
-  estimationReason?: string;
+  estimationReasons: string[];
   exchangeRate: number;
   breakdown: BreakdownItem[];
 }
@@ -80,10 +85,11 @@ export interface BreakdownItem {
   valueUsd?: number;
   type: 'price' | 'shipping' | 'tax' | 'commission' | 'total' | 'info';
   isEstimated?: boolean;
+  estimationReason?: string;
 }
 
 /**
- * Calculate full cost breakdown
+ * Calculate full cost breakdown with Actual/Estimated distinction
  */
 export function calculateFullCost(
   specs: ProductSpecs,
@@ -93,27 +99,35 @@ export function calculateFullCost(
 ): CostBreakdown {
   const exchangeRate = settings.usd_to_iqd_rate;
   const breakdown: BreakdownItem[] = [];
+  const estimationReasons: string[] = [];
   let isEstimated = specs.estimated;
-  let estimationReason = specs.estimated ? 'بيانات تقديرية من الذكاء الاصطناعي' : undefined;
   
   // === Product Price ===
   const productPriceUsd = specs.priceUsd || 0;
   const productPriceIqd = Math.round(productPriceUsd * exchangeRate);
   
   if (productPriceUsd > 0) {
+    const priceEstimated = specs.estimated;
     breakdown.push({
       labelAr: 'سعر المنتج',
       labelEn: 'Product Price',
       valueIqd: productPriceIqd,
       valueUsd: productPriceUsd,
       type: 'price',
-      isEstimated: specs.estimated,
+      isEstimated: priceEstimated,
+      estimationReason: priceEstimated ? 'تم استخراجه بالذكاء الاصطناعي' : undefined,
     });
+    if (priceEstimated) {
+      estimationReasons.push('سعر المنتج تقديري');
+    }
   }
   
   // === Internal Shipping (from store) ===
+  // Note: We can't reliably extract this from cross-origin pages
+  // So we mark it as estimated if we got it from AI, or 0 if not available
   const internalShippingUsd = specs.internalShipping || 0;
   const internalShippingIqd = Math.round(internalShippingUsd * exchangeRate);
+  const internalShippingEstimated = internalShippingUsd > 0 ? true : false; // Always estimated from AI
   
   if (internalShippingUsd > 0) {
     breakdown.push({
@@ -122,12 +136,28 @@ export function calculateFullCost(
       valueIqd: internalShippingIqd,
       valueUsd: internalShippingUsd,
       type: 'shipping',
+      isEstimated: true,
+      estimationReason: 'تقديري - قد يختلف حسب العنوان المحدد في المتجر',
+    });
+    estimationReasons.push('الشحن الداخلي تقديري');
+    isEstimated = true;
+  } else {
+    // Add note that internal shipping wasn't detected
+    breakdown.push({
+      labelAr: 'الشحن الداخلي',
+      labelEn: 'Store Shipping',
+      valueIqd: 0,
+      valueUsd: 0,
+      type: 'shipping',
+      isEstimated: true,
+      estimationReason: 'غير متوفر - قد يضاف لاحقاً إن وجد',
     });
   }
   
   // === Tax ===
   const taxUsd = specs.tax || 0;
   const taxIqd = Math.round(taxUsd * exchangeRate);
+  const taxEstimated = taxUsd > 0 ? true : false;
   
   if (taxUsd > 0) {
     breakdown.push({
@@ -136,7 +166,11 @@ export function calculateFullCost(
       valueIqd: taxIqd,
       valueUsd: taxUsd,
       type: 'tax',
+      isEstimated: true,
+      estimationReason: 'تقديري - قد يختلف حسب الولاية',
     });
+    estimationReasons.push('الضريبة تقديرية');
+    isEstimated = true;
   }
   
   // === Subtotal ===
@@ -148,11 +182,12 @@ export function calculateFullCost(
   const shippingDetails: CostBreakdown['shippingDetails'] = {};
   
   // Sea shipping only from China
+  let effectiveShippingType = shippingType;
   if (shippingType === 'sea' && sourceCountry === 'usa') {
-    shippingType = 'air';
+    effectiveShippingType = 'air';
   }
   
-  if (shippingType === 'sea') {
+  if (effectiveShippingType === 'sea') {
     // Sea shipping - CBM calculation
     if (specs.dimensions && specs.dimensions.length > 0) {
       const padding = settings.sea_padding_cm;
@@ -170,16 +205,20 @@ export function calculateFullCost(
         valueIqd: Math.round(shippingCost),
         type: 'shipping',
       });
+    } else {
+      isEstimated = true;
+      estimationReasons.push('الأبعاد غير متوفرة للشحن البحري');
     }
-  } else if (shippingType === 'air') {
+  } else if (effectiveShippingType === 'air') {
     if (sourceCountry === 'usa') {
       // Air from USA - weight-based
       if (specs.weight && specs.weight > 0) {
-        const bufferPercent = settings.air_usa_weight_buffer_percent / 100;
-        const weightWithPackaging = specs.weight * (1 + bufferPercent);
+        const bufferPercent = settings.air_usa_weight_buffer_percent;
+        const weightWithPackaging = specs.weight * (1 + bufferPercent / 100);
         
         shippingDetails.actualWeight = specs.weight;
         shippingDetails.weightWithPackaging = weightWithPackaging;
+        shippingDetails.bufferPercent = bufferPercent;
         
         shippingCost = weightWithPackaging * settings.air_usa_kg_price;
         
@@ -188,10 +227,19 @@ export function calculateFullCost(
           labelEn: `Air Shipping (${weightWithPackaging.toFixed(2)} kg)`,
           valueIqd: Math.round(shippingCost),
           type: 'shipping',
+          estimationReason: `الوزن ${specs.weight.toFixed(2)} كغ + ${bufferPercent}% للتغليف`,
         });
       } else {
         isEstimated = true;
-        estimationReason = 'الوزن غير متوفر - يُحسب لاحقاً';
+        estimationReasons.push('الوزن غير متوفر - سيُحسب لاحقاً');
+        breakdown.push({
+          labelAr: 'الشحن الجوي',
+          labelEn: 'Air Shipping',
+          valueIqd: 0,
+          type: 'shipping',
+          isEstimated: true,
+          estimationReason: 'الوزن غير متوفر - سيُحسب لاحقاً',
+        });
       }
     } else if (sourceCountry === 'china') {
       // Air from China - max of volumetric or actual weight
@@ -209,13 +257,14 @@ export function calculateFullCost(
       const usedWeight = Math.max(volumetricWeight, actualWeight);
       
       if (usedWeight > 0) {
-        const safetyMargin = settings.air_china_weight_safety_margin / 100;
-        const weightWithPackaging = usedWeight * (1 + safetyMargin);
+        const safetyMargin = settings.air_china_weight_safety_margin;
+        const weightWithPackaging = usedWeight * (1 + safetyMargin / 100);
         
         shippingDetails.actualWeight = actualWeight;
         shippingDetails.volumetricWeight = volumetricWeight;
         shippingDetails.usedWeight = usedWeight;
         shippingDetails.weightWithPackaging = weightWithPackaging;
+        shippingDetails.bufferPercent = safetyMargin;
         
         shippingCost = weightWithPackaging * settings.air_china_volumetric_price;
         
@@ -225,10 +274,19 @@ export function calculateFullCost(
           labelEn: `Air Shipping (${weightWithPackaging.toFixed(2)} kg)`,
           valueIqd: Math.round(shippingCost),
           type: 'shipping',
+          estimationReason: `الوزن المستخدم: ${usedWeight.toFixed(2)} كغ + ${safetyMargin}% للتغليف`,
         });
       } else {
         isEstimated = true;
-        estimationReason = 'الوزن والأبعاد غير متوفرة - يُحسب لاحقاً';
+        estimationReasons.push('الوزن والأبعاد غير متوفرة');
+        breakdown.push({
+          labelAr: 'الشحن الجوي',
+          labelEn: 'Air Shipping',
+          valueIqd: 0,
+          type: 'shipping',
+          isEstimated: true,
+          estimationReason: 'الوزن والأبعاد غير متوفرة - سيُحسب لاحقاً',
+        });
       }
     }
   }
@@ -252,6 +310,7 @@ export function calculateFullCost(
     valueIqd: totalIqd,
     valueUsd: totalUsd,
     type: 'total',
+    isEstimated,
   });
   
   return {
@@ -259,8 +318,10 @@ export function calculateFullCost(
     productPriceIqd,
     internalShippingUsd,
     internalShippingIqd,
+    internalShippingEstimated,
     taxUsd,
     taxIqd,
+    taxEstimated,
     subtotalUsd,
     subtotalIqd,
     shippingCost: Math.round(shippingCost),
@@ -269,7 +330,7 @@ export function calculateFullCost(
     totalUsd,
     totalIqd,
     isEstimated,
-    estimationReason,
+    estimationReasons,
     exchangeRate,
     breakdown,
   };
@@ -299,4 +360,31 @@ export function formatCostDisplay(breakdown: CostBreakdown): {
   const summary = `الإجمالي: ${breakdown.totalIqd.toLocaleString()} د.ع${estimatedNote}`;
   
   return { summary, details };
+}
+
+/**
+ * Validate product specs completeness
+ */
+export function validateProductSpecs(specs: ProductSpecs): {
+  isComplete: boolean;
+  missingFields: string[];
+} {
+  const missingFields: string[] = [];
+  
+  if (!specs.priceUsd || specs.priceUsd <= 0) {
+    missingFields.push('سعر المنتج');
+  }
+  
+  if (!specs.weight || specs.weight <= 0) {
+    missingFields.push('الوزن');
+  }
+  
+  if (!specs.dimensions || specs.dimensions.length <= 0) {
+    missingFields.push('الأبعاد');
+  }
+  
+  return {
+    isComplete: missingFields.length === 0,
+    missingFields,
+  };
 }
