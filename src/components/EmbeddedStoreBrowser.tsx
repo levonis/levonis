@@ -198,12 +198,9 @@ export default function EmbeddedStoreBrowser({
       </div>
 
       {/* Address Info */}
-      <div className="flex items-center justify-between px-4 py-2 bg-muted/50 text-sm">
+      <div className="flex items-center justify-center px-4 py-2 bg-muted/50 text-sm">
         <span className="text-muted-foreground">
-          عنوان الشحن المحدد: {storeAddress.city}, {storeAddress.state} - {storeAddress.zip_code}
-        </span>
-        <span className="text-xs text-muted-foreground">
-          (العنوان يُحدد تلقائياً من الإدارة)
+          📍 {storeAddress.city}, {storeAddress.state} - {storeAddress.zip_code}
         </span>
       </div>
 
