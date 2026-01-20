@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { X, ShoppingCart, Package, Loader2, ExternalLink, Copy, Check, Globe } from 'lucide-react';
+import { X, ShoppingCart, Package, Loader2, ExternalLink, Copy, Check, Globe, Maximize2, Minimize2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -48,11 +48,69 @@ export default function EmbeddedStoreBrowser({
   const [productEstimate, setProductEstimate] = useState<ProductEstimate | null>(null);
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [popupWindow, setPopupWindow] = useState<Window | null>(null);
+  const [isPopupOpen, setIsPopupOpen] = useState(false);
   const { user } = useAuth();
   const { data: shippingSettings } = useShippingSettings();
+  const popupCheckInterval = useRef<NodeJS.Timeout | null>(null);
 
-  const handleOpenStore = () => {
-    window.open(storeUrl, '_blank');
+  // Check if popup is still open
+  useEffect(() => {
+    if (popupWindow) {
+      popupCheckInterval.current = setInterval(() => {
+        if (popupWindow.closed) {
+          setIsPopupOpen(false);
+          setPopupWindow(null);
+          if (popupCheckInterval.current) {
+            clearInterval(popupCheckInterval.current);
+          }
+        }
+      }, 500);
+    }
+
+    return () => {
+      if (popupCheckInterval.current) {
+        clearInterval(popupCheckInterval.current);
+      }
+    };
+  }, [popupWindow]);
+
+  const handleOpenPopup = () => {
+    // Calculate popup dimensions (80% of screen)
+    const width = Math.min(window.screen.width * 0.8, 1200);
+    const height = Math.min(window.screen.height * 0.8, 800);
+    const left = (window.screen.width - width) / 2;
+    const top = (window.screen.height - height) / 2;
+
+    const popup = window.open(
+      storeUrl,
+      `store_${storeKey}`,
+      `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes,toolbar=yes,menubar=no,location=yes`
+    );
+
+    if (popup) {
+      setPopupWindow(popup);
+      setIsPopupOpen(true);
+      popup.focus();
+    } else {
+      toast.error('تم حظر النافذة المنبثقة. يرجى السماح للنوافذ المنبثقة');
+    }
+  };
+
+  const handleFocusPopup = () => {
+    if (popupWindow && !popupWindow.closed) {
+      popupWindow.focus();
+    } else {
+      handleOpenPopup();
+    }
+  };
+
+  const handleClosePopup = () => {
+    if (popupWindow && !popupWindow.closed) {
+      popupWindow.close();
+    }
+    setPopupWindow(null);
+    setIsPopupOpen(false);
   };
 
   const handleCopyAddress = async () => {
@@ -174,6 +232,29 @@ export default function EmbeddedStoreBrowser({
           <div className="w-10" />
         </div>
 
+        {/* Popup Status Bar */}
+        {isPopupOpen && (
+          <Card className="mb-4 border-primary/50 bg-primary/5">
+            <CardContent className="py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-sm font-medium">المتجر مفتوح في نافذة منبثقة</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleFocusPopup} className="gap-1">
+                    <Maximize2 className="w-3 h-3" />
+                    عرض المتجر
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={handleClosePopup}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Store Card */}
         <Card className="mb-6">
           <CardHeader className="pb-3">
@@ -182,10 +263,17 @@ export default function EmbeddedStoreBrowser({
                 <Globe className="w-5 h-5" />
                 تصفح المتجر
               </CardTitle>
-              <Button onClick={handleOpenStore} className="gap-2">
-                <ExternalLink className="w-4 h-4" />
-                فتح المتجر
-              </Button>
+              {!isPopupOpen ? (
+                <Button onClick={handleOpenPopup} className="gap-2">
+                  <ExternalLink className="w-4 h-4" />
+                  فتح المتجر
+                </Button>
+              ) : (
+                <Button onClick={handleFocusPopup} variant="secondary" className="gap-2">
+                  <Maximize2 className="w-4 h-4" />
+                  إظهار النافذة
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -203,7 +291,7 @@ export default function EmbeddedStoreBrowser({
 
             <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
               <p className="text-sm text-amber-700 dark:text-amber-400">
-                💡 افتح المتجر، اختر المنتج، وانسخ رابطه هنا لحساب التكلفة
+                💡 {isPopupOpen ? 'تصفح المتجر في النافذة المنبثقة، ثم انسخ رابط المنتج هنا' : 'افتح المتجر، اختر المنتج، وانسخ رابطه هنا لحساب التكلفة'}
               </p>
             </div>
           </CardContent>
