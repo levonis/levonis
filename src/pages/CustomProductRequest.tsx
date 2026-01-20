@@ -84,7 +84,7 @@ export default function CustomProductRequest() {
   
   const { data: shippingSettings } = useShippingSettings();
 
-  // Fetch store settings
+  // Fetch store settings - only when user is authenticated
   const { data: storeSettings, isLoading: storeSettingsLoading } = useQuery({
     queryKey: ['external-store-addresses'],
     queryFn: async () => {
@@ -92,7 +92,7 @@ export default function CustomProductRequest() {
         .from('default_settings')
         .select('setting_value')
         .eq('setting_key', 'external_store_addresses')
-        .single();
+        .maybeSingle();
       
       if (error) {
         console.error('Error fetching store settings:', error);
@@ -100,7 +100,11 @@ export default function CustomProductRequest() {
       }
       return data?.setting_value as unknown as StoreSettings;
     },
-    retry: 2
+    enabled: !authLoading,
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false
   });
 
   const form = useForm<CustomProductFormData>({
