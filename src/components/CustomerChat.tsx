@@ -406,7 +406,7 @@ export default function CustomerChat({
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 left-4 right-4 sm:left-6 sm:right-auto sm:w-[400px] h-[550px] max-h-[75vh] shadow-2xl z-50 flex flex-col overflow-hidden border-2 border-primary/40 bg-background">
+        <Card className="fixed bottom-24 left-4 right-4 sm:left-6 sm:right-auto sm:w-[380px] lg:w-[400px] h-[500px] sm:h-[520px] max-h-[70vh] shadow-2xl z-50 flex flex-col overflow-hidden border-2 border-primary/40 bg-background">
           {/* Header */}
           <CardHeader className="bg-primary p-4 flex-shrink-0">
             <div className="flex items-center justify-between">
@@ -631,18 +631,18 @@ export default function CustomerChat({
           )}
 
           {/* Input Area */}
-          <div className="border-t border-border bg-card p-3 flex-shrink-0">
+          <div className="border-t border-border bg-card p-2 sm:p-3 flex-shrink-0">
             {imagePreview && (
-              <div className="mb-3 relative inline-block">
+              <div className="mb-2 relative inline-block">
                 <img
                   src={imagePreview}
                   alt="معاينة"
-                  className="h-20 w-20 object-cover rounded-xl border-2 border-primary/50"
+                  className="h-16 w-16 object-cover rounded-xl border-2 border-primary/50"
                 />
                 <Button
                   variant="destructive"
                   size="icon"
-                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full shadow-lg"
+                  className="absolute -top-2 -right-2 h-5 w-5 rounded-full shadow-lg"
                   onClick={() => {
                     setSelectedImage(null);
                     setImagePreview(null);
@@ -654,7 +654,7 @@ export default function CustomerChat({
               </div>
             )}
             
-            <div className="flex gap-2 items-end">
+            <div className="flex gap-1.5 items-center">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -664,26 +664,24 @@ export default function CustomerChat({
               />
               
               {/* Action Buttons */}
-              <div className="flex gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingImage || sendMessageMutation.isPending}
-                  className="h-10 w-10 rounded-full hover:bg-primary/20 text-foreground/70"
-                >
-                  <ImageIcon className="h-5 w-5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowProductSearch(!showProductSearch)}
-                  disabled={uploadingImage || sendMessageMutation.isPending}
-                  className={`h-10 w-10 rounded-full hover:bg-primary/20 ${showProductSearch ? 'bg-primary/20 text-primary' : 'text-foreground/70'}`}
-                >
-                  <ShoppingBag className="h-5 w-5" />
-                </Button>
-              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingImage || sendMessageMutation.isPending}
+                className="h-8 w-8 rounded-full hover:bg-primary/20 text-foreground/70 flex-shrink-0"
+              >
+                <ImageIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowProductSearch(!showProductSearch)}
+                disabled={uploadingImage || sendMessageMutation.isPending}
+                className={`h-8 w-8 rounded-full hover:bg-primary/20 flex-shrink-0 ${showProductSearch ? 'bg-primary/20 text-primary' : 'text-foreground/70'}`}
+              >
+                <ShoppingBag className="h-4 w-4" />
+              </Button>
               
               {/* Input Field */}
               <Input
@@ -692,7 +690,7 @@ export default function CustomerChat({
                 onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSend()}
                 placeholder="اكتب رسالتك..."
                 disabled={uploadingImage || sendMessageMutation.isPending}
-                className="flex-1 rounded-full border-border bg-background text-foreground placeholder:text-foreground/50 focus:border-primary"
+                className="flex-1 h-9 rounded-full border-border bg-background text-foreground placeholder:text-foreground/50 focus:border-primary text-sm px-3"
               />
               
               {/* Send Button */}
@@ -700,12 +698,12 @@ export default function CustomerChat({
                 onClick={handleSend}
                 disabled={(!message.trim() && !selectedImage) || uploadingImage || sendMessageMutation.isPending}
                 size="icon"
-                className="h-10 w-10 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg"
+                className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg flex-shrink-0"
               >
                 {uploadingImage || sendMessageMutation.isPending ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  <Send className="h-5 w-5" />
+                  <Send className="h-4 w-4" />
                 )}
               </Button>
             </div>
