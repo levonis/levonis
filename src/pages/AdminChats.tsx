@@ -275,49 +275,60 @@ export default function AdminChats() {
       description="إدارة جميع محادثات الدعم"
       icon={<MessageCircle className="h-5 w-5" />}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
         {/* Conversations List */}
-        <AdminCard className="md:col-span-1 overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-border/50">
-            <h3 className="font-semibold">المحادثات</h3>
+        <AdminCard className="lg:col-span-1 overflow-hidden flex flex-col max-h-[300px] lg:max-h-none">
+          <div className="p-3 border-b border-border/50">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold text-sm">المحادثات</h3>
+              {conversations.filter((c: any) => c.unread_count > 0).length > 0 && (
+                <Badge variant="destructive" className="text-xs animate-pulse">
+                  {conversations.filter((c: any) => c.unread_count > 0).length} غير مقروءة
+                </Badge>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               {conversations.length} محادثة - العملاء المميزون أولاً
             </p>
           </div>
           <div className="flex-1 overflow-y-auto">
             {conversations.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                <MessageCircle className="h-12 w-12 text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">لا توجد محادثات</p>
+              <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                <MessageCircle className="h-10 w-10 text-muted-foreground mb-2" />
+                <p className="text-muted-foreground text-sm">لا توجد محادثات</p>
               </div>
             ) : (
               <div className="divide-y divide-border/50">
                 {conversations.map((conv: any) => {
                   const LevelIcon = LEVEL_ICONS[conv.level] || MessageCircle;
+                  const hasUnread = conv.unread_count > 0;
                   return (
                     <button
                       key={conv.id}
                       onClick={() => setSelectedConversation(conv.id)}
-                      className={`w-full p-4 text-right hover:bg-muted/50 transition-colors ${
+                      className={`w-full p-3 text-right hover:bg-muted/50 transition-colors relative ${
                         selectedConversation === conv.id ? 'bg-primary/10' : ''
-                      }`}
+                      } ${hasUnread ? 'bg-destructive/5' : ''}`}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="relative">
+                      {hasUnread && (
+                        <div className="absolute right-0 top-0 bottom-0 w-1 bg-destructive rounded-l" />
+                      )}
+                      <div className="flex items-start gap-2">
+                        <div className="relative flex-shrink-0">
                           <img
                             src={conv.user?.avatar_url || '/placeholder.svg'}
                             alt={conv.user?.full_name}
-                            className="h-10 w-10 rounded-full object-cover"
+                            className={`h-9 w-9 rounded-full object-cover ${hasUnread ? 'ring-2 ring-destructive' : ''}`}
                           />
                           <LevelIcon className="absolute -bottom-1 -right-1 h-4 w-4 text-primary bg-background rounded-full p-0.5" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="font-semibold truncate text-sm">
+                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <p className={`truncate text-sm ${hasUnread ? 'font-bold' : 'font-medium'}`}>
                               {conv.user?.full_name || conv.user?.username}
                             </p>
-                            {conv.unread_count > 0 && (
-                              <Badge variant="destructive" className="text-xs h-5 px-1.5">
+                            {hasUnread && (
+                              <Badge variant="destructive" className="text-[10px] h-4 px-1.5 animate-pulse flex-shrink-0">
                                 {conv.unread_count}
                               </Badge>
                             )}
@@ -339,21 +350,21 @@ export default function AdminChats() {
         </AdminCard>
 
         {/* Chat Window */}
-        <AdminCard className="md:col-span-2 flex flex-col overflow-hidden">
+        <AdminCard className="lg:col-span-2 flex flex-col overflow-hidden min-h-[400px] lg:min-h-0">
           {selectedConversation && selectedConv ? (
             <>
-              <div className="p-4 border-b border-border/50">
-                <div className="flex items-center gap-3">
+              <div className="p-3 border-b border-border/50 flex-shrink-0">
+                <div className="flex items-center gap-2">
                   <img
                     src={selectedConv.user?.avatar_url || '/placeholder.svg'}
                     alt={selectedConv.user?.full_name}
-                    className="h-10 w-10 rounded-full object-cover"
+                    className="h-9 w-9 rounded-full object-cover"
                   />
-                  <div>
-                    <h3 className="font-semibold">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-sm truncate">
                       {selectedConv.user?.full_name || selectedConv.user?.username}
                     </h3>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground truncate">
                       {selectedConv.order_id
                         ? `محادثة حول الطلب #${selectedConv.order_id.slice(0, 8)}`
                         : 'محادثة عامة'}
@@ -362,7 +373,7 @@ export default function AdminChats() {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {messagesLoading ? (
                   <div className="flex items-center justify-center h-full">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -374,10 +385,10 @@ export default function AdminChats() {
                       return (
                         <div
                           key={msg.id}
-                          className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                          className={`flex ${isOwn ? 'justify-start' : 'justify-end'}`}
                         >
                           <div
-                            className={`max-w-[75%] rounded-lg px-4 py-2 ${
+                            className={`max-w-[75%] rounded-xl px-3 py-2 ${
                               isOwn
                                 ? 'bg-primary text-primary-foreground'
                                 : 'bg-muted text-foreground'
@@ -387,13 +398,13 @@ export default function AdminChats() {
                               <img
                                 src={msg.image_url}
                                 alt="صورة"
-                                className="rounded-lg mb-2 max-w-full h-auto cursor-pointer"
+                                className="rounded-lg mb-2 max-w-full max-h-40 h-auto cursor-pointer"
                                 onClick={() => window.open(msg.image_url, '_blank')}
                               />
                             )}
-                            <p className="text-sm break-words">{msg.content}</p>
+                            <p className="text-sm break-words whitespace-pre-wrap">{msg.content}</p>
                             <p
-                              className={`text-xs mt-1 ${
+                              className={`text-[10px] mt-1 ${
                                 isOwn ? 'text-primary-foreground/70' : 'text-muted-foreground'
                               }`}
                             >
@@ -411,18 +422,18 @@ export default function AdminChats() {
                 )}
               </div>
 
-              <div className="border-t border-border/50 p-4">
+              <div className="border-t border-border/50 p-3 flex-shrink-0">
                 {imagePreview && (
                   <div className="mb-2 relative inline-block">
                     <img
                       src={imagePreview}
                       alt="معاينة"
-                      className="h-20 w-20 object-cover rounded-lg"
+                      className="h-16 w-16 object-cover rounded-lg"
                     />
                     <Button
                       variant="destructive"
                       size="icon"
-                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                      className="absolute -top-2 -right-2 h-5 w-5 rounded-full"
                       onClick={() => {
                         setSelectedImage(null);
                         setImagePreview(null);
@@ -433,7 +444,7 @@ export default function AdminChats() {
                     </Button>
                   </div>
                 )}
-                <div className="flex gap-2">
+                <div className="flex gap-2 items-center">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -446,6 +457,7 @@ export default function AdminChats() {
                     size="icon"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingImage}
+                    className="h-9 w-9 flex-shrink-0"
                   >
                     <ImageIcon className="h-4 w-4" />
                   </Button>
@@ -455,11 +467,12 @@ export default function AdminChats() {
                     placeholder="اكتب رسالتك..."
                     onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                     disabled={uploadingImage}
+                    className="h-9 text-sm"
                   />
                   <Button
                     onClick={handleSend}
                     disabled={(!message.trim() && !selectedImage) || uploadingImage}
-                    className="admin-btn-primary"
+                    className="admin-btn-primary h-9 px-3 flex-shrink-0"
                   >
                     {uploadingImage ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -473,7 +486,7 @@ export default function AdminChats() {
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <AdminEmptyState
-                icon={<MessageCircle className="h-12 w-12" />}
+                icon={<MessageCircle className="h-10 w-10" />}
                 title="اختر محادثة"
                 description="اختر محادثة من القائمة للبدء"
               />
