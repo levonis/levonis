@@ -1,14 +1,13 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowRight, ArrowLeft, RotateCw, Home, X, ShoppingCart, Package, Loader2, ChevronUp, ChevronDown } from 'lucide-react';
+import { X, ShoppingCart, Package, Loader2, ExternalLink, Copy, Check, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
 import { useShippingSettings, calculateShippingCost, type ShippingType } from '@/hooks/useShippingCalculator';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface StoreAddress {
   country: string;
@@ -33,6 +32,8 @@ interface ProductEstimate {
   commission: number;
   total: number;
   productName: string;
+  weight: number | null;
+  dimensions: { length: number; width: number; height: number } | null;
 }
 
 export default function EmbeddedStoreBrowser({
@@ -42,29 +43,39 @@ export default function EmbeddedStoreBrowser({
   storeAddress,
   onClose
 }: EmbeddedStoreBrowserProps) {
-  const [currentUrl, setCurrentUrl] = useState(storeUrl);
-  const [inputUrl, setInputUrl] = useState(storeUrl);
-  const [isLoading, setIsLoading] = useState(true);
-  const [showShippingPanel, setShowShippingPanel] = useState(false);
+  const [productUrl, setProductUrl] = useState('');
   const [isCalculating, setIsCalculating] = useState(false);
   const [productEstimate, setProductEstimate] = useState<ProductEstimate | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [copied, setCopied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const { data: shippingSettings } = useShippingSettings();
 
-  // Note: Due to CORS and X-Frame-Options, most sites won't load in iframe
-  // This is a concept implementation - production would need a proxy server
-  const [iframeError, setIframeError] = useState(false);
+  const handleOpenStore = () => {
+    window.open(storeUrl, '_blank');
+  };
+
+  const handleCopyAddress = async () => {
+    const address = `${storeAddress.street}, ${storeAddress.city}, ${storeAddress.state} ${storeAddress.zip_code}, ${storeAddress.country}`;
+    await navigator.clipboard.writeText(address);
+    setCopied(true);
+    toast.success('تم نسخ العنوان');
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleCalculateShipping = async () => {
+    if (!productUrl.trim()) {
+      toast.error('يرجى إدخال رابط المنتج');
+      return;
+    }
+
     setIsCalculating(true);
     setProductEstimate(null);
 
     try {
       const { data, error } = await supabase.functions.invoke('calculate-shipping-ai', {
         body: {
-          productUrl: currentUrl,
+          productUrl: productUrl.trim(),
           sourceCountry: 'usa',
           shippingType: 'air' as ShippingType
         }
@@ -96,13 +107,14 @@ export default function EmbeddedStoreBrowser({
           shippingCost,
           commission,
           total: (specs.price_iqd || 0) + shippingCost + commission,
-          productName: specs.product_name || 'منتج'
+          productName: specs.product_name || 'منتج',
+          weight: specs.weight || null,
+          dimensions: specs.dimensions || null
         });
         
-        setShowDetails(true);
         toast.success('تم حساب تكلفة الشحن');
       } else {
-        toast.error('لم يتم العثور على معلومات المنتج');
+        toast.error(data?.error || 'لم يتم العثور على معلومات المنتج');
       }
     } catch (error) {
       console.error('Calculation error:', error);
@@ -112,7 +124,7 @@ export default function EmbeddedStoreBrowser({
     }
   };
 
-  const handleAddToCart = async () => {
+  const handleAddToRequests = async () => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
       return;
@@ -123,14 +135,17 @@ export default function EmbeddedStoreBrowser({
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const { error } = await supabase.from('custom_product_requests').insert({
         user_id: user.id,
-        product_link: currentUrl,
+        product_link: productUrl,
         product_name: productEstimate.productName,
         quantity: 1,
         source_country: 'usa',
         shipping_type: 'air',
+        product_weight: productEstimate.weight,
+        product_dimensions: productEstimate.dimensions,
         estimated_shipping_cost: productEstimate.shippingCost + productEstimate.commission,
         status: 'pending'
       });
@@ -138,211 +153,160 @@ export default function EmbeddedStoreBrowser({
       if (error) throw error;
 
       toast.success('تم إضافة المنتج لطلباتك! سنتواصل معك قريباً');
+      onClose();
     } catch (error) {
-      console.error('Error adding to cart:', error);
+      console.error('Error adding to requests:', error);
       toast.error('حدث خطأ في إضافة المنتج');
-    }
-  };
-
-  const navigateTo = (url: string) => {
-    setCurrentUrl(url);
-    setInputUrl(url);
-    setIsLoading(true);
-    setProductEstimate(null);
-  };
-
-  const handleUrlSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (inputUrl) {
-      navigateTo(inputUrl);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background flex flex-col">
-      {/* Top Navigation Bar */}
-      <div className="flex items-center gap-2 p-2 border-b bg-card">
-        <Button variant="ghost" size="icon" onClick={onClose}>
-          <X className="w-5 h-5" />
-        </Button>
-        
-        <Button variant="ghost" size="icon" onClick={() => window.history.back()}>
-          <ArrowRight className="w-5 h-5" />
-        </Button>
-        
-        <Button variant="ghost" size="icon" onClick={() => window.history.forward()}>
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        
-        <Button variant="ghost" size="icon" onClick={() => navigateTo(currentUrl)}>
-          <RotateCw className="w-5 h-5" />
-        </Button>
-        
-        <Button variant="ghost" size="icon" onClick={() => navigateTo(storeUrl)}>
-          <Home className="w-5 h-5" />
-        </Button>
-        
-        <form onSubmit={handleUrlSubmit} className="flex-1 flex gap-2">
-          <Input
-            value={inputUrl}
-            onChange={(e) => setInputUrl(e.target.value)}
-            placeholder="أدخل رابط المنتج"
-            className="flex-1 text-sm"
-            dir="ltr"
-          />
-        </form>
-        
-        <div className="text-sm font-medium text-muted-foreground px-2">
-          {storeName}
+    <div className="min-h-screen bg-background pb-20">
+      <div className="container max-w-2xl mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="w-5 h-5" />
+          </Button>
+          <h1 className="text-xl font-bold">{storeName}</h1>
+          <div className="w-10" />
         </div>
-      </div>
 
-      {/* Address Info */}
-      <div className="flex items-center justify-center px-4 py-2 bg-muted/50 text-sm">
-        <span className="text-muted-foreground">
-          📍 {storeAddress.city}, {storeAddress.state} - {storeAddress.zip_code}
-        </span>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="flex-1 relative overflow-hidden">
-        {/* Notice for CORS restrictions */}
-        {iframeError ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-            <Package className="w-16 h-16 text-muted-foreground" />
-            <h2 className="text-xl font-bold">لا يمكن تضمين هذا المتجر مباشرة</h2>
-            <p className="text-muted-foreground max-w-md">
-              بسبب قيود الأمان، لا يمكن عرض معظم المتاجر داخل التطبيق.
-              يمكنك نسخ رابط المنتج من المتجر وإرساله عبر نموذج الطلب المخصص.
-            </p>
-            <div className="flex gap-2 mt-4">
-              <Button onClick={() => window.open(currentUrl, '_blank')}>
-                فتح المتجر في نافذة جديدة
-              </Button>
-              <Button variant="outline" onClick={onClose}>
-                العودة لنموذج الطلب
+        {/* Store Card */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                تصفح المتجر
+              </CardTitle>
+              <Button onClick={handleOpenStore} className="gap-2">
+                <ExternalLink className="w-4 h-4" />
+                فتح المتجر
               </Button>
             </div>
-          </div>
-        ) : (
-          <>
-            {isLoading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/80 z-10">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-3 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-2">عنوان الشحن:</p>
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium" dir="ltr">
+                  {storeAddress.street}, {storeAddress.city}, {storeAddress.state} {storeAddress.zip_code}
+                </p>
+                <Button variant="ghost" size="sm" onClick={handleCopyAddress}>
+                  {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                </Button>
               </div>
-            )}
-            <iframe
-              ref={iframeRef}
-              src={currentUrl}
-              className="w-full h-full border-0"
-              onLoad={() => setIsLoading(false)}
-              onError={() => {
-                setIsLoading(false);
-                setIframeError(true);
-              }}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            />
-          </>
-        )}
-      </div>
+            </div>
 
-      {/* Bottom Shipping Panel */}
-      <Collapsible open={showShippingPanel} onOpenChange={setShowShippingPanel}>
-        <div className="border-t bg-card">
-          <CollapsibleTrigger asChild>
-            <Button 
-              variant="ghost" 
-              className="w-full flex items-center justify-center gap-2 py-3"
-            >
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                💡 افتح المتجر، اختر المنتج، وانسخ رابطه هنا لحساب التكلفة
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Product URL Input */}
+        <Card className="mb-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
               <Package className="w-5 h-5" />
-              تفاصيل الشحن والتكلفة
-              {showShippingPanel ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </Button>
-          </CollapsibleTrigger>
-          
-          <CollapsibleContent>
-            <div className="p-4 space-y-4">
-              {!productEstimate ? (
-                <div className="text-center">
-                  <p className="text-muted-foreground mb-4">
-                    انتقل إلى صفحة المنتج ثم اضغط لحساب التكلفة
-                  </p>
-                  <Button 
-                    onClick={handleCalculateShipping}
-                    disabled={isCalculating}
-                    className="gap-2"
-                  >
-                    {isCalculating ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        جاري الحساب...
-                      </>
-                    ) : (
-                      <>
-                        <Package className="w-4 h-4" />
-                        حساب تكلفة الشحن
-                      </>
-                    )}
-                  </Button>
-                </div>
+              حساب تكلفة المنتج
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Input
+                value={productUrl}
+                onChange={(e) => setProductUrl(e.target.value)}
+                placeholder="الصق رابط المنتج هنا..."
+                className="text-sm"
+                dir="ltr"
+              />
+            </div>
+
+            <Button
+              onClick={handleCalculateShipping}
+              disabled={isCalculating || !productUrl.trim()}
+              className="w-full gap-2"
+            >
+              {isCalculating ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  جاري حساب التكلفة...
+                </>
               ) : (
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <p className="text-sm text-muted-foreground mb-1">{productEstimate.productName}</p>
-                    {productEstimate.priceIqd && (
-                      <p className="text-2xl font-bold text-primary">{formatPrice(productEstimate.priceIqd)}</p>
-                    )}
-                    {productEstimate.priceUsd && (
-                      <p className="text-xs text-muted-foreground">${productEstimate.priceUsd.toFixed(2)} USD</p>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-3 gap-2 text-center text-sm">
-                    <div className="p-2 bg-muted rounded-lg">
-                      <p className="text-muted-foreground text-xs">سعر المنتج</p>
-                      <p className="font-bold">{formatPrice(productEstimate.priceIqd || 0)}</p>
-                    </div>
-                    <div className="p-2 bg-muted rounded-lg">
-                      <p className="text-muted-foreground text-xs">الشحن</p>
-                      <p className="font-bold">{formatPrice(productEstimate.shippingCost)}</p>
-                    </div>
-                    <div className="p-2 bg-muted rounded-lg">
-                      <p className="text-muted-foreground text-xs">العمولة</p>
-                      <p className="font-bold">{formatPrice(productEstimate.commission)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="p-3 bg-primary/10 rounded-lg text-center border border-primary/20">
-                    <p className="text-xs text-muted-foreground mb-1">الإجمالي التقديري</p>
-                    <p className="text-2xl font-bold text-primary">{formatPrice(productEstimate.total)}</p>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button 
-                      onClick={handleAddToCart}
-                      className="flex-1 gap-2"
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      إضافة للطلبات
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={handleCalculateShipping}
-                      disabled={isCalculating}
-                    >
-                      <RotateCw className={`w-4 h-4 ${isCalculating ? 'animate-spin' : ''}`} />
-                    </Button>
-                  </div>
-                  
-                  <p className="text-xs text-amber-600 text-center">
-                    ⚠️ هذه تكلفة تقديرية وقد تختلف عن السعر النهائي
-                  </p>
+                <>
+                  <Package className="w-4 h-4" />
+                  حساب التكلفة التقديرية
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Results */}
+        {productEstimate && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-center">{productEstimate.productName}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {productEstimate.priceIqd && (
+                <div className="text-center p-4 bg-primary/5 rounded-lg">
+                  <p className="text-sm text-muted-foreground mb-1">سعر المنتج</p>
+                  <p className="text-2xl font-bold text-primary">{formatPrice(productEstimate.priceIqd)}</p>
+                  {productEstimate.priceUsd && (
+                    <p className="text-xs text-muted-foreground">${productEstimate.priceUsd.toFixed(2)} USD</p>
+                  )}
                 </div>
               )}
-            </div>
-          </CollapsibleContent>
-        </div>
-      </Collapsible>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="p-3 bg-muted/50 rounded-lg text-center">
+                  <p className="text-xs text-muted-foreground mb-1">تكلفة الشحن</p>
+                  <p className="text-lg font-bold">{formatPrice(productEstimate.shippingCost)}</p>
+                </div>
+                <div className="p-3 bg-muted/50 rounded-lg text-center">
+                  <p className="text-xs text-muted-foreground mb-1">العمولة</p>
+                  <p className="text-lg font-bold">{formatPrice(productEstimate.commission)}</p>
+                </div>
+              </div>
+
+              <div className="p-4 bg-primary/10 rounded-lg text-center border border-primary/20">
+                <p className="text-sm text-muted-foreground mb-1">الإجمالي التقديري</p>
+                <p className="text-3xl font-bold text-primary">{formatPrice(productEstimate.total)}</p>
+              </div>
+
+              <Button
+                onClick={handleAddToRequests}
+                disabled={isSubmitting}
+                className="w-full gap-2"
+                size="lg"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    جاري الإضافة...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCart className="w-4 h-4" />
+                    إضافة للطلبات
+                  </>
+                )}
+              </Button>
+
+              <p className="text-xs text-amber-600 text-center">
+                ⚠️ هذه تكلفة تقديرية وقد تختلف عن السعر النهائي
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
