@@ -1,21 +1,31 @@
+/**
+ * Store Browser Popup - المكون الرئيسي لتصفح المتاجر وحساب التكلفة
+ * 
+ * معمارية Popup + Adapter:
+ * - يفتح المتجر في نافذة منفصلة (window.open)
+ * - يوفر واجهة للصق الرابط وحساب التكلفة
+ * - يعرض تفاصيل التكلفة مع التمييز بين Actual/Estimated
+ */
+
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { 
-  X, ShoppingCart, Package, Loader2, ExternalLink, Copy, Check, 
-  Globe, Maximize2, RefreshCw, AlertCircle, Truck, Calculator,
-  ChevronDown, ChevronUp
+  X, ShoppingCart, Loader2, ExternalLink, 
+  ChevronDown, ChevronUp, ArrowLeft
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
 import { useShippingSettings, type ShippingType, type SourceCountry } from '@/hooks/useShippingCalculator';
-import { detectStore, extractProductIdentity, getSourceCountryFromUrl } from '@/lib/stores/storeAdapters';
+import { extractProductIdentity, getSourceCountryFromUrl, type ProductIdentity } from '@/lib/stores/storeAdapters';
 import { calculateFullCost, type ProductSpecs } from '@/lib/stores/costEngine';
 import CostBreakdownCard from './CostBreakdownCard';
+import PopupStatusBar from './PopupStatusBar';
+import LinkCapturePanel from './LinkCapturePanel';
+import DestinationSettings from './DestinationSettings';
+import WhyAutoAddressNotPossible from './WhyAutoAddressNotPossible';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface StoreAddress {
@@ -43,21 +53,32 @@ export default function StoreBrowserPopup({
   storeAddress,
   onClose
 }: StoreBrowserPopupProps) {
-  const [productUrl, setProductUrl] = useState('');
+  // State
   const [calculationStatus, setCalculationStatus] = useState<CalculationStatus>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [productSpecs, setProductSpecs] = useState<ProductSpecs | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [productUrl, setProductUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [popupWindow, setPopupWindow] = useState<Window | null>(null);
   const [isPopupOpen, setIsPopupOpen] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(true);
-  const [detectedStore, setDetectedStore] = useState<string | null>(null);
+  const [showAddressInfo, setShowAddressInfo] = useState(false);
+  
+  // Shipping options
   const [shippingType, setShippingType] = useState<ShippingType>('air');
+  const [sourceCountry, setSourceCountry] = useState<SourceCountry>('usa');
   
   const { user } = useAuth();
   const { data: shippingSettings } = useShippingSettings();
   const popupCheckInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // Set initial source country based on store
+  useEffect(() => {
+    const detectedCountry = getSourceCountryFromUrl(storeUrl);
+    if (detectedCountry) {
+      setSourceCountry(detectedCountry);
+    }
+  }, [storeUrl]);
 
   // Check if popup is still open
   useEffect(() => {
@@ -80,16 +101,7 @@ export default function StoreBrowserPopup({
     };
   }, [popupWindow]);
 
-  // Detect store when URL changes
-  useEffect(() => {
-    if (productUrl.trim()) {
-      const adapter = detectStore(productUrl);
-      setDetectedStore(adapter?.nameAr || null);
-    } else {
-      setDetectedStore(null);
-    }
-  }, [productUrl]);
-
+  // Open store popup
   const handleOpenPopup = useCallback(() => {
     const width = Math.min(window.screen.width * 0.85, 1400);
     const height = Math.min(window.screen.height * 0.85, 900);
@@ -127,47 +139,26 @@ export default function StoreBrowserPopup({
     setIsPopupOpen(false);
   }, [popupWindow]);
 
-  const handleCopyAddress = async () => {
-    const address = `${storeAddress.street}, ${storeAddress.city}, ${storeAddress.state} ${storeAddress.zip_code}, ${storeAddress.country}`;
-    await navigator.clipboard.writeText(address);
-    setCopied(true);
-    toast.success('تم نسخ العنوان');
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleCalculateCost = async () => {
-    if (!productUrl.trim()) {
-      toast.error('يرجى إدخال رابط المنتج');
-      return;
-    }
-
-    // Validate URL
-    try {
-      new URL(productUrl);
-    } catch {
-      toast.error('رابط غير صالح. يرجى إدخال رابط كامل يبدأ بـ https://');
-      return;
-    }
-
-    // Extract product identity
-    const identity = extractProductIdentity(productUrl);
-    if (!identity) {
-      toast.warning('لم نتعرف على المتجر تلقائياً، سنحاول استخراج المعلومات');
-    }
-
+  // Calculate cost from URL
+  const handleUrlSubmit = async (url: string, identity: ProductIdentity | null) => {
+    setProductUrl(url);
     setCalculationStatus('calculating');
     setErrorMessage(null);
     setProductSpecs(null);
 
     try {
-      // Determine source country
-      const detectedCountry = getSourceCountryFromUrl(productUrl);
-      const sourceCountry: SourceCountry = detectedCountry || 'usa';
+      // Determine source country from URL or use selected
+      const detectedCountry = getSourceCountryFromUrl(url);
+      const effectiveCountry = detectedCountry || sourceCountry;
+      
+      if (detectedCountry && detectedCountry !== sourceCountry) {
+        setSourceCountry(detectedCountry);
+      }
 
       const { data, error } = await supabase.functions.invoke('calculate-shipping-ai', {
         body: {
-          productUrl: productUrl.trim(),
-          sourceCountry,
+          productUrl: url,
+          sourceCountry: effectiveCountry,
           shippingType
         }
       });
@@ -206,6 +197,7 @@ export default function StoreBrowserPopup({
     }
   };
 
+  // Add to requests
   const handleAddToRequests = async () => {
     if (!user) {
       toast.error('يجب تسجيل الدخول أولاً');
@@ -217,7 +209,6 @@ export default function StoreBrowserPopup({
       return;
     }
 
-    const sourceCountry: SourceCountry = getSourceCountryFromUrl(productUrl) || 'usa';
     const costBreakdown = calculateFullCost(productSpecs, sourceCountry, shippingType, shippingSettings);
 
     setIsSubmitting(true);
@@ -238,6 +229,27 @@ export default function StoreBrowserPopup({
 
       if (error) throw error;
 
+      // Send Telegram notification
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user.id)
+          .single();
+        
+        const userName = profile?.full_name || profile?.username || 'مستخدم';
+        const countryLabel = sourceCountry === 'china' ? 'الصين' : 'أمريكا';
+        const shippingLabel = shippingType === 'sea' ? 'بحري' : 'جوي';
+        
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `📦 <b>طلب منتج جديد</b>\n\n👤 ${userName}\n📝 ${productSpecs.productName}\n🌍 ${countryLabel} - ${shippingLabel}\n💰 ${formatPrice(costBreakdown.totalIqd)}\n🔗 ${productUrl}`,
+          },
+        });
+      } catch (telegramError) {
+        console.error('Telegram notification error:', telegramError);
+      }
+
       toast.success('تم إضافة المنتج لطلباتك! سنتواصل معك قريباً');
       onClose();
     } catch (error) {
@@ -248,20 +260,9 @@ export default function StoreBrowserPopup({
     }
   };
 
-  const handleRetry = () => {
-    setCalculationStatus('idle');
-    setErrorMessage(null);
-    handleCalculateCost();
-  };
-
   // Calculate cost breakdown
   const costBreakdown = productSpecs && shippingSettings
-    ? calculateFullCost(
-        productSpecs,
-        getSourceCountryFromUrl(productUrl) || 'usa',
-        shippingType,
-        shippingSettings
-      )
+    ? calculateFullCost(productSpecs, sourceCountry, shippingType, shippingSettings)
     : null;
 
   return (
@@ -270,151 +271,83 @@ export default function StoreBrowserPopup({
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <Button variant="ghost" size="icon" onClick={onClose}>
-            <X className="w-5 h-5" />
+            <ArrowLeft className="w-5 h-5" />
           </Button>
           <h1 className="text-xl font-bold">{storeName}</h1>
-          <div className="w-10" />
+          <Button 
+            variant={isPopupOpen ? "secondary" : "default"} 
+            size="sm"
+            onClick={isPopupOpen ? handleFocusPopup : handleOpenPopup}
+            className="gap-1"
+          >
+            <ExternalLink className="w-4 h-4" />
+            {isPopupOpen ? 'عرض' : 'فتح'}
+          </Button>
         </div>
 
-        {/* Popup Status Bar */}
-        {isPopupOpen && (
-          <Card className="mb-4 border-green-500/50 bg-green-500/5">
-            <CardContent className="py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-sm font-medium">المتجر مفتوح في نافذة منفصلة</span>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleFocusPopup} className="gap-1">
-                    <Maximize2 className="w-3 h-3" />
-                    عرض المتجر
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={handleClosePopup}>
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
+        {/* Popup Status */}
+        <div className="mb-4">
+          <PopupStatusBar
+            isOpen={isPopupOpen}
+            storeName={storeName}
+            storeAddress={storeAddress}
+            onFocus={handleFocusPopup}
+            onClose={handleClosePopup}
+            onReopen={handleOpenPopup}
+          />
+        </div>
+
+        {/* Open Store Button (when popup not open) */}
+        {!isPopupOpen && (
+          <Card className="mb-4">
+            <CardContent className="py-6 text-center">
+              <p className="text-muted-foreground mb-4">
+                افتح المتجر في نافذة منفصلة للتصفح واختيار المنتجات
+              </p>
+              <Button onClick={handleOpenPopup} size="lg" className="gap-2">
+                <ExternalLink className="w-4 h-4" />
+                فتح {storeName}
+              </Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Store Card */}
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Globe className="w-5 h-5" />
-                تصفح المتجر
-              </CardTitle>
-              {!isPopupOpen ? (
-                <Button onClick={handleOpenPopup} className="gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  فتح المتجر
-                </Button>
-              ) : (
-                <Button onClick={handleFocusPopup} variant="secondary" className="gap-2">
-                  <Maximize2 className="w-4 h-4" />
-                  إظهار النافذة
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Shipping Address */}
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <div className="flex items-center gap-2 mb-2">
-                <Truck className="w-4 h-4 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">عنوان الشحن (للمخزن):</p>
-              </div>
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium" dir="ltr">
-                  {storeAddress.street}, {storeAddress.city}, {storeAddress.state} {storeAddress.zip_code}
-                </p>
-                <Button variant="ghost" size="sm" onClick={handleCopyAddress}>
-                  {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-                </Button>
-              </div>
-            </div>
+        {/* Link Capture */}
+        <div className="mb-4">
+          <LinkCapturePanel
+            onUrlSubmit={handleUrlSubmit}
+            isCalculating={calculationStatus === 'calculating'}
+            popupWindow={popupWindow}
+          />
+        </div>
 
-            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-              <p className="text-sm text-blue-700 dark:text-blue-400">
-                💡 {isPopupOpen 
-                  ? 'تصفح المتجر واختر المنتج والخيارات (اللون، الحجم، البائع)، ثم انسخ الرابط هنا' 
-                  : 'افتح المتجر، اختر المنتج مع كل الخيارات، وانسخ رابطه لحساب التكلفة'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Shipping Options */}
+        <div className="mb-4">
+          <DestinationSettings
+            sourceCountry={sourceCountry}
+            shippingType={shippingType}
+            onSourceCountryChange={setSourceCountry}
+            onShippingTypeChange={setShippingType}
+            disabled={calculationStatus === 'calculating'}
+          />
+        </div>
 
-        {/* Product URL Input */}
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2">
-              <Package className="w-5 h-5" />
-              حساب تكلفة المنتج
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="relative">
-                <Input
-                  value={productUrl}
-                  onChange={(e) => setProductUrl(e.target.value)}
-                  placeholder="الصق رابط المنتج هنا..."
-                  className="text-sm pr-4"
-                  dir="ltr"
-                />
-                {detectedStore && (
-                  <Badge variant="secondary" className="absolute left-2 top-1/2 -translate-y-1/2 text-xs">
-                    {detectedStore}
-                  </Badge>
-                )}
-              </div>
-            </div>
-
-            <Button
-              onClick={handleCalculateCost}
-              disabled={calculationStatus === 'calculating' || !productUrl.trim()}
-              className="w-full gap-2"
-            >
-              {calculationStatus === 'calculating' ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  جاري حساب التكلفة...
-                </>
-              ) : (
-                <>
-                  <Calculator className="w-4 h-4" />
-                  حساب التكلفة
-                </>
-              )}
-            </Button>
-
-            {/* Error State */}
-            {calculationStatus === 'error' && errorMessage && (
-              <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
-                <div className="flex items-start gap-2">
-                  <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-red-700 dark:text-red-400">
-                      {errorMessage}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleRetry}
-                      className="mt-2 gap-1 text-red-600"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                      إعادة المحاولة
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Error State */}
+        {calculationStatus === 'error' && errorMessage && (
+          <Card className="mb-4 border-red-500/50 bg-red-500/5">
+            <CardContent className="py-4">
+              <p className="text-sm text-red-600">{errorMessage}</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setCalculationStatus('idle')}
+                className="mt-2"
+              >
+                إعادة المحاولة
+              </Button>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Results */}
         {costBreakdown && productSpecs && (
@@ -443,10 +376,10 @@ export default function StoreBrowserPopup({
 
             {/* Quick Summary if collapsed */}
             {!showBreakdown && (
-              <Card className="mb-6">
+              <Card className="mb-4">
                 <CardContent className="py-4">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">{productSpecs.productName}</span>
+                    <span className="font-medium line-clamp-1">{productSpecs.productName}</span>
                     <span className="text-xl font-bold text-primary">
                       {formatPrice(costBreakdown.totalIqd)}
                     </span>
@@ -475,6 +408,25 @@ export default function StoreBrowserPopup({
             </Button>
           </>
         )}
+
+        {/* Why Auto Address Not Possible - Collapsible */}
+        <div className="mt-6">
+          <Collapsible open={showAddressInfo} onOpenChange={setShowAddressInfo}>
+            <CollapsibleTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full text-muted-foreground text-xs gap-1"
+              >
+                لماذا لا يمكن إدخال العنوان تلقائياً؟
+                {showAddressInfo ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <WhyAutoAddressNotPossible />
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
       </div>
     </div>
   );
