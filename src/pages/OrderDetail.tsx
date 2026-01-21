@@ -6,13 +6,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Star, Image, File, Download, Ship, Plane } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditCard, ArrowRight, ShoppingBag, FileText, Printer, Star, Image, File, Download, Ship, Plane, MessageCircle } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import generatePDF, { Margin, Resolution } from 'react-to-pdf';
 import { OrderInvoice } from '@/components/OrderInvoice';
 import CustomerChat from '@/components/CustomerChat';
+import AdminUserChat from '@/components/AdminUserChat';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { OrderTimeline } from '@/components/OrderTimeline';
@@ -57,6 +58,7 @@ const OrderDetail = () => {
   const { user, isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [showAdminChat, setShowAdminChat] = useState(false);
   
   // Enable realtime notifications
   useOrderRealtimeNotifications();
@@ -355,6 +357,16 @@ const OrderDetail = () => {
                     تحميل PDF
                   </Button>
                 </>
+              )}
+              {isAdmin && (
+                <Button 
+                  onClick={() => setShowAdminChat(true)}
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/10"
+                >
+                  <MessageCircle className="ml-2 h-4 w-4" />
+                  التواصل مع العميل
+                </Button>
               )}
               <Badge variant={statusInfo.variant} className="text-lg px-4 py-2 w-fit">
                 {statusInfo.label}
@@ -703,7 +715,19 @@ const OrderDetail = () => {
         <OrderInvoice order={order} />
       </div>
       
-      <CustomerChat orderId={orderId} />
+      {/* User Chat */}
+      {!isAdmin && <CustomerChat orderId={orderId} />}
+      
+      {/* Admin Chat with Customer */}
+      {isAdmin && order && (
+        <AdminUserChat
+          userId={order.user_id}
+          orderId={orderId}
+          open={showAdminChat}
+          onOpenChange={setShowAdminChat}
+          userName={order.profiles?.full_name || 'العميل'}
+        />
+      )}
     </div>
   );
 };

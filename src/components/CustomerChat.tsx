@@ -314,6 +314,35 @@ export default function CustomerChat({
       });
 
       if (error) throw error;
+
+      // Update conversation last_message_at
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', conversation.id);
+
+      // Send Telegram notification to admin for new customer messages
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', user.id)
+          .single();
+        
+        const senderName = profile?.full_name || profile?.username || 'مستخدم';
+        const orderInfo = orderId ? `\n📦 الطلب: #${orderId.slice(0, 8)}` : '';
+        
+        // Send to admin Telegram with context for reply
+        await supabase.functions.invoke('send-telegram-notification', {
+          body: {
+            message: `💬 <b>رسالة جديدة من ${senderName}</b>${orderInfo}\n\n📩 الرسالة:\n${content}\n\n💡 للرد، اكتب رسالتك مباشرة هنا\n\n🛍️ دعم العملاء - LEVONIS`,
+            conversation_id: conversation.id,
+            customer_user_id: user.id,
+          },
+        });
+      } catch (telegramError) {
+        console.error('Error sending Telegram notification:', telegramError);
+      }
     },
     onSuccess: () => {
       setMessage('');
@@ -406,7 +435,7 @@ export default function CustomerChat({
 
       {/* Chat Window */}
       {isOpen && (
-        <Card className="fixed bottom-24 left-4 right-4 sm:left-6 sm:right-auto sm:w-[380px] lg:w-[400px] h-[500px] sm:h-[520px] max-h-[70vh] shadow-2xl z-50 flex flex-col overflow-hidden border-2 border-primary/40 bg-background">
+        <Card className="fixed bottom-24 left-4 right-4 sm:left-6 sm:right-auto sm:w-[360px] lg:w-[380px] h-[480px] sm:h-[500px] max-h-[65vh] shadow-2xl z-50 flex flex-col overflow-hidden border-2 border-primary/40 bg-background">
           {/* Header */}
           <CardHeader className="bg-primary p-4 flex-shrink-0">
             <div className="flex items-center justify-between">
