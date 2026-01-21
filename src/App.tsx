@@ -28,7 +28,6 @@ const UserInfo = lazy(() => import("./pages/UserInfo"));
 const Favorites = lazy(() => import("./pages/Favorites"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 const MyCustomRequests = lazy(() => import("./pages/MyCustomRequests"));
-const CustomProductRequest = lazy(() => import("./pages/CustomProductRequest"));
 const UserAddresses = lazy(() => import("./pages/UserAddresses"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Admin = lazy(() => import("./pages/Admin"));
@@ -99,7 +98,6 @@ function AppContent() {
             <Route path="/favorites" element={<Favorites />} />
             <Route path="/notifications" element={<Notifications />} />
             <Route path="/my-requests" element={<MyCustomRequests />} />
-            <Route path="/custom-request" element={<CustomProductRequest />} />
             <Route path="/addresses" element={<UserAddresses />} />
             <Route path="/my-orders" element={<MyOrders />} />
             <Route path="/order/:orderId" element={<OrderDetail />} />

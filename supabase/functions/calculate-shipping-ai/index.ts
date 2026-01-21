@@ -51,59 +51,30 @@ serve(async (req) => {
 
     console.log('Searching for product specs:', productName, productUrl, 'USD rate:', usdToIqdRate);
 
-    // Build a search query for web search
-    let searchQuery = '';
-    if (productUrl) {
-      // Extract product info from URL
-      try {
-        const url = new URL(productUrl);
-        const hostname = url.hostname.replace('www.', '');
-        
-        // Try to extract product name from URL path
-        const pathParts = url.pathname.split('/').filter(p => p && p !== 'dp' && p !== 'product');
-        const productIdOrName = pathParts[pathParts.length - 1] || '';
-        
-        searchQuery = `${hostname} ${productIdOrName} price specifications weight dimensions`;
-      } catch {
-        searchQuery = productUrl + ' price weight dimensions specifications';
-      }
-    } else if (productName) {
-      searchQuery = `${productName} ${optionName || ''} price specifications weight dimensions`;
-    }
-
     const prompt = `أنت خبير في استخراج معلومات المنتجات من المتاجر الإلكترونية.
 
 المطلوب: استخراج معلومات المنتج التالي بدقة عالية جداً.
 
-${productName ? `اسم المنتج: ${productName}` : ''}
+اسم المنتج: ${productName}
 ${optionName ? `الخيار المحدد: ${optionName}` : ''}
 ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
-
-مهمتك:
-1. ابحث على الإنترنت عن هذا المنتج واستخرج السعر والأبعاد والوزن الحقيقية
-2. إذا كان الرابط من Amazon.com، ابحث عن "amazon [اسم المنتج أو رقمه] price"
-3. إذا كان الرابط من Newegg، ابحث عن "newegg [اسم المنتج] specifications"
-4. إذا كان الرابط من BestBuy، ابحث عن "bestbuy [اسم المنتج] specs"
 
 تعليمات مهمة جداً:
 1. السعر: ابحث عن السعر الفعلي للمنتج بالدولار الأمريكي (USD). 
    - إذا كان الرابط من Taobao أو 1688 أو JD، السعر سيكون بالـ Yuan الصيني (CNY/RMB/¥) - قم بتحويله للدولار (1 USD ≈ 7.2 CNY)
-   - إذا كان من Amazon أو eBay أو Newegg أو BestBuy، السعر بالدولار مباشرة
-   - استخرج السعر الدقيق، لا تقربه أو تغيره
+   - إذا كان من Amazon أو eBay، السعر بالدولار مباشرة
+   - استخرج السعر الدقيق كما هو مكتوب في الصفحة، لا تقربه أو تغيره
    - مثال: إذا كان السعر 94.95$ أرجع 94.95 وليس 95 أو 100
 
-2. الأبعاد: استخرج أبعاد المنتج (الطول × العرض × الارتفاع) بالسنتيمتر
+2. الأبعاد: استخرج أبعاد المنتج الدقيقة (الطول × العرض × الارتفاع) بالسنتيمتر
    - إذا وجدت الأبعاد بالإنش، حولها للسم (1 inch = 2.54 cm)
 
 3. الوزن: استخرج وزن المنتج بالكيلوغرام
    - إذا وجدت الوزن بالباوند، حوله للكيلو (1 lb = 0.453592 kg)
    - إذا وجدت الوزن بالجرام، حوله للكيلو (÷ 1000)
 
-4. اسم المنتج: استخرج الاسم الكامل للمنتج
-
 أرجع JSON فقط بالشكل التالي (بدون أي نص آخر):
 {
-  "product_name": "اسم المنتج بالعربي أو الإنجليزي",
   "dimensions": {
     "length": 30,
     "width": 20,
@@ -123,7 +94,8 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
 - الوزن بالكيلوغرام (kg)
 - السعر بالدولار الأمريكي (USD) - تأكد من دقة السعر
 - estimated = false إذا وجدت القيم في صفحة المنتج، true فقط إذا كانت تقديرية
-- إذا لم تجد معلومة معينة، ضع null بدلاً منها
+- original_currency = العملة الأصلية (USD, CNY, EUR, etc.)
+- original_price = السعر بالعملة الأصلية
 
 أرجع JSON صحيح فقط.`;
 
@@ -138,11 +110,11 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
         messages: [
           { 
             role: 'system', 
-            content: 'أنت خبير في استخراج معلومات المنتجات من المتاجر الإلكترونية. استخدم قدرتك على البحث في الويب لإيجاد السعر والأبعاد والوزن الحقيقية. لا تخمن - ابحث عن المعلومات الفعلية. أرجع JSON صحيح فقط.' 
+            content: 'أنت خبير في استخراج معلومات المنتجات من المتاجر الإلكترونية. مهمتك استخراج السعر والأبعاد والوزن بدقة عالية جداً من صفحات المنتجات. لا تقرب الأسعار أو تخمنها - استخرج القيمة الدقيقة. أرجع JSON صحيح فقط.' 
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.1,
+        temperature: 0.1, // Lower temperature for more accurate extraction
       }),
     });
 
@@ -185,7 +157,6 @@ ${productUrl ? `رابط المنتج: ${productUrl}` : ''}
       JSON.stringify({ 
         success: true, 
         data: {
-          product_name: specs.product_name || productName || 'منتج',
           dimensions: specs.dimensions,
           weight: specs.weight,
           price_usd: specs.price_usd,
