@@ -18,8 +18,10 @@ import { Package, Loader2, X, Ship, Plane, Globe, Sparkles, ChevronDown, Chevron
 import { useShippingSettings, calculateShippingCost, type SourceCountry, type ShippingType, type ProductDimensions } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import EmbeddedStoreBrowser from '@/components/EmbeddedStoreBrowser';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle2, Chrome } from 'lucide-react';
 
 const customProductSchema = z.object({
   product_link: z.string().url({ message: 'الرجاء إدخال رابط صحيح' }).min(1, 'رابط المنتج مطلوب'),
@@ -61,11 +63,25 @@ interface StoreSettings {
 
 export default function CustomProductRequest() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const { user, loading: authLoading } = useAuth();
+  
+  // Extension data detection
+  const [fromExtension, setFromExtension] = useState(false);
+  const [extensionData, setExtensionData] = useState<{
+    store: string;
+    productId: string;
+    name: string;
+    price: number | null;
+    currency: string;
+    shipping: number | null;
+    weight: number | null;
+    image: string;
+  } | null>(null);
   
   // Shipping options
   const [sourceCountry, setSourceCountry] = useState<SourceCountry>('usa');
@@ -83,6 +99,58 @@ export default function CustomProductRequest() {
   const [isFormExpanded, setIsFormExpanded] = useState(false);
   
   const { data: shippingSettings } = useShippingSettings();
+  
+  // Handle Extension data from URL params
+  useEffect(() => {
+    const source = searchParams.get('source');
+    if (source === 'extension') {
+      const store = searchParams.get('store') || '';
+      const url = searchParams.get('url') || '';
+      const productId = searchParams.get('productId') || '';
+      const name = searchParams.get('name') || '';
+      const priceStr = searchParams.get('price');
+      const currency = searchParams.get('currency') || 'USD';
+      const shippingStr = searchParams.get('shipping');
+      const weightStr = searchParams.get('weight');
+      const image = searchParams.get('image') || '';
+      
+      setFromExtension(true);
+      setExtensionData({
+        store,
+        productId,
+        name,
+        price: priceStr ? parseFloat(priceStr) : null,
+        currency,
+        shipping: shippingStr ? parseFloat(shippingStr) : null,
+        weight: weightStr ? parseFloat(weightStr) : null,
+        image
+      });
+      
+      // Pre-fill the form
+      form.setValue('product_link', url);
+      form.setValue('product_name', name);
+      setIsFormExpanded(true);
+      
+      // Set image preview if available
+      if (image) {
+        setImagePreview(image);
+      }
+      
+      // Clear URL params to avoid re-triggering
+      setSearchParams({});
+      
+      // Auto-calculate after a short delay
+      setTimeout(() => {
+        if (url) {
+          handleAICalculate();
+        }
+      }, 500);
+      
+      toast.success('تم استلام بيانات المنتج من الإضافة!', {
+        icon: '🎉'
+      });
+    }
+  }, [searchParams]);
 
   // Fetch store settings - only when user is authenticated
   const { data: storeSettings, isLoading: storeSettingsLoading } = useQuery({
@@ -344,6 +412,58 @@ export default function CustomProductRequest() {
           <h1 className="text-2xl md:text-3xl font-bold">اطلب أي منتج من أي متجر</h1>
           <p className="text-muted-foreground mt-2">أدخل رابط المنتج أو تصفح المتاجر الشهيرة</p>
         </div>
+        
+        {/* Extension Banner */}
+        {fromExtension && extensionData && (
+          <Card className="mb-6 border-green-500/50 bg-green-500/5">
+            <CardContent className="py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium text-green-700 dark:text-green-400">
+                    تم استلام البيانات من Chrome Extension
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {extensionData.name?.slice(0, 50)}{extensionData.name?.length > 50 ? '...' : ''}
+                  </p>
+                </div>
+                <Badge variant="outline" className="border-green-500/50 text-green-600">
+                  {extensionData.store?.toUpperCase()}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Extension Promotion Card */}
+        <Card className="mb-6 bg-gradient-to-r from-primary/5 via-accent/5 to-primary/5 border-primary/20">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Chrome className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold">إضافة Chrome للإرسال السريع</p>
+                <p className="text-sm text-muted-foreground">
+                  ثبّت الإضافة لإرسال منتجات Amazon/Newegg/BestBuy بضغطة واحدة
+                </p>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2"
+                onClick={() => {
+                  toast.info('لتثبيت الإضافة: افتح chrome://extensions → Developer mode → Load unpacked → اختر مجلد chrome-extension');
+                }}
+              >
+                <ExternalLink className="w-4 h-4" />
+                كيفية التثبيت
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Manual Request Form - Collapsible */}
         <Card className="mb-8">
