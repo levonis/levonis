@@ -6,11 +6,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Send, MessageCircle, Crown, Award, Star, Image as ImageIcon, X } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Loader2, Send, MessageCircle, Crown, Award, Star, Image as ImageIcon, X, ShoppingBag, Search, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import AdminLayout, { AdminCard, AdminCardContent, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
+import OptimizedImage from '@/components/OptimizedImage';
+import { formatPrice } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -44,8 +47,44 @@ export default function AdminChats() {
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showProductSearch, setShowProductSearch] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Products search for admin
+  interface Product {
+    id: string;
+    name_ar: string;
+    image_url: string | null;
+    price: number;
+  }
+  const [chatProducts, setChatProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    if (!showProductSearch) return;
+    
+    const loadProducts = async () => {
+      const { data } = await (supabase as any)
+        .from('products')
+        .select('id, name_ar, image_url, price')
+        .eq('status', 'published')
+        .ilike('name_ar', `%${productSearchQuery}%`)
+        .limit(50);
+      
+      if (data) {
+        const mapped: Product[] = data.map((p: any) => ({
+          id: p.id,
+          name_ar: p.name_ar,
+          image_url: p.image_url,
+          price: p.price
+        }));
+        setChatProducts(mapped);
+      }
+    };
+    
+    loadProducts();
+  }, [showProductSearch, productSearchQuery]);
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -224,11 +263,19 @@ export default function AdminChats() {
       });
 
       if (error) throw error;
+
+      // Update conversation last_message_at
+      await supabase
+        .from('conversations')
+        .update({ last_message_at: new Date().toISOString() })
+        .eq('id', selectedConversation);
     },
     onSuccess: () => {
       setMessage('');
       setSelectedImage(null);
       setImagePreview(null);
+      setShowProductSearch(false);
+      setProductSearchQuery('');
       queryClient.invalidateQueries({ 
         queryKey: ['admin-conversation-messages', selectedConversation] 
       });
@@ -238,6 +285,12 @@ export default function AdminChats() {
       setUploadingImage(false);
     },
   });
+
+  // Send product as message
+  const sendProductMessage = (product: Product) => {
+    const productMessage = `📦 منتج: ${product.name_ar}\n💰 السعر: ${formatPrice(product.price)} د.ع\n🔗 /product/${product.id}`;
+    sendMessageMutation.mutate({ content: productMessage, imageUrl: product.image_url || undefined });
+  };
 
   const handleSend = async () => {
     if (!message.trim() && !selectedImage) return;
@@ -422,6 +475,52 @@ export default function AdminChats() {
                 )}
               </div>
 
+              {/* Product Search Panel */}
+              {showProductSearch && (
+                <div className="border-t border-border/50 p-3 max-h-48 overflow-hidden">
+                  <div className="relative mb-2">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="ابحث عن منتج..."
+                      value={productSearchQuery}
+                      onChange={(e) => setProductSearchQuery(e.target.value)}
+                      className="pr-10 h-8 text-sm"
+                      autoFocus
+                    />
+                  </div>
+                  <ScrollArea className="h-32">
+                    <div className="space-y-1">
+                      {chatProducts.slice(0, 10).map((product) => (
+                        <button
+                          key={product.id}
+                          onClick={() => sendProductMessage(product)}
+                          className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-primary/10 transition-colors text-right"
+                        >
+                          {product.image_url ? (
+                            <OptimizedImage
+                              src={product.image_url}
+                              alt={product.name_ar}
+                              className="w-8 h-8 rounded object-cover"
+                            />
+                          ) : (
+                            <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
+                              <Package className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{product.name_ar}</p>
+                            <p className="text-xs text-primary font-bold">{formatPrice(product.price)} د.ع</p>
+                          </div>
+                        </button>
+                      ))}
+                      {chatProducts.length === 0 && productSearchQuery && (
+                        <p className="text-sm text-muted-foreground text-center py-4">لا توجد منتجات مطابقة</p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+
               <div className="border-t border-border/50 p-3 flex-shrink-0">
                 {imagePreview && (
                   <div className="mb-2 relative inline-block">
@@ -460,6 +559,14 @@ export default function AdminChats() {
                     className="h-9 w-9 flex-shrink-0"
                   >
                     <ImageIcon className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant={showProductSearch ? 'default' : 'outline'}
+                    size="icon"
+                    onClick={() => setShowProductSearch(!showProductSearch)}
+                    className="h-9 w-9 flex-shrink-0"
+                  >
+                    <ShoppingBag className="h-4 w-4" />
                   </Button>
                   <Input
                     value={message}
