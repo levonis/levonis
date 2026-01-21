@@ -9,8 +9,8 @@ import { useNavigate } from 'react-router-dom';
 import { useShippingSettings, calculateShippingCost, type SourceCountry, type ShippingType } from '@/hooks/useShippingCalculator';
 import { formatPrice } from '@/lib/utils';
 import { PopupOverlayManager } from './PopupOverlayManager';
-import { LinkCapturePanel } from './LinkCapturePanel';
-import { CostBreakdownCard } from './CostBreakdownCard';
+import LinkCapturePanel from './LinkCapturePanel';
+import CostBreakdownCard from './CostBreakdownCard';
 import { detectStore, extractProductIdentity, type ProductIdentity, type StoreAdapter } from '@/lib/stores/storeAdapters';
 import { calculateFullCost, type ProductSpecs, type CostBreakdown } from '@/lib/stores/costEngine';
 
@@ -240,9 +240,9 @@ export function StoreBrowserFlow() {
         onClose={handleCloseStore}
       >
         <LinkCapturePanel
-          onLinkSubmit={handleLinkSubmit}
-          isProcessing={isCalculating}
-          expectedStore={selectedStoreKey}
+          onUrlSubmit={(url) => handleLinkSubmit(url)}
+          isCalculating={isCalculating}
+          popupWindow={null}
         />
 
         {isCalculating && (
@@ -255,12 +255,25 @@ export function StoreBrowserFlow() {
         )}
 
         {costBreakdown && !isCalculating && (
-          <CostBreakdownCard
-            breakdown={costBreakdown}
-            productName={productName || undefined}
-            onAddToRequests={handleAddToRequests}
-            isSubmitting={isSubmitting}
-          />
+          <>
+            <CostBreakdownCard
+              breakdown={costBreakdown}
+              productName={productName || undefined}
+            />
+            <Button 
+              onClick={handleAddToRequests} 
+              disabled={isSubmitting}
+              className="w-full gap-2"
+              size="lg"
+            >
+              {isSubmitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <ShoppingCart className="w-4 h-4" />
+              )}
+              إضافة للطلبات
+            </Button>
+          </>
         )}
       </PopupOverlayManager>
     </div>
