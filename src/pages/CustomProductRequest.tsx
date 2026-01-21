@@ -21,7 +21,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import EmbeddedStoreBrowser from '@/components/EmbeddedStoreBrowser';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, Chrome } from 'lucide-react';
+import { CheckCircle2, Chrome, Download } from 'lucide-react';
+import ChromeExtensionGuide from '@/components/ChromeExtensionGuide';
 
 const customProductSchema = z.object({
   product_link: z.string().url({ message: 'الرجاء إدخال رابط صحيح' }).min(1, 'رابط المنتج مطلوب'),
@@ -98,6 +99,9 @@ export default function CustomProductRequest() {
   // Collapsible form state
   const [isFormExpanded, setIsFormExpanded] = useState(false);
   
+  // Chrome Extension Guide dialog
+  const [showExtensionGuide, setShowExtensionGuide] = useState(false);
+
   const { data: shippingSettings } = useShippingSettings();
   
   // Handle Extension data from URL params
@@ -451,19 +455,22 @@ export default function CustomProductRequest() {
                 </p>
               </div>
               <Button 
-                variant="outline" 
                 size="sm"
                 className="gap-2"
-                onClick={() => {
-                  toast.info('لتثبيت الإضافة: افتح chrome://extensions → Developer mode → Load unpacked → اختر مجلد chrome-extension');
-                }}
+                onClick={() => setShowExtensionGuide(true)}
               >
-                <ExternalLink className="w-4 h-4" />
-                كيفية التثبيت
+                <Download className="w-4 h-4" />
+                تحميل الإضافة
               </Button>
             </div>
           </CardContent>
         </Card>
+        
+        {/* Chrome Extension Guide Dialog */}
+        <ChromeExtensionGuide 
+          open={showExtensionGuide} 
+          onOpenChange={setShowExtensionGuide} 
+        />
 
         {/* Manual Request Form - Collapsible */}
         <Card className="mb-8">
