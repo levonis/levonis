@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { Store, Filter, RefreshCw, CheckCircle2, XCircle } from "lucide-react";
+import { Store, Filter, RefreshCw, CheckCircle2, XCircle, Image as ImageIcon, ExternalLink } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout, { AdminSection } from "@/components/admin/AdminLayout";
@@ -24,6 +24,8 @@ const rowSchema = z.object({
   phone_number: z.string().nullable().optional(),
   city: z.string().nullable().optional(),
   bio: z.string().nullable().optional(),
+  store_image_url: z.string().nullable().optional(),
+  social_links: z.any().nullable().optional(),
   status: z.string(),
   admin_notes: z.string().nullable().optional(),
   created_at: z.string(),
@@ -46,7 +48,9 @@ export default function AdminCommunityMerchants() {
     queryFn: async () => {
       let query = supabase
         .from("merchant_applications")
-        .select("id, user_id, display_name, phone_number, city, bio, status, admin_notes, created_at")
+        .select(
+          "id, user_id, display_name, phone_number, city, bio, store_image_url, social_links, status, admin_notes, created_at"
+        )
         .order("created_at", { ascending: false });
 
       if (status !== "all") query = query.eq("status", status);
@@ -57,6 +61,30 @@ export default function AdminCommunityMerchants() {
       return z.array(rowSchema).parse(data ?? []);
     },
     staleTime: 10_000,
+  });
+
+  const { data: privateInfo, isLoading: privateLoading } = useQuery({
+    queryKey: ["admin-merchant-private", active?.id],
+    enabled: open && !!active?.id,
+    staleTime: 10_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_application_private")
+        .select("legal_full_name, nickname, phone_number, address, birth_date, gender")
+        .eq("application_id", active!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data ?? null) as
+        | {
+            legal_full_name: string | null;
+            nickname: string | null;
+            phone_number: string | null;
+            address: string | null;
+            birth_date: string | null;
+            gender: string | null;
+          }
+        | null;
+    },
   });
 
   const rows = data ?? [];
@@ -144,18 +172,60 @@ export default function AdminCommunityMerchants() {
           <Card className="p-6 text-sm text-muted-foreground">لا توجد طلبات حالياً.</Card>
         ) : (
           rows.map((r) => (
-            <Card key={r.id} className="p-4">
+            <Card key={r.id} className="p-4" dir="rtl">
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold truncate">{r.display_name ?? "(بدون اسم)"}</p>
-                    <Badge variant="outline">{r.status}</Badge>
+                <div className="flex items-start gap-3 min-w-0">
+                  <div className="h-12 w-12 shrink-0 rounded-xl border border-border bg-muted/20 overflow-hidden flex items-center justify-center">
+                    {r.store_image_url ? (
+                      // Intentionally simple img to avoid layout shifts in admin lists
+                      <img
+                        src={r.store_image_url}
+                        alt="صورة المتجر"
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                    )}
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground truncate">
-                    {r.phone_number ?? "—"} • {r.city ?? "—"}
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{r.bio ?? "—"}</p>
+
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-bold truncate">{r.display_name ?? "(بدون اسم)"}</p>
+                      <Badge variant="outline" className="text-xs">
+                        {r.status}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground truncate">
+                      {r.phone_number ?? "—"} • {r.city ?? "—"}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{r.bio ?? "—"}</p>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {(r.social_links as any)?.instagram ? (
+                        <a
+                          className="text-xs text-primary underline underline-offset-4"
+                          href={(r.social_links as any).instagram}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Instagram
+                        </a>
+                      ) : null}
+                      {(r.social_links as any)?.facebook ? (
+                        <a
+                          className="text-xs text-primary underline underline-offset-4"
+                          href={(r.social_links as any).facebook}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          Facebook
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
                 </div>
+
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -163,6 +233,7 @@ export default function AdminCommunityMerchants() {
                     setAdminNotes(r.admin_notes ?? "");
                     setOpen(true);
                   }}
+                  className="shrink-0"
                 >
                   مراجعة
                 </Button>
@@ -173,19 +244,107 @@ export default function AdminCommunityMerchants() {
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-3xl" dir="rtl">
           <DialogHeader>
             <DialogTitle>مراجعة الطلب</DialogTitle>
             <DialogDescription>يمكنك الموافقة/الرفض وإضافة ملاحظات.</DialogDescription>
           </DialogHeader>
 
           {active && (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* Top summary */}
               <div className="rounded-xl border border-border bg-muted/20 p-3">
-                <p className="text-sm font-semibold">{active.display_name ?? "(بدون اسم)"}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{active.user_id}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{active.display_name ?? "(بدون اسم)"}</p>
+                    <p className="mt-1 text-xs text-muted-foreground truncate">User ID: {active.user_id}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">الحالة الحالية: {active.status}</p>
+                  </div>
+
+                  {active.store_image_url ? (
+                    <a
+                      href={active.store_image_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-2 text-xs text-primary underline underline-offset-4 shrink-0"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      فتح صورة المتجر
+                    </a>
+                  ) : null}
+                </div>
               </div>
-              <Textarea value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} className="min-h-24" />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                {/* Public info */}
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <div className="text-sm font-semibold text-foreground">معلومات المتجر (المرحلة الأولى)</div>
+                  <div className="mt-2 space-y-2 text-sm">
+                    <KV label="المدينة" value={active.city ?? "—"} />
+                    <KV label="رقم الهاتف (المتجر)" value={active.phone_number ?? "—"} />
+                    <KV label="نبذة" value={active.bio ?? "—"} multiline />
+
+                    <div className="pt-2">
+                      <div className="text-xs text-muted-foreground">الروابط الاجتماعية</div>
+                      <div className="mt-1 flex flex-wrap gap-2">
+                        {(active.social_links as any)?.instagram ? (
+                          <a
+                            className="text-xs text-primary underline underline-offset-4"
+                            href={(active.social_links as any).instagram}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Instagram
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Instagram: —</span>
+                        )}
+                        {(active.social_links as any)?.facebook ? (
+                          <a
+                            className="text-xs text-primary underline underline-offset-4"
+                            href={(active.social_links as any).facebook}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            Facebook
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">Facebook: —</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Private info */}
+                <div className="rounded-xl border border-border bg-card p-3">
+                  <div className="text-sm font-semibold text-foreground">معلومات خاصة (المرحلة الثانية)</div>
+                  <div className="mt-2 space-y-2 text-sm">
+                    {privateLoading ? (
+                      <div className="text-sm text-muted-foreground">جارٍ تحميل المعلومات الخاصة…</div>
+                    ) : (
+                      <>
+                        <KV label="الاسم الكامل" value={privateInfo?.legal_full_name ?? "—"} />
+                        <KV label="اللقب" value={privateInfo?.nickname ?? "—"} />
+                        <KV label="هاتف شخصي" value={privateInfo?.phone_number ?? "—"} />
+                        <KV label="العنوان" value={privateInfo?.address ?? "—"} multiline />
+                        <KV label="تاريخ الميلاد" value={privateInfo?.birth_date ?? "—"} />
+                        <KV label="الجنس" value={privateInfo?.gender ?? "—"} />
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-3">
+                <div className="text-sm font-semibold text-foreground">ملاحظات الإدارة</div>
+                <Textarea
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  className="mt-2 min-h-24"
+                  placeholder="أضف ملاحظات (اختياري)"
+                />
+              </div>
             </div>
           )}
 
@@ -202,7 +361,7 @@ export default function AdminCommunityMerchants() {
             <Button
               onClick={() => active && updateMutation.mutate({ id: active.id, status: "approved", admin_notes: adminNotes || null })}
               disabled={!active || updateMutation.isPending}
-              className="gap-2 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+              className="gap-2"
             >
               <CheckCircle2 className="h-4 w-4" />
               موافقة
@@ -211,5 +370,30 @@ export default function AdminCommunityMerchants() {
         </DialogContent>
       </Dialog>
     </AdminLayout>
+  );
+}
+
+function KV({
+  label,
+  value,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  multiline?: boolean;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="text-xs text-muted-foreground shrink-0">{label}</div>
+      <div
+        className={
+          multiline
+            ? "text-sm text-foreground text-right leading-relaxed whitespace-pre-wrap"
+            : "text-sm text-foreground text-right"
+        }
+      >
+        {value}
+      </div>
+    </div>
   );
 }
