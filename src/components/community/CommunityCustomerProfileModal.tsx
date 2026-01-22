@@ -22,7 +22,15 @@ const DEFAULT_AVATAR_URL = "/placeholder.svg";
 
 const formSchema = z.object({
   fullName: z.string().trim().min(2, "الاسم مطلوب").max(120),
-  phoneNumber: z.string().trim().min(7, "رقم الهاتف مطلوب").max(30),
+  phoneNumber: z
+    .string()
+    .trim()
+    .min(10, "رقم الهاتف مطلوب")
+    .max(20)
+    .refine(
+      (v) => /^\+9647\d{8,9}$/.test(v.replace(/[^\d+]/g, "")) || /^07\d{8,9}$/.test(v.replace(/[^\d+]/g, "")),
+      "صيغة رقم الهاتف غير صحيحة"
+    ),
   username: z.string().trim().min(3, "اليوزرنيم مطلوب").max(30),
   birthDate: z.string().min(1, "تاريخ الميلاد مطلوب"),
   gender: z.enum(["male", "female"], { required_error: "الجنس مطلوب" }),

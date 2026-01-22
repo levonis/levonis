@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, ArrowRight, Calendar } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import LevelBadge from '@/components/LevelBadge';
-import PrintReputationSummary from '@/components/PrintReputationSummary';
+import ReputationBar from '@/components/reputation/ReputationBar';
+import { useUserPrintReputation } from '@/hooks/useUserPrintReputation';
 
 const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -34,6 +35,35 @@ const PublicProfile = () => {
   });
 
   // NOTE: تم حذف سوق المستعمل بالكامل، لذلك صفحة الملف العام تعرض بيانات المستخدم الأساسية فقط.
+
+  const { data: rep } = useUserPrintReputation(userId);
+
+  const metrics = useMemo(() => {
+    const submitted = rep?.customer_requests_made ?? 0;
+    const received = rep?.customer_requests_received ?? 0;
+    const receiveRate = rep?.customer_receive_rate_percent ?? (submitted > 0 ? (received / submitted) * 100 : null);
+
+    const accepted = rep?.merchant_accepted_jobs ?? 0;
+    const completed = rep?.merchant_completed_jobs ?? 0;
+    const completion = rep?.merchant_completion_percent ?? (accepted > 0 ? (completed / accepted) * 100 : null);
+
+    return [
+      {
+        key: 'customer_receive',
+        label: 'نسبة استلام الزبون',
+        percent: receiveRate == null ? null : Number(receiveRate),
+        hint: 'نسبة الطلبات التي استلمها الزبون من مجموع ما قدّمه.',
+        rightText: submitted ? `${received} من ${submitted}` : '—',
+      },
+      {
+        key: 'merchant_completion',
+        label: 'نسبة إكمال التاجر',
+        percent: completion == null ? null : Number(completion),
+        hint: 'نسبة الأعمال المكتملة من الأعمال المقبولة للتاجر.',
+        rightText: accepted ? `${completed} من ${accepted}` : '—',
+      },
+    ];
+  }, [rep]);
 
   if (loadingProfile) {
     return (
@@ -118,7 +148,12 @@ const PublicProfile = () => {
 
         {userId && (
           <div className="mb-6">
-            <PrintReputationSummary userId={userId} />
+            <ReputationBar
+              overallStars={rep?.avg_stars ?? null}
+              basisCount={rep?.ratings_count ?? null}
+              basisLabel="تقييم"
+              metrics={metrics}
+            />
           </div>
         )}
       </main>

@@ -72,6 +72,9 @@ const CommunityRequestsBrowse = lazy(() => import("./pages/CommunityRequestsBrow
 const CommunityMerchantsPages = lazy(() => import("./pages/CommunityMerchantsPages"));
 const CommunityMerchantSignup = lazy(() => import("./pages/CommunityMerchantSignup"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
+const Profile = lazy(() => import("./pages/Profile"));
+const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
+const SellerProfile = lazy(() => import("./pages/SellerProfile"));
 const MyPurchasedProducts = lazy(() => import("./pages/MyPurchasedProducts"));
 const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
 const AdminOfferPurchases = lazy(() => import("./pages/AdminOfferPurchases"));
@@ -157,6 +160,9 @@ function AppContent() {
             <Route path="/community/requests" element={<RequireAuth><CommunityRequestsBrowse /></RequireAuth>} />
             <Route path="/community/merchants" element={<RequireAuth><CommunityMerchantsPages /></RequireAuth>} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
+            <Route path="/seller/:id" element={<SellerProfile />} />
+            <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
+            <Route path="/profile/settings" element={<RequireAuth><ProfileSettings /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
