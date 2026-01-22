@@ -2,10 +2,10 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  ArrowRight,
   Settings,
   ShieldAlert,
   ShieldCheck,
+  Star,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -16,10 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import ReputationBar from "@/components/reputation/ReputationBar";
 import MerchantSignupDialog from "@/components/community/MerchantSignupDialog";
-import ProfileQuickActions from "@/components/profile/ProfileQuickActions";
-import ProfileMyRequestsPreview from "@/components/profile/ProfileMyRequestsPreview";
 
 function calcPercent(numer: number, denom: number) {
   if (!Number.isFinite(numer) || !Number.isFinite(denom) || denom <= 0) return null;
@@ -46,6 +43,23 @@ export default function Profile() {
   });
 
   const { data: rep } = useUserPrintReputation(user?.id);
+
+  const { data: lastRequest } = useQuery({
+    queryKey: ["my-last-print-request", user?.id],
+    enabled: !!user?.id,
+    staleTime: 20_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("print_requests")
+        .select("status, created_at")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
 
   const metrics = useMemo(() => {
     const submitted = rep?.customer_requests_made ?? 0;
@@ -78,94 +92,156 @@ export default function Profile() {
 
   const phoneVerified = Boolean(profile?.phone_verified) || profile?.phone_verification_status === "verified";
 
+  const overall = rep?.avg_stars ?? null;
+  const overallText = overall == null ? "—" : Number(overall).toFixed(1);
+  const basisCount = rep?.ratings_count ?? null;
+
+  const lastStatus = lastRequest?.status ?? null;
+  const lastActivityAt = lastRequest?.created_at ?? null;
+  const lastActivityText = lastActivityAt
+    ? new Date(lastActivityAt).toLocaleString("ar-IQ", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+      })
+    : "—";
+
+  const statusLabel = (s: string | null) => {
+    if (!s) return "—";
+    switch (s) {
+      case "pending_review":
+        return "قيد المراجعة";
+      case "in_progress":
+        return "قيد التنفيذ";
+      case "completed":
+        return "مكتمل";
+      case "delivered":
+        return "تم التسليم";
+      case "rejected":
+        return "مرفوض";
+      default:
+        return s;
+    }
+  };
+
+  const percentText = (p: number | null | undefined) => {
+    if (p == null || !Number.isFinite(p)) return "—";
+    return `${Math.round(p)}%`;
+  };
+
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 pt-24 pb-10 max-w-6xl">
-        <header className="mb-6 flex items-center justify-between gap-3">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2 h-9">
-            <ArrowRight className="h-4 w-4" />
-            رجوع
-          </Button>
-          <Button variant="outline" onClick={() => navigate("/profile/settings")} className="gap-2 h-9">
-            <Settings className="h-4 w-4" />
-            الإعدادات
-          </Button>
-        </header>
+      <main className="container mx-auto px-4 pt-24 pb-10 max-w-3xl">
+        {/* A) Profile Header */}
+        <Card className="border-border/60">
+          <CardContent className="p-4 sm:p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start gap-3 min-w-0">
+                <Avatar className="h-14 w-14">
+                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarFallback className="text-base bg-primary/10 text-primary">
+                    {(profile?.username?.[0] || profile?.full_name?.[0] || "م").toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left: identity + quick actions */}
-          <section className="lg:col-span-5">
-            <Card className="glass-effect border-border/50 overflow-hidden">
-              <div className="relative">
-                <div className="h-32 bg-gradient-to-l from-primary/25 via-accent/10 to-transparent" />
-                <CardContent className="pt-0">
-                  <div className="-mt-10 flex items-start gap-4">
-                    <Avatar className="h-24 w-24 ring-4 ring-background shadow-sm">
-                      <AvatarImage src={profile?.avatar_url || undefined} />
-                      <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                        {(profile?.username?.[0] || profile?.full_name?.[0] || "م").toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="text-2xl sm:text-3xl font-black text-foreground truncate">
-                          {profile?.full_name || profile?.username || "مستخدم"}
-                        </h1>
-                        <Badge variant="secondary" className="font-semibold">
-                          @{profile?.username || "—"}
-                        </Badge>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
-                        <Badge variant={phoneVerified ? "secondary" : "outline"} className="gap-2">
-                          {phoneVerified ? (
-                            <ShieldCheck className="h-3.5 w-3.5" />
-                          ) : (
-                            <ShieldAlert className="h-3.5 w-3.5" />
-                          )}
-                          <span>{phoneVerified ? "تم تأكيد الرقم" : "غير مؤكد"}</span>
-                        </Badge>
-
-                        <Button size="sm" className="h-9 rounded-xl" onClick={() => navigate("/profile/settings")}>
-                          تعديل سريع
-                        </Button>
-                      </div>
-
-                      <div className="mt-4">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-9 rounded-xl"
-                          onClick={() => setMerchantOpen(true)}
-                        >
-                          تحويل الملف الشخصي إلى تاجر
-                        </Button>
-                      </div>
-                    </div>
+                <div className="min-w-0">
+                  <h1 className="text-lg font-bold text-foreground truncate">
+                    {profile?.full_name || profile?.username || "مستخدم"}
+                  </h1>
+                  <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-muted-foreground truncate">@{profile?.username || "—"}</span>
+                    <Badge
+                      variant={phoneVerified ? "secondary" : "outline"}
+                      className="gap-1.5 text-xs font-semibold"
+                    >
+                      {phoneVerified ? (
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                      ) : (
+                        <ShieldAlert className="h-3.5 w-3.5" />
+                      )}
+                      <span>{phoneVerified ? "مؤكد" : "غير مؤكد"}</span>
+                    </Badge>
                   </div>
-                </CardContent>
+                </div>
               </div>
-            </Card>
 
-            <ProfileQuickActions />
-          </section>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-xl shrink-0 gap-2"
+                onClick={() => navigate("/profile/settings")}
+              >
+                <Settings className="h-4 w-4" />
+                الإعدادات
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Right: reputation + my requests preview */}
-          <section className="lg:col-span-7">
-            <section>
-              <ReputationBar
-                title="تقييماتك"
-                overallStars={rep?.avg_stars ?? null}
-                basisCount={rep?.ratings_count ?? null}
-                basisLabel="تقييم"
-                metrics={metrics}
-              />
-            </section>
+        {/* B) Rating Card */}
+        <Card className="mt-4 border-border/60">
+          <CardContent className="p-4 sm:p-5">
+            <h2 className="text-sm font-bold text-foreground">التقييم</h2>
 
-            <ProfileMyRequestsPreview />
-          </section>
-        </div>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1" aria-label="التقييم العام">
+                  {Array.from({ length: 5 }).map((_, i) => {
+                    const filled = overall != null && overall >= i + 1;
+                    const half = overall != null && overall >= i + 0.5 && overall < i + 1;
+                    return (
+                      <span key={i} className="relative inline-flex h-4 w-4">
+                        <Star className="h-4 w-4 text-muted-foreground" />
+                        {(filled || half) && (
+                          <span
+                            className="absolute inset-0 overflow-hidden"
+                            style={{ width: filled ? "100%" : "50%" }}
+                          >
+                            <Star className="h-4 w-4 text-primary" />
+                          </span>
+                        )}
+                      </span>
+                    );
+                  })}
+                </div>
+                <div className="text-sm font-bold text-foreground tabular-nums">{overallText}</div>
+              </div>
+
+              <div className="text-xs text-muted-foreground">
+                بناءً على {basisCount == null ? "—" : basisCount} طلب
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {metrics.map((m) => (
+                <div key={m.key} className="rounded-xl border border-border/60 bg-card p-3">
+                  <div className="text-xs text-muted-foreground">{m.label}</div>
+                  <div className="mt-1 text-base font-bold text-foreground tabular-nums">
+                    {percentText(m.percent)}
+                  </div>
+                  <div className="mt-1 text-[11px] text-muted-foreground">{m.rightText ?? ""}</div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* C) Activity Summary */}
+        <Card className="mt-4 border-border/60">
+          <CardContent className="p-4 sm:p-5">
+            <h2 className="text-sm font-bold text-foreground">ملخص النشاط</h2>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-xl border border-border/60 bg-card p-3">
+                <div className="text-xs text-muted-foreground">حالة آخر طلب</div>
+                <div className="mt-1 text-sm font-semibold text-foreground">{statusLabel(lastStatus)}</div>
+              </div>
+              <div className="rounded-xl border border-border/60 bg-card p-3">
+                <div className="text-xs text-muted-foreground">تاريخ آخر نشاط</div>
+                <div className="mt-1 text-sm font-semibold text-foreground tabular-nums">{lastActivityText}</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <MerchantSignupDialog open={merchantOpen} onOpenChange={setMerchantOpen} />
       </main>
