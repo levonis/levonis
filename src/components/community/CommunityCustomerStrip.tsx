@@ -100,7 +100,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
 
               <Button
                 variant={complete ? "outline" : "default"}
-                onClick={() => setProfileOpen(true)}
+                onClick={() => (complete ? navigate("/profile") : setProfileOpen(true))}
                 className={
                   !complete
                     ? "shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
@@ -233,7 +233,7 @@ export function CommunityCustomerActionsInline({
       <Button
         size="sm"
         variant={complete ? "outline" : "default"}
-        onClick={() => setProfileOpen(true)}
+        onClick={() => (complete ? navigate("/profile") : setProfileOpen(true))}
         className={newBtnClass}
       >
         <UserIcon className="ml-2 h-4 w-4" />
