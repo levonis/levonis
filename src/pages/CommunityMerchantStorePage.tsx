@@ -1,12 +1,12 @@
  import { useState } from "react";
  import { useNavigate, useParams } from "react-router-dom";
-import { useQuery, useMutation } from "@tanstack/react-query";
- import { Store, Star, Facebook, Instagram, ArrowRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Store, Facebook, Instagram, ArrowRight, Clock, BadgePercent, Play } from "lucide-react";
  import { supabase } from "@/integrations/supabase/client";
  import { Button } from "@/components/ui/button";
  import { Card, CardContent } from "@/components/ui/card";
  import { Skeleton } from "@/components/ui/skeleton";
- import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
  import { Label } from "@/components/ui/label";
  import { Badge } from "@/components/ui/badge";
 import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay";
@@ -26,8 +26,9 @@ import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay
  export default function CommunityMerchantStorePage() {
    const navigate = useNavigate();
    const { merchantId } = useParams<{ merchantId: string }>();
-   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-   const [selectedProduct, setSelectedProduct] = useState<MerchantProduct | null>(null);
+    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+    const [selectedProduct, setSelectedProduct] = useState<MerchantProduct | null>(null);
+    const [activeMediaIndex, setActiveMediaIndex] = useState(0);
  
    const { data: merchantApp, isLoading: appLoading } = useQuery({
      queryKey: ["merchant-store", merchantId],
@@ -76,6 +77,7 @@ import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay
  
    const handleOpenDetail = (product: MerchantProduct) => {
      setSelectedProduct(product);
+      setActiveMediaIndex(product.primary_image_index || 0);
      setDetailDialogOpen(true);
    };
  
@@ -249,67 +251,130 @@ import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay
  
          {/* Product Detail Dialog */}
          <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-           <DialogContent className="sm:max-w-3xl">
+            <DialogContent className="sm:max-w-3xl">
              <DialogHeader>
                <DialogTitle>{selectedProduct?.title}</DialogTitle>
              </DialogHeader>
              {selectedProduct && (
-               <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
-                 {selectedProduct.image_urls && selectedProduct.image_urls.length > 0 && (
-                   <div className="grid grid-cols-2 gap-2">
-                     {selectedProduct.image_urls.map((url, idx) => (
-                       <img
-                         key={idx}
-                         src={url}
-                         alt={`${selectedProduct.title} ${idx + 1}`}
-                         className="w-full aspect-square rounded-lg object-cover border border-border"
-                       />
-                     ))}
-                   </div>
-                 )}
- 
-                 {selectedProduct.video_url && (
-                   <div>
-                     <Label>الفيديو</Label>
-                     <video controls className="w-full rounded-lg border border-border mt-1">
-                       <source src={selectedProduct.video_url} />
-                       المتصفح لا يدعم تشغيل الفيديو.
-                     </video>
-                   </div>
-                 )}
- 
-                 {selectedProduct.description && (
-                   <div>
-                     <Label>الوصف</Label>
-                     <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap">
-                       {selectedProduct.description}
-                     </p>
-                   </div>
-                 )}
- 
-                 {selectedProduct.price_iqd && (
-                   <div>
-                     <Label>السعر</Label>
-                     <div className="flex items-baseline gap-2 mt-1">
-                       {selectedProduct.original_price_iqd && (
-                         <span className="text-sm text-muted-foreground line-through">
-                           {selectedProduct.original_price_iqd.toLocaleString()} د.ع
-                         </span>
-                       )}
-                       <span className="text-lg font-bold text-primary">
-                         {selectedProduct.price_iqd.toLocaleString()} د.ع
-                       </span>
-                     </div>
-                   </div>
-                 )}
- 
-                 {selectedProduct.estimated_days && (
-                   <div>
-                     <Label>وقت التنفيذ</Label>
-                     <p className="text-sm text-foreground/80 mt-1">{selectedProduct.estimated_days} يوم تقريباً</p>
-                   </div>
-                 )}
-               </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto px-1">
+                  {/* Media */}
+                  <div className="space-y-3">
+                    {selectedProduct.image_urls && selectedProduct.image_urls.length > 0 ? (
+                      <div className="rounded-2xl overflow-hidden border border-border bg-muted/10">
+                        <div className="relative aspect-square bg-muted/20">
+                          <img
+                            src={
+                              selectedProduct.image_urls[
+                                Math.min(activeMediaIndex, selectedProduct.image_urls.length - 1)
+                              ]
+                            }
+                            alt={selectedProduct.title}
+                            className="w-full h-full object-cover"
+                          />
+
+                          {!!selectedProduct.video_url && (
+                            <div className="absolute bottom-3 left-3">
+                              <div className="inline-flex items-center gap-1 rounded-full bg-background/80 backdrop-blur px-2 py-1 border border-border text-xs text-muted-foreground">
+                                <Play className="h-3.5 w-3.5" />
+                                فيديو متاح
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {selectedProduct.image_urls.length > 1 && (
+                          <div className="grid grid-cols-5 gap-2 p-3 bg-background/40">
+                            {selectedProduct.image_urls.slice(0, 10).map((url, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setActiveMediaIndex(idx)}
+                                className={`relative aspect-square rounded-lg overflow-hidden border transition-colors ${
+                                  idx === activeMediaIndex
+                                    ? "border-primary"
+                                    : "border-border hover:border-primary/50"
+                                }`}
+                              >
+                                <img src={url} alt={`${selectedProduct.title} ${idx + 1}`} className="w-full h-full object-cover" />
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-border bg-muted/20 aspect-square flex items-center justify-center">
+                        <Store className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+
+                    {selectedProduct.video_url && (
+                      <div className="rounded-2xl border border-border overflow-hidden">
+                        <video controls className="w-full" preload="metadata">
+                          <source src={selectedProduct.video_url} />
+                          المتصفح لا يدعم تشغيل الفيديو.
+                        </video>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-4">
+                    {/* Price */}
+                    {(selectedProduct.price_iqd || selectedProduct.original_price_iqd) && (
+                      <div className="rounded-2xl border border-border bg-card p-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs text-muted-foreground">السعر</p>
+                            <div className="mt-1 flex items-baseline gap-2">
+                              {selectedProduct.original_price_iqd && selectedProduct.price_iqd && selectedProduct.original_price_iqd > selectedProduct.price_iqd && (
+                                <span className="text-sm text-muted-foreground line-through">
+                                  {selectedProduct.original_price_iqd.toLocaleString()} د.ع
+                                </span>
+                              )}
+                              {selectedProduct.price_iqd && (
+                                <span className="text-2xl font-black text-primary">
+                                  {selectedProduct.price_iqd.toLocaleString()} د.ع
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {selectedProduct.original_price_iqd && selectedProduct.price_iqd && selectedProduct.original_price_iqd > selectedProduct.price_iqd && (
+                            <Badge variant="outline" className="gap-1">
+                              <BadgePercent className="h-3.5 w-3.5" />
+                              خصم
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ETA */}
+                    {selectedProduct.estimated_days && (
+                      <div className="rounded-2xl border border-border bg-card p-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                            <Clock className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <Label className="text-xs">وقت التنفيذ</Label>
+                            <p className="text-sm text-foreground/80 mt-0.5">{selectedProduct.estimated_days} يوم تقريباً</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    {selectedProduct.description && (
+                      <div className="rounded-2xl border border-border bg-card p-4">
+                        <Label className="text-xs">الوصف</Label>
+                        <p className="text-sm text-foreground/80 mt-2 whitespace-pre-wrap leading-relaxed">
+                          {selectedProduct.description}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
              )}
            </DialogContent>
          </Dialog>
