@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PlusCircle, User as UserIcon, ClipboardList } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import CommunityCustomerProfileModal from "@/components/community/CommunityCustomerProfileModal";
+import MerchantSignupDialog from "@/components/community/MerchantSignupDialog";
 
 const profileSchema = z.object({
   full_name: z.string().nullable().optional(),
@@ -36,6 +37,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
   const navigate = useNavigate();
   const { user } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [merchantOpen, setMerchantOpen] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["community-profile", user?.id],
@@ -118,11 +120,19 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
               </DialogHeader>
               <div className="max-h-[70vh] overflow-auto">
                 <div className="rounded-xl border border-border bg-card">
-                  <CommunityCustomerProfileModal onDone={() => setProfileOpen(false)} />
+                  <CommunityCustomerProfileModal
+                    onDone={() => setProfileOpen(false)}
+                    onOpenMerchantSignup={() => {
+                      setProfileOpen(false);
+                      setMerchantOpen(true);
+                    }}
+                  />
                 </div>
               </div>
             </DialogContent>
           </Dialog>
+
+          <MerchantSignupDialog open={merchantOpen} onOpenChange={setMerchantOpen} />
 
           {!isLoading && !complete && (
             <p className="mt-3 text-xs text-muted-foreground">
@@ -145,6 +155,7 @@ export function CommunityCustomerActionsInline({
   const navigate = useNavigate();
   const { user } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [merchantOpen, setMerchantOpen] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["community-profile", user?.id],
@@ -236,11 +247,19 @@ export function CommunityCustomerActionsInline({
           </DialogHeader>
           <div className="max-h-[70vh] overflow-auto">
             <div className="rounded-xl border border-border bg-card">
-              <CommunityCustomerProfileModal onDone={() => setProfileOpen(false)} />
+              <CommunityCustomerProfileModal
+                onDone={() => setProfileOpen(false)}
+                onOpenMerchantSignup={() => {
+                  setProfileOpen(false);
+                  setMerchantOpen(true);
+                }}
+              />
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      <MerchantSignupDialog open={merchantOpen} onOpenChange={setMerchantOpen} />
     </>
   );
 

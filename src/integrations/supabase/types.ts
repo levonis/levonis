@@ -1646,6 +1646,50 @@ export type Database = {
           },
         ]
       }
+      merchant_application_private: {
+        Row: {
+          address: string | null
+          application_id: string
+          birth_date: string | null
+          created_at: string
+          gender: string | null
+          legal_full_name: string | null
+          nickname: string | null
+          phone_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          application_id: string
+          birth_date?: string | null
+          created_at?: string
+          gender?: string | null
+          legal_full_name?: string | null
+          nickname?: string | null
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          application_id?: string
+          birth_date?: string | null
+          created_at?: string
+          gender?: string | null
+          legal_full_name?: string | null
+          nickname?: string | null
+          phone_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_application_private_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: true
+            referencedRelation: "merchant_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_applications: {
         Row: {
           admin_notes: string | null
@@ -1653,9 +1697,14 @@ export type Database = {
           city: string | null
           created_at: string
           display_name: string | null
+          fee_status: string
+          fee_transaction_id: string | null
           id: string
           phone_number: string | null
+          registration_fee: number
+          social_links: Json | null
           status: string
+          store_image_url: string | null
           updated_at: string
           user_id: string
         }
@@ -1665,9 +1714,14 @@ export type Database = {
           city?: string | null
           created_at?: string
           display_name?: string | null
+          fee_status?: string
+          fee_transaction_id?: string | null
           id?: string
           phone_number?: string | null
+          registration_fee?: number
+          social_links?: Json | null
           status?: string
+          store_image_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -1677,9 +1731,14 @@ export type Database = {
           city?: string | null
           created_at?: string
           display_name?: string | null
+          fee_status?: string
+          fee_transaction_id?: string | null
           id?: string
           phone_number?: string | null
+          registration_fee?: number
+          social_links?: Json | null
           status?: string
+          store_image_url?: string | null
           updated_at?: string
           user_id?: string
         }
