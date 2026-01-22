@@ -118,7 +118,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
               <DialogHeader>
                 <DialogTitle>الملف الشخصي</DialogTitle>
               </DialogHeader>
-              <div className="max-h-[70vh] overflow-auto">
+              <div className="scrollbar-stable max-h-[70vh] overflow-y-auto overflow-x-hidden">
                 <div className="rounded-xl border border-border bg-card">
                   <CommunityCustomerProfileModal
                     onDone={() => setProfileOpen(false)}
@@ -245,7 +245,7 @@ export function CommunityCustomerActionsInline({
           <DialogHeader>
             <DialogTitle>الملف الشخصي</DialogTitle>
           </DialogHeader>
-          <div className="max-h-[70vh] overflow-auto">
+          <div className="scrollbar-stable max-h-[70vh] overflow-y-auto overflow-x-hidden">
             <div className="rounded-xl border border-border bg-card">
               <CommunityCustomerProfileModal
                 onDone={() => setProfileOpen(false)}

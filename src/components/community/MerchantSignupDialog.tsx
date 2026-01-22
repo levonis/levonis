@@ -325,7 +325,7 @@ export default function MerchantSignupDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="max-h-[75vh] overflow-auto">
+        <div className="scrollbar-stable max-h-[75vh] overflow-y-auto overflow-x-hidden">
           <div className="space-y-4">
             <Card className="border-border bg-card">
               <CardHeader>
