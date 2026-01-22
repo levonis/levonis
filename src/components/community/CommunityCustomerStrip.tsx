@@ -165,7 +165,7 @@ export function CommunityCustomerActionsInline({ className }: { className?: stri
       <div className={className} aria-label="اختصارات الزبون">
         <div className="flex gap-2 overflow-x-auto">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-9 w-28 rounded-xl" />
+            <Skeleton key={i} className="h-10 w-28 rounded-xl" />
           ))}
         </div>
       </div>
@@ -174,12 +174,13 @@ export function CommunityCustomerActionsInline({ className }: { className?: stri
 
   return (
     <div className={className} aria-label="اختصارات الزبون">
+      {/* Wrap naturally to 2 lines on small screens, keep consistent button height */}
       <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"
           onClick={() => navigate("/community/customer/new")}
           disabled={!complete}
-          className="h-9 shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+          className="h-10 w-full sm:w-auto shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
         >
           <PlusCircle className="ml-2 h-4 w-4" />
           طلب جديد
@@ -190,7 +191,7 @@ export function CommunityCustomerActionsInline({ className }: { className?: stri
           variant="outline"
           disabled={!complete}
           onClick={() => navigate("/community/customer/requests")}
-          className="h-9 shrink-0"
+          className="h-10 w-full sm:w-auto shrink-0"
         >
           <ClipboardList className="ml-2 h-4 w-4" />
           طلباتي
@@ -202,8 +203,8 @@ export function CommunityCustomerActionsInline({ className }: { className?: stri
           onClick={() => setProfileOpen(true)}
           className={
             !complete
-              ? "h-9 shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-              : "h-9 shrink-0"
+              ? "h-10 w-full sm:w-auto shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+              : "h-10 w-full sm:w-auto shrink-0"
           }
         >
           <UserIcon className="ml-2 h-4 w-4" />

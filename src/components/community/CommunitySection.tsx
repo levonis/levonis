@@ -27,15 +27,22 @@ export default function CommunitySection() {
           <p className="text-xs sm:text-sm text-muted-foreground">المحادثات والتواصل داخل المجتمع</p>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Quick actions (wrap to 2 lines on small screens) */}
+        <div className="flex flex-wrap items-center gap-2">
           <Suspense fallback={null}>
             <ListingConversations>
-              <Button size="sm">المحادثات</Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-10 w-full sm:w-auto"
+              >
+                المحادثات
+              </Button>
             </ListingConversations>
           </Suspense>
 
           {/* actions beside chats */}
-          <CommunityCustomerActionsInline />
+          <CommunityCustomerActionsInline className="w-full sm:w-auto" />
         </div>
       </div>
 
