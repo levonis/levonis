@@ -41,6 +41,7 @@ import {
   UserX,
   AlertOctagon,
   ChevronLeft,
+  Hash,
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -102,12 +103,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     queryFn: async () => {
       if (!user) return [];
       
+      // NOTE: سوق المستعمل تم إزالته. نُبقي المحادثات فقط بدون ربطها بجدول الإعلانات.
       let query = supabase
         .from('listing_conversations')
-        .select(`
-          *,
-          user_listings(title_ar, images, price, currency)
-        `)
+        .select('id, buyer_id, seller_id, listing_id, status, conversation_code, admin_joined, created_at, updated_at')
         .order('updated_at', { ascending: false });
       
       if (listingId) {
@@ -133,19 +132,20 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     }
   }, [autoOpenConversationId, conversations]);
 
-  // Fetch profiles with seller data
+  // Fetch profiles (بدون seller_profiles لأن سوق المستعمل تم حذفه)
   const { data: profiles } = useQuery({
     queryKey: ['conversation-profiles-full', conversations?.map(c => [c.buyer_id, c.seller_id]).flat()],
     queryFn: async () => {
       if (!conversations?.length) return {};
       const userIds = [...new Set(conversations.flatMap(c => [c.buyer_id, c.seller_id]))];
-      const { data: profilesData } = await supabase.from('profiles').select('id, full_name, username, avatar_url, phone_number').in('id', userIds);
-      const { data: sellerProfiles } = await supabase.from('seller_profiles').select('*').in('user_id', userIds);
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url, phone_number')
+        .in('id', userIds);
       
       const result: Record<string, any> = {};
       profilesData?.forEach(p => {
-        const sellerData = sellerProfiles?.find(sp => sp.user_id === p.id);
-        result[p.id] = { ...p, seller_profile: sellerData };
+        result[p.id] = { ...p };
       });
       return result;
     },
@@ -259,7 +259,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           .single();
 
         const senderName = senderProfile?.full_name || senderProfile?.username || 'مستخدم';
-        const listingTitle = (selectedConv.user_listings as any)?.title_ar || 'منتج';
+        const listingTitle = selectedConv.conversation_code ? `محادثة #${selectedConv.conversation_code}` : 'محادثة';
 
         // Call the telegram notification function
         await supabase.functions.invoke('notify-marketplace-telegram', {
@@ -295,7 +295,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       // Get conversation details for notification
       const { data: conv } = await supabase
         .from('listing_conversations')
-        .select('conversation_code, user_listings(title_ar)')
+        .select('conversation_code')
         .eq('id', selectedConversation)
         .single();
 
@@ -307,7 +307,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         .single();
 
       const userName = userProfile?.full_name || userProfile?.username || 'مستخدم';
-      const listingTitle = (conv?.user_listings as any)?.title_ar || 'منتج';
+      const listingTitle = conv?.conversation_code ? `محادثة #${conv.conversation_code}` : 'محادثة';
 
       // Insert system message in conversation
       await supabase.from('listing_messages').insert({
@@ -533,11 +533,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     setUploadingMedia(true);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `chat/${user.id}/${Date.now()}.${fileExt}`;
-      const { error } = await supabase.storage.from('listing-images').upload(fileName, file);
+      const fileName = `chat/listing/${user.id}/${Date.now()}.${fileExt}`;
+      // سوق المستعمل تم حذفه، لذلك نستخدم نفس حاوية الملفات العامة للتطبيق
+      const { error } = await supabase.storage.from('product-images').upload(fileName, file);
       if (error) throw error;
       
-      const { data: { publicUrl } } = supabase.storage.from('listing-images').getPublicUrl(fileName);
+      const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
       await sendMessageMutation.mutateAsync(publicUrl);
     } catch (error) {
       toast.error('فشل رفع الملف');
@@ -558,21 +559,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     if (onClose) onClose();
   };
 
-  // Fetch other listings for selected conversation user
-  const { data: otherUserListings } = useQuery({
-    queryKey: ['other-user-listings', otherUserId],
-    queryFn: async () => {
-      if (!otherUserId) return [];
-      const { data } = await supabase
-        .from('user_listings')
-        .select('id, title_ar, price, images, status')
-        .eq('seller_id', otherUserId)
-        .eq('status', 'approved')
-        .limit(6);
-      return data || [];
-    },
-    enabled: !!otherUserId && !!selectedConversation,
-  });
+  // NOTE: تم حذف منتجات السوق، لذلك لا نجلب "منتجات أخرى" هنا.
 
   // Group messages by date
   const groupedMessages = messages?.reduce((groups: any, msg) => {
@@ -617,7 +604,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
             <div className="p-3 border-b bg-muted/30 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-5 h-5 text-primary" />
-                <h2 className="font-bold text-sm">{listingId ? 'محادثات المنتج' : 'المحادثات'}</h2>
+                <h2 className="font-bold text-sm">المحادثات</h2>
               </div>
             </div>
 
@@ -666,17 +653,17 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           isActive && "bg-muted"
                         )}
                       >
-                        {/* Avatar / Product Image */}
+                        {/* Avatar */}
                         <div className="relative flex-shrink-0">
-                          {(conv.user_listings as any)?.images?.[0] ? (
-                            <img 
-                              src={(conv.user_listings as any).images[0]} 
-                              alt="" 
+                          {convOtherUser?.avatar_url ? (
+                            <img
+                              src={convOtherUser.avatar_url}
+                              alt=""
                               className="w-12 h-12 rounded-full object-cover ring-2 ring-border"
                             />
                           ) : (
                             <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-border">
-                              <Package className="w-5 h-5 text-primary" />
+                              <User className="w-5 h-5 text-primary" />
                             </div>
                           )}
                           {conv.status === 'disputed' && (
@@ -691,7 +678,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           <div className="flex items-center justify-between gap-2 mb-0.5">
                           <div className="flex items-center gap-1">
                             <p className="font-medium text-sm truncate">
-                              {(conv.user_listings as any)?.title_ar || 'منتج'}
+                              {convOtherUser?.full_name || convOtherUser?.username || 'محادثة'}
                             </p>
                             {(conv as any).conversation_code && (
                               <Badge variant="outline" className="text-[8px] px-1 py-0 font-mono">
@@ -965,42 +952,18 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     </div>
                   </div>
                   
-                  {/* Product Info Bar - Clickable with Back Option */}
-                  <div 
-                    className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/50 transition-colors group"
-                    onClick={() => {
-                      const listingId = selectedConv?.listing_id || (selectedConv?.user_listings as any)?.id;
-                      if (!listingId) {
-                        toast.error('تعذر فتح المنتج');
-                        return;
-                      }
-                      // Store conversation ID to return back
-                      sessionStorage.setItem('returnToConversation', selectedConv?.id || '');
-                      setOpen(false);
-                      setSelectedConversation(null);
-                      navigate(`/marketplace?listing=${listingId}`);
-                    }}
-                  >
-                    {(selectedConv?.user_listings as any)?.images?.[0] && (
-                      <img 
-                        src={(selectedConv?.user_listings as any).images[0]} 
-                        alt={`صورة ${(selectedConv?.user_listings as any)?.title_ar || 'المنتج'}`} 
-                        className="w-8 h-8 rounded object-cover"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate text-foreground font-medium">
-                        {(selectedConv?.user_listings as any)?.title_ar}
-                      </p>
-                      <p className="text-primary font-bold">
-                        {Number((selectedConv?.user_listings as any)?.price).toLocaleString()} دينار
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1 text-muted-foreground group-hover:text-primary transition-colors">
-                      <span className="text-[10px]">عرض المنتج</span>
-                      <ChevronLeft className="w-4 h-4" />
-                    </div>
-                  </div>
+                   {/* Info Bar */}
+                   <div className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs">
+                     <Hash className="w-4 h-4 text-primary" />
+                     <div className="flex-1 min-w-0">
+                       <p className="truncate text-foreground font-medium">
+                         {selectedConv?.conversation_code ? `رمز المحادثة: ${selectedConv.conversation_code}` : 'محادثة'}
+                       </p>
+                       <p className="text-muted-foreground">
+                         {otherUser?.full_name || otherUser?.username || ''}
+                       </p>
+                     </div>
+                   </div>
                   
                 </div>
 
