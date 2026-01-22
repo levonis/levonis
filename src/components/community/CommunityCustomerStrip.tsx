@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MessageCircle, PlusCircle, User as UserIcon, Truck } from "lucide-react";
+import { PlusCircle, User as UserIcon, ClipboardList } from "lucide-react";
 
 const profileSchema = z.object({
   full_name: z.string().nullable().optional(),
@@ -86,21 +86,11 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
               <Button
                 variant="outline"
                 disabled={!complete}
-                onClick={() => navigate("/community/customer/track")}
+                onClick={() => navigate("/community/customer/requests")}
                 className="shrink-0"
               >
-                <Truck className="ml-2 h-4 w-4" />
-                تتبع الطلب
-              </Button>
-
-              <Button
-                variant="outline"
-                disabled={!complete}
-                onClick={() => navigate("/community/messages")}
-                className="shrink-0"
-              >
-                <MessageCircle className="ml-2 h-4 w-4" />
-                المحادثات
+                <ClipboardList className="ml-2 h-4 w-4" />
+                طلباتي
               </Button>
 
               <Button
@@ -182,11 +172,11 @@ export function CommunityCustomerActionsInline({ className }: { className?: stri
           size="sm"
           variant="outline"
           disabled={!complete}
-          onClick={() => navigate("/community/customer/track")}
+          onClick={() => navigate("/community/customer/requests")}
           className="shrink-0"
         >
-          <Truck className="ml-2 h-4 w-4" />
-          تتبع
+          <ClipboardList className="ml-2 h-4 w-4" />
+          طلباتي
         </Button>
 
         <Button
