@@ -60,6 +60,7 @@ const AdminProductOffers = lazy(() => import("./pages/AdminProductOffers"));
 const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const AdminShipmentRequests = lazy(() => import("./pages/AdminShipmentRequests"));
 const AdminShippingSettings = lazy(() => import("./pages/AdminShippingSettings"));
+const AdminCommunityMerchants = lazy(() => import("./pages/AdminCommunityMerchants"));
 const CommunityMessages = lazy(() => import("./pages/CommunityMessages"));
   const CommunityCustomer = lazy(() => import("./pages/CommunityCustomer"));
   const CommunityCustomerNewRequest = lazy(() => import("./pages/CommunityCustomerNewRequest"));
@@ -69,6 +70,7 @@ const CommunityCustomerTrack = lazy(() => import("./pages/CommunityCustomerTrack
 const CommunityMerchantsProducts = lazy(() => import("./pages/CommunityMerchantsProducts"));
 const CommunityRequestsBrowse = lazy(() => import("./pages/CommunityRequestsBrowse"));
 const CommunityMerchantsPages = lazy(() => import("./pages/CommunityMerchantsPages"));
+const CommunityMerchantSignup = lazy(() => import("./pages/CommunityMerchantSignup"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const MyPurchasedProducts = lazy(() => import("./pages/MyPurchasedProducts"));
 const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
@@ -135,6 +137,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/shipment-requests`} element={<AdminRoute><AdminShipmentRequests /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/offer-purchases`} element={<AdminRoute><AdminOfferPurchases /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/shipping-settings`} element={<AdminRoute><AdminShippingSettings /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/community-merchants`} element={<AdminRoute><AdminCommunityMerchants /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/redeemable-products`} element={<AdminRoute><AdminRedeemableProducts /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/cart-requests`} element={<AdminRoute><AdminCartRequests /></AdminRoute>} />
             
@@ -148,6 +151,7 @@ function AppContent() {
             <Route path="/community/customer/requests" element={<RequireAuth><CommunityCustomerRequests /></RequireAuth>} />
             <Route path="/community/customer/new" element={<RequireAuth><CommunityCustomerNewRequest /></RequireAuth>} />
             <Route path="/community/customer/profile" element={<RequireAuth><CommunityCustomerProfile /></RequireAuth>} />
+            <Route path="/community/merchant/signup" element={<RequireAuth><CommunityMerchantSignup /></RequireAuth>} />
             <Route path="/community/customer/track" element={<RequireAuth><CommunityCustomerTrack /></RequireAuth>} />
             <Route path="/community/merchants/products" element={<RequireAuth><CommunityMerchantsProducts /></RequireAuth>} />
             <Route path="/community/requests" element={<RequireAuth><CommunityRequestsBrowse /></RequireAuth>} />

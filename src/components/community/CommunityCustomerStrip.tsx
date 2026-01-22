@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PlusCircle, User as UserIcon, ClipboardList } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import CommunityCustomerProfileModal from "@/components/community/CommunityCustomerProfileModal";
 
 const profileSchema = z.object({
   full_name: z.string().nullable().optional(),
@@ -33,6 +35,7 @@ function isProfileComplete(p: Profile | null | undefined) {
 export default function CommunityCustomerStrip({ className }: { className?: string }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["community-profile", user?.id],
@@ -95,7 +98,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
 
               <Button
                 variant={complete ? "outline" : "default"}
-                onClick={() => navigate("/community/customer/profile")}
+                onClick={() => setProfileOpen(true)}
                 className={
                   !complete
                     ? "shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
@@ -107,6 +110,19 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
               </Button>
             </div>
           )}
+
+          <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+            <DialogContent className="sm:max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>الملف الشخصي</DialogTitle>
+              </DialogHeader>
+              <div className="max-h-[70vh] overflow-auto">
+                <div className="rounded-xl border border-border bg-card">
+                  <CommunityCustomerProfileModal onDone={() => setProfileOpen(false)} />
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
 
           {!isLoading && !complete && (
             <p className="mt-3 text-xs text-muted-foreground">
@@ -122,6 +138,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
 export function CommunityCustomerActionsInline({ className }: { className?: string }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [profileOpen, setProfileOpen] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["community-profile", user?.id],
@@ -157,12 +174,12 @@ export function CommunityCustomerActionsInline({ className }: { className?: stri
 
   return (
     <div className={className} aria-label="اختصارات الزبون">
-      <div className="flex items-center gap-2 overflow-x-auto">
+      <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"
           onClick={() => navigate("/community/customer/new")}
           disabled={!complete}
-          className="shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+          className="h-9 shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
         >
           <PlusCircle className="ml-2 h-4 w-4" />
           طلب جديد
@@ -173,7 +190,7 @@ export function CommunityCustomerActionsInline({ className }: { className?: stri
           variant="outline"
           disabled={!complete}
           onClick={() => navigate("/community/customer/requests")}
-          className="shrink-0"
+          className="h-9 shrink-0"
         >
           <ClipboardList className="ml-2 h-4 w-4" />
           طلباتي
@@ -182,17 +199,30 @@ export function CommunityCustomerActionsInline({ className }: { className?: stri
         <Button
           size="sm"
           variant={complete ? "outline" : "default"}
-          onClick={() => navigate("/community/customer/profile")}
+          onClick={() => setProfileOpen(true)}
           className={
             !complete
-              ? "shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-              : "shrink-0"
+              ? "h-9 shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+              : "h-9 shrink-0"
           }
         >
           <UserIcon className="ml-2 h-4 w-4" />
           {complete ? "الملف" : "إكمال"}
         </Button>
       </div>
+
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>الملف الشخصي</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[70vh] overflow-auto">
+            <div className="rounded-xl border border-border bg-card">
+              <CommunityCustomerProfileModal onDone={() => setProfileOpen(false)} />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
