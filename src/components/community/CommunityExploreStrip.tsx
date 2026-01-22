@@ -1,61 +1,83 @@
+import { Boxes, Store, Users } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-import { Store, Boxes, Users } from "lucide-react";
 
 export default function CommunityExploreStrip({ className }: { className?: string }) {
-  const navigate = useNavigate();
-
   return (
     <section className={className} aria-label="استكشاف المجتمع">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Store className="h-4 w-4 text-primary" />
-              منتجات من التجار
-            </CardTitle>
-            <CardDescription>تصفّح منتجات وخدمات التجار</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full" onClick={() => navigate("/community/merchants/products")}>
-              فتح
-            </Button>
-          </CardContent>
-        </Card>
+      <Tabs defaultValue="products" className="w-full">
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="products" className="shrink-0">
+            <Store className="ml-2 h-4 w-4" />
+            منتجات التجار
+          </TabsTrigger>
+          <TabsTrigger value="requests" className="shrink-0">
+            <Users className="ml-2 h-4 w-4" />
+            طلبات الزبائن
+          </TabsTrigger>
+          <TabsTrigger value="merchants" className="shrink-0">
+            <Boxes className="ml-2 h-4 w-4" />
+            صفحات التجار
+          </TabsTrigger>
+        </TabsList>
 
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              طلبات لزبائن آخرين
-            </CardTitle>
-            <CardDescription>تصفّح طلبات الزبائن (عرض فقط كبداية)</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full" onClick={() => navigate("/community/requests")}
-            >
-              فتح
-            </Button>
-          </CardContent>
-        </Card>
+        <TabsContent value="products" className="mt-3">
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle className="text-base">منتجات من التجار</CardTitle>
+              <CardDescription>هيكلة أولية — سيتم عرض بطاقات منتجات/خدمات هنا</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="rounded-xl border border-border bg-muted/20 p-4">
+                    <p className="text-sm font-semibold">بطاقة منتج #{i}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">اسم التاجر • السعر • وقت الإنجاز</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        <Card className="border-border bg-card">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Boxes className="h-4 w-4 text-primary" />
-              صفحات التجار
-            </CardTitle>
-            <CardDescription>استعرض صفحات التجار وتفاصيلهم</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button variant="outline" className="w-full" onClick={() => navigate("/community/merchants")}
-            >
-              فتح
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="requests" className="mt-3">
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle className="text-base">طلبات لزبائن آخرين</CardTitle>
+              <CardDescription>هيكلة أولية — سيتم عرض قائمة الطلبات هنا</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="rounded-xl border border-border bg-muted/20 p-4">
+                    <p className="text-sm font-semibold">طلب #{i}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">عنوان • فئة • تاريخ • حالة</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="merchants" className="mt-3">
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle className="text-base">صفحات التجار</CardTitle>
+              <CardDescription>هيكلة أولية — سيتم عرض بطاقات التجار هنا</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="rounded-xl border border-border bg-muted/20 p-4">
+                    <p className="text-sm font-semibold">تاجر #{i}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">تقييم • مدينة • خدمات</p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </section>
   );
 }

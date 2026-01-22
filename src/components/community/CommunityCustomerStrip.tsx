@@ -67,33 +67,50 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-11 rounded-xl" />
+                <Skeleton key={i} className="h-10 w-32 rounded-xl" />
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               <Button
                 onClick={() => navigate("/community/customer/new")}
                 disabled={!complete}
-                className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                className="shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
               >
                 <PlusCircle className="ml-2 h-4 w-4" />
                 إضافة طلب جديد
               </Button>
-              <Button variant="outline" disabled={!complete} onClick={() => navigate("/community/customer/track")}> 
+
+              <Button
+                variant="outline"
+                disabled={!complete}
+                onClick={() => navigate("/community/customer/track")}
+                className="shrink-0"
+              >
                 <Truck className="ml-2 h-4 w-4" />
                 تتبع الطلب
               </Button>
-              <Button variant="outline" disabled={!complete} onClick={() => navigate("/community/messages")}> 
+
+              <Button
+                variant="outline"
+                disabled={!complete}
+                onClick={() => navigate("/community/messages")}
+                className="shrink-0"
+              >
                 <MessageCircle className="ml-2 h-4 w-4" />
                 المحادثات
               </Button>
+
               <Button
                 variant={complete ? "outline" : "default"}
                 onClick={() => navigate("/community/customer/profile")}
-                className={!complete ? "bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90" : undefined}
+                className={
+                  !complete
+                    ? "shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                    : "shrink-0"
+                }
               >
                 <UserIcon className="ml-2 h-4 w-4" />
                 {complete ? "الملف الشخصي" : "إكمال الملف"}
@@ -109,5 +126,83 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
         </CardContent>
       </Card>
     </section>
+  );
+}
+
+export function CommunityCustomerActionsInline({ className }: { className?: string }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const { data: profile, isLoading } = useQuery({
+    queryKey: ["community-profile", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("full_name, phone_number, username, avatar_url, birth_date, gender")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return profileSchema.parse(data);
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
+  const complete = useMemo(() => isProfileComplete(profile), [profile]);
+
+  if (!user) return null;
+
+  if (isLoading) {
+    return (
+      <div className={className} aria-label="اختصارات الزبون">
+        <div className="flex gap-2 overflow-x-auto">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-9 w-28 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className} aria-label="اختصارات الزبون">
+      <div className="flex items-center gap-2 overflow-x-auto">
+        <Button
+          size="sm"
+          onClick={() => navigate("/community/customer/new")}
+          disabled={!complete}
+          className="shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+        >
+          <PlusCircle className="ml-2 h-4 w-4" />
+          طلب جديد
+        </Button>
+
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!complete}
+          onClick={() => navigate("/community/customer/track")}
+          className="shrink-0"
+        >
+          <Truck className="ml-2 h-4 w-4" />
+          تتبع
+        </Button>
+
+        <Button
+          size="sm"
+          variant={complete ? "outline" : "default"}
+          onClick={() => navigate("/community/customer/profile")}
+          className={
+            !complete
+              ? "shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+              : "shrink-0"
+          }
+        >
+          <UserIcon className="ml-2 h-4 w-4" />
+          {complete ? "الملف" : "إكمال"}
+        </Button>
+      </div>
+    </div>
   );
 }
