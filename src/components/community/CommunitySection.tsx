@@ -1,6 +1,5 @@
 import { Suspense, lazy } from 'react';
 import { Users } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 const ListingConversations = lazy(() => import('@/components/marketplace/ListingConversations'));
@@ -27,10 +26,6 @@ export default function CommunitySection() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link to="/community">
-            <Button variant="outline" size="sm">الدخول</Button>
-          </Link>
-
           <Suspense fallback={null}>
             <ListingConversations>
               <Button size="sm">المحادثات</Button>
