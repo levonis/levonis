@@ -2003,6 +2003,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_user_id_fkey_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_print_reputation"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       parts_discount_requests: {
@@ -2218,6 +2225,8 @@ export type Database = {
       }
       print_offers: {
         Row: {
+          accepted_at: string | null
+          completed_at: string | null
           created_at: string
           duration_days: number
           grams: number | null
@@ -2230,6 +2239,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_at?: string | null
+          completed_at?: string | null
           created_at?: string
           duration_days: number
           grams?: number | null
@@ -2242,6 +2253,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_at?: string | null
+          completed_at?: string | null
           created_at?: string
           duration_days?: number
           grams?: number | null
@@ -2256,6 +2269,84 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "print_offers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "print_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      print_ratings: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          quality_stars: number | null
+          ratee_id: string
+          rater_id: string
+          rater_role: Database["public"]["Enums"]["print_rating_role"]
+          request_id: string
+          speed_stars: number | null
+          stars: number
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          quality_stars?: number | null
+          ratee_id: string
+          rater_id: string
+          rater_role: Database["public"]["Enums"]["print_rating_role"]
+          request_id: string
+          speed_stars?: number | null
+          stars: number
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          quality_stars?: number | null
+          ratee_id?: string
+          rater_id?: string
+          rater_role?: Database["public"]["Enums"]["print_rating_role"]
+          request_id?: string
+          speed_stars?: number | null
+          stars?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_ratings_ratee_id_fkey"
+            columns: ["ratee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_ratings_ratee_id_fkey"
+            columns: ["ratee_id"]
+            isOneToOne: false
+            referencedRelation: "user_print_reputation"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "print_ratings_rater_id_fkey"
+            columns: ["rater_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_ratings_rater_id_fkey"
+            columns: ["rater_id"]
+            isOneToOne: false
+            referencedRelation: "user_print_reputation"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "print_ratings_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
             referencedRelation: "print_requests"
@@ -2309,10 +2400,15 @@ export type Database = {
       }
       print_requests: {
         Row: {
+          accepted_offer_id: string | null
           colors_spec: string | null
+          completed_at: string | null
           created_at: string
+          customer_confirmed_at: string | null
+          delivered_at: string | null
           description: string | null
           id: string
+          in_progress_at: string | null
           notes: string | null
           reference_links: string[]
           review_notes: string | null
@@ -2325,10 +2421,15 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          accepted_offer_id?: string | null
           colors_spec?: string | null
+          completed_at?: string | null
           created_at?: string
+          customer_confirmed_at?: string | null
+          delivered_at?: string | null
           description?: string | null
           id?: string
+          in_progress_at?: string | null
           notes?: string | null
           reference_links?: string[]
           review_notes?: string | null
@@ -2341,10 +2442,15 @@ export type Database = {
           user_id: string
         }
         Update: {
+          accepted_offer_id?: string | null
           colors_spec?: string | null
+          completed_at?: string | null
           created_at?: string
+          customer_confirmed_at?: string | null
+          delivered_at?: string | null
           description?: string | null
           id?: string
+          in_progress_at?: string | null
           notes?: string | null
           reference_links?: string[]
           review_notes?: string | null
@@ -2356,7 +2462,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "print_requests_accepted_offer_id_fkey"
+            columns: ["accepted_offer_id"]
+            isOneToOne: false
+            referencedRelation: "print_offers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       printer_protection_logs: {
         Row: {
@@ -4168,7 +4282,30 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "orders_user_id_fkey_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_print_reputation"
+            referencedColumns: ["user_id"]
+          },
         ]
+      }
+      user_print_reputation: {
+        Row: {
+          avg_quality_stars: number | null
+          avg_speed_stars: number | null
+          avg_stars: number | null
+          customer_receive_rate_percent: number | null
+          customer_requests_made: number | null
+          customer_requests_received: number | null
+          merchant_accepted_jobs: number | null
+          merchant_completed_jobs: number | null
+          merchant_completion_percent: number | null
+          ratings_count: number | null
+          user_id: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -4201,6 +4338,16 @@ export type Database = {
       }
       cleanup_old_coupon_attempts: { Args: never; Returns: undefined }
       complete_daily_task: { Args: { task_key_param: string }; Returns: Json }
+      compute_overall_print_score: {
+        Args: {
+          p_avg_quality_stars: number
+          p_avg_speed_stars: number
+          p_avg_stars: number
+          p_completion_percent: number
+          p_receive_rate_percent: number
+        }
+        Returns: number
+      }
       convert_points_to_tickets: {
         Args: { points_amount: number }
         Returns: Json
@@ -4379,8 +4526,21 @@ export type Database = {
         | "flash_sale"
         | "growing_prize"
         | "collect_letters"
-      print_offer_status: "submitted" | "withdrawn" | "accepted" | "rejected"
-      print_request_status: "pending_review" | "approved" | "rejected"
+      print_offer_status:
+        | "submitted"
+        | "withdrawn"
+        | "accepted"
+        | "rejected"
+        | "completed"
+      print_rating_role: "customer" | "merchant"
+      print_request_status:
+        | "pending_review"
+        | "approved"
+        | "rejected"
+        | "in_progress"
+        | "completed"
+        | "delivered"
+        | "cancelled"
       printer_subscription_status: "active" | "paused" | "expired" | "cancelled"
       printer_verification_status: "pending" | "verified" | "rejected"
       protection_plan_type: "basic" | "standard" | "comprehensive"
@@ -4528,8 +4688,23 @@ export const Constants = {
         "growing_prize",
         "collect_letters",
       ],
-      print_offer_status: ["submitted", "withdrawn", "accepted", "rejected"],
-      print_request_status: ["pending_review", "approved", "rejected"],
+      print_offer_status: [
+        "submitted",
+        "withdrawn",
+        "accepted",
+        "rejected",
+        "completed",
+      ],
+      print_rating_role: ["customer", "merchant"],
+      print_request_status: [
+        "pending_review",
+        "approved",
+        "rejected",
+        "in_progress",
+        "completed",
+        "delivered",
+        "cancelled",
+      ],
       printer_subscription_status: ["active", "paused", "expired", "cancelled"],
       printer_verification_status: ["pending", "verified", "rejected"],
       protection_plan_type: ["basic", "standard", "comprehensive"],

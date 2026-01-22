@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, ArrowRight, Calendar } from 'lucide-react';
 import { formatDate } from '@/lib/utils';
 import LevelBadge from '@/components/LevelBadge';
+import PrintReputationSummary from '@/components/PrintReputationSummary';
 
 const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -114,6 +115,12 @@ const PublicProfile = () => {
             </div>
           </CardContent>
         </Card>
+
+        {userId && (
+          <div className="mb-6">
+            <PrintReputationSummary userId={userId} />
+          </div>
+        )}
       </main>
     </div>
   );
