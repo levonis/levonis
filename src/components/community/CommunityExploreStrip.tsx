@@ -52,9 +52,9 @@ export default function CommunityExploreStrip({ className }: { className?: strin
                       <Button
                         variant="outline"
                         className="mt-4 w-full h-10"
-                        onClick={() => navigate("/community")}
+                        onClick={() => navigate("/community/merchants/all-products")}
                       >
-                        الانتقال الى المجتمع
+                        عرض جميع المنتجات
                       </Button>
                     )}
                   </>
@@ -89,9 +89,9 @@ export default function CommunityExploreStrip({ className }: { className?: strin
                       <Button
                         variant="outline"
                         className="mt-4 w-full h-10"
-                        onClick={() => navigate("/community")}
+                        onClick={() => navigate("/community/merchants")}
                       >
-                        الانتقال الى المجتمع
+                        عرض جميع التجار
                       </Button>
                     )}
                   </>

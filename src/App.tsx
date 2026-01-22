@@ -73,6 +73,8 @@ const CommunityMerchantsPages = lazy(() => import("./pages/CommunityMerchantsPag
 const CommunityMerchantSignup = lazy(() => import("./pages/CommunityMerchantSignup"));
 const CommunityMerchantStore = lazy(() => import("./pages/CommunityMerchantStore"));
 const CommunityMerchantOrders = lazy(() => import("./pages/CommunityMerchantOrders"));
+const CommunityAllMerchantsProducts = lazy(() => import("./pages/CommunityAllMerchantsProducts"));
+const CommunityMerchantStorePage = lazy(() => import("./pages/CommunityMerchantStorePage"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
@@ -161,8 +163,10 @@ function AppContent() {
             <Route path="/community/merchant/orders" element={<RequireAuth><CommunityMerchantOrders /></RequireAuth>} />
             <Route path="/community/customer/track" element={<RequireAuth><CommunityCustomerTrack /></RequireAuth>} />
             <Route path="/community/merchants/products" element={<RequireAuth><CommunityMerchantsProducts /></RequireAuth>} />
+            <Route path="/community/merchants/all-products" element={<CommunityAllMerchantsProducts />} />
             <Route path="/community/requests" element={<RequireAuth><CommunityRequestsBrowse /></RequireAuth>} />
             <Route path="/community/merchants" element={<RequireAuth><CommunityMerchantsPages /></RequireAuth>} />
+            <Route path="/store/:merchantId" element={<CommunityMerchantStorePage />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/seller/:id" element={<SellerProfile />} />
             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
