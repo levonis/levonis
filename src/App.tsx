@@ -60,7 +60,6 @@ const AdminProductOffers = lazy(() => import("./pages/AdminProductOffers"));
 const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const AdminShipmentRequests = lazy(() => import("./pages/AdminShipmentRequests"));
 const AdminShippingSettings = lazy(() => import("./pages/AdminShippingSettings"));
-const Community = lazy(() => import("./pages/Community"));
 const CommunityHome = lazy(() => import("./pages/CommunityHome"));
 const CommunityMessages = lazy(() => import("./pages/CommunityMessages"));
   const CommunityCustomer = lazy(() => import("./pages/CommunityCustomer"));
@@ -141,8 +140,6 @@ function AppContent() {
             <Route path="/admin" element={<NotFound />} />
             
             {/* Community (requires login) */}
-            <Route path="/community" element={<RequireAuth><Community /></RequireAuth>} />
-            <Route path="/community/home" element={<RequireAuth><CommunityHome /></RequireAuth>} />
             <Route path="/community/messages" element={<RequireAuth><CommunityMessages /></RequireAuth>} />
             <Route path="/community/customer" element={<RequireAuth><CommunityCustomer /></RequireAuth>} />
             <Route path="/community/customer/requests" element={<RequireAuth><CommunityCustomerRequests /></RequireAuth>} />
