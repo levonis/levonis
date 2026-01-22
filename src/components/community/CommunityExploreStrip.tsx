@@ -28,7 +28,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
               <CardDescription>هيكلة أولية — سيتم عرض بطاقات منتجات/خدمات هنا</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="rounded-xl bg-muted/20 p-3">
                     <div className="aspect-square rounded-lg bg-background/40" />
@@ -48,7 +48,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
               <CardDescription>هيكلة أولية — سيتم عرض قائمة الطلبات هنا</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="rounded-xl bg-muted/20 p-3">
                     <div className="aspect-square rounded-lg bg-background/40" />
@@ -68,7 +68,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
               <CardDescription>هيكلة أولية — سيتم عرض بطاقات التجار هنا</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
                 {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="rounded-xl bg-muted/20 p-3">
                     <div className="aspect-square rounded-lg bg-background/40" />
