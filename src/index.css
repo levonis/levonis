@@ -113,6 +113,11 @@
 }
 
 @layer utilities {
+  /* Keep scrollbar space stable to prevent RTL horizontal jitter in nested scroll containers */
+  .scrollbar-stable {
+    scrollbar-gutter: stable;
+  }
+
   /* Reduced motion support - CRITICAL for mobile performance */
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {

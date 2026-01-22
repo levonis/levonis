@@ -169,7 +169,7 @@ export default function CommunityCustomerProfileModal({
       </header>
 
       {/* Scrollable body */}
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4">
+      <div className="scrollbar-stable flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-5 py-4">
         {isLoading || loadingUi ? (
           <div className="space-y-3">
             <Skeleton className="h-10 rounded-xl" />
@@ -179,7 +179,7 @@ export default function CommunityCustomerProfileModal({
             <Skeleton className="h-24 rounded-xl" />
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div className="space-y-2">
               <Label className="text-xs" htmlFor="fullName">
                 الاسم الصحيح
@@ -217,36 +217,38 @@ export default function CommunityCustomerProfileModal({
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs" htmlFor="birthDate">
-                تاريخ الميلاد
-              </Label>
-              <Input id="birthDate" type="date" {...form.register("birthDate")} />
-              <p className="text-xs text-muted-foreground">لن يظهر للآخرين</p>
-              {form.formState.errors.birthDate && (
-                <p className="text-xs text-destructive">{form.formState.errors.birthDate.message}</p>
-              )}
-            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="text-xs" htmlFor="birthDate">
+                  تاريخ الميلاد
+                </Label>
+                <Input id="birthDate" type="date" {...form.register("birthDate")} />
+                <p className="text-xs text-muted-foreground">لن يظهر للآخرين</p>
+                {form.formState.errors.birthDate && (
+                  <p className="text-xs text-destructive">{form.formState.errors.birthDate.message}</p>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs">الجنس</Label>
-              <RadioGroup
-                value={form.watch("gender")}
-                onValueChange={(v) => form.setValue("gender", v as "male" | "female", { shouldValidate: true })}
-                className="flex items-center gap-6"
-              >
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="male" id="gender-male" />
-                  <Label htmlFor="gender-male">ذكر</Label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <RadioGroupItem value="female" id="gender-female" />
-                  <Label htmlFor="gender-female">أنثى</Label>
-                </div>
-              </RadioGroup>
-              {form.formState.errors.gender && (
-                <p className="text-xs text-destructive">{form.formState.errors.gender.message}</p>
-              )}
+              <div className="space-y-2">
+                <Label className="text-xs">الجنس</Label>
+                <RadioGroup
+                  value={form.watch("gender")}
+                  onValueChange={(v) => form.setValue("gender", v as "male" | "female", { shouldValidate: true })}
+                  className="flex items-center justify-start gap-6"
+                >
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="male" id="gender-male" />
+                    <Label htmlFor="gender-male">ذكر</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem value="female" id="gender-female" />
+                    <Label htmlFor="gender-female">أنثى</Label>
+                  </div>
+                </RadioGroup>
+                {form.formState.errors.gender && (
+                  <p className="text-xs text-destructive">{form.formState.errors.gender.message}</p>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
