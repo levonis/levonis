@@ -135,7 +135,13 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
   );
 }
 
-export function CommunityCustomerActionsInline({ className }: { className?: string }) {
+export function CommunityCustomerActionsInline({
+  className,
+  mode = "standalone",
+}: {
+  className?: string;
+  mode?: "standalone" | "items";
+}) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
@@ -163,54 +169,65 @@ export function CommunityCustomerActionsInline({ className }: { className?: stri
   if (isLoading) {
     return (
       <div className={className} aria-label="اختصارات الزبون">
-        <div className="flex gap-2 overflow-x-auto">
-          {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-10 w-28 rounded-xl" />
-          ))}
-        </div>
+        {mode === "items" ? (
+          <>
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-10 w-full rounded-xl" />
+            ))}
+          </>
+        ) : (
+          <div className="grid grid-cols-2 gap-2">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-10 w-full rounded-xl" />
+            ))}
+            <Skeleton className="h-10 w-full rounded-xl" />
+          </div>
+        )}
       </div>
     );
   }
 
-  return (
-    <div className={className} aria-label="اختصارات الزبون">
-      {/* Wrap naturally to 2 lines on small screens, keep consistent button height */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          size="sm"
-          onClick={() => navigate("/community/customer/new")}
-          disabled={!complete}
-          className="h-10 w-full sm:w-auto shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-        >
-          <PlusCircle className="ml-2 h-4 w-4" />
-          طلب جديد
-        </Button>
+  const newBtnClass =
+    !complete
+      ? "h-10 w-full shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+      : "h-10 w-full shrink-0";
 
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={!complete}
-          onClick={() => navigate("/community/customer/requests")}
-          className="h-10 w-full sm:w-auto shrink-0"
-        >
-          <ClipboardList className="ml-2 h-4 w-4" />
-          طلباتي
-        </Button>
+  const content = (
+    <>
+      <Button
+        size="sm"
+        onClick={() => navigate("/community/customer/new")}
+        disabled={!complete}
+        className={
+          !complete
+            ? "h-10 w-full shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+            : "h-10 w-full shrink-0"
+        }
+      >
+        <PlusCircle className="ml-2 h-4 w-4" />
+        طلب جديد
+      </Button>
 
-        <Button
-          size="sm"
-          variant={complete ? "outline" : "default"}
-          onClick={() => setProfileOpen(true)}
-          className={
-            !complete
-              ? "h-10 w-full sm:w-auto shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-              : "h-10 w-full sm:w-auto shrink-0"
-          }
-        >
-          <UserIcon className="ml-2 h-4 w-4" />
-          {complete ? "الملف" : "إكمال"}
-        </Button>
-      </div>
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={!complete}
+        onClick={() => navigate("/community/customer/requests")}
+        className="h-10 w-full shrink-0"
+      >
+        <ClipboardList className="ml-2 h-4 w-4" />
+        طلباتي
+      </Button>
+
+      <Button
+        size="sm"
+        variant={complete ? "outline" : "default"}
+        onClick={() => setProfileOpen(true)}
+        className={newBtnClass}
+      >
+        <UserIcon className="ml-2 h-4 w-4" />
+        {complete ? "الملف" : "إكمال"}
+      </Button>
 
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
         <DialogContent className="sm:max-w-2xl">
@@ -224,6 +241,17 @@ export function CommunityCustomerActionsInline({ className }: { className?: stri
           </div>
         </DialogContent>
       </Dialog>
+    </>
+  );
+
+  if (mode === "items") return <>{content}</>;
+
+  return (
+    <div className={className} aria-label="اختصارات الزبون">
+      {/* Mobile: exactly 2 rows (2 buttons per row). Desktop: inline */}
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+        {content}
+      </div>
     </div>
   );
 }

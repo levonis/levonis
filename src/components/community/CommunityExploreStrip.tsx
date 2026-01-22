@@ -1,8 +1,14 @@
 import { Boxes, Store, Users } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function CommunityExploreStrip({ className }: { className?: string }) {
+  const navigate = useNavigate();
+
+  const showGoToCommunity = (count: number) => count > 15;
+
   return (
     <section className={className} aria-label="استكشاف المجتمع">
       <Tabs defaultValue="products" className="w-full">
@@ -28,15 +34,32 @@ export default function CommunityExploreStrip({ className }: { className?: strin
               <CardDescription>هيكلة أولية — سيتم عرض بطاقات منتجات/خدمات هنا</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
+              {(() => {
+                const items = [1, 2, 3, 4, 5, 6];
+                return (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                      {items.map((i) => (
                   <div key={i} className="rounded-xl bg-muted/20 p-3">
                     <div className="aspect-square rounded-lg bg-background/40" />
                     <p className="mt-2 text-sm font-semibold">منتج #{i}</p>
                     <p className="mt-1 text-xs text-muted-foreground">تاجر • سعر • وقت</p>
                   </div>
-                ))}
-              </div>
+                      ))}
+                    </div>
+
+                    {showGoToCommunity(items.length) && (
+                      <Button
+                        variant="outline"
+                        className="mt-4 w-full h-10"
+                        onClick={() => navigate("/community")}
+                      >
+                        الانتقال الى المجتمع
+                      </Button>
+                    )}
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
@@ -48,15 +71,32 @@ export default function CommunityExploreStrip({ className }: { className?: strin
               <CardDescription>هيكلة أولية — سيتم عرض قائمة الطلبات هنا</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
+              {(() => {
+                const items = [1, 2, 3, 4, 5, 6];
+                return (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                      {items.map((i) => (
                   <div key={i} className="rounded-xl bg-muted/20 p-3">
                     <div className="aspect-square rounded-lg bg-background/40" />
                     <p className="mt-2 text-sm font-semibold">طلب #{i}</p>
                     <p className="mt-1 text-xs text-muted-foreground">عنوان • فئة • حالة</p>
                   </div>
-                ))}
-              </div>
+                      ))}
+                    </div>
+
+                    {showGoToCommunity(items.length) && (
+                      <Button
+                        variant="outline"
+                        className="mt-4 w-full h-10"
+                        onClick={() => navigate("/community")}
+                      >
+                        الانتقال الى المجتمع
+                      </Button>
+                    )}
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
@@ -68,15 +108,32 @@ export default function CommunityExploreStrip({ className }: { className?: strin
               <CardDescription>هيكلة أولية — سيتم عرض بطاقات التجار هنا</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                {[1, 2, 3, 4, 5, 6].map((i) => (
+              {(() => {
+                const items = [1, 2, 3, 4, 5, 6];
+                return (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                      {items.map((i) => (
                   <div key={i} className="rounded-xl bg-muted/20 p-3">
                     <div className="aspect-square rounded-lg bg-background/40" />
                     <p className="mt-2 text-sm font-semibold">تاجر #{i}</p>
                     <p className="mt-1 text-xs text-muted-foreground">تقييم • مدينة • خدمات</p>
                   </div>
-                ))}
-              </div>
+                      ))}
+                    </div>
+
+                    {showGoToCommunity(items.length) && (
+                      <Button
+                        variant="outline"
+                        className="mt-4 w-full h-10"
+                        onClick={() => navigate("/community")}
+                      >
+                        الانتقال الى المجتمع
+                      </Button>
+                    )}
+                  </>
+                );
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
