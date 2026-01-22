@@ -5,6 +5,8 @@ import SearchBar from '@/components/SearchBar';
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
 import BannerCarousel from '@/components/BannerCarousel';
+import CommunityCustomerStrip from '@/components/community/CommunityCustomerStrip';
+import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
 import { Loader2 } from 'lucide-react';
 
 // Lazy load non-critical components
@@ -109,6 +111,13 @@ const Home = () => {
               WhatsApp
             </a>
           </div>
+        </section>
+
+        {/* Levo Community Strips (logged-in only) */}
+        <section className="container mx-auto px-4 pb-6 md:pb-10">
+          <CommunityCustomerStrip />
+          <div className="my-6 h-px bg-border" />
+          <CommunityExploreStrip />
         </section>
 
         {/* Categories Section - Optimized DOM */}
