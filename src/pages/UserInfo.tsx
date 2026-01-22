@@ -1,16 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, Mail, Calendar, Shield, Camera, Lock, Eye, EyeOff } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { formatDate } from '@/lib/utils';
-import LevelBadge from '@/components/LevelBadge';
+import UserInfoPageHeader from '@/components/user-info/UserInfoPageHeader';
+import UserInfoProfileCard from '@/components/user-info/UserInfoProfileCard';
+import UserInfoAccountDetailsCard from '@/components/user-info/UserInfoAccountDetailsCard';
+import UserInfoSecurityCard from '@/components/user-info/UserInfoSecurityCard';
 
 const UserInfo = () => {
   const { user, loading: authLoading } = useAuth();
@@ -184,253 +181,38 @@ const UserInfo = () => {
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
-        <div className="mb-8">
-          <h1 className="text-4xl font-black text-primary mb-2">معلومات الحساب</h1>
-          <p className="text-muted-foreground">إدارة معلومات حسابك الشخصية</p>
-        </div>
+      <main className="container mx-auto px-4 pt-24 pb-10 max-w-4xl">
+        <UserInfoPageHeader />
 
-        <div className="space-y-6">
-          {/* User Info Card */}
-          <Card className="glass-effect border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                معلومات الحساب
-              </CardTitle>
-              <CardDescription>
-                قم بتحديث معلوماتك الشخصية
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSave} className="space-y-4">
-                {/* Avatar Upload */}
-                <div className="flex flex-col items-center gap-4 pb-6 border-b border-border/30">
-                  <div className="flex flex-col items-center gap-2">
-                    <Avatar className="h-24 w-24">
-                      <AvatarImage 
-                        src={avatarFile ? URL.createObjectURL(avatarFile) : profile.avatar_url || undefined} 
-                      />
-                      <AvatarFallback className="text-2xl">
-                        {profile.username?.[0] || profile.full_name?.[0] || 'م'}
-                      </AvatarFallback>
-                    </Avatar>
-                    {user?.id && <LevelBadge userId={user.id} size="lg" />}
-                  </div>
-                  <div>
-                    <Input
-                      id="avatar"
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        if (e.target.files?.[0]) {
-                          setAvatarFile(e.target.files[0]);
-                        }
-                      }}
-                    />
-                    <Label htmlFor="avatar" className="cursor-pointer">
-                      <div className="flex items-center gap-2 px-4 py-2 bg-primary/10 hover:bg-primary/20 rounded-lg transition-colors">
-                        <Camera className="h-4 w-4" />
-                        <span className="text-sm">تغيير الصورة</span>
-                      </div>
-                    </Label>
-                  </div>
-                </div>
+        <section className="space-y-6">
+          <UserInfoProfileCard
+            userId={user?.id}
+            profile={profile}
+            setProfile={setProfile}
+            avatarFile={avatarFile}
+            setAvatarFile={setAvatarFile}
+            saving={saving}
+            uploadingAvatar={uploadingAvatar}
+            onSubmit={handleSave}
+          />
 
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">الاسم الكامل</Label>
-                  <Input
-                    id="full_name"
-                    value={profile.full_name}
-                    onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-                    placeholder="أدخل اسمك الكامل"
-                  />
-                </div>
+          <UserInfoAccountDetailsCard userId={user?.id} createdAt={user?.created_at} />
 
-                <div className="space-y-2">
-                  <Label htmlFor="username">اسم المستخدم</Label>
-                  <Input
-                    id="username"
-                    value={profile.username}
-                    onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-                    placeholder="اختر اسم مستخدم فريد"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    يستخدم للبحث في قائمة الطلبات وظهوره في التقييمات
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">البريد الإلكتروني</Label>
-                  <div className="relative">
-                    <Mail className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      value={profile.email}
-                      disabled
-                      className="pr-10 bg-muted/50"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    لا يمكن تغيير البريد الإلكتروني
-                  </p>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                  disabled={saving || uploadingAvatar}
-                >
-                  {(saving || uploadingAvatar) && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                  {uploadingAvatar ? 'جاري رفع الصورة...' : 'حفظ التغييرات'}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Account Details Card */}
-          <Card className="glass-effect border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
-                تفاصيل الحساب
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b border-border/30">
-                <span className="text-muted-foreground">مستوى العضوية</span>
-                <div className="flex items-center gap-2">
-                  {user?.id && <LevelBadge userId={user.id} size="md" />}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between py-2">
-                <span className="text-muted-foreground">تاريخ الإنشاء</span>
-                <span className="font-medium text-foreground">
-                  {user?.created_at ? formatDate(user.created_at) : '-'}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Security Card */}
-          <Card className="glass-effect border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5 text-primary" />
-                الأمان
-              </CardTitle>
-              <CardDescription>
-                إدارة إعدادات الأمان الخاصة بك
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!showPasswordForm ? (
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setShowPasswordForm(true)}
-                >
-                  <Lock className="ml-2 h-4 w-4" />
-                  تغيير كلمة المرور
-                </Button>
-              ) : (
-                <form onSubmit={handleChangePassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">كلمة المرور الحالية</Label>
-                    <div className="relative">
-                      <Input
-                        id="currentPassword"
-                        type={showCurrentPassword ? 'text' : 'password'}
-                        value={passwordData.currentPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
-                        placeholder="أدخل كلمة المرور الحالية"
-                        required
-                        className="pl-10"
-                      />
-                      <button
-                        type="button"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      >
-                        {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">كلمة المرور الجديدة</Label>
-                    <div className="relative">
-                      <Input
-                        id="newPassword"
-                        type={showNewPassword ? 'text' : 'password'}
-                        value={passwordData.newPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
-                        placeholder="أدخل كلمة المرور الجديدة"
-                        required
-                        minLength={6}
-                        className="pl-10"
-                      />
-                      <button
-                        type="button"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                      >
-                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">تأكيد كلمة المرور الجديدة</Label>
-                    <div className="relative">
-                      <Input
-                        id="confirmPassword"
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        value={passwordData.confirmPassword}
-                        onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
-                        placeholder="أعد إدخال كلمة المرور الجديدة"
-                        required
-                        minLength={6}
-                        className="pl-10"
-                      />
-                      <button
-                        type="button"
-                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      >
-                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      type="submit"
-                      className="flex-1"
-                      disabled={changingPassword}
-                    >
-                      {changingPassword && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                      حفظ كلمة المرور
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        setShowPasswordForm(false);
-                        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-                      }}
-                      disabled={changingPassword}
-                    >
-                      إلغاء
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+          <UserInfoSecurityCard
+            showPasswordForm={showPasswordForm}
+            setShowPasswordForm={setShowPasswordForm}
+            changingPassword={changingPassword}
+            passwordData={passwordData}
+            setPasswordData={setPasswordData}
+            showCurrentPassword={showCurrentPassword}
+            setShowCurrentPassword={setShowCurrentPassword}
+            showNewPassword={showNewPassword}
+            setShowNewPassword={setShowNewPassword}
+            showConfirmPassword={showConfirmPassword}
+            setShowConfirmPassword={setShowConfirmPassword}
+            onSubmit={handleChangePassword}
+          />
+        </section>
       </main>
     </div>
   );
