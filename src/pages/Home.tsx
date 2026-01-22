@@ -9,7 +9,7 @@ import { Loader2 } from 'lucide-react';
 
 // Lazy load non-critical components
 const CustomerChat = lazy(() => import('@/components/CustomerChat'));
-const MarketplaceSection = lazy(() => import('@/components/marketplace/MarketplaceSection'));
+const CommunitySection = lazy(() => import('@/components/community/CommunitySection'));
 
 // Memoized category card for performance
 const MemoizedCategoryCard = memo(CategoryCard);
@@ -166,9 +166,9 @@ const Home = () => {
           )}
         </section>
 
-        {/* Marketplace Section - Lazy loaded */}
+        {/* Community Section - Lazy loaded */}
         <Suspense fallback={<div className="h-32 md:h-64 flex items-center justify-center"><Loader2 className="w-6 h-6 md:w-8 md:h-8 animate-spin text-primary" /></div>}>
-          <MarketplaceSection />
+          <CommunitySection />
         </Suspense>
 
         <Footer />

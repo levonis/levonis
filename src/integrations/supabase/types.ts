@@ -1367,44 +1367,7 @@ export type Database = {
           status?: string
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "listing_conversations_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "user_listings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      listing_favorites: {
-        Row: {
-          created_at: string
-          id: string
-          listing_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          listing_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          listing_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "listing_favorites_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "user_listings"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       listing_fees_settings: {
         Row: {
@@ -1444,35 +1407,6 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
-      }
-      listing_likes: {
-        Row: {
-          created_at: string
-          id: string
-          listing_id: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          listing_id: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          listing_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "listing_likes_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "user_listings"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       listing_messages: {
         Row: {
@@ -1564,41 +1498,7 @@ export type Database = {
           tracking_info?: string | null
           updated_at?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "listing_transactions_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "user_listings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      listing_views: {
-        Row: {
-          last_viewed_at: string
-          listing_id: string
-          user_id: string
-        }
-        Insert: {
-          last_viewed_at?: string
-          listing_id: string
-          user_id: string
-        }
-        Update: {
-          last_viewed_at?: string
-          listing_id?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "listing_views_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "user_listings"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       loyalty_levels: {
         Row: {
@@ -3183,42 +3083,6 @@ export type Database = {
           },
         ]
       }
-      seller_profiles: {
-        Row: {
-          average_rating: number | null
-          completed_orders: number | null
-          created_at: string
-          id: string
-          is_verified: boolean | null
-          total_reviews: number | null
-          total_sales: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          average_rating?: number | null
-          completed_orders?: number | null
-          created_at?: string
-          id?: string
-          is_verified?: boolean | null
-          total_reviews?: number | null
-          total_sales?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          average_rating?: number | null
-          completed_orders?: number | null
-          created_at?: string
-          id?: string
-          is_verified?: boolean | null
-          total_reviews?: number | null
-          total_sales?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       seller_reviews: {
         Row: {
           buyer_id: string
@@ -3247,15 +3111,7 @@ export type Database = {
           rating?: number
           seller_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "seller_reviews_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "user_listings"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       serial_number_requests: {
         Row: {
@@ -3826,95 +3682,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_listings: {
-        Row: {
-          admin_notes: string | null
-          approved_at: string | null
-          category_id: string | null
-          condition: string
-          created_at: string
-          currency: string
-          description: string | null
-          description_ar: string | null
-          expires_at: string | null
-          id: string
-          images: string[] | null
-          last_renewed_at: string | null
-          likes_count: number | null
-          listing_code: string | null
-          location: string | null
-          original_price: number | null
-          price: number
-          seller_id: string
-          shipping_method: string
-          status: string
-          title: string
-          title_ar: string
-          updated_at: string
-          views_count: number | null
-        }
-        Insert: {
-          admin_notes?: string | null
-          approved_at?: string | null
-          category_id?: string | null
-          condition?: string
-          created_at?: string
-          currency?: string
-          description?: string | null
-          description_ar?: string | null
-          expires_at?: string | null
-          id?: string
-          images?: string[] | null
-          last_renewed_at?: string | null
-          likes_count?: number | null
-          listing_code?: string | null
-          location?: string | null
-          original_price?: number | null
-          price: number
-          seller_id: string
-          shipping_method?: string
-          status?: string
-          title: string
-          title_ar: string
-          updated_at?: string
-          views_count?: number | null
-        }
-        Update: {
-          admin_notes?: string | null
-          approved_at?: string | null
-          category_id?: string | null
-          condition?: string
-          created_at?: string
-          currency?: string
-          description?: string | null
-          description_ar?: string | null
-          expires_at?: string | null
-          id?: string
-          images?: string[] | null
-          last_renewed_at?: string | null
-          likes_count?: number | null
-          listing_code?: string | null
-          location?: string | null
-          original_price?: number | null
-          price?: number
-          seller_id?: string
-          shipping_method?: string
-          status?: string
-          title?: string
-          title_ar?: string
-          updated_at?: string
-          views_count?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_listings_category_id_fkey"
-            columns: ["category_id"]
-            isOneToOne: false
-            referencedRelation: "categories"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_points: {
         Row: {
           available_points: number
@@ -4081,13 +3848,6 @@ export type Database = {
             columns: ["competition_id"]
             isOneToOne: false
             referencedRelation: "competitions"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_purchased_products_marketplace_listing_id_fkey"
-            columns: ["marketplace_listing_id"]
-            isOneToOne: false
-            referencedRelation: "user_listings"
             referencedColumns: ["id"]
           },
           {

@@ -59,8 +59,7 @@ const AdminProductOffers = lazy(() => import("./pages/AdminProductOffers"));
 const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const AdminShipmentRequests = lazy(() => import("./pages/AdminShipmentRequests"));
 const AdminShippingSettings = lazy(() => import("./pages/AdminShippingSettings"));
-const AdminMarketplace = lazy(() => import("./pages/AdminMarketplace"));
-const Marketplace = lazy(() => import("./pages/Marketplace"));
+const Community = lazy(() => import("./pages/Community"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const MyPurchasedProducts = lazy(() => import("./pages/MyPurchasedProducts"));
 const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
@@ -125,7 +124,6 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/product-offers`} element={<AdminRoute><AdminProductOffers /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/ticket-bundles`} element={<AdminRoute><AdminTicketBundles /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/shipment-requests`} element={<AdminRoute><AdminShipmentRequests /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/marketplace`} element={<AdminRoute><AdminMarketplace /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/offer-purchases`} element={<AdminRoute><AdminOfferPurchases /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/shipping-settings`} element={<AdminRoute><AdminShippingSettings /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/redeemable-products`} element={<AdminRoute><AdminRedeemableProducts /></AdminRoute>} />
@@ -135,8 +133,7 @@ function AppContent() {
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />
             
-            <Route path="/marketplace" element={<Marketplace />} />
-            <Route path="/marketplace/:listingId" element={<Marketplace />} />
+            <Route path="/community" element={<Community />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/shop" element={<ProductShop />} />
