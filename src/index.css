@@ -91,6 +91,8 @@
 
   html {
     direction: rtl;
+    /* Prevent layout shift when scrollbar appears/disappears (common RTL “shift right” issue) */
+    scrollbar-gutter: stable;
   }
 
   body {
@@ -100,6 +102,8 @@
     font-variation-settings: 'opsz' 32;
     position: relative;
     overflow-x: hidden;
+    /* Keep vertical scrollbar space stable on desktop to avoid horizontal jitter */
+    scrollbar-gutter: stable;
   }
 
   h1, h2, h3, h4, h5, h6 {
