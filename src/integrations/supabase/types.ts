@@ -1744,6 +1744,62 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_products: {
+        Row: {
+          created_at: string
+          description: string | null
+          estimated_days: number | null
+          id: string
+          image_urls: string[] | null
+          is_active: boolean
+          merchant_id: string
+          original_price_iqd: number | null
+          price_iqd: number | null
+          primary_image_index: number | null
+          title: string
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          estimated_days?: number | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean
+          merchant_id: string
+          original_price_iqd?: number | null
+          price_iqd?: number | null
+          primary_image_index?: number | null
+          title: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          estimated_days?: number | null
+          id?: string
+          image_urls?: string[] | null
+          is_active?: boolean
+          merchant_id?: string
+          original_price_iqd?: number | null
+          price_iqd?: number | null
+          primary_image_index?: number | null
+          title?: string
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_products_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
