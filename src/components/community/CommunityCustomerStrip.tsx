@@ -52,7 +52,36 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
 
   const complete = useMemo(() => isProfileComplete(profile), [profile]);
 
-  if (!user) return null;
+  // On homepage we still want a visible community entry even when logged out.
+  if (!user) {
+    return (
+      <section className={className} aria-label="مجتمع ليفو">
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">مجتمع ليفو</CardTitle>
+            <CardDescription>
+              لتفعيل لوحة الزبون والمحادثات داخل المجتمع، يرجى تسجيل الدخول أولاً.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Button
+                onClick={() => navigate("/auth")}
+                className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+              >
+                تسجيل الدخول
+              </Button>
+              <Button variant="outline" onClick={() => navigate("/community")}
+                className="w-full"
+              >
+                الدخول إلى المجتمع
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
 
   return (
     <section className={className} aria-label="لوحة مجتمع ليفو">
