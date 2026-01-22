@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Users } from 'lucide-react';
+import { MessageSquare, Store, User, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
@@ -23,37 +23,72 @@ export default function Community() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-primary">مجتمع ليفو</h1>
-              <p className="text-sm text-muted-foreground">محادثات المجتمع والدعم في مكان واحد</p>
+              <p className="text-sm text-muted-foreground">المحادثات والتواصل داخل المجتمع</p>
             </div>
           </div>
         </header>
 
         <section className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="text-lg font-bold text-foreground mb-2">مجتمع ليفو</h2>
+          <h2 className="text-lg font-bold text-foreground mb-1">اختر طريقة الدخول</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            المحادثات والتواصل داخل المجتمع
+            اختر إذا كنت زبون أو بائع داخل المجتمع، أو ادخل مباشرة إلى المحادثات.
           </p>
 
-          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="mt-5 grid grid-cols-1 md:grid-cols-3 gap-3">
             {loading ? (
               <>
-                <div className="h-11 rounded-xl bg-muted animate-pulse" />
-                <div className="h-11 rounded-xl bg-muted animate-pulse" />
+                <div className="h-24 rounded-2xl bg-muted animate-pulse" />
+                <div className="h-24 rounded-2xl bg-muted animate-pulse" />
+                <div className="h-24 rounded-2xl bg-muted animate-pulse" />
               </>
             ) : (
               <>
-                <Button
-                  onClick={() => navigate('/community/home')}
-                  className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                <button
+                  type="button"
+                  onClick={() => navigate('/community/customer')}
+                  className="text-right rounded-2xl border border-border bg-background/40 hover:bg-background/60 transition-colors p-4"
                 >
-                  الدخول
-                </Button>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <User className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-base font-black text-foreground">زبون</div>
+                      <div className="text-xs text-muted-foreground mt-1">طلب طباعة + متابعة + محادثة</div>
+                    </div>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/community/home')}
+                  className="text-right rounded-2xl border border-border bg-background/40 hover:bg-background/60 transition-colors p-4"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <Store className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-base font-black text-foreground">بائع</div>
+                      <div className="text-xs text-muted-foreground mt-1">قريباً — لوحة البائع قيد التطوير</div>
+                    </div>
+                  </div>
+                </button>
+
                 <Button
                   variant="outline"
                   onClick={() => navigate('/community/messages')}
-                  className="w-full"
+                  className="h-auto py-4 rounded-2xl justify-between"
                 >
-                  المحادثات
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <MessageSquare className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="text-right">
+                      <div className="text-base font-black">المحادثات</div>
+                      <div className="text-xs text-muted-foreground mt-1">افتح واجهة المحادثات الحالية</div>
+                    </div>
+                  </div>
                 </Button>
               </>
             )}
