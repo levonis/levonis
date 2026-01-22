@@ -1,10 +1,13 @@
 import { Suspense, lazy } from 'react';
 import { Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 
 const ListingConversations = lazy(() => import('@/components/marketplace/ListingConversations'));
 
 export default function CommunitySection() {
+  const navigate = useNavigate();
+
   return (
     <section className="container mx-auto px-4 py-10">
       <div className="relative mb-6">
@@ -14,7 +17,14 @@ export default function CommunitySection() {
         <div className="relative flex justify-center">
           <div className="bg-background px-6 py-2 flex items-center gap-2 rounded-full border border-primary/30 shadow-sm">
             <Users className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-primary">مجتمع ليفو</span>
+            <button
+              type="button"
+              onClick={() => navigate('/community/customer')}
+              className="text-sm font-medium text-primary"
+              aria-label="الدخول إلى مجتمع ليفو"
+            >
+              مجتمع ليفو
+            </button>
           </div>
         </div>
       </div>
