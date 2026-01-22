@@ -33,9 +33,11 @@ type FormValues = z.infer<typeof formSchema>;
 export default function CommunityCustomerProfileModal({
   onDone,
   showMerchantCta = true,
+  onOpenMerchantSignup,
 }: {
   onDone?: () => void;
   showMerchantCta?: boolean;
+  onOpenMerchantSignup?: () => void;
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -131,7 +133,10 @@ export default function CommunityCustomerProfileModal({
               type="button"
               variant="link"
               className="h-auto p-0 text-sm"
-              onClick={() => navigate("/community/merchant/signup")}
+              onClick={() => {
+                if (onOpenMerchantSignup) return onOpenMerchantSignup();
+                navigate("/community/merchant/signup");
+              }}
             >
               هل انت تاجر؟ اضغط هنا
             </Button>
