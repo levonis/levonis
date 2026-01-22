@@ -21,7 +21,7 @@ export default function CommunityCustomer() {
             </div>
           </div>
 
-          <Button variant="outline" onClick={() => navigate('/community')} className="gap-2">
+          <Button variant="outline" onClick={() => navigate('/')} className="gap-2">
             <ArrowRight className="h-4 w-4" />
             رجوع
           </Button>

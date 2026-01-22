@@ -60,12 +60,15 @@ const AdminProductOffers = lazy(() => import("./pages/AdminProductOffers"));
 const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const AdminShipmentRequests = lazy(() => import("./pages/AdminShipmentRequests"));
 const AdminShippingSettings = lazy(() => import("./pages/AdminShippingSettings"));
-const CommunityHome = lazy(() => import("./pages/CommunityHome"));
 const CommunityMessages = lazy(() => import("./pages/CommunityMessages"));
   const CommunityCustomer = lazy(() => import("./pages/CommunityCustomer"));
   const CommunityCustomerNewRequest = lazy(() => import("./pages/CommunityCustomerNewRequest"));
   const CommunityCustomerRequests = lazy(() => import("./pages/CommunityCustomerRequests"));
   const CommunityCustomerProfile = lazy(() => import("./pages/CommunityCustomerProfile"));
+const CommunityCustomerTrack = lazy(() => import("./pages/CommunityCustomerTrack"));
+const CommunityMerchantsProducts = lazy(() => import("./pages/CommunityMerchantsProducts"));
+const CommunityRequestsBrowse = lazy(() => import("./pages/CommunityRequestsBrowse"));
+const CommunityMerchantsPages = lazy(() => import("./pages/CommunityMerchantsPages"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const MyPurchasedProducts = lazy(() => import("./pages/MyPurchasedProducts"));
 const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
@@ -145,7 +148,10 @@ function AppContent() {
             <Route path="/community/customer/requests" element={<RequireAuth><CommunityCustomerRequests /></RequireAuth>} />
             <Route path="/community/customer/new" element={<RequireAuth><CommunityCustomerNewRequest /></RequireAuth>} />
             <Route path="/community/customer/profile" element={<RequireAuth><CommunityCustomerProfile /></RequireAuth>} />
-            <Route path="/community/customer/track" element={<RequireAuth><CommunityHome /></RequireAuth>} />
+            <Route path="/community/customer/track" element={<RequireAuth><CommunityCustomerTrack /></RequireAuth>} />
+            <Route path="/community/merchants/products" element={<RequireAuth><CommunityMerchantsProducts /></RequireAuth>} />
+            <Route path="/community/requests" element={<RequireAuth><CommunityRequestsBrowse /></RequireAuth>} />
+            <Route path="/community/merchants" element={<RequireAuth><CommunityMerchantsPages /></RequireAuth>} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/shop" element={<ProductShop />} />

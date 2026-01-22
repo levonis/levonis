@@ -18,6 +18,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowRight, User } from "lucide-react";
 
+const DEFAULT_AVATAR_URL = "/placeholder.svg";
+
 const formSchema = z.object({
   fullName: z.string().trim().min(2, "الاسم مطلوب").max(120),
   phoneNumber: z.string().trim().min(7, "رقم الهاتف مطلوب").max(30),
@@ -47,7 +49,7 @@ export default function CommunityCustomerProfile() {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, phone_number, username, birth_date, gender, bio")
+        .select("full_name, phone_number, username, birth_date, gender, bio, avatar_url")
         .eq("id", user.id)
         .maybeSingle();
       if (error) throw error;
@@ -78,6 +80,10 @@ export default function CommunityCustomerProfile() {
     mutationFn: async (values: FormValues) => {
       if (!user?.id) throw new Error("Not authenticated");
 
+      // If user didn't set an avatar, assign a system default.
+      // (We don't force avatar upload; we ensure the profile has a usable image.)
+      const avatarUrl = (profile as any)?.avatar_url ?? DEFAULT_AVATAR_URL;
+
       const payload = {
         full_name: values.fullName,
         phone_number: values.phoneNumber,
@@ -85,6 +91,7 @@ export default function CommunityCustomerProfile() {
         birth_date: values.birthDate,
         gender: values.gender,
         bio: values.bio?.trim() ? values.bio.trim() : null,
+        ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
       };
 
       const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
