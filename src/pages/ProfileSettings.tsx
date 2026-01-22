@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import ImageCropper from "@/components/marketplace/ImageCropper";
 
 function daysUntilAllowed(last: string | null) {
   if (!last) return 0;
@@ -47,6 +48,9 @@ export default function ProfileSettings() {
   const [username, setUsername] = useState("");
   const [selectedDefaultAddressId, setSelectedDefaultAddressId] = useState<string>("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [cropOpen, setCropOpen] = useState(false);
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const cropObjectUrlRef = useRef<string | null>(null);
 
   const { data: profile, isLoading: loadingProfile } = useQuery({
     queryKey: ["profile-settings-profile", user?.id],
@@ -193,10 +197,40 @@ export default function ProfileSettings() {
     },
   });
 
+  useEffect(() => {
+    return () => {
+      if (cropObjectUrlRef.current) URL.revokeObjectURL(cropObjectUrlRef.current);
+    };
+  }, []);
+
   const previewAvatar = useMemo(() => {
     if (avatarFile) return URL.createObjectURL(avatarFile);
     return (profile as any)?.avatar_url || undefined;
   }, [avatarFile, profile]);
+
+  useEffect(() => {
+    if (!avatarFile || !previewAvatar) return;
+    // previewAvatar is the object URL created above
+    return () => URL.revokeObjectURL(previewAvatar);
+  }, [avatarFile, previewAvatar]);
+
+  const handlePickAvatar = (file: File | null) => {
+    if (!file) return;
+    if (cropObjectUrlRef.current) {
+      URL.revokeObjectURL(cropObjectUrlRef.current);
+      cropObjectUrlRef.current = null;
+    }
+    const objectUrl = URL.createObjectURL(file);
+    cropObjectUrlRef.current = objectUrl;
+    setCropImageSrc(objectUrl);
+    setCropOpen(true);
+  };
+
+  const handleCropComplete = (blob: Blob) => {
+    const next = new File([blob], `avatar-${Date.now()}.jpg`, { type: blob.type || "image/jpeg" });
+    setAvatarFile(next);
+    setCropOpen(false);
+  };
 
   const usernameHint = canEditUsername
     ? "يمكنك تغيير اليوزرنيم مرة كل 14 يوم."
@@ -238,7 +272,7 @@ export default function ProfileSettings() {
                     type="file"
                     accept="image/*"
                     className="hidden"
-                    onChange={(e) => setAvatarFile(e.target.files?.[0] ?? null)}
+                    onChange={(e) => handlePickAvatar(e.target.files?.[0] ?? null)}
                   />
                 </div>
 
@@ -337,6 +371,17 @@ export default function ProfileSettings() {
           </div>
         </div>
       </main>
+
+      {cropImageSrc && (
+        <ImageCropper
+          open={cropOpen}
+          onOpenChange={setCropOpen}
+          imageSrc={cropImageSrc}
+          onCropComplete={handleCropComplete}
+          aspectRatio={1}
+          isUploading={false}
+        />
+      )}
     </div>
   );
 }
