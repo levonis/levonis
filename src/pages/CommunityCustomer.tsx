@@ -1,17 +1,11 @@
-import { useEffect, useState } from 'react';
-import { ArrowRight, PlusCircle, User } from 'lucide-react';
+import { ArrowRight, User } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import CommunityCustomerStrip from '@/components/community/CommunityCustomerStrip';
+import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
 
 export default function CommunityCustomer() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const t = window.setTimeout(() => setLoading(false), 250);
-    return () => window.clearTimeout(t);
-  }, []);
 
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
@@ -33,48 +27,13 @@ export default function CommunityCustomer() {
           </Button>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-base">إضافة طلب جديد</CardTitle>
-              <CardDescription>ابدأ طلب طباعة جديد (واجهة فقط الآن)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="h-11 rounded-xl bg-muted animate-pulse" />
-              ) : (
-                <Button
-                  onClick={() => navigate('/community/customer/new')}
-                  className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                >
-                  <PlusCircle className="ml-2 h-4 w-4" />
-                  إضافة طلب جديد
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+        <CommunityCustomerStrip />
 
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-base">طلباتي</CardTitle>
-              <CardDescription>سيتم تفعيلها لاحقاً</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-11 rounded-xl bg-muted/40" />
-            </CardContent>
-          </Card>
+        <div className="my-6 h-px bg-border" />
 
-          <Card className="border-border bg-card">
-            <CardHeader>
-              <CardTitle className="text-base">تتبع الطلب</CardTitle>
-              <CardDescription>سيتم ربطها لاحقاً</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="h-11 rounded-xl bg-muted/40" />
-            </CardContent>
-          </Card>
-        </div>
+        <CommunityExploreStrip />
       </main>
     </div>
   );
 }
+

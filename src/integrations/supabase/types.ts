@@ -2932,9 +2932,12 @@ export type Database = {
         Row: {
           avatar_url: string | null
           ban_reason: string | null
+          bio: string | null
+          birth_date: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
+          gender: string | null
           governorate: string | null
           id: string
           is_banned: boolean | null
@@ -2946,9 +2949,12 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           ban_reason?: string | null
+          bio?: string | null
+          birth_date?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
+          gender?: string | null
           governorate?: string | null
           id: string
           is_banned?: boolean | null
@@ -2960,9 +2966,12 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           ban_reason?: string | null
+          bio?: string | null
+          birth_date?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
+          gender?: string | null
           governorate?: string | null
           id?: string
           is_banned?: boolean | null
