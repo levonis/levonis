@@ -7,21 +7,31 @@ import { Button } from "@/components/ui/button";
 export default function CommunityExploreStrip({ className }: { className?: string }) {
   const navigate = useNavigate();
 
-  const showGoToCommunity = (count: number) => count > 15;
-
   return (
     <section className={className} aria-label="استكشاف المجتمع">
       <Tabs defaultValue="products" className="w-full">
         <TabsList className="grid w-full grid-cols-3 bg-card border border-border rounded-xl p-1">
-          <TabsTrigger value="products" className="shrink-0">
+          <TabsTrigger
+            value="products"
+            className="shrink-0"
+            onClick={() => navigate("/community/merchants/all-products")}
+          >
             <Store className="ml-2 h-4 w-4" />
             منتجات التجار
           </TabsTrigger>
-          <TabsTrigger value="requests" className="shrink-0">
+          <TabsTrigger
+            value="requests"
+            className="shrink-0"
+            onClick={() => navigate("/community/requests")}
+          >
             <Users className="ml-2 h-4 w-4" />
             طلبات الزبائن
           </TabsTrigger>
-          <TabsTrigger value="merchants" className="shrink-0">
+          <TabsTrigger
+            value="merchants"
+            className="shrink-0"
+            onClick={() => navigate("/community/merchants")}
+          >
             <Boxes className="ml-2 h-4 w-4" />
             صفحات التجار
           </TabsTrigger>
@@ -31,7 +41,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="text-base">منتجات من التجار</CardTitle>
-              <CardDescription>هيكلة أولية — سيتم عرض بطاقات منتجات/خدمات هنا</CardDescription>
+              <CardDescription>اضغط للانتقال إلى صفحة جميع منتجات التجار</CardDescription>
             </CardHeader>
             <CardContent>
               {(() => {
@@ -48,15 +58,13 @@ export default function CommunityExploreStrip({ className }: { className?: strin
                       ))}
                     </div>
 
-                    {showGoToCommunity(items.length) && (
-                      <Button
-                        variant="outline"
-                        className="mt-4 w-full h-10"
-                        onClick={() => navigate("/community/merchants/all-products")}
-                      >
-                        عرض جميع المنتجات
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      className="mt-4 w-full h-10"
+                      onClick={() => navigate("/community/merchants/all-products")}
+                    >
+                      عرض جميع المنتجات
+                    </Button>
                   </>
                 );
               })()}
@@ -68,7 +76,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="text-base">طلبات لزبائن آخرين</CardTitle>
-              <CardDescription>هيكلة أولية — سيتم عرض قائمة الطلبات هنا</CardDescription>
+              <CardDescription>اضغط للانتقال إلى صفحة طلبات الزبائن</CardDescription>
             </CardHeader>
             <CardContent>
               {(() => {
@@ -85,15 +93,13 @@ export default function CommunityExploreStrip({ className }: { className?: strin
                       ))}
                     </div>
 
-                    {showGoToCommunity(items.length) && (
-                      <Button
-                        variant="outline"
-                        className="mt-4 w-full h-10"
-                        onClick={() => navigate("/community/merchants")}
-                      >
-                        عرض جميع التجار
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      className="mt-4 w-full h-10"
+                      onClick={() => navigate("/community/requests")}
+                    >
+                      عرض جميع الطلبات
+                    </Button>
                   </>
                 );
               })()}
@@ -105,7 +111,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="text-base">صفحات التجار</CardTitle>
-              <CardDescription>هيكلة أولية — سيتم عرض بطاقات التجار هنا</CardDescription>
+              <CardDescription>اضغط للانتقال إلى دليل التجار</CardDescription>
             </CardHeader>
             <CardContent>
               {(() => {
@@ -122,15 +128,13 @@ export default function CommunityExploreStrip({ className }: { className?: strin
                       ))}
                     </div>
 
-                    {showGoToCommunity(items.length) && (
-                      <Button
-                        variant="outline"
-                        className="mt-4 w-full h-10"
-                        onClick={() => navigate("/community")}
-                      >
-                        الانتقال الى المجتمع
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      className="mt-4 w-full h-10"
+                      onClick={() => navigate("/community/merchants")}
+                    >
+                      عرض جميع التجار
+                    </Button>
                   </>
                 );
               })()}

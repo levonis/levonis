@@ -6,6 +6,7 @@ import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
 import BannerCarousel from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
+import AnimatedDivider from '@/components/ui/animated-divider';
 
 // Lazy load non-critical components
 const CustomerChat = lazy(() => import('@/components/CustomerChat'));
@@ -165,6 +166,11 @@ const Home = () => {
             </div>
           )}
         </section>
+
+        {/* Animated divider between store sections and community */}
+        <div className="container mx-auto px-4">
+          <AnimatedDivider className="my-4 md:my-6 opacity-90" />
+        </div>
 
         {/* Community Section - Lazy loaded */}
         <Suspense fallback={<div className="h-32 md:h-64 flex items-center justify-center"><Loader2 className="w-6 h-6 md:w-8 md:h-8 animate-spin text-primary" /></div>}>

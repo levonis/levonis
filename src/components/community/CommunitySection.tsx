@@ -3,6 +3,7 @@ import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CommunityCustomerActionsInline } from '@/components/community/CommunityCustomerStrip';
 import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
+import AnimatedDivider from '@/components/ui/animated-divider';
 
 const ListingConversations = lazy(() => import('@/components/marketplace/ListingConversations'));
 
@@ -45,6 +46,9 @@ export default function CommunitySection() {
           <CommunityCustomerActionsInline mode="items" />
         </div>
       </div>
+
+      {/* subtle animated separator */}
+      <AnimatedDivider className="mt-4 mb-2 opacity-90" />
 
       {/* Explore tabs (products/requests/merchant pages) */}
       <div className="mt-6">

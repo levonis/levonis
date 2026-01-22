@@ -327,7 +327,7 @@ const ProductDetail = () => {
         </div>
 
         {/* Product Details */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-12">
           {/* Image Section */}
           <div className="relative">
             {hasSale && (
@@ -461,7 +461,7 @@ const ProductDetail = () => {
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className="glass-effect rounded-xl p-5 border border-border/50">
+            <div className="glass-effect rounded-2xl p-5 md:p-6 border border-border/50 card-premium">
               {/* Category Badge */}
               {product.categories && (
                 <Badge variant="outline" className="mb-3 text-xs">
@@ -469,7 +469,7 @@ const ProductDetail = () => {
                 </Badge>
               )}
 
-              <h1 className="text-2xl md:text-3xl font-black text-gradient-gold mb-3 flex items-center gap-2">
+              <h1 className="text-2xl md:text-4xl font-black text-gradient-gold mb-3 flex items-center gap-2 leading-tight">
                 {product.name_ar}
                 {/* Admin-only Taobao quick access */}
                 {isAdmin && (product as any).taobao_url && (
@@ -478,7 +478,7 @@ const ProductDetail = () => {
               </h1>
               
               {product.description_ar && (
-                <div className="text-muted-foreground text-sm mb-4 leading-relaxed">
+                <div className="text-muted-foreground text-sm mb-5 leading-relaxed">
                   <p className={`${!showFullDescription && product.description_ar.length > 150 ? 'line-clamp-2' : ''}`}>
                     {product.description_ar}
                   </p>
@@ -804,7 +804,7 @@ const ProductDetail = () => {
               </div>
 
               {/* Price Section - Compact */}
-              <div className="border-t border-border/30 pt-4 mb-4">
+               <div className="border-t border-border/30 pt-5 mb-4">
                 <div className="flex items-baseline gap-2">
                   <span className="text-3xl font-black text-primary">
                     {formatPrice(finalPrice)}
