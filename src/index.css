@@ -45,7 +45,8 @@
     --ring: 44 51% 64%;               /* #d8c887 */
     
     /* Status colors */
-    --destructive: 0 68% 52%;
+    /* Muted ruby red that harmonizes with the green/gold theme */
+    --destructive: 6 58% 46%;
     --destructive-foreground: 44 44% 89%;
     
     /* WhatsApp green for chat button */
