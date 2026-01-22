@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import RateRequestButton from "@/components/merchant/RateRequestButton";
 
 export default function CommunityCustomerRequests() {
   const navigate = useNavigate();
@@ -289,6 +290,7 @@ export default function CommunityCustomerRequests() {
                           </AlertDialog>
                         </div>
                       </div>
+                      <RateRequestButton requestId={r.id} requestStatus={r.status} />
 
                       <Separator className="my-3" />
 

@@ -82,6 +82,22 @@ export default function CommunityMerchantsPages() {
      featuredProducts: productsMap.get(m.id) || [],
    }));
  
+  // Fetch rating stats for all merchants
+  const { data: ratingsStats = [] } = useQuery({
+    queryKey: ["all-merchant-rating-stats", merchantIds],
+    enabled: merchantIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_rating_stats")
+        .select("*")
+        .in("merchant_id", merchantIds);
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const ratingsMap = new Map(ratingsStats.map((r: any) => [r.merchant_id, r]));
+
    if (merchantsLoading || productsLoading) {
      return (
        <div className="min-h-screen bg-background/95 backdrop-blur-sm">
@@ -147,12 +163,31 @@ export default function CommunityMerchantsPages() {
                       <CardDescription className="text-xs">@{merchant.username || "—"}</CardDescription>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 mt-2">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star key={i} className="h-3.5 w-3.5 fill-primary text-primary" />
-                    ))}
-                    <span className="text-xs text-muted-foreground mr-1">(تقييم تجريبي)</span>
-                  </div>
+                  {(() => {
+                    const stats = ratingsMap.get(merchant.id);
+                    if (stats && stats.total_ratings > 0) {
+                      return (
+                        <div className="flex items-center gap-1 mt-2">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <Star
+                              key={i}
+                              className={`h-3.5 w-3.5 ${
+                                i <= Math.round(stats.average_rating)
+                                  ? "fill-yellow-500 text-yellow-500"
+                                  : "text-muted-foreground"
+                              }`}
+                            />
+                          ))}
+                          <span className="text-xs text-muted-foreground mr-1">
+                            ({stats.average_rating.toFixed(1)} • {stats.total_ratings} تقييم)
+                          </span>
+                        </div>
+                      );
+                    }
+                    return (
+                      <p className="text-xs text-muted-foreground mt-2">لا توجد تقييمات بعد</p>
+                    );
+                  })()}
                 </CardHeader>
                 <CardContent>
                   {merchant.featuredProducts.length > 0 ? (
