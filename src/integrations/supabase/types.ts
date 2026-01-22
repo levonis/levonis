@@ -2316,6 +2316,148 @@ export type Database = {
         }
         Relationships: []
       }
+      print_offers: {
+        Row: {
+          created_at: string
+          duration_days: number
+          grams: number | null
+          id: string
+          notes: string | null
+          price_iqd: number
+          request_id: string
+          status: Database["public"]["Enums"]["print_offer_status"]
+          trader_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          duration_days: number
+          grams?: number | null
+          id?: string
+          notes?: string | null
+          price_iqd: number
+          request_id: string
+          status?: Database["public"]["Enums"]["print_offer_status"]
+          trader_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          duration_days?: number
+          grams?: number | null
+          id?: string
+          notes?: string | null
+          price_iqd?: number
+          request_id?: string
+          status?: Database["public"]["Enums"]["print_offer_status"]
+          trader_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_offers_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "print_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      print_request_attachments: {
+        Row: {
+          bucket_id: string
+          created_at: string
+          file_name: string
+          file_size_bytes: number | null
+          id: string
+          mime_type: string | null
+          request_id: string
+          storage_path: string
+          uploader_id: string
+        }
+        Insert: {
+          bucket_id?: string
+          created_at?: string
+          file_name: string
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          request_id: string
+          storage_path: string
+          uploader_id: string
+        }
+        Update: {
+          bucket_id?: string
+          created_at?: string
+          file_name?: string
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          request_id?: string
+          storage_path?: string
+          uploader_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "print_request_attachments_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "print_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      print_requests: {
+        Row: {
+          colors_spec: string | null
+          created_at: string
+          description: string | null
+          id: string
+          notes: string | null
+          reference_links: string[]
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          size_spec: string | null
+          status: Database["public"]["Enums"]["print_request_status"]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          colors_spec?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          reference_links?: string[]
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          size_spec?: string | null
+          status?: Database["public"]["Enums"]["print_request_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          colors_spec?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          reference_links?: string[]
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          size_spec?: string | null
+          status?: Database["public"]["Enums"]["print_request_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       printer_protection_logs: {
         Row: {
           action: string
@@ -4292,6 +4434,7 @@ export type Database = {
       }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_user_level: { Args: { points: number }; Returns: string }
+      can_read_print_file: { Args: { object_name: string }; Returns: boolean }
       check_username_available: {
         Args: { username_to_check: string }
         Returns: boolean
@@ -4476,6 +4619,8 @@ export type Database = {
         | "flash_sale"
         | "growing_prize"
         | "collect_letters"
+      print_offer_status: "submitted" | "withdrawn" | "accepted" | "rejected"
+      print_request_status: "pending_review" | "approved" | "rejected"
       printer_subscription_status: "active" | "paused" | "expired" | "cancelled"
       printer_verification_status: "pending" | "verified" | "rejected"
       protection_plan_type: "basic" | "standard" | "comprehensive"
@@ -4623,6 +4768,8 @@ export const Constants = {
         "growing_prize",
         "collect_letters",
       ],
+      print_offer_status: ["submitted", "withdrawn", "accepted", "rejected"],
+      print_request_status: ["pending_review", "approved", "rejected"],
       printer_subscription_status: ["active", "paused", "expired", "cancelled"],
       printer_verification_status: ["pending", "verified", "rejected"],
       protection_plan_type: ["basic", "standard", "comprehensive"],
