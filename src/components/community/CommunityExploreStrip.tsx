@@ -6,7 +6,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
   return (
     <section className={className} aria-label="استكشاف المجتمع">
       <Tabs defaultValue="products" className="w-full">
-        <TabsList className="w-full justify-start overflow-x-auto">
+        <TabsList className="grid w-full grid-cols-3 bg-card border border-border rounded-xl p-1">
           <TabsTrigger value="products" className="shrink-0">
             <Store className="ml-2 h-4 w-4" />
             منتجات التجار
@@ -28,11 +28,12 @@ export default function CommunityExploreStrip({ className }: { className?: strin
               <CardDescription>هيكلة أولية — سيتم عرض بطاقات منتجات/خدمات هنا</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="rounded-xl border border-border bg-muted/20 p-4">
-                    <p className="text-sm font-semibold">بطاقة منتج #{i}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">اسم التاجر • السعر • وقت الإنجاز</p>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="rounded-xl bg-muted/20 p-3">
+                    <div className="aspect-square rounded-lg bg-background/40" />
+                    <p className="mt-2 text-sm font-semibold">منتج #{i}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">تاجر • سعر • وقت</p>
                   </div>
                 ))}
               </div>
@@ -47,11 +48,12 @@ export default function CommunityExploreStrip({ className }: { className?: strin
               <CardDescription>هيكلة أولية — سيتم عرض قائمة الطلبات هنا</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="rounded-xl border border-border bg-muted/20 p-4">
-                    <p className="text-sm font-semibold">طلب #{i}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">عنوان • فئة • تاريخ • حالة</p>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="rounded-xl bg-muted/20 p-3">
+                    <div className="aspect-square rounded-lg bg-background/40" />
+                    <p className="mt-2 text-sm font-semibold">طلب #{i}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">عنوان • فئة • حالة</p>
                   </div>
                 ))}
               </div>
@@ -66,10 +68,11 @@ export default function CommunityExploreStrip({ className }: { className?: strin
               <CardDescription>هيكلة أولية — سيتم عرض بطاقات التجار هنا</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="rounded-xl border border-border bg-muted/20 p-4">
-                    <p className="text-sm font-semibold">تاجر #{i}</p>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="rounded-xl bg-muted/20 p-3">
+                    <div className="aspect-square rounded-lg bg-background/40" />
+                    <p className="mt-2 text-sm font-semibold">تاجر #{i}</p>
                     <p className="mt-1 text-xs text-muted-foreground">تقييم • مدينة • خدمات</p>
                   </div>
                 ))}
