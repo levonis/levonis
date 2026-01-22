@@ -279,6 +279,42 @@ export default function MerchantSignupDialog({
 
   const canEdit = app?.status !== "approved"; // allow editing draft/pending/rejected
 
+  const step1Ok = useMemo(() => {
+    // Step 1 requires the public fields + store image
+    return step1Schema.safeParse(step1).success && !!storeImageUrl;
+  }, [step1, storeImageUrl]);
+
+  const step2Ok = useMemo(() => step2Schema.safeParse(step2).success, [step2]);
+
+  const canNavigateTo2 = !canEdit || step1Ok || step > 1;
+  const canNavigateTo3 = !canEdit || (step1Ok && step2Ok) || step > 2;
+
+  const guardGoToStep = (target: 1 | 2 | 3) => {
+    if (target === 1) return setStep(1);
+    if (target === 2) {
+      if (!canNavigateTo2) {
+        toast({
+          title: "أكمل المرحلة الأولى أولاً",
+          description: "يرجى إدخال اسم المتجر ورفع صورة المتجر ثم اضغط التالي",
+          variant: "destructive",
+        });
+        return;
+      }
+      return setStep(2);
+    }
+
+    // target === 3
+    if (!canNavigateTo3) {
+      toast({
+        title: "أكمل البيانات قبل المتابعة",
+        description: "يرجى إكمال المرحلة الأولى والثانية ثم اضغط التالي",
+        variant: "destructive",
+      });
+      return;
+    }
+    return setStep(3);
+  };
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="sm:max-w-3xl">
@@ -318,10 +354,20 @@ export default function MerchantSignupDialog({
                       <Button variant={step === 1 ? "default" : "outline"} size="sm" onClick={() => setStep(1)}>
                         1
                       </Button>
-                      <Button variant={step === 2 ? "default" : "outline"} size="sm" onClick={() => setStep(2)}>
+                      <Button
+                        variant={step === 2 ? "default" : "outline"}
+                        size="sm"
+                        disabled={!canNavigateTo2}
+                        onClick={() => guardGoToStep(2)}
+                      >
                         2
                       </Button>
-                      <Button variant={step === 3 ? "default" : "outline"} size="sm" onClick={() => setStep(3)}>
+                      <Button
+                        variant={step === 3 ? "default" : "outline"}
+                        size="sm"
+                        disabled={!canNavigateTo3}
+                        onClick={() => guardGoToStep(3)}
+                      >
                         3
                       </Button>
                     </div>
@@ -442,7 +488,7 @@ export default function MerchantSignupDialog({
                       disabled={!canEdit}
                       onClick={async () => {
                         await saveDraftMutation.mutateAsync({ step1, store_image_url: storeImageUrl || null });
-                        setStep(2);
+                        guardGoToStep(2);
                       }}
                     >
                       التالي
@@ -542,7 +588,7 @@ export default function MerchantSignupDialog({
                       disabled={!canEdit}
                       onClick={async () => {
                         await saveDraftMutation.mutateAsync({ step2 });
-                        setStep(3);
+                        guardGoToStep(3);
                       }}
                     >
                       التالي
