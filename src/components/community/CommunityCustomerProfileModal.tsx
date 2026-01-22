@@ -10,12 +10,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
-import { CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2, User, X } from "lucide-react";
 
 const DEFAULT_AVATAR_URL = "/placeholder.svg";
 
@@ -32,10 +33,12 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function CommunityCustomerProfileModal({
   onDone,
+  onLater,
   showMerchantCta = true,
   onOpenMerchantSignup,
 }: {
   onDone?: () => void;
+  onLater?: () => void;
   showMerchantCta?: boolean;
   onOpenMerchantSignup?: () => void;
 }) {
@@ -120,31 +123,53 @@ export default function CommunityCustomerProfileModal({
   });
 
   return (
-    <>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <CardTitle>بيانات الزبون</CardTitle>
-            <CardDescription>يرجى إدخال المعلومات الصحيحة</CardDescription>
+    <form
+      onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))}
+      className="flex min-h-0 flex-1 flex-col"
+    >
+      {/* Sticky header */}
+      <header className="sticky top-0 z-10 border-b bg-card/95 px-5 py-4 backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+              <User className="h-5 w-5 text-primary" />
+            </div>
+            <div className="min-w-0">
+              <CardTitle className="text-lg sm:text-xl">الملف الشخصي</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">يرجى إدخال المعلومات الصحيحة</CardDescription>
+            </div>
           </div>
 
-          {showMerchantCta && (
+          <div className="flex items-center gap-2">
+            {showMerchantCta && (
+              <Button
+                type="button"
+                variant="link"
+                className="h-auto p-0 text-sm"
+                onClick={() => {
+                  if (onOpenMerchantSignup) return onOpenMerchantSignup();
+                  navigate("/community/merchant/signup");
+                }}
+              >
+                هل انت تاجر؟ اضغط هنا
+              </Button>
+            )}
+
             <Button
               type="button"
-              variant="link"
-              className="h-auto p-0 text-sm"
-              onClick={() => {
-                if (onOpenMerchantSignup) return onOpenMerchantSignup();
-                navigate("/community/merchant/signup");
-              }}
+              variant="ghost"
+              size="icon"
+              onClick={() => (onLater ? onLater() : navigate("/community/customer"))}
+              aria-label="إغلاق"
             >
-              هل انت تاجر؟ اضغط هنا
+              <X className="h-4 w-4" />
             </Button>
-          )}
+          </div>
         </div>
-      </CardHeader>
+      </header>
 
-      <CardContent>
+      {/* Scrollable body */}
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-4">
         {isLoading || loadingUi ? (
           <div className="space-y-3">
             <Skeleton className="h-10 rounded-xl" />
@@ -154,43 +179,57 @@ export default function CommunityCustomerProfileModal({
             <Skeleton className="h-24 rounded-xl" />
           </div>
         ) : (
-          <form onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))} className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">الاسم الصحيح</Label>
-                <Input id="fullName" {...form.register("fullName")} maxLength={120} />
-                {form.formState.errors.fullName && (
-                  <p className="text-xs text-destructive">{form.formState.errors.fullName.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phoneNumber">الرقم الصحيح</Label>
-                <Input id="phoneNumber" {...form.register("phoneNumber")} maxLength={30} inputMode="tel" />
-                {form.formState.errors.phoneNumber && (
-                  <p className="text-xs text-destructive">{form.formState.errors.phoneNumber.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="username">يوزرنيم</Label>
-                <Input id="username" {...form.register("username")} maxLength={30} />
-                {form.formState.errors.username && (
-                  <p className="text-xs text-destructive">{form.formState.errors.username.message}</p>
-                )}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="birthDate">تاريخ الميلاد</Label>
-                <Input id="birthDate" type="date" {...form.register("birthDate")} />
-                {form.formState.errors.birthDate && (
-                  <p className="text-xs text-destructive">{form.formState.errors.birthDate.message}</p>
-                )}
-              </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs" htmlFor="fullName">
+                الاسم الصحيح
+              </Label>
+              <Input id="fullName" placeholder="مثال: محمد أحمد" {...form.register("fullName")} maxLength={120} />
+              {form.formState.errors.fullName && (
+                <p className="text-xs text-destructive">{form.formState.errors.fullName.message}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label>الجنس</Label>
+              <Label className="text-xs" htmlFor="phoneNumber">
+                الرقم الصحيح
+              </Label>
+              <Input
+                id="phoneNumber"
+                placeholder="مثال: 07xxxxxxxxx"
+                {...form.register("phoneNumber")}
+                maxLength={30}
+                inputMode="tel"
+              />
+              <p className="text-xs text-muted-foreground">سيُستخدم للتواصل عند الحاجة</p>
+              {form.formState.errors.phoneNumber && (
+                <p className="text-xs text-destructive">{form.formState.errors.phoneNumber.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs" htmlFor="username">
+                يوزرنيم
+              </Label>
+              <Input id="username" placeholder="مثال: levo_user" {...form.register("username")} maxLength={30} />
+              {form.formState.errors.username && (
+                <p className="text-xs text-destructive">{form.formState.errors.username.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs" htmlFor="birthDate">
+                تاريخ الميلاد
+              </Label>
+              <Input id="birthDate" type="date" {...form.register("birthDate")} />
+              <p className="text-xs text-muted-foreground">لن يظهر للآخرين</p>
+              {form.formState.errors.birthDate && (
+                <p className="text-xs text-destructive">{form.formState.errors.birthDate.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs">الجنس</Label>
               <RadioGroup
                 value={form.watch("gender")}
                 onValueChange={(v) => form.setValue("gender", v as "male" | "female", { shouldValidate: true })}
@@ -211,20 +250,46 @@ export default function CommunityCustomerProfileModal({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="bio">الوصف (اختياري)</Label>
-              <Textarea id="bio" {...form.register("bio")} maxLength={500} className="min-h-24" />
+              <Label className="text-xs" htmlFor="bio">
+                الوصف (اختياري)
+              </Label>
+              <Textarea
+                id="bio"
+                placeholder="نبذة قصيرة عنك (اختياري)"
+                {...form.register("bio")}
+                maxLength={500}
+                className="min-h-24"
+              />
             </div>
-
-            <Button
-              type="submit"
-              disabled={!form.formState.isValid || saveMutation.isPending}
-              className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-            >
-              {saveMutation.isPending ? "جارٍ الحفظ..." : "حفظ"}
-            </Button>
-          </form>
+          </div>
         )}
-      </CardContent>
-    </>
+      </div>
+
+      {/* Sticky footer */}
+      <footer className="sticky bottom-0 z-10 border-t bg-card/95 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur supports-[backdrop-filter]:bg-card/80">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1"
+            disabled={saveMutation.isPending}
+            onClick={() => (onLater ? onLater() : navigate("/community/customer"))}
+          >
+            لاحقًا
+          </Button>
+
+          <Button
+            type="submit"
+            className="flex-1"
+            disabled={!form.formState.isValid || saveMutation.isPending}
+          >
+            <span className="inline-flex items-center justify-center gap-2">
+              {saveMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {saveMutation.isPending ? "جارٍ الحفظ..." : "حفظ"}
+            </span>
+          </Button>
+        </div>
+      </footer>
+    </form>
   );
 }

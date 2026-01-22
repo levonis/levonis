@@ -1,36 +1,38 @@
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ArrowRight, User } from "lucide-react";
 import CommunityCustomerProfileModal from "@/components/community/CommunityCustomerProfileModal";
 
 export default function CommunityCustomerProfile() {
   const navigate = useNavigate();
+
+  // Prevent background scroll + page jitter while the completion overlay is open
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
-        <header className="mb-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <User className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-primary">إكمال الملف الشخصي</h1>
-              <p className="text-sm text-muted-foreground">مطلوب لتفعيل لوحة المجتمع</p>
-            </div>
-          </div>
+    <div className="fixed inset-0 z-50">
+      {/* Overlay */}
+      <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
 
-          <Button variant="outline" onClick={() => navigate("/community/customer")} className="gap-2">
-            <ArrowRight className="h-4 w-4" />
-            رجوع
-          </Button>
-        </header>
-
-        <Card className="border-border bg-card">
-          <CommunityCustomerProfileModal onDone={() => navigate("/community/customer", { replace: true })} />
-        </Card>
-      </main>
+      {/* Centered modern card */}
+      <div className="relative flex h-full w-full items-center justify-center p-4">
+        <section
+          className="w-[min(92vw,480px)] max-h-[90dvh] rounded-2xl border bg-card shadow-lg overflow-hidden flex flex-col"
+          aria-label="إكمال الملف الشخصي"
+        >
+          <CommunityCustomerProfileModal
+            showMerchantCta
+            onDone={() => navigate("/community/customer", { replace: true })}
+            onLater={() => navigate("/community/customer")}
+          />
+        </section>
+      </div>
     </div>
   );
 }
