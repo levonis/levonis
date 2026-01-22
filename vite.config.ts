@@ -17,5 +17,7 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+    // Prevent multiple React copies in the bundle (common cause of dispatcher/useState null errors)
+    dedupe: ["react", "react-dom"],
   },
 }));
