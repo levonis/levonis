@@ -1,6 +1,8 @@
 import { Suspense, lazy } from 'react';
 import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CommunityCustomerActionsInline } from '@/components/community/CommunityCustomerStrip';
+import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
 
 const ListingConversations = lazy(() => import('@/components/marketplace/ListingConversations'));
 
@@ -31,7 +33,15 @@ export default function CommunitySection() {
               <Button size="sm">المحادثات</Button>
             </ListingConversations>
           </Suspense>
+
+          {/* actions beside chats */}
+          <CommunityCustomerActionsInline />
         </div>
+      </div>
+
+      {/* Explore tabs (products/requests/merchant pages) */}
+      <div className="mt-6">
+        <CommunityExploreStrip />
       </div>
     </section>
   );
