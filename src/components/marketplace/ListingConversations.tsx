@@ -46,6 +46,7 @@ import {
 import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useUserPrintReputation } from '@/hooks/useUserPrintReputation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -389,6 +390,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const isSeller = selectedConv?.seller_id === user?.id;
   const otherUserId = selectedConv ? (selectedConv.buyer_id === user?.id ? selectedConv.seller_id : selectedConv.buyer_id) : null;
   const otherUser = otherUserId ? profiles?.[otherUserId] : null;
+
+  const { data: otherUserReputation } = useUserPrintReputation(otherUserId ?? undefined);
 
   // Check if user is blocked
   const { data: isUserBlocked } = useQuery({
@@ -797,20 +800,17 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         </Badge>
                         <ExternalLink className="w-3 h-3 text-muted-foreground" />
                       </div>
-                      {/* Rating and Stats */}
+                      {/* Reputation Summary (Community printing) */}
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        {otherUser?.seller_profile && (
-                          <>
-                            <span className="flex items-center gap-0.5">
-                              <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                              {(otherUser.seller_profile.average_rating ?? 0).toFixed(1)}
-                            </span>
-                            <span className="flex items-center gap-0.5">
-                              <ShoppingBag className="w-3 h-3" />
-                              {otherUser.seller_profile.completed_orders ?? 0} طلب
-                            </span>
-                          </>
-                        )}
+                        <span className="flex items-center gap-0.5">
+                          <Star className="w-3 h-3 fill-primary text-primary" />
+                          {Number(otherUserReputation?.avg_stars ?? 0).toFixed(1)}/5
+                        </span>
+                        <span className="text-muted-foreground/70">•</span>
+                        <span className="flex items-center gap-1">
+                          <ShoppingBag className="w-3 h-3" />
+                          إكمال {Number(otherUserReputation?.merchant_completion_percent ?? 0).toFixed(0)}%
+                        </span>
                       </div>
                     </button>
 
