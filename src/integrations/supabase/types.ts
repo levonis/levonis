@@ -3039,7 +3039,10 @@ export type Database = {
           governorate: string | null
           id: string
           is_banned: boolean | null
+          last_username_change_at: string | null
           phone_number: string | null
+          phone_verification_status: string
+          phone_verified: boolean
           telegram_chat_id: string | null
           username: string
           warnings_count: number | null
@@ -3056,7 +3059,10 @@ export type Database = {
           governorate?: string | null
           id: string
           is_banned?: boolean | null
+          last_username_change_at?: string | null
           phone_number?: string | null
+          phone_verification_status?: string
+          phone_verified?: boolean
           telegram_chat_id?: string | null
           username: string
           warnings_count?: number | null
@@ -3073,7 +3079,10 @@ export type Database = {
           governorate?: string | null
           id?: string
           is_banned?: boolean | null
+          last_username_change_at?: string | null
           phone_number?: string | null
+          phone_verification_status?: string
+          phone_verified?: boolean
           telegram_chat_id?: string | null
           username?: string
           warnings_count?: number | null

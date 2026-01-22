@@ -1,81 +1,43 @@
 import { useMemo } from "react";
-import { Star } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useUserPrintReputation } from "@/hooks/useUserPrintReputation";
-
-function clampPercent(v: number) {
-  if (!Number.isFinite(v)) return 0;
-  return Math.max(0, Math.min(100, v));
-}
+import ReputationBar from "@/components/reputation/ReputationBar";
 
 export default function PrintReputationSummary({ userId }: { userId: string }) {
   const { data } = useUserPrintReputation(userId);
 
-  const summary = useMemo(() => {
-    if (!data) {
-      return {
-        avgStarsText: "0.0",
-        ratingsCount: 0,
-        customerReceive: 0,
-        merchantCompletion: 0,
-      };
-    }
+  const metrics = useMemo(() => {
+    const submitted = data?.customer_requests_made ?? 0;
+    const received = data?.customer_requests_received ?? 0;
+    const receiveRate = data?.customer_receive_rate_percent ?? (submitted > 0 ? (received / submitted) * 100 : null);
 
-    return {
-      avgStarsText: Number(data.avg_stars ?? 0).toFixed(1),
-      ratingsCount: data.ratings_count ?? 0,
-      customerReceive: clampPercent(data.customer_receive_rate_percent ?? 0),
-      merchantCompletion: clampPercent(data.merchant_completion_percent ?? 0),
-    };
+    const accepted = data?.merchant_accepted_jobs ?? 0;
+    const completed = data?.merchant_completed_jobs ?? 0;
+    const completion = data?.merchant_completion_percent ?? (accepted > 0 ? (completed / accepted) * 100 : null);
+
+    return [
+      {
+        key: "customer_receive",
+        label: "نسبة استلام الزبون",
+        percent: receiveRate == null ? null : Number(receiveRate),
+        hint: "نسبة الطلبات التي استلمها الزبون من مجموع ما قدّمه.",
+        rightText: submitted ? `${received} من ${submitted}` : "—",
+      },
+      {
+        key: "merchant_completion",
+        label: "نسبة إكمال التاجر",
+        percent: completion == null ? null : Number(completion),
+        hint: "نسبة الأعمال المكتملة من الأعمال المقبولة للتاجر.",
+        rightText: accepted ? `${completed} من ${accepted}` : "—",
+      },
+    ];
   }, [data]);
 
   return (
-    <Card className="glass-effect border-border/50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Star className="h-5 w-5 text-primary" />
-          التقييم في مجتمع الطباعة
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge variant="secondary" className="gap-1">
-            <Star className="h-3.5 w-3.5 fill-primary text-primary" />
-            <span className="font-bold">{summary.avgStarsText}</span>
-            <span className="text-muted-foreground">/ 5</span>
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            ({summary.ratingsCount} تقييم)
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="rounded-xl border border-border bg-card p-3">
-            <p className="text-xs text-muted-foreground mb-1">الزبون</p>
-            <p className="text-sm font-semibold text-foreground">
-              نسبة الاستلام: {summary.customerReceive}%
-            </p>
-            {data && (
-              <p className="text-xs text-muted-foreground mt-1">
-                طلبات مقدّمة: {data.customer_requests_made} • مستلمة: {data.customer_requests_received}
-              </p>
-            )}
-          </div>
-
-          <div className="rounded-xl border border-border bg-card p-3">
-            <p className="text-xs text-muted-foreground mb-1">التاجر</p>
-            <p className="text-sm font-semibold text-foreground">
-              نسبة الإكمال: {summary.merchantCompletion}%
-            </p>
-            {data && (
-              <p className="text-xs text-muted-foreground mt-1">
-                مكتملة: {data.merchant_completed_jobs} • مقبولة: {data.merchant_accepted_jobs}
-              </p>
-            )}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <ReputationBar
+      overallStars={data?.avg_stars ?? null}
+      basisCount={data?.ratings_count ?? null}
+      basisLabel="تقييم"
+      metrics={metrics}
+    />
   );
 }

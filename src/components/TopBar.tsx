@@ -288,6 +288,10 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
                     <User className="ml-2 h-3.5 w-3.5" />
                     <span>معلومات الحساب</span>
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/profile')}>
+                    <User className="ml-2 h-3.5 w-3.5" />
+                    <span>الملف</span>
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/my-requests')}>
                     <FileText className="ml-2 h-3.5 w-3.5" />
                     <span>طلباتي المخصصة</span>
