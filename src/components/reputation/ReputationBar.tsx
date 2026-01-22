@@ -56,18 +56,18 @@ export default function ReputationBar({
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
-            {title && <div className="text-sm font-bold text-foreground truncate">{title}</div>}
+            {title && <div className="text-sm font-black text-foreground truncate">{title}</div>}
             <div className="mt-1 flex items-center gap-2">
-              <Badge variant="secondary" className="gap-1">
+              <Badge variant="secondary" className="gap-1 rounded-xl">
                 <Star className="h-3.5 w-3.5 fill-primary text-primary" />
                 <span className="font-black tabular-nums">{header.starsText}</span>
                 <span className="text-muted-foreground">/ 5</span>
               </Badge>
-              {header.basisText && <span className="text-xs text-muted-foreground">{header.basisText}</span>}
+              {header.basisText && <span className="text-[11px] text-muted-foreground">{header.basisText}</span>}
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
             <Star className="h-4 w-4 text-primary" />
             <span>سمعة مجتمع الطباعة</span>
           </div>
@@ -75,15 +75,16 @@ export default function ReputationBar({
       </CardHeader>
 
       <CardContent className="pt-0">
-        <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 gap-2">
           {metrics.map((m) => {
             const percent = m.percent == null ? null : clampPercent(m.percent);
 
             return (
               <div key={m.key} className="rounded-2xl border border-border bg-card/60 p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-sm font-semibold text-foreground truncate">{m.label}</span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-foreground truncate">{m.label}</span>
                     {m.hint && (
                       <Tooltip>
                         <TooltipTrigger asChild>
@@ -100,9 +101,12 @@ export default function ReputationBar({
                         </TooltipContent>
                       </Tooltip>
                     )}
+                    </div>
+
+                    {m.rightText && <div className="mt-0.5 text-[11px] text-muted-foreground">{m.rightText}</div>}
                   </div>
 
-                  <div className="shrink-0 text-sm font-black tabular-nums text-foreground">
+                  <div className="shrink-0 text-base font-black tabular-nums text-foreground">
                     {percent == null ? "—" : `${Math.round(percent)}%`}
                   </div>
                 </div>
@@ -110,8 +114,6 @@ export default function ReputationBar({
                 <div className="mt-2">
                   <Progress value={percent ?? 0} className={cn("h-2", percent == null && "opacity-40")} />
                 </div>
-
-                {m.rightText && <div className="mt-1 text-xs text-muted-foreground">{m.rightText}</div>}
               </div>
             );
           })}
