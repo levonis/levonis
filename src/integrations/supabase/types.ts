@@ -1752,6 +1752,7 @@ export type Database = {
           id: string
           image_urls: string[] | null
           is_active: boolean
+          is_featured: boolean
           merchant_id: string
           original_price_iqd: number | null
           price_iqd: number | null
@@ -1767,6 +1768,7 @@ export type Database = {
           id?: string
           image_urls?: string[] | null
           is_active?: boolean
+          is_featured?: boolean
           merchant_id: string
           original_price_iqd?: number | null
           price_iqd?: number | null
@@ -1782,6 +1784,7 @@ export type Database = {
           id?: string
           image_urls?: string[] | null
           is_active?: boolean
+          is_featured?: boolean
           merchant_id?: string
           original_price_iqd?: number | null
           price_iqd?: number | null

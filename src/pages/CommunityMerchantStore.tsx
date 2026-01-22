@@ -26,6 +26,7 @@
    primary_image_index: number;
    is_active: boolean;
    estimated_days: number | null;
+  is_featured: boolean;
  }
  
  export default function CommunityMerchantStore() {
@@ -47,6 +48,7 @@
      video_url: "",
      estimated_days: "",
      is_active: true,
+    is_featured: false,
    });
  
    // Fetch merchant application
@@ -109,6 +111,7 @@
          video_url: formData.video_url.trim() || null,
          estimated_days: formData.estimated_days ? parseInt(formData.estimated_days, 10) : null,
          is_active: formData.is_active,
+        is_featured: formData.is_featured,
        };
  
        if (selectedProduct) {
@@ -135,11 +138,12 @@
          video_url: "",
          estimated_days: "",
          is_active: true,
+        is_featured: false,
        });
        toast({ title: selectedProduct ? "تم التحديث" : "تمت الإضافة", description: "المنتج حُفظ بنجاح." });
      },
      onError: () => {
-       toast({ title: "خطأ", description: "فشل حفظ المنتج.", variant: "destructive" });
+      toast({ title: "خطأ", description: "فشل حفظ المنتج. قد تكون وصلت للحد الأقصى (3 منتجات مميزة).", variant: "destructive" });
      },
    });
  
@@ -169,6 +173,7 @@
        video_url: product.video_url || "",
        estimated_days: product.estimated_days?.toString() || "",
        is_active: product.is_active,
+      is_featured: product.is_featured || false,
      });
      setProductDialogOpen(true);
    };
@@ -184,6 +189,7 @@
        video_url: "",
        estimated_days: "",
        is_active: true,
+      is_featured: false,
      });
      setProductDialogOpen(true);
    };
@@ -340,6 +346,11 @@
                      {!p.is_active && (
                        <Badge className="absolute top-2 right-2 bg-muted text-muted-foreground">مخفي</Badge>
                      )}
+                     {p.is_featured && (
+                       <Badge className="absolute bottom-2 right-2 bg-primary text-primary-foreground text-xs">
+                         مميز
+                       </Badge>
+                     )}
                      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                        <Button
                          size="sm"
@@ -480,6 +491,17 @@
                  />
                  <Label htmlFor="is_active" className="cursor-pointer">
                    نشر المنتج (ظاهر للزبائن)
+                 </Label>
+               </div>
+
+               <div className="flex items-center gap-2">
+                 <Switch
+                   id="is_featured"
+                   checked={formData.is_featured}
+                   onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+                 />
+                 <Label htmlFor="is_featured" className="cursor-pointer">
+                   منتج مميز (يظهر في صفحة التجار، حد أقصى 3)
                  </Label>
                </div>
              </div>
