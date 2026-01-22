@@ -1,6 +1,6 @@
  import { useState } from "react";
  import { useNavigate, useParams } from "react-router-dom";
- import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
  import { Store, Star, Facebook, Instagram, ArrowRight } from "lucide-react";
  import { supabase } from "@/integrations/supabase/client";
  import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@
  import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
  import { Label } from "@/components/ui/label";
  import { Badge } from "@/components/ui/badge";
+import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay";
  
  interface MerchantProduct {
    id: string;
@@ -149,13 +150,6 @@
                  <h2 className="text-xl font-bold text-primary">{merchantApp.display_name}</h2>
                  <p className="text-sm text-muted-foreground mt-1">@{profile?.username || "—"}</p>
  
-                 <div className="flex items-center gap-1 mt-2">
-                   {[1, 2, 3, 4, 5].map((i) => (
-                     <Star key={i} className="h-4 w-4 fill-primary text-primary" />
-                   ))}
-                   <span className="text-xs text-muted-foreground mr-2">(تقييم تجريبي)</span>
-                 </div>
- 
                  {merchantApp.bio && (
                    <p className="text-sm text-foreground/80 mt-3 whitespace-pre-wrap">{merchantApp.bio}</p>
                  )}
@@ -193,6 +187,14 @@
  
          <div className="border-t border-border my-6" />
  
+        {/* Ratings Section */}
+        <div className="mb-6">
+          <h2 className="text-lg font-bold text-primary mb-3">التقييمات</h2>
+          <MerchantRatingsDisplay merchantId={merchantId!} />
+        </div>
+
+        <div className="border-t border-border my-6" />
+
          {/* Products section */}
          <div className="mb-4">
            <h2 className="text-lg font-bold text-primary">المنتجات</h2>

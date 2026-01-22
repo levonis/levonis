@@ -1803,6 +1803,54 @@ export type Database = {
           },
         ]
       }
+      merchant_ratings: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          merchant_id: string
+          rating: number
+          request_id: string
+          review_text: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          merchant_id: string
+          rating: number
+          request_id: string
+          review_text?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          merchant_id?: string
+          rating?: number
+          request_id?: string
+          review_text?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_ratings_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_ratings_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "print_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -4448,6 +4496,27 @@ export type Database = {
       }
     }
     Views: {
+      merchant_rating_stats: {
+        Row: {
+          average_rating: number | null
+          five_stars: number | null
+          four_stars: number | null
+          merchant_id: string | null
+          one_star: number | null
+          three_stars: number | null
+          total_ratings: number | null
+          two_stars: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_ratings_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_items_for_serial: {
         Row: {
           model_name: string | null
