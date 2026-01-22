@@ -74,6 +74,7 @@ const CommunityMerchantSignup = lazy(() => import("./pages/CommunityMerchantSign
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Profile = lazy(() => import("./pages/Profile"));
 const ProfileSettings = lazy(() => import("./pages/ProfileSettings"));
+const ProfileShortcuts = lazy(() => import("./pages/ProfileShortcuts"));
 const SellerProfile = lazy(() => import("./pages/SellerProfile"));
 const MyPurchasedProducts = lazy(() => import("./pages/MyPurchasedProducts"));
 const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
@@ -163,6 +164,7 @@ function AppContent() {
             <Route path="/seller/:id" element={<SellerProfile />} />
             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
             <Route path="/profile/settings" element={<RequireAuth><ProfileSettings /></RequireAuth>} />
+             <Route path="/profile/shortcuts" element={<RequireAuth><ProfileShortcuts /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
