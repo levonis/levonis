@@ -3999,42 +3999,6 @@ export type Database = {
           },
         ]
       }
-      user_profile_preferences: {
-        Row: {
-          created_at: string
-          quick_actions: Json
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          quick_actions?: Json
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          quick_actions?: Json
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_profile_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "user_profile_preferences_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: true
-            referencedRelation: "user_print_reputation"
-            referencedColumns: ["user_id"]
-          },
-        ]
-      }
       user_purchased_products: {
         Row: {
           competition_id: string | null
