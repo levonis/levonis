@@ -114,6 +114,15 @@ export default function CommunityCustomerProfileModal({
       onDone?.();
     },
     onError: (err: any) => {
+      // Common failure: username already exists (unique constraint)
+      if (err?.code === "23505") {
+        toast({
+          title: "تعذر حفظ الملف",
+          description: "اسم المستخدم مستخدم بالفعل — الرجاء اختيار يوزرنيم مختلف.",
+          variant: "destructive",
+        });
+        return;
+      }
       toast({
         title: "تعذر حفظ الملف",
         description: err?.message ?? "حدث خطأ غير متوقع",
