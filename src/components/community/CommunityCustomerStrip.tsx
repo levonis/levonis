@@ -80,31 +80,34 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
           ) : (
             <div className="flex gap-2 overflow-x-auto pb-1">
               <Button
+                size="sm"
                 onClick={() => navigate("/community/customer/new")}
                 disabled={!complete}
-                className="shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                className="h-9 shrink-0 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
               >
                 <PlusCircle className="ml-2 h-4 w-4" />
                 إضافة طلب جديد
               </Button>
 
               <Button
+                size="sm"
                 variant="outline"
                 disabled={!complete}
                 onClick={() => navigate("/community/customer/requests")}
-                className="shrink-0"
+                className="h-9 shrink-0 rounded-xl"
               >
                 <ClipboardList className="ml-2 h-4 w-4" />
                 طلباتي
               </Button>
 
               <Button
+                size="sm"
                 variant={complete ? "outline" : "default"}
                 onClick={() => (complete ? navigate("/profile") : setProfileOpen(true))}
                 className={
                   !complete
-                    ? "shrink-0 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                    : "shrink-0"
+                    ? "h-9 shrink-0 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                    : "h-9 shrink-0 rounded-xl"
                 }
               >
                 <UserIcon className="ml-2 h-4 w-4" />
