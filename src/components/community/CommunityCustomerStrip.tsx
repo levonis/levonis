@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+ import { useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -7,7 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, User as UserIcon, ClipboardList } from "lucide-react";
+ import { PlusCircle, User as UserIcon, ClipboardList, Store } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import CommunityCustomerProfileModal from "@/components/community/CommunityCustomerProfileModal";
 import MerchantSignupDialog from "@/components/community/MerchantSignupDialog";
@@ -57,6 +57,42 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
 
   const complete = useMemo(() => isProfileComplete(profile), [profile]);
 
+   // Check if user is an approved merchant
+   const { data: merchantApp } = useQuery({
+     queryKey: ["merchant-status", user?.id],
+     queryFn: async () => {
+       if (!user?.id) return null;
+       const { data, error } = await supabase
+         .from("merchant_applications")
+         .select("id, status")
+         .eq("user_id", user.id)
+         .eq("status", "approved")
+         .maybeSingle();
+       if (error) throw error;
+       return data;
+     },
+     enabled: !!user?.id,
+     staleTime: 60_000,
+   });
+
+   const isMerchant = useMemo(() => !!merchantApp, [merchantApp]);
+
+   const handleRequestsClick = useCallback(() => {
+     if (isMerchant) {
+       navigate("/community/merchant/orders");
+     } else {
+       navigate("/community/customer/requests");
+     }
+   }, [isMerchant, navigate]);
+
+   const handleNewClick = useCallback(() => {
+     if (isMerchant) {
+       navigate("/community/merchant/store");
+     } else {
+       navigate("/community/customer/new");
+     }
+   }, [isMerchant, navigate]);
+
   if (!user) return null;
 
   return (
@@ -81,23 +117,32 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
             <div className="flex gap-2 overflow-x-auto pb-1">
               <Button
                 size="sm"
-                onClick={() => navigate("/community/customer/new")}
+                onClick={handleNewClick}
                 disabled={!complete}
                 className="h-9 shrink-0 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
               >
-                <PlusCircle className="ml-2 h-4 w-4" />
-                إضافة طلب جديد
+                {isMerchant ? (
+                  <>
+                    <Store className="ml-2 h-4 w-4" />
+                    المتجر
+                  </>
+                ) : (
+                  <>
+                    <PlusCircle className="ml-2 h-4 w-4" />
+                    إضافة طلب جديد
+                  </>
+                )}
               </Button>
 
               <Button
                 size="sm"
                 variant="outline"
                 disabled={!complete}
-                onClick={() => navigate("/community/customer/requests")}
+                onClick={handleRequestsClick}
                 className="h-9 shrink-0 rounded-xl"
               >
                 <ClipboardList className="ml-2 h-4 w-4" />
-                طلباتي
+                {isMerchant ? "طلبات الزبائن" : "طلباتي"}
               </Button>
 
               <Button
@@ -178,6 +223,42 @@ export function CommunityCustomerActionsInline({
 
   const complete = useMemo(() => isProfileComplete(profile), [profile]);
 
+   // Check if user is an approved merchant
+   const { data: merchantApp } = useQuery({
+     queryKey: ["merchant-status", user?.id],
+     queryFn: async () => {
+       if (!user?.id) return null;
+       const { data, error } = await supabase
+         .from("merchant_applications")
+         .select("id, status")
+         .eq("user_id", user.id)
+         .eq("status", "approved")
+         .maybeSingle();
+       if (error) throw error;
+       return data;
+     },
+     enabled: !!user?.id,
+     staleTime: 60_000,
+   });
+
+   const isMerchant = useMemo(() => !!merchantApp, [merchantApp]);
+
+   const handleRequestsClick = useCallback(() => {
+     if (isMerchant) {
+       navigate("/community/merchant/orders");
+     } else {
+       navigate("/community/customer/requests");
+     }
+   }, [isMerchant, navigate]);
+
+   const handleNewClick = useCallback(() => {
+     if (isMerchant) {
+       navigate("/community/merchant/store");
+     } else {
+       navigate("/community/customer/new");
+     }
+   }, [isMerchant, navigate]);
+
   if (!user) return null;
 
   if (isLoading) {
@@ -210,7 +291,7 @@ export function CommunityCustomerActionsInline({
     <>
       <Button
         size="sm"
-        onClick={() => navigate("/community/customer/new")}
+        onClick={handleNewClick}
         disabled={!complete}
         className={
           !complete
@@ -218,19 +299,28 @@ export function CommunityCustomerActionsInline({
             : "h-10 w-full shrink-0"
         }
       >
-        <PlusCircle className="ml-2 h-4 w-4" />
-        طلب جديد
+        {isMerchant ? (
+          <>
+            <Store className="ml-2 h-4 w-4" />
+            المتجر
+          </>
+        ) : (
+          <>
+            <PlusCircle className="ml-2 h-4 w-4" />
+            طلب جديد
+          </>
+        )}
       </Button>
 
       <Button
         size="sm"
         variant="outline"
         disabled={!complete}
-        onClick={() => navigate("/community/customer/requests")}
+        onClick={handleRequestsClick}
         className="h-10 w-full shrink-0"
       >
         <ClipboardList className="ml-2 h-4 w-4" />
-        طلباتي
+        {isMerchant ? "طلبات الزبائن" : "طلباتي"}
       </Button>
 
       <Button
