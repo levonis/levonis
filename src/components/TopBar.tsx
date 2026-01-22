@@ -199,6 +199,14 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
             >
               المنتجات
             </Link>
+             {user && (
+               <Link
+                 to="/community"
+                 className="text-foreground/80 hover:text-foreground transition-colors font-medium hover-scale"
+               >
+                 المجتمع
+               </Link>
+             )}
           </div>
 
           {/* Cart and User Actions */}
@@ -298,6 +306,10 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
                   <DropdownMenuItem onClick={() => navigate('/my-orders')}>
                     <Package className="ml-2 h-3.5 w-3.5" />
                     <span>طلباتي</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/community')}>
+                    <MessageCircle className="ml-2 h-3.5 w-3.5" />
+                    <span>المجتمع</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-3.5 w-3.5" />

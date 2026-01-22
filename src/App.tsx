@@ -14,6 +14,7 @@ import DecorativeFrame from "@/components/DecorativeFrame";
 import AdminRoute from "@/components/AdminRoute";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import { Loader2 } from "lucide-react";
+import RequireAuth from "@/components/auth/RequireAuth";
 
 // Eager load Home page for best initial load
 import Home from "./pages/Home";
@@ -60,6 +61,8 @@ const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const AdminShipmentRequests = lazy(() => import("./pages/AdminShipmentRequests"));
 const AdminShippingSettings = lazy(() => import("./pages/AdminShippingSettings"));
 const Community = lazy(() => import("./pages/Community"));
+const CommunityHome = lazy(() => import("./pages/CommunityHome"));
+const CommunityMessages = lazy(() => import("./pages/CommunityMessages"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const MyPurchasedProducts = lazy(() => import("./pages/MyPurchasedProducts"));
 const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
@@ -133,7 +136,10 @@ function AppContent() {
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />
             
-            <Route path="/community" element={<Community />} />
+            {/* Community (requires login) */}
+            <Route path="/community" element={<RequireAuth><Community /></RequireAuth>} />
+            <Route path="/community/home" element={<RequireAuth><CommunityHome /></RequireAuth>} />
+            <Route path="/community/messages" element={<RequireAuth><CommunityMessages /></RequireAuth>} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/shop" element={<ProductShop />} />

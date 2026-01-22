@@ -1,11 +1,18 @@
-import { Suspense, lazy } from 'react';
-import { Loader2, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/Footer';
 
-const ListingConversations = lazy(() => import('@/components/marketplace/ListingConversations'));
-
 export default function Community() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const t = window.setTimeout(() => setLoading(false), 250);
+    return () => window.clearTimeout(t);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
       <main className="container mx-auto px-4 py-8 pt-24 max-w-5xl">
@@ -19,21 +26,48 @@ export default function Community() {
               <p className="text-sm text-muted-foreground">محادثات المجتمع والدعم في مكان واحد</p>
             </div>
           </div>
-
-          <Suspense fallback={null}>
-            <ListingConversations>
-              <Button variant="outline" className="gap-2">
-                افتح المحادثات
-              </Button>
-            </ListingConversations>
-          </Suspense>
         </header>
 
         <section className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="text-lg font-bold text-foreground mb-2">ملاحظة</h2>
+          <h2 className="text-lg font-bold text-foreground mb-2">مجتمع ليفو</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            تم إزالة نظام سوق المستعمل (المنتجات/الملفات) بالكامل، وتم الإبقاء على واجهة الرسائل.
+            المحادثات والتواصل داخل المجتمع
           </p>
+
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {loading ? (
+              <>
+                <div className="h-11 rounded-xl bg-muted animate-pulse" />
+                <div className="h-11 rounded-xl bg-muted animate-pulse" />
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={() => navigate('/community/home')}
+                  className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                >
+                  الدخول
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/community/messages')}
+                  className="w-full"
+                >
+                  المحادثات
+                </Button>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Simple placeholders for future sections */}
+        <section className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="rounded-2xl border border-border bg-card p-4">
+              <div className="h-4 w-28 bg-muted rounded animate-pulse" />
+              <div className="mt-3 h-20 w-full bg-muted rounded-xl animate-pulse" />
+            </div>
+          ))}
         </section>
 
         <div className="mt-10">
