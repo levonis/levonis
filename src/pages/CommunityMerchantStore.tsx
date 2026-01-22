@@ -14,6 +14,7 @@
  import { Textarea } from "@/components/ui/textarea";
  import { Switch } from "@/components/ui/switch";
  import { useToast } from "@/hooks/use-toast";
+import MerchantProductMediaUpload from "@/components/merchant/MerchantProductMediaUpload";
  
  interface MerchantProduct {
    id: string;
@@ -44,12 +45,16 @@
      description: "",
      price_iqd: "",
      original_price_iqd: "",
-     image_urls: "",
-     video_url: "",
      estimated_days: "",
      is_active: true,
     is_featured: false,
    });
+
+  const [mediaState, setMediaState] = useState({
+    image_urls: [] as string[],
+    video_url: "",
+    primary_image_index: 0,
+  });
  
    // Fetch merchant application
    const { data: merchantApp, isLoading: appLoading } = useQuery({
@@ -100,15 +105,15 @@
    // Save product mutation
    const saveMutation = useMutation({
      mutationFn: async () => {
-       const urls = formData.image_urls.split("\n").map((u) => u.trim()).filter(Boolean);
        const payload = {
          merchant_id: merchantApp!.id,
          title: formData.title.trim(),
          description: formData.description.trim() || null,
          price_iqd: formData.price_iqd ? parseInt(formData.price_iqd, 10) : null,
          original_price_iqd: formData.original_price_iqd ? parseInt(formData.original_price_iqd, 10) : null,
-         image_urls: urls.length > 0 ? urls : null,
-         video_url: formData.video_url.trim() || null,
+        image_urls: mediaState.image_urls.length > 0 ? mediaState.image_urls : null,
+        video_url: mediaState.video_url || null,
+        primary_image_index: mediaState.primary_image_index,
          estimated_days: formData.estimated_days ? parseInt(formData.estimated_days, 10) : null,
          is_active: formData.is_active,
         is_featured: formData.is_featured,
@@ -134,12 +139,15 @@
          description: "",
          price_iqd: "",
          original_price_iqd: "",
-         image_urls: "",
-         video_url: "",
          estimated_days: "",
          is_active: true,
         is_featured: false,
        });
+      setMediaState({
+        image_urls: [],
+        video_url: "",
+        primary_image_index: 0,
+      });
        toast({ title: selectedProduct ? "تم التحديث" : "تمت الإضافة", description: "المنتج حُفظ بنجاح." });
      },
      onError: () => {
@@ -169,12 +177,15 @@
        description: product.description || "",
        price_iqd: product.price_iqd?.toString() || "",
        original_price_iqd: product.original_price_iqd?.toString() || "",
-       image_urls: product.image_urls?.join("\n") || "",
-       video_url: product.video_url || "",
        estimated_days: product.estimated_days?.toString() || "",
        is_active: product.is_active,
       is_featured: product.is_featured || false,
      });
+    setMediaState({
+      image_urls: product.image_urls || [],
+      video_url: product.video_url || "",
+      primary_image_index: product.primary_image_index,
+    });
      setProductDialogOpen(true);
    };
  
@@ -185,12 +196,15 @@
        description: "",
        price_iqd: "",
        original_price_iqd: "",
-       image_urls: "",
-       video_url: "",
        estimated_days: "",
        is_active: true,
       is_featured: false,
      });
+    setMediaState({
+      image_urls: [],
+      video_url: "",
+      primary_image_index: 0,
+    });
      setProductDialogOpen(true);
    };
  
@@ -451,26 +465,14 @@
                  </div>
                </div>
  
-               <div>
-                 <Label htmlFor="image_urls">روابط الصور (كل رابط في سطر)</Label>
-                 <Textarea
-                   id="image_urls"
-                   rows={3}
-                   value={formData.image_urls}
-                   onChange={(e) => setFormData({ ...formData, image_urls: e.target.value })}
-                   placeholder="https://example.com/image1.jpg&#10;https://example.com/image2.jpg"
-                 />
-               </div>
- 
-               <div>
-                 <Label htmlFor="video_url">رابط الفيديو (اختياري)</Label>
-                 <Input
-                   id="video_url"
-                   value={formData.video_url}
-                   onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                   placeholder="https://example.com/video.mp4"
-                 />
-               </div>
+              <MerchantProductMediaUpload
+                imageUrls={mediaState.image_urls}
+                onImagesChange={(urls) => setMediaState({ ...mediaState, image_urls: urls })}
+                primaryImageIndex={mediaState.primary_image_index}
+                onPrimaryImageChange={(idx) => setMediaState({ ...mediaState, primary_image_index: idx })}
+                videoUrl={mediaState.video_url}
+                onVideoUrlChange={(url) => setMediaState({ ...mediaState, video_url: url })}
+              />
  
                <div>
                  <Label htmlFor="estimated_days">وقت التنفيذ التقديري (بالأيام)</Label>
