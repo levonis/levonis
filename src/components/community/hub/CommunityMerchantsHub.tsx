@@ -1,16 +1,11 @@
 import { useMemo, useState } from "react";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
-// icons are rendered inside MerchantShowcaseCard
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { Boxes, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFetchUntil } from "@/components/community/hub/useAutoFetchUntil";
-import { useNavigate } from "react-router-dom";
-import MerchantShowcaseCard, {
-  type MerchantShowcaseProduct,
-  type MerchantShowcaseRating,
-} from "@/components/community/merchant/MerchantShowcaseCard";
 
 type Props = {
   mode: "preview" | "hub";
@@ -23,22 +18,7 @@ type MerchantRow = {
   store_image_url: string | null;
 };
 
-type RatingRow = {
-  merchant_id: string;
-  average_rating: number;
-  total_ratings: number;
-};
-
-type FeaturedProductRow = {
-  id: string;
-  merchant_id: string;
-  title: string;
-  image_urls: string[] | null;
-  primary_image_index: number;
-};
-
 export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
-  const navigate = useNavigate();
   const chunkSize = mode === "hub" ? 5 : 10;
   const initialTarget = mode === "hub" ? 25 : 10;
   const [targetCount, setTargetCount] = useState(initialTarget);
@@ -66,58 +46,6 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
   });
 
   const loaded = useMemo(() => (query.data?.pages || []).flat(), [query.data]);
-
-  const merchantIds = useMemo(() => loaded.map((m) => m.id), [loaded]);
-
-  const { data: ratingStats = [] } = useQuery({
-    queryKey: ["community-merchant-rating-stats", merchantIds],
-    enabled: merchantIds.length > 0,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("merchant_rating_stats")
-        .select("merchant_id, average_rating, total_ratings")
-        .in("merchant_id", merchantIds);
-      if (error) throw error;
-      return (data || []) as RatingRow[];
-    },
-    staleTime: 60_000,
-  });
-
-  const { data: featuredProducts = [] } = useQuery({
-    queryKey: ["community-merchant-featured-products", merchantIds],
-    enabled: merchantIds.length > 0,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("merchant_products")
-        .select("id, merchant_id, title, image_urls, primary_image_index")
-        .in("merchant_id", merchantIds)
-        .eq("is_featured", true)
-        .eq("is_active", true);
-      if (error) throw error;
-      return (data || []) as FeaturedProductRow[];
-    },
-    staleTime: 60_000,
-  });
-
-  const ratingMap = useMemo(() => {
-    const map = new Map<string, MerchantShowcaseRating>();
-    for (const r of ratingStats) map.set(r.merchant_id, { average_rating: r.average_rating, total_ratings: r.total_ratings });
-    return map;
-  }, [ratingStats]);
-
-  const productsMap = useMemo(() => {
-    const map = new Map<string, MerchantShowcaseProduct[]>();
-    for (const p of featuredProducts) {
-      if (!map.has(p.merchant_id)) map.set(p.merchant_id, []);
-      map.get(p.merchant_id)!.push({
-        id: p.id,
-        title: p.title,
-        image_urls: p.image_urls,
-        primary_image_index: p.primary_image_index,
-      });
-    }
-    return map;
-  }, [featuredProducts]);
 
   const items = useMemo(() => {
     if (mode !== "preview") return loaded;
@@ -161,15 +89,35 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
   return (
     <div className="space-y-3">
       {items.map((m) => (
-        <MerchantShowcaseCard
+        <Card
           key={m.id}
-          name={m.display_name}
-          storeImageUrl={m.store_image_url}
-          rating={ratingMap.get(m.id) || null}
-          products={productsMap.get(m.id) || []}
-          onVisit={() => onOpenStore(m.id)}
-          onContact={() => navigate("/community/messages")}
-        />
+          className="border-border bg-card cursor-pointer hover:shadow-lg transition-shadow"
+          onClick={() => onOpenStore(m.id)}
+        >
+          <CardHeader className="py-4">
+            <div className="flex items-center gap-3">
+              {m.store_image_url ? (
+                <img
+                  src={m.store_image_url}
+                  alt={m.display_name}
+                  loading="lazy"
+                  className="w-12 h-12 rounded-xl object-cover border border-border"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-xl bg-muted/20 flex items-center justify-center">
+                  <Store className="h-6 w-6 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex-1">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Boxes className="h-4 w-4 text-primary" />
+                  {m.display_name}
+                </CardTitle>
+                <CardDescription className="text-xs">عرض المتجر</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
       ))}
 
       {mode === "hub" && (
