@@ -1,11 +1,11 @@
 import { useMemo, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFetchUntil } from "@/components/community/hub/useAutoFetchUntil";
+import CommunityProductCard from "@/components/community/CommunityProductCard";
 
 type Props = {
   mode: "preview" | "hub";
@@ -102,34 +102,13 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
         {items.map((p) => {
           const mainImg = pickMainImage(p);
           return (
-            <Card
+            <CommunityProductCard
               key={p.id}
-              className="border-border bg-card overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => onOpenStore(p.merchant_id)}
-            >
-              <div className="relative aspect-square bg-muted/20">
-                {mainImg ? (
-                  <img
-                    src={mainImg}
-                    alt={p.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center w-full h-full">
-                    <Store className="h-10 w-10 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              <CardContent className="p-3">
-                <p className="text-sm font-semibold line-clamp-1">{p.title}</p>
-                {p.price_iqd ? (
-                  <p className="mt-1 text-sm font-bold text-primary">{p.price_iqd.toLocaleString()} د.ع</p>
-                ) : (
-                  <p className="mt-1 text-xs text-muted-foreground">السعر عند التواصل</p>
-                )}
-              </CardContent>
-            </Card>
+              title={p.title}
+              priceIqd={p.price_iqd}
+              imageUrl={mainImg}
+              onOpenStore={() => onOpenStore(p.merchant_id)}
+            />
           );
         })}
       </div>
