@@ -45,8 +45,8 @@
        // Get merchant info
        const merchantIds = Array.from(new Set(prods.map((p) => p.merchant_id)));
        const { data: merchants, error: merchError } = await supabase
-         .from("merchant_applications")
-         .select("id, display_name, store_image_url")
+          .from("merchant_public_profiles")
+          .select("id, display_name, store_image_url")
          .in("id", merchantIds);
        if (merchError) throw merchError;
  

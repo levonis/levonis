@@ -84,6 +84,7 @@ const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
 const AdminOfferPurchases = lazy(() => import("./pages/AdminOfferPurchases"));
 const AdminRedeemableProducts = lazy(() => import("./pages/AdminRedeemableProducts"));
 const AdminCartRequests = lazy(() => import("./pages/AdminCartRequests"));
+const CommunityHome = lazy(() => import("./pages/CommunityHome"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -153,6 +154,7 @@ function AppContent() {
             <Route path="/admin" element={<NotFound />} />
             
             {/* Community (requires login) */}
+            <Route path="/community" element={<RequireAuth><CommunityHome /></RequireAuth>} />
             <Route path="/community/messages" element={<RequireAuth><CommunityMessages /></RequireAuth>} />
             <Route path="/community/customer" element={<RequireAuth><CommunityCustomer /></RequireAuth>} />
             <Route path="/community/customer/requests" element={<RequireAuth><CommunityCustomerRequests /></RequireAuth>} />

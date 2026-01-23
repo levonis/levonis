@@ -1,4 +1,4 @@
- import { ArrowRight, Boxes, Store, Star } from "lucide-react";
+import { ArrowRight, Boxes, Store, Star } from "lucide-react";
 import { useNavigate } from "react-router-dom";
  import { useQuery } from "@tanstack/react-query";
  import { supabase } from "@/integrations/supabase/client";
@@ -10,8 +10,6 @@ import { Button } from "@/components/ui/button";
    id: string;
    display_name: string;
    store_image_url: string | null;
-   user_id: string;
-   username: string | null;
    featuredProducts: Array<{
      id: string;
      title: string;
@@ -28,25 +26,9 @@ export default function CommunityMerchantsPages() {
      queryKey: ["approved-merchants"],
      queryFn: async () => {
        const { data, error } = await supabase
-         .from("merchant_applications")
-         .select("id, display_name, store_image_url, user_id")
-         .eq("status", "approved")
-         .order("created_at", { ascending: false });
-       if (error) throw error;
-       return data || [];
-     },
-   });
- 
-   // Fetch usernames
-   const userIds = merchants.map((m) => m.user_id);
-   const { data: profiles = [] } = useQuery({
-     queryKey: ["merchant-profiles", userIds],
-     enabled: userIds.length > 0,
-     queryFn: async () => {
-       const { data, error } = await supabase
-         .from("profiles")
-         .select("id, username")
-         .in("id", userIds);
+          .from("merchant_public_profiles")
+          .select("id, display_name, store_image_url")
+          .order("created_at", { ascending: false });
        if (error) throw error;
        return data || [];
      },
@@ -69,7 +51,6 @@ export default function CommunityMerchantsPages() {
      },
    });
  
-   const profilesMap = new Map(profiles.map((p) => [p.id, p.username]));
    const productsMap = new Map<string, typeof products>();
    products.forEach((p) => {
      if (!productsMap.has(p.merchant_id)) productsMap.set(p.merchant_id, []);
@@ -78,7 +59,6 @@ export default function CommunityMerchantsPages() {
  
    const merchantsWithProducts: MerchantWithProducts[] = merchants.map((m) => ({
      ...m,
-     username: profilesMap.get(m.user_id) || null,
      featuredProducts: productsMap.get(m.id) || [],
    }));
  
@@ -160,7 +140,7 @@ export default function CommunityMerchantsPages() {
                     )}
                     <div className="flex-1">
                       <CardTitle className="text-base">{merchant.display_name}</CardTitle>
-                      <CardDescription className="text-xs">@{merchant.username || "—"}</CardDescription>
+                      <CardDescription className="text-xs">عرض المتجر</CardDescription>
                     </div>
                   </div>
                   {(() => {
