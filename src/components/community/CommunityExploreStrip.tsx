@@ -1,15 +1,50 @@
 import { Boxes, Store, Users } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import CommunityProductsHub from "@/components/community/hub/CommunityProductsHub";
+import CommunityMerchantsHub from "@/components/community/hub/CommunityMerchantsHub";
 
 export default function CommunityExploreStrip({ className }: { className?: string }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
+  const isCommunityHub = location.pathname === "/community";
+  const tabFromUrl = searchParams.get("tab") || undefined;
+
+  const defaultTab = useMemo(() => {
+    if (!isCommunityHub) return "products";
+    if (tabFromUrl === "products" || tabFromUrl === "requests" || tabFromUrl === "merchants") {
+      return tabFromUrl;
+    }
+    return "products";
+  }, [isCommunityHub, tabFromUrl]);
+
+  const [activeTab, setActiveTab] = useState<string>(defaultTab);
+
+  useEffect(() => {
+    setActiveTab(defaultTab);
+  }, [defaultTab]);
+
+  const openHubTab = (tab: "products" | "requests" | "merchants") => {
+    navigate(`/community?tab=${tab}`);
+  };
 
   return (
     <section className={className} aria-label="استكشاف المجتمع">
-      <Tabs defaultValue="products" className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) => {
+          setActiveTab(v);
+          if (isCommunityHub && (v === "products" || v === "requests" || v === "merchants")) {
+            navigate(`/community?tab=${v}`, { replace: true });
+          }
+        }}
+        className="w-full"
+      >
         <TabsList className="grid w-full grid-cols-3 bg-card border border-border rounded-xl p-1">
           <TabsTrigger
             value="products"
@@ -38,33 +73,27 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="text-base">منتجات من التجار</CardTitle>
-              <CardDescription>استعرض أحدث المنتجات، وللمزيد استخدم زر العرض بالأسفل</CardDescription>
+              <CardDescription>
+                {isCommunityHub
+                  ? "تحميل تدريجي — 4 ثم 4 حتى 50، ثم يمكنك إظهار المزيد"
+                  : "معاينة سريعة (اختيار عشوائي) — للمزيد استخدم زر العرض"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {(() => {
-                const items = [1, 2, 3, 4, 5, 6];
-                return (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                      {items.map((i) => (
-                  <div key={i} className="rounded-xl bg-muted/20 p-3">
-                    <div className="aspect-square rounded-lg bg-background/40" />
-                    <p className="mt-2 text-sm font-semibold">منتج #{i}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">تاجر • سعر • وقت</p>
-                  </div>
-                      ))}
-                    </div>
+              <CommunityProductsHub
+                mode={isCommunityHub ? "hub" : "preview"}
+                onOpenStore={(merchantId) => navigate(`/store/${merchantId}`)}
+              />
 
-                    <Button
-                      variant="outline"
-                      className="mt-4 w-full h-10"
-                      onClick={() => navigate("/community/merchants/all-products")}
-                    >
-                      عرض جميع المنتجات
-                    </Button>
-                  </>
-                );
-              })()}
+              {!isCommunityHub && (
+                <Button
+                  variant="outline"
+                  className="mt-4 w-full h-10"
+                  onClick={() => openHubTab("products")}
+                >
+                  عرض جميع المنتجات
+                </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -76,30 +105,21 @@ export default function CommunityExploreStrip({ className }: { className?: strin
               <CardDescription>استعرض آخر الطلبات، وللمزيد استخدم زر العرض بالأسفل</CardDescription>
             </CardHeader>
             <CardContent>
-              {(() => {
-                const items = [1, 2, 3, 4, 5, 6];
-                return (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                      {items.map((i) => (
-                  <div key={i} className="rounded-xl bg-muted/20 p-3">
-                    <div className="aspect-square rounded-lg bg-background/40" />
-                    <p className="mt-2 text-sm font-semibold">طلب #{i}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">عنوان • فئة • حالة</p>
-                  </div>
-                      ))}
-                    </div>
+              <div className="rounded-xl border border-border bg-muted/10 p-4">
+                <p className="text-sm text-muted-foreground">
+                  سيتم تفعيل عرض الطلبات داخل /community بنفس مبدأ التحميل التدريجي (مثل المنتجات).
+                </p>
+              </div>
 
-                    <Button
-                      variant="outline"
-                      className="mt-4 w-full h-10"
-                      onClick={() => navigate("/community/requests")}
-                    >
-                      عرض جميع الطلبات
-                    </Button>
-                  </>
-                );
-              })()}
+              {!isCommunityHub && (
+                <Button
+                  variant="outline"
+                  className="mt-4 w-full h-10"
+                  onClick={() => openHubTab("requests")}
+                >
+                  عرض جميع الطلبات
+                </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -108,33 +128,27 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="text-base">صفحات التجار</CardTitle>
-              <CardDescription>تصفح التجار، وللمزيد استخدم زر العرض بالأسفل</CardDescription>
+              <CardDescription>
+                {isCommunityHub
+                  ? "عرض أكبر — 25 تاجر (تحميل تدريجي) ثم يمكنك إظهار المزيد"
+                  : "معاينة 10 متاجر (اختيار عشوائي)"}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {(() => {
-                const items = [1, 2, 3, 4, 5, 6];
-                return (
-                  <>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-                      {items.map((i) => (
-                  <div key={i} className="rounded-xl bg-muted/20 p-3">
-                    <div className="aspect-square rounded-lg bg-background/40" />
-                    <p className="mt-2 text-sm font-semibold">تاجر #{i}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">تقييم • مدينة • خدمات</p>
-                  </div>
-                      ))}
-                    </div>
+              <CommunityMerchantsHub
+                mode={isCommunityHub ? "hub" : "preview"}
+                onOpenStore={(merchantId) => navigate(`/store/${merchantId}`)}
+              />
 
-                    <Button
-                      variant="outline"
-                      className="mt-4 w-full h-10"
-                      onClick={() => navigate("/community/merchants")}
-                    >
-                      عرض جميع التجار
-                    </Button>
-                  </>
-                );
-              })()}
+              {!isCommunityHub && (
+                <Button
+                  variant="outline"
+                  className="mt-4 w-full h-10"
+                  onClick={() => openHubTab("merchants")}
+                >
+                  عرض جميع التجار
+                </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
