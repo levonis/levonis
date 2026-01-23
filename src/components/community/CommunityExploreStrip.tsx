@@ -14,7 +14,6 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <TabsTrigger
             value="products"
             className="shrink-0"
-            onClick={() => navigate("/community/merchants/all-products")}
           >
             <Store className="ml-2 h-4 w-4" />
             منتجات التجار
@@ -22,7 +21,6 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <TabsTrigger
             value="requests"
             className="shrink-0"
-            onClick={() => navigate("/community/requests")}
           >
             <Users className="ml-2 h-4 w-4" />
             طلبات الزبائن
@@ -30,7 +28,6 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <TabsTrigger
             value="merchants"
             className="shrink-0"
-            onClick={() => navigate("/community/merchants")}
           >
             <Boxes className="ml-2 h-4 w-4" />
             صفحات التجار
@@ -41,7 +38,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="text-base">منتجات من التجار</CardTitle>
-              <CardDescription>اضغط للانتقال إلى صفحة جميع منتجات التجار</CardDescription>
+              <CardDescription>استعرض أحدث المنتجات، وللمزيد استخدم زر العرض بالأسفل</CardDescription>
             </CardHeader>
             <CardContent>
               {(() => {
@@ -76,7 +73,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="text-base">طلبات لزبائن آخرين</CardTitle>
-              <CardDescription>اضغط للانتقال إلى صفحة طلبات الزبائن</CardDescription>
+              <CardDescription>استعرض آخر الطلبات، وللمزيد استخدم زر العرض بالأسفل</CardDescription>
             </CardHeader>
             <CardContent>
               {(() => {
@@ -111,7 +108,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           <Card className="border-border bg-card">
             <CardHeader>
               <CardTitle className="text-base">صفحات التجار</CardTitle>
-              <CardDescription>اضغط للانتقال إلى دليل التجار</CardDescription>
+              <CardDescription>تصفح التجار، وللمزيد استخدم زر العرض بالأسفل</CardDescription>
             </CardHeader>
             <CardContent>
               {(() => {
