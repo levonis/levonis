@@ -1,10 +1,11 @@
-import { ArrowRight, Boxes, Store, Star } from "lucide-react";
+import { ArrowRight, Boxes } from "lucide-react";
 import { useNavigate } from "react-router-dom";
  import { useQuery } from "@tanstack/react-query";
  import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
  import { Skeleton } from "@/components/ui/skeleton";
+import MerchantDirectoryCard from "@/components/community/MerchantDirectoryCard";
  
  interface MerchantWithProducts {
    id: string;
@@ -118,86 +119,19 @@ export default function CommunityMerchantsPages() {
             <p className="text-sm text-muted-foreground text-center">لا يوجد تجار مقبولين بعد.</p>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {merchantsWithProducts.map((merchant) => (
-              <Card
-                key={merchant.id}
-                className="border-border bg-card cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => navigate(`/store/${merchant.id}`)}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-3">
-                    {merchant.store_image_url ? (
-                      <img
-                        src={merchant.store_image_url}
-                        alt={merchant.display_name}
-                        className="w-12 h-12 rounded-xl object-cover border border-border"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-xl bg-muted/20 flex items-center justify-center">
-                        <Store className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <CardTitle className="text-base">{merchant.display_name}</CardTitle>
-                      <CardDescription className="text-xs">عرض المتجر</CardDescription>
-                    </div>
-                  </div>
-                  {(() => {
-                    const stats = ratingsMap.get(merchant.id);
-                    if (stats && stats.total_ratings > 0) {
-                      return (
-                        <div className="flex items-center gap-1 mt-2">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <Star
-                              key={i}
-                              className={`h-3.5 w-3.5 ${
-                                i <= Math.round(stats.average_rating)
-                                  ? "fill-yellow-500 text-yellow-500"
-                                  : "text-muted-foreground"
-                              }`}
-                            />
-                          ))}
-                          <span className="text-xs text-muted-foreground mr-1">
-                            ({stats.average_rating.toFixed(1)} • {stats.total_ratings} تقييم)
-                          </span>
-                        </div>
-                      );
-                    }
-                    return (
-                      <p className="text-xs text-muted-foreground mt-2">لا توجد تقييمات بعد</p>
-                    );
-                  })()}
-                </CardHeader>
-                <CardContent>
-                  {merchant.featuredProducts.length > 0 ? (
-                    <div className="grid grid-cols-3 gap-2">
-                      {merchant.featuredProducts.slice(0, 3).map((product) => {
-                        const mainImg =
-                          product.image_urls?.[product.primary_image_index] || product.image_urls?.[0];
-                        return (
-                          <div key={product.id} className="relative">
-                            <div className="aspect-square rounded-lg bg-muted/20 overflow-hidden">
-                              {mainImg ? (
-                                <img src={mainImg} alt={product.title} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="flex items-center justify-center w-full h-full">
-                                  <Store className="h-6 w-6 text-muted-foreground" />
-                                </div>
-                              )}
-                            </div>
-                            <p className="text-xs font-semibold line-clamp-1 mt-1">{product.title}</p>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">لا توجد منتجات مميزة</p>
-                  )}
-                </CardContent>
-            </Card>
-          ))}
-          </div>
+           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+             {merchantsWithProducts.map((merchant) => (
+               <MerchantDirectoryCard
+                 key={merchant.id}
+                 id={merchant.id}
+                 displayName={merchant.display_name}
+                 storeImageUrl={merchant.store_image_url}
+                 stats={ratingsMap.get(merchant.id) || null}
+                 featuredProducts={merchant.featuredProducts}
+                 onOpenStore={() => navigate(`/store/${merchant.id}`)}
+               />
+             ))}
+           </div>
         )}
       </main>
     </div>
