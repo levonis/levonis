@@ -1,11 +1,14 @@
 import { useMemo, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFetchUntil } from "@/components/community/hub/useAutoFetchUntil";
 import MerchantDirectoryCard from "@/components/community/MerchantDirectoryCard";
+import { useAuth } from "@/hooks/useAuth";
+import { ADMIN_ROUTES } from "@/config/adminConfig";
 
 type Props = {
   mode: "preview" | "hub";
@@ -27,6 +30,8 @@ type FeaturedProductRow = {
 };
 
 export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
+  const { isAdmin } = useAuth();
+  const navigate = useNavigate();
   const chunkSize = mode === "hub" ? 5 : 10;
   const initialTarget = mode === "hub" ? 25 : 10;
   const [targetCount, setTargetCount] = useState(initialTarget);
@@ -152,6 +157,8 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
             stats={ratingsByMerchant.get(m.id) || null}
             featuredProducts={productsByMerchant.get(m.id) || []}
             onOpenStore={() => onOpenStore(m.id)}
+            isAdmin={isAdmin}
+            onAdminManage={() => navigate(ADMIN_ROUTES.communityMerchants)}
           />
         ))}
       </div>

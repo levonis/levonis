@@ -2,10 +2,12 @@ import { ArrowRight, Boxes } from "lucide-react";
 import { useNavigate } from "react-router-dom";
  import { useQuery } from "@tanstack/react-query";
  import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
  import { Skeleton } from "@/components/ui/skeleton";
 import MerchantDirectoryCard from "@/components/community/MerchantDirectoryCard";
+import { useAuth } from "@/hooks/useAuth";
+import { ADMIN_ROUTES } from "@/config/adminConfig";
  
  interface MerchantWithProducts {
    id: string;
@@ -21,6 +23,7 @@ import MerchantDirectoryCard from "@/components/community/MerchantDirectoryCard"
 
 export default function CommunityMerchantsPages() {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
  
    // Fetch approved merchants
    const { data: merchants = [], isLoading: merchantsLoading } = useQuery({
@@ -129,6 +132,8 @@ export default function CommunityMerchantsPages() {
                  stats={ratingsMap.get(merchant.id) || null}
                  featuredProducts={merchant.featuredProducts}
                  onOpenStore={() => navigate(`/store/${merchant.id}`)}
+                  isAdmin={isAdmin}
+                  onAdminManage={() => navigate(ADMIN_ROUTES.communityMerchants)}
                />
              ))}
            </div>
