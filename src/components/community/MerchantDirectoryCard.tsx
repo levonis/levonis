@@ -56,7 +56,7 @@ function MerchantDirectoryCardBase({
       <CardContent className="p-3 sm:p-4">
         <div className="flex items-center gap-3 min-w-0">
           {/* Store image (fixed, no layout jumps) */}
-          <div className="relative h-20 w-20 shrink-0 rounded-2xl bg-muted/20 border border-border overflow-hidden">
+          <div className="relative h-16 w-16 shrink-0 rounded-2xl bg-muted/20 border border-border overflow-hidden">
             {storeImageUrl ? (
               <img
                 src={storeImageUrl}
@@ -69,22 +69,21 @@ function MerchantDirectoryCardBase({
                 <Store className="h-8 w-8 text-muted-foreground" />
               </div>
             )}
-
-            {featured ? (
-              <div className="absolute top-2 right-2">
-                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/85 backdrop-blur px-2 py-0.5 text-[10px] font-bold text-foreground">
-                  <ShieldCheck className="h-3 w-3 text-primary" />
-                  مميز
-                </span>
-              </div>
-            ) : null}
           </div>
 
           {/* Name + rating */}
           <div className="min-w-0 flex-1">
-            <h3 className="text-base sm:text-lg font-extrabold leading-tight truncate">
-              {displayName}
-            </h3>
+            <div className="flex items-center gap-2 min-w-0">
+              <h3 className="text-[15px] sm:text-base font-extrabold leading-tight whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
+                {displayName}
+              </h3>
+              {featured ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/20 px-2 py-0.5 text-[10px] font-bold text-foreground shrink-0">
+                  <ShieldCheck className="h-3 w-3 text-primary" />
+                  مميز
+                </span>
+              ) : null}
+            </div>
             <div className="mt-1 flex items-center gap-2">
               {hasRatings ? (
                 <div className="flex items-center gap-1 min-w-0">
@@ -110,7 +109,7 @@ function MerchantDirectoryCardBase({
                   className={hideOnSm ? "hidden lg:block" : "block"}
                   title={p.title}
                 >
-                  <div className="h-12 w-12 rounded-xl bg-muted/20 overflow-hidden border border-border">
+                  <div className="h-14 w-14 rounded-2xl bg-muted/20 overflow-hidden border border-border">
                     {mainImg ? (
                       <img
                         src={mainImg}
@@ -136,7 +135,7 @@ function MerchantDirectoryCardBase({
                 type="button"
                 variant="outline"
                 size="icon"
-                className="h-10 w-10 rounded-2xl"
+                className="h-9 w-9 rounded-2xl"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAdminManage();
@@ -144,7 +143,7 @@ function MerchantDirectoryCardBase({
                 aria-label="إدارة التجار"
                 title="إدارة التجار"
               >
-                <Settings className="h-5 w-5" />
+                <Settings className="h-4.5 w-4.5" />
               </Button>
             ) : null}
 
@@ -152,7 +151,7 @@ function MerchantDirectoryCardBase({
               type="button"
               variant="secondary"
               size="icon"
-              className="h-10 w-10 rounded-2xl"
+              className="h-9 w-9 rounded-2xl"
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenStore();
@@ -160,14 +159,14 @@ function MerchantDirectoryCardBase({
               aria-label="زيارة المتجر"
               title="زيارة المتجر"
             >
-              <Store className="h-5 w-5" />
+              <Store className="h-4.5 w-4.5" />
             </Button>
 
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="h-10 w-10 rounded-2xl"
+              className="h-9 w-9 rounded-2xl"
               disabled={!onContact}
               onClick={(e) => {
                 e.stopPropagation();
@@ -176,18 +175,22 @@ function MerchantDirectoryCardBase({
               aria-label="تواصل"
               title="تواصل"
             >
-              <MessageCircle className="h-5 w-5" />
+              <MessageCircle className="h-4.5 w-4.5" />
             </Button>
           </div>
         </div>
 
-        {/* Mobile-only: product thumbs under the row but still "single card" (keeps row uncluttered) */}
+        {/* Mobile-only: show up to 3 larger thumbs (no overflow) */}
         {featuredProducts.length ? (
-          <div className="mt-3 flex sm:hidden items-center gap-2">
-            {featuredProducts.slice(0, 2).map((p) => {
+          <div className="mt-3 grid grid-cols-3 gap-2 sm:hidden">
+            {featuredProducts.slice(0, 3).map((p) => {
               const mainImg = p.image_urls?.[p.primary_image_index] || p.image_urls?.[0] || null;
               return (
-                <div key={p.id} className="h-12 w-12 rounded-xl bg-muted/20 overflow-hidden border border-border" title={p.title}>
+                <div
+                  key={p.id}
+                  className="aspect-square rounded-2xl bg-muted/20 overflow-hidden border border-border"
+                  title={p.title}
+                >
                   {mainImg ? (
                     <img src={mainImg} alt={p.title} loading="lazy" className="h-full w-full object-cover" />
                   ) : (
