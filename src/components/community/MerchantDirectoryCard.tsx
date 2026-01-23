@@ -41,7 +41,7 @@ function MerchantDirectoryCardBase({
 
   return (
     <Card
-      className="border-border bg-card overflow-hidden group"
+      className="border-border bg-card overflow-hidden group w-full min-w-0"
       role="button"
       tabIndex={0}
       onClick={onOpenStore}
@@ -49,117 +49,126 @@ function MerchantDirectoryCardBase({
         if (e.key === "Enter" || e.key === " ") onOpenStore();
       }}
     >
-      <CardContent className="p-0">
-        {/* Header */}
+      <CardContent className="p-4 sm:p-4">
+        {/* Top: Store image */}
         <div className="relative">
-          <div className="h-16 bg-muted/30" />
-
-          <div className="absolute inset-x-0 top-4 px-4 flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-12 w-12 rounded-2xl bg-background border border-border shadow-sm overflow-hidden flex items-center justify-center shrink-0">
-                {storeImageUrl ? (
-                  <img
-                    src={storeImageUrl}
-                    alt={displayName}
-                    loading="lazy"
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <Store className="h-6 w-6 text-muted-foreground" />
-                )}
+          <div className="aspect-[16/10] rounded-2xl bg-muted/20 border border-border overflow-hidden">
+            {storeImageUrl ? (
+              <img
+                src={storeImageUrl}
+                alt={displayName}
+                loading="lazy"
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center">
+                <Store className="h-10 w-10 text-muted-foreground" />
               </div>
+            )}
+          </div>
 
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 min-w-0">
-                  <h3 className="text-sm sm:text-base font-extrabold leading-tight truncate">
-                    {displayName}
-                  </h3>
-                  {featured ? (
-                    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/80 px-2 py-0.5 text-[11px] font-bold text-foreground">
-                      <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                      مميز
-                    </span>
-                  ) : null}
-                </div>
-
-                <div className="mt-1 flex items-center justify-between gap-2">
-                  {hasRatings ? (
-                    <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-primary text-primary" />
-                      <span className="text-xs font-bold tabular-nums">{avg.toFixed(1)}</span>
-                      <span className="text-xs text-muted-foreground">
-                        ({stats!.total_ratings} تقييم)
-                      </span>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">لا توجد تقييمات بعد</span>
-                  )}
-                </div>
-              </div>
+          {featured ? (
+            <div className="absolute top-3 right-3">
+              <span className="inline-flex items-center gap-1 rounded-full border border-border bg-background/85 backdrop-blur px-2.5 py-1 text-[11px] font-bold text-foreground">
+                <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                مميز
+              </span>
             </div>
+          ) : null}
+        </div>
+
+        {/* Name + rating */}
+        <div className="mt-3 min-w-0">
+          <h3 className="text-base sm:text-base font-extrabold leading-tight truncate">
+            {displayName}
+          </h3>
+
+          <div className="mt-1 flex items-center gap-2">
+            {hasRatings ? (
+              <div className="flex items-center gap-1">
+                <Star className="h-4 w-4 fill-primary text-primary" />
+                <span className="text-xs font-bold tabular-nums">{avg.toFixed(1)}</span>
+                <span className="text-xs text-muted-foreground">({stats!.total_ratings})</span>
+              </div>
+            ) : (
+              <span className="text-xs text-muted-foreground">لا توجد تقييمات بعد</span>
+            )}
           </div>
         </div>
 
-        {/* Featured products */}
-        <div className="px-4 pb-4 pt-6">
+        {/* Featured products: clearer sizing, responsive count */}
+        <div className="mt-4">
           {featuredProducts.length ? (
-            <div className="grid grid-cols-3 gap-2">
-              {featuredProducts.slice(0, 3).map((p) => {
-                const mainImg =
-                  p.image_urls?.[p.primary_image_index] || p.image_urls?.[0] || null;
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {featuredProducts.slice(0, 3).map((p, idx) => {
+                  const mainImg =
+                    p.image_urls?.[p.primary_image_index] || p.image_urls?.[0] || null;
 
-                return (
-                  <div key={p.id} className="min-w-0">
-                    <div className="aspect-square rounded-xl bg-muted/20 overflow-hidden border border-border">
-                      {mainImg ? (
-                        <img
-                          src={mainImg}
-                          alt={p.title}
-                          loading="lazy"
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center">
-                          <Store className="h-6 w-6 text-muted-foreground" />
-                        </div>
-                      )}
+                  // Render all 3, but hide 3rd on small screens via class
+                  const hideOnMobile = idx === 2;
+
+                  return (
+                    <div key={p.id} className={hideOnMobile ? "hidden md:block" : "block"}>
+                      <div className="aspect-square rounded-2xl bg-muted/20 overflow-hidden border border-border">
+                        {mainImg ? (
+                          <img
+                            src={mainImg}
+                            alt={p.title}
+                            loading="lazy"
+                            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center">
+                            <Store className="h-6 w-6 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-1 text-xs font-semibold text-foreground/90 line-clamp-1">
+                        {p.title}
+                      </p>
                     </div>
-                    <p className="mt-1 text-[11px] font-semibold text-foreground/90 line-clamp-1">
-                      {p.title}
-                    </p>
-                  </div>
-                );
-              })}
+                  );
+                })}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-border bg-muted/10 p-3">
+            <div className="rounded-2xl border border-dashed border-border bg-muted/10 p-4">
               <p className="text-xs text-muted-foreground">لا توجد منتجات مميزة</p>
             </div>
           )}
+        </div>
 
-          {/* Actions */}
-          <div className="mt-4 grid grid-cols-2 gap-2">
+        {/* Icon-only actions (no big buttons) */}
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <Button
-              variant="default"
-              className="h-10"
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="h-10 w-10 rounded-2xl"
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenStore();
               }}
+              aria-label="زيارة المتجر"
+              title="زيارة المتجر"
             >
-              زيارة المتجر
+              <Store className="h-5 w-5" />
             </Button>
+
             <Button
+              type="button"
               variant="outline"
-              className="h-10"
+              size="icon"
+              className="h-10 w-10 rounded-2xl"
               disabled={!onContact}
               onClick={(e) => {
                 e.stopPropagation();
                 onContact?.();
               }}
+              aria-label="تواصل"
+              title="تواصل"
             >
-              <MessageCircle className="h-4 w-4 ms-2" />
-              تواصل
+              <MessageCircle className="h-5 w-5" />
             </Button>
           </div>
         </div>

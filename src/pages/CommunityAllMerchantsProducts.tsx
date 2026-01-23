@@ -7,7 +7,7 @@
  import { Card, CardContent } from "@/components/ui/card";
  import { Skeleton } from "@/components/ui/skeleton";
  import { Input } from "@/components/ui/input";
- import { Badge } from "@/components/ui/badge";
+ import CommunityProductCard from "@/components/community/CommunityProductCard";
  
  interface ProductWithMerchant {
    id: string;
@@ -123,58 +123,22 @@
              <p className="text-xs text-muted-foreground mb-3">
                {filteredProducts.length} منتج
              </p>
-             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-               {filteredProducts.map((p) => {
-                 const mainImg = p.image_urls?.[p.primary_image_index] || p.image_urls?.[0];
-                 return (
-                   <Card
-                     key={p.id}
-                     className="border-border bg-card overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                     onClick={() => navigate(`/store/${p.merchant_id}`)}
-                   >
-                     <div className="relative aspect-square bg-muted/20">
-                       {mainImg ? (
-                         <img src={mainImg} alt={p.title} className="w-full h-full object-cover" />
-                       ) : (
-                         <div className="flex items-center justify-center w-full h-full">
-                           <Store className="h-12 w-12 text-muted-foreground" />
-                         </div>
-                       )}
-                     </div>
-                     <CardContent className="p-3">
-                       <p className="text-sm font-semibold line-clamp-1">{p.title}</p>
-                       <div className="flex items-center gap-1 mt-1">
-                         {p.merchant_image ? (
-                           <img
-                             src={p.merchant_image}
-                             alt={p.merchant_name}
-                             className="w-4 h-4 rounded-full object-cover"
-                           />
-                         ) : (
-                           <div className="w-4 h-4 rounded-full bg-primary/10" />
-                         )}
-                         <p className="text-xs text-muted-foreground line-clamp-1">{p.merchant_name}</p>
-                       </div>
-                       {p.price_iqd && (
-                         <div className="mt-1 flex items-baseline gap-1">
-                           {p.original_price_iqd && (
-                             <span className="text-xs text-muted-foreground line-through">
-                               {p.original_price_iqd.toLocaleString()}
-                             </span>
-                           )}
-                           <span className="text-sm font-bold text-primary">
-                             {p.price_iqd.toLocaleString()} د.ع
-                           </span>
-                         </div>
-                       )}
-                       {p.estimated_days && (
-                         <p className="text-xs text-muted-foreground mt-1">{p.estimated_days} يوم</p>
-                       )}
-                     </CardContent>
-                   </Card>
-                 );
-               })}
-             </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {filteredProducts.map((p) => {
+                  const mainImg = p.image_urls?.[p.primary_image_index] || p.image_urls?.[0] || null;
+                  return (
+                    <CommunityProductCard
+                      key={p.id}
+                      title={p.title}
+                      priceIqd={p.price_iqd}
+                      imageUrl={mainImg}
+                      merchantName={p.merchant_name}
+                      merchantImageUrl={p.merchant_image}
+                      onOpenStore={() => navigate(`/store/${p.merchant_id}`)}
+                    />
+                  );
+                })}
+              </div>
            </>
          )}
        </main>
