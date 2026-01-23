@@ -4,11 +4,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
 import { useDailyLogin } from "@/hooks/useDailyLogin";
 import Header from "@/components/Header";
+import CommunityTopBar from "@/components/community/CommunityTopBar";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import DecorativeFrame from "@/components/DecorativeFrame";
 import AdminRoute from "@/components/AdminRoute";
@@ -97,13 +98,15 @@ const PageLoader = () => (
 function AppContent() {
   useDailyLogin();
   const [announcementHeight, setAnnouncementHeight] = useState(0);
+  const location = useLocation();
+  const isCommunityShell = location.pathname === "/community" || location.pathname.startsWith("/community/");
   
   return (
     <>
       <DecorativeFrame />
       <AnnouncementBar onHeightChange={setAnnouncementHeight} />
-      <Header announcementHeight={announcementHeight} />
-      <main style={{ paddingTop: `${68 + announcementHeight}px` }}>
+      {isCommunityShell ? <CommunityTopBar /> : <Header announcementHeight={announcementHeight} />}
+      <main style={{ paddingTop: isCommunityShell ? "56px" : `${68 + announcementHeight}px` }}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
