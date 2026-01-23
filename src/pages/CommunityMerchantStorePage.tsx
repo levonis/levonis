@@ -35,24 +35,9 @@ import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay
      enabled: !!merchantId,
      queryFn: async () => {
        const { data, error } = await supabase
-         .from("merchant_applications")
-         .select("id, display_name, bio, store_image_url, social_links, user_id")
-         .eq("id", merchantId!)
-         .eq("status", "approved")
-         .maybeSingle();
-       if (error) throw error;
-       return data;
-     },
-   });
- 
-   const { data: profile } = useQuery({
-     queryKey: ["merchant-profile", merchantApp?.user_id],
-     enabled: !!merchantApp?.user_id,
-     queryFn: async () => {
-       const { data, error } = await supabase
-         .from("profiles")
-         .select("username")
-         .eq("id", merchantApp!.user_id)
+          .from("merchant_public_profiles")
+          .select("id, display_name, bio, store_image_url, social_links")
+          .eq("id", merchantId!)
          .maybeSingle();
        if (error) throw error;
        return data;
@@ -150,7 +135,7 @@ import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay
  
                <div className="flex-1">
                  <h2 className="text-xl font-bold text-primary">{merchantApp.display_name}</h2>
-                 <p className="text-sm text-muted-foreground mt-1">@{profile?.username || "—"}</p>
+                  <p className="text-sm text-muted-foreground mt-1">متجر داخل مجتمع ليفو</p>
  
                  {merchantApp.bio && (
                    <p className="text-sm text-foreground/80 mt-3 whitespace-pre-wrap">{merchantApp.bio}</p>

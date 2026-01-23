@@ -1803,6 +1803,39 @@ export type Database = {
           },
         ]
       }
+      merchant_public_profiles: {
+        Row: {
+          bio: string | null
+          city: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          social_links: Json | null
+          store_image_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          bio?: string | null
+          city?: string | null
+          created_at?: string
+          display_name?: string | null
+          id: string
+          social_links?: Json | null
+          store_image_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bio?: string | null
+          city?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          social_links?: Json | null
+          store_image_url?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       merchant_ratings: {
         Row: {
           created_at: string
