@@ -138,35 +138,7 @@ function MerchantDirectoryCardBase({
           )}
 
           {/* Actions */}
-          {/* Mobile: icon-only actions (≤768px) */}
-          <div className="mt-3 flex items-center justify-end gap-2 md:hidden">
-            <Button
-              variant="outline"
-              className="h-9 w-9 p-0"
-              aria-label="زيارة المتجر"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpenStore();
-              }}
-            >
-              <Store className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="outline"
-              className="h-9 w-9 p-0"
-              aria-label="تواصل مع التاجر"
-              disabled={!onContact}
-              onClick={(e) => {
-                e.stopPropagation();
-                onContact?.();
-              }}
-            >
-              <MessageCircle className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Desktop: keep text buttons */}
-          <div className="mt-4 hidden grid-cols-2 gap-2 md:grid">
+          <div className="mt-4 grid grid-cols-2 gap-2">
             <Button
               variant="default"
               className="h-10"
