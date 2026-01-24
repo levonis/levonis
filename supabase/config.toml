@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.extract-product-info]
 verify_jwt = false
+
+[functions.calculate-merchant-badges]
+verify_jwt = false

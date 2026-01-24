@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { Store, Filter, RefreshCw, CheckCircle2, XCircle, Image as ImageIcon, ExternalLink } from "lucide-react";
+import { Store, Filter, RefreshCw, CheckCircle2, XCircle, Image as ImageIcon, ExternalLink, Calculator } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout, { AdminSection } from "@/components/admin/AdminLayout";
@@ -158,6 +158,25 @@ export default function AdminCommunityMerchants() {
     },
   });
 
+  // Mutation to recalculate all badges
+  const recalculateBadgesMutation = useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke("calculate-merchant-badges");
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: async (data) => {
+      await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
+      toast({ 
+        title: "تم حساب الشارات", 
+        description: `تم تحديث ${data?.updated || 0} تاجر من ${data?.processed || 0}` 
+      });
+    },
+    onError: (err: any) => {
+      toast({ title: "فشل حساب الشارات", description: err?.message ?? "حدث خطأ", variant: "destructive" });
+    },
+  });
+
   return (
     <AdminLayout
       title="طلبات تسجيل التجار"
@@ -166,10 +185,21 @@ export default function AdminCommunityMerchants() {
       backTo={ADMIN_ROUTES.dashboard}
       maxWidth="6xl"
       actions={
-        <Button variant="outline" onClick={() => refetch()} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          تحديث
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={() => recalculateBadgesMutation.mutate()} 
+            disabled={recalculateBadgesMutation.isPending}
+            className="gap-2"
+          >
+            <Calculator className="h-4 w-4" />
+            {recalculateBadgesMutation.isPending ? "جارٍ الحساب..." : "حساب الشارات"}
+          </Button>
+          <Button variant="outline" onClick={() => refetch()} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            تحديث
+          </Button>
+        </div>
       }
     >
       <AdminSection

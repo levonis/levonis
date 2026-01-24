@@ -1780,6 +1780,33 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_monthly_orders: {
+        Row: {
+          completed_orders: number
+          created_at: string
+          id: string
+          merchant_id: string
+          updated_at: string
+          year_month: string
+        }
+        Insert: {
+          completed_orders?: number
+          created_at?: string
+          id?: string
+          merchant_id: string
+          updated_at?: string
+          year_month: string
+        }
+        Update: {
+          completed_orders?: number
+          created_at?: string
+          id?: string
+          merchant_id?: string
+          updated_at?: string
+          year_month?: string
+        }
+        Relationships: []
+      }
       merchant_products: {
         Row: {
           created_at: string
@@ -4685,6 +4712,10 @@ export type Database = {
         Returns: Json
       }
       auto_confirm_delivery: { Args: never; Returns: undefined }
+      calculate_merchant_badge_tier: {
+        Args: { p_merchant_id: string; p_settings?: Json }
+        Returns: string
+      }
       calculate_user_level: { Args: { points: number }; Returns: string }
       can_read_print_file: { Args: { object_name: string }; Returns: boolean }
       check_username_available: {
