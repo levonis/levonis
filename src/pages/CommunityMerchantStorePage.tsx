@@ -110,7 +110,7 @@ import MerchantBadgesDetailCard from "@/components/community/MerchantBadgesDetai
                 <Store className="h-5 w-5 text-primary" />
               </div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl sm:text-3xl font-black text-primary">{merchantApp.display_name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-black text-primary truncate max-w-[200px] sm:max-w-[300px]" title={merchantApp.display_name}>{merchantApp.display_name}</h1>
                 <MerchantBadgesDisplay 
                   isVerified={merchantApp.is_verified} 
                   badgeTier={(merchantApp.badge_tier || "none") as BadgeTier}
