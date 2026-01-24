@@ -78,9 +78,9 @@ function MerchantDirectoryCardBase({
 
           {/* Name + rating */}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <h3 className="text-[15px] sm:text-base font-extrabold leading-tight truncate max-w-[120px] sm:max-w-[160px]" title={displayName}>
-                {displayName.length > 20 ? `${displayName.slice(0, 20)}...` : displayName}
+            <div className="flex items-center gap-2 min-w-0 flex-wrap">
+              <h3 className="text-[15px] sm:text-base font-extrabold leading-tight" title={displayName}>
+                {displayName}
               </h3>
               <MerchantBadgesDisplay 
                 isVerified={isVerified} 
