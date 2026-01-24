@@ -1693,6 +1693,8 @@ export type Database = {
       merchant_applications: {
         Row: {
           admin_notes: string | null
+          badge_override: boolean
+          badge_tier: string
           bio: string | null
           city: string | null
           created_at: string
@@ -1700,6 +1702,7 @@ export type Database = {
           fee_status: string
           fee_transaction_id: string | null
           id: string
+          is_verified: boolean
           phone_number: string | null
           registration_fee: number
           social_links: Json | null
@@ -1710,6 +1713,8 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          badge_override?: boolean
+          badge_tier?: string
           bio?: string | null
           city?: string | null
           created_at?: string
@@ -1717,6 +1722,7 @@ export type Database = {
           fee_status?: string
           fee_transaction_id?: string | null
           id?: string
+          is_verified?: boolean
           phone_number?: string | null
           registration_fee?: number
           social_links?: Json | null
@@ -1727,6 +1733,8 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          badge_override?: boolean
+          badge_tier?: string
           bio?: string | null
           city?: string | null
           created_at?: string
@@ -1734,6 +1742,7 @@ export type Database = {
           fee_status?: string
           fee_transaction_id?: string | null
           id?: string
+          is_verified?: boolean
           phone_number?: string | null
           registration_fee?: number
           social_links?: Json | null
@@ -1741,6 +1750,33 @@ export type Database = {
           store_image_url?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      merchant_badge_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          setting_key: string
+          setting_value: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key: string
+          setting_value: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          setting_key?: string
+          setting_value?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1805,31 +1841,37 @@ export type Database = {
       }
       merchant_public_profiles: {
         Row: {
+          badge_tier: string
           bio: string | null
           city: string | null
           created_at: string
           display_name: string | null
           id: string
+          is_verified: boolean
           social_links: Json | null
           store_image_url: string | null
           updated_at: string
         }
         Insert: {
+          badge_tier?: string
           bio?: string | null
           city?: string | null
           created_at?: string
           display_name?: string | null
           id: string
+          is_verified?: boolean
           social_links?: Json | null
           store_image_url?: string | null
           updated_at?: string
         }
         Update: {
+          badge_tier?: string
           bio?: string | null
           city?: string | null
           created_at?: string
           display_name?: string | null
           id?: string
+          is_verified?: boolean
           social_links?: Json | null
           store_image_url?: string | null
           updated_at?: string

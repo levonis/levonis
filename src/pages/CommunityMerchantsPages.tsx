@@ -1,25 +1,28 @@
 import { ArrowRight, Boxes } from "lucide-react";
 import { useNavigate } from "react-router-dom";
- import { useQuery } from "@tanstack/react-query";
- import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
- import { Skeleton } from "@/components/ui/skeleton";
+import { Skeleton } from "@/components/ui/skeleton";
 import MerchantDirectoryCard from "@/components/community/MerchantDirectoryCard";
 import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
+import { BadgeTier } from "@/components/community/MerchantBadges";
  
- interface MerchantWithProducts {
-   id: string;
-   display_name: string;
-   store_image_url: string | null;
-   featuredProducts: Array<{
-     id: string;
-     title: string;
-     image_urls: string[] | null;
-     primary_image_index: number;
-   }>;
- }
+interface MerchantWithProducts {
+  id: string;
+  display_name: string;
+  store_image_url: string | null;
+  is_verified: boolean;
+  badge_tier: string;
+  featuredProducts: Array<{
+    id: string;
+    title: string;
+    image_urls: string[] | null;
+    primary_image_index: number;
+  }>;
+}
 
 export default function CommunityMerchantsPages() {
   const navigate = useNavigate();
@@ -29,10 +32,10 @@ export default function CommunityMerchantsPages() {
    const { data: merchants = [], isLoading: merchantsLoading } = useQuery({
      queryKey: ["approved-merchants"],
      queryFn: async () => {
-       const { data, error } = await supabase
-          .from("merchant_public_profiles")
-          .select("id, display_name, store_image_url")
-          .order("created_at", { ascending: false });
+      const { data, error } = await supabase
+         .from("merchant_public_profiles")
+         .select("id, display_name, store_image_url, is_verified, badge_tier")
+         .order("created_at", { ascending: false });
        if (error) throw error;
        return data || [];
      },
@@ -124,17 +127,19 @@ export default function CommunityMerchantsPages() {
         ) : (
            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
              {merchantsWithProducts.map((merchant) => (
-               <MerchantDirectoryCard
-                 key={merchant.id}
-                 id={merchant.id}
-                 displayName={merchant.display_name}
-                 storeImageUrl={merchant.store_image_url}
-                 stats={ratingsMap.get(merchant.id) || null}
-                 featuredProducts={merchant.featuredProducts}
-                 onOpenStore={() => navigate(`/store/${merchant.id}`)}
-                  isAdmin={isAdmin}
-                  onAdminManage={() => navigate(ADMIN_ROUTES.communityMerchants)}
-               />
+              <MerchantDirectoryCard
+                  key={merchant.id}
+                  id={merchant.id}
+                  displayName={merchant.display_name}
+                  storeImageUrl={merchant.store_image_url}
+                  isVerified={merchant.is_verified}
+                  badgeTier={(merchant.badge_tier || "none") as BadgeTier}
+                  stats={ratingsMap.get(merchant.id) || null}
+                  featuredProducts={merchant.featuredProducts}
+                  onOpenStore={() => navigate(`/store/${merchant.id}`)}
+                   isAdmin={isAdmin}
+                   onAdminManage={() => navigate(ADMIN_ROUTES.communityMerchants)}
+                />
              ))}
            </div>
         )}

@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import MerchantBadgesEditor from "@/components/admin/MerchantBadgesEditor";
+import { MerchantBadgesDisplay, BadgeTier } from "@/components/community/MerchantBadges";
 
 const rowSchema = z.object({
   id: z.string().uuid(),
@@ -29,6 +31,9 @@ const rowSchema = z.object({
   status: z.string(),
   admin_notes: z.string().nullable().optional(),
   created_at: z.string(),
+  is_verified: z.boolean().default(false),
+  badge_tier: z.string().default("none"),
+  badge_override: z.boolean().default(false),
 });
 
 type Row = z.infer<typeof rowSchema>;
@@ -42,6 +47,9 @@ export default function AdminCommunityMerchants() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<Row | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
+  const [isVerified, setIsVerified] = useState(false);
+  const [badgeTier, setBadgeTier] = useState<BadgeTier>("none");
+  const [badgeOverride, setBadgeOverride] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["admin-merchant-applications", status, q],
@@ -49,7 +57,7 @@ export default function AdminCommunityMerchants() {
       let query = supabase
         .from("merchant_applications")
         .select(
-          "id, user_id, display_name, phone_number, city, bio, store_image_url, social_links, status, admin_notes, created_at"
+          "id, user_id, display_name, phone_number, city, bio, store_image_url, social_links, status, admin_notes, created_at, is_verified, badge_tier, badge_override"
         )
         .order("created_at", { ascending: false });
 
@@ -100,17 +108,49 @@ export default function AdminCommunityMerchants() {
   }, [rows]);
 
   const updateMutation = useMutation({
-    mutationFn: async (payload: { id: string; status: string; admin_notes?: string | null }) => {
+    mutationFn: async (payload: { 
+      id: string; 
+      status: string; 
+      admin_notes?: string | null;
+      is_verified?: boolean;
+      badge_tier?: string;
+      badge_override?: boolean;
+    }) => {
       const { error } = await supabase
         .from("merchant_applications")
-        .update({ status: payload.status, admin_notes: payload.admin_notes ?? null })
+        .update({ 
+          status: payload.status, 
+          admin_notes: payload.admin_notes ?? null,
+          is_verified: payload.is_verified ?? false,
+          badge_tier: payload.badge_tier ?? "none",
+          badge_override: payload.badge_override ?? false,
+        })
         .eq("id", payload.id);
       if (error) throw error;
+
+      // Also update the public profile if approved
+      if (payload.status === "approved") {
+        const { data: app } = await supabase
+          .from("merchant_applications")
+          .select("user_id")
+          .eq("id", payload.id)
+          .single();
+        
+        if (app?.user_id) {
+          await supabase
+            .from("merchant_public_profiles")
+            .update({
+              is_verified: payload.is_verified ?? false,
+              badge_tier: payload.badge_tier ?? "none",
+            })
+            .eq("id", app.user_id);
+        }
+      }
       return true;
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
-      toast({ title: "تم تحديث الحالة" });
+      toast({ title: "تم تحديث البيانات" });
       setOpen(false);
     },
     onError: (err: any) => {
@@ -192,6 +232,11 @@ export default function AdminCommunityMerchants() {
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-bold truncate">{r.display_name ?? "(بدون اسم)"}</p>
+                      <MerchantBadgesDisplay 
+                        isVerified={r.is_verified} 
+                        badgeTier={(r.badge_tier || "none") as BadgeTier} 
+                        size="sm"
+                      />
                       <Badge variant="outline" className="text-xs">
                         {r.status}
                       </Badge>
@@ -231,6 +276,9 @@ export default function AdminCommunityMerchants() {
                   onClick={() => {
                     setActive(r);
                     setAdminNotes(r.admin_notes ?? "");
+                    setIsVerified(r.is_verified ?? false);
+                    setBadgeTier((r.badge_tier || "none") as BadgeTier);
+                    setBadgeOverride(r.badge_override ?? false);
                     setOpen(true);
                   }}
                   className="shrink-0"
@@ -336,6 +384,20 @@ export default function AdminCommunityMerchants() {
                 </div>
               </div>
 
+              {/* Badges Editor */}
+              <div className="rounded-xl border border-border bg-card p-3">
+                <div className="text-sm font-semibold text-foreground mb-3">شارات التاجر</div>
+                <MerchantBadgesEditor
+                  isVerified={isVerified}
+                  badgeTier={badgeTier}
+                  badgeOverride={badgeOverride}
+                  onVerifiedChange={setIsVerified}
+                  onBadgeTierChange={setBadgeTier}
+                  onBadgeOverrideChange={setBadgeOverride}
+                  disabled={updateMutation.isPending}
+                />
+              </div>
+
               <div className="rounded-xl border border-border bg-card p-3">
                 <div className="text-sm font-semibold text-foreground">ملاحظات الإدارة</div>
                 <Textarea
@@ -351,7 +413,14 @@ export default function AdminCommunityMerchants() {
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => active && updateMutation.mutate({ id: active.id, status: "rejected", admin_notes: adminNotes || null })}
+              onClick={() => active && updateMutation.mutate({ 
+                id: active.id, 
+                status: "rejected", 
+                admin_notes: adminNotes || null,
+                is_verified: isVerified,
+                badge_tier: badgeTier,
+                badge_override: badgeOverride,
+              })}
               disabled={!active || updateMutation.isPending}
               className="gap-2"
             >
@@ -359,7 +428,14 @@ export default function AdminCommunityMerchants() {
               رفض
             </Button>
             <Button
-              onClick={() => active && updateMutation.mutate({ id: active.id, status: "approved", admin_notes: adminNotes || null })}
+              onClick={() => active && updateMutation.mutate({ 
+                id: active.id, 
+                status: "approved", 
+                admin_notes: adminNotes || null,
+                is_verified: isVerified,
+                badge_tier: badgeTier,
+                badge_override: badgeOverride,
+              })}
               disabled={!active || updateMutation.isPending}
               className="gap-2"
             >
