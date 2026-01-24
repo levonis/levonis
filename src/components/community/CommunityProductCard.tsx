@@ -107,8 +107,8 @@ function CommunityProductCardBase({
               ) : (
                 <div className="h-5 w-5 rounded-full bg-muted border border-border" />
               )}
-              <span className="text-[11px] text-muted-foreground truncate max-w-[9rem]">
-                {merchantName}
+              <span className="text-[11px] text-muted-foreground truncate max-w-[80px] sm:max-w-[100px]" title={merchantName}>
+                {merchantName.length > 15 ? `${merchantName.slice(0, 15)}...` : merchantName}
               </span>
             </div>
           ) : null}
