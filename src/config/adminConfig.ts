@@ -41,6 +41,7 @@ export const ADMIN_ROUTES = {
   printerProtection: `${ADMIN_BASE_PATH}/printer-protection`,
   shippingSettings: `${ADMIN_BASE_PATH}/shipping-settings`,
   communityMerchants: `${ADMIN_BASE_PATH}/community-merchants`,
+  badgeSettings: `${ADMIN_BASE_PATH}/badge-settings`,
 } as const;
 
 // Helper to check if a path is an admin path
