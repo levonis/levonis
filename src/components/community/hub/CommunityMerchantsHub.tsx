@@ -9,6 +9,7 @@ import { useAutoFetchUntil } from "@/components/community/hub/useAutoFetchUntil"
 import MerchantDirectoryCard from "@/components/community/MerchantDirectoryCard";
 import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
+import { BadgeTier } from "@/components/community/MerchantBadges";
 
 type Props = {
   mode: "preview" | "hub";
@@ -19,6 +20,8 @@ type MerchantRow = {
   id: string;
   display_name: string;
   store_image_url: string | null;
+  is_verified: boolean;
+  badge_tier: string;
 };
 
 type FeaturedProductRow = {
@@ -44,7 +47,7 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
       const to = from + chunkSize - 1;
       const { data, error } = await supabase
         .from("merchant_public_profiles")
-        .select("id, display_name, store_image_url")
+        .select("id, display_name, store_image_url, is_verified, badge_tier")
         .order("created_at", { ascending: false })
         .range(from, to);
 
@@ -154,6 +157,8 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
             id={m.id}
             displayName={m.display_name}
             storeImageUrl={m.store_image_url}
+            isVerified={m.is_verified}
+            badgeTier={(m.badge_tier || "none") as BadgeTier}
             stats={ratingsByMerchant.get(m.id) || null}
             featuredProducts={productsByMerchant.get(m.id) || []}
             onOpenStore={() => onOpenStore(m.id)}

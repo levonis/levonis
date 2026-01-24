@@ -1,8 +1,9 @@
 import { memo } from "react";
-import { MessageCircle, Settings, ShieldCheck, Star, Store } from "lucide-react";
+import { MessageCircle, Settings, Star, Store } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { MerchantBadgesDisplay, BadgeTier } from "./MerchantBadges";
 
 type FeaturedProduct = {
   id: string;
@@ -21,6 +22,8 @@ type Props = {
   displayName: string;
   storeImageUrl?: string | null;
   featured?: boolean;
+  isVerified?: boolean;
+  badgeTier?: BadgeTier;
   stats?: RatingStats;
   featuredProducts?: FeaturedProduct[];
   onOpenStore: () => void;
@@ -33,6 +36,8 @@ function MerchantDirectoryCardBase({
   displayName,
   storeImageUrl,
   featured,
+  isVerified = false,
+  badgeTier = "none",
   stats,
   featuredProducts = [],
   onOpenStore,
@@ -77,12 +82,16 @@ function MerchantDirectoryCardBase({
               <h3 className="text-[15px] sm:text-base font-extrabold leading-tight whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
                 {displayName}
               </h3>
-              {featured ? (
+              <MerchantBadgesDisplay 
+                isVerified={isVerified} 
+                badgeTier={badgeTier} 
+                size="sm" 
+              />
+              {featured && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/20 px-2 py-0.5 text-[10px] font-bold text-foreground shrink-0">
-                  <ShieldCheck className="h-3 w-3 text-primary" />
                   مميز
                 </span>
-              ) : null}
+              )}
             </div>
             <div className="mt-1 flex items-center gap-2">
               {hasRatings ? (
