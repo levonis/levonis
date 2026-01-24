@@ -1,15 +1,17 @@
- import { useState } from "react";
- import { useNavigate, useParams } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Store, Facebook, Instagram, ArrowRight, Clock, BadgePercent, Play } from "lucide-react";
- import { supabase } from "@/integrations/supabase/client";
- import { Button } from "@/components/ui/button";
- import { Card, CardContent } from "@/components/ui/card";
- import { Skeleton } from "@/components/ui/skeleton";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
- import { Label } from "@/components/ui/label";
- import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay";
+import { MerchantBadgesDisplay, BadgeTier } from "@/components/community/MerchantBadges";
+import MerchantBadgesDetailCard from "@/components/community/MerchantBadgesDetailCard";
  
  interface MerchantProduct {
    id: string;
@@ -34,10 +36,10 @@ import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay
      queryKey: ["merchant-store", merchantId],
      enabled: !!merchantId,
      queryFn: async () => {
-       const { data, error } = await supabase
-          .from("merchant_public_profiles")
-          .select("id, display_name, bio, store_image_url, social_links")
-          .eq("id", merchantId!)
+      const { data, error } = await supabase
+         .from("merchant_public_profiles")
+         .select("id, display_name, bio, store_image_url, social_links, is_verified, badge_tier")
+         .eq("id", merchantId!)
          .maybeSingle();
        if (error) throw error;
        return data;
@@ -102,13 +104,20 @@ import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay
    return (
      <div className="min-h-screen bg-background/95 backdrop-blur-sm">
        <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
-         <header className="mb-6 flex items-center justify-between gap-4">
-           <div className="flex items-center gap-3">
-             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-               <Store className="h-5 w-5 text-primary" />
-             </div>
-             <h1 className="text-2xl sm:text-3xl font-black text-primary">{merchantApp.display_name}</h1>
-           </div>
+          <header className="mb-6 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                <Store className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl sm:text-3xl font-black text-primary">{merchantApp.display_name}</h1>
+                <MerchantBadgesDisplay 
+                  isVerified={merchantApp.is_verified} 
+                  badgeTier={(merchantApp.badge_tier || "none") as BadgeTier}
+                  size="md"
+                />
+              </div>
+            </div>
            <Button variant="outline" onClick={() => navigate("/community")}>
              <ArrowRight className="ml-2 h-4 w-4" />
              رجوع
@@ -170,17 +179,26 @@ import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay
                </div>
              </div>
            </CardContent>
-         </Card>
- 
-         <div className="border-t border-border my-6" />
- 
-        {/* Ratings Section */}
-        <div className="mb-6">
-          <h2 className="text-lg font-bold text-primary mb-3">التقييمات</h2>
-          <MerchantRatingsDisplay merchantId={merchantId!} />
-        </div>
+          </Card>
 
-        <div className="border-t border-border my-6" />
+          {/* Badges Detail Card */}
+          {(merchantApp.is_verified || (merchantApp.badge_tier && merchantApp.badge_tier !== "none")) && (
+            <MerchantBadgesDetailCard 
+              isVerified={merchantApp.is_verified} 
+              badgeTier={(merchantApp.badge_tier || "none") as BadgeTier}
+              className="mb-6"
+            />
+          )}
+
+          <div className="border-t border-border my-6" />
+ 
+         {/* Ratings Section */}
+         <div className="mb-6">
+           <h2 className="text-lg font-bold text-primary mb-3">التقييمات</h2>
+           <MerchantRatingsDisplay merchantId={merchantId!} />
+         </div>
+
+         <div className="border-t border-border my-6" />
 
          {/* Products section */}
          <div className="mb-4">
