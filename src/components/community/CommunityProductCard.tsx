@@ -2,6 +2,7 @@ import { memo } from "react";
 import { MessageCircle, Store, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 
 type Props = {
   title: string;
@@ -9,6 +10,7 @@ type Props = {
   imageUrl?: string | null;
   merchantName?: string;
   merchantImageUrl?: string | null;
+  merchantFrameUrl?: string | null;
   onOpenStore: () => void;
   /** Opens the product detail modal */
   onProductClick?: () => void;
@@ -22,6 +24,7 @@ function CommunityProductCardBase({
   imageUrl,
   merchantName,
   merchantImageUrl,
+  merchantFrameUrl,
   onOpenStore,
   onProductClick,
   onContact,
@@ -104,18 +107,11 @@ function CommunityProductCardBase({
 
           {merchantName ? (
             <div className="flex items-center gap-1.5 min-w-0">
-              {merchantImageUrl ? (
-                <img
-                  src={merchantImageUrl}
-                  alt={merchantName}
-                  loading="lazy"
-                  className="h-5 w-5 rounded-full object-cover border border-primary/20"
-                />
-              ) : (
-                <div className="levo-icon-frame h-5 w-5 rounded-full">
-                  <Store className="h-2.5 w-2.5 text-primary/60" />
-                </div>
-              )}
+              <AvatarWithFrame
+                imageUrl={merchantImageUrl}
+                frameUrl={merchantFrameUrl}
+                size="xs"
+              />
               <span className="text-[11px] text-muted-foreground truncate max-w-[80px]" title={merchantName}>
                 {merchantName}
               </span>

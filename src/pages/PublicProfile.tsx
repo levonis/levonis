@@ -11,6 +11,7 @@ import { formatDate } from '@/lib/utils';
 import LevelBadge from '@/components/LevelBadge';
 import ReputationBar from '@/components/reputation/ReputationBar';
 import { useUserPrintReputation } from '@/hooks/useUserPrintReputation';
+import AvatarWithFrame from '@/components/merchant/AvatarWithFrame';
 
 const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -32,6 +33,37 @@ const PublicProfile = () => {
       return data;
     },
     enabled: !!userId,
+  });
+
+  // Check if user is a merchant and get their frame
+  const { data: merchantData } = useQuery({
+    queryKey: ['public-profile-merchant', userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data, error } = await supabase
+        .from('merchant_public_profiles')
+        .select('id, display_name, store_image_url, selected_frame_id, is_verified, badge_tier')
+        .eq('id', userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch frame if merchant has one
+  const { data: selectedFrame } = useQuery({
+    queryKey: ['profile-frame', merchantData?.selected_frame_id],
+    enabled: !!merchantData?.selected_frame_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('avatar_frames')
+        .select('id, image_url')
+        .eq('id', merchantData!.selected_frame_id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
   });
 
   // NOTE: تم حذف سوق المستعمل بالكامل، لذلك صفحة الملف العام تعرض بيانات المستخدم الأساسية فقط.
@@ -106,12 +138,22 @@ const PublicProfile = () => {
         <Card className="glass-effect border-border/50 mb-6">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-              <Avatar className="h-24 w-24 ring-4 ring-primary/20">
-                <AvatarImage src={profile.avatar_url || undefined} />
-                <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                  {profile.username?.[0] || profile.full_name?.[0] || 'م'}
-                </AvatarFallback>
-              </Avatar>
+              {/* Use AvatarWithFrame for merchants, regular Avatar for others */}
+              {merchantData ? (
+                <AvatarWithFrame
+                  imageUrl={merchantData.store_image_url || profile.avatar_url}
+                  frameUrl={selectedFrame?.image_url}
+                  size="lg"
+                  animated
+                />
+              ) : (
+                <Avatar className="h-24 w-24 ring-4 ring-primary/20">
+                  <AvatarImage src={profile.avatar_url || undefined} />
+                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                    {profile.username?.[0] || profile.full_name?.[0] || 'م'}
+                  </AvatarFallback>
+                </Avatar>
+              )}
 
               <div className="flex-1 text-center sm:text-right">
                 <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
