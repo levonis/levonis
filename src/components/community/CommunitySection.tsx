@@ -1,18 +1,40 @@
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { CommunityCustomerActionsInline } from '@/components/community/CommunityCustomerStrip';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
 import AnimatedDivider from '@/components/ui/animated-divider';
 
-const ListingConversations = lazy(() => import('@/components/marketplace/ListingConversations'));
+const MerchantDashboardWidgets = lazy(() => import('@/components/merchant/MerchantDashboardWidgets'));
 
 interface CommunitySectionProps {
   noFrame?: boolean;
 }
 
 export default function CommunitySection({ noFrame = false }: CommunitySectionProps) {
+  const { user } = useAuth();
+
+  const { data: merchantApp } = useQuery({
+    queryKey: ["merchant-status", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("merchant_applications")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .eq("status", "approved")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
+  const isMerchant = useMemo(() => !!merchantApp, [merchantApp]);
+
   const sectionClass = noFrame 
     ? "container mx-auto px-0" 
     : "levo-section-frame container mx-auto px-0";
@@ -38,44 +60,32 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       </div>
 
-      {/* Title and actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <Link to="/community" className="inline-block">
-            <h2 className="text-xl sm:text-2xl font-black text-primary hover:opacity-90 transition-opacity">
-              مجتمع ليفو
-            </h2>
-          </Link>
-          <Link to="/community" className="inline-block">
-            <p className="text-xs sm:text-sm text-muted-foreground hover:text-foreground/70 transition-colors">
-              المحادثات والتواصل داخل المجتمع
-            </p>
-          </Link>
-        </div>
-
-        {/* Action buttons */}
-        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
-          <Suspense fallback={null}>
-            <ListingConversations>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-10 w-full levo-action-frame border-0"
-              >
-                المحادثات
-              </Button>
-            </ListingConversations>
-          </Suspense>
-
-          <CommunityCustomerActionsInline mode="items" />
-        </div>
+      {/* Title */}
+      <div className="mb-4">
+        <Link to="/community" className="inline-block">
+          <h2 className="text-xl sm:text-2xl font-black text-primary hover:opacity-90 transition-opacity">
+            مجتمع ليفو
+          </h2>
+        </Link>
+        <Link to="/community" className="inline-block">
+          <p className="text-xs sm:text-sm text-muted-foreground hover:text-foreground/70 transition-colors">
+            {isMerchant ? "لوحة تحكم التاجر" : "المحادثات والتواصل داخل المجتمع"}
+          </p>
+        </Link>
       </div>
 
-      {/* Divider */}
-      <AnimatedDivider className="mt-5 mb-3 opacity-80" />
+      {/* Merchant Dashboard Widgets */}
+      {isMerchant && user?.id && (
+        <>
+          <Suspense fallback={<div className="h-40 animate-pulse bg-muted/30 rounded-xl" />}>
+            <MerchantDashboardWidgets merchantId={user.id} />
+          </Suspense>
+          <AnimatedDivider className="mt-5 mb-3 opacity-80" />
+        </>
+      )}
 
       {/* Explore tabs */}
-      <div className="mt-6">
+      <div className={isMerchant ? "mt-4" : "mt-6"}>
         <CommunityExploreStrip />
       </div>
     </section>

@@ -7,6 +7,7 @@ import {
   Search,
   Settings,
   Store,
+  Package,
   Users,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -109,38 +110,73 @@ const CommunityTopBar = memo(() => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="icon"
-              className="rounded-full"
-              aria-label="المحادثات"
-              onClick={() => navigate("/community/messages")}
-            >
-              <MessageCircle className="h-4 w-4" />
-            </Button>
+            {/* For merchants: Settings, Orders, Store, Messages */}
+            {isMerchant ? (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label="الإعدادات"
+                  onClick={() => navigate("/profile/settings")}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
 
-            {isMerchant && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-full"
-                aria-label="إدارة المتجر"
-                onClick={() => navigate("/community/merchant/store")}
-              >
-                <Store className="h-4 w-4" />
-              </Button>
-            )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label="الطلبات"
+                  onClick={() => navigate("/community/merchant/orders")}
+                >
+                  <Package className="h-4 w-4" />
+                </Button>
 
-            {isCommunityRoot && (
-              <Button
-                variant={tab === "merchants" ? "default" : "outline"}
-                size="icon"
-                className="rounded-full"
-                aria-label="صفحات التجار"
-                onClick={() => navigate("/community?tab=merchants", { replace: false })}
-              >
-                <Boxes className="h-4 w-4" />
-              </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label="إدارة المتجر"
+                  onClick={() => navigate("/community/merchant/store")}
+                >
+                  <Store className="h-4 w-4" />
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label="المحادثات"
+                  onClick={() => navigate("/community/messages")}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label="المحادثات"
+                  onClick={() => navigate("/community/messages")}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                </Button>
+
+                {isCommunityRoot && (
+                  <Button
+                    variant={tab === "merchants" ? "default" : "outline"}
+                    size="icon"
+                    className="rounded-full"
+                    aria-label="صفحات التجار"
+                    onClick={() => navigate("/community?tab=merchants", { replace: false })}
+                  >
+                    <Boxes className="h-4 w-4" />
+                  </Button>
+                )}
+              </>
             )}
 
             {isAdmin && (
