@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Store, Facebook, Instagram, ArrowRight, Clock, BadgePercent, Play } from "lucide-react";
+import { Store, Facebook, Instagram, ArrowRight, Clock, BadgePercent, Play, MessageCircle, Link as LinkIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import MerchantRatingsDisplay from "@/components/merchant/MerchantRatingsDisplay";
 import { MerchantBadgesDisplay, BadgeTier } from "@/components/community/MerchantBadges";
 import MerchantBadgesDetailCard from "@/components/community/MerchantBadgesDetailCard";
+import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
  
  interface MerchantProduct {
    id: string;
@@ -28,9 +31,12 @@ import MerchantBadgesDetailCard from "@/components/community/MerchantBadgesDetai
  export default function CommunityMerchantStorePage() {
    const navigate = useNavigate();
    const { merchantId } = useParams<{ merchantId: string }>();
-    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-    const [selectedProduct, setSelectedProduct] = useState<MerchantProduct | null>(null);
-    const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+   const { user } = useAuth();
+   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+   const [selectedProduct, setSelectedProduct] = useState<MerchantProduct | null>(null);
+   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
+   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+   const [includeProductLink, setIncludeProductLink] = useState(true);
  
    const { data: merchantApp, isLoading: appLoading } = useQuery({
      queryKey: ["merchant-store", merchantId],
@@ -64,8 +70,33 @@ import MerchantBadgesDetailCard from "@/components/community/MerchantBadgesDetai
  
    const handleOpenDetail = (product: MerchantProduct) => {
      setSelectedProduct(product);
-      setActiveMediaIndex(product.primary_image_index || 0);
+     setActiveMediaIndex(product.primary_image_index || 0);
      setDetailDialogOpen(true);
+   };
+
+   const handleContactMerchant = () => {
+     if (!user) {
+       navigate("/auth");
+       return;
+     }
+     setMessageDialogOpen(true);
+   };
+
+   const handleStartConversation = () => {
+     // Build the message with optional product link
+     const productUrl = selectedProduct 
+       ? `${window.location.origin}/store/${merchantId}?product=${selectedProduct.id}`
+       : null;
+     
+     // Navigate to messages with conversation context
+     const params = new URLSearchParams();
+     params.set("merchant_id", merchantId!);
+     if (includeProductLink && selectedProduct) {
+       params.set("product_title", selectedProduct.title);
+       params.set("product_url", productUrl!);
+     }
+     
+     navigate(`/community/messages?${params.toString()}`);
    };
  
    const socialLinks = merchantApp?.social_links as { facebook?: string; instagram?: string } | undefined;
@@ -376,9 +407,92 @@ import MerchantBadgesDetailCard from "@/components/community/MerchantBadgesDetai
                         </p>
                       </div>
                     )}
+
+                    {/* Contact Button */}
+                    <Button
+                      className="w-full gap-2"
+                      onClick={handleContactMerchant}
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      تواصل مع التاجر
+                    </Button>
                   </div>
                 </div>
              )}
+           </DialogContent>
+         </Dialog>
+
+         {/* Message Dialog */}
+         <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
+           <DialogContent className="sm:max-w-md">
+             <DialogHeader>
+               <DialogTitle>مراسلة التاجر</DialogTitle>
+               <DialogDescription>
+                 سيتم فتح محادثة جديدة مع {merchantApp?.display_name}
+               </DialogDescription>
+             </DialogHeader>
+
+             <div className="space-y-4">
+               {selectedProduct && (
+                 <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/20 border border-border">
+                   <div className="h-12 w-12 rounded-lg overflow-hidden bg-muted/30 shrink-0">
+                     {selectedProduct.image_urls?.[0] ? (
+                       <img
+                         src={selectedProduct.image_urls[0]}
+                         alt={selectedProduct.title}
+                         className="h-full w-full object-cover"
+                       />
+                     ) : (
+                       <div className="h-full w-full flex items-center justify-center">
+                         <Store className="h-5 w-5 text-muted-foreground" />
+                       </div>
+                     )}
+                   </div>
+                   <div className="flex-1 min-w-0">
+                     <p className="text-sm font-medium line-clamp-1">{selectedProduct.title}</p>
+                     {selectedProduct.price_iqd && (
+                       <p className="text-xs text-primary font-bold mt-0.5">
+                         {selectedProduct.price_iqd.toLocaleString()} د.ع
+                       </p>
+                     )}
+                   </div>
+                 </div>
+               )}
+
+               <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+                 <Checkbox
+                   id="include-link"
+                   checked={includeProductLink}
+                   onCheckedChange={(checked) => setIncludeProductLink(!!checked)}
+                 />
+                 <label htmlFor="include-link" className="text-sm cursor-pointer flex-1">
+                   <div className="flex items-center gap-2">
+                     <LinkIcon className="h-4 w-4 text-primary" />
+                     <span>إرسال رابط المنتج تلقائياً</span>
+                   </div>
+                   <p className="text-xs text-muted-foreground mt-0.5">
+                     سيتم إرفاق رابط المنتج في بداية المحادثة
+                   </p>
+                 </label>
+               </div>
+
+               <div className="flex gap-2">
+                 <Button
+                   variant="outline"
+                   className="flex-1"
+                   onClick={() => setMessageDialogOpen(false)}
+                 >
+                   إلغاء
+                 </Button>
+                 <Button
+                   className="flex-1 gap-2"
+                   onClick={handleStartConversation}
+                 >
+                   <MessageCircle className="h-4 w-4" />
+                   بدء المحادثة
+                 </Button>
+               </div>
+             </div>
            </DialogContent>
          </Dialog>
        </main>
