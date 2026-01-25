@@ -17,7 +17,8 @@ interface AvatarWithFrameProps {
   isUser?: boolean;
 }
 
-const frameSizeClasses = {
+// The frame IS the border - these are the total sizes
+const containerSizeClasses = {
   xs: "h-10 w-10",
   sm: "h-14 w-14",
   md: "h-20 w-20",
@@ -25,12 +26,13 @@ const frameSizeClasses = {
   xl: "h-36 w-36",
 };
 
+// Avatar is slightly smaller to fit inside the frame
 const avatarSizeClasses = {
-  xs: "h-7 w-7",
-  sm: "h-10 w-10",
-  md: "h-14 w-14",
-  lg: "h-20 w-20",
-  xl: "h-26 w-26",
+  xs: "h-8 w-8",
+  sm: "h-11 w-11",
+  md: "h-16 w-16",
+  lg: "h-22 w-22",
+  xl: "h-28 w-28",
 };
 
 const badgeSizeClasses = {
@@ -56,11 +58,12 @@ function AvatarWithFrameBase({
     : "";
 
   const FallbackIcon = isUser ? User : Store;
+  const hasFrame = !!frameUrl;
 
   return (
-    <div className={`relative flex items-center justify-center ${frameSizeClasses[size]}`}>
-      {/* Animated Frame with multiple animation types */}
-      {frameUrl && (
+    <div className={`relative flex items-center justify-center ${containerSizeClasses[size]}`}>
+      {/* Frame as the border - positioned to perfectly wrap the avatar */}
+      {hasFrame && (
         <img
           src={frameUrl}
           alt="Frame"
@@ -71,9 +74,11 @@ function AvatarWithFrameBase({
         />
       )}
 
-      {/* Avatar (Circular) */}
+      {/* Avatar (Circular) - no border when frame exists */}
       <div
-        className={`${avatarSizeClasses[size]} rounded-full overflow-hidden border-2 border-border bg-muted/30 z-0 flex items-center justify-center`}
+        className={`${avatarSizeClasses[size]} rounded-full overflow-hidden ${
+          hasFrame ? "border-0" : "border-2 border-border"
+        } bg-muted/30 z-0 flex items-center justify-center`}
       >
         {imageUrl ? (
           <img
@@ -96,7 +101,7 @@ function AvatarWithFrameBase({
       )}
 
       {/* Glow effect behind avatar when animated */}
-      {animated && frameUrl && (
+      {animated && hasFrame && (
         <div 
           className="absolute inset-0 rounded-full animate-avatar-frame-glow opacity-50 -z-10"
           style={{
