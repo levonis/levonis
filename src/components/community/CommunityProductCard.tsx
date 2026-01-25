@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { MessageCircle, Store } from "lucide-react";
+import { MessageCircle, Store, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -10,6 +10,8 @@ type Props = {
   merchantName?: string;
   merchantImageUrl?: string | null;
   onOpenStore: () => void;
+  /** Opens the product detail modal */
+  onProductClick?: () => void;
   /** Optional: if you already have a chat action elsewhere */
   onContact?: () => void;
 };
@@ -21,6 +23,7 @@ function CommunityProductCardBase({
   merchantName,
   merchantImageUrl,
   onOpenStore,
+  onProductClick,
   onContact,
 }: Props) {
   return (
@@ -28,9 +31,9 @@ function CommunityProductCardBase({
       className="levo-card-frame group w-full min-w-0 cursor-pointer"
       role="button"
       tabIndex={0}
-      onClick={onOpenStore}
+      onClick={onProductClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter" || e.key === " ") onOpenStore();
+        if (e.key === "Enter" || e.key === " ") onProductClick?.();
       }}
     >
       {/* Image */}
@@ -67,21 +70,22 @@ function CommunityProductCardBase({
             <Store className="h-4 w-4" />
           </Button>
 
-          <Button
-            type="button"
-            variant="secondary"
-            size="icon"
-            className="levo-action-frame h-9 w-9 border-0"
-            disabled={!onContact}
-            onClick={(e) => {
-              e.stopPropagation();
-              onContact?.();
-            }}
-            aria-label="تواصل"
-            title="تواصل"
-          >
-            <MessageCircle className="h-4 w-4" />
-          </Button>
+          {onProductClick && (
+            <Button
+              type="button"
+              variant="secondary"
+              size="icon"
+              className="levo-action-frame h-9 w-9 border-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                onProductClick();
+              }}
+              aria-label="عرض التفاصيل"
+              title="عرض التفاصيل"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       </div>
 
