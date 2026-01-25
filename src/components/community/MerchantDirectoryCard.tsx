@@ -131,14 +131,14 @@ function MerchantDirectoryCardBase({
             })}
           </div>
 
-          {/* Actions (icon-only) */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Actions (icon-only) - smaller on mobile */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {isAdmin && onAdminManage ? (
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-2xl"
+                className="h-7 w-7 sm:h-9 sm:w-9 rounded-xl sm:rounded-2xl"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAdminManage();
@@ -146,7 +146,7 @@ function MerchantDirectoryCardBase({
                 aria-label="إدارة التجار"
                 title="إدارة التجار"
               >
-                <Settings className="h-4.5 w-4.5" />
+                <Settings className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
               </Button>
             ) : null}
 
@@ -154,7 +154,7 @@ function MerchantDirectoryCardBase({
               type="button"
               variant="secondary"
               size="icon"
-              className="h-9 w-9 rounded-2xl"
+              className="h-7 w-7 sm:h-9 sm:w-9 rounded-xl sm:rounded-2xl"
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenStore();
@@ -162,14 +162,14 @@ function MerchantDirectoryCardBase({
               aria-label="زيارة المتجر"
               title="زيارة المتجر"
             >
-              <Store className="h-4.5 w-4.5" />
+              <Store className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
             </Button>
 
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="h-9 w-9 rounded-2xl"
+              className="h-7 w-7 sm:h-9 sm:w-9 rounded-xl sm:rounded-2xl"
               disabled={!onContact}
               onClick={(e) => {
                 e.stopPropagation();
@@ -178,7 +178,7 @@ function MerchantDirectoryCardBase({
               aria-label="تواصل"
               title="تواصل"
             >
-              <MessageCircle className="h-4.5 w-4.5" />
+              <MessageCircle className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
             </Button>
           </div>
         </div>
