@@ -47,6 +47,7 @@ import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useUserPrintReputation } from '@/hooks/useUserPrintReputation';
+import AvatarWithFrame from '@/components/merchant/AvatarWithFrame';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -139,15 +140,49 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     queryFn: async () => {
       if (!conversations?.length) return {};
       const userIds = [...new Set(conversations.flatMap(c => [c.buyer_id, c.seller_id]))];
+      
+      // First get profiles
       const { data: profilesData } = await supabase
         .from('profiles')
         .select('id, full_name, username, avatar_url, phone_number')
         .in('id', userIds);
       
+      // Then check if any are merchants and get their frames
+      const { data: merchantProfiles } = await supabase
+        .from('merchant_public_profiles')
+        .select('id, display_name, store_image_url, selected_frame_id')
+        .in('id', userIds);
+      
+      // Get all frame IDs from merchants
+      const frameIds = merchantProfiles?.map(m => m.selected_frame_id).filter(Boolean) as string[] || [];
+      
+      // Fetch frames
+      let framesMap: Record<string, string> = {};
+      if (frameIds.length > 0) {
+        const { data: framesData } = await supabase
+          .from('avatar_frames')
+          .select('id, image_url')
+          .in('id', frameIds);
+        framesData?.forEach(f => {
+          framesMap[f.id] = f.image_url;
+        });
+      }
+      
       const result: Record<string, any> = {};
+      
+      // Add profiles with frame URLs
       profilesData?.forEach(p => {
-        result[p.id] = { ...p };
+        const merchantData = merchantProfiles?.find(m => m.id === p.id);
+        const frameId = merchantData?.selected_frame_id;
+        result[p.id] = { 
+          ...p,
+          // Use merchant store image if available, otherwise profile avatar
+          avatar_url: merchantData?.store_image_url || p.avatar_url,
+          display_name: merchantData?.display_name,
+          selected_frame_url: frameId ? framesMap[frameId] : null 
+        };
       });
+      
       return result;
     },
     enabled: !!conversations?.length,
@@ -656,19 +691,13 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           isActive && "bg-muted"
                         )}
                       >
-                        {/* Avatar */}
+                        {/* Avatar with Frame */}
                         <div className="relative flex-shrink-0">
-                          {convOtherUser?.avatar_url ? (
-                            <img
-                              src={convOtherUser.avatar_url}
-                              alt=""
-                              className="w-12 h-12 rounded-full object-cover ring-2 ring-border"
-                            />
-                          ) : (
-                            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-border">
-                              <User className="w-5 h-5 text-primary" />
-                            </div>
-                          )}
+                          <AvatarWithFrame
+                            imageUrl={convOtherUser?.avatar_url}
+                            frameUrl={(convOtherUser as any)?.selected_frame_url}
+                            size="sm"
+                          />
                           {conv.status === 'disputed' && (
                             <div className="absolute -bottom-1 -right-1 bg-destructive rounded-full p-0.5">
                               <AlertTriangle className="w-3 h-3 text-white" />
@@ -758,7 +787,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       <ArrowRight className="w-5 h-5" />
                     </button>
                     
-                    {/* Avatar - Clickable */}
+                    {/* Avatar with Frame - Clickable */}
                     <button 
                       onClick={() => {
                         if (otherUserId) {
@@ -768,17 +797,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       }}
                       className="relative flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
                     >
-                      {otherUser?.avatar_url ? (
-                        <img 
-                          src={otherUser.avatar_url} 
-                          alt="" 
-                          className="w-10 h-10 rounded-full object-cover ring-2 ring-border"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center ring-2 ring-border">
-                          <User className="w-5 h-5 text-primary" />
-                        </div>
-                      )}
+                      <AvatarWithFrame
+                        imageUrl={otherUser?.avatar_url}
+                        frameUrl={(otherUser as any)?.selected_frame_url}
+                        size="xs"
+                      />
                     </button>
 
                     {/* User Info - Clickable */}

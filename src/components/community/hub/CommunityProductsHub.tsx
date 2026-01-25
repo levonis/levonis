@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,18 +63,69 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
     staleTime: mode === "hub" ? 60_000 : 5 * 60_000,
   });
 
+  const loaded = useMemo(() => (query.data?.pages || []).flat(), [query.data]);
+  const merchantIds = useMemo(() => [...new Set(loaded.map(p => p.merchant_id))], [loaded]);
+
+  // Fetch merchant profiles with frames
+  const { data: merchantProfiles = [] } = useQuery({
+    queryKey: ["products-merchants", merchantIds],
+    enabled: merchantIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_public_profiles")
+        .select("id, display_name, store_image_url, selected_frame_id")
+        .in("id", merchantIds);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 60_000,
+  });
+
+  // Fetch frames
+  const frameIds = useMemo(() => 
+    merchantProfiles.map(m => m.selected_frame_id).filter(Boolean) as string[],
+    [merchantProfiles]
+  );
+
+  const { data: framesData = [] } = useQuery({
+    queryKey: ["products-frames", frameIds],
+    enabled: frameIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("avatar_frames")
+        .select("id, image_url")
+        .in("id", frameIds);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const merchantsMap = useMemo(() => {
+    const map = new Map<string, { name: string; imageUrl: string | null; frameUrl: string | null }>();
+    const framesMap = new Map(framesData.map(f => [f.id, f.image_url]));
+    
+    for (const m of merchantProfiles) {
+      map.set(m.id, {
+        name: m.display_name,
+        imageUrl: m.store_image_url,
+        frameUrl: m.selected_frame_id ? framesMap.get(m.selected_frame_id) || null : null,
+      });
+    }
+    return map;
+  }, [merchantProfiles, framesData]);
+
   const items = useMemo(() => {
-    const flat = (query.data?.pages || []).flat();
-    if (mode !== "preview") return flat;
+    if (mode !== "preview") return loaded;
 
     // Preview mode: pick a pseudo-random sample from what we loaded (no heavy random SQL)
-    const shuffled = [...flat];
+    const shuffled = [...loaded];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled.slice(0, 6);
-  }, [query.data, mode]);
+  }, [loaded, mode]);
 
   useAutoFetchUntil({
     count: (query.data?.pages || []).flat().length,
@@ -115,12 +166,16 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         {items.map((p) => {
           const mainImg = pickMainImage(p);
+          const merchant = merchantsMap.get(p.merchant_id);
           return (
             <CommunityProductCard
               key={p.id}
               title={p.title}
               priceIqd={p.price_iqd}
               imageUrl={mainImg}
+              merchantName={merchant?.name}
+              merchantImageUrl={merchant?.imageUrl}
+              merchantFrameUrl={merchant?.frameUrl}
               onOpenStore={() => onOpenStore(p.merchant_id)}
               onProductClick={() => handleProductClick(p)}
             />
