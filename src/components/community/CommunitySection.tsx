@@ -1,14 +1,17 @@
 import { Suspense, lazy } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { CommunityCustomerActionsInline } from '@/components/community/CommunityCustomerStrip';
 import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
+import CommunityNavGrid from '@/components/community/CommunityNavGrid';
 import AnimatedDivider from '@/components/ui/animated-divider';
 
 const ListingConversations = lazy(() => import('@/components/marketplace/ListingConversations'));
 
 export default function CommunitySection() {
+  const location = useLocation();
+  const isCommunityPage = location.pathname === '/community';
+
   return (
     <section className="container mx-auto px-4 py-10">
       {/* Section header pill - refined with subtle glow */}
@@ -30,43 +33,57 @@ export default function CommunitySection() {
         </div>
       </div>
 
-      {/* Title + actions strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="space-y-1">
-          <Link to="/community" className="inline-block">
-            <h2 className="text-xl sm:text-2xl font-black text-primary hover:opacity-90 transition-opacity">
-              مجتمع ليفو
-            </h2>
-          </Link>
-          <Link to="/community" className="inline-block">
-            <p className="text-xs sm:text-sm text-muted-foreground hover:text-foreground/70 transition-colors">
-              المحادثات والتواصل داخل المجتمع
-            </p>
-          </Link>
-        </div>
+      {/* Title */}
+      <div className="text-center mb-6">
+        <Link to="/community" className="inline-block">
+          <h2 className="text-xl sm:text-2xl font-black text-primary hover:opacity-90 transition-opacity">
+            مجتمع ليفو
+          </h2>
+        </Link>
+        <Link to="/community" className="inline-block">
+          <p className="text-xs sm:text-sm text-muted-foreground hover:text-foreground/70 transition-colors mt-1">
+            تصفح المنتجات، تواصل مع التجار، وأرسل طلباتك
+          </p>
+        </Link>
+      </div>
 
-        {/* Actions grid - refined spacing */}
-        <div className="grid w-full grid-cols-2 gap-2.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2">
+      {/* Navigation Grid - Only on /community page */}
+      {isCommunityPage && (
+        <>
+          <CommunityNavGrid className="mb-6" />
+          <AnimatedDivider className="my-6 opacity-80" />
+        </>
+      )}
+
+      {/* Quick actions for homepage only */}
+      {!isCommunityPage && (
+        <div className="flex flex-wrap justify-center gap-2 mb-6">
           <Suspense fallback={null}>
             <ListingConversations>
               <Button
                 size="sm"
                 variant="outline"
-                className="h-10 w-full rounded-xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+                className="h-10 rounded-xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
               >
                 المحادثات
               </Button>
             </ListingConversations>
           </Suspense>
-
-          <CommunityCustomerActionsInline mode="items" />
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-10 rounded-xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+            asChild
+          >
+            <Link to="/community">استكشاف المجتمع</Link>
+          </Button>
         </div>
-      </div>
+      )}
 
-      <AnimatedDivider className="mt-6 mb-4 opacity-80" />
+      <AnimatedDivider className="mt-4 mb-6 opacity-80" />
 
       {/* Explore tabs */}
-      <div className="mt-6">
+      <div className="mt-4">
         <CommunityExploreStrip />
       </div>
     </section>
