@@ -293,10 +293,6 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
                     <User className="ml-2 h-3.5 w-3.5" />
                     <span>معلومات الحساب</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
-                    <User className="ml-2 h-3.5 w-3.5" />
-                    <span>الملف</span>
-                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/my-requests')}>
                     <FileText className="ml-2 h-3.5 w-3.5" />
                     <span>طلباتي المخصصة</span>
@@ -308,10 +304,6 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
                   <DropdownMenuItem onClick={() => navigate('/my-orders')}>
                     <Package className="ml-2 h-3.5 w-3.5" />
                     <span>طلباتي</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/community')}>
-                    <Users className="ml-2 h-3.5 w-3.5" />
-                    <span>المجتمع</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-3.5 w-3.5" />
@@ -326,12 +318,6 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
                       </span>
                     )}
                   </DropdownMenuItem>
-                  {showPointsMenu && (
-                    <DropdownMenuItem onClick={() => navigate('/my-points')}>
-                      <Coins className="ml-2 h-3.5 w-3.5" />
-                      <span>النقاط</span>
-                    </DropdownMenuItem>
-                  )}
                   <DropdownMenuItem onClick={() => navigate('/notifications')}>
                     <Bell className="ml-2 h-3.5 w-3.5" />
                     <span>الإشعارات</span>
