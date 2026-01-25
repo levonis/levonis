@@ -50,7 +50,7 @@ function MerchantDirectoryCardBase({
 
   return (
     <Card
-      className="border-border bg-card overflow-hidden group w-full min-w-0"
+      className="border-border/50 bg-gradient-to-b from-card to-card/80 overflow-hidden group w-full min-w-0 shadow-sm hover:shadow-md transition-shadow duration-200"
       role="button"
       tabIndex={0}
       onClick={onOpenStore}
@@ -60,8 +60,8 @@ function MerchantDirectoryCardBase({
     >
       <CardContent className="p-3 sm:p-4">
         <div className="flex items-center gap-3 min-w-0">
-          {/* Store image (fixed, no layout jumps) */}
-          <div className="relative h-16 w-16 shrink-0 rounded-2xl bg-muted/20 border border-border overflow-hidden">
+          {/* Store image - refined with subtle border */}
+          <div className="relative h-16 w-16 shrink-0 rounded-2xl bg-muted/10 border border-border/40 overflow-hidden shadow-sm">
             {storeImageUrl ? (
               <img
                 src={storeImageUrl}
@@ -112,7 +112,7 @@ function MerchantDirectoryCardBase({
                   className={hideOnSm ? "hidden lg:block" : "block"}
                   title={p.title}
                 >
-                  <div className="h-14 w-14 rounded-2xl bg-muted/20 overflow-hidden border border-border">
+                  <div className="h-14 w-14 rounded-xl bg-muted/10 overflow-hidden border border-border/40 shadow-sm">
                     {mainImg ? (
                       <img
                         src={mainImg}
@@ -191,7 +191,7 @@ function MerchantDirectoryCardBase({
               return (
                 <div
                   key={p.id}
-                  className="aspect-square rounded-2xl bg-muted/20 overflow-hidden border border-border"
+                  className="aspect-square rounded-xl bg-muted/10 overflow-hidden border border-border/40 shadow-sm"
                   title={p.title}
                 >
                   {mainImg ? (
