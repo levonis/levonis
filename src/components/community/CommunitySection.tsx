@@ -8,9 +8,17 @@ import AnimatedDivider from '@/components/ui/animated-divider';
 
 const ListingConversations = lazy(() => import('@/components/marketplace/ListingConversations'));
 
-export default function CommunitySection() {
+interface CommunitySectionProps {
+  noFrame?: boolean;
+}
+
+export default function CommunitySection({ noFrame = false }: CommunitySectionProps) {
+  const sectionClass = noFrame 
+    ? "container mx-auto px-0" 
+    : "levo-section-frame container mx-auto px-0";
+
   return (
-    <section className="levo-section-frame container mx-auto px-0">
+    <section className={sectionClass}>
       {/* Header badge */}
       <div className="relative mb-6">
         <div className="absolute inset-0 flex items-center">
