@@ -78,8 +78,8 @@ function MerchantDirectoryCardBase({
 
           {/* Name + rating */}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 min-w-0 flex-wrap">
-              <h3 className="text-[15px] sm:text-base font-extrabold leading-tight" title={displayName}>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h3 className="text-[15px] sm:text-base font-extrabold leading-tight truncate" title={displayName}>
                 {displayName}
               </h3>
               <MerchantBadgesDisplay 
@@ -88,15 +88,15 @@ function MerchantDirectoryCardBase({
                 size="sm" 
               />
               {featured && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/20 px-2 py-0.5 text-[10px] font-bold text-foreground shrink-0">
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/20 px-1.5 py-0.5 text-[9px] font-bold text-foreground shrink-0">
                   مميز
                 </span>
               )}
             </div>
-            <div className="mt-1 flex items-center gap-1 min-w-0">
-              <Star className="h-4 w-4 fill-primary text-primary" />
-              <span className="text-xs font-bold tabular-nums">{hasRatings ? avg.toFixed(1) : "0.0"}</span>
-              <span className="text-xs text-muted-foreground">({stats?.total_ratings || 0})</span>
+            <div className="mt-0.5 flex items-center gap-1 min-w-0">
+              <Star className="h-3 w-3 fill-primary text-primary" />
+              <span className="text-[10px] font-bold tabular-nums">{hasRatings ? avg.toFixed(1) : "0.0"}</span>
+              <span className="text-[10px] text-muted-foreground">({stats?.total_ratings || 0})</span>
             </div>
           </div>
 
