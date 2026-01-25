@@ -93,16 +93,10 @@ function MerchantDirectoryCardBase({
                 </span>
               )}
             </div>
-            <div className="mt-1 flex items-center gap-2">
-              {hasRatings ? (
-                <div className="flex items-center gap-1 min-w-0">
-                  <Star className="h-4 w-4 fill-primary text-primary" />
-                  <span className="text-xs font-bold tabular-nums">{avg.toFixed(1)}</span>
-                  <span className="text-xs text-muted-foreground">({stats!.total_ratings})</span>
-                </div>
-              ) : (
-                <span className="text-xs text-muted-foreground">لا توجد تقييمات بعد</span>
-              )}
+            <div className="mt-1 flex items-center gap-1 min-w-0">
+              <Star className="h-4 w-4 fill-primary text-primary" />
+              <span className="text-xs font-bold tabular-nums">{hasRatings ? avg.toFixed(1) : "0.0"}</span>
+              <span className="text-xs text-muted-foreground">({stats?.total_ratings || 0})</span>
             </div>
           </div>
 
