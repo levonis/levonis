@@ -10,24 +10,28 @@ const ListingConversations = lazy(() => import('@/components/marketplace/Listing
 
 export default function CommunitySection() {
   return (
-    <section className="container mx-auto px-4 py-10">
+    <section className="levo-section-frame container mx-auto px-0">
+      {/* Header badge */}
       <div className="relative mb-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t-2 border-primary/20" />
+          <div className="w-full border-t border-primary/15" />
         </div>
         <div className="relative flex justify-center">
           <Link
             to="/community"
-            className="bg-background px-6 py-2 flex items-center gap-2 rounded-full border border-primary/30 shadow-sm hover:border-primary/50 transition-colors"
+            className="levo-badge-frame"
             aria-label="الانتقال إلى صفحة مجتمع ليفو"
           >
-            <Users className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium text-primary">مجتمع ليفو</span>
+            <div className="levo-icon-frame h-8 w-8">
+              <Users className="w-4 h-4 text-primary" />
+            </div>
+            <span className="text-sm font-bold text-primary">مجتمع ليفو</span>
           </Link>
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      {/* Title and actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <Link to="/community" className="inline-block">
             <h2 className="text-xl sm:text-2xl font-black text-primary hover:opacity-90 transition-opacity">
@@ -41,29 +45,28 @@ export default function CommunitySection() {
           </Link>
         </div>
 
-        {/* Mobile: 2×2 buttons (chats + 3 actions). Desktop: inline */}
+        {/* Action buttons */}
         <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           <Suspense fallback={null}>
             <ListingConversations>
               <Button
                 size="sm"
                 variant="outline"
-                className="h-10 w-full"
+                className="h-10 w-full levo-action-frame border-0"
               >
                 المحادثات
               </Button>
             </ListingConversations>
           </Suspense>
 
-          {/* actions beside chats */}
           <CommunityCustomerActionsInline mode="items" />
         </div>
       </div>
 
-      {/* subtle animated separator */}
-      <AnimatedDivider className="mt-4 mb-2 opacity-90" />
+      {/* Divider */}
+      <AnimatedDivider className="mt-5 mb-3 opacity-80" />
 
-      {/* Explore tabs (products/requests/merchant pages) */}
+      {/* Explore tabs */}
       <div className="mt-6">
         <CommunityExploreStrip />
       </div>
