@@ -1922,6 +1922,7 @@ export type Database = {
           display_name: string | null
           id: string
           is_verified: boolean
+          selected_frame_id: string | null
           social_links: Json | null
           store_image_url: string | null
           updated_at: string
@@ -1934,6 +1935,7 @@ export type Database = {
           display_name?: string | null
           id: string
           is_verified?: boolean
+          selected_frame_id?: string | null
           social_links?: Json | null
           store_image_url?: string | null
           updated_at?: string
@@ -1946,11 +1948,20 @@ export type Database = {
           display_name?: string | null
           id?: string
           is_verified?: boolean
+          selected_frame_id?: string | null
           social_links?: Json | null
           store_image_url?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "merchant_public_profiles_selected_frame_id_fkey"
+            columns: ["selected_frame_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_frames"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchant_ratings: {
         Row: {

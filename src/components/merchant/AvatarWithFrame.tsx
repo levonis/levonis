@@ -4,23 +4,25 @@ import { Store } from "lucide-react";
 interface AvatarWithFrameProps {
   imageUrl?: string | null;
   frameUrl?: string | null;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   alt?: string;
-  className?: string;
+  animated?: boolean;
 }
 
-const sizeClasses = {
-  sm: "h-12 w-12",
-  md: "h-16 w-16",
-  lg: "h-24 w-24",
-  xl: "h-32 w-32",
-};
-
 const frameSizeClasses = {
+  xs: "h-10 w-10",
   sm: "h-14 w-14",
   md: "h-20 w-20",
   lg: "h-28 w-28",
   xl: "h-36 w-36",
+};
+
+const avatarSizeClasses = {
+  xs: "h-7 w-7",
+  sm: "h-10 w-10",
+  md: "h-14 w-14",
+  lg: "h-20 w-20",
+  xl: "h-26 w-26",
 };
 
 function AvatarWithFrameBase({
@@ -28,24 +30,25 @@ function AvatarWithFrameBase({
   frameUrl,
   size = "md",
   alt = "Avatar",
-  className = "",
+  animated = false,
 }: AvatarWithFrameProps) {
-  const avatarSize = sizeClasses[size];
-  const frameSize = frameSizeClasses[size];
-
   return (
-    <div className={`relative flex items-center justify-center ${frameSizeClasses[size]} ${className}`}>
-      {/* Frame (behind) */}
+    <div className={`relative flex items-center justify-center ${frameSizeClasses[size]}`}>
+      {/* Animated Frame */}
       {frameUrl && (
         <img
           src={frameUrl}
           alt="Frame"
-          className={`absolute inset-0 ${frameSize} pointer-events-none z-10`}
+          className={`absolute inset-0 w-full h-full pointer-events-none z-10 ${
+            animated ? "animate-avatar-frame-glow" : ""
+          }`}
         />
       )}
-      
-      {/* Avatar (center, circular) */}
-      <div className={`${avatarSize} rounded-full overflow-hidden bg-muted/20 border-2 border-border z-0`}>
+
+      {/* Avatar (Circular) */}
+      <div
+        className={`${avatarSizeClasses[size]} rounded-full overflow-hidden border-2 border-border bg-muted/30 z-0 flex items-center justify-center`}
+      >
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -53,9 +56,7 @@ function AvatarWithFrameBase({
             className="h-full w-full object-cover"
           />
         ) : (
-          <div className="h-full w-full flex items-center justify-center bg-muted/30">
-            <Store className="h-1/2 w-1/2 text-muted-foreground" />
-          </div>
+          <Store className="h-1/2 w-1/2 text-muted-foreground" />
         )}
       </div>
     </div>

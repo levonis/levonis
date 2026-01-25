@@ -63,6 +63,7 @@ const AdminShipmentRequests = lazy(() => import("./pages/AdminShipmentRequests")
 const AdminShippingSettings = lazy(() => import("./pages/AdminShippingSettings"));
 const AdminCommunityMerchants = lazy(() => import("./pages/AdminCommunityMerchants"));
 const AdminBadgeSettings = lazy(() => import("./pages/AdminBadgeSettings"));
+const AdminAvatarFrames = lazy(() => import("./pages/AdminAvatarFrames"));
 const CommunityMessages = lazy(() => import("./pages/CommunityMessages"));
   const CommunityCustomer = lazy(() => import("./pages/CommunityCustomer"));
   const CommunityCustomerNewRequest = lazy(() => import("./pages/CommunityCustomerNewRequest"));
@@ -153,6 +154,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/redeemable-products`} element={<AdminRoute><AdminRedeemableProducts /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/cart-requests`} element={<AdminRoute><AdminCartRequests /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/badge-settings`} element={<AdminRoute><AdminBadgeSettings /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/avatar-frames`} element={<AdminRoute><AdminAvatarFrames /></AdminRoute>} />
             
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />

@@ -22,6 +22,7 @@ type MerchantRow = {
   store_image_url: string | null;
   is_verified: boolean;
   badge_tier: string;
+  selected_frame_id: string | null;
 };
 
 type FeaturedProductRow = {
@@ -47,7 +48,7 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
       const to = from + chunkSize - 1;
       const { data, error } = await supabase
         .from("merchant_public_profiles")
-        .select("id, display_name, store_image_url, is_verified, badge_tier")
+        .select("id, display_name, store_image_url, is_verified, badge_tier, selected_frame_id")
         .order("created_at", { ascending: false })
         .range(from, to);
 
@@ -64,6 +65,33 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
   const loaded = useMemo(() => (query.data?.pages || []).flat(), [query.data]);
 
   const merchantIds = useMemo(() => loaded.map((m) => m.id), [loaded]);
+  const frameIds = useMemo(() => 
+    loaded.map((m) => m.selected_frame_id).filter(Boolean) as string[], 
+    [loaded]
+  );
+
+  // Fetch frames for merchants
+  const { data: framesData = [] } = useQuery({
+    queryKey: ["avatar-frames-batch", frameIds],
+    enabled: frameIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("avatar_frames")
+        .select("id, image_url")
+        .in("id", frameIds);
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 5 * 60_000,
+  });
+
+  const frameUrlsMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const f of framesData) {
+      map.set(f.id, f.image_url);
+    }
+    return map;
+  }, [framesData]);
 
   const { data: featuredProducts = [] } = useQuery({
     queryKey: ["community-merchants-featured-products", merchantIds],
@@ -157,6 +185,7 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
             id={m.id}
             displayName={m.display_name}
             storeImageUrl={m.store_image_url}
+            storeFrameUrl={m.selected_frame_id ? frameUrlsMap.get(m.selected_frame_id) : null}
             isVerified={m.is_verified}
             badgeTier={(m.badge_tier || "none") as BadgeTier}
             stats={ratingsByMerchant.get(m.id) || null}
