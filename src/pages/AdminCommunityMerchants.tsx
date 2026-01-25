@@ -179,10 +179,10 @@ export default function AdminCommunityMerchants() {
 
   return (
     <AdminLayout
-      title="طلبات تسجيل التجار"
+      title="إدارة التجار"
       description="مراجعة طلبات التسجيل كتاجر (موافقة/رفض/ملاحظات)"
       icon={<Store className="h-5 w-5" />}
-      backTo={ADMIN_ROUTES.dashboard}
+      backTo={ADMIN_ROUTES.levoCommunity}
       maxWidth="6xl"
       actions={
         <div className="flex items-center gap-2">

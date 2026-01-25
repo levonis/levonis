@@ -180,16 +180,17 @@ export default function CommunityMerchantStorePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/30">
       <main className="container mx-auto px-4 py-8 pt-24 max-w-5xl">
-        {/* Hero Store Header */}
+        {/* Hero Store Header - Redesigned */}
         <Card className="border-border bg-gradient-to-br from-card via-card to-primary/5 mb-6 overflow-hidden relative">
           {/* Decorative Elements */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl" />
+          <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl" />
           
-          <CardContent className="p-6 relative">
-            <div className="flex flex-col sm:flex-row gap-5 items-start">
-              {/* Circular Store Image with Frame */}
-              <div className="shrink-0 relative mx-auto sm:mx-0">
+          <CardContent className="p-6 sm:p-8 relative">
+            {/* Centered Layout */}
+            <div className="flex flex-col items-center text-center">
+              {/* Large Circular Store Image with Animated Frame */}
+              <div className="relative mb-5">
                 <AvatarWithFrame
                   imageUrl={merchantApp.store_image_url}
                   frameUrl={selectedFrame?.image_url}
@@ -200,7 +201,7 @@ export default function CommunityMerchantStorePage() {
                   <Button
                     size="icon"
                     variant="secondary"
-                    className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-lg"
+                    className="absolute -bottom-2 -right-2 h-9 w-9 rounded-full shadow-lg border-2 border-background"
                     onClick={() => setProfileEditorOpen(true)}
                   >
                     <Settings className="h-4 w-4" />
@@ -208,76 +209,77 @@ export default function CommunityMerchantStorePage() {
                 )}
               </div>
 
-              <div className="flex-1 text-center sm:text-right">
-                {/* Store Name & Badges */}
-                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-2 mb-2">
-                  <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-l from-primary to-primary/70 bg-clip-text text-transparent">
-                    {merchantApp.display_name}
-                  </h1>
-                  <CompactBadgesDisplay
-                    isVerified={merchantApp.is_verified}
-                    badgeTier={(merchantApp.badge_tier || "none") as BadgeTier}
-                  />
+              {/* Store Name - Large & Prominent */}
+              <h1 className="text-2xl sm:text-3xl font-black bg-gradient-to-l from-primary to-primary/70 bg-clip-text text-transparent mb-2">
+                {merchantApp.display_name}
+              </h1>
+              
+              {/* Compact Badges - Below Name */}
+              <div className="mb-3">
+                <CompactBadgesDisplay
+                  isVerified={merchantApp.is_verified}
+                  badgeTier={(merchantApp.badge_tier || "none") as BadgeTier}
+                />
+              </div>
+              
+              <p className="text-xs text-muted-foreground mb-4">متجر داخل مجتمع ليفو</p>
+
+              {/* Bio - Centered */}
+              {merchantApp.bio && (
+                <p className="text-sm text-foreground/80 mb-5 whitespace-pre-wrap leading-relaxed max-w-lg">
+                  {merchantApp.bio}
+                </p>
+              )}
+
+              {/* Social Links */}
+              {(socialLinks?.facebook || socialLinks?.instagram) && (
+                <div className="flex gap-2 justify-center mb-5">
+                  {socialLinks.facebook && (
+                    <a
+                      href={socialLinks.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                    >
+                      <Facebook className="h-3.5 w-3.5" />
+                      فيسبوك
+                    </a>
+                  )}
+                  {socialLinks.instagram && (
+                    <a
+                      href={socialLinks.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
+                    >
+                      <Instagram className="h-3.5 w-3.5" />
+                      إنستقرام
+                    </a>
+                  )}
                 </div>
-                
-                <p className="text-xs text-muted-foreground mb-3">متجر داخل مجتمع ليفو</p>
+              )}
 
-                {merchantApp.bio && (
-                  <p className="text-sm text-foreground/80 mb-4 whitespace-pre-wrap leading-relaxed max-w-md">
-                    {merchantApp.bio}
-                  </p>
-                )}
-
-                {/* Social Links */}
-                {(socialLinks?.facebook || socialLinks?.instagram) && (
-                  <div className="flex gap-2 justify-center sm:justify-start mb-4">
-                    {socialLinks.facebook && (
-                      <a
-                        href={socialLinks.facebook}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
-                      >
-                        <Facebook className="h-3.5 w-3.5" />
-                        فيسبوك
-                      </a>
-                    )}
-                    {socialLinks.instagram && (
-                      <a
-                        href={socialLinks.instagram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors"
-                      >
-                        <Instagram className="h-3.5 w-3.5" />
-                        إنستقرام
-                      </a>
-                    )}
-                  </div>
-                )}
-
-                {/* Quick Actions */}
-                <div className="flex gap-2 justify-center sm:justify-start">
-                  <Button
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => {
-                      if (!user) {
-                        navigate("/auth");
-                        return;
-                      }
-                      setSelectedProduct(null);
-                      setMessageDialogOpen(true);
-                    }}
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    تواصل مع التاجر
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={() => navigate("/community")}>
-                    <ArrowRight className="ml-1 h-4 w-4" />
-                    رجوع
-                  </Button>
-                </div>
+              {/* Quick Actions */}
+              <div className="flex gap-2 justify-center">
+                <Button
+                  size="sm"
+                  className="gap-2"
+                  onClick={() => {
+                    if (!user) {
+                      navigate("/auth");
+                      return;
+                    }
+                    setSelectedProduct(null);
+                    setMessageDialogOpen(true);
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  تواصل مع التاجر
+                </Button>
+                <Button variant="outline" size="sm" onClick={() => navigate("/community")}>
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                  رجوع
+                </Button>
               </div>
             </div>
           </CardContent>

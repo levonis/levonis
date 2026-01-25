@@ -64,11 +64,15 @@ const AdminShippingSettings = lazy(() => import("./pages/AdminShippingSettings")
 const AdminCommunityMerchants = lazy(() => import("./pages/AdminCommunityMerchants"));
 const AdminBadgeSettings = lazy(() => import("./pages/AdminBadgeSettings"));
 const AdminAvatarFrames = lazy(() => import("./pages/AdminAvatarFrames"));
+const AdminLevoCommunity = lazy(() => import("./pages/AdminLevoCommunity"));
+const AdminCommunityCustomers = lazy(() => import("./pages/AdminCommunityCustomers"));
+const AdminCommunityComplaints = lazy(() => import("./pages/AdminCommunityComplaints"));
+const AdminCommunityMessages = lazy(() => import("./pages/AdminCommunityMessages"));
 const CommunityMessages = lazy(() => import("./pages/CommunityMessages"));
-  const CommunityCustomer = lazy(() => import("./pages/CommunityCustomer"));
-  const CommunityCustomerNewRequest = lazy(() => import("./pages/CommunityCustomerNewRequest"));
-  const CommunityCustomerRequests = lazy(() => import("./pages/CommunityCustomerRequests"));
-  const CommunityCustomerProfile = lazy(() => import("./pages/CommunityCustomerProfile"));
+const CommunityCustomer = lazy(() => import("./pages/CommunityCustomer"));
+const CommunityCustomerNewRequest = lazy(() => import("./pages/CommunityCustomerNewRequest"));
+const CommunityCustomerRequests = lazy(() => import("./pages/CommunityCustomerRequests"));
+const CommunityCustomerProfile = lazy(() => import("./pages/CommunityCustomerProfile"));
 const CommunityCustomerTrack = lazy(() => import("./pages/CommunityCustomerTrack"));
 const CommunityMerchantsProducts = lazy(() => import("./pages/CommunityMerchantsProducts"));
 const CommunityRequestsBrowse = lazy(() => import("./pages/CommunityRequestsBrowse"));
@@ -150,11 +154,16 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/shipment-requests`} element={<AdminRoute><AdminShipmentRequests /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/offer-purchases`} element={<AdminRoute><AdminOfferPurchases /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/shipping-settings`} element={<AdminRoute><AdminShippingSettings /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/community-merchants`} element={<AdminRoute><AdminCommunityMerchants /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/redeemable-products`} element={<AdminRoute><AdminRedeemableProducts /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/cart-requests`} element={<AdminRoute><AdminCartRequests /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/badge-settings`} element={<AdminRoute><AdminBadgeSettings /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/avatar-frames`} element={<AdminRoute><AdminAvatarFrames /></AdminRoute>} />
+            {/* Levo Community Management */}
+            <Route path={`${ADMIN_BASE_PATH}/levo-community`} element={<AdminRoute><AdminLevoCommunity /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/levo-community/merchants`} element={<AdminRoute><AdminCommunityMerchants /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/levo-community/customers`} element={<AdminRoute><AdminCommunityCustomers /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/levo-community/complaints`} element={<AdminRoute><AdminCommunityComplaints /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/levo-community/messages`} element={<AdminRoute><AdminCommunityMessages /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/levo-community/badge-settings`} element={<AdminRoute><AdminBadgeSettings /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/levo-community/avatar-frames`} element={<AdminRoute><AdminAvatarFrames /></AdminRoute>} />
             
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />

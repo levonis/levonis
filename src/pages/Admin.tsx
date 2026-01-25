@@ -1641,10 +1641,9 @@ const Admin = () => {
                 { icon: TrendingUp, title: 'التحليلات المالية', desc: 'الإيرادات والتكاليف والأرباح', path: ADMIN_ROUTES.financials },
                 { icon: Percent, title: 'رسوم الدفع الجزئي', desc: 'إعداد رسوم دفع ربع المبلغ', path: ADMIN_ROUTES.partialPaymentSettings },
                 { icon: Trophy, title: 'المسابقات والعروض', desc: 'إدارة المسابقات وعروض المنتجات', path: ADMIN_ROUTES.competitions },
-                { icon: Package, title: 'سوق المستعمل', desc: 'إدارة منتجات البائعين', path: ADMIN_ROUTES.marketplace },
                 { icon: Shield, title: 'حماية الطابعات', desc: 'إدارة اشتراكات الحماية', path: ADMIN_ROUTES.printerProtection },
                 { icon: Truck, title: 'إعدادات الشحن', desc: 'أسعار وحساب تكلفة الشحن', path: ADMIN_ROUTES.shippingSettings },
-                { icon: Package, title: 'تسجيل التجار', desc: 'طلبات الانضمام كتاجر', path: ADMIN_ROUTES.communityMerchants },
+                { icon: Sparkles, title: 'مجتمع ليفو', desc: 'إدارة التجار والزبائن والمحادثات', path: ADMIN_ROUTES.levoCommunity },
               ].map((item, idx) => (
                 <button
                   key={idx}

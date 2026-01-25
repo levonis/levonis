@@ -34,14 +34,17 @@ function AvatarWithFrameBase({
 }: AvatarWithFrameProps) {
   return (
     <div className={`relative flex items-center justify-center ${frameSizeClasses[size]}`}>
-      {/* Animated Frame */}
+      {/* Animated Frame with multiple animation types */}
       {frameUrl && (
         <img
           src={frameUrl}
           alt="Frame"
           className={`absolute inset-0 w-full h-full pointer-events-none z-10 ${
-            animated ? "animate-avatar-frame-glow" : ""
+            animated ? "animate-avatar-frame-pulse" : ""
           }`}
+          style={animated ? {
+            filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.6))",
+          } : undefined}
         />
       )}
 
@@ -59,6 +62,16 @@ function AvatarWithFrameBase({
           <Store className="h-1/2 w-1/2 text-muted-foreground" />
         )}
       </div>
+
+      {/* Glow effect behind avatar when animated */}
+      {animated && frameUrl && (
+        <div 
+          className="absolute inset-0 rounded-full animate-avatar-frame-glow opacity-50 -z-10"
+          style={{
+            background: "radial-gradient(circle, hsl(var(--primary) / 0.3) 0%, transparent 70%)",
+          }}
+        />
+      )}
     </div>
   );
 }
