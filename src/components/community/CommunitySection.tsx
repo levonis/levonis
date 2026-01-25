@@ -1,12 +1,8 @@
-import { Suspense, lazy } from 'react';
 import { Link } from 'react-router-dom';
 import { Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { CommunityCustomerActionsInline } from '@/components/community/CommunityCustomerStrip';
+import CommunityQuickActions from '@/components/community/CommunityQuickActions';
 import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
 import AnimatedDivider from '@/components/ui/animated-divider';
-
-const ListingConversations = lazy(() => import('@/components/marketplace/ListingConversations'));
 
 export default function CommunitySection() {
   return (
@@ -30,40 +26,24 @@ export default function CommunitySection() {
         </div>
       </div>
 
-      {/* Title + actions strip */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="space-y-1">
-          <Link to="/community" className="inline-block">
-            <h2 className="text-xl sm:text-2xl font-black text-primary hover:opacity-90 transition-opacity">
-              مجتمع ليفو
-            </h2>
-          </Link>
-          <Link to="/community" className="inline-block">
-            <p className="text-xs sm:text-sm text-muted-foreground hover:text-foreground/70 transition-colors">
-              المحادثات والتواصل داخل المجتمع
-            </p>
-          </Link>
-        </div>
-
-        {/* Actions grid - refined spacing */}
-        <div className="grid w-full grid-cols-2 gap-2.5 sm:flex sm:w-auto sm:flex-wrap sm:items-center sm:gap-2">
-          <Suspense fallback={null}>
-            <ListingConversations>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-10 w-full rounded-xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
-              >
-                المحادثات
-              </Button>
-            </ListingConversations>
-          </Suspense>
-
-          <CommunityCustomerActionsInline mode="items" />
-        </div>
+      {/* Title section */}
+      <div className="text-center mb-6">
+        <Link to="/community" className="inline-block">
+          <h2 className="text-xl sm:text-2xl font-black text-primary hover:opacity-90 transition-opacity">
+            مجتمع ليفو
+          </h2>
+        </Link>
+        <Link to="/community" className="inline-block">
+          <p className="text-xs sm:text-sm text-muted-foreground hover:text-foreground/70 transition-colors mt-1">
+            منصة الطباعة ثلاثية الأبعاد — المحادثات، الطلبات، والتجار
+          </p>
+        </Link>
       </div>
 
-      <AnimatedDivider className="mt-6 mb-4 opacity-80" />
+      {/* New comprehensive quick actions */}
+      <CommunityQuickActions />
+
+      <AnimatedDivider className="mt-8 mb-4 opacity-80" />
 
       {/* Explore tabs */}
       <div className="mt-6">
