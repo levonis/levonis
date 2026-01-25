@@ -36,13 +36,17 @@ export const ADMIN_ROUTES = {
   productOffers: `${ADMIN_BASE_PATH}/product-offers`,
   offerPurchases: `${ADMIN_BASE_PATH}/offer-purchases`,
   ticketBundles: `${ADMIN_BASE_PATH}/ticket-bundles`,
-  marketplace: `${ADMIN_BASE_PATH}/marketplace`,
   shipmentRequests: `${ADMIN_BASE_PATH}/shipment-requests`,
   printerProtection: `${ADMIN_BASE_PATH}/printer-protection`,
   shippingSettings: `${ADMIN_BASE_PATH}/shipping-settings`,
-  communityMerchants: `${ADMIN_BASE_PATH}/community-merchants`,
-  badgeSettings: `${ADMIN_BASE_PATH}/badge-settings`,
-  avatarFrames: `${ADMIN_BASE_PATH}/avatar-frames`,
+  // Levo Community Management
+  levoCommunity: `${ADMIN_BASE_PATH}/levo-community`,
+  communityMerchants: `${ADMIN_BASE_PATH}/levo-community/merchants`,
+  communityCustomers: `${ADMIN_BASE_PATH}/levo-community/customers`,
+  communityComplaints: `${ADMIN_BASE_PATH}/levo-community/complaints`,
+  communityMessages: `${ADMIN_BASE_PATH}/levo-community/messages`,
+  badgeSettings: `${ADMIN_BASE_PATH}/levo-community/badge-settings`,
+  avatarFrames: `${ADMIN_BASE_PATH}/levo-community/avatar-frames`,
 } as const;
 
 // Helper to check if a path is an admin path

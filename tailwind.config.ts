@@ -1,5 +1,7 @@
 import type { Config } from "tailwindcss";
 
+// Avatar frame animation keyframes are defined below in the theme.extend.keyframes section
+
 export default {
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
@@ -103,19 +105,39 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
-        "avatar-frame-glow": {
+"avatar-frame-glow": {
           "0%, 100%": {
-            filter: "drop-shadow(0 0 3px hsl(var(--primary) / 0.5))",
+            transform: "scale(1)",
+            opacity: "0.4",
+          },
+          "50%": {
+            transform: "scale(1.15)",
+            opacity: "0.7",
+          },
+        },
+        "avatar-frame-pulse": {
+          "0%, 100%": {
+            filter: "drop-shadow(0 0 4px hsl(var(--primary) / 0.5)) brightness(1)",
             transform: "scale(1)",
           },
           "50%": {
-            filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.8))",
-            transform: "scale(1.02)",
+            filter: "drop-shadow(0 0 12px hsl(var(--primary) / 0.8)) brightness(1.1)",
+            transform: "scale(1.03)",
           },
         },
         "avatar-frame-rotate": {
           "0%": { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(360deg)" },
+        },
+        "avatar-frame-shimmer": {
+          "0%": { 
+            backgroundPosition: "-200% 0",
+            filter: "drop-shadow(0 0 3px hsl(var(--primary) / 0.4))",
+          },
+          "100%": { 
+            backgroundPosition: "200% 0",
+            filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.6))",
+          },
         },
       },
       animation: {
@@ -123,8 +145,10 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-slow": "pulse-slow 2s ease-in-out infinite",
         shimmer: "shimmer 2s linear infinite",
-        "avatar-frame-glow": "avatar-frame-glow 2.5s ease-in-out infinite",
+        "avatar-frame-glow": "avatar-frame-glow 3s ease-in-out infinite",
+        "avatar-frame-pulse": "avatar-frame-pulse 2.5s ease-in-out infinite",
         "avatar-frame-rotate": "avatar-frame-rotate 20s linear infinite",
+        "avatar-frame-shimmer": "avatar-frame-shimmer 3s linear infinite",
       },
     },
   },
