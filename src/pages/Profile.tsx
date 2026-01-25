@@ -18,6 +18,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import MerchantSignupDialog from "@/components/community/MerchantSignupDialog";
+import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 
 function calcPercent(numer: number, denom: number) {
   if (!Number.isFinite(numer) || !Number.isFinite(denom) || denom <= 0) return null;
@@ -36,10 +37,26 @@ export default function Profile() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("merchant_applications")
-        .select("id, status, display_name, store_image_url")
+        .select("id, status, display_name, store_image_url, selected_frame_id")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Fetch selected frame for merchant
+  const { data: selectedFrame } = useQuery({
+    queryKey: ["merchant-frame", merchantApp?.selected_frame_id],
+    enabled: !!merchantApp?.selected_frame_id,
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("avatar_frames")
+        .select("id, name_ar, image_url")
+        .eq("id", merchantApp!.selected_frame_id!)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -174,12 +191,12 @@ export default function Profile() {
             <CardContent className="p-4 sm:p-5">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-start gap-3 min-w-0">
-                  <Avatar className="h-14 w-14">
-                    <AvatarImage src={merchantApp?.store_image_url || profile?.avatar_url || undefined} />
-                    <AvatarFallback className="text-base bg-primary/10 text-primary">
-                      {(merchantApp?.display_name?.[0] || profile?.username?.[0] || "ت").toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <AvatarWithFrame
+                    imageUrl={merchantApp?.store_image_url || profile?.avatar_url}
+                    frameUrl={selectedFrame?.image_url}
+                    size="sm"
+                    animated
+                  />
 
                   <div className="min-w-0">
                     <h1 className="text-lg font-bold text-foreground truncate">
