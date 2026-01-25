@@ -40,9 +40,11 @@ export const ADMIN_ROUTES = {
   shipmentRequests: `${ADMIN_BASE_PATH}/shipment-requests`,
   printerProtection: `${ADMIN_BASE_PATH}/printer-protection`,
   shippingSettings: `${ADMIN_BASE_PATH}/shipping-settings`,
-  communityMerchants: `${ADMIN_BASE_PATH}/community-merchants`,
-  badgeSettings: `${ADMIN_BASE_PATH}/badge-settings`,
-  avatarFrames: `${ADMIN_BASE_PATH}/avatar-frames`,
+  // مجتمع ليفو - Levo Community
+  community: `${ADMIN_BASE_PATH}/community`,
+  communityMerchants: `${ADMIN_BASE_PATH}/community/merchants`,
+  badgeSettings: `${ADMIN_BASE_PATH}/community/badges`,
+  avatarFrames: `${ADMIN_BASE_PATH}/community/frames`,
 } as const;
 
 // Helper to check if a path is an admin path

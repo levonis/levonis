@@ -61,6 +61,7 @@ const AdminProductOffers = lazy(() => import("./pages/AdminProductOffers"));
 const AdminTicketBundles = lazy(() => import("./pages/AdminTicketBundles"));
 const AdminShipmentRequests = lazy(() => import("./pages/AdminShipmentRequests"));
 const AdminShippingSettings = lazy(() => import("./pages/AdminShippingSettings"));
+const AdminCommunity = lazy(() => import("./pages/AdminCommunity"));
 const AdminCommunityMerchants = lazy(() => import("./pages/AdminCommunityMerchants"));
 const AdminBadgeSettings = lazy(() => import("./pages/AdminBadgeSettings"));
 const AdminAvatarFrames = lazy(() => import("./pages/AdminAvatarFrames"));
@@ -150,11 +151,16 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/shipment-requests`} element={<AdminRoute><AdminShipmentRequests /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/offer-purchases`} element={<AdminRoute><AdminOfferPurchases /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/shipping-settings`} element={<AdminRoute><AdminShippingSettings /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/community-merchants`} element={<AdminRoute><AdminCommunityMerchants /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/redeemable-products`} element={<AdminRoute><AdminRedeemableProducts /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/cart-requests`} element={<AdminRoute><AdminCartRequests /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/badge-settings`} element={<AdminRoute><AdminBadgeSettings /></AdminRoute>} />
-            <Route path={`${ADMIN_BASE_PATH}/avatar-frames`} element={<AdminRoute><AdminAvatarFrames /></AdminRoute>} />
+            {/* Levo Community Admin Section */}
+            <Route path={`${ADMIN_BASE_PATH}/community`} element={<AdminRoute><AdminCommunity /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/community/merchants`} element={<AdminRoute><AdminCommunityMerchants /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/community/badges`} element={<AdminRoute><AdminBadgeSettings /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/community/frames`} element={<AdminRoute><AdminAvatarFrames /></AdminRoute>} />
+            
+            {/* Redirect old community paths */}
+            <Route path={`${ADMIN_BASE_PATH}/community-merchants`} element={<Navigate to={`${ADMIN_BASE_PATH}/community/merchants`} replace />} />
+            <Route path={`${ADMIN_BASE_PATH}/badge-settings`} element={<Navigate to={`${ADMIN_BASE_PATH}/community/badges`} replace />} />
+            <Route path={`${ADMIN_BASE_PATH}/avatar-frames`} element={<Navigate to={`${ADMIN_BASE_PATH}/community/frames`} replace />} />
             
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />

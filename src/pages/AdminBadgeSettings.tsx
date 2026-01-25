@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import AdminLayout from "@/components/admin/AdminLayout";
+import { ADMIN_ROUTES } from "@/config/adminConfig";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -136,6 +137,7 @@ export default function AdminBadgeSettings() {
     <AdminLayout
       title="إعدادات الشارات"
       description="تعديل قيم عتبات شارات التجار (فضي، ذهبي، ماسي، زمردة)"
+      backTo={ADMIN_ROUTES.community}
     >
       <div className="space-y-6">
         {/* Info Card */}
