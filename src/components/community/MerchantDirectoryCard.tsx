@@ -45,8 +45,8 @@ function MerchantDirectoryCardBase({
   isAdmin,
   onAdminManage,
 }: Props) {
-  const hasRatings = !!stats && typeof stats.total_ratings === 'number' && stats.total_ratings > 0;
-  const avg = hasRatings ? Number(stats.average_rating) : 0;
+  const hasRatings = !!stats && stats.total_ratings > 0;
+  const avg = hasRatings ? Number(stats!.average_rating) : 0;
 
   return (
     <Card
