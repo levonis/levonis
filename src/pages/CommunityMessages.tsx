@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { MessageSquare, Users } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ListingConversations } from '@/components/marketplace/ListingConversations';
 
 export default function CommunityMessages() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [open, setOpen] = useState(true);
   const [loading, setLoading] = useState(true);
+  
+  // Get auto_open param for automatic conversation opening
+  const autoOpenConversationId = searchParams.get('auto_open');
 
   useEffect(() => {
     const t = window.setTimeout(() => setLoading(false), 250);
@@ -24,7 +28,7 @@ export default function CommunityMessages() {
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-primary">محادثات المجتمع</h1>
-              <p className="text-sm text-muted-foreground">نفس واجهة المحادثات الحالية داخل المجتمع</p>
+              <p className="text-sm text-muted-foreground">تواصل مع التجار والعملاء</p>
             </div>
           </div>
 
@@ -54,6 +58,7 @@ export default function CommunityMessages() {
           externalOpen={open}
           onExternalOpenChange={setOpen}
           onClose={() => navigate('/community')}
+          autoOpenConversationId={autoOpenConversationId}
         >
           <span className="sr-only">فتح المحادثات</span>
         </ListingConversations>

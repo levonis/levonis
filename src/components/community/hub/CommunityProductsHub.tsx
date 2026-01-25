@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFetchUntil } from "@/components/community/hub/useAutoFetchUntil";
 import CommunityProductCard from "@/components/community/CommunityProductCard";
+import CommunityProductDetailModal from "@/components/community/CommunityProductDetailModal";
 
 type Props = {
   mode: "preview" | "hub";
@@ -15,9 +17,13 @@ type Props = {
 type ProductRow = {
   id: string;
   title: string;
+  description: string | null;
   price_iqd: number | null;
+  original_price_iqd: number | null;
   image_urls: string[] | null;
+  video_url: string | null;
   primary_image_index: number;
+  estimated_days: number | null;
   merchant_id: string;
 };
 
@@ -26,9 +32,12 @@ function pickMainImage(p: ProductRow) {
 }
 
 export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
+  const navigate = useNavigate();
   const chunkSize = mode === "hub" ? 4 : 12;
   const initialTarget = mode === "hub" ? 50 : 6;
   const [targetCount, setTargetCount] = useState(initialTarget);
+  const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const query = useInfiniteQuery({
     queryKey: ["community-products", { mode }],
@@ -39,7 +48,7 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
 
       const { data, error } = await supabase
         .from("merchant_products")
-        .select("id, title, price_iqd, image_urls, primary_image_index, merchant_id")
+        .select("id, title, description, price_iqd, original_price_iqd, image_urls, video_url, primary_image_index, estimated_days, merchant_id")
         .eq("is_active", true)
         .order("created_at", { ascending: false })
         .range(from, to);
@@ -76,6 +85,11 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
     delayMs: 120,
   });
 
+  const handleProductClick = (product: ProductRow) => {
+    setSelectedProduct(product);
+    setDetailOpen(true);
+  };
+
   if (query.isLoading) {
     return (
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
@@ -108,6 +122,7 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
               priceIqd={p.price_iqd}
               imageUrl={mainImg}
               onOpenStore={() => onOpenStore(p.merchant_id)}
+              onProductClick={() => handleProductClick(p)}
             />
           );
         })}
@@ -125,6 +140,13 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
           </Button>
         </div>
       )}
+
+      {/* Product Detail Modal */}
+      <CommunityProductDetailModal
+        product={selectedProduct}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </div>
   );
 }
