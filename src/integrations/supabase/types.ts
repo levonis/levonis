@@ -1548,6 +1548,8 @@ export type Database = {
           duration_days: number | null
           early_access: boolean | null
           exclusive_products: boolean | null
+          frame_animation: string | null
+          frame_url: string | null
           free_shipping: boolean | null
           free_shipping_min_order: number | null
           icon: string | null
@@ -1576,6 +1578,8 @@ export type Database = {
           duration_days?: number | null
           early_access?: boolean | null
           exclusive_products?: boolean | null
+          frame_animation?: string | null
+          frame_url?: string | null
           free_shipping?: boolean | null
           free_shipping_min_order?: number | null
           icon?: string | null
@@ -1604,6 +1608,8 @@ export type Database = {
           duration_days?: number | null
           early_access?: boolean | null
           exclusive_products?: boolean | null
+          frame_animation?: string | null
+          frame_url?: string | null
           free_shipping?: boolean | null
           free_shipping_min_order?: number | null
           icon?: string | null
@@ -3295,6 +3301,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          active_card_frame_url: string | null
           avatar_url: string | null
           ban_reason: string | null
           bio: string | null
@@ -3310,11 +3317,13 @@ export type Database = {
           phone_number: string | null
           phone_verification_status: string
           phone_verified: boolean
+          selected_frame_id: string | null
           telegram_chat_id: string | null
           username: string
           warnings_count: number | null
         }
         Insert: {
+          active_card_frame_url?: string | null
           avatar_url?: string | null
           ban_reason?: string | null
           bio?: string | null
@@ -3330,11 +3339,13 @@ export type Database = {
           phone_number?: string | null
           phone_verification_status?: string
           phone_verified?: boolean
+          selected_frame_id?: string | null
           telegram_chat_id?: string | null
           username: string
           warnings_count?: number | null
         }
         Update: {
+          active_card_frame_url?: string | null
           avatar_url?: string | null
           ban_reason?: string | null
           bio?: string | null
@@ -3350,11 +3361,20 @@ export type Database = {
           phone_number?: string | null
           phone_verification_status?: string
           phone_verified?: boolean
+          selected_frame_id?: string | null
           telegram_chat_id?: string | null
           username?: string
           warnings_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_selected_frame_id_fkey"
+            columns: ["selected_frame_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_frames"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       protection_plans: {
         Row: {
@@ -4877,6 +4897,15 @@ export type Database = {
         | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       generate_ticket_number: { Args: { comp_id: string }; Returns: string }
+      get_user_card_frame: {
+        Args: { p_user_id: string }
+        Returns: {
+          card_color: string
+          card_name: string
+          frame_animation: string
+          frame_url: string
+        }[]
+      }
       get_user_delivered_printers: {
         Args: { p_user_id: string }
         Returns: {

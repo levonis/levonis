@@ -1,11 +1,13 @@
 import { useEffect, useMemo } from "react";
 import { Camera, Loader2, Mail, User } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import LevelBadge from "@/components/LevelBadge";
+import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
+import { useUserCardFrame } from "@/hooks/useUserCardFrame";
+import type { FrameAnimationType } from "@/components/merchant/AvatarWithFrame";
 
 type ProfileState = {
   full_name: string;
@@ -45,6 +47,9 @@ export default function UserInfoProfileCard({
   }, [objectUrl]);
 
   const previewSrc = objectUrl || profile.avatar_url || undefined;
+  
+  // Get user's active card frame
+  const { data: cardFrame } = useUserCardFrame(userId);
 
   return (
     <Card className="glass-effect border-border/50">
@@ -58,15 +63,17 @@ export default function UserInfoProfileCard({
 
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
-          {/* Avatar */}
           <div className="flex flex-col items-center gap-4 pb-6 border-b border-border/30">
             <div className="flex flex-col items-center gap-2">
-              <Avatar className="h-24 w-24">
-                <AvatarImage src={previewSrc} />
-                <AvatarFallback className="text-2xl">
-                  {profile.username?.[0] || profile.full_name?.[0] || "م"}
-                </AvatarFallback>
-              </Avatar>
+              <AvatarWithFrame
+                imageUrl={previewSrc}
+                frameUrl={cardFrame?.frame_url}
+                size="lg"
+                animated={!!cardFrame?.frame_url}
+                animationType={cardFrame?.frame_animation as FrameAnimationType}
+                badgeColor={cardFrame?.card_color}
+                isUser
+              />
               {userId && <LevelBadge userId={userId} size="lg" />}
             </div>
 

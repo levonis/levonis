@@ -12,13 +12,14 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserPrintReputation } from "@/hooks/useUserPrintReputation";
+import { useUserCardFrame } from "@/hooks/useUserCardFrame";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import MerchantSignupDialog from "@/components/community/MerchantSignupDialog";
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
+import type { FrameAnimationType } from "@/components/merchant/AvatarWithFrame";
 
 function calcPercent(numer: number, denom: number) {
   if (!Number.isFinite(numer) || !Number.isFinite(denom) || denom <= 0) return null;
@@ -80,6 +81,9 @@ export default function Profile() {
   });
 
   const { data: rep } = useUserPrintReputation(user?.id);
+  
+  // Get user's active card frame
+  const { data: cardFrame } = useUserCardFrame(user?.id);
 
   const { data: lastRequest } = useQuery({
     queryKey: ["my-last-print-request", user?.id],
@@ -261,12 +265,15 @@ export default function Profile() {
           <CardContent className="p-4 sm:p-5">
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-start gap-3 min-w-0">
-                <Avatar className="h-14 w-14">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
-                  <AvatarFallback className="text-base bg-primary/10 text-primary">
-                    {(profile?.username?.[0] || profile?.full_name?.[0] || "م").toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <AvatarWithFrame
+                  imageUrl={profile?.avatar_url}
+                  frameUrl={cardFrame?.frame_url}
+                  size="sm"
+                  animated={!!cardFrame?.frame_url}
+                  animationType={cardFrame?.frame_animation as FrameAnimationType}
+                  badgeColor={cardFrame?.card_color}
+                  isUser
+                />
 
                 <div className="min-w-0">
                   <h1 className="text-lg font-bold text-foreground truncate">

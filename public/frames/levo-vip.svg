@@ -1,0 +1,41 @@
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="vipGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700"/>
+      <stop offset="25%" style="stop-color:#15552c"/>
+      <stop offset="50%" style="stop-color:#FFD700"/>
+      <stop offset="75%" style="stop-color:#15552c"/>
+      <stop offset="100%" style="stop-color:#FFD700"/>
+    </linearGradient>
+    <linearGradient id="vipGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700"/>
+      <stop offset="100%" style="stop-color:#15552c"/>
+    </linearGradient>
+    <filter id="vipGlow" x="-35%" y="-35%" width="170%" height="170%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="emeraldGlow">
+      <feGaussianBlur stdDeviation="2"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <!-- Outer ring -->
+  <circle cx="50" cy="50" r="46" fill="none" stroke="url(#vipGrad1)" stroke-width="4" filter="url(#vipGlow)"/>
+  <!-- Inner ring -->
+  <circle cx="50" cy="50" r="40" fill="none" stroke="#15552c" stroke-width="2" opacity="0.7"/>
+  <!-- Crown on top -->
+  <g fill="url(#vipGrad2)" filter="url(#emeraldGlow)" transform="translate(32, -4)">
+    <path d="M0,14 L6,0 L12,10 L18,0 L24,10 L30,0 L36,14 L34,16 L2,16 Z"/>
+    <circle cx="6" cy="0" r="3" fill="#FFD700"/>
+    <circle cx="18" cy="0" r="3" fill="#FFD700"/>
+    <circle cx="30" cy="0" r="3" fill="#FFD700"/>
+  </g>
+  <!-- Corner emeralds -->
+  <g fill="#15552c" filter="url(#emeraldGlow)">
+    <circle cx="15" cy="15" r="4"/>
+    <circle cx="85" cy="15" r="4"/>
+    <circle cx="15" cy="85" r="4"/>
+    <circle cx="85" cy="85" r="4"/>
+  </g>
+</svg>
