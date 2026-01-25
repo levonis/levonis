@@ -139,6 +139,51 @@ export default {
             filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.6))",
           },
         },
+        "avatar-frame-rainbow": {
+          "0%": {
+            filter: "drop-shadow(0 0 8px hsl(44 39% 60% / 0.8)) hue-rotate(0deg)",
+          },
+          "25%": {
+            filter: "drop-shadow(0 0 12px hsl(160 46% 40% / 0.9)) hue-rotate(30deg)",
+          },
+          "50%": {
+            filter: "drop-shadow(0 0 16px hsl(44 39% 60% / 1)) hue-rotate(0deg)",
+          },
+          "75%": {
+            filter: "drop-shadow(0 0 12px hsl(160 46% 40% / 0.9)) hue-rotate(-30deg)",
+          },
+          "100%": {
+            filter: "drop-shadow(0 0 8px hsl(44 39% 60% / 0.8)) hue-rotate(0deg)",
+          },
+        },
+        "avatar-frame-glow-cyan": {
+          "0%, 100%": {
+            filter: "drop-shadow(0 0 6px hsl(187 100% 50% / 0.6)) brightness(1)",
+            transform: "scale(1)",
+          },
+          "50%": {
+            filter: "drop-shadow(0 0 16px hsl(187 100% 50% / 0.9)) brightness(1.15)",
+            transform: "scale(1.02)",
+          },
+        },
+        "avatar-frame-sparkle": {
+          "0%, 100%": {
+            filter: "drop-shadow(0 0 4px hsl(var(--primary) / 0.5))",
+            opacity: "1",
+          },
+          "25%": {
+            filter: "drop-shadow(0 0 10px hsl(var(--primary) / 0.8))",
+            opacity: "0.9",
+          },
+          "50%": {
+            filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.6))",
+            opacity: "1",
+          },
+          "75%": {
+            filter: "drop-shadow(0 0 12px hsl(var(--primary) / 0.9))",
+            opacity: "0.95",
+          },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -149,6 +194,9 @@ export default {
         "avatar-frame-pulse": "avatar-frame-pulse 2.5s ease-in-out infinite",
         "avatar-frame-rotate": "avatar-frame-rotate 20s linear infinite",
         "avatar-frame-shimmer": "avatar-frame-shimmer 3s linear infinite",
+        "avatar-frame-rainbow": "avatar-frame-rainbow 4s ease-in-out infinite",
+        "avatar-frame-glow-cyan": "avatar-frame-glow-cyan 2s ease-in-out infinite",
+        "avatar-frame-sparkle": "avatar-frame-sparkle 1.5s ease-in-out infinite",
       },
     },
   },

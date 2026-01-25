@@ -11,7 +11,9 @@ import { formatDate } from '@/lib/utils';
 import LevelBadge from '@/components/LevelBadge';
 import ReputationBar from '@/components/reputation/ReputationBar';
 import { useUserPrintReputation } from '@/hooks/useUserPrintReputation';
+import { useUserCardFrame } from '@/hooks/useUserCardFrame';
 import AvatarWithFrame from '@/components/merchant/AvatarWithFrame';
+import type { FrameAnimationType } from '@/components/merchant/AvatarWithFrame';
 
 const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -69,6 +71,9 @@ const PublicProfile = () => {
   // NOTE: تم حذف سوق المستعمل بالكامل، لذلك صفحة الملف العام تعرض بيانات المستخدم الأساسية فقط.
 
   const { data: rep } = useUserPrintReputation(userId);
+  
+  // Get user's active card frame
+  const { data: cardFrame } = useUserCardFrame(userId);
 
   const metrics = useMemo(() => {
     const submitted = rep?.customer_requests_made ?? 0;
@@ -138,13 +143,23 @@ const PublicProfile = () => {
         <Card className="glass-effect border-border/50 mb-6">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
-              {/* Use AvatarWithFrame for merchants, regular Avatar for others */}
+              {/* Use AvatarWithFrame for all users - merchants get their frame, card holders get card frame */}
               {merchantData ? (
                 <AvatarWithFrame
                   imageUrl={merchantData.store_image_url || profile.avatar_url}
                   frameUrl={selectedFrame?.image_url}
                   size="lg"
                   animated
+                />
+              ) : cardFrame?.frame_url ? (
+                <AvatarWithFrame
+                  imageUrl={profile.avatar_url}
+                  frameUrl={cardFrame.frame_url}
+                  size="lg"
+                  animated
+                  animationType={cardFrame.frame_animation as FrameAnimationType}
+                  badgeColor={cardFrame.card_color}
+                  isUser
                 />
               ) : (
                 <Avatar className="h-24 w-24 ring-4 ring-primary/20">
