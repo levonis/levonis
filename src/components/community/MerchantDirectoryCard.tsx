@@ -78,8 +78,8 @@ function MerchantDirectoryCardBase({
 
           {/* Name + rating */}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <h3 className="text-[15px] sm:text-base font-extrabold leading-tight whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h3 className="text-[15px] sm:text-base font-extrabold leading-tight" title={displayName}>
                 {displayName}
               </h3>
               <MerchantBadgesDisplay 
@@ -88,21 +88,15 @@ function MerchantDirectoryCardBase({
                 size="sm" 
               />
               {featured && (
-                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/20 px-2 py-0.5 text-[10px] font-bold text-foreground shrink-0">
+                <span className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/20 px-1.5 py-0.5 text-[9px] font-bold text-foreground shrink-0">
                   مميز
                 </span>
               )}
             </div>
-            <div className="mt-1 flex items-center gap-2">
-              {hasRatings ? (
-                <div className="flex items-center gap-1 min-w-0">
-                  <Star className="h-4 w-4 fill-primary text-primary" />
-                  <span className="text-xs font-bold tabular-nums">{avg.toFixed(1)}</span>
-                  <span className="text-xs text-muted-foreground">({stats!.total_ratings})</span>
-                </div>
-              ) : (
-                <span className="text-xs text-muted-foreground">لا توجد تقييمات بعد</span>
-              )}
+            <div className="mt-0.5 flex items-center gap-1 min-w-0">
+              <Star className="h-3 w-3 fill-primary text-primary" />
+              <span className="text-[10px] font-bold tabular-nums">{hasRatings ? avg.toFixed(1) : "0.0"}</span>
+              <span className="text-[10px] text-muted-foreground">({stats?.total_ratings || 0})</span>
             </div>
           </div>
 
@@ -137,14 +131,14 @@ function MerchantDirectoryCardBase({
             })}
           </div>
 
-          {/* Actions (icon-only) */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Actions (icon-only) - smaller on mobile */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             {isAdmin && onAdminManage ? (
               <Button
                 type="button"
                 variant="outline"
                 size="icon"
-                className="h-9 w-9 rounded-2xl"
+                className="h-7 w-7 sm:h-9 sm:w-9 rounded-xl sm:rounded-2xl"
                 onClick={(e) => {
                   e.stopPropagation();
                   onAdminManage();
@@ -152,7 +146,7 @@ function MerchantDirectoryCardBase({
                 aria-label="إدارة التجار"
                 title="إدارة التجار"
               >
-                <Settings className="h-4.5 w-4.5" />
+                <Settings className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
               </Button>
             ) : null}
 
@@ -160,7 +154,7 @@ function MerchantDirectoryCardBase({
               type="button"
               variant="secondary"
               size="icon"
-              className="h-9 w-9 rounded-2xl"
+              className="h-7 w-7 sm:h-9 sm:w-9 rounded-xl sm:rounded-2xl"
               onClick={(e) => {
                 e.stopPropagation();
                 onOpenStore();
@@ -168,14 +162,14 @@ function MerchantDirectoryCardBase({
               aria-label="زيارة المتجر"
               title="زيارة المتجر"
             >
-              <Store className="h-4.5 w-4.5" />
+              <Store className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
             </Button>
 
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="h-9 w-9 rounded-2xl"
+              className="h-7 w-7 sm:h-9 sm:w-9 rounded-xl sm:rounded-2xl"
               disabled={!onContact}
               onClick={(e) => {
                 e.stopPropagation();
@@ -184,7 +178,7 @@ function MerchantDirectoryCardBase({
               aria-label="تواصل"
               title="تواصل"
             >
-              <MessageCircle className="h-4.5 w-4.5" />
+              <MessageCircle className="h-3.5 w-3.5 sm:h-4.5 sm:w-4.5" />
             </Button>
           </div>
         </div>

@@ -4712,10 +4712,12 @@ export type Database = {
         Returns: Json
       }
       auto_confirm_delivery: { Args: never; Returns: undefined }
-      calculate_merchant_badge_tier: {
-        Args: { p_merchant_id: string; p_settings?: Json }
-        Returns: string
-      }
+      calculate_merchant_badge_tier:
+        | { Args: { p_merchant_id: string }; Returns: string }
+        | {
+            Args: { p_merchant_id: string; p_settings?: Json }
+            Returns: string
+          }
       calculate_user_level: { Args: { points: number }; Returns: string }
       can_read_print_file: { Args: { object_name: string }; Returns: boolean }
       check_username_available: {
