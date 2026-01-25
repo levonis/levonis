@@ -103,12 +103,28 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "avatar-frame-glow": {
+          "0%, 100%": {
+            filter: "drop-shadow(0 0 3px hsl(var(--primary) / 0.5))",
+            transform: "scale(1)",
+          },
+          "50%": {
+            filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.8))",
+            transform: "scale(1.02)",
+          },
+        },
+        "avatar-frame-rotate": {
+          "0%": { transform: "rotate(0deg)" },
+          "100%": { transform: "rotate(360deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-slow": "pulse-slow 2s ease-in-out infinite",
         shimmer: "shimmer 2s linear infinite",
+        "avatar-frame-glow": "avatar-frame-glow 2.5s ease-in-out infinite",
+        "avatar-frame-rotate": "avatar-frame-rotate 20s linear infinite",
       },
     },
   },

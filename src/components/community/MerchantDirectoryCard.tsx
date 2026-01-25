@@ -3,6 +3,7 @@ import { MessageCircle, Settings, Star, Store } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { MerchantBadgesDisplay, BadgeTier } from "./MerchantBadges";
+import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 
 type FeaturedProduct = {
   id: string;
@@ -20,6 +21,7 @@ type Props = {
   id: string;
   displayName: string;
   storeImageUrl?: string | null;
+  storeFrameUrl?: string | null;
   featured?: boolean;
   isVerified?: boolean;
   badgeTier?: BadgeTier;
@@ -34,6 +36,7 @@ type Props = {
 function MerchantDirectoryCardBase({
   displayName,
   storeImageUrl,
+  storeFrameUrl,
   featured,
   isVerified = false,
   badgeTier = "none",
@@ -59,22 +62,14 @@ function MerchantDirectoryCardBase({
     >
       <div className="p-3 sm:p-4">
         <div className="flex items-center gap-3 min-w-0">
-          {/* Store image */}
-          <div className="levo-thumb-frame relative h-16 w-16 shrink-0">
-            {storeImageUrl ? (
-              <img
-                src={storeImageUrl}
-                alt={displayName}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              <div className="h-full w-full flex items-center justify-center">
-                <div className="levo-icon-frame h-10 w-10">
-                  <Store className="h-5 w-5 text-primary/60" />
-                </div>
-              </div>
-            )}
+          {/* Circular Store image with Frame */}
+          <div className="shrink-0">
+            <AvatarWithFrame
+              imageUrl={storeImageUrl}
+              frameUrl={storeFrameUrl}
+              size="sm"
+              animated
+            />
           </div>
 
           {/* Name + rating */}

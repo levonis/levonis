@@ -42,6 +42,7 @@ export const ADMIN_ROUTES = {
   shippingSettings: `${ADMIN_BASE_PATH}/shipping-settings`,
   communityMerchants: `${ADMIN_BASE_PATH}/community-merchants`,
   badgeSettings: `${ADMIN_BASE_PATH}/badge-settings`,
+  avatarFrames: `${ADMIN_BASE_PATH}/avatar-frames`,
 } as const;
 
 // Helper to check if a path is an admin path
