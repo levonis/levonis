@@ -107,7 +107,7 @@ function CommunityProductCardBase({
               ) : (
                 <div className="h-5 w-5 rounded-full bg-muted border border-border" />
               )}
-              <span className="text-[11px] text-muted-foreground truncate max-w-[100px]" title={merchantName}>
+              <span className="text-[11px] text-muted-foreground truncate max-w-[9rem]">
                 {merchantName}
               </span>
             </div>

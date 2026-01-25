@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { CheckCircle2, Clock, Image as ImageIcon, Store, XCircle } from "lucide-react";
 
 const step1Schema = z.object({
-  display_name: z.string().trim().min(2, "اسم المتجر مطلوب (2 حروف على الأقل)").max(15, "اسم المتجر يجب أن لا يتجاوز 15 حرف"),
+  display_name: z.string().trim().min(2, "اسم المتجر مطلوب").max(120),
   bio: z.string().trim().max(500).optional().or(z.literal("")),
   instagram: z.string().trim().max(200).optional().or(z.literal("")),
   facebook: z.string().trim().max(200).optional().or(z.literal("")),
@@ -442,12 +442,8 @@ export default function MerchantSignupDialog({
                       <Input
                         value={step1.display_name}
                         disabled={!canEdit}
-                        maxLength={15}
                         onChange={(e) => setStep1((p) => ({ ...p, display_name: e.target.value }))}
                       />
-                      <p className={`text-xs ${step1.display_name.length > 15 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {step1.display_name.length}/15 حرف كحد أقصى
-                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label>يوزرنيم (من الملف الشخصي)</Label>

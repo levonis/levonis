@@ -2,23 +2,19 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
+  Boxes,
+  MessageCircle,
   Search,
+  Settings,
+  Store,
   Users,
-  Menu,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import CommunityNavGrid from "./CommunityNavGrid";
+import { ADMIN_ROUTES } from "@/config/adminConfig";
 
 /**
  * يظهر فقط داخل /community* ويستبدل شريط الموقع.
@@ -26,12 +22,11 @@ import CommunityNavGrid from "./CommunityNavGrid";
  * - البحث يُخزن في ?q= ... حتى تتشاركه المكونات بدون تمرير props.
  */
 const CommunityTopBar = memo(() => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isScrolled, setIsScrolled] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     let ticking = false;
@@ -85,12 +80,11 @@ const CommunityTopBar = memo(() => {
     >
       <div className="container mx-auto px-4">
         <div className="h-14 flex items-center justify-between gap-3">
-          {/* Left Side - Back + Title */}
           <div className="flex items-center gap-2 min-w-0">
             <Button
-              variant="ghost"
+              variant="outline"
               size="icon"
-              className="rounded-full h-9 w-9 shrink-0"
+              className="rounded-full"
               aria-label="العودة للرئيسية"
               onClick={() => navigate("/")}
             >
@@ -102,55 +96,74 @@ const CommunityTopBar = memo(() => {
               className="flex items-center gap-2 min-w-0"
               aria-label="الانتقال إلى مجتمع ليفو"
             >
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0 shadow-sm">
-                <Users className="h-4 w-4 text-primary" />
+              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Users className="h-4.5 w-4.5 text-primary" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-black text-foreground truncate">مجتمع ليفو</p>
-                <p className="text-[10px] text-muted-foreground truncate leading-tight">
+                <p className="text-[11px] text-muted-foreground truncate">
                   {tab === "products" ? "منتجات التجار" : tab === "merchants" ? "صفحات التجار" : "طلبات الزبائن"}
                 </p>
               </div>
             </Link>
           </div>
 
-          {/* Right Side - Menu Button */}
           <div className="flex items-center gap-2">
-            <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full h-9 w-9 border-primary/20 hover:border-primary/40"
-                  aria-label="قائمة التنقل"
-                >
-                  <Menu className="h-4 w-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-[320px] sm:w-[380px] p-0">
-                <SheetHeader className="p-4 border-b border-border/30 bg-muted/10">
-                  <SheetTitle className="text-right flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                      <Users className="h-4 w-4 text-primary" />
-                    </div>
-                    <span>قائمة مجتمع ليفو</span>
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="p-4 overflow-y-auto max-h-[calc(100vh-80px)]">
-                  <CommunityNavGrid />
-                </div>
-              </SheetContent>
-            </Sheet>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              aria-label="المحادثات"
+              onClick={() => navigate("/community/messages")}
+            >
+              <MessageCircle className="h-4 w-4" />
+            </Button>
+
+            {isMerchant && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full"
+                aria-label="إدارة المتجر"
+                onClick={() => navigate("/community/merchant/store")}
+              >
+                <Store className="h-4 w-4" />
+              </Button>
+            )}
+
+            {isCommunityRoot && (
+              <Button
+                variant={tab === "merchants" ? "default" : "outline"}
+                size="icon"
+                className="rounded-full"
+                aria-label="صفحات التجار"
+                onClick={() => navigate("/community?tab=merchants", { replace: false })}
+              >
+                <Boxes className="h-4 w-4" />
+              </Button>
+            )}
+
+            {isAdmin && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full"
+                aria-label="لوحة التحكم"
+                onClick={() => navigate(ADMIN_ROUTES.dashboard)}
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
-        {/* Search collapses into topbar after scrolling */}
+        {/* search collapses into topbar after scrolling */}
         {isCommunityRoot && (
           <div
             className={
               isScrolled
-                ? "pb-3 transition-all duration-200"
-                : "pb-0 h-0 overflow-hidden transition-all duration-200"
+                ? "pb-3 transition-all"
+                : "pb-0 h-0 overflow-hidden transition-all"
             }
           >
             <div className="relative">
@@ -159,7 +172,7 @@ const CommunityTopBar = memo(() => {
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={tab === "products" ? "ابحث عن منتج..." : tab === "merchants" ? "ابحث عن تاجر..." : "ابحث عن طلب..."}
-                className="pr-10 h-10 rounded-xl border-border/50 focus:border-primary/40"
+                className="pr-10"
               />
             </div>
           </div>

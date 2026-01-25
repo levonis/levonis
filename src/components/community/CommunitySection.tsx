@@ -1,89 +1,70 @@
 import { Suspense, lazy } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { CommunityCustomerActionsInline } from '@/components/community/CommunityCustomerStrip';
 import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
-import CommunityNavGrid from '@/components/community/CommunityNavGrid';
 import AnimatedDivider from '@/components/ui/animated-divider';
 
 const ListingConversations = lazy(() => import('@/components/marketplace/ListingConversations'));
 
 export default function CommunitySection() {
-  const location = useLocation();
-  const isCommunityPage = location.pathname === '/community';
-
   return (
     <section className="container mx-auto px-4 py-10">
-      {/* Section header pill - refined with subtle glow */}
-      <div className="relative mb-8">
+      <div className="relative mb-6">
         <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-primary/15" />
+          <div className="w-full border-t-2 border-primary/20" />
         </div>
         <div className="relative flex justify-center">
           <Link
             to="/community"
-            className="bg-gradient-to-b from-background to-muted/30 px-5 py-2 flex items-center gap-2.5 rounded-full border border-primary/20 shadow-sm hover:border-primary/40 hover:shadow-md transition-all duration-200"
+            className="bg-background px-6 py-2 flex items-center gap-2 rounded-full border border-primary/30 shadow-sm hover:border-primary/50 transition-colors"
             aria-label="الانتقال إلى صفحة مجتمع ليفو"
           >
-            <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-              <Users className="w-4 h-4 text-primary" />
-            </div>
-            <span className="text-sm font-semibold text-primary">مجتمع ليفو</span>
+            <Users className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium text-primary">مجتمع ليفو</span>
           </Link>
         </div>
       </div>
 
-      {/* Title */}
-      <div className="text-center mb-6">
-        <Link to="/community" className="inline-block">
-          <h2 className="text-xl sm:text-2xl font-black text-primary hover:opacity-90 transition-opacity">
-            مجتمع ليفو
-          </h2>
-        </Link>
-        <Link to="/community" className="inline-block">
-          <p className="text-xs sm:text-sm text-muted-foreground hover:text-foreground/70 transition-colors mt-1">
-            تصفح المنتجات، تواصل مع التجار، وأرسل طلباتك
-          </p>
-        </Link>
-      </div>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <Link to="/community" className="inline-block">
+            <h2 className="text-xl sm:text-2xl font-black text-primary hover:opacity-90 transition-opacity">
+              مجتمع ليفو
+            </h2>
+          </Link>
+          <Link to="/community" className="inline-block">
+            <p className="text-xs sm:text-sm text-muted-foreground hover:text-foreground/70 transition-colors">
+              المحادثات والتواصل داخل المجتمع
+            </p>
+          </Link>
+        </div>
 
-      {/* Navigation Grid - Only on /community page */}
-      {isCommunityPage && (
-        <>
-          <CommunityNavGrid className="mb-6" />
-          <AnimatedDivider className="my-6 opacity-80" />
-        </>
-      )}
-
-      {/* Quick actions for homepage only */}
-      {!isCommunityPage && (
-        <div className="flex flex-wrap justify-center gap-2 mb-6">
+        {/* Mobile: 2×2 buttons (chats + 3 actions). Desktop: inline */}
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
           <Suspense fallback={null}>
             <ListingConversations>
               <Button
                 size="sm"
                 variant="outline"
-                className="h-10 rounded-xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+                className="h-10 w-full"
               >
                 المحادثات
               </Button>
             </ListingConversations>
           </Suspense>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-10 rounded-xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
-            asChild
-          >
-            <Link to="/community">استكشاف المجتمع</Link>
-          </Button>
+
+          {/* actions beside chats */}
+          <CommunityCustomerActionsInline mode="items" />
         </div>
-      )}
+      </div>
 
-      <AnimatedDivider className="mt-4 mb-6 opacity-80" />
+      {/* subtle animated separator */}
+      <AnimatedDivider className="mt-4 mb-2 opacity-90" />
 
-      {/* Explore tabs */}
-      <div className="mt-4">
+      {/* Explore tabs (products/requests/merchant pages) */}
+      <div className="mt-6">
         <CommunityExploreStrip />
       </div>
     </section>

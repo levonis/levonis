@@ -5,8 +5,9 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, User as UserIcon, ClipboardList, Store } from "lucide-react";
+ import { PlusCircle, User as UserIcon, ClipboardList, Store } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import CommunityCustomerProfileModal from "@/components/community/CommunityCustomerProfileModal";
 import MerchantSignupDialog from "@/components/community/MerchantSignupDialog";
@@ -96,30 +97,29 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
 
   return (
     <section className={className} aria-label="لوحة مجتمع ليفو">
-      {/* Premium card container with refined styling */}
-      <div className="rounded-2xl border border-border/50 bg-gradient-to-b from-card to-card/80 shadow-sm overflow-hidden">
-        <div className="p-4 sm:p-5 border-b border-border/30 bg-muted/10">
-          <h3 className="text-base font-bold text-foreground">مجتمع ليفو — الزبون</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">مجتمع ليفو — الزبون</CardTitle>
+          <CardDescription>
             {complete
               ? "اختصارات سريعة للطلبات والمحادثات والملف الشخصي"
               : "أكمل ملفك الشخصي أولاً لتفعيل لوحة المجتمع"}
-          </p>
-        </div>
-        <div className="p-4 sm:p-5">
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
           {isLoading ? (
-            <div className="flex gap-2.5 overflow-x-auto pb-1">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               {[1, 2, 3, 4].map((i) => (
                 <Skeleton key={i} className="h-10 w-32 rounded-xl" />
               ))}
             </div>
           ) : (
-            <div className="flex gap-2.5 overflow-x-auto pb-1">
+            <div className="flex gap-2 overflow-x-auto pb-1">
               <Button
                 size="sm"
                 onClick={handleNewClick}
                 disabled={!complete}
-                className="h-9 shrink-0 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 shadow-sm"
+                className="h-9 shrink-0 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
               >
                 {isMerchant ? (
                   <>
@@ -139,7 +139,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
                 variant="outline"
                 disabled={!complete}
                 onClick={handleRequestsClick}
-                className="h-9 shrink-0 rounded-xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+                className="h-9 shrink-0 rounded-xl"
               >
                 <ClipboardList className="ml-2 h-4 w-4" />
                 {isMerchant ? "طلبات الزبائن" : "طلباتي"}
@@ -151,8 +151,8 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
                 onClick={() => (complete ? navigate("/profile") : setProfileOpen(true))}
                 className={
                   !complete
-                    ? "h-9 shrink-0 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 shadow-sm"
-                    : "h-9 shrink-0 rounded-xl border-primary/20 hover:border-primary/40 hover:bg-primary/5"
+                    ? "h-9 shrink-0 rounded-xl bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                    : "h-9 shrink-0 rounded-xl"
                 }
               >
                 <UserIcon className="ml-2 h-4 w-4" />
@@ -167,7 +167,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
                 <DialogTitle>الملف الشخصي</DialogTitle>
               </DialogHeader>
               <div className="scrollbar-stable max-h-[70vh] overflow-y-auto overflow-x-hidden">
-                <div className="rounded-2xl border border-border/50 bg-card overflow-hidden">
+                <div className="rounded-xl border border-border bg-card">
                   <CommunityCustomerProfileModal
                     onDone={() => setProfileOpen(false)}
                     onOpenMerchantSignup={() => {
@@ -187,8 +187,8 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
               المطلوب: الاسم، رقم الهاتف، يوزرنيم، تاريخ الميلاد، الجنس.
             </p>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </section>
   );
 }
