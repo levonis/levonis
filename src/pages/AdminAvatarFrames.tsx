@@ -214,7 +214,7 @@ export default function AdminAvatarFrames() {
       title="إدارة إطارات الصور"
       description="إضافة وتعديل إطارات الأفتار للمستخدمين والتجار"
       icon={<Frame className="h-5 w-5" />}
-      backTo={ADMIN_ROUTES.community}
+      backTo={ADMIN_ROUTES.communityMerchants}
       maxWidth="4xl"
       actions={
         <Button onClick={openCreateDialog} className="gap-2">

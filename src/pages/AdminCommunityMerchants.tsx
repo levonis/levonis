@@ -182,7 +182,7 @@ export default function AdminCommunityMerchants() {
       title="طلبات تسجيل التجار"
       description="مراجعة طلبات التسجيل كتاجر (موافقة/رفض/ملاحظات)"
       icon={<Store className="h-5 w-5" />}
-      backTo={ADMIN_ROUTES.community}
+      backTo={ADMIN_ROUTES.dashboard}
       maxWidth="6xl"
       actions={
         <div className="flex items-center gap-2">

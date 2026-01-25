@@ -105,35 +105,17 @@ export default {
         },
         "avatar-frame-glow": {
           "0%, 100%": {
-            filter: "drop-shadow(0 0 4px hsl(var(--primary) / 0.6)) drop-shadow(0 0 8px hsl(var(--primary) / 0.3))",
+            filter: "drop-shadow(0 0 3px hsl(var(--primary) / 0.5))",
             transform: "scale(1)",
           },
           "50%": {
-            filter: "drop-shadow(0 0 12px hsl(var(--primary) / 0.9)) drop-shadow(0 0 20px hsl(var(--primary) / 0.5))",
-            transform: "scale(1.03)",
+            filter: "drop-shadow(0 0 8px hsl(var(--primary) / 0.8))",
+            transform: "scale(1.02)",
           },
         },
         "avatar-frame-rotate": {
           "0%": { transform: "rotate(0deg)" },
           "100%": { transform: "rotate(360deg)" },
-        },
-        "avatar-frame-pulse": {
-          "0%, 100%": {
-            opacity: "1",
-            filter: "brightness(1) saturate(1)",
-          },
-          "50%": {
-            opacity: "0.9",
-            filter: "brightness(1.2) saturate(1.3)",
-          },
-        },
-        "avatar-frame-shimmer": {
-          "0%": {
-            backgroundPosition: "-200% 0",
-          },
-          "100%": {
-            backgroundPosition: "200% 0",
-          },
         },
       },
       animation: {
@@ -141,10 +123,8 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-slow": "pulse-slow 2s ease-in-out infinite",
         shimmer: "shimmer 2s linear infinite",
-        "avatar-frame-glow": "avatar-frame-glow 2s ease-in-out infinite",
-        "avatar-frame-rotate": "avatar-frame-rotate 15s linear infinite",
-        "avatar-frame-pulse": "avatar-frame-pulse 3s ease-in-out infinite",
-        "avatar-frame-shimmer": "avatar-frame-shimmer 3s linear infinite",
+        "avatar-frame-glow": "avatar-frame-glow 2.5s ease-in-out infinite",
+        "avatar-frame-rotate": "avatar-frame-rotate 20s linear infinite",
       },
     },
   },
