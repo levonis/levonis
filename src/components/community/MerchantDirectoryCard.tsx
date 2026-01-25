@@ -79,7 +79,7 @@ function MerchantDirectoryCardBase({
           {/* Name + rating */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 min-w-0">
-              <h3 className="text-[15px] sm:text-base font-extrabold leading-tight truncate" title={displayName}>
+              <h3 className="text-[15px] sm:text-base font-extrabold leading-tight" title={displayName}>
                 {displayName}
               </h3>
               <MerchantBadgesDisplay 
