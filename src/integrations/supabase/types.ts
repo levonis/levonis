@@ -97,6 +97,42 @@ export type Database = {
         }
         Relationships: []
       }
+      avatar_frames: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          id: string
+          image_url: string
+          is_active: boolean
+          is_free: boolean
+          name_ar: string
+          points_cost: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url: string
+          is_active?: boolean
+          is_free?: boolean
+          name_ar: string
+          points_cost?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          id?: string
+          image_url?: string
+          is_active?: boolean
+          is_free?: boolean
+          name_ar?: string
+          points_cost?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           action_type: string
@@ -1705,6 +1741,7 @@ export type Database = {
           is_verified: boolean
           phone_number: string | null
           registration_fee: number
+          selected_frame_id: string | null
           social_links: Json | null
           status: string
           store_image_url: string | null
@@ -1725,6 +1762,7 @@ export type Database = {
           is_verified?: boolean
           phone_number?: string | null
           registration_fee?: number
+          selected_frame_id?: string | null
           social_links?: Json | null
           status?: string
           store_image_url?: string | null
@@ -1745,13 +1783,22 @@ export type Database = {
           is_verified?: boolean
           phone_number?: string | null
           registration_fee?: number
+          selected_frame_id?: string | null
           social_links?: Json | null
           status?: string
           store_image_url?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "merchant_applications_selected_frame_id_fkey"
+            columns: ["selected_frame_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_frames"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchant_badge_settings: {
         Row: {
@@ -3971,6 +4018,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_avatar_frames: {
+        Row: {
+          frame_id: string
+          id: string
+          is_active: boolean
+          purchased_at: string
+          user_id: string
+        }
+        Insert: {
+          frame_id: string
+          id?: string
+          is_active?: boolean
+          purchased_at?: string
+          user_id: string
+        }
+        Update: {
+          frame_id?: string
+          id?: string
+          is_active?: boolean
+          purchased_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_avatar_frames_frame_id_fkey"
+            columns: ["frame_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_frames"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_blocks: {
         Row: {

@@ -1,7 +1,7 @@
  import { useState } from "react";
  import { useNavigate } from "react-router-dom";
  import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
- import { Store, Plus, Edit2, X, Star, Facebook, Instagram, ArrowRight } from "lucide-react";
+ import { Store, Plus, Edit2, X, Star, Facebook, Instagram, ArrowRight, Settings } from "lucide-react";
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "@/hooks/useAuth";
  import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@
  import { Switch } from "@/components/ui/switch";
  import { useToast } from "@/hooks/use-toast";
 import MerchantProductMediaUpload from "@/components/merchant/MerchantProductMediaUpload";
+import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
+import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
  
  interface MerchantProduct {
    id: string;
@@ -38,6 +40,7 @@ import MerchantProductMediaUpload from "@/components/merchant/MerchantProductMed
  
    const [productDialogOpen, setProductDialogOpen] = useState(false);
    const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
    const [selectedProduct, setSelectedProduct] = useState<MerchantProduct | null>(null);
  
    const [formData, setFormData] = useState({
@@ -63,7 +66,7 @@ import MerchantProductMediaUpload from "@/components/merchant/MerchantProductMed
      queryFn: async () => {
        const { data, error } = await supabase
          .from("merchant_applications")
-         .select("id, status, display_name, bio, store_image_url, social_links")
+         .select("id, status, display_name, bio, store_image_url, social_links, selected_frame_id")
          .eq("user_id", user!.id)
          .eq("status", "approved")
          .maybeSingle();
@@ -81,6 +84,21 @@ import MerchantProductMediaUpload from "@/components/merchant/MerchantProductMed
          .from("profiles")
          .select("username")
          .eq("id", user!.id)
+         .maybeSingle();
+       if (error) throw error;
+       return data;
+     },
+   });
+
+   // Fetch selected frame
+   const { data: selectedFrame } = useQuery({
+     queryKey: ["selected-frame", merchantApp?.selected_frame_id],
+     enabled: !!merchantApp?.selected_frame_id,
+     queryFn: async () => {
+       const { data, error } = await supabase
+         .from("avatar_frames")
+         .select("id, name_ar, image_url")
+         .eq("id", merchantApp!.selected_frame_id!)
          .maybeSingle();
        if (error) throw error;
        return data;
@@ -263,23 +281,36 @@ import MerchantProductMediaUpload from "@/components/merchant/MerchantProductMed
          {/* Store info card */}
          <Card className="border-border bg-card mb-6">
            <CardContent className="p-6">
-             <div className="flex flex-col sm:flex-row gap-4">
-               <div className="shrink-0">
-                 {merchantApp.store_image_url ? (
-                   <img
-                     src={merchantApp.store_image_url}
-                     alt="Store"
-                     className="w-24 h-24 rounded-xl object-cover border border-border"
-                   />
-                 ) : (
-                   <div className="w-24 h-24 rounded-xl bg-muted/20 flex items-center justify-center">
-                     <Store className="h-10 w-10 text-muted-foreground" />
-                   </div>
-                 )}
+             <div className="flex flex-col sm:flex-row gap-4 items-start">
+               {/* Circular store image with frame */}
+               <div className="shrink-0 relative">
+                 <AvatarWithFrame
+                   imageUrl={merchantApp.store_image_url}
+                   frameUrl={selectedFrame?.image_url}
+                   size="lg"
+                 />
+                 <Button
+                   size="icon"
+                   variant="secondary"
+                   className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full"
+                   onClick={() => setProfileEditorOpen(true)}
+                 >
+                   <Settings className="h-4 w-4" />
+                 </Button>
                </div>
  
                <div className="flex-1">
-                 <h2 className="text-xl font-bold text-primary">{merchantApp.display_name}</h2>
+                 <div className="flex items-center gap-2">
+                   <h2 className="text-xl font-bold text-primary">{merchantApp.display_name}</h2>
+                   <Button
+                     size="sm"
+                     variant="ghost"
+                     className="h-7 px-2"
+                     onClick={() => setProfileEditorOpen(true)}
+                   >
+                     <Edit2 className="h-3.5 w-3.5" />
+                   </Button>
+                 </div>
                  <p className="text-sm text-muted-foreground mt-1">@{profile?.username || "—"}</p>
  
                  <div className="flex items-center gap-1 mt-2">
@@ -594,6 +625,22 @@ import MerchantProductMediaUpload from "@/components/merchant/MerchantProductMed
              )}
            </DialogContent>
          </Dialog>
+
+         {/* Store Profile Editor */}
+         {merchantApp && (
+           <StoreProfileEditor
+             open={profileEditorOpen}
+             onOpenChange={setProfileEditorOpen}
+             merchantApp={{
+               id: merchantApp.id,
+               display_name: merchantApp.display_name,
+               bio: merchantApp.bio,
+               store_image_url: merchantApp.store_image_url,
+               social_links: socialLinks || null,
+               selected_frame_id: merchantApp.selected_frame_id || null,
+             }}
+           />
+         )}
        </main>
      </div>
    );
