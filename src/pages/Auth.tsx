@@ -135,11 +135,11 @@ const Auth = () => {
         governorate
       });
       
-      // Check if username is available
+      // Check if username is available (case-insensitive)
       const { data: existingProfile } = await supabase
         .from('profiles')
         .select('username')
-        .eq('username', validatedData.username)
+        .ilike('username', validatedData.username)
         .maybeSingle();
 
       if (existingProfile) {
