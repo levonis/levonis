@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -11,11 +11,11 @@ import {
   ExternalLink, 
   ChevronLeft,
   ChevronRight,
-  Sparkles,
   Shield,
   Star,
   X,
   Maximize2,
+  Package,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,6 +37,7 @@ interface MerchantProduct {
   video_url: string | null;
   primary_image_index: number;
   estimated_days: number | null;
+  category_ids?: string[] | null;
 }
 
 interface CommunityProductDetailModalProps {
@@ -103,6 +104,45 @@ export default function CommunityProductDetailModal({
     },
   });
 
+  // Fetch similar products
+  const { data: similarProducts } = useQuery({
+    queryKey: ["similar-products", product?.id, product?.merchant_id],
+    enabled: !!product?.id && open,
+    queryFn: async () => {
+      // Get products from same merchant
+      const { data: sameMerchant, error: err1 } = await supabase
+        .from("merchant_products")
+        .select(`
+          id, title, price_iqd, image_urls, merchant_id,
+          merchant:merchant_public_profiles!inner(display_name, store_image_url)
+        `)
+        .eq("merchant_id", product!.merchant_id)
+        .neq("id", product!.id)
+        .eq("is_active", true)
+        .limit(4);
+
+      // Get products from other merchants
+      const { data: otherMerchants, error: err2 } = await supabase
+        .from("merchant_products")
+        .select(`
+          id, title, price_iqd, image_urls, merchant_id,
+          merchant:merchant_public_profiles!inner(display_name, store_image_url)
+        `)
+        .neq("merchant_id", product!.merchant_id)
+        .neq("id", product!.id)
+        .eq("is_active", true)
+        .limit(4);
+
+      if (err1) console.error(err1);
+      if (err2) console.error(err2);
+
+      return {
+        sameMerchant: sameMerchant || [],
+        otherMerchants: otherMerchants || [],
+      };
+    },
+  });
+
   const handleContactMerchant = () => {
     if (!user) {
       navigate("/auth");
@@ -145,16 +185,9 @@ export default function CommunityProductDetailModal({
 
     if (includeProductLink && conversationId) {
       const productUrl = `${window.location.origin}/store/${product.merchant_id}?product=${product.id}`;
-      const systemMessage = `📦 طلب استفسار عن منتج
-
-🏷️ المنتج: ${product.title}
-${product.price_iqd ? `💰 السعر: ${product.price_iqd.toLocaleString()} د.ع` : "💰 السعر: غير محدد"}
-${product.description ? `📝 الوصف: ${product.description.slice(0, 100)}${product.description.length > 100 ? "..." : ""}` : ""}
-
-🔗 رابط المنتج: ${productUrl}
-
----
-مرحباً، أنا مهتم بهذا المنتج وأود الاستفسار عنه.`;
+      const systemMessage = `📦 ${product.title}
+💰 ${product.price_iqd ? `${product.price_iqd.toLocaleString()} د.ع` : "السعر عند التواصل"}
+🔗 ${productUrl}`;
 
       await supabase.from("listing_messages").insert({
         conversation_id: conversationId,
@@ -190,245 +223,296 @@ ${product.description ? `📝 الوصف: ${product.description.slice(0, 100)}${
     }
   };
 
-  const discountPercent = product?.original_price_iqd && product?.price_iqd && product.original_price_iqd > product.price_iqd
-    ? Math.round(((product.original_price_iqd - product.price_iqd) / product.original_price_iqd) * 100)
-    : 0;
+  const discountPercent = useMemo(() => {
+    if (!product?.original_price_iqd || !product?.price_iqd) return 0;
+    if (product.original_price_iqd <= product.price_iqd) return 0;
+    return Math.round(((product.original_price_iqd - product.price_iqd) / product.original_price_iqd) * 100);
+  }, [product?.original_price_iqd, product?.price_iqd]);
 
   if (!product) return null;
 
+  const activeUrl = product.image_urls?.[Math.min(activeMediaIndex, (product.image_urls?.length || 1) - 1)];
+
   return (
     <>
-      {/* Main Product Detail Modal - Premium Redesign */}
+      {/* Main Product Detail Modal */}
       <Dialog open={open && !messageDialogOpen} onOpenChange={onOpenChange}>
         <DialogContent 
-          className="sm:max-w-4xl p-0 gap-0 overflow-hidden rounded-3xl border-2 border-primary/10 bg-gradient-to-b from-background via-background to-muted/20 shadow-2xl shadow-primary/10"
+          className="sm:max-w-2xl p-0 gap-0 overflow-hidden rounded-2xl border border-border/50 bg-background shadow-xl"
           hideClose
         >
-          {/* Custom Header with Gradient */}
-          <div className="relative">
-            {/* Hero Image Section */}
-            <div className="relative aspect-[16/10] sm:aspect-[2/1] bg-gradient-to-br from-muted/50 to-muted overflow-hidden rounded-t-3xl">
-              {product.image_urls && product.image_urls.length > 0 ? (
-                <>
-                  <img
-                    src={product.image_urls[Math.min(activeMediaIndex, product.image_urls.length - 1)]}
-                    alt={product.title}
-                    className="w-full h-full object-cover"
-                    onClick={() => setFullscreenImage(true)}
-                  />
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
-                  
-                  {/* Navigation Arrows */}
-                  {product.image_urls.length > 1 && (
-                    <>
-                      <button
-                        onClick={() => navigateMedia("next")}
-                        className="absolute left-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center hover:bg-background transition-colors shadow-lg"
-                      >
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-                      <button
-                        onClick={() => navigateMedia("prev")}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center hover:bg-background transition-colors shadow-lg"
-                      >
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    </>
-                  )}
-
-                  {/* Fullscreen Button */}
-                  <button
-                    onClick={() => setFullscreenImage(true)}
-                    className="absolute top-3 left-3 h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center hover:bg-background transition-colors"
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                  </button>
-                </>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Store className="h-16 w-16 text-muted-foreground/30" />
-                </div>
-              )}
-
-              {/* Close Button */}
-              <button
-                onClick={() => onOpenChange(false)}
-                className="absolute top-3 right-3 h-9 w-9 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 flex items-center justify-center hover:bg-background transition-colors"
-              >
-                <X className="h-4 w-4" />
-              </button>
-
-              {/* Discount Badge */}
-              {discountPercent > 0 && (
-                <div className="absolute top-3 left-14 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-destructive text-destructive-foreground text-sm font-bold shadow-lg">
-                  <BadgePercent className="h-4 w-4" />
-                  <span>خصم {discountPercent}%</span>
-                </div>
-              )}
-
-              {/* Video Badge */}
-              {product.video_url && (
-                <div className="absolute bottom-16 left-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 text-xs font-medium">
-                  <Play className="h-3.5 w-3.5 text-primary" />
-                  فيديو متاح
-                </div>
-              )}
-
-              {/* Image Counter */}
-              {product.image_urls && product.image_urls.length > 1 && (
-                <div className="absolute bottom-16 right-3 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border/50 text-xs font-bold tabular-nums">
-                  {activeMediaIndex + 1} / {product.image_urls.length}
-                </div>
-              )}
-            </div>
-
-            {/* Thumbnails Strip */}
-            {product.image_urls && product.image_urls.length > 1 && (
-              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 p-2 rounded-2xl bg-background/95 backdrop-blur border border-border/50 shadow-xl">
-                {product.image_urls.slice(0, 6).map((url, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setActiveMediaIndex(idx)}
-                    className={`relative h-12 w-12 rounded-xl overflow-hidden border-2 transition-all ${
-                      idx === activeMediaIndex 
-                        ? "border-primary ring-2 ring-primary/20 scale-110" 
-                        : "border-transparent hover:border-primary/30"
-                    }`}
-                  >
-                    <img src={url} alt={`${idx + 1}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-                {product.image_urls.length > 6 && (
-                  <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center text-xs font-bold text-muted-foreground">
-                    +{product.image_urls.length - 6}
-                  </div>
+          {/* Hero Image */}
+          <div className="relative aspect-[4/3] bg-muted/30 overflow-hidden">
+            {activeUrl ? (
+              <>
+                <img
+                  src={activeUrl}
+                  alt={product.title}
+                  className="w-full h-full object-contain bg-muted/10 cursor-zoom-in"
+                  onClick={() => setFullscreenImage(true)}
+                />
+                
+                {/* Navigation */}
+                {product.image_urls && product.image_urls.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => navigateMedia("next")}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors shadow"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => navigateMedia("prev")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors shadow"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </>
                 )}
+
+                {/* Fullscreen */}
+                <button
+                  onClick={() => setFullscreenImage(true)}
+                  className="absolute top-2 left-2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
+                >
+                  <Maximize2 className="h-3.5 w-3.5" />
+                </button>
+              </>
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <Package className="h-12 w-12 text-muted-foreground/30" />
               </div>
+            )}
+
+            {/* Close */}
+            <button
+              onClick={() => onOpenChange(false)}
+              className="absolute top-2 right-2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Discount */}
+            {discountPercent > 0 && (
+              <Badge className="absolute top-2 left-11 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0 gap-0.5">
+                <BadgePercent className="h-3 w-3" />
+                {discountPercent}%
+              </Badge>
+            )}
+
+            {/* Video Badge */}
+            {product.video_url && (
+              <Badge variant="secondary" className="absolute bottom-2 left-2 text-[10px] gap-1">
+                <Play className="h-3 w-3" />
+                فيديو
+              </Badge>
+            )}
+
+            {/* Counter */}
+            {product.image_urls && product.image_urls.length > 1 && (
+              <Badge variant="secondary" className="absolute bottom-2 right-2 text-[10px] tabular-nums">
+                {activeMediaIndex + 1}/{product.image_urls.length}
+              </Badge>
             )}
           </div>
 
-          {/* Content Section */}
-          <div className="p-5 pt-8 space-y-4 max-h-[50vh] overflow-y-auto">
-            {/* Title & Price Row */}
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          {/* Thumbnails */}
+          {product.image_urls && product.image_urls.length > 1 && (
+            <div className="flex gap-1 p-2 border-b border-border/50 overflow-x-auto">
+              {product.image_urls.slice(0, 8).map((url, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveMediaIndex(idx)}
+                  className={`shrink-0 h-10 w-10 rounded-md overflow-hidden border transition-all ${
+                    idx === activeMediaIndex 
+                      ? "border-primary ring-1 ring-primary/30" 
+                      : "border-border/50 hover:border-primary/50"
+                  }`}
+                >
+                  <img src={url} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="p-3 space-y-3 max-h-[45vh] overflow-y-auto">
+            {/* Title & Price */}
+            <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h2 className="text-xl sm:text-2xl font-black text-foreground leading-tight">
+                <h2 className="text-sm font-bold text-foreground line-clamp-2 leading-tight">
                   {product.title}
                 </h2>
                 {product.estimated_days && (
-                  <div className="flex items-center gap-1.5 mt-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>التنفيذ خلال {product.estimated_days} يوم</span>
+                  <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    {product.estimated_days} يوم
                   </div>
                 )}
               </div>
               
-              {/* Price Card */}
-              <div className="shrink-0 p-4 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
+              <div className="shrink-0 text-left">
                 {product.original_price_iqd && product.price_iqd && product.original_price_iqd > product.price_iqd && (
-                  <div className="text-sm text-muted-foreground line-through mb-0.5">
-                    {product.original_price_iqd.toLocaleString()} د.ع
+                  <div className="text-[10px] text-muted-foreground line-through">
+                    {product.original_price_iqd.toLocaleString()}
                   </div>
                 )}
                 {product.price_iqd ? (
-                  <div className="text-2xl sm:text-3xl font-black text-primary tabular-nums">
+                  <div className="text-base font-bold text-primary tabular-nums">
                     {product.price_iqd.toLocaleString()}
-                    <span className="text-sm font-semibold mr-1">د.ع</span>
+                    <span className="text-[10px] font-medium mr-0.5">د.ع</span>
                   </div>
                 ) : (
-                  <div className="text-sm text-muted-foreground flex items-center gap-1.5">
-                    <Sparkles className="h-4 w-4 text-primary" />
-                    السعر عند التواصل
-                  </div>
+                  <span className="text-[11px] text-muted-foreground">عند التواصل</span>
                 )}
               </div>
             </div>
 
-            {/* Merchant Card - Premium */}
+            {/* Merchant */}
             {merchantApp && (
               <button
                 onClick={handleVisitStore}
-                className="w-full rounded-2xl border border-border/60 bg-gradient-to-r from-card via-card to-primary/5 p-4 hover:shadow-xl hover:border-primary/30 transition-all group"
+                className="w-full rounded-lg border border-border/50 bg-muted/20 p-2 hover:bg-muted/40 transition-colors group"
               >
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
                   <div className="relative">
                     <AvatarWithFrame
                       imageUrl={merchantApp.store_image_url}
                       frameUrl={selectedFrame?.image_url}
-                      size="md"
-                      animated
+                      size="xs"
                     />
                     {merchantApp.is_verified && (
-                      <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-primary flex items-center justify-center ring-2 ring-background">
-                        <Shield className="h-3 w-3 text-primary-foreground" />
+                      <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center ring-1 ring-background">
+                        <Shield className="h-2 w-2 text-primary-foreground" />
                       </div>
                     )}
                   </div>
-                  <div className="flex-1 text-right min-w-0">
-                    <div className="flex items-center gap-2 justify-end">
-                      <p className="font-bold text-base truncate group-hover:text-primary transition-colors">
-                        {merchantApp.display_name}
-                      </p>
-                      {merchantApp.badge_tier && (
-                        <Badge variant="secondary" className="text-[10px] shrink-0">
-                          {merchantApp.badge_tier}
-                        </Badge>
-                      )}
-                    </div>
-                    {merchantRatings && merchantRatings.count > 0 && (
-                      <div className="flex items-center gap-1.5 justify-end mt-1">
-                        <span className="text-sm font-semibold">{merchantRatings.avg.toFixed(1)}</span>
-                        <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                        <span className="text-xs text-muted-foreground">({merchantRatings.count})</span>
+                  <div className="flex-1 min-w-0 text-right">
+                    <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
+                      {merchantApp.display_name}
+                    </p>
+                    {merchantRatings && (
+                      <div className="flex items-center gap-1 justify-end">
+                        <span className="text-[11px] font-medium">{merchantRatings.avg.toFixed(1)}</span>
+                        <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />
+                        <span className="text-[10px] text-muted-foreground">({merchantRatings.count})</span>
                       </div>
                     )}
                   </div>
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                    <ExternalLink className="h-5 w-5" />
-                  </div>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
                 </div>
               </button>
             )}
 
             {/* Description */}
             {product.description && (
-              <div className="rounded-2xl border border-border/60 bg-card/50 p-4">
-                <Label className="text-xs text-muted-foreground font-medium">الوصف</Label>
-                <p className="text-sm text-foreground/80 mt-2 whitespace-pre-wrap leading-relaxed">
+              <div className="rounded-lg border border-border/50 bg-muted/10 p-2">
+                <Label className="text-[10px] text-muted-foreground">الوصف</Label>
+                <p className="text-xs text-foreground/80 mt-1 whitespace-pre-wrap leading-relaxed line-clamp-4">
                   {product.description}
                 </p>
               </div>
             )}
 
-            {/* Video Section */}
+            {/* Video */}
             {product.video_url && (
-              <div className="rounded-2xl border border-border/60 overflow-hidden">
-                <video controls className="w-full" preload="metadata">
+              <div className="rounded-lg border border-border/50 overflow-hidden">
+                <video controls className="w-full max-h-40" preload="metadata">
                   <source src={product.video_url} />
-                  المتصفح لا يدعم تشغيل الفيديو.
                 </video>
               </div>
             )}
 
-            {/* Action Buttons - Fixed Bottom */}
-            <div className="flex gap-3 pt-2">
+            {/* Similar Products - Same Merchant */}
+            {similarProducts?.sameMerchant && similarProducts.sameMerchant.length > 0 && (
+              <div className="pt-1">
+                <Label className="text-[10px] text-muted-foreground mb-2 block">منتجات أخرى من نفس التاجر</Label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {similarProducts.sameMerchant.slice(0, 4).map((p: any) => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        setActiveMediaIndex(0);
+                        // Navigate to the product in store
+                        navigate(`/store/${p.merchant_id}?product=${p.id}`);
+                        onOpenChange(false);
+                      }}
+                      className="rounded-md border border-border/40 bg-muted/20 overflow-hidden hover:border-primary/40 transition-colors"
+                    >
+                      <div className="aspect-square bg-muted/30">
+                        {p.image_urls?.[0] ? (
+                          <img src={p.image_urls[0]} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-4 w-4 text-muted-foreground/30" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-1">
+                        <p className="text-[9px] font-medium line-clamp-1">{p.title}</p>
+                        {p.price_iqd && (
+                          <p className="text-[9px] text-primary font-bold">{p.price_iqd.toLocaleString()}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Similar Products - Other Merchants */}
+            {similarProducts?.otherMerchants && similarProducts.otherMerchants.length > 0 && (
+              <div className="pt-1">
+                <Label className="text-[10px] text-muted-foreground mb-2 block">منتجات مشابهة من تجار آخرين</Label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {similarProducts.otherMerchants.slice(0, 4).map((p: any) => (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        navigate(`/store/${p.merchant_id}?product=${p.id}`);
+                        onOpenChange(false);
+                      }}
+                      className="rounded-md border border-border/40 bg-muted/20 overflow-hidden hover:border-primary/40 transition-colors"
+                    >
+                      <div className="aspect-square bg-muted/30">
+                        {p.image_urls?.[0] ? (
+                          <img src={p.image_urls[0]} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="h-4 w-4 text-muted-foreground/30" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-1">
+                        <p className="text-[9px] font-medium line-clamp-1">{p.title}</p>
+                        <p className="text-[8px] text-muted-foreground truncate">{p.merchant?.display_name}</p>
+                        {p.price_iqd && (
+                          <p className="text-[9px] text-primary font-bold">{p.price_iqd.toLocaleString()}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-1">
               <Button 
-                size="lg"
-                className="flex-1 gap-2 h-12 text-base font-bold rounded-xl shadow-lg shadow-primary/20" 
+                size="sm"
+                className="flex-1 gap-1.5 h-9 text-xs font-bold rounded-lg" 
                 onClick={handleContactMerchant}
               >
-                <MessageCircle className="h-5 w-5" />
+                <MessageCircle className="h-3.5 w-3.5" />
                 تواصل للطلب
               </Button>
               <Button 
                 variant="outline" 
-                size="lg"
-                className="gap-2 h-12 rounded-xl" 
+                size="sm"
+                className="gap-1.5 h-9 text-xs rounded-lg" 
                 onClick={handleVisitStore}
               >
-                <Store className="h-5 w-5" />
+                <Store className="h-3.5 w-3.5" />
                 المتجر
               </Button>
             </div>
@@ -436,14 +520,14 @@ ${product.description ? `📝 الوصف: ${product.description.slice(0, 100)}${
         </DialogContent>
       </Dialog>
 
-      {/* Fullscreen Image Viewer */}
+      {/* Fullscreen */}
       <Dialog open={fullscreenImage} onOpenChange={setFullscreenImage}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 rounded-3xl border-0 bg-black/95">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 rounded-xl border-0 bg-black/95">
           <button
             onClick={() => setFullscreenImage(false)}
-            className="absolute top-4 right-4 z-50 h-10 w-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center hover:bg-white/20 transition-colors"
+            className="absolute top-3 right-3 z-50 h-8 w-8 rounded-full bg-white/10 backdrop-blur flex items-center justify-center hover:bg-white/20"
           >
-            <X className="h-5 w-5 text-white" />
+            <X className="h-4 w-4 text-white" />
           </button>
           {product.image_urls && (
             <img
@@ -455,73 +539,63 @@ ${product.description ? `📝 الوصف: ${product.description.slice(0, 100)}${
         </DialogContent>
       </Dialog>
 
-      {/* Message Confirmation Dialog - Improved */}
+      {/* Message Dialog */}
       <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-3xl border-2 border-primary/20">
+        <DialogContent className="sm:max-w-sm rounded-xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                <MessageCircle className="h-4 w-4 text-primary" />
-              </div>
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <MessageCircle className="h-4 w-4 text-primary" />
               مراسلة التاجر
             </DialogTitle>
-            <DialogDescription>
-              سيتم فتح محادثة مع {merchantApp?.display_name || "التاجر"}
+            <DialogDescription className="text-xs">
+              {merchantApp?.display_name || "التاجر"}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            {/* Product Preview - Enhanced */}
-            <div className="flex items-start gap-4 p-4 rounded-2xl bg-gradient-to-br from-muted/30 to-muted/10 border border-border/60">
-              <div className="h-16 w-16 rounded-xl overflow-hidden bg-muted/50 shrink-0 ring-2 ring-border/30">
+          <div className="space-y-3">
+            {/* Product Preview */}
+            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/50">
+              <div className="h-10 w-10 rounded-md overflow-hidden bg-muted/50 shrink-0">
                 {product.image_urls?.[0] ? (
-                  <img
-                    src={product.image_urls[0]}
-                    alt={product.title}
-                    className="h-full w-full object-cover"
-                  />
+                  <img src={product.image_urls[0]} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center">
-                    <Store className="h-7 w-7 text-muted-foreground" />
+                    <Package className="h-4 w-4 text-muted-foreground" />
                   </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold line-clamp-2">{product.title}</p>
+                <p className="text-xs font-medium line-clamp-1">{product.title}</p>
                 {product.price_iqd && (
-                  <p className="text-base text-primary font-black mt-1 tabular-nums">
-                    {product.price_iqd.toLocaleString()} د.ع
-                  </p>
+                  <p className="text-xs text-primary font-bold">{product.price_iqd.toLocaleString()} د.ع</p>
                 )}
               </div>
             </div>
 
-            {/* Auto-send Option - Enhanced */}
-            <div className="flex items-start gap-3 p-4 rounded-2xl bg-primary/5 border-2 border-primary/20">
+            {/* Auto-send Option */}
+            <div className="flex items-start gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
               <Checkbox
-                id="include-product-link"
+                id="include-link"
                 checked={includeProductLink}
-                onCheckedChange={(checked) => setIncludeProductLink(!!checked)}
+                onCheckedChange={(c) => setIncludeProductLink(!!c)}
                 className="mt-0.5"
               />
-              <label htmlFor="include-product-link" className="text-sm cursor-pointer flex-1">
-                <div className="flex items-center gap-2">
-                  <LinkIcon className="h-4 w-4 text-primary" />
-                  <span className="font-bold">إرسال تفاصيل المنتج تلقائياً</span>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                  سيتم إرسال رسالة تحتوي على اسم المنتج وسعره ورابطه
-                </p>
+              <label htmlFor="include-link" className="text-xs cursor-pointer flex-1">
+                <span className="font-medium flex items-center gap-1">
+                  <LinkIcon className="h-3 w-3" />
+                  إرسال تفاصيل المنتج
+                </span>
+                <p className="text-[10px] text-muted-foreground mt-0.5">تلقائياً مع الرابط</p>
               </label>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-2">
-              <Button variant="outline" className="flex-1 h-11 rounded-xl" onClick={() => setMessageDialogOpen(false)}>
+            {/* Buttons */}
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" className="flex-1 h-8 text-xs rounded-lg" onClick={() => setMessageDialogOpen(false)}>
                 إلغاء
               </Button>
-              <Button className="flex-1 gap-2 h-11 rounded-xl font-bold" onClick={handleStartConversation}>
-                <MessageCircle className="h-4 w-4" />
+              <Button size="sm" className="flex-1 gap-1 h-8 text-xs rounded-lg" onClick={handleStartConversation}>
+                <MessageCircle className="h-3 w-3" />
                 بدء المحادثة
               </Button>
             </div>
