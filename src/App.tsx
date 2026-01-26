@@ -1,4 +1,4 @@
-// App component - main application entry point - v6
+// App component - main application entry point - v7 (community profile check)
 import { Suspense, lazy, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
