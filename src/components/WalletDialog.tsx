@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { 
   Wallet, 
@@ -31,12 +32,16 @@ import {
   CreditCard,
   ChevronDown,
   ChevronUp,
-  TrendingUp,
-  TrendingDown,
+  ArrowUpRight,
+  ArrowDownLeft,
   Clock,
   CheckCircle2,
   XCircle,
-  Sparkles
+  History,
+  Plus,
+  Minus,
+  Banknote,
+  Receipt
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -76,10 +81,11 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // UI states
-  const [activeTab, setActiveTab] = useState<"stripe" | "transfer">("stripe");
+  const [depositMethod, setDepositMethod] = useState<"stripe" | "transfer">("stripe");
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [showDepositConfirm, setShowDepositConfirm] = useState(false);
   const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
+  const [activeMainTab, setActiveMainTab] = useState("deposit");
 
   // Fetch wallet settings
   const { data: walletSettings } = useQuery({
@@ -124,7 +130,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
         .select("*")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false })
-        .limit(20);
+        .limit(15);
       
       if (error) throw error;
       return data;
@@ -248,7 +254,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
   // Stripe payment handler
   const handleStripePayment = async () => {
     const amount = Number(stripeAmount);
-    const minAmount = Math.ceil(50 * usdRate / 100); // Minimum $0.50 in IQD
+    const minAmount = Math.ceil(50 * usdRate / 100);
     
     if (!amount || amount < minAmount) {
       toast.error(`الحد الأدنى للدفع هو ${minAmount.toLocaleString()} د.ع`);
@@ -325,12 +331,21 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
   };
 
   const getTransactionIcon = (type: string, status: string) => {
-    if (status === 'pending') return <Clock className="h-4 w-4 text-yellow-500" />;
-    if (status === 'rejected') return <XCircle className="h-4 w-4 text-destructive" />;
+    if (status === 'pending') return <Clock className="h-3.5 w-3.5" />;
+    if (status === 'rejected') return <XCircle className="h-3.5 w-3.5" />;
     if (type === 'deposit' || type === 'admin_addition' || type === 'points_conversion') {
-      return <TrendingUp className="h-4 w-4 text-green-500" />;
+      return <ArrowDownLeft className="h-3.5 w-3.5" />;
     }
-    return <TrendingDown className="h-4 w-4 text-red-500" />;
+    return <ArrowUpRight className="h-3.5 w-3.5" />;
+  };
+
+  const getTransactionColor = (type: string, status: string) => {
+    if (status === 'pending') return 'text-yellow-500 bg-yellow-500/10';
+    if (status === 'rejected') return 'text-destructive bg-destructive/10';
+    if (type === 'deposit' || type === 'admin_addition' || type === 'points_conversion') {
+      return 'text-green-500 bg-green-500/10';
+    }
+    return 'text-red-500 bg-red-500/10';
   };
 
   const getTransactionLabel = (type: string) => {
@@ -347,24 +362,18 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
     return labels[type] || type;
   };
 
-  const getStatusBadge = (status: string) => {
-    const styles: Record<string, string> = {
-      pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
-      completed: 'bg-green-500/10 text-green-600 border-green-500/20',
-      approved: 'bg-green-500/10 text-green-600 border-green-500/20',
-      rejected: 'bg-destructive/10 text-destructive border-destructive/20',
-    };
+  const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
       pending: 'قيد المراجعة',
       completed: 'مكتمل',
-      approved: 'موافق عليه',
+      approved: 'تمت الموافقة',
       rejected: 'مرفوض',
     };
-    return (
-      <span className={cn("text-[10px] px-1.5 py-0.5 rounded border", styles[status] || '')}>
-        {labels[status] || status}
-      </span>
-    );
+    return labels[status] || status;
+  };
+
+  const isIncome = (type: string) => {
+    return ['deposit', 'admin_addition', 'points_conversion'].includes(type);
   };
 
   return (
@@ -374,397 +383,465 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
         if (!open) resetDepositForm();
       }}>
         <DialogContent 
-          className="max-w-lg p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col" 
+          className="max-w-md p-0 gap-0 overflow-hidden max-h-[90vh] flex flex-col bg-gradient-to-b from-background via-background to-card/50" 
           dir="rtl"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          {/* Premium Header */}
-          <header className="relative overflow-hidden bg-gradient-to-br from-primary/20 via-accent/10 to-transparent p-5 border-b border-primary/20">
-            <div className="absolute top-0 left-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-            <div className="absolute bottom-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-2xl translate-x-1/2 translate-y-1/2" />
-            
-            <div className="relative flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-accent p-[2px] shadow-lg shadow-primary/25">
-                <div className="h-full w-full rounded-2xl bg-card flex items-center justify-center">
-                  <Wallet className="h-6 w-6 text-primary" />
-                </div>
+          {/* Compact Balance Header */}
+          <div className="relative p-4 pb-3 border-b border-border/50">
+            <div className="flex items-center gap-3">
+              <div className="h-11 w-11 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center">
+                <Wallet className="h-5 w-5 text-primary" />
               </div>
-              
               <div className="flex-1">
-                <h2 className="text-lg font-bold text-foreground mb-0.5">المحفظة</h2>
-                <p className="text-xs text-muted-foreground">إدارة رصيدك ومعاملاتك</p>
-              </div>
-            </div>
-            
-            {/* Balance Card */}
-            <div className="relative mt-4 p-4 rounded-xl bg-gradient-to-br from-card via-card to-primary/5 border border-primary/20 shadow-lg">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">رصيدك الحالي</p>
-                  <p className="text-3xl font-bold text-foreground">
+                <p className="text-xs text-muted-foreground">رصيد المحفظة</p>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl font-bold text-foreground">
                     {wallet?.balance?.toLocaleString() || "0"}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">دينار عراقي</p>
-                </div>
-                <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-primary" />
+                  </span>
+                  <span className="text-xs text-muted-foreground">د.ع</span>
                 </div>
               </div>
             </div>
-          </header>
+          </div>
 
-          {/* Scrollable Content */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            {/* Deposit Section */}
-            <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
-              <div className="p-4 border-b border-border/30 bg-muted/30">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-lg bg-green-500/10 flex items-center justify-center">
-                    <Upload className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold">تعبئة المحفظة</h3>
-                    <p className="text-[11px] text-muted-foreground">اختر طريقة الدفع المناسبة</p>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="p-4 space-y-4">
-                {/* Payment Method Tabs */}
-                <div className="flex gap-2">
+          {/* Main Tabs */}
+          <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="flex-1 flex flex-col min-h-0">
+            <TabsList className="grid grid-cols-3 m-3 mb-0 bg-muted/50 p-1 h-10">
+              <TabsTrigger value="deposit" className="text-xs gap-1.5 data-[state=active]:bg-background">
+                <Plus className="h-3.5 w-3.5" />
+                إيداع
+              </TabsTrigger>
+              <TabsTrigger value="withdraw" className="text-xs gap-1.5 data-[state=active]:bg-background">
+                <Minus className="h-3.5 w-3.5" />
+                سحب
+              </TabsTrigger>
+              <TabsTrigger value="history" className="text-xs gap-1.5 data-[state=active]:bg-background">
+                <History className="h-3.5 w-3.5" />
+                السجل
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Deposit Tab */}
+            <TabsContent value="deposit" className="flex-1 m-0 overflow-y-auto">
+              <div className="p-3 space-y-3">
+                {/* Deposit Method Selection */}
+                <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => setActiveTab("stripe")}
+                    onClick={() => setDepositMethod("stripe")}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all",
-                      activeTab === "stripe"
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                      "relative p-3 rounded-xl border-2 transition-all text-right",
+                      depositMethod === "stripe"
+                        ? "border-primary bg-primary/5"
+                        : "border-border/50 bg-card/50 hover:border-border"
                     )}
                   >
-                    <CreditCard className="h-4 w-4" />
-                    بطاقة ائتمان
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("transfer")}
-                    className={cn(
-                      "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-sm font-medium transition-all",
-                      activeTab === "transfer"
-                        ? "bg-primary text-primary-foreground shadow-md"
-                        : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    <Upload className="h-4 w-4" />
-                    تحويل بنكي
-                  </button>
-                </div>
-
-                {/* Stripe Tab Content */}
-                {activeTab === "stripe" && (
-                  <div className="space-y-3">
-                    <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
-                      <p className="text-xs text-muted-foreground">
-                        💳 ادفع ببطاقتك الائتمانية وسيتم إضافة الرصيد فوراً
-                      </p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center",
+                        depositMethod === "stripe" ? "bg-primary/10" : "bg-muted"
+                      )}>
+                        <CreditCard className={cn(
+                          "h-4 w-4",
+                          depositMethod === "stripe" ? "text-primary" : "text-muted-foreground"
+                        )} />
+                      </div>
+                      <span className="text-sm font-medium">بطاقة ائتمان</span>
                     </div>
-                    
+                    <p className="text-[10px] text-muted-foreground">فوري ومباشر</p>
+                    {depositMethod === "stripe" && (
+                      <div className="absolute top-2 left-2 h-2 w-2 rounded-full bg-primary" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setDepositMethod("transfer")}
+                    className={cn(
+                      "relative p-3 rounded-xl border-2 transition-all text-right",
+                      depositMethod === "transfer"
+                        ? "border-primary bg-primary/5"
+                        : "border-border/50 bg-card/50 hover:border-border"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={cn(
+                        "h-8 w-8 rounded-lg flex items-center justify-center",
+                        depositMethod === "transfer" ? "bg-primary/10" : "bg-muted"
+                      )}>
+                        <Banknote className={cn(
+                          "h-4 w-4",
+                          depositMethod === "transfer" ? "text-primary" : "text-muted-foreground"
+                        )} />
+                      </div>
+                      <span className="text-sm font-medium">تحويل بنكي</span>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">يدوي بإثبات</p>
+                    {depositMethod === "transfer" && (
+                      <div className="absolute top-2 left-2 h-2 w-2 rounded-full bg-primary" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Stripe Content */}
+                {depositMethod === "stripe" && (
+                  <div className="space-y-3">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10">
+                      <div className="flex items-start gap-2">
+                        <CreditCard className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          الدفع ببطاقتك الائتمانية عبر بوابة Stripe الآمنة. يتم إضافة الرصيد فوراً.
+                        </p>
+                      </div>
+                    </div>
+
                     <div className="space-y-2">
-                      <Label className="text-xs">المبلغ (دينار عراقي)</Label>
+                      <Label className="text-xs font-medium">المبلغ بالدينار العراقي</Label>
                       <Input
                         type="number"
                         placeholder={`الحد الأدنى ${Math.ceil(50 * usdRate / 100).toLocaleString()}`}
                         value={stripeAmount}
                         onChange={(e) => setStripeAmount(e.target.value)}
-                        className="h-11"
+                        className="h-11 text-base"
                       />
                       {stripeAmount && Number(stripeAmount) > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          ≈ ${(Number(stripeAmount) / usdRate).toFixed(2)} دولار أمريكي
-                        </p>
+                        <div className="flex items-center justify-between px-1">
+                          <span className="text-xs text-muted-foreground">المقابل بالدولار</span>
+                          <span className="text-xs font-medium text-primary">
+                            ${(Number(stripeAmount) / usdRate).toFixed(2)}
+                          </span>
+                        </div>
                       )}
                     </div>
 
-                    <Button 
+                    <Button
                       onClick={handleStripePayment}
-                      disabled={stripeLoading || !stripeAmount || Number(stripeAmount) < Math.ceil(50 * usdRate / 100)}
-                      className="w-full h-11 gap-2 bg-gradient-to-r from-primary to-accent"
+                      disabled={stripeLoading || !stripeAmount}
+                      className="w-full h-11 gap-2"
                     >
                       {stripeLoading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          جاري التحميل...
-                        </>
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        <>
-                          <CreditCard className="h-4 w-4" />
-                          الدفع الآن
-                        </>
+                        <CreditCard className="h-4 w-4" />
                       )}
+                      {stripeLoading ? "جاري التحويل..." : "الدفع الآن"}
                     </Button>
                   </div>
                 )}
 
-                {/* Bank Transfer Tab Content */}
-                {activeTab === "transfer" && (
+                {/* Bank Transfer Content */}
+                {depositMethod === "transfer" && (
                   <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs">المبلغ</Label>
-                      <Input
-                        type="number"
-                        placeholder="أدخل المبلغ"
-                        value={depositAmount}
-                        onChange={(e) => setDepositAmount(e.target.value)}
-                        className="h-10"
-                      />
-                    </div>
-
+                    {/* Payment Methods */}
                     {activePaymentMethods.length > 0 && (
                       <div className="space-y-2">
-                        <Label className="text-xs">طريقة الدفع</Label>
+                        <Label className="text-xs font-medium">اختر طريقة الدفع</Label>
                         <RadioGroup
                           value={selectedPaymentMethod}
                           onValueChange={setSelectedPaymentMethod}
-                          className="space-y-1.5"
+                          className="space-y-2"
                         >
                           {activePaymentMethods.map((method) => (
-                            <div key={method.id} className="flex items-center gap-2 p-2 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors">
+                            <div
+                              key={method.id}
+                              className={cn(
+                                "flex items-center gap-3 p-3 rounded-xl border-2 transition-all cursor-pointer",
+                                selectedPaymentMethod === method.id
+                                  ? "border-primary bg-primary/5"
+                                  : "border-border/50 bg-card/30 hover:border-border"
+                              )}
+                              onClick={() => setSelectedPaymentMethod(method.id)}
+                            >
                               <RadioGroupItem value={method.id} id={method.id} />
-                              <Label htmlFor={method.id} className="flex-1 text-sm cursor-pointer">
-                                {method.name}
-                              </Label>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium">{method.name}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <code className="text-xs bg-muted px-2 py-0.5 rounded font-mono">
+                                    {method.account_number}
+                                  </code>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      copyAccountNumber(method.account_number);
+                                    }}
+                                    className="p-1 hover:bg-muted rounded"
+                                  >
+                                    {copiedNumber === method.account_number ? (
+                                      <Check className="h-3 w-3 text-green-500" />
+                                    ) : (
+                                      <Copy className="h-3 w-3 text-muted-foreground" />
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </RadioGroup>
                       </div>
                     )}
 
-                    {selectedPaymentMethod && getSelectedMethodDetails() && (
-                      <div className="p-3 bg-muted/50 rounded-lg space-y-2">
-                        <p className="text-xs font-medium">رقم الحساب للتحويل:</p>
-                        <div className="flex items-center gap-2">
-                          <code className="flex-1 text-xs bg-background p-2 rounded border font-mono">
-                            {getSelectedMethodDetails()?.account_number}
-                          </code>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-8 w-8 p-0"
-                            onClick={() => copyAccountNumber(getSelectedMethodDetails()?.account_number || '')}
-                          >
-                            {copiedNumber === getSelectedMethodDetails()?.account_number ? (
-                              <Check className="h-3.5 w-3.5 text-green-600" />
-                            ) : (
-                              <Copy className="h-3.5 w-3.5" />
-                            )}
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-
+                    {/* Amount Input */}
                     <div className="space-y-2">
-                      <Label className="text-xs">صورة إثبات الدفع</Label>
+                      <Label className="text-xs font-medium">المبلغ المحول</Label>
+                      <Input
+                        type="number"
+                        placeholder="أدخل المبلغ بالدينار"
+                        value={depositAmount}
+                        onChange={(e) => setDepositAmount(e.target.value)}
+                        className="h-11 text-base"
+                      />
+                    </div>
+
+                    {/* Proof Upload */}
+                    <div className="space-y-2">
+                      <Label className="text-xs font-medium">صورة إثبات التحويل</Label>
                       <input
-                        ref={fileInputRef}
                         type="file"
                         accept="image/*"
-                        onChange={handleUploadProof}
+                        ref={fileInputRef}
                         className="hidden"
+                        onChange={handleUploadProof}
                       />
                       {paymentProofUrl ? (
-                        <div className="relative">
+                        <div className="relative rounded-xl overflow-hidden border border-border/50 bg-card/30">
                           <img
                             src={paymentProofUrl}
                             alt="إثبات الدفع"
-                            className="w-full h-24 object-cover rounded-lg border"
+                            className="w-full h-32 object-cover"
                           />
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            className="absolute top-1.5 left-1.5 h-6 text-[10px] px-2"
-                            onClick={() => setPaymentProofUrl("")}
-                          >
-                            حذف
-                          </Button>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                          <div className="absolute bottom-2 right-2 flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="h-7 text-xs"
+                            >
+                              تغيير
+                            </Button>
+                          </div>
+                          <div className="absolute top-2 left-2">
+                            <div className="h-6 w-6 rounded-full bg-green-500 flex items-center justify-center">
+                              <Check className="h-3.5 w-3.5 text-white" />
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         <button
                           onClick={() => fileInputRef.current?.click()}
                           disabled={uploadingProof}
-                          className="w-full h-20 border-2 border-dashed border-border/50 rounded-lg flex flex-col items-center justify-center gap-1 hover:bg-muted/30 transition-colors"
+                          className="w-full h-24 rounded-xl border-2 border-dashed border-border/50 bg-card/30 hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-2"
                         >
                           {uploadingProof ? (
                             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                           ) : (
                             <>
-                              <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                              <span className="text-[11px] text-muted-foreground">اضغط لرفع الصورة</span>
+                              <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                                <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                              <span className="text-xs text-muted-foreground">اضغط لرفع الصورة</span>
                             </>
                           )}
                         </button>
                       )}
                     </div>
 
-                    <Button 
-                      onClick={handleDepositClick} 
-                      disabled={depositWallet.isPending || !depositAmount || !selectedPaymentMethod || !paymentProofUrl} 
-                      className="w-full h-10"
+                    <Button
+                      onClick={handleDepositClick}
+                      disabled={depositWallet.isPending || !depositAmount || !selectedPaymentMethod || !paymentProofUrl}
+                      className="w-full h-11 gap-2"
                     >
                       {depositWallet.isPending ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                          جاري الإرسال...
-                        </>
+                        <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
-                        "طلب التعبئة"
+                        <Upload className="h-4 w-4" />
                       )}
+                      إرسال طلب التعبئة
                     </Button>
                   </div>
                 )}
               </div>
-            </div>
+            </TabsContent>
 
-            {/* Withdrawal Section - Collapsible */}
-            <Collapsible open={withdrawOpen} onOpenChange={setWithdrawOpen}>
-              <CollapsibleTrigger asChild>
-                <button className="w-full rounded-xl border border-border/50 bg-card p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-                      <Download className="h-4 w-4 text-red-600" />
-                    </div>
-                    <div className="text-right">
-                      <h3 className="text-sm font-semibold">سحب الرصيد</h3>
-                      <p className="text-[11px] text-muted-foreground">الحد الأدنى: {minWithdrawal.toLocaleString()} د.ع</p>
+            {/* Withdraw Tab */}
+            <TabsContent value="withdraw" className="flex-1 m-0 overflow-y-auto">
+              <div className="p-3 space-y-3">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-orange-500/5 to-transparent border border-orange-500/10">
+                  <div className="flex items-start gap-2">
+                    <Download className="h-4 w-4 text-orange-500 mt-0.5 shrink-0" />
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        يمكنك سحب رصيدك إلى حسابك البنكي. سيتم مراجعة طلبك خلال ٢٤ ساعة.
+                      </p>
+                      <p className="text-xs text-orange-600">
+                        الحد الأدنى للسحب: {minWithdrawal.toLocaleString()} د.ع
+                      </p>
                     </div>
                   </div>
-                  {withdrawOpen ? (
-                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
-                  ) : (
-                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                  )}
-                </button>
-              </CollapsibleTrigger>
-              
-              <CollapsibleContent className="mt-2">
-                <div className="rounded-xl border border-border/50 bg-card p-4 space-y-3">
+                </div>
+
+                <div className="p-4 rounded-xl bg-card/50 border border-border/50">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm text-muted-foreground">الرصيد المتاح</span>
+                    <span className="text-lg font-bold text-foreground">
+                      {wallet?.balance?.toLocaleString() || 0} <span className="text-xs text-muted-foreground">د.ع</span>
+                    </span>
+                  </div>
+
                   <div className="space-y-2">
-                    <Label className="text-xs">المبلغ</Label>
+                    <Label className="text-xs font-medium">مبلغ السحب</Label>
                     <Input
                       type="number"
                       placeholder={`الحد الأدنى ${minWithdrawal.toLocaleString()}`}
                       value={withdrawAmount}
                       onChange={(e) => setWithdrawAmount(e.target.value)}
                       max={wallet?.balance || 0}
-                      min={minWithdrawal}
-                      className="h-10"
+                      className="h-11 text-base"
                     />
-                    {Number(withdrawAmount) > 0 && Number(withdrawAmount) < minWithdrawal && (
-                      <p className="text-[10px] text-destructive">
-                        الحد الأدنى للسحب {minWithdrawal.toLocaleString()} د.ع
-                      </p>
+                    {wallet && wallet.balance > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setWithdrawAmount(String(wallet.balance))}
+                        className="text-xs h-7 px-2"
+                      >
+                        سحب كامل الرصيد
+                      </Button>
                     )}
                   </div>
-                  <Button 
-                    onClick={handleWithdrawClick} 
-                    disabled={
-                      withdrawWallet.isPending || 
-                      !wallet || 
-                      wallet.balance <= 0 ||
-                      Number(withdrawAmount) < minWithdrawal
-                    } 
-                    className="w-full h-10" 
-                    variant="outline"
-                  >
-                    {withdrawWallet.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                        جاري الإرسال...
-                      </>
-                    ) : (
-                      "طلب السحب"
-                    )}
-                  </Button>
                 </div>
-              </CollapsibleContent>
-            </Collapsible>
 
-            {/* Transactions */}
-            <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
-              <div className="p-3 border-b border-border/30 bg-muted/30">
-                <h3 className="text-sm font-semibold">سجل المعاملات</h3>
+                <Button
+                  onClick={handleWithdrawClick}
+                  disabled={withdrawWallet.isPending || !withdrawAmount || Number(withdrawAmount) < minWithdrawal}
+                  className="w-full h-11 gap-2"
+                  variant="outline"
+                >
+                  {withdrawWallet.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                  طلب السحب
+                </Button>
               </div>
-              <ScrollArea className="h-[200px]">
-                {walletTransactions && walletTransactions.length > 0 ? (
-                  <div className="divide-y divide-border/30">
-                    {walletTransactions.map((tx: any) => (
-                      <div key={tx.id} className="flex items-center gap-3 p-3 hover:bg-muted/20">
-                        {getTransactionIcon(tx.type, tx.status)}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium">{getTransactionLabel(tx.type)}</span>
-                            {getStatusBadge(tx.status)}
+            </TabsContent>
+
+            {/* History Tab */}
+            <TabsContent value="history" className="flex-1 m-0 overflow-hidden flex flex-col">
+              <ScrollArea className="flex-1">
+                <div className="p-3">
+                  {walletTransactions && walletTransactions.length > 0 ? (
+                    <div className="space-y-2">
+                      {walletTransactions.map((tx) => (
+                        <div
+                          key={tx.id}
+                          className="flex items-center gap-3 p-3 rounded-xl bg-card/50 border border-border/30 hover:border-border/50 transition-colors"
+                        >
+                          <div className={cn(
+                            "h-9 w-9 rounded-lg flex items-center justify-center shrink-0",
+                            getTransactionColor(tx.type, tx.status)
+                          )}>
+                            {getTransactionIcon(tx.type, tx.status)}
                           </div>
-                          <p className="text-[10px] text-muted-foreground">
-                            {new Date(tx.created_at).toLocaleDateString('ar-IQ', {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })}
-                          </p>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium truncate">
+                                {getTransactionLabel(tx.type)}
+                              </span>
+                              <span className={cn(
+                                "text-sm font-semibold tabular-nums shrink-0",
+                                isIncome(tx.type) && tx.status !== 'rejected'
+                                  ? "text-green-600"
+                                  : tx.status === 'rejected'
+                                    ? "text-muted-foreground line-through"
+                                    : "text-foreground"
+                              )}>
+                                {isIncome(tx.type) ? "+" : "-"}{tx.amount.toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between mt-0.5">
+                              <span className="text-[10px] text-muted-foreground">
+                                {new Date(tx.created_at).toLocaleDateString('ar-IQ', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </span>
+                              <span className={cn(
+                                "text-[10px] px-1.5 py-0.5 rounded-full",
+                                tx.status === 'pending' && "bg-yellow-500/10 text-yellow-600",
+                                (tx.status === 'completed' || tx.status === 'approved') && "bg-green-500/10 text-green-600",
+                                tx.status === 'rejected' && "bg-destructive/10 text-destructive"
+                              )}>
+                                {getStatusLabel(tx.status)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
-                        <span className={cn(
-                          "text-sm font-bold",
-                          tx.type === 'withdrawal' || tx.type === 'order_payment' || tx.type === 'admin_deduction' || tx.type === 'purchase' || tx.type === 'competition_ticket' || tx.amount < 0
-                            ? 'text-red-600'
-                            : 'text-green-600'
-                        )}>
-                          {tx.type === 'withdrawal' || tx.type === 'order_payment' || tx.type === 'admin_deduction' || tx.type === 'purchase' || tx.type === 'competition_ticket' || tx.amount < 0 ? '-' : '+'}
-                          {Math.abs(tx.amount).toLocaleString()}
-                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="py-12 text-center">
+                      <div className="h-12 w-12 rounded-xl bg-muted mx-auto mb-3 flex items-center justify-center">
+                        <Receipt className="h-6 w-6 text-muted-foreground" />
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-                    <Wallet className="h-8 w-8 mb-2 opacity-40" />
-                    <p className="text-sm">لا توجد معاملات بعد</p>
-                  </div>
-                )}
+                      <p className="text-sm text-muted-foreground">لا توجد معاملات بعد</p>
+                    </div>
+                  )}
+                </div>
               </ScrollArea>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
 
-      {/* Deposit Confirmation */}
+      {/* Deposit Confirmation Dialog */}
       <AlertDialog open={showDepositConfirm} onOpenChange={setShowDepositConfirm}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle>تأكيد طلب التعبئة</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>المبلغ: <strong>{Number(depositAmount).toLocaleString()} د.ع</strong></p>
-              <p>طريقة الدفع: <strong>{getSelectedMethodDetails()?.name}</strong></p>
-              <p className="text-xs">سيتم مراجعة الطلب من قبل الإدارة</p>
+              <p>هل أنت متأكد من إرسال طلب تعبئة بمبلغ:</p>
+              <p className="text-lg font-bold text-foreground">
+                {Number(depositAmount).toLocaleString()} د.ع
+              </p>
+              <p className="text-xs">
+                عبر: {getSelectedMethodDetails()?.name}
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction onClick={confirmDeposit}>
+              تأكيد الإرسال
+            </AlertDialogAction>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeposit}>تأكيد</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Withdraw Confirmation */}
+      {/* Withdraw Confirmation Dialog */}
       <AlertDialog open={showWithdrawConfirm} onOpenChange={setShowWithdrawConfirm}>
         <AlertDialogContent dir="rtl">
           <AlertDialogHeader>
             <AlertDialogTitle>تأكيد طلب السحب</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>المبلغ: <strong>{Number(withdrawAmount).toLocaleString()} د.ع</strong></p>
-              <p className="text-xs">سيتم مراجعة الطلب من قبل الإدارة</p>
+              <p>هل أنت متأكد من طلب سحب مبلغ:</p>
+              <p className="text-lg font-bold text-foreground">
+                {Number(withdrawAmount).toLocaleString()} د.ع
+              </p>
+              <p className="text-xs text-muted-foreground">
+                سيتم خصم المبلغ من رصيدك فوراً ومراجعة الطلب خلال ٢٤ ساعة
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
+          <AlertDialogFooter className="flex-row-reverse gap-2">
+            <AlertDialogAction onClick={confirmWithdraw}>
+              تأكيد السحب
+            </AlertDialogAction>
             <AlertDialogCancel>إلغاء</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmWithdraw}>تأكيد</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
