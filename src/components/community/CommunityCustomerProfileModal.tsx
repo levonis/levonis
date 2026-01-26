@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -8,6 +8,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { filterContent, validateUsername } from "@/lib/contentFilter";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { 
   Loader2, 
   UserCircle2, 
@@ -25,7 +27,10 @@ import {
   FileText,
   Sparkles,
   CheckCircle2,
-  Store
+  Store,
+  Camera,
+  Upload,
+  ImagePlus
 } from "lucide-react";
 
 const DEFAULT_AVATAR_URL = "/placeholder.svg";
@@ -75,6 +80,9 @@ export default function CommunityCustomerProfileModal({
   const { toast } = useToast();
   const { user } = useAuth();
   const [loadingUi, setLoadingUi] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string>("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setLoadingUi(false), 200);
@@ -96,6 +104,12 @@ export default function CommunityCustomerProfileModal({
     enabled: !!user?.id,
   });
 
+  useEffect(() => {
+    if (profile?.avatar_url) {
+      setAvatarUrl(profile.avatar_url as string);
+    }
+  }, [profile?.avatar_url]);
+
   const defaults = useMemo<FormValues>(
     () => ({
       fullName: (profile?.full_name as string | null) ?? "",
@@ -114,11 +128,93 @@ export default function CommunityCustomerProfileModal({
     mode: "onChange",
   });
 
+  // Avatar upload mutation
+  const uploadAvatarMutation = useMutation({
+    mutationFn: async (file: File) => {
+      if (!user?.id) throw new Error("Not authenticated");
+      
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(`avatars/${fileName}`, file, { upsert: true });
+      
+      if (uploadError) throw uploadError;
+      
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(`avatars/${fileName}`);
+      
+      return publicUrl;
+    },
+    onSuccess: (url) => {
+      setAvatarUrl(url);
+      toast({ title: "تم رفع الصورة بنجاح" });
+    },
+    onError: (err: any) => {
+      toast({ 
+        title: "تعذر رفع الصورة", 
+        description: err?.message ?? "حدث خطأ", 
+        variant: "destructive" 
+      });
+    },
+  });
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "الملف كبير جداً",
+        description: "الحد الأقصى لحجم الصورة هو 5 ميغابايت",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "نوع الملف غير مدعوم",
+        description: "الرجاء اختيار صورة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      await uploadAvatarMutation.mutateAsync(file);
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
   const saveMutation = useMutation({
     mutationFn: async (values: FormValues) => {
       if (!user?.id) throw new Error("Not authenticated");
 
-      const avatarUrl = (profile as any)?.avatar_url ?? DEFAULT_AVATAR_URL;
+      // Content filtering
+      const usernameCheck = validateUsername(values.username);
+      if (!usernameCheck.isClean) {
+        throw new Error("اسم المستخدم يحتوي على كلمات غير مناسبة");
+      }
+
+      const nameCheck = filterContent(values.fullName);
+      if (!nameCheck.isClean) {
+        throw new Error("الاسم يحتوي على كلمات غير مناسبة");
+      }
+
+      if (values.bio) {
+        const bioCheck = filterContent(values.bio);
+        if (!bioCheck.isClean) {
+          throw new Error("النبذة تحتوي على كلمات غير مناسبة");
+        }
+      }
+
       const payload = {
         full_name: values.fullName,
         phone_number: values.phoneNumber,
@@ -126,7 +222,7 @@ export default function CommunityCustomerProfileModal({
         birth_date: values.birthDate,
         gender: values.gender,
         bio: values.bio?.trim() ? values.bio.trim() : null,
-        ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+        avatar_url: avatarUrl || DEFAULT_AVATAR_URL,
       };
 
       const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
@@ -159,19 +255,20 @@ export default function CommunityCustomerProfileModal({
     },
   });
 
-  // Calculate completion progress
+  // Calculate completion progress (now includes avatar)
   const completedFields = useMemo(() => {
     const values = form.watch();
     let count = 0;
+    if (avatarUrl && avatarUrl !== DEFAULT_AVATAR_URL) count++;
     if (values.fullName?.trim()) count++;
     if (values.phoneNumber?.trim()) count++;
     if (values.username?.trim()) count++;
     if (values.birthDate) count++;
     if (values.gender) count++;
     return count;
-  }, [form.watch()]);
+  }, [form.watch(), avatarUrl]);
 
-  const totalRequiredFields = 5;
+  const totalRequiredFields = 6; // Added avatar
   const progressPercent = (completedFields / totalRequiredFields) * 100;
 
   const fields: FieldConfig[] = [
@@ -205,23 +302,61 @@ export default function CommunityCustomerProfileModal({
       onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))}
       className="flex min-h-0 flex-1 flex-col"
     >
-      {/* Premium Header */}
+      {/* Premium Header with Avatar Upload */}
       <header className="relative overflow-hidden border-b border-primary/20 bg-gradient-to-br from-primary/15 via-accent/10 to-transparent px-5 py-5">
         {/* Decorative elements */}
         <div className="absolute top-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
         <div className="absolute bottom-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl translate-x-1/2 translate-y-1/2" />
         
         <div className="relative flex items-center gap-4">
-          {/* Avatar placeholder with glow */}
-          <div className="relative">
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-accent p-[2px] shadow-lg shadow-primary/25">
-              <div className="h-full w-full rounded-2xl bg-card flex items-center justify-center">
-                <Sparkles className="h-6 w-6 text-primary" />
+          {/* Avatar Upload Section */}
+          <div className="relative group">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-accent p-[2px] shadow-lg shadow-primary/25">
+              <div className="h-full w-full rounded-2xl bg-card overflow-hidden">
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt="الصورة الشخصية" 
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-muted/50">
+                    <UserCircle2 className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
               </div>
             </div>
+            
+            {/* Upload overlay */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            >
+              {uploadingAvatar ? (
+                <Loader2 className="h-5 w-5 text-white animate-spin" />
+              ) : (
+                <Camera className="h-5 w-5 text-white" />
+              )}
+            </button>
+            
+            {/* Badge indicator */}
             <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-accent flex items-center justify-center shadow-md">
-              <span className="text-[10px] font-bold text-accent-foreground">{completedFields}</span>
+              {avatarUrl && avatarUrl !== DEFAULT_AVATAR_URL ? (
+                <CheckCircle2 className="h-3 w-3 text-accent-foreground" />
+              ) : (
+                <ImagePlus className="h-3 w-3 text-accent-foreground" />
+              )}
             </div>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
           </div>
           
           <div className="flex-1 min-w-0">
@@ -240,6 +375,14 @@ export default function CommunityCustomerProfileModal({
             </p>
           </div>
         </div>
+
+        {/* Avatar upload hint */}
+        {(!avatarUrl || avatarUrl === DEFAULT_AVATAR_URL) && (
+          <p className="text-[10px] text-primary/80 mt-3 flex items-center gap-1">
+            <Upload className="h-3 w-3" />
+            اضغط على الصورة لرفع صورتك الشخصية
+          </p>
+        )}
       </header>
 
       {/* Scrollable body */}
@@ -437,19 +580,19 @@ export default function CommunityCustomerProfileModal({
 
           <Button
             type="submit"
-            className="flex-[2] h-11 bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 disabled:opacity-50"
-            disabled={!form.formState.isValid || saveMutation.isPending}
+            disabled={saveMutation.isPending || !form.formState.isValid || uploadingAvatar}
+            className="flex-[2] h-11 bg-gradient-to-b from-primary to-accent text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:opacity-90"
           >
             {saveMutation.isPending ? (
-              <span className="inline-flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
+              <>
+                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                 جارٍ الحفظ...
-              </span>
+              </>
             ) : (
-              <span className="inline-flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
+              <>
+                <Sparkles className="ml-2 h-4 w-4" />
                 حفظ الملف الشخصي
-              </span>
+              </>
             )}
           </Button>
         </div>

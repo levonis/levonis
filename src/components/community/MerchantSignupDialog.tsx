@@ -5,16 +5,41 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { filterContent, validateDisplayName, validateBio } from "@/lib/contentFilter";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 
-import { CheckCircle2, Clock, Image as ImageIcon, Store, XCircle } from "lucide-react";
+import { 
+  CheckCircle2, 
+  Clock, 
+  Image as ImageIcon, 
+  Store, 
+  XCircle,
+  Upload,
+  User,
+  MapPin,
+  Phone,
+  Calendar,
+  Sparkles,
+  ArrowRight,
+  ArrowLeft,
+  Send,
+  FileText,
+  Instagram,
+  Facebook,
+  BadgeCheck,
+  Shield,
+  Wallet,
+  Loader2,
+  Users
+} from "lucide-react";
 
 const step1Schema = z.object({
   display_name: z.string().trim().min(2, "اسم المتجر مطلوب (2 حروف على الأقل)").max(15, "اسم المتجر يجب أن لا يتجاوز 15 حرف"),
@@ -35,11 +60,21 @@ const step2Schema = z.object({
 type Step1 = z.infer<typeof step1Schema>;
 type Step2 = z.infer<typeof step2Schema>;
 
-function statusBadge(status?: string | null) {
-  if (status === "approved") return { label: "مقبول", Icon: CheckCircle2 };
-  if (status === "rejected") return { label: "مرفوض", Icon: XCircle };
-  if (status === "pending") return { label: "قيد المراجعة", Icon: Clock };
-  return { label: "مسودة", Icon: Clock };
+function StatusBadge({ status }: { status?: string | null }) {
+  const config = {
+    approved: { label: "مقبول", Icon: CheckCircle2, color: "text-emerald-500 bg-emerald-500/10" },
+    rejected: { label: "مرفوض", Icon: XCircle, color: "text-destructive bg-destructive/10" },
+    pending: { label: "قيد المراجعة", Icon: Clock, color: "text-amber-500 bg-amber-500/10" },
+    draft: { label: "مسودة", Icon: FileText, color: "text-muted-foreground bg-muted" },
+  };
+  const s = config[status as keyof typeof config] || config.draft;
+  
+  return (
+    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${s.color}`}>
+      <s.Icon className="h-3.5 w-3.5" />
+      {s.label}
+    </div>
+  );
 }
 
 async function uploadStoreImage(params: { userId: string; file: File }) {
@@ -62,7 +97,6 @@ export default function MerchantSignupDialog({
 }: {
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
-  /** When used as a standalone route wrapper */
   defaultOpen?: boolean;
 }) {
   const qc = useQueryClient();
@@ -156,6 +190,20 @@ export default function MerchantSignupDialog({
     mutationFn: async (payload: { step1?: Step1; step2?: Step2; store_image_url?: string | null }) => {
       if (!user?.id) throw new Error("Not authenticated");
 
+      // Content filtering for step1
+      if (payload.step1) {
+        const nameCheck = validateDisplayName(payload.step1.display_name);
+        if (!nameCheck.isClean) {
+          throw new Error("اسم المتجر يحتوي على كلمات غير مناسبة");
+        }
+        if (payload.step1.bio) {
+          const bioCheck = validateBio(payload.step1.bio);
+          if (!bioCheck.isClean) {
+            throw new Error("وصف المتجر يحتوي على محتوى غير مناسب");
+          }
+        }
+      }
+
       // Ensure application row exists (draft)
       let appId = app?.id as string | undefined;
       if (!appId) {
@@ -188,7 +236,6 @@ export default function MerchantSignupDialog({
                 }
               : {}),
             ...(payload.store_image_url !== undefined ? { store_image_url: payload.store_image_url } : {}),
-            // keep pending/approved/rejected as-is
             ...(app?.status ? {} : { status: "draft" }),
           })
           .eq("id", appId);
@@ -274,13 +321,10 @@ export default function MerchantSignupDialog({
   });
 
   const busy = appLoading || saveDraftMutation.isPending;
-  const s = statusBadge(app?.status);
   const fee = Number((app?.registration_fee as any) ?? 25000);
-
-  const canEdit = app?.status !== "approved"; // allow editing draft/pending/rejected
+  const canEdit = app?.status !== "approved";
 
   const step1Ok = useMemo(() => {
-    // Step 1 requires the public fields + store image
     return step1Schema.safeParse(step1).success && !!storeImageUrl;
   }, [step1, storeImageUrl]);
 
@@ -303,7 +347,6 @@ export default function MerchantSignupDialog({
       return setStep(2);
     }
 
-    // target === 3
     if (!canNavigateTo3) {
       toast({
         title: "أكمل البيانات قبل المتابعة",
@@ -315,91 +358,145 @@ export default function MerchantSignupDialog({
     return setStep(3);
   };
 
+  const progressPercent = step === 1 ? 33 : step === 2 ? 66 : 100;
+
+  const stepInfo = [
+    { num: 1, label: "معلومات المتجر", icon: Store },
+    { num: 2, label: "بيانات التحقق", icon: Shield },
+    { num: 3, label: "المراجعة والإرسال", icon: Send },
+  ];
+
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogContent className="sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Store className="h-5 w-5 text-primary" />
-            التسجيل كتاجر
-          </DialogTitle>
-        </DialogHeader>
+      <DialogContent className="sm:max-w-2xl p-0 gap-0 overflow-hidden border-primary/20">
+        {/* Premium Header */}
+        <div className="relative bg-gradient-to-br from-primary/20 via-accent/10 to-transparent border-b border-primary/20 p-6">
+          {/* Decorative elements */}
+          <div className="absolute top-0 left-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-2xl translate-x-1/2 translate-y-1/2" />
+          
+          <div className="relative flex items-start justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-accent p-[2px] shadow-lg shadow-primary/25">
+                <div className="h-full w-full rounded-2xl bg-card flex items-center justify-center">
+                  <Store className="h-6 w-6 text-primary" />
+                </div>
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">التسجيل كتاجر</h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {profileMini?.username ? `@${profileMini.username}` : "انضم لمجتمع تجار ليفو"}
+                </p>
+              </div>
+            </div>
+            <StatusBadge status={app?.status} />
+          </div>
 
-        <div className="scrollbar-stable max-h-[75vh] overflow-y-auto overflow-x-hidden">
-          <div className="space-y-4">
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <s.Icon className="h-5 w-5 text-primary" />
-                  حالة الطلب: {s.label}
-                </CardTitle>
-                <CardDescription>
-                  {app?.admin_notes ? `ملاحظة الإدارة: ${app.admin_notes}` : "أكمل المراحل ثم أرسل الطلب"}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {busy ? (
-                  <div className="space-y-3">
-                    <Skeleton className="h-10 rounded-xl" />
-                    <Skeleton className="h-10 rounded-xl" />
-                    <Skeleton className="h-24 rounded-xl" />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="text-xs text-muted-foreground">
-                      المرحلة {step} من 3
-                      {profileMini?.username ? ` • يوزرنيم: @${profileMini.username}` : ""}
+          {/* Progress Steps */}
+          <div className="relative mt-6">
+            <Progress value={progressPercent} className="h-1.5 bg-muted/30" />
+            <div className="flex justify-between mt-4">
+              {stepInfo.map((s) => {
+                const isActive = step === s.num;
+                const isCompleted = step > s.num;
+                const Icon = s.icon;
+                
+                return (
+                  <button
+                    key={s.num}
+                    type="button"
+                    onClick={() => guardGoToStep(s.num as 1 | 2 | 3)}
+                    disabled={s.num === 2 && !canNavigateTo2 || s.num === 3 && !canNavigateTo3}
+                    className={`flex flex-col items-center gap-2 transition-all ${
+                      isActive ? 'scale-105' : ''
+                    } disabled:opacity-50`}
+                  >
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${
+                      isCompleted 
+                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
+                        : isActive 
+                          ? 'bg-primary/20 text-primary border-2 border-primary' 
+                          : 'bg-muted/50 text-muted-foreground'
+                    }`}>
+                      {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button variant={step === 1 ? "default" : "outline"} size="sm" onClick={() => setStep(1)}>
-                        1
-                      </Button>
-                      <Button
-                        variant={step === 2 ? "default" : "outline"}
-                        size="sm"
-                        disabled={!canNavigateTo2}
-                        onClick={() => guardGoToStep(2)}
-                      >
-                        2
-                      </Button>
-                      <Button
-                        variant={step === 3 ? "default" : "outline"}
-                        size="sm"
-                        disabled={!canNavigateTo3}
-                        onClick={() => guardGoToStep(3)}
-                      >
-                        3
-                      </Button>
-                    </div>
+                    <span className={`text-[11px] font-medium ${
+                      isActive ? 'text-primary' : 'text-muted-foreground'
+                    }`}>
+                      {s.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Content Area */}
+        <ScrollArea className="max-h-[60vh]">
+          <div className="p-6">
+            {busy ? (
+              <div className="space-y-4">
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-20 rounded-xl" />
+                <Skeleton className="h-32 rounded-xl" />
+              </div>
+            ) : (
+              <>
+                {/* Admin Notes Alert */}
+                {app?.admin_notes && (
+                  <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10">
+                    <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                      ملاحظة الإدارة: {app.admin_notes}
+                    </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
 
-            {/* Step 1 */}
-            {step === 1 && (
-              <Card className="border-border bg-card">
-                <CardHeader>
-                  <CardTitle>المرحلة الأولى: معلومات المتجر</CardTitle>
-                  <CardDescription>هذه المعلومات تظهر للزبائن داخل المجتمع.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>صورة المتجر</Label>
-                    <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
-                      <div className="flex items-center gap-3">
-                        <div className="h-14 w-14 rounded-2xl border border-border bg-muted/20 overflow-hidden flex items-center justify-center">
+                {/* Step 1: Store Info */}
+                {step === 1 && (
+                  <div className="space-y-5">
+                    {/* Store Image Upload */}
+                    <div className="space-y-3">
+                      <Label className="text-sm font-semibold flex items-center gap-2">
+                        <ImageIcon className="h-4 w-4 text-primary" />
+                        صورة/شعار المتجر
+                      </Label>
+                      <div className="flex items-center gap-4">
+                        <div 
+                          onClick={() => canEdit && fileInputRef.current?.click()}
+                          className={`relative h-24 w-24 rounded-2xl border-2 border-dashed transition-all overflow-hidden group ${
+                            canEdit ? 'cursor-pointer hover:border-primary' : ''
+                          } ${storeImageUrl ? 'border-primary/50 bg-primary/5' : 'border-border bg-muted/30'}`}
+                        >
                           {storeImageUrl ? (
-                            <img src={storeImageUrl} alt="صورة المتجر" className="h-full w-full object-cover" loading="lazy" />
+                            <>
+                              <img 
+                                src={storeImageUrl} 
+                                alt="صورة المتجر" 
+                                className="h-full w-full object-cover"
+                              />
+                              {canEdit && (
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <Upload className="h-6 w-6 text-white" />
+                                </div>
+                              )}
+                            </>
                           ) : (
-                            <ImageIcon className="h-5 w-5 text-muted-foreground" />
+                            <div className="h-full w-full flex flex-col items-center justify-center gap-1 text-muted-foreground">
+                              <Upload className="h-6 w-6" />
+                              <span className="text-[10px]">رفع صورة</span>
+                            </div>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {storeImageUrl ? "تم رفع الصورة" : "ارفع صورة واضحة لشعار/واجهة المتجر"}
+                        <div className="flex-1">
+                          <p className="text-sm text-muted-foreground">
+                            {storeImageUrl ? "تم رفع الصورة بنجاح" : "ارفع شعار أو صورة واضحة لمتجرك"}
+                          </p>
+                          <p className="text-xs text-muted-foreground/70 mt-1">
+                            الحد الأقصى: 5 ميغابايت
+                          </p>
                         </div>
                       </div>
-
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -410,241 +507,316 @@ export default function MerchantSignupDialog({
                           if (f) uploadMutation.mutate(f);
                         }}
                       />
-
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          disabled={!canEdit || uploadMutation.isPending}
-                          onClick={() => fileInputRef.current?.click()}
-                        >
-                          {uploadMutation.isPending ? "جارٍ الرفع…" : "رفع صورة"}
-                        </Button>
-                        {storeImageUrl && canEdit && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => {
-                              setStoreImageUrl("");
-                              saveDraftMutation.mutate({ store_image_url: null });
-                            }}
-                          >
-                            إزالة
-                          </Button>
-                        )}
-                      </div>
                     </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Store Name */}
                     <div className="space-y-2">
-                      <Label>اسم المتجر</Label>
+                      <Label className="text-sm font-semibold flex items-center gap-2">
+                        <Store className="h-4 w-4 text-primary" />
+                        اسم المتجر
+                      </Label>
                       <Input
                         value={step1.display_name}
                         disabled={!canEdit}
                         maxLength={15}
+                        placeholder="مثال: متجر الطباعة"
                         onChange={(e) => setStep1((p) => ({ ...p, display_name: e.target.value }))}
+                        className="h-12"
                       />
                       <p className={`text-xs ${step1.display_name.length > 15 ? 'text-destructive' : 'text-muted-foreground'}`}>
-                        {step1.display_name.length}/15 حرف كحد أقصى
+                        {step1.display_name.length}/15 حرف
                       </p>
                     </div>
-                    <div className="space-y-2">
-                      <Label>يوزرنيم (من الملف الشخصي)</Label>
-                      <Input value={profileMini?.username ? `@${profileMini.username}` : ""} disabled />
-                    </div>
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label>وصف المتجر</Label>
-                    <Textarea
-                      value={step1.bio}
-                      disabled={!canEdit}
-                      onChange={(e) => setStep1((p) => ({ ...p, bio: e.target.value }))}
-                      maxLength={500}
-                      className="min-h-24"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Store Description */}
                     <div className="space-y-2">
-                      <Label>رابط إنستغرام (اختياري)</Label>
-                      <Input
-                        value={step1.instagram}
+                      <Label className="text-sm font-semibold flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" />
+                        وصف المتجر
+                      </Label>
+                      <Textarea
+                        value={step1.bio}
                         disabled={!canEdit}
-                        onChange={(e) => setStep1((p) => ({ ...p, instagram: e.target.value }))}
+                        onChange={(e) => setStep1((p) => ({ ...p, bio: e.target.value }))}
+                        maxLength={500}
+                        placeholder="اكتب وصفاً مختصراً عن متجرك وخدماتك..."
+                        className="min-h-24 resize-none"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>رابط فيسبوك (اختياري)</Label>
-                      <Input
-                        value={step1.facebook}
-                        disabled={!canEdit}
-                        onChange={(e) => setStep1((p) => ({ ...p, facebook: e.target.value }))}
-                      />
-                    </div>
-                  </div>
 
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={!canEdit}
-                      onClick={async () => {
-                        await saveDraftMutation.mutateAsync({ step1, store_image_url: storeImageUrl || null });
-                        guardGoToStep(2);
-                      }}
-                    >
-                      التالي
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Step 2 */}
-            {step === 2 && (
-              <Card className="border-border bg-card">
-                <CardHeader>
-                  <CardTitle>المرحلة الثانية: معلومات خاصة (للإدارة فقط)</CardTitle>
-                  <CardDescription>هذه المعلومات تظهر للإدارة فقط لأغراض التحقق.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>الاسم الثلاثي الحقيقي</Label>
-                      <Input
-                        value={step2.legal_full_name}
-                        disabled={!canEdit}
-                        onChange={(e) => setStep2((p) => ({ ...p, legal_full_name: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>اللقب (اختياري)</Label>
-                      <Input
-                        value={step2.nickname}
-                        disabled={!canEdit}
-                        onChange={(e) => setStep2((p) => ({ ...p, nickname: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>رقم الهاتف</Label>
-                      <Input
-                        value={step2.phone_number}
-                        disabled={!canEdit}
-                        inputMode="tel"
-                        onChange={(e) => setStep2((p) => ({ ...p, phone_number: e.target.value }))}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>تاريخ الميلاد</Label>
-                      <Input
-                        type="date"
-                        value={step2.birth_date}
-                        disabled={!canEdit}
-                        onChange={(e) => setStep2((p) => ({ ...p, birth_date: e.target.value }))}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>الجنس</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <Button
-                          type="button"
-                          variant={step2.gender === "male" ? "default" : "outline"}
+                    {/* Social Links */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                          <Instagram className="h-4 w-4" />
+                          إنستغرام (اختياري)
+                        </Label>
+                        <Input
+                          value={step1.instagram}
                           disabled={!canEdit}
-                          onClick={() => setStep2((p) => ({ ...p, gender: "male" }))}
-                        >
-                          ذكر
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={step2.gender === "female" ? "default" : "outline"}
+                          placeholder="رابط الحساب"
+                          onChange={(e) => setStep1((p) => ({ ...p, instagram: e.target.value }))}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                          <Facebook className="h-4 w-4" />
+                          فيسبوك (اختياري)
+                        </Label>
+                        <Input
+                          value={step1.facebook}
                           disabled={!canEdit}
-                          onClick={() => setStep2((p) => ({ ...p, gender: "female" }))}
-                        >
-                          أنثى
-                        </Button>
+                          placeholder="رابط الصفحة"
+                          onChange={(e) => setStep1((p) => ({ ...p, facebook: e.target.value }))}
+                        />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label>عنوان السكن</Label>
-                      <Input
-                        value={step2.address}
-                        disabled={!canEdit}
-                        onChange={(e) => setStep2((p) => ({ ...p, address: e.target.value }))}
-                      />
+                  </div>
+                )}
+
+                {/* Step 2: Verification Info */}
+                {step === 2 && (
+                  <div className="space-y-5">
+                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50 mb-6">
+                      <div className="flex items-start gap-3">
+                        <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium">معلومات خاصة للتحقق</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            هذه المعلومات تظهر للإدارة فقط ولن تكون مرئية للزبائن
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold flex items-center gap-2">
+                          <User className="h-4 w-4 text-primary" />
+                          الاسم الثلاثي الحقيقي
+                        </Label>
+                        <Input
+                          value={step2.legal_full_name}
+                          disabled={!canEdit}
+                          placeholder="الاسم الكامل"
+                          onChange={(e) => setStep2((p) => ({ ...p, legal_full_name: e.target.value }))}
+                          className="h-12"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium flex items-center gap-2 text-muted-foreground">
+                          <User className="h-4 w-4" />
+                          اللقب (اختياري)
+                        </Label>
+                        <Input
+                          value={step2.nickname}
+                          disabled={!canEdit}
+                          placeholder="اللقب"
+                          onChange={(e) => setStep2((p) => ({ ...p, nickname: e.target.value }))}
+                          className="h-12"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold flex items-center gap-2">
+                          <Phone className="h-4 w-4 text-primary" />
+                          رقم الهاتف
+                        </Label>
+                        <Input
+                          value={step2.phone_number}
+                          disabled={!canEdit}
+                          inputMode="tel"
+                          placeholder="07xxxxxxxxx"
+                          onChange={(e) => setStep2((p) => ({ ...p, phone_number: e.target.value }))}
+                          className="h-12"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-primary" />
+                          تاريخ الميلاد
+                        </Label>
+                        <Input
+                          type="date"
+                          value={step2.birth_date}
+                          disabled={!canEdit}
+                          onChange={(e) => setStep2((p) => ({ ...p, birth_date: e.target.value }))}
+                          className="h-12"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold flex items-center gap-2">
+                          <Users className="h-4 w-4 text-primary" />
+                          الجنس
+                        </Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Button
+                            type="button"
+                            variant={step2.gender === "male" ? "default" : "outline"}
+                            disabled={!canEdit}
+                            onClick={() => setStep2((p) => ({ ...p, gender: "male" }))}
+                            className="h-12"
+                          >
+                            ذكر
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={step2.gender === "female" ? "default" : "outline"}
+                            disabled={!canEdit}
+                            onClick={() => setStep2((p) => ({ ...p, gender: "female" }))}
+                            className="h-12"
+                          >
+                            أنثى
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-sm font-semibold flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-primary" />
+                          عنوان السكن
+                        </Label>
+                        <Input
+                          value={step2.address}
+                          disabled={!canEdit}
+                          placeholder="المحافظة، المنطقة"
+                          onChange={(e) => setStep2((p) => ({ ...p, address: e.target.value }))}
+                          className="h-12"
+                        />
+                      </div>
                     </div>
                   </div>
+                )}
 
-                  <div className="flex items-center justify-between gap-2">
-                    <Button type="button" variant="outline" onClick={() => setStep(1)}>
-                      رجوع
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      disabled={!canEdit}
-                      onClick={async () => {
-                        await saveDraftMutation.mutateAsync({ step2 });
-                        guardGoToStep(3);
-                      }}
-                    >
-                      التالي
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Step 3 */}
-            {step === 3 && (
-              <Card className="border-border bg-card">
-                <CardHeader>
-                  <CardTitle>المرحلة الثالثة: الرسوم + ملخص</CardTitle>
-                  <CardDescription>
-                    رسوم التسجيل الحالية: {fee.toLocaleString()} د.ع — يتم خصمها من المحفظة عند موافقة الإدارة.
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="rounded-2xl border border-border bg-muted/20 p-4 text-sm">
-                    <p className="font-bold">ملخص الطلب</p>
-                    <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-muted-foreground">
-                      <div>اسم المتجر: {step1.display_name || "—"}</div>
-                      <div>يوزرنيم: {profileMini?.username ? `@${profileMini.username}` : "—"}</div>
-                      <div>إنستغرام: {step1.instagram?.trim() || "—"}</div>
-                      <div>فيسبوك: {step1.facebook?.trim() || "—"}</div>
+                {/* Step 3: Summary & Submit */}
+                {step === 3 && (
+                  <div className="space-y-6">
+                    {/* Summary Card */}
+                    <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-5">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
+                          <BadgeCheck className="h-6 w-6 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-lg">ملخص الطلب</h3>
+                          <p className="text-sm text-muted-foreground">تحقق من المعلومات قبل الإرسال</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="space-y-1">
+                          <span className="text-muted-foreground">اسم المتجر:</span>
+                          <p className="font-medium">{step1.display_name || "—"}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-muted-foreground">يوزرنيم:</span>
+                          <p className="font-medium">{profileMini?.username ? `@${profileMini.username}` : "—"}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-muted-foreground">إنستغرام:</span>
+                          <p className="font-medium truncate">{step1.instagram?.trim() || "—"}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-muted-foreground">فيسبوك:</span>
+                          <p className="font-medium truncate">{step1.facebook?.trim() || "—"}</p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center justify-between gap-2">
-                    <Button type="button" variant="outline" onClick={() => setStep(2)}>
-                      رجوع
-                    </Button>
-                    <Button
-                      type="button"
-                      disabled={!canEdit || submitMutation.isPending}
-                      className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
-                      onClick={() => submitMutation.mutate()}
-                    >
-                      {submitMutation.isPending ? "جارٍ الإرسال…" : "إرسال الطلب"}
-                    </Button>
-                  </div>
+                    {/* Fee Card */}
+                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                          <Wallet className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="font-bold">رسوم التسجيل</h3>
+                          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                            {fee.toLocaleString()} د.ع
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-3">
+                        سيتم خصم الرسوم تلقائياً من المحفظة عند موافقة الإدارة
+                      </p>
+                    </div>
 
-                  {app?.status === "pending" && (
-                    <p className="text-xs text-muted-foreground">
-                      ملاحظة: عند موافقة الإدارة سيتم خصم الرسوم تلقائياً من المحفظة، وإذا كان الرصيد غير كافٍ لن تتم الموافقة.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
+                    {app?.status === "pending" && (
+                      <p className="text-sm text-muted-foreground text-center p-4 bg-muted/30 rounded-xl">
+                        ✓ طلبك قيد المراجعة - سنتواصل معك قريباً
+                      </p>
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
+        </ScrollArea>
+
+        {/* Footer Navigation */}
+        <div className="border-t border-border/50 bg-muted/30 p-4 flex items-center justify-between gap-3">
+          {step > 1 ? (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setStep((step - 1) as 1 | 2)}
+              className="gap-2"
+            >
+              <ArrowRight className="h-4 w-4" />
+              رجوع
+            </Button>
+          ) : (
+            <div />
+          )}
+
+          {step < 3 ? (
+            <Button
+              type="button"
+              disabled={!canEdit || (step === 1 && !step1Ok) || saveDraftMutation.isPending}
+              onClick={async () => {
+                if (step === 1) {
+                  await saveDraftMutation.mutateAsync({ step1, store_image_url: storeImageUrl || null });
+                  guardGoToStep(2);
+                } else {
+                  await saveDraftMutation.mutateAsync({ step2 });
+                  guardGoToStep(3);
+                }
+              }}
+              className="gap-2 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+            >
+              {saveDraftMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  التالي
+                  <ArrowLeft className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              disabled={!canEdit || submitMutation.isPending}
+              onClick={() => submitMutation.mutate()}
+              className="gap-2 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/25"
+            >
+              {submitMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  جارٍ الإرسال...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  إرسال الطلب
+                </>
+              )}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
