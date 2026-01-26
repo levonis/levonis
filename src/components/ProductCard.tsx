@@ -90,22 +90,15 @@ const ProductCard = ({
     <Link 
       to={`/product/${slug}`}
       onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-      className="group block bg-gradient-to-b from-card to-card/80 rounded-xl p-2.5 border border-border/40 card-premium hover:border-primary/50 transition-all hover:-translate-y-1 relative overflow-hidden"
+      className="group block bg-gradient-to-b from-card to-card/80 rounded-lg p-1.5 border border-border/30 hover:border-primary/40 transition-all hover:-translate-y-0.5 relative overflow-hidden"
     >
-      {/* Decorative corner accent */}
-      <div className="absolute top-0 right-0 w-12 h-12 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-        <svg viewBox="0 0 50 50" className="w-full h-full">
-          <path d="M0,0 L50,0 L50,20 Q40,20 40,10 Z" fill="hsl(var(--ring) / 0.1)" />
-        </svg>
-      </div>
-      
       {/* Sale badge - above image */}
       {hasSale && (
         <Badge 
           variant="secondary" 
-          className="absolute top-1 left-1 z-20 text-xs bg-primary/90 text-primary-foreground border-0 shadow-lg px-2 py-0.5"
+          className="absolute top-0.5 left-0.5 z-20 text-[10px] bg-primary/90 text-primary-foreground border-0 shadow-sm px-1.5 py-0"
         >
-          تخفيضات
+          تخفيض
         </Badge>
       )}
       
@@ -113,23 +106,23 @@ const ProductCard = ({
       {!inStock && (
         <Badge 
           variant="destructive" 
-          className="absolute top-1 right-1 z-20 text-xs border-0 shadow-lg px-2 py-0.5"
+          className="absolute top-0.5 right-0.5 z-20 text-[10px] border-0 shadow-sm px-1.5 py-0"
         >
           غير متوفر
         </Badge>
       )}
 
-      <div className="relative mb-2">
-        <div className="relative overflow-hidden rounded-lg aspect-square bg-muted/30">
+      <div className="relative mb-1.5">
+        <div className="relative overflow-hidden rounded-md aspect-square bg-muted/20">
           <img 
             src={optimizedImage || '/placeholder.svg'} 
             alt={nameAr}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-200"
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
             decoding="async"
-            width="400"
-            height="400"
+            width="300"
+            height="300"
             onError={(e) => {
               const target = e.currentTarget as HTMLImageElement;
               target.src = '/placeholder.svg';
@@ -138,33 +131,33 @@ const ProductCard = ({
         </div>
       </div>
       
-      <h3 className="font-bold text-sm mb-1 text-foreground group-hover:text-primary transition-colors line-clamp-1">
+      <h3 className="font-semibold text-xs leading-tight mb-0.5 text-foreground group-hover:text-primary transition-colors line-clamp-1">
         {nameAr}
       </h3>
       
       {descriptionAr && (
-        <p className="text-xs text-muted-foreground mb-2 line-clamp-1">
+        <p className="text-[10px] text-muted-foreground mb-1 line-clamp-1">
           {descriptionAr}
         </p>
       )}
       
-      <div className="flex items-center justify-between gap-2 mt-auto">
+      <div className="flex items-center justify-between gap-1">
         <div className="flex flex-col min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline gap-1">
-            <span className="text-base font-black text-primary whitespace-nowrap">
+          <div className="flex flex-wrap items-baseline gap-0.5">
+            <span className="text-sm font-bold text-primary whitespace-nowrap">
               {formatPrice(price)}
             </span>
-            <span className="text-xs text-muted-foreground">
+            <span className="text-[9px] text-muted-foreground">
               {currency}
             </span>
           </div>
           {hasSale && (
-            <div className="flex items-center gap-1 flex-wrap">
-              <span className="text-xs line-through text-muted-foreground/60 whitespace-nowrap">
+            <div className="flex items-center gap-0.5 flex-wrap">
+              <span className="text-[10px] line-through text-muted-foreground/60 whitespace-nowrap">
                 {formatPrice(originalPrice || 0)}
               </span>
-              <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                وفر {formatPrice(savings)}
+              <span className="text-[9px] bg-primary/10 text-primary px-1 py-0 rounded-full whitespace-nowrap">
+                -{formatPrice(savings)}
               </span>
             </div>
           )}
@@ -172,12 +165,12 @@ const ProductCard = ({
         
         <Button 
           size="sm"
-          className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 h-8 w-8 p-0 flex-shrink-0"
+          className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 h-6 w-6 p-0 flex-shrink-0 rounded-md"
           onClick={handleAddToFavorites}
           disabled={isAdding}
           aria-label="أضف للمفضلة"
         >
-          <Heart className="h-3.5 w-3.5" />
+          <Heart className="h-3 w-3" />
         </Button>
       </div>
     </Link>
