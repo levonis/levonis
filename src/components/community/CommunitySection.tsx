@@ -4,6 +4,7 @@ import { Users, MessageCircle, Store, Package, FileText, Search } from 'lucide-r
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCommunityProfileCheck } from '@/hooks/useCommunityProfileCheck';
 import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
 import AnimatedDivider from '@/components/ui/animated-divider';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ interface CommunitySectionProps {
 
 export default function CommunitySection({ noFrame = false }: CommunitySectionProps) {
   const { user } = useAuth();
+  const { isProfileComplete } = useCommunityProfileCheck();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -59,7 +61,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
     ? "container mx-auto px-0" 
     : "levo-section-frame container mx-auto px-0";
 
-  // Quick action buttons for merchants and customers
+  // Quick action buttons for merchants and customers - only show if profile is complete
   const quickActions = useMemo(() => {
     if (isMerchant) {
       return [
@@ -113,8 +115,8 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       )}
 
-      {/* Quick Actions - Show on homepage only (legacy navigation preserved) */}
-      {!isCommunityHub && user && (
+      {/* Quick Actions - Show on homepage only if profile is complete */}
+      {!isCommunityHub && user && isProfileComplete && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
           {quickActions.map((action) => {
             const Icon = action.icon;
