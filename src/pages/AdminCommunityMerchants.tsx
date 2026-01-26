@@ -38,7 +38,11 @@ const rowSchema = z.object({
 
 type Row = z.infer<typeof rowSchema>;
 
-export default function AdminCommunityMerchants() {
+interface Props {
+  embedded?: boolean;
+}
+
+export default function AdminCommunityMerchants({ embedded }: Props) {
   const qc = useQueryClient();
   const { toast } = useToast();
 
@@ -177,31 +181,26 @@ export default function AdminCommunityMerchants() {
     },
   });
 
-  return (
-    <AdminLayout
-      title="إدارة التجار"
-      description="مراجعة طلبات التسجيل كتاجر (موافقة/رفض/ملاحظات)"
-      icon={<Store className="h-5 w-5" />}
-      backTo={ADMIN_ROUTES.levoCommunity}
-      maxWidth="6xl"
-      actions={
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => recalculateBadgesMutation.mutate()} 
-            disabled={recalculateBadgesMutation.isPending}
-            className="gap-2"
-          >
-            <Calculator className="h-4 w-4" />
-            {recalculateBadgesMutation.isPending ? "جارٍ الحساب..." : "حساب الشارات"}
-          </Button>
-          <Button variant="outline" onClick={() => refetch()} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            تحديث
-          </Button>
-        </div>
-      }
-    >
+  const actionButtons = (
+    <div className="flex items-center gap-2">
+      <Button 
+        variant="outline" 
+        onClick={() => recalculateBadgesMutation.mutate()} 
+        disabled={recalculateBadgesMutation.isPending}
+        className="gap-2"
+      >
+        <Calculator className="h-4 w-4" />
+        {recalculateBadgesMutation.isPending ? "جارٍ الحساب..." : "حساب الشارات"}
+      </Button>
+      <Button variant="outline" onClick={() => refetch()} className="gap-2">
+        <RefreshCw className="h-4 w-4" />
+        تحديث
+      </Button>
+    </div>
+  );
+
+  const content = (
+    <>
       <AdminSection
         title="التصفية"
         actions={
@@ -475,6 +474,30 @@ export default function AdminCommunityMerchants() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </>
+  );
+
+  if (embedded) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between gap-4">
+          {actionButtons}
+        </div>
+        {content}
+      </div>
+    );
+  }
+
+  return (
+    <AdminLayout
+      title="إدارة التجار"
+      description="مراجعة طلبات التسجيل كتاجر (موافقة/رفض/ملاحظات)"
+      icon={<Store className="h-5 w-5" />}
+      backTo={ADMIN_ROUTES.levoCommunity}
+      maxWidth="6xl"
+      actions={actionButtons}
+    >
+      {content}
     </AdminLayout>
   );
 }

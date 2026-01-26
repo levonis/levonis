@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import {
   Loader2,
@@ -26,20 +27,29 @@ import {
   Ruler,
   MessageSquare,
   Send,
-  Sparkles,
   CheckCircle2,
   Upload,
   Package,
   ArrowLeft,
   ArrowRight,
-  AlertCircle,
+  Video,
+  X,
+  Layers,
 } from "lucide-react";
 
 type LinkItem = { id: string; url: string };
+type MediaFile = { id: string; url: string; type: "image" | "video" };
 
 function safeId() {
   return `${Date.now()}_${Math.random().toString(16).slice(2)}`;
 }
+
+const MATERIAL_TYPES = [
+  { value: "filament", label: "فلمنت (FDM)" },
+  { value: "resin", label: "رزن (SLA/DLP)" },
+  { value: "both", label: "كلاهما" },
+  { value: "any", label: "لا يهم" },
+] as const;
 
 const requestSchema = z.object({
   title: z.string().trim().min(3, "العنوان مطلوب (3 أحرف على الأقل)").max(120),
@@ -47,12 +57,13 @@ const requestSchema = z.object({
   size: z.string().trim().min(1, "الحجم مطلوب").max(80),
   colors: z.string().trim().min(1, "الألوان مطلوبة").max(120),
   notes: z.string().trim().max(500).optional(),
+  materialType: z.enum(["filament", "resin", "both", "any"]),
 });
 
 type RequestData = z.infer<typeof requestSchema>;
 
 interface FieldConfig {
-  id: keyof RequestData;
+  id: keyof Omit<RequestData, "materialType">;
   label: string;
   placeholder: string;
   icon: React.ReactNode;
@@ -72,6 +83,7 @@ export default function NewPrintRequestDialog({
   const { toast } = useToast();
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<1 | 2>(1);
   const [formData, setFormData] = useState<RequestData>({
@@ -80,36 +92,21 @@ export default function NewPrintRequestDialog({
     size: "",
     colors: "",
     notes: "",
+    materialType: "any",
   });
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imageUrl, setImageUrl] = useState<string>("");
-  const [uploadingImage, setUploadingImage] = useState(false);
+  const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [uploadingMedia, setUploadingMedia] = useState(false);
 
   const [hasReferenceLinks, setHasReferenceLinks] = useState(false);
   const [links, setLinks] = useState<LinkItem[]>([{ id: safeId(), url: "" }]);
-
-  const imagePreviewUrl = useMemo(() => {
-    if (imageUrl) return imageUrl;
-    if (!imageFile) return null;
-    return URL.createObjectURL(imageFile);
-  }, [imageFile, imageUrl]);
-
-  useEffect(() => {
-    return () => {
-      if (imagePreviewUrl && !imageUrl) {
-        URL.revokeObjectURL(imagePreviewUrl);
-      }
-    };
-  }, [imagePreviewUrl, imageUrl]);
 
   // Reset form when dialog closes
   useEffect(() => {
     if (!open) {
       setStep(1);
-      setFormData({ title: "", description: "", size: "", colors: "", notes: "" });
-      setImageFile(null);
-      setImageUrl("");
+      setFormData({ title: "", description: "", size: "", colors: "", notes: "", materialType: "any" });
+      setMediaFiles([]);
       setHasReferenceLinks(false);
       setLinks([{ id: safeId(), url: "" }]);
     }
@@ -124,13 +121,17 @@ export default function NewPrintRequestDialog({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Upload image mutation
-  const uploadImageMutation = useMutation({
-    mutationFn: async (file: File) => {
+  const removeMedia = (id: string) => {
+    setMediaFiles((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  // Upload media mutation
+  const uploadMediaMutation = useMutation({
+    mutationFn: async ({ file, type }: { file: File; type: "image" | "video" }) => {
       if (!user?.id) throw new Error("Not authenticated");
 
       const fileExt = file.name.split(".").pop();
-      const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/${Date.now()}_${Math.random().toString(16).slice(2)}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
         .from("product-images")
@@ -142,49 +143,114 @@ export default function NewPrintRequestDialog({
         data: { publicUrl },
       } = supabase.storage.from("product-images").getPublicUrl(`print-requests/${fileName}`);
 
-      return publicUrl;
-    },
-    onSuccess: (url) => {
-      setImageUrl(url);
-      toast({ title: "تم رفع الصورة بنجاح" });
-    },
-    onError: (err: any) => {
-      toast({
-        title: "تعذر رفع الصورة",
-        description: err?.message ?? "حدث خطأ",
-        variant: "destructive",
-      });
+      return { url: publicUrl, type };
     },
   });
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    const imageCount = mediaFiles.filter((m) => m.type === "image").length;
+    const maxImages = 5;
+    const allowedCount = maxImages - imageCount;
+
+    if (allowedCount <= 0) {
+      toast({
+        title: "تم الوصول للحد الأقصى",
+        description: `الحد الأقصى ${maxImages} صور`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const filesToUpload = files.slice(0, allowedCount);
+
+    for (const file of filesToUpload) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "الملف كبير جداً",
+          description: `${file.name} - الحد الأقصى 5 ميغابايت`,
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "نوع الملف غير مدعوم",
+          description: "الرجاء اختيار صورة",
+          variant: "destructive",
+        });
+        continue;
+      }
+
+      setUploadingMedia(true);
+      try {
+        const result = await uploadMediaMutation.mutateAsync({ file, type: "image" });
+        setMediaFiles((prev) => [...prev, { id: safeId(), url: result.url, type: "image" }]);
+        toast({ title: "تم رفع الصورة بنجاح" });
+      } catch (err: any) {
+        toast({
+          title: "تعذر رفع الصورة",
+          description: err?.message ?? "حدث خطأ",
+          variant: "destructive",
+        });
+      } finally {
+        setUploadingMedia(false);
+      }
+    }
+
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
+    const hasVideo = mediaFiles.some((m) => m.type === "video");
+    if (hasVideo) {
+      toast({
+        title: "فيديو موجود مسبقاً",
+        description: "يمكنك رفع فيديو واحد فقط",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 50 * 1024 * 1024) {
       toast({
         title: "الملف كبير جداً",
-        description: "الحد الأقصى 5 ميغابايت",
+        description: "الحد الأقصى 50 ميغابايت للفيديو",
         variant: "destructive",
       });
       return;
     }
 
-    if (!file.type.startsWith("image/")) {
+    if (!file.type.startsWith("video/")) {
       toast({
         title: "نوع الملف غير مدعوم",
-        description: "الرجاء اختيار صورة",
+        description: "الرجاء اختيار فيديو",
         variant: "destructive",
       });
       return;
     }
 
-    setImageFile(file);
-    setUploadingImage(true);
+    setUploadingMedia(true);
     try {
-      await uploadImageMutation.mutateAsync(file);
+      const result = await uploadMediaMutation.mutateAsync({ file, type: "video" });
+      setMediaFiles((prev) => [...prev, { id: safeId(), url: result.url, type: "video" }]);
+      toast({ title: "تم رفع الفيديو بنجاح" });
+    } catch (err: any) {
+      toast({
+        title: "تعذر رفع الفيديو",
+        description: err?.message ?? "حدث خطأ",
+        variant: "destructive",
+      });
     } finally {
-      setUploadingImage(false);
+      setUploadingMedia(false);
+      if (videoInputRef.current) videoInputRef.current.value = "";
     }
   };
 
@@ -207,8 +273,11 @@ export default function NewPrintRequestDialog({
         throw new Error("الوصف يحتوي على محتوى غير مناسب");
       }
 
-      if (!imageUrl) {
-        throw new Error("الصورة مطلوبة");
+      const images = mediaFiles.filter((m) => m.type === "image").map((m) => m.url);
+      const video = mediaFiles.find((m) => m.type === "video")?.url || null;
+
+      if (images.length === 0) {
+        throw new Error("صورة واحدة على الأقل مطلوبة");
       }
 
       // Prepare reference links
@@ -216,7 +285,7 @@ export default function NewPrintRequestDialog({
         ? links.filter((l) => l.url.trim()).map((l) => l.url.trim())
         : [];
 
-      // Insert request
+      // Insert request - auto-publish (approved status)
       const { data, error } = await supabase
         .from("community_print_requests")
         .insert({
@@ -226,9 +295,12 @@ export default function NewPrintRequestDialog({
           size: validated.size,
           colors: validated.colors,
           notes: validated.notes?.trim() || null,
-          image_url: imageUrl,
+          image_url: images[0], // Keep first image for backward compatibility
+          images: images,
+          video_url: video,
+          material_type: validated.materialType,
           reference_links: validLinks.length > 0 ? validLinks : null,
-          status: "pending_review", // Pending admin review
+          status: "approved", // Auto-publish without manual review
         })
         .select("id")
         .single();
@@ -239,8 +311,8 @@ export default function NewPrintRequestDialog({
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["community-print-requests"] });
       toast({
-        title: "تم إرسال الطلب بنجاح ✓",
-        description: "سيتم مراجعة طلبك من قبل الإدارة",
+        title: "تم نشر الطلب بنجاح ✓",
+        description: "طلبك متاح الآن للتجار",
       });
       onOpenChange(false);
     },
@@ -301,13 +373,16 @@ export default function NewPrintRequestDialog({
     },
   ];
 
+  const imageCount = mediaFiles.filter((m) => m.type === "image").length;
+  const hasVideo = mediaFiles.some((m) => m.type === "video");
+
   const step1Valid = useMemo(() => {
     return (
       formData.title.trim().length >= 3 &&
       formData.description.trim().length >= 10 &&
-      !!imageUrl
+      imageCount >= 1
     );
-  }, [formData.title, formData.description, imageUrl]);
+  }, [formData.title, formData.description, imageCount]);
 
   const step2Valid = useMemo(() => {
     return formData.size.trim().length >= 1 && formData.colors.trim().length >= 1;
@@ -333,7 +408,7 @@ export default function NewPrintRequestDialog({
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-bold text-foreground">طلب طباعة جديد</h2>
-              <p className="text-xs text-muted-foreground">أضف تفاصيل طلبك وسيتم مراجعته</p>
+              <p className="text-xs text-muted-foreground">أضف تفاصيل طلبك وسيُنشر تلقائياً</p>
             </div>
           </div>
 
@@ -389,61 +464,104 @@ export default function NewPrintRequestDialog({
         >
           {step === 1 && (
             <div className="space-y-5">
-              {/* Image Upload */}
+              {/* Media Upload Section */}
               <div className="space-y-3">
                 <Label className="text-sm font-semibold flex items-center gap-2">
                   <ImageIcon className="h-4 w-4 text-primary" />
-                  صورة الطلب
+                  صور وفيديو الطلب
                   <span className="text-destructive">*</span>
+                  <span className="text-xs text-muted-foreground font-normal mr-auto">
+                    ({imageCount}/5 صور)
+                  </span>
                 </Label>
-                <div className="flex gap-4">
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`relative h-28 w-28 rounded-2xl border-2 border-dashed transition-all overflow-hidden group cursor-pointer hover:border-primary ${
-                      imagePreviewUrl
-                        ? "border-primary/60 bg-primary/10"
-                        : "border-border bg-muted/50"
-                    }`}
-                  >
-                    {uploadingImage ? (
-                      <div className="h-full w-full flex items-center justify-center">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      </div>
-                    ) : imagePreviewUrl ? (
-                      <>
+
+                {/* Media Grid */}
+                <div className="grid grid-cols-4 gap-2">
+                  {/* Existing Media */}
+                  {mediaFiles.map((media) => (
+                    <div
+                      key={media.id}
+                      className="relative aspect-square rounded-xl border-2 border-primary/40 bg-primary/10 overflow-hidden group"
+                    >
+                      {media.type === "image" ? (
                         <img
-                          src={imagePreviewUrl}
+                          src={media.url}
                           alt="معاينة"
                           className="h-full w-full object-cover"
                         />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Upload className="h-6 w-6 text-white" />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center bg-muted">
+                          <Video className="h-6 w-6 text-primary" />
                         </div>
-                      </>
-                    ) : (
-                      <div className="h-full w-full flex flex-col items-center justify-center gap-1 text-muted-foreground">
-                        <Upload className="h-6 w-6" />
-                        <span className="text-[10px]">رفع صورة</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm text-muted-foreground">
-                      {imageUrl
-                        ? "✓ تم رفع الصورة بنجاح"
-                        : "ارفع صورة توضح ما تريد طباعته"}
-                    </p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">
-                      الحد الأقصى: 5 ميغابايت
-                    </p>
-                  </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeMedia(media.id)}
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                      {media.type === "video" && (
+                        <div className="absolute bottom-1 left-1 text-[9px] bg-black/60 text-white px-1.5 py-0.5 rounded">
+                          فيديو
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {/* Add Image Button */}
+                  {imageCount < 5 && (
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="aspect-square rounded-xl border-2 border-dashed border-border bg-muted/50 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all"
+                    >
+                      {uploadingMedia ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      ) : (
+                        <>
+                          <Upload className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-[9px] text-muted-foreground">صورة</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Add Video Button */}
+                  {!hasVideo && (
+                    <div
+                      onClick={() => videoInputRef.current?.click()}
+                      className="aspect-square rounded-xl border-2 border-dashed border-border bg-muted/50 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-primary hover:bg-primary/5 transition-all"
+                    >
+                      {uploadingMedia ? (
+                        <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      ) : (
+                        <>
+                          <Video className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-[9px] text-muted-foreground">فيديو</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
+
+                <p className="text-xs text-muted-foreground">
+                  حد أقصى: 5 صور (5MB لكل صورة) + فيديو واحد (50MB)
+                </p>
+
                 <input
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  multiple
                   className="hidden"
-                  onChange={handleFileSelect}
+                  onChange={handleImageSelect}
+                />
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  onChange={handleVideoSelect}
                 />
               </div>
 
@@ -507,6 +625,40 @@ export default function NewPrintRequestDialog({
 
           {step === 2 && (
             <div className="space-y-5">
+              {/* Material Type Selection */}
+              <div className="rounded-xl border-2 border-border bg-muted/50 p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center">
+                    <Layers className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <Label className="text-[11px] font-medium text-muted-foreground">
+                    نوع المادة المطلوبة
+                    <span className="text-destructive mr-1">*</span>
+                  </Label>
+                </div>
+                <RadioGroup
+                  value={formData.materialType}
+                  onValueChange={(v) => updateField("materialType", v)}
+                  className="grid grid-cols-2 gap-2"
+                >
+                  {MATERIAL_TYPES.map((type) => (
+                    <div key={type.value} className="flex items-center">
+                      <RadioGroupItem
+                        value={type.value}
+                        id={`material-${type.value}`}
+                        className="peer sr-only"
+                      />
+                      <Label
+                        htmlFor={`material-${type.value}`}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-lg border-2 border-muted bg-card p-3 cursor-pointer transition-all peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 hover:bg-muted/50"
+                      >
+                        <span className="text-sm font-medium">{type.label}</span>
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+
               {/* Step 2 Fields */}
               {step2Fields.map((field) => {
                 const hasValue = !!formData[field.id]?.toString().trim();
@@ -615,16 +767,16 @@ export default function NewPrintRequestDialog({
                 )}
               </div>
 
-              {/* Review Notice */}
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+              {/* Auto-publish Notice */}
+              <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-amber-700 dark:text-amber-300">
-                      ملاحظة هامة
+                    <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                      نشر تلقائي
                     </p>
-                    <p className="text-xs text-amber-600/80 dark:text-amber-400/80 mt-1">
-                      سيتم مراجعة طلبك من قبل الإدارة قبل عرضه للتجار
+                    <p className="text-xs text-emerald-600/80 dark:text-emerald-400/80 mt-1">
+                      سيُنشر طلبك مباشرة ويكون متاحاً للتجار
                     </p>
                   </div>
                 </div>
@@ -675,12 +827,12 @@ export default function NewPrintRequestDialog({
                 {submitMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    جارٍ الإرسال...
+                    جارٍ النشر...
                   </>
                 ) : (
                   <>
                     <Send className="h-4 w-4" />
-                    إرسال الطلب
+                    نشر الطلب
                   </>
                 )}
               </Button>

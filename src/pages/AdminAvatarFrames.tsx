@@ -42,7 +42,11 @@ interface AvatarFrame {
   created_at: string;
 }
 
-export default function AdminAvatarFrames() {
+interface Props {
+  embedded?: boolean;
+}
+
+export default function AdminAvatarFrames({ embedded }: Props) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -209,21 +213,16 @@ export default function AdminAvatarFrames() {
     });
   };
 
-  return (
-    <AdminLayout
-      title="إدارة إطارات الصور"
-      description="إضافة وتعديل إطارات الأفتار للمستخدمين والتجار"
-      icon={<Frame className="h-5 w-5" />}
-      backTo={ADMIN_ROUTES.levoCommunity}
-      maxWidth="4xl"
-      actions={
-        <Button onClick={openCreateDialog} className="gap-2">
-          <Plus className="h-4 w-4" />
-          إضافة إطار
-        </Button>
-      }
-    >
-      <AdminSection title="الإطارات المتاحة">
+  const actionButtons = (
+    <Button onClick={openCreateDialog} className="gap-2">
+      <Plus className="h-4 w-4" />
+      إضافة إطار
+    </Button>
+  );
+
+  const content = (
+    <>
+      <AdminSection title={embedded ? undefined : "الإطارات المتاحة"} actions={embedded ? actionButtons : undefined}>
         {isLoading ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
@@ -439,6 +438,23 @@ export default function AdminAvatarFrames() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <AdminLayout
+      title="إدارة إطارات الصور"
+      description="إضافة وتعديل إطارات الأفتار للمستخدمين والتجار"
+      icon={<Frame className="h-5 w-5" />}
+      backTo={ADMIN_ROUTES.levoCommunity}
+      maxWidth="4xl"
+      actions={actionButtons}
+    >
+      {content}
     </AdminLayout>
   );
 }
