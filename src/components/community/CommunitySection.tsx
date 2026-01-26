@@ -60,20 +60,6 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       </div>
 
-      {/* Title */}
-      <div className="mb-4">
-        <Link to="/community" className="inline-block">
-          <h2 className="text-xl sm:text-2xl font-black text-primary hover:opacity-90 transition-opacity">
-            مجتمع ليفو
-          </h2>
-        </Link>
-        <Link to="/community" className="inline-block">
-          <p className="text-xs sm:text-sm text-muted-foreground hover:text-foreground/70 transition-colors">
-            {isMerchant ? "لوحة تحكم التاجر" : "المحادثات والتواصل داخل المجتمع"}
-          </p>
-        </Link>
-      </div>
-
       {/* Merchant Dashboard Widgets */}
       {isMerchant && user?.id && (
         <>

@@ -110,19 +110,9 @@ const CommunityTopBar = memo(() => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* For merchants: Settings, Orders, Store, Messages */}
+          {/* For merchants: Orders, Store, Messages, Settings */}
             {isMerchant ? (
               <>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full"
-                  aria-label="الإعدادات"
-                  onClick={() => navigate("/profile/settings")}
-                >
-                  <Settings className="h-4 w-4" />
-                </Button>
-
                 <Button
                   variant="outline"
                   size="icon"
@@ -152,6 +142,16 @@ const CommunityTopBar = memo(() => {
                 >
                   <MessageCircle className="h-4 w-4" />
                 </Button>
+
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full"
+                  aria-label={isAdmin ? "لوحة التحكم" : "الإعدادات"}
+                  onClick={() => navigate(isAdmin ? ADMIN_ROUTES.dashboard : "/profile/settings")}
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
               </>
             ) : (
               <>
@@ -176,19 +176,19 @@ const CommunityTopBar = memo(() => {
                     <Boxes className="h-4 w-4" />
                   </Button>
                 )}
-              </>
-            )}
 
-            {isAdmin && (
-              <Button
-                variant="outline"
-                size="icon"
-                className="rounded-full"
-                aria-label="لوحة التحكم"
-                onClick={() => navigate(ADMIN_ROUTES.dashboard)}
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="rounded-full"
+                    aria-label="لوحة التحكم"
+                    onClick={() => navigate(ADMIN_ROUTES.dashboard)}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </div>
