@@ -159,21 +159,15 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
 
       {/* Profile Completion Dialog */}
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>الملف الشخصي</DialogTitle>
-          </DialogHeader>
-          <div className="scrollbar-stable max-h-[70vh] overflow-y-auto overflow-x-hidden">
-            <div className="rounded-xl border border-border bg-card">
-              <CommunityCustomerProfileModal
-                onDone={() => setProfileOpen(false)}
-                onOpenMerchantSignup={() => {
-                  setProfileOpen(false);
-                  setMerchantOpen(true);
-                }}
-              />
-            </div>
-          </div>
+        <DialogContent className="sm:max-w-md p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
+          <CommunityCustomerProfileModal
+            onDone={() => setProfileOpen(false)}
+            onLater={() => setProfileOpen(false)}
+            onOpenMerchantSignup={() => {
+              setProfileOpen(false);
+              setMerchantOpen(true);
+            }}
+          />
         </DialogContent>
       </Dialog>
 
