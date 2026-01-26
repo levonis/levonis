@@ -201,13 +201,13 @@ ${product.description ? `📝 الوصف: ${product.description.slice(0, 100)}${
       {/* Main Product Detail Modal - Premium Redesign */}
       <Dialog open={open && !messageDialogOpen} onOpenChange={onOpenChange}>
         <DialogContent 
-          className="sm:max-w-4xl p-0 gap-0 overflow-hidden border-0 bg-gradient-to-b from-background via-background to-muted/20"
+          className="sm:max-w-4xl p-0 gap-0 overflow-hidden rounded-3xl border-2 border-primary/10 bg-gradient-to-b from-background via-background to-muted/20 shadow-2xl shadow-primary/10"
           hideClose
         >
           {/* Custom Header with Gradient */}
           <div className="relative">
             {/* Hero Image Section */}
-            <div className="relative aspect-[16/10] sm:aspect-[2/1] bg-gradient-to-br from-muted/50 to-muted overflow-hidden">
+            <div className="relative aspect-[16/10] sm:aspect-[2/1] bg-gradient-to-br from-muted/50 to-muted overflow-hidden rounded-t-3xl">
               {product.image_urls && product.image_urls.length > 0 ? (
                 <>
                   <img
@@ -438,7 +438,7 @@ ${product.description ? `📝 الوصف: ${product.description.slice(0, 100)}${
 
       {/* Fullscreen Image Viewer */}
       <Dialog open={fullscreenImage} onOpenChange={setFullscreenImage}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 border-0 bg-black/95">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 rounded-3xl border-0 bg-black/95">
           <button
             onClick={() => setFullscreenImage(false)}
             className="absolute top-4 right-4 z-50 h-10 w-10 rounded-full bg-white/10 backdrop-blur flex items-center justify-center hover:bg-white/20 transition-colors"
@@ -457,7 +457,7 @@ ${product.description ? `📝 الوصف: ${product.description.slice(0, 100)}${
 
       {/* Message Confirmation Dialog - Improved */}
       <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
-        <DialogContent className="sm:max-w-md border-primary/20">
+        <DialogContent className="sm:max-w-md rounded-3xl border-2 border-primary/20">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
