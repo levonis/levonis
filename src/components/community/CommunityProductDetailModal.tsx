@@ -238,11 +238,11 @@ export default function CommunityProductDetailModal({
       {/* Main Product Detail Modal */}
       <Dialog open={open && !messageDialogOpen} onOpenChange={onOpenChange}>
         <DialogContent 
-          className="sm:max-w-2xl p-0 gap-0 overflow-hidden rounded-2xl border border-border/50 bg-background shadow-xl"
+          className="sm:max-w-md p-0 gap-0 overflow-hidden rounded-3xl border border-border/30 bg-background shadow-2xl"
           hideClose
         >
-          {/* Hero Image */}
-          <div className="relative aspect-[4/3] bg-muted/30 overflow-hidden">
+          {/* Hero Image - Smaller aspect ratio */}
+          <div className="relative aspect-[5/3] bg-muted/20 overflow-hidden">
             {activeUrl ? (
               <>
                 <img
@@ -335,12 +335,12 @@ export default function CommunityProductDetailModal({
             </div>
           )}
 
-          {/* Content */}
-          <div className="p-3 space-y-3 max-h-[45vh] overflow-y-auto">
+          {/* Content - More compact */}
+          <div className="p-2.5 space-y-2 max-h-[40vh] overflow-y-auto">
             {/* Title & Price */}
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h2 className="text-sm font-bold text-foreground line-clamp-2 leading-tight">
+                <h2 className="text-xs font-bold text-foreground line-clamp-2 leading-tight">
                   {product.title}
                 </h2>
                 {product.estimated_days && (
@@ -496,23 +496,23 @@ export default function CommunityProductDetailModal({
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex gap-2 pt-1">
+            {/* Actions - Compact */}
+            <div className="flex gap-1.5 pt-0.5">
               <Button 
                 size="sm"
-                className="flex-1 gap-1.5 h-9 text-xs font-bold rounded-lg" 
+                className="flex-1 gap-1 h-8 text-[11px] font-bold rounded-xl" 
                 onClick={handleContactMerchant}
               >
-                <MessageCircle className="h-3.5 w-3.5" />
+                <MessageCircle className="h-3 w-3" />
                 تواصل للطلب
               </Button>
               <Button 
                 variant="outline" 
                 size="sm"
-                className="gap-1.5 h-9 text-xs rounded-lg" 
+                className="gap-1 h-8 text-[11px] rounded-xl" 
                 onClick={handleVisitStore}
               >
-                <Store className="h-3.5 w-3.5" />
+                <Store className="h-3 w-3" />
                 المتجر
               </Button>
             </div>
@@ -522,12 +522,12 @@ export default function CommunityProductDetailModal({
 
       {/* Fullscreen */}
       <Dialog open={fullscreenImage} onOpenChange={setFullscreenImage}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-0 rounded-xl border-0 bg-black/95">
+        <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 rounded-3xl border-0 bg-black/95">
           <button
             onClick={() => setFullscreenImage(false)}
-            className="absolute top-3 right-3 z-50 h-8 w-8 rounded-full bg-white/10 backdrop-blur flex items-center justify-center hover:bg-white/20"
+            className="absolute top-2 right-2 z-50 h-7 w-7 rounded-full bg-white/10 backdrop-blur flex items-center justify-center hover:bg-white/20"
           >
-            <X className="h-4 w-4 text-white" />
+            <X className="h-3.5 w-3.5 text-white" />
           </button>
           {product.image_urls && (
             <img
@@ -539,63 +539,62 @@ export default function CommunityProductDetailModal({
         </DialogContent>
       </Dialog>
 
-      {/* Message Dialog */}
+      {/* Message Dialog - Compact */}
       <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
-        <DialogContent className="sm:max-w-sm rounded-xl">
+        <DialogContent className="sm:max-w-xs rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-sm">
-              <MessageCircle className="h-4 w-4 text-primary" />
+            <DialogTitle className="flex items-center gap-1.5 text-xs">
+              <MessageCircle className="h-3.5 w-3.5 text-primary" />
               مراسلة التاجر
             </DialogTitle>
-            <DialogDescription className="text-xs">
+            <DialogDescription className="text-[11px]">
               {merchantApp?.display_name || "التاجر"}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             {/* Product Preview */}
-            <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/30 border border-border/50">
-              <div className="h-10 w-10 rounded-md overflow-hidden bg-muted/50 shrink-0">
+            <div className="flex items-center gap-2 p-1.5 rounded-lg bg-muted/30 border border-border/50">
+              <div className="h-8 w-8 rounded-md overflow-hidden bg-muted/50 shrink-0">
                 {product.image_urls?.[0] ? (
                   <img src={product.image_urls[0]} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="h-full w-full flex items-center justify-center">
-                    <Package className="h-4 w-4 text-muted-foreground" />
+                    <Package className="h-3 w-3 text-muted-foreground" />
                   </div>
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium line-clamp-1">{product.title}</p>
+                <p className="text-[11px] font-medium line-clamp-1">{product.title}</p>
                 {product.price_iqd && (
-                  <p className="text-xs text-primary font-bold">{product.price_iqd.toLocaleString()} د.ع</p>
+                  <p className="text-[11px] text-primary font-bold">{product.price_iqd.toLocaleString()} د.ع</p>
                 )}
               </div>
             </div>
 
             {/* Auto-send Option */}
-            <div className="flex items-start gap-2 p-2 rounded-lg bg-primary/5 border border-primary/20">
+            <div className="flex items-start gap-1.5 p-1.5 rounded-lg bg-primary/5 border border-primary/20">
               <Checkbox
                 id="include-link"
                 checked={includeProductLink}
                 onCheckedChange={(c) => setIncludeProductLink(!!c)}
-                className="mt-0.5"
+                className="mt-0.5 h-3.5 w-3.5"
               />
-              <label htmlFor="include-link" className="text-xs cursor-pointer flex-1">
+              <label htmlFor="include-link" className="text-[11px] cursor-pointer flex-1">
                 <span className="font-medium flex items-center gap-1">
-                  <LinkIcon className="h-3 w-3" />
+                  <LinkIcon className="h-2.5 w-2.5" />
                   إرسال تفاصيل المنتج
                 </span>
-                <p className="text-[10px] text-muted-foreground mt-0.5">تلقائياً مع الرابط</p>
               </label>
             </div>
 
             {/* Buttons */}
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1 h-8 text-xs rounded-lg" onClick={() => setMessageDialogOpen(false)}>
+            <div className="flex gap-1.5">
+              <Button variant="outline" size="sm" className="flex-1 h-7 text-[11px] rounded-xl" onClick={() => setMessageDialogOpen(false)}>
                 إلغاء
               </Button>
-              <Button size="sm" className="flex-1 gap-1 h-8 text-xs rounded-lg" onClick={handleStartConversation}>
-                <MessageCircle className="h-3 w-3" />
+              <Button size="sm" className="flex-1 gap-1 h-7 text-[11px] rounded-xl" onClick={handleStartConversation}>
+                <MessageCircle className="h-2.5 w-2.5" />
                 بدء المحادثة
               </Button>
             </div>
