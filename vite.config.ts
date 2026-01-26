@@ -18,6 +18,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
     // Prevent multiple React copies in the bundle (common cause of dispatcher/useState null errors)
-    dedupe: ["react", "react-dom"],
+    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime"],
+  },
+  optimizeDeps: {
+    // Force re-optimization to clear cache issues
+    force: true,
+    include: ["react", "react-dom"],
   },
 }));
