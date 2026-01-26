@@ -1,11 +1,12 @@
 import { Suspense, lazy, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { Users } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Users, MessageCircle, Store, Package, FileText } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
 import AnimatedDivider from '@/components/ui/animated-divider';
+import { Button } from '@/components/ui/button';
 
 const MerchantDashboardWidgets = lazy(() => import('@/components/merchant/MerchantDashboardWidgets'));
 
@@ -15,6 +16,9 @@ interface CommunitySectionProps {
 
 export default function CommunitySection({ noFrame = false }: CommunitySectionProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isCommunityHub = location.pathname === "/community";
 
   const { data: merchantApp } = useQuery({
     queryKey: ["merchant-status", user?.id],
@@ -39,6 +43,24 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
     ? "container mx-auto px-0" 
     : "levo-section-frame container mx-auto px-0";
 
+  // Quick action buttons for merchants and customers
+  const quickActions = useMemo(() => {
+    if (isMerchant) {
+      return [
+        { key: "messages", label: "المحادثات", icon: MessageCircle, to: "/community/messages" },
+        { key: "store", label: "إدارة المتجر", icon: Store, to: "/community/merchant/store" },
+        { key: "orders", label: "الطلبات", icon: Package, to: "/community/merchant/orders" },
+        { key: "requests", label: "طلبات الزبائن", icon: FileText, to: "/community/requests" },
+      ];
+    }
+    return [
+      { key: "messages", label: "المحادثات", icon: MessageCircle, to: "/community/messages" },
+      { key: "new-request", label: "طلب جديد", icon: FileText, to: "/community/customer/new-request" },
+      { key: "my-requests", label: "طلباتي", icon: Package, to: "/community/customer/requests" },
+      { key: "profile", label: "ملفي", icon: Users, to: "/profile" },
+    ];
+  }, [isMerchant]);
+
   return (
     <section className={sectionClass}>
       {/* Header badge */}
@@ -60,8 +82,28 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       </div>
 
-      {/* Merchant Dashboard Widgets */}
-      {isMerchant && user?.id && (
+      {/* Quick Actions - Show on homepage only */}
+      {!isCommunityHub && user && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <Button
+                key={action.key}
+                variant="outline"
+                className="h-9 gap-2 text-xs"
+                onClick={() => navigate(action.to)}
+              >
+                <Icon className="h-4 w-4" />
+                {action.label}
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Merchant Dashboard Widgets - Show on /community hub only */}
+      {isCommunityHub && isMerchant && user?.id && (
         <>
           <Suspense fallback={<div className="h-40 animate-pulse bg-muted/30 rounded-xl" />}>
             <MerchantDashboardWidgets merchantId={user.id} />
@@ -71,7 +113,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
       )}
 
       {/* Explore tabs */}
-      <div className={isMerchant ? "mt-4" : "mt-6"}>
+      <div className={isCommunityHub && isMerchant ? "mt-4" : "mt-6"}>
         <CommunityExploreStrip />
       </div>
     </section>
