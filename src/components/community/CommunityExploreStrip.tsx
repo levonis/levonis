@@ -1,4 +1,4 @@
-import { Boxes, Store, Users, SlidersHorizontal, Search } from "lucide-react";
+import { Boxes, Store, Users, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -6,7 +6,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -49,7 +48,12 @@ const MERCHANT_SORTS = [
   { value: "verified", label: "الموثوق" },
 ];
 
-export default function CommunityExploreStrip({ className }: { className?: string }) {
+interface CommunityExploreStripProps {
+  className?: string;
+  searchQuery?: string;
+}
+
+export default function CommunityExploreStrip({ className, searchQuery: externalSearchQuery }: CommunityExploreStripProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
@@ -87,29 +91,16 @@ export default function CommunityExploreStrip({ className }: { className?: strin
   }, [isCommunityHub, tabFromUrl]);
 
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
-  const [searchQuery, setSearchQuery] = useState(searchFromUrl);
   const [productSort, setProductSort] = useState("newest");
   const [requestSort, setRequestSort] = useState("newest");
   const [merchantSort, setMerchantSort] = useState("newest");
 
+  // Use external search query if provided, otherwise use URL
+  const searchQuery = externalSearchQuery ?? searchFromUrl;
+
   useEffect(() => {
     setActiveTab(defaultTab);
   }, [defaultTab]);
-
-  // Sync search from URL
-  useEffect(() => {
-    setSearchQuery(searchFromUrl);
-  }, [searchFromUrl]);
-
-  const handleSearchChange = (value: string) => {
-    setSearchQuery(value);
-    if (isCommunityHub) {
-      const next = new URLSearchParams(searchParams);
-      if (value.trim()) next.set("q", value);
-      else next.delete("q");
-      setSearchParams(next, { replace: true });
-    }
-  };
 
   const openHubTab = (tab: "products" | "requests" | "merchants") => {
     navigate(`/community?tab=${tab}`);
@@ -119,26 +110,7 @@ export default function CommunityExploreStrip({ className }: { className?: strin
 
   return (
     <section className={className} aria-label="استكشاف المجتمع">
-      {/* Unified Search Bar - Only show on /community hub, not on homepage */}
-      {isCommunityHub && (
-        <div className="mb-3">
-          <div className="relative">
-            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder={
-                activeTab === "products"
-                  ? "ابحث عن منتج..."
-                  : activeTab === "merchants"
-                  ? "ابحث عن تاجر..."
-                  : "ابحث عن طلب..."
-              }
-              className="pr-8 h-8 text-xs rounded-xl"
-            />
-          </div>
-        </div>
-      )}
+      {/* Search bar is in CommunitySection header, not here */}
 
       <Tabs
         value={activeTab}

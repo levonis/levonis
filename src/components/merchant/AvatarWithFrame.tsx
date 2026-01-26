@@ -17,21 +17,21 @@ interface AvatarWithFrameProps {
   isUser?: boolean;
 }
 
-// The frame IS the border - these are the total sizes
+// The frame IS the border - these are the total sizes (frame fits tightly around avatar)
 const containerSizeClasses = {
-  xs: "h-10 w-10",
-  sm: "h-14 w-14",
-  md: "h-20 w-20",
-  lg: "h-28 w-28",
-  xl: "h-36 w-36",
+  xs: "h-9 w-9",
+  sm: "h-12 w-12",
+  md: "h-16 w-16",
+  lg: "h-24 w-24",
+  xl: "h-32 w-32",
 };
 
-// Avatar is slightly smaller to fit inside the frame
+// Avatar fills most of the container - frame wraps closely
 const avatarSizeClasses = {
-  xs: "h-8 w-8",
-  sm: "h-11 w-11",
-  md: "h-16 w-16",
-  lg: "h-22 w-22",
+  xs: "h-7 w-7",
+  sm: "h-10 w-10",
+  md: "h-14 w-14",
+  lg: "h-20 w-20",
   xl: "h-28 w-28",
 };
 
@@ -62,12 +62,12 @@ function AvatarWithFrameBase({
 
   return (
     <div className={`relative flex items-center justify-center ${containerSizeClasses[size]}`}>
-      {/* Frame as the border - positioned to perfectly wrap the avatar */}
+      {/* Frame as the border - scale to wrap tightly around avatar */}
       {hasFrame && (
         <img
           src={frameUrl}
           alt="Frame"
-          className={`absolute inset-0 w-full h-full pointer-events-none z-10 ${animationClass}`}
+          className={`absolute inset-[-10%] w-[120%] h-[120%] pointer-events-none z-10 ${animationClass}`}
           style={animated && !animationType ? {
             filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.6))",
           } : undefined}
