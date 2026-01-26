@@ -1,12 +1,13 @@
-import { Suspense, lazy, useMemo } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Users, MessageCircle, Store, Package, FileText } from 'lucide-react';
+import { Suspense, lazy, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Users, MessageCircle, Store, Package, FileText, Search } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
 import AnimatedDivider from '@/components/ui/animated-divider';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 const MerchantDashboardWidgets = lazy(() => import('@/components/merchant/MerchantDashboardWidgets'));
 
@@ -18,7 +19,22 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isCommunityHub = location.pathname === "/community";
+  
+  // Search state
+  const searchFromUrl = searchParams.get("q") || "";
+  const [searchQuery, setSearchQuery] = useState(searchFromUrl);
+  
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if (isCommunityHub) {
+      const next = new URLSearchParams(searchParams);
+      if (value.trim()) next.set("q", value);
+      else next.delete("q");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   const { data: merchantApp } = useQuery({
     queryKey: ["merchant-status", user?.id],
@@ -64,7 +80,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
   return (
     <section className={sectionClass}>
       {/* Header badge */}
-      <div className="relative mb-6">
+      <div className="relative mb-4">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t border-primary/15" />
         </div>
@@ -79,6 +95,19 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
             </div>
             <span className="text-sm font-bold text-primary">مجتمع ليفو</span>
           </Link>
+        </div>
+      </div>
+
+      {/* Search Bar - unified, always visible */}
+      <div className="mb-4">
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder="ابحث في المنتجات، الطلبات، التجار..."
+            className="levo-input-frame pr-10 h-10 text-sm"
+          />
         </div>
       </div>
 
@@ -113,8 +142,8 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
       )}
 
       {/* Explore tabs */}
-      <div className={isCommunityHub && isMerchant ? "mt-4" : "mt-6"}>
-        <CommunityExploreStrip />
+      <div className={isCommunityHub && isMerchant ? "mt-4" : "mt-4"}>
+        <CommunityExploreStrip searchQuery={searchQuery} />
       </div>
     </section>
   );
