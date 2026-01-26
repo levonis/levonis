@@ -10,10 +10,13 @@ import MerchantDirectoryCard from "@/components/community/MerchantDirectoryCard"
 import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
 import { BadgeTier } from "@/components/community/MerchantBadges";
+import { MerchantSortKey } from "./CommunitySortSelect";
 
 type Props = {
   mode: "preview" | "hub";
   onOpenStore: (merchantId: string) => void;
+  searchQuery?: string;
+  sortKey?: MerchantSortKey;
 };
 
 type MerchantRow = {
@@ -23,6 +26,7 @@ type MerchantRow = {
   is_verified: boolean;
   badge_tier: string;
   selected_frame_id: string | null;
+  bio: string | null;
 };
 
 type FeaturedProductRow = {
@@ -33,7 +37,7 @@ type FeaturedProductRow = {
   primary_image_index: number;
 };
 
-export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
+export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery = "", sortKey = "newest" }: Props) {
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const chunkSize = mode === "hub" ? 5 : 10;
@@ -48,7 +52,7 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
       const to = from + chunkSize - 1;
       const { data, error } = await supabase
         .from("merchant_public_profiles")
-        .select("id, display_name, store_image_url, is_verified, badge_tier, selected_frame_id")
+        .select("id, display_name, store_image_url, is_verified, badge_tier, selected_frame_id, bio")
         .order("created_at", { ascending: false })
         .range(from, to);
 
@@ -137,15 +141,51 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
     return new Map((ratingsStats as any[]).map((r) => [r.merchant_id, r]));
   }, [ratingsStats]);
 
+  // Filter and sort items
   const items = useMemo(() => {
-    if (mode !== "preview") return loaded;
-    const shuffled = [...loaded];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    let filtered = [...loaded];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (m) =>
+          m.display_name.toLowerCase().includes(q) ||
+          m.bio?.toLowerCase().includes(q)
+      );
     }
-    return shuffled.slice(0, 10);
-  }, [loaded, mode]);
+
+    // Sort
+    switch (sortKey) {
+      case "verified":
+        filtered = filtered.filter((m) => m.is_verified);
+        break;
+      case "filament_specialist":
+        filtered = filtered.filter((m) =>
+          m.bio?.toLowerCase().includes("filament") ||
+          m.bio?.includes("فلمنت")
+        );
+        break;
+      case "resin_specialist":
+        filtered = filtered.filter((m) =>
+          m.bio?.toLowerCase().includes("resin") ||
+          m.bio?.includes("رزن")
+        );
+        break;
+      // newest keeps default order
+    }
+
+    if (mode === "preview") {
+      const shuffled = [...filtered];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled.slice(0, 10);
+    }
+
+    return filtered;
+  }, [loaded, mode, searchQuery, sortKey]);
 
   useAutoFetchUntil({
     count: loaded.length,
@@ -158,9 +198,9 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
 
   if (query.isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         {Array.from({ length: mode === "hub" ? 6 : 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-20 rounded-2xl" />
+          <Skeleton key={i} className="h-16 rounded-xl" />
         ))}
       </div>
     );
@@ -169,16 +209,18 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
   if (!items.length) {
     return (
       <Card className="border-border bg-card">
-        <CardContent className="p-6 text-center">
-          <p className="text-sm text-muted-foreground">لا توجد متاجر متاحة حالياً.</p>
+        <CardContent className="p-4 text-center">
+          <p className="text-xs text-muted-foreground">
+            {searchQuery ? "لا توجد متاجر مطابقة للبحث." : "لا توجد متاجر متاحة حالياً."}
+          </p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+    <div className="space-y-2">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
         {items.map((m) => (
           <MerchantDirectoryCard
             key={m.id}
@@ -198,14 +240,15 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
       </div>
 
       {mode === "hub" && (
-        <div className="flex items-center justify-center pt-2">
+        <div className="flex items-center justify-center pt-1">
           <Button
             variant="outline"
-            className="h-10"
+            size="sm"
+            className="h-7 text-[11px]"
             disabled={query.isFetchingNextPage || !query.hasNextPage}
             onClick={() => setTargetCount((c) => c + 25)}
           >
-            {query.hasNextPage ? "إظهار المزيد (+25)" : "لا يوجد المزيد"}
+            {query.hasNextPage ? "إظهار المزيد" : "لا يوجد المزيد"}
           </Button>
         </div>
       )}
