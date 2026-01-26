@@ -5,6 +5,7 @@ import SearchBar from '@/components/SearchBar';
 import CategoryCard from '@/components/CategoryCard';
 import Footer from '@/components/Footer';
 import BannerCarousel from '@/components/BannerCarousel';
+import CompleteProfileBanner from '@/components/CompleteProfileBanner';
 import { Loader2 } from 'lucide-react';
 import AnimatedDivider from '@/components/ui/animated-divider';
 
@@ -65,6 +66,11 @@ const Home = () => {
         {/* Banner Carousel - minimal spacing */}
         <section className="w-full">
           <BannerCarousel />
+        </section>
+
+        {/* Complete Profile Banner - shows only for incomplete profiles */}
+        <section className="container mx-auto px-4 pt-4">
+          <CompleteProfileBanner />
         </section>
 
         {/* Hero Section - Simplified for mobile */}
