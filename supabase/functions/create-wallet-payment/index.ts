@@ -68,6 +68,35 @@ serve(async (req) => {
       throw new Error(`Minimum amount is approximately ${Math.ceil(exchangeRate * 0.5)} IQD`);
     }
 
+    // Get origin from headers or use Supabase URL as fallback
+    let origin = req.headers.get("origin");
+    if (!origin) {
+      // Try referer header
+      const referer = req.headers.get("referer");
+      if (referer) {
+        try {
+          const refererUrl = new URL(referer);
+          origin = refererUrl.origin;
+        } catch {
+          // Ignore parsing errors
+        }
+      }
+    }
+    
+    // Fallback to SUPABASE_URL based domain or default
+    if (!origin) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      // Extract project ref from supabase URL
+      const match = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
+      if (match) {
+        origin = `https://${match[1]}.lovable.app`;
+      } else {
+        origin = "https://levonis.lovable.app";
+      }
+    }
+
+    console.log("Creating checkout session with origin:", origin);
+
     // Create a one-time payment session with dynamic pricing
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -86,14 +115,16 @@ serve(async (req) => {
         },
       ],
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/wallet-success?session_id={CHECKOUT_SESSION_ID}&amount=${amount}`,
-      cancel_url: `${req.headers.get("origin")}/?wallet_canceled=true`,
+      success_url: `${origin}/wallet-success?session_id={CHECKOUT_SESSION_ID}&amount=${amount}`,
+      cancel_url: `${origin}/?wallet_canceled=true`,
       metadata: {
         user_id: user.id,
         amount_iqd: amount.toString(),
         type: "wallet_deposit",
       },
     });
+
+    console.log("Checkout session created:", session.id);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
