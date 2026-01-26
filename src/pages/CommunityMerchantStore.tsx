@@ -453,230 +453,238 @@ type MaterialType = "resin" | "filament" | "both";
            </div>
          )}
  
-         {/* Add/Edit Product Dialog */}
-         <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
-           <DialogContent className="sm:max-w-2xl">
-             <DialogHeader>
-               <DialogTitle>{selectedProduct ? "تعديل المنتج" : "إضافة منتج جديد"}</DialogTitle>
-             </DialogHeader>
-             <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
-               <div>
-                 <Label htmlFor="title">العنوان *</Label>
-                 <Input
-                   id="title"
-                   value={formData.title}
-                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                   placeholder="مثلاً: طباعة 3D مخصصة"
-                 />
-               </div>
- 
-               <div>
-                 <Label htmlFor="description">الوصف</Label>
-                 <Textarea
-                   id="description"
-                   rows={3}
-                   value={formData.description}
-                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                   placeholder="وصف المنتج..."
-                 />
-               </div>
- 
-               <div className="grid grid-cols-2 gap-3">
-                 <div>
-                   <Label htmlFor="price">السعر (د.ع)</Label>
-                   <Input
-                     id="price"
-                     type="number"
-                     value={formData.price_iqd}
-                     onChange={(e) => setFormData({ ...formData, price_iqd: e.target.value })}
-                     placeholder="مثلاً: 50000"
-                   />
-                 </div>
-                 <div>
-                   <Label htmlFor="original_price">السعر قبل الخصم (د.ع)</Label>
-                   <Input
-                     id="original_price"
-                     type="number"
-                     value={formData.original_price_iqd}
-                     onChange={(e) => setFormData({ ...formData, original_price_iqd: e.target.value })}
-                     placeholder="مثلاً: 70000"
-                   />
-                 </div>
-               </div>
- 
-              <MerchantProductMediaUpload
-                imageUrls={mediaState.image_urls}
-                onImagesChange={(urls) => setMediaState({ ...mediaState, image_urls: urls })}
-                primaryImageIndex={mediaState.primary_image_index}
-                onPrimaryImageChange={(idx) => setMediaState({ ...mediaState, primary_image_index: idx })}
-                videoUrl={mediaState.video_url}
-                onVideoUrlChange={(url) => setMediaState({ ...mediaState, video_url: url })}
-              />
- 
-               <div>
-                 <Label htmlFor="estimated_days">وقت التنفيذ التقديري (بالأيام)</Label>
-                 <Input
-                   id="estimated_days"
-                   type="number"
-                   value={formData.estimated_days}
-                   onChange={(e) => setFormData({ ...formData, estimated_days: e.target.value })}
-                   placeholder="مثلاً: 7"
-                 />
-               </div>
- 
-               <div className="flex items-center gap-2">
-                 <Switch
-                   id="is_active"
-                   checked={formData.is_active}
-                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                 />
-                 <Label htmlFor="is_active" className="cursor-pointer">
-                   نشر المنتج (ظاهر للزبائن)
-                 </Label>
-               </div>
-
-               <div className="flex items-center gap-2">
-                 <Switch
-                    id="is_featured"
-                    checked={formData.is_featured}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+          {/* Add/Edit Product Dialog */}
+          <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
+            <DialogContent className="sm:max-w-xl">
+              <DialogHeader className="pb-3 border-b border-border/50">
+                <DialogTitle className="text-lg">{selectedProduct ? "تعديل المنتج" : "إضافة منتج جديد"}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 max-h-[55vh] overflow-y-auto px-0.5 py-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="title" className="text-xs font-medium text-foreground/80">العنوان *</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="مثلاً: طباعة 3D مخصصة"
+                    className="h-9 text-sm bg-background/50 border-border/60 focus:border-primary/50"
                   />
-                  <Label htmlFor="is_featured" className="cursor-pointer">
-                    منتج مميز (يظهر في صفحة التجار، حد أقصى 3)
-                  </Label>
                 </div>
 
-                {/* Material Type Selector */}
-                <div>
-                  <Label className="mb-2 block">نوع المادة</Label>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, material_type: "resin" })}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
-                        formData.material_type === "resin"
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <Droplets className="h-4 w-4" />
-                      <span className="text-sm">رزن</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, material_type: "filament" })}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
-                        formData.material_type === "filament"
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <Layers className="h-4 w-4" />
-                      <span className="text-sm">فلمنت</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, material_type: "both" })}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
-                        formData.material_type === "both"
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "border-border hover:border-primary/50"
-                      }`}
-                    >
-                      <Droplets className="h-4 w-4" />
-                      <Layers className="h-4 w-4 -mr-1" />
-                      <span className="text-sm">كلاهما</span>
-                    </button>
+                <div className="space-y-1.5">
+                  <Label htmlFor="description" className="text-xs font-medium text-foreground/80">الوصف</Label>
+                  <Textarea
+                    id="description"
+                    rows={2}
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="وصف المنتج..."
+                    className="text-sm bg-background/50 border-border/60 focus:border-primary/50 resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="price" className="text-xs font-medium text-foreground/80">السعر (د.ع)</Label>
+                    <Input
+                      id="price"
+                      type="number"
+                      value={formData.price_iqd}
+                      onChange={(e) => setFormData({ ...formData, price_iqd: e.target.value })}
+                      placeholder="50000"
+                      className="h-9 text-sm bg-background/50 border-border/60 focus:border-primary/50"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="original_price" className="text-xs font-medium text-foreground/80">السعر قبل الخصم</Label>
+                    <Input
+                      id="original_price"
+                      type="number"
+                      value={formData.original_price_iqd}
+                      onChange={(e) => setFormData({ ...formData, original_price_iqd: e.target.value })}
+                      placeholder="70000"
+                      className="h-9 text-sm bg-background/50 border-border/60 focus:border-primary/50"
+                    />
                   </div>
                 </div>
-              </div>
- 
-             <div className="flex gap-2 mt-4">
-               <Button variant="outline" onClick={() => setProductDialogOpen(false)} className="flex-1">
-                 إلغاء
-               </Button>
-               <Button
-                 onClick={() => saveMutation.mutate()}
-                 disabled={!formData.title.trim() || saveMutation.isPending}
-                 className="flex-1"
-               >
-                 {saveMutation.isPending ? "جارٍ الحفظ..." : selectedProduct ? "حفظ التعديل" : "إضافة"}
-               </Button>
-             </div>
-           </DialogContent>
-         </Dialog>
- 
-         {/* Product Detail Dialog */}
-         <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-           <DialogContent className="sm:max-w-3xl">
-             <DialogHeader>
-               <DialogTitle>{selectedProduct?.title}</DialogTitle>
-             </DialogHeader>
-             {selectedProduct && (
-               <div className="space-y-4 max-h-[60vh] overflow-y-auto px-1">
-                 {selectedProduct.image_urls && selectedProduct.image_urls.length > 0 && (
-                   <div className="grid grid-cols-2 gap-2">
-                     {selectedProduct.image_urls.map((url, idx) => (
-                       <img
-                         key={idx}
-                         src={url}
-                         alt={`${selectedProduct.title} ${idx + 1}`}
-                         className="w-full aspect-square rounded-lg object-cover border border-border"
-                       />
-                     ))}
+
+               <MerchantProductMediaUpload
+                 imageUrls={mediaState.image_urls}
+                 onImagesChange={(urls) => setMediaState({ ...mediaState, image_urls: urls })}
+                 primaryImageIndex={mediaState.primary_image_index}
+                 onPrimaryImageChange={(idx) => setMediaState({ ...mediaState, primary_image_index: idx })}
+                 videoUrl={mediaState.video_url}
+                 onVideoUrlChange={(url) => setMediaState({ ...mediaState, video_url: url })}
+               />
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="estimated_days" className="text-xs font-medium text-foreground/80">وقت التنفيذ (بالأيام)</Label>
+                  <Input
+                    id="estimated_days"
+                    type="number"
+                    value={formData.estimated_days}
+                    onChange={(e) => setFormData({ ...formData, estimated_days: e.target.value })}
+                    placeholder="7"
+                    className="h-9 text-sm bg-background/50 border-border/60 focus:border-primary/50"
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-4 p-3 rounded-lg bg-background/30 border border-border/40">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id="is_active"
+                      checked={formData.is_active}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                    />
+                    <Label htmlFor="is_active" className="text-xs cursor-pointer">نشر المنتج</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                       id="is_featured"
+                       checked={formData.is_featured}
+                       onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+                     />
+                     <Label htmlFor="is_featured" className="text-xs cursor-pointer">منتج مميز</Label>
                    </div>
-                 )}
- 
-                 {selectedProduct.video_url && (
-                   <div>
-                     <Label>الفيديو</Label>
-                     <video controls className="w-full rounded-lg border border-border mt-1">
-                       <source src={selectedProduct.video_url} />
-                       المتصفح لا يدعم تشغيل الفيديو.
-                     </video>
+                 </div>
+
+                 {/* Material Type Selector */}
+                 <div className="space-y-2">
+                   <Label className="text-xs font-medium text-foreground/80">نوع المادة</Label>
+                   <div className="flex flex-wrap gap-2">
+                     <button
+                       type="button"
+                       onClick={() => setFormData({ ...formData, material_type: "resin" })}
+                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                         formData.material_type === "resin"
+                           ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                           : "bg-background/30 border-border/60 hover:border-primary/50 hover:bg-background/50"
+                       }`}
+                     >
+                       <Droplets className="h-3.5 w-3.5" />
+                       رزن
+                     </button>
+                     <button
+                       type="button"
+                       onClick={() => setFormData({ ...formData, material_type: "filament" })}
+                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                         formData.material_type === "filament"
+                           ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                           : "bg-background/30 border-border/60 hover:border-primary/50 hover:bg-background/50"
+                       }`}
+                     >
+                       <Layers className="h-3.5 w-3.5" />
+                       فلمنت
+                     </button>
+                     <button
+                       type="button"
+                       onClick={() => setFormData({ ...formData, material_type: "both" })}
+                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+                         formData.material_type === "both"
+                           ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                           : "bg-background/30 border-border/60 hover:border-primary/50 hover:bg-background/50"
+                       }`}
+                     >
+                       <Droplets className="h-3.5 w-3.5" />
+                       <Layers className="h-3.5 w-3.5 -mr-0.5" />
+                       كلاهما
+                     </button>
                    </div>
-                 )}
- 
-                 {selectedProduct.description && (
-                   <div>
-                     <Label>الوصف</Label>
-                     <p className="text-sm text-foreground/80 mt-1 whitespace-pre-wrap">
-                       {selectedProduct.description}
-                     </p>
-                   </div>
-                 )}
- 
-                 {selectedProduct.price_iqd && (
-                   <div>
-                     <Label>السعر</Label>
-                     <div className="flex items-baseline gap-2 mt-1">
-                       {selectedProduct.original_price_iqd && (
-                         <span className="text-sm text-muted-foreground line-through">
-                           {selectedProduct.original_price_iqd.toLocaleString()} د.ع
-                         </span>
-                       )}
-                       <span className="text-lg font-bold text-primary">
-                         {selectedProduct.price_iqd.toLocaleString()} د.ع
-                       </span>
-                     </div>
-                   </div>
-                 )}
- 
-                 {selectedProduct.estimated_days && (
-                   <div>
-                     <Label>وقت التنفيذ</Label>
-                     <p className="text-sm text-foreground/80 mt-1">{selectedProduct.estimated_days} يوم تقريباً</p>
-                   </div>
-                 )}
- 
-                 <div>
-                   <Label>حالة النشر</Label>
-                   <Badge className="mt-1">{selectedProduct.is_active ? "نشط" : "مخفي"}</Badge>
                  </div>
                </div>
-             )}
-           </DialogContent>
-         </Dialog>
+
+              <div className="flex gap-2 pt-3 border-t border-border/50">
+                <Button variant="outline" onClick={() => setProductDialogOpen(false)} className="flex-1 h-9 text-sm">
+                  إلغاء
+                </Button>
+                <Button
+                  onClick={() => saveMutation.mutate()}
+                  disabled={!formData.title.trim() || saveMutation.isPending}
+                  className="flex-1 h-9 text-sm"
+                >
+                  {saveMutation.isPending ? "جارٍ الحفظ..." : selectedProduct ? "حفظ التعديل" : "إضافة"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+ 
+          {/* Product Detail Dialog */}
+          <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader className="pb-3 border-b border-border/50">
+                <DialogTitle className="text-lg line-clamp-1">{selectedProduct?.title}</DialogTitle>
+              </DialogHeader>
+              {selectedProduct && (
+                <div className="space-y-4 max-h-[55vh] overflow-y-auto px-0.5 py-2">
+                  {selectedProduct.image_urls && selectedProduct.image_urls.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedProduct.image_urls.map((url, idx) => (
+                        <img
+                          key={idx}
+                          src={url}
+                          alt={`${selectedProduct.title} ${idx + 1}`}
+                          className="w-full aspect-square rounded-lg object-cover border border-border/50"
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedProduct.video_url && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-foreground/80">الفيديو</Label>
+                      <video controls className="w-full rounded-lg border border-border/50">
+                        <source src={selectedProduct.video_url} />
+                        المتصفح لا يدعم تشغيل الفيديو.
+                      </video>
+                    </div>
+                  )}
+
+                  {selectedProduct.description && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium text-foreground/80">الوصف</Label>
+                      <p className="text-sm text-foreground/80 whitespace-pre-wrap p-2.5 rounded-lg bg-background/30 border border-border/40">
+                        {selectedProduct.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {selectedProduct.price_iqd && (
+                      <div className="p-3 rounded-lg bg-background/30 border border-border/40">
+                        <Label className="text-xs font-medium text-foreground/60">السعر</Label>
+                        <div className="flex items-baseline gap-1.5 mt-1">
+                          {selectedProduct.original_price_iqd && (
+                            <span className="text-xs text-muted-foreground line-through">
+                              {selectedProduct.original_price_iqd.toLocaleString()}
+                            </span>
+                          )}
+                          <span className="text-base font-bold text-primary">
+                            {selectedProduct.price_iqd.toLocaleString()} د.ع
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedProduct.estimated_days && (
+                      <div className="p-3 rounded-lg bg-background/30 border border-border/40">
+                        <Label className="text-xs font-medium text-foreground/60">وقت التنفيذ</Label>
+                        <p className="text-sm font-medium text-foreground mt-1">{selectedProduct.estimated_days} يوم</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2">
+                    <Badge variant={selectedProduct.is_active ? "default" : "secondary"} className="text-xs">
+                      {selectedProduct.is_active ? "نشط" : "مخفي"}
+                    </Badge>
+                    {selectedProduct.is_featured && (
+                      <Badge className="text-xs bg-primary/20 text-primary border-primary/30">مميز</Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
          {/* Store Profile Editor */}
          {merchantApp && (

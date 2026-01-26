@@ -205,12 +205,12 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>تعديل المتجر</DialogTitle>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader className="pb-3 border-b border-border/50">
+            <DialogTitle className="text-lg">تعديل المتجر</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 max-h-[65vh] overflow-y-auto px-1">
+          <div className="space-y-4 max-h-[55vh] overflow-y-auto px-0.5 py-2">
             {/* Store Image with Frame */}
             <div className="flex flex-col items-center gap-3">
               <div className="relative">
@@ -219,8 +219,8 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
                   frameUrl={selectedFrame?.image_url}
                   size="xl"
                 />
-                <label className="absolute bottom-0 right-0 h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors z-20">
-                  <Camera className="h-4 w-4" />
+                <label className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors z-20 shadow-md">
+                  <Camera className="h-3.5 w-3.5" />
                   <input
                     type="file"
                     accept="image/*"
@@ -235,100 +235,106 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
                 variant="outline"
                 size="sm"
                 onClick={() => setFrameDialogOpen(true)}
-                className="gap-2"
+                className="gap-1.5 h-8 text-xs"
               >
                 اختيار إطار
               </Button>
             </div>
 
-            <div>
-              <Label>اسم المتجر *</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-foreground/80">اسم المتجر *</Label>
               <Input
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="اسم المتجر"
+                className="h-9 text-sm bg-background/50 border-border/60 focus:border-primary/50"
               />
             </div>
 
-            <div>
-              <Label>نبذة عن المتجر</Label>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-foreground/80">نبذة عن المتجر</Label>
               <Textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
                 placeholder="وصف قصير عن متجرك..."
-                rows={3}
+                rows={2}
+                className="text-sm bg-background/50 border-border/60 focus:border-primary/50 resize-none"
               />
             </div>
 
-            <div>
-              <Label>رابط فيسبوك</Label>
-              <Input
-                value={facebook}
-                onChange={(e) => setFacebook(e.target.value)}
-                placeholder="https://facebook.com/..."
-                dir="ltr"
-              />
-            </div>
-
-            <div>
-              <Label>رابط إنستقرام</Label>
-              <Input
-                value={instagram}
-                onChange={(e) => setInstagram(e.target.value)}
-                placeholder="https://instagram.com/..."
-                dir="ltr"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground/80">فيسبوك</Label>
+                <Input
+                  value={facebook}
+                  onChange={(e) => setFacebook(e.target.value)}
+                  placeholder="الرابط..."
+                  dir="ltr"
+                  className="h-9 text-xs bg-background/50 border-border/60 focus:border-primary/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground/80">إنستقرام</Label>
+                <Input
+                  value={instagram}
+                  onChange={(e) => setInstagram(e.target.value)}
+                  placeholder="الرابط..."
+                  dir="ltr"
+                  className="h-9 text-xs bg-background/50 border-border/60 focus:border-primary/50"
+                />
+              </div>
             </div>
 
             {/* Specialty Selector */}
-            <div>
-              <Label className="mb-2 block">تخصص الطباعة</Label>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-foreground/80">تخصص الطباعة</Label>
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => setSpecialty("resin")}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                     specialty === "resin"
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border hover:border-primary/50"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-background/30 border-border/60 hover:border-primary/50 hover:bg-background/50"
                   }`}
                 >
-                  <Droplets className="h-4 w-4" />
-                  <span className="text-sm">رزن فقط</span>
+                  <Droplets className="h-3.5 w-3.5" />
+                  رزن فقط
                 </button>
                 <button
                   type="button"
                   onClick={() => setSpecialty("filament")}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                     specialty === "filament"
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border hover:border-primary/50"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-background/30 border-border/60 hover:border-primary/50 hover:bg-background/50"
                   }`}
                 >
-                  <Layers className="h-4 w-4" />
-                  <span className="text-sm">فلمنت فقط</span>
+                  <Layers className="h-3.5 w-3.5" />
+                  فلمنت فقط
                 </button>
                 <button
                   type="button"
                   onClick={() => setSpecialty("both")}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
                     specialty === "both"
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "border-border hover:border-primary/50"
+                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                      : "bg-background/30 border-border/60 hover:border-primary/50 hover:bg-background/50"
                   }`}
                 >
-                  <Droplets className="h-4 w-4" />
-                  <Layers className="h-4 w-4 -mr-1" />
-                  <span className="text-sm">كلاهما</span>
+                  <Droplets className="h-3.5 w-3.5" />
+                  <Layers className="h-3.5 w-3.5 -mr-0.5" />
+                  كلاهما
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">اختر نوع الطباعة التي تقدمها</p>
             </div>
+          </div>
 
+          <div className="pt-3 border-t border-border/50">
             <Button
               onClick={() => saveMutation.mutate()}
               disabled={!displayName.trim() || saveMutation.isPending}
-              className="w-full"
+              className="w-full h-9 text-sm"
             >
               {saveMutation.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
             </Button>
@@ -338,20 +344,20 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
 
       {/* Frame Selection Dialog */}
       <Dialog open={frameDialogOpen} onOpenChange={setFrameDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>اختيار إطار الصورة</DialogTitle>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader className="pb-3 border-b border-border/50">
+            <DialogTitle className="text-lg">اختيار إطار الصورة</DialogTitle>
           </DialogHeader>
 
-          <div className="flex items-center justify-between mb-4 p-3 rounded-xl bg-primary/10">
-            <span className="text-sm font-medium">نقاطك الحالية</span>
+          <div className="flex items-center justify-between p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+            <span className="text-xs font-medium">نقاطك الحالية</span>
             <div className="flex items-center gap-1">
-              <Coins className="h-4 w-4 text-primary" />
-              <span className="font-bold text-primary">{userPoints?.toLocaleString() || 0}</span>
+              <Coins className="h-3.5 w-3.5 text-primary" />
+              <span className="text-sm font-bold text-primary">{userPoints?.toLocaleString() || 0}</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 max-h-[50vh] overflow-y-auto">
+          <div className="grid grid-cols-3 gap-2 max-h-[45vh] overflow-y-auto py-2">
             {frames.map((frame) => {
               const owned = canUseFrame(frame);
               const isSelected = selectedFrameId === frame.id;
@@ -368,38 +374,38 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
                     }
                   }}
                   disabled={purchaseFrameMutation.isPending}
-                  className={`relative p-2 rounded-xl border-2 transition-all ${
+                  className={`relative p-2 rounded-lg border-2 transition-all ${
                     isSelected
                       ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/50"
+                      : "border-border/50 hover:border-primary/50 bg-background/30"
                   }`}
                 >
-                  <div className="flex flex-col items-center gap-2">
+                  <div className="flex flex-col items-center gap-1.5">
                     <AvatarWithFrame
                       imageUrl={storeImageUrl}
                       frameUrl={frame.image_url}
                       size="sm"
                     />
-                    <span className="text-[10px] font-medium text-center line-clamp-1">
+                    <span className="text-[9px] font-medium text-center line-clamp-1">
                       {frame.name_ar}
                     </span>
                   </div>
 
                   {isSelected && (
-                    <div className="absolute top-1 right-1 h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                      <Check className="h-3 w-3" />
+                    <div className="absolute top-1 right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                      <Check className="h-2.5 w-2.5" />
                     </div>
                   )}
 
                   {!owned && (
-                    <Badge className="absolute bottom-1 left-1 right-1 text-[9px] gap-0.5 justify-center">
-                      <Coins className="h-2.5 w-2.5" />
+                    <Badge className="absolute bottom-0.5 left-0.5 right-0.5 text-[8px] gap-0.5 justify-center py-0">
+                      <Coins className="h-2 w-2" />
                       {frame.points_cost}
                     </Badge>
                   )}
 
                   {frame.is_free && !isSelected && (
-                    <Badge variant="secondary" className="absolute top-1 left-1 text-[9px]">
+                    <Badge variant="secondary" className="absolute top-0.5 left-0.5 text-[8px] py-0">
                       مجاني
                     </Badge>
                   )}
@@ -408,12 +414,14 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
             })}
           </div>
 
-          <Button
-            onClick={() => setFrameDialogOpen(false)}
-            className="w-full mt-2"
-          >
-            تم
-          </Button>
+          <div className="pt-3 border-t border-border/50">
+            <Button
+              onClick={() => setFrameDialogOpen(false)}
+              className="w-full h-9 text-sm"
+            >
+              تم
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>
