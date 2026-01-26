@@ -19,8 +19,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Wallet, Upload, Download, Image as ImageIcon, Copy, Check, Loader2 } from "lucide-react";
+import { Wallet, Upload, Download, Image as ImageIcon, Copy, Check, Loader2, CreditCard } from "lucide-react";
 
 interface WalletDialogProps {
   open: boolean;
@@ -45,6 +46,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [depositAmount, setDepositAmount] = useState("");
+  const [stripeAmount, setStripeAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [showDepositConfirm, setShowDepositConfirm] = useState(false);
   const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
@@ -52,6 +54,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
   const [paymentProofUrl, setPaymentProofUrl] = useState("");
   const [uploadingProof, setUploadingProof] = useState(false);
   const [copiedNumber, setCopiedNumber] = useState<string | null>(null);
+  const [stripeLoading, setStripeLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // جلب إعدادات المحفظة
@@ -251,8 +254,38 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
 
   const resetDepositForm = () => {
     setDepositAmount("");
+    setStripeAmount("");
     setSelectedPaymentMethod("");
     setPaymentProofUrl("");
+  };
+
+  // Stripe payment handler
+  const handleStripePayment = async () => {
+    const amount = Number(stripeAmount);
+    if (!amount || amount < 730) {
+      toast.error('الحد الأدنى للدفع هو 730 دينار عراقي');
+      return;
+    }
+
+    setStripeLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-wallet-payment', {
+        body: { amount },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+        onOpenChange(false);
+      } else {
+        throw new Error('لم يتم الحصول على رابط الدفع');
+      }
+    } catch (err: any) {
+      console.error('Stripe payment error:', err);
+      toast.error(err.message || 'حدث خطأ في بدء عملية الدفع');
+    } finally {
+      setStripeLoading(false);
+    }
   };
 
   const handleDepositClick = () => {
@@ -359,116 +392,176 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="depositAmount">المبلغ</Label>
-                  <Input
-                    id="depositAmount"
-                    type="number"
-                    placeholder="أدخل المبلغ"
-                    value={depositAmount}
-                    onChange={(e) => setDepositAmount(e.target.value)}
-                    autoFocus={false}
-                  />
-                </div>
+                <Tabs defaultValue="stripe" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                    <TabsTrigger value="stripe" className="gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      بطاقة ائتمان
+                    </TabsTrigger>
+                    <TabsTrigger value="transfer" className="gap-2">
+                      <Upload className="h-4 w-4" />
+                      تحويل بنكي
+                    </TabsTrigger>
+                  </TabsList>
 
-                {/* اختيار طريقة الدفع */}
-                {activePaymentMethods.length > 0 && (
-                  <div className="space-y-2">
-                    <Label>طريقة الدفع</Label>
-                    <RadioGroup
-                      value={selectedPaymentMethod}
-                      onValueChange={setSelectedPaymentMethod}
-                      className="space-y-2"
-                    >
-                      {activePaymentMethods.map((method) => (
-                        <div key={method.id} className="flex items-center space-x-2 space-x-reverse">
-                          <RadioGroupItem value={method.id} id={method.id} />
-                          <Label htmlFor={method.id} className="flex-1 cursor-pointer">
-                            <div className="flex items-center justify-between">
-                              <span>{method.name}</span>
-                            </div>
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-                )}
-
-                {/* عرض رقم الحساب المحدد */}
-                {selectedPaymentMethod && getSelectedMethodDetails() && (
-                  <div className="p-3 bg-muted rounded-lg space-y-2">
-                    <p className="text-sm font-medium">رقم الحساب للتحويل:</p>
-                    <div className="flex items-center justify-between gap-2">
-                      <code className="flex-1 text-sm bg-background p-2 rounded border">
-                        {getSelectedMethodDetails()?.account_number}
-                      </code>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => copyAccountNumber(getSelectedMethodDetails()?.account_number || '')}
-                      >
-                        {copiedNumber === getSelectedMethodDetails()?.account_number ? (
-                          <Check className="h-4 w-4" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
+                  {/* Stripe Payment Tab */}
+                  <TabsContent value="stripe" className="space-y-4">
+                    <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                      <p className="text-xs text-muted-foreground">
+                        ادفع ببطاقتك الائتمانية وسيتم إضافة الرصيد فوراً
+                      </p>
                     </div>
-                  </div>
-                )}
-
-                {/* رفع صورة إثبات الدفع */}
-                <div className="space-y-2">
-                  <Label>صورة إثبات الدفع</Label>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleUploadProof}
-                    className="hidden"
-                  />
-                  {paymentProofUrl ? (
-                    <div className="relative">
-                      <img
-                        src={paymentProofUrl}
-                        alt="إثبات الدفع"
-                        className="w-full h-32 object-cover rounded-lg border"
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="stripeAmount">المبلغ (دينار عراقي)</Label>
+                      <Input
+                        id="stripeAmount"
+                        type="number"
+                        placeholder="أدخل المبلغ (الحد الأدنى 730)"
+                        value={stripeAmount}
+                        onChange={(e) => setStripeAmount(e.target.value)}
+                        min={730}
                       />
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        className="absolute top-2 left-2"
-                        onClick={() => setPaymentProofUrl("")}
-                      >
-                        حذف
-                      </Button>
+                      {stripeAmount && Number(stripeAmount) >= 730 && (
+                        <p className="text-xs text-muted-foreground">
+                          ≈ ${(Number(stripeAmount) / 1460).toFixed(2)} USD
+                        </p>
+                      )}
                     </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="w-full h-24 border-dashed"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingProof}
+
+                    <Button 
+                      onClick={handleStripePayment}
+                      disabled={stripeLoading || !stripeAmount || Number(stripeAmount) < 730}
+                      className="w-full gap-2"
                     >
-                      {uploadingProof ? (
-                        <Loader2 className="h-6 w-6 animate-spin" />
+                      {stripeLoading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          جاري التحميل...
+                        </>
                       ) : (
-                        <div className="flex flex-col items-center gap-2">
-                          <ImageIcon className="h-6 w-6" />
-                          <span className="text-sm">اضغط لرفع الصورة</span>
-                        </div>
+                        <>
+                          <CreditCard className="h-4 w-4" />
+                          الدفع بالبطاقة
+                        </>
                       )}
                     </Button>
-                  )}
-                </div>
+                  </TabsContent>
 
-                <Button 
-                  onClick={handleDepositClick} 
-                  disabled={depositWallet.isPending || !depositAmount || !selectedPaymentMethod || !paymentProofUrl} 
-                  className="w-full"
-                >
-                  {depositWallet.isPending ? "جاري الإرسال..." : "طلب التعبئة"}
-                </Button>
+                  {/* Bank Transfer Tab */}
+                  <TabsContent value="transfer" className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="depositAmount">المبلغ</Label>
+                      <Input
+                        id="depositAmount"
+                        type="number"
+                        placeholder="أدخل المبلغ"
+                        value={depositAmount}
+                        onChange={(e) => setDepositAmount(e.target.value)}
+                        autoFocus={false}
+                      />
+                    </div>
+
+                    {/* اختيار طريقة الدفع */}
+                    {activePaymentMethods.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>طريقة الدفع</Label>
+                        <RadioGroup
+                          value={selectedPaymentMethod}
+                          onValueChange={setSelectedPaymentMethod}
+                          className="space-y-2"
+                        >
+                          {activePaymentMethods.map((method) => (
+                            <div key={method.id} className="flex items-center space-x-2 space-x-reverse">
+                              <RadioGroupItem value={method.id} id={method.id} />
+                              <Label htmlFor={method.id} className="flex-1 cursor-pointer">
+                                <div className="flex items-center justify-between">
+                                  <span>{method.name}</span>
+                                </div>
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    )}
+
+                    {/* عرض رقم الحساب المحدد */}
+                    {selectedPaymentMethod && getSelectedMethodDetails() && (
+                      <div className="p-3 bg-muted rounded-lg space-y-2">
+                        <p className="text-sm font-medium">رقم الحساب للتحويل:</p>
+                        <div className="flex items-center justify-between gap-2">
+                          <code className="flex-1 text-sm bg-background p-2 rounded border">
+                            {getSelectedMethodDetails()?.account_number}
+                          </code>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => copyAccountNumber(getSelectedMethodDetails()?.account_number || '')}
+                          >
+                            {copiedNumber === getSelectedMethodDetails()?.account_number ? (
+                              <Check className="h-4 w-4" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* رفع صورة إثبات الدفع */}
+                    <div className="space-y-2">
+                      <Label>صورة إثبات الدفع</Label>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleUploadProof}
+                        className="hidden"
+                      />
+                      {paymentProofUrl ? (
+                        <div className="relative">
+                          <img
+                            src={paymentProofUrl}
+                            alt="إثبات الدفع"
+                            className="w-full h-32 object-cover rounded-lg border"
+                          />
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            className="absolute top-2 left-2"
+                            onClick={() => setPaymentProofUrl("")}
+                          >
+                            حذف
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full h-24 border-dashed"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={uploadingProof}
+                        >
+                          {uploadingProof ? (
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                          ) : (
+                            <div className="flex flex-col items-center gap-2">
+                              <ImageIcon className="h-6 w-6" />
+                              <span className="text-sm">اضغط لرفع الصورة</span>
+                            </div>
+                          )}
+                        </Button>
+                      )}
+                    </div>
+
+                    <Button 
+                      onClick={handleDepositClick} 
+                      disabled={depositWallet.isPending || !depositAmount || !selectedPaymentMethod || !paymentProofUrl} 
+                      className="w-full"
+                    >
+                      {depositWallet.isPending ? "جاري الإرسال..." : "طلب التعبئة"}
+                    </Button>
+                  </TabsContent>
+                </Tabs>
               </CardContent>
             </Card>
 
