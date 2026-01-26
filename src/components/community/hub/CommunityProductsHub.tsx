@@ -8,10 +8,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useAutoFetchUntil } from "@/components/community/hub/useAutoFetchUntil";
 import CommunityProductCard from "@/components/community/CommunityProductCard";
 import CommunityProductDetailModal from "@/components/community/CommunityProductDetailModal";
+import { ProductSortKey } from "./CommunitySortSelect";
 
 type Props = {
   mode: "preview" | "hub";
   onOpenStore: (merchantId: string) => void;
+  searchQuery?: string;
+  sortKey?: ProductSortKey;
 };
 
 type ProductRow = {
@@ -31,7 +34,7 @@ function pickMainImage(p: ProductRow) {
   return p.image_urls?.[p.primary_image_index] || p.image_urls?.[0] || null;
 }
 
-export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
+export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = "", sortKey = "newest" }: Props) {
   const navigate = useNavigate();
   const chunkSize = mode === "hub" ? 4 : 12;
   const initialTarget = mode === "hub" ? 50 : 6;
@@ -115,17 +118,65 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
     return map;
   }, [merchantProfiles, framesData]);
 
+  // Filter and sort items
   const items = useMemo(() => {
-    if (mode !== "preview") return loaded;
+    let filtered = [...loaded];
 
-    // Preview mode: pick a pseudo-random sample from what we loaded (no heavy random SQL)
-    const shuffled = [...loaded];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (p) =>
+          p.title.toLowerCase().includes(q) ||
+          p.description?.toLowerCase().includes(q)
+      );
     }
-    return shuffled.slice(0, 6);
-  }, [loaded, mode]);
+
+    // Sort
+    switch (sortKey) {
+      case "price_low":
+        filtered.sort((a, b) => (a.price_iqd || 0) - (b.price_iqd || 0));
+        break;
+      case "price_high":
+        filtered.sort((a, b) => (b.price_iqd || 0) - (a.price_iqd || 0));
+        break;
+      case "alpha_asc":
+        filtered.sort((a, b) => a.title.localeCompare(b.title, "ar"));
+        break;
+      case "alpha_desc":
+        filtered.sort((a, b) => b.title.localeCompare(a.title, "ar"));
+        break;
+      case "resin":
+        filtered = filtered.filter((p) =>
+          p.title.toLowerCase().includes("resin") ||
+          p.title.includes("رزن") ||
+          p.description?.toLowerCase().includes("resin") ||
+          p.description?.includes("رزن")
+        );
+        break;
+      case "filament":
+        filtered = filtered.filter((p) =>
+          p.title.toLowerCase().includes("filament") ||
+          p.title.includes("فلمنت") ||
+          p.description?.toLowerCase().includes("filament") ||
+          p.description?.includes("فلمنت")
+        );
+        break;
+      // newest and best_selling keep default order
+    }
+
+    if (mode === "preview") {
+      // Preview mode: pick a pseudo-random sample from what we loaded
+      const shuffled = [...filtered];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      return shuffled.slice(0, 6);
+    }
+    
+    return filtered;
+  }, [loaded, mode, searchQuery, sortKey]);
 
   useAutoFetchUntil({
     count: (query.data?.pages || []).flat().length,
@@ -143,9 +194,9 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
 
   if (query.isLoading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {Array.from({ length: mode === "hub" ? 8 : 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-44 sm:h-56 rounded-xl" />
+          <Skeleton key={i} className="h-32 sm:h-40 rounded-xl" />
         ))}
       </div>
     );
@@ -154,16 +205,18 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
   if (!items.length) {
     return (
       <Card className="border-border bg-card">
-        <CardContent className="p-6 text-center">
-          <p className="text-sm text-muted-foreground">لا توجد منتجات متاحة حالياً.</p>
+        <CardContent className="p-4 text-center">
+          <p className="text-xs text-muted-foreground">
+            {searchQuery ? "لا توجد منتجات مطابقة للبحث." : "لا توجد منتجات متاحة حالياً."}
+          </p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
         {items.map((p) => {
           const mainImg = pickMainImage(p);
           const merchant = merchantsMap.get(p.merchant_id);
@@ -187,11 +240,12 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
         <div className="flex items-center justify-center">
           <Button
             variant="outline"
-            className="h-10"
+            size="sm"
+            className="h-7 text-[11px]"
             disabled={query.isFetchingNextPage || !query.hasNextPage}
             onClick={() => setTargetCount((c) => c + 25)}
           >
-            {query.hasNextPage ? "إظهار المزيد (+25)" : "لا يوجد المزيد"}
+            {query.hasNextPage ? "إظهار المزيد" : "لا يوجد المزيد"}
           </Button>
         </div>
       )}

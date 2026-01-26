@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { MessageCircle, Store, Eye } from "lucide-react";
+import { Store, Eye } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
@@ -27,11 +27,10 @@ function CommunityProductCardBase({
   merchantFrameUrl,
   onOpenStore,
   onProductClick,
-  onContact,
 }: Props) {
   return (
     <div
-      className="levo-card-frame group w-full min-w-0 cursor-pointer"
+      className="group relative rounded-lg border border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden cursor-pointer hover:border-primary/30 hover:shadow-md transition-all duration-200"
       role="button"
       tabIndex={0}
       onClick={onProductClick}
@@ -46,77 +45,70 @@ function CommunityProductCardBase({
             src={imageUrl}
             alt={title}
             loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <div className="levo-icon-frame h-14 w-14">
-              <Store className="h-7 w-7 text-primary/60" />
-            </div>
+            <Store className="h-5 w-5 text-muted-foreground/40" />
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="absolute top-2 left-2 flex items-center gap-2">
+        {/* Compact action buttons */}
+        <div className="absolute top-1 left-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button
             type="button"
             variant="secondary"
             size="icon"
-            className="levo-action-frame h-9 w-9 border-0"
+            className="h-6 w-6 rounded-md bg-background/90 backdrop-blur-sm border-0 shadow-sm"
             onClick={(e) => {
               e.stopPropagation();
               onOpenStore();
             }}
             aria-label="زيارة المتجر"
-            title="زيارة المتجر"
           >
-            <Store className="h-4 w-4" />
+            <Store className="h-3 w-3" />
           </Button>
-
-          {onProductClick && (
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              className="levo-action-frame h-9 w-9 border-0"
-              onClick={(e) => {
-                e.stopPropagation();
-                onProductClick();
-              }}
-              aria-label="عرض التفاصيل"
-              title="عرض التفاصيل"
-            >
-              <Eye className="h-4 w-4" />
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            className="h-6 w-6 rounded-md bg-background/90 backdrop-blur-sm border-0 shadow-sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onProductClick?.();
+            }}
+            aria-label="عرض التفاصيل"
+          >
+            <Eye className="h-3 w-3" />
+          </Button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-3">
-        <p className="text-sm font-bold leading-snug line-clamp-1">{title}</p>
+      {/* Content - Compact */}
+      <div className="p-1.5">
+        <p className="text-[10px] font-semibold leading-tight line-clamp-1 text-foreground">{title}</p>
 
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-1 flex items-center justify-between gap-1">
           {priceIqd ? (
-            <p className="text-sm font-extrabold text-primary tabular-nums">
-              {priceIqd.toLocaleString()} د.ع
+            <p className="text-[11px] font-bold text-primary tabular-nums">
+              {priceIqd.toLocaleString()}
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground">السعر عند التواصل</p>
+            <p className="text-[8px] text-muted-foreground">تواصل</p>
           )}
 
-          {merchantName ? (
-            <div className="flex items-center gap-1.5 min-w-0">
+          {merchantName && (
+            <div className="flex items-center gap-0.5 min-w-0">
               <AvatarWithFrame
                 imageUrl={merchantImageUrl}
                 frameUrl={merchantFrameUrl}
                 size="xs"
               />
-              <span className="text-[11px] text-muted-foreground truncate max-w-[80px]" title={merchantName}>
+              <span className="text-[8px] text-muted-foreground truncate max-w-[50px]">
                 {merchantName}
               </span>
             </div>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
