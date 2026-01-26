@@ -2,7 +2,27 @@ import { Users } from "lucide-react";
 import AdminLayout, { AdminSection, AdminEmptyState } from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
 
-export default function AdminCommunityCustomers() {
+interface Props {
+  embedded?: boolean;
+}
+
+function CustomersContent() {
+  return (
+    <AdminSection>
+      <AdminEmptyState
+        icon={<Users className="h-12 w-12" />}
+        title="قريباً"
+        description="سيتم إضافة إدارة الزبائن قريباً"
+      />
+    </AdminSection>
+  );
+}
+
+export default function AdminCommunityCustomers({ embedded }: Props) {
+  if (embedded) {
+    return <CustomersContent />;
+  }
+
   return (
     <AdminLayout
       title="إدارة الزبائن"
@@ -11,13 +31,7 @@ export default function AdminCommunityCustomers() {
       backTo={ADMIN_ROUTES.levoCommunity}
       maxWidth="6xl"
     >
-      <AdminSection>
-        <AdminEmptyState
-          icon={<Users className="h-12 w-12" />}
-          title="قريباً"
-          description="سيتم إضافة إدارة الزبائن قريباً"
-        />
-      </AdminSection>
+      <CustomersContent />
     </AdminLayout>
   );
 }

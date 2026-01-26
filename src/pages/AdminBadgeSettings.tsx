@@ -62,7 +62,11 @@ const tierIcons: Record<string, { icon: React.ReactNode; color: string; bgColor:
   emerald: { icon: <Gem className="h-5 w-5" />, color: "text-emerald-500", bgColor: "bg-emerald-100" },
 };
 
-export default function AdminBadgeSettings() {
+interface Props {
+  embedded?: boolean;
+}
+
+export default function AdminBadgeSettings({ embedded }: Props) {
   const { isAdmin, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -133,13 +137,8 @@ export default function AdminBadgeSettings() {
 
   if (authLoading || !isAdmin) return null;
 
-  return (
-    <AdminLayout
-      title="إعدادات الشارات"
-      description="تعديل قيم عتبات شارات التجار (فضي، ذهبي، ماسي، زمردة)"
-      backTo={ADMIN_ROUTES.levoCommunity}
-    >
-      <div className="space-y-6">
+  const content = (
+    <div className="space-y-6">
         {/* Info Card */}
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-4">
@@ -429,6 +428,19 @@ export default function AdminBadgeSettings() {
           </div>
         )}
       </div>
+    );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <AdminLayout
+      title="إعدادات الشارات"
+      description="تعديل قيم عتبات شارات التجار (فضي، ذهبي، ماسي، زمردة)"
+      backTo={ADMIN_ROUTES.levoCommunity}
+    >
+      {content}
     </AdminLayout>
   );
 }

@@ -1,70 +1,75 @@
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { Store, Users, MessageCircle, AlertTriangle, Award, ImageIcon } from "lucide-react";
-import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent } from "@/components/admin/AdminLayout";
+import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Suspense, lazy } from "react";
+import { Loader2 } from "lucide-react";
 
-interface CommunitySection {
+// Lazy load the tab content components
+const AdminCommunityMerchants = lazy(() => import("@/pages/AdminCommunityMerchants"));
+const AdminCommunityCustomers = lazy(() => import("@/pages/AdminCommunityCustomers"));
+const AdminCommunityComplaints = lazy(() => import("@/pages/AdminCommunityComplaints"));
+const AdminCommunityMessages = lazy(() => import("@/pages/AdminCommunityMessages"));
+const AdminBadgeSettings = lazy(() => import("@/pages/AdminBadgeSettings"));
+const AdminAvatarFrames = lazy(() => import("@/pages/AdminAvatarFrames"));
+
+interface TabConfig {
+  value: string;
   icon: React.ElementType;
-  title: string;
-  description: string;
-  path: string;
+  label: string;
   colorClass: string;
-  bgClass: string;
 }
 
-const sections: CommunitySection[] = [
+const tabs: TabConfig[] = [
   {
+    value: "merchants",
     icon: Store,
-    title: "إدارة التجار",
-    description: "مراجعة طلبات التسجيل والموافقة/الرفض",
-    path: ADMIN_ROUTES.communityMerchants,
+    label: "التجار",
     colorClass: "text-emerald-500",
-    bgClass: "bg-emerald-500/10",
   },
   {
+    value: "customers",
     icon: Users,
-    title: "إدارة الزبائن",
-    description: "عرض وإدارة حسابات الزبائن",
-    path: ADMIN_ROUTES.communityCustomers,
+    label: "الزبائن",
     colorClass: "text-blue-500",
-    bgClass: "bg-blue-500/10",
   },
   {
+    value: "complaints",
     icon: AlertTriangle,
-    title: "الشكاوى والنزاعات",
-    description: "مراجعة الشكاوى والتدخل في النزاعات",
-    path: ADMIN_ROUTES.communityComplaints,
+    label: "الشكاوى",
     colorClass: "text-amber-500",
-    bgClass: "bg-amber-500/10",
   },
   {
+    value: "messages",
     icon: MessageCircle,
-    title: "المحادثات",
-    description: "مراقبة محادثات المجتمع",
-    path: ADMIN_ROUTES.communityMessages,
+    label: "المحادثات",
     colorClass: "text-purple-500",
-    bgClass: "bg-purple-500/10",
   },
   {
+    value: "badges",
     icon: Award,
-    title: "إعدادات الشارات",
-    description: "تخصيص شارات ورتب التجار",
-    path: ADMIN_ROUTES.badgeSettings,
+    label: "الشارات",
     colorClass: "text-primary",
-    bgClass: "bg-primary/10",
   },
   {
+    value: "frames",
     icon: ImageIcon,
-    title: "إطارات الأفتار",
-    description: "إدارة الإطارات المتحركة للصور",
-    path: ADMIN_ROUTES.avatarFrames,
+    label: "الإطارات",
     colorClass: "text-pink-500",
-    bgClass: "bg-pink-500/10",
   },
 ];
 
+function TabLoader() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  );
+}
+
 export default function AdminLevoCommunity() {
-  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState("merchants");
 
   return (
     <AdminLayout
@@ -72,30 +77,52 @@ export default function AdminLevoCommunity() {
       description="إدارة التجار والزبائن والمحادثات والشكاوى"
       icon={<Users className="h-5 w-5" />}
       backTo={ADMIN_ROUTES.dashboard}
-      maxWidth="4xl"
+      maxWidth="7xl"
     >
-      <AdminSection>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sections.map((section) => (
-            <AdminCard key={section.path} className="cursor-pointer" hover>
-              <button
-                onClick={() => navigate(section.path)}
-                className="w-full text-right p-5 block"
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* Scrollable Tabs Bar */}
+        <div className="sticky top-[calc(4rem+4.5rem)] z-30 bg-background/95 backdrop-blur-sm border-b border-border/50 -mx-4 md:-mx-6 px-4 md:px-6 mb-6">
+          <TabsList className="h-auto p-1 bg-transparent justify-start gap-1 overflow-x-auto flex-nowrap w-full scrollbar-hide">
+            {tabs.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-lg data-[state=active]:bg-primary/10 data-[state=active]:text-primary whitespace-nowrap shrink-0"
               >
-                <div className={`w-12 h-12 rounded-xl ${section.bgClass} flex items-center justify-center mb-4`}>
-                  <section.icon className={`h-6 w-6 ${section.colorClass}`} />
-                </div>
-                <h3 className="text-base font-bold text-foreground mb-1">
-                  {section.title}
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {section.description}
-                </p>
-              </button>
-            </AdminCard>
-          ))}
+                <tab.icon className={`h-4 w-4 ${activeTab === tab.value ? "text-primary" : tab.colorClass}`} />
+                <span className="text-sm font-medium">{tab.label}</span>
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
-      </AdminSection>
+
+        {/* Tab Contents */}
+        <Suspense fallback={<TabLoader />}>
+          <TabsContent value="merchants" className="mt-0">
+            <AdminCommunityMerchants embedded />
+          </TabsContent>
+          
+          <TabsContent value="customers" className="mt-0">
+            <AdminCommunityCustomers embedded />
+          </TabsContent>
+          
+          <TabsContent value="complaints" className="mt-0">
+            <AdminCommunityComplaints embedded />
+          </TabsContent>
+          
+          <TabsContent value="messages" className="mt-0">
+            <AdminCommunityMessages embedded />
+          </TabsContent>
+          
+          <TabsContent value="badges" className="mt-0">
+            <AdminBadgeSettings embedded />
+          </TabsContent>
+          
+          <TabsContent value="frames" className="mt-0">
+            <AdminAvatarFrames embedded />
+          </TabsContent>
+        </Suspense>
+      </Tabs>
     </AdminLayout>
   );
 }

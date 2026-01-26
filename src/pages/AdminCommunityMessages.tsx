@@ -2,7 +2,27 @@ import { MessageCircle } from "lucide-react";
 import AdminLayout, { AdminSection, AdminEmptyState } from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
 
-export default function AdminCommunityMessages() {
+interface Props {
+  embedded?: boolean;
+}
+
+function MessagesContent() {
+  return (
+    <AdminSection>
+      <AdminEmptyState
+        icon={<MessageCircle className="h-12 w-12" />}
+        title="قريباً"
+        description="سيتم إضافة مراقبة المحادثات قريباً"
+      />
+    </AdminSection>
+  );
+}
+
+export default function AdminCommunityMessages({ embedded }: Props) {
+  if (embedded) {
+    return <MessagesContent />;
+  }
+
   return (
     <AdminLayout
       title="محادثات المجتمع"
@@ -11,13 +31,7 @@ export default function AdminCommunityMessages() {
       backTo={ADMIN_ROUTES.levoCommunity}
       maxWidth="6xl"
     >
-      <AdminSection>
-        <AdminEmptyState
-          icon={<MessageCircle className="h-12 w-12" />}
-          title="قريباً"
-          description="سيتم إضافة مراقبة المحادثات قريباً"
-        />
-      </AdminSection>
+      <MessagesContent />
     </AdminLayout>
   );
 }

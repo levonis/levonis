@@ -464,7 +464,9 @@ export type Database = {
           created_at: string
           description: string
           id: string
-          image_url: string
+          image_url: string | null
+          images: string[] | null
+          material_type: string | null
           notes: string | null
           reference_links: string[] | null
           size: string
@@ -472,6 +474,7 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          video_url: string | null
         }
         Insert: {
           admin_notes?: string | null
@@ -479,7 +482,9 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
-          image_url: string
+          image_url?: string | null
+          images?: string[] | null
+          material_type?: string | null
           notes?: string | null
           reference_links?: string[] | null
           size: string
@@ -487,6 +492,7 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          video_url?: string | null
         }
         Update: {
           admin_notes?: string | null
@@ -494,7 +500,9 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
-          image_url?: string
+          image_url?: string | null
+          images?: string[] | null
+          material_type?: string | null
           notes?: string | null
           reference_links?: string[] | null
           size?: string
@@ -502,6 +510,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          video_url?: string | null
         }
         Relationships: []
       }
