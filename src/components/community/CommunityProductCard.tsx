@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { MessageCircle, Store, Eye } from "lucide-react";
+import { MessageCircle, Store } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
@@ -14,7 +14,7 @@ type Props = {
   onOpenStore: () => void;
   /** Opens the product detail modal */
   onProductClick?: () => void;
-  /** Optional: if you already have a chat action elsewhere */
+  /** Contact the merchant */
   onContact?: () => void;
 };
 
@@ -31,7 +31,7 @@ function CommunityProductCardBase({
 }: Props) {
   return (
     <div
-      className="levo-card-frame group w-full min-w-0 cursor-pointer"
+      className="levo-card-frame group w-full min-w-0 cursor-pointer overflow-hidden"
       role="button"
       tabIndex={0}
       onClick={onProductClick}
@@ -40,29 +40,29 @@ function CommunityProductCardBase({
       }}
     >
       {/* Image */}
-      <div className="relative aspect-square bg-muted/10">
+      <div className="relative aspect-[4/3] bg-gradient-to-b from-muted/5 to-muted/15">
         {imageUrl ? (
           <img
             src={imageUrl}
             alt={title}
             loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <div className="levo-icon-frame h-14 w-14">
-              <Store className="h-7 w-7 text-primary/60" />
+            <div className="levo-icon-frame h-10 w-10">
+              <Store className="h-5 w-5 text-primary/60" />
             </div>
           </div>
         )}
 
-        {/* Action buttons */}
-        <div className="absolute top-2 left-2 flex items-center gap-2">
+        {/* Action buttons - compact */}
+        <div className="absolute top-1.5 left-1.5 flex items-center gap-1">
           <Button
             type="button"
             variant="secondary"
             size="icon"
-            className="levo-action-frame h-9 w-9 border-0"
+            className="levo-action-frame h-7 w-7 border-0"
             onClick={(e) => {
               e.stopPropagation();
               onOpenStore();
@@ -70,49 +70,49 @@ function CommunityProductCardBase({
             aria-label="زيارة المتجر"
             title="زيارة المتجر"
           >
-            <Store className="h-4 w-4" />
+            <Store className="h-3 w-3" />
           </Button>
 
-          {onProductClick && (
+          {onContact && (
             <Button
               type="button"
               variant="secondary"
               size="icon"
-              className="levo-action-frame h-9 w-9 border-0"
+              className="levo-action-frame h-7 w-7 border-0"
               onClick={(e) => {
                 e.stopPropagation();
-                onProductClick();
+                onContact();
               }}
-              aria-label="عرض التفاصيل"
-              title="عرض التفاصيل"
+              aria-label="تواصل مع التاجر"
+              title="تواصل مع التاجر"
             >
-              <Eye className="h-4 w-4" />
+              <MessageCircle className="h-3 w-3" />
             </Button>
           )}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-3">
-        <p className="text-sm font-bold leading-snug line-clamp-1">{title}</p>
+      {/* Content - compact */}
+      <div className="p-2">
+        <p className="text-xs font-bold leading-tight line-clamp-1">{title}</p>
 
-        <div className="mt-2 flex items-center justify-between gap-2">
+        <div className="mt-1.5 flex items-center justify-between gap-1">
           {priceIqd ? (
-            <p className="text-sm font-extrabold text-primary tabular-nums">
+            <p className="text-xs font-extrabold text-primary tabular-nums">
               {priceIqd.toLocaleString()} د.ع
             </p>
           ) : (
-            <p className="text-xs text-muted-foreground">السعر عند التواصل</p>
+            <p className="text-[10px] text-muted-foreground">تواصل للسعر</p>
           )}
 
           {merchantName ? (
-            <div className="flex items-center gap-1.5 min-w-0">
+            <div className="flex items-center gap-1 min-w-0">
               <AvatarWithFrame
                 imageUrl={merchantImageUrl}
                 frameUrl={merchantFrameUrl}
                 size="xs"
               />
-              <span className="text-[11px] text-muted-foreground truncate max-w-[80px]" title={merchantName}>
+              <span className="text-[10px] text-muted-foreground truncate max-w-[60px]" title={merchantName}>
                 {merchantName}
               </span>
             </div>
