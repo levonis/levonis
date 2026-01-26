@@ -401,8 +401,8 @@ export default function NewPrintRequestDialog({
                     onClick={() => fileInputRef.current?.click()}
                     className={`relative h-28 w-28 rounded-2xl border-2 border-dashed transition-all overflow-hidden group cursor-pointer hover:border-primary ${
                       imagePreviewUrl
-                        ? "border-primary/50 bg-primary/5"
-                        : "border-border bg-muted/30"
+                        ? "border-primary/60 bg-primary/10"
+                        : "border-border bg-muted/50"
                     }`}
                   >
                     {uploadingImage ? (
@@ -457,8 +457,8 @@ export default function NewPrintRequestDialog({
                     key={field.id}
                     className={`rounded-xl border-2 transition-all duration-200 ${
                       hasValue
-                        ? "border-primary/30 bg-primary/5"
-                        : "border-border/50 bg-muted/30"
+                        ? "border-primary/40 bg-primary/10"
+                        : "border-border bg-muted/50"
                     }`}
                   >
                     <div className="px-4 py-3">
@@ -516,8 +516,8 @@ export default function NewPrintRequestDialog({
                     key={field.id}
                     className={`rounded-xl border-2 transition-all duration-200 ${
                       hasValue
-                        ? "border-primary/30 bg-primary/5"
-                        : "border-border/50 bg-muted/30"
+                        ? "border-primary/40 bg-primary/10"
+                        : "border-border bg-muted/50"
                     }`}
                   >
                     <div className="px-4 py-3">
@@ -561,7 +561,7 @@ export default function NewPrintRequestDialog({
               })}
 
               {/* Reference Links */}
-              <div className="rounded-xl border-2 border-border/50 bg-muted/30 p-4">
+              <div className="rounded-xl border-2 border-border bg-muted/50 p-4">
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
