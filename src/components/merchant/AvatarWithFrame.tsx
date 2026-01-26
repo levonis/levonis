@@ -35,8 +35,8 @@ const containerSizes = {
   xl: 128,
 };
 
-// Avatar should be 70% of container, leaving 15% on each side for frame
-const avatarPercentage = 0.70;
+// Avatar should be 85% of container, leaving 7.5% on each side for frame (tighter fit)
+const avatarPercentage = 0.85;
 
 const badgeSizeClasses = {
   xs: "h-2.5 w-2.5 -bottom-0.5 -right-0.5",

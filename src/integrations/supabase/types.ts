@@ -457,6 +457,131 @@ export type Database = {
         }
         Relationships: []
       }
+      community_complaints: {
+        Row: {
+          admin_notes: string | null
+          complainant_id: string
+          complaint_type: string
+          created_at: string
+          description: string
+          id: string
+          images: string[] | null
+          offer_id: string | null
+          priority: string | null
+          reported_merchant_id: string | null
+          reported_user_id: string | null
+          request_id: string | null
+          resolution: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          complainant_id: string
+          complaint_type?: string
+          created_at?: string
+          description: string
+          id?: string
+          images?: string[] | null
+          offer_id?: string | null
+          priority?: string | null
+          reported_merchant_id?: string | null
+          reported_user_id?: string | null
+          request_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          complainant_id?: string
+          complaint_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          images?: string[] | null
+          offer_id?: string | null
+          priority?: string | null
+          reported_merchant_id?: string | null
+          reported_user_id?: string | null
+          request_id?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_complaints_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "community_print_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      community_customer_profiles: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          frame_url: string | null
+          id: string
+          is_suspended: boolean | null
+          is_verified: boolean | null
+          reputation_score: number | null
+          suspension_reason: string | null
+          total_requests_made: number | null
+          total_requests_received: number | null
+          total_spent: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          frame_url?: string | null
+          id?: string
+          is_suspended?: boolean | null
+          is_verified?: boolean | null
+          reputation_score?: number | null
+          suspension_reason?: string | null
+          total_requests_made?: number | null
+          total_requests_received?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          frame_url?: string | null
+          id?: string
+          is_suspended?: boolean | null
+          is_verified?: boolean | null
+          reputation_score?: number | null
+          suspension_reason?: string | null
+          total_requests_made?: number | null
+          total_requests_received?: number | null
+          total_spent?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_print_requests: {
         Row: {
           admin_notes: string | null
@@ -5109,6 +5234,7 @@ export type Database = {
         Args: { _message: string; _title: string; _type?: string }
         Returns: undefined
       }
+      trigger_badge_calculation: { Args: never; Returns: undefined }
       validate_coupon: { Args: { coupon_code: string }; Returns: Json }
       validate_coupon_with_rate_limit: {
         Args: { coupon_code: string }
