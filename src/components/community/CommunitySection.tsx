@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import CommunityCustomerProfileModal from '@/components/community/CommunityCustomerProfileModal';
 import MerchantSignupDialog from '@/components/community/MerchantSignupDialog';
+import NewPrintRequestDialog from '@/components/community/NewPrintRequestDialog';
 
 const MerchantDashboardWidgets = lazy(() => import('@/components/merchant/MerchantDashboardWidgets'));
 
@@ -69,6 +70,9 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
     : "levo-section-frame container mx-auto px-0";
 
   // Quick action buttons for merchants and customers - only show if profile is complete
+  // Dialog state for new request
+  const [newRequestOpen, setNewRequestOpen] = useState(false);
+  
   const quickActions = useMemo(() => {
     if (isMerchant) {
       return [
@@ -80,7 +84,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
     }
     return [
       { key: "messages", label: "المحادثات", icon: MessageCircle, to: "/community/messages" },
-      { key: "new-request", label: "طلب جديد", icon: FileText, to: "/community/customer/new-request" },
+      { key: "new-request", label: "طلب جديد", icon: FileText, action: () => setNewRequestOpen(true) },
       { key: "my-requests", label: "طلباتي", icon: Package, to: "/community/customer/requests" },
       { key: "profile", label: "ملفي", icon: Users, to: "/profile" },
     ];
@@ -133,7 +137,13 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
                   key={action.key}
                   variant="outline"
                   className="h-9 gap-2 text-xs"
-                  onClick={() => navigate(action.to)}
+                  onClick={() => {
+                    if ('action' in action && action.action) {
+                      action.action();
+                    } else if ('to' in action && action.to) {
+                      navigate(action.to);
+                    }
+                  }}
                 >
                   <Icon className="h-4 w-4" />
                   {action.label}
@@ -172,6 +182,9 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
       </Dialog>
 
       <MerchantSignupDialog open={merchantOpen} onOpenChange={setMerchantOpen} />
+
+      {/* New Print Request Dialog */}
+      <NewPrintRequestDialog open={newRequestOpen} onOpenChange={setNewRequestOpen} />
 
       {/* Merchant Dashboard Widgets - Show on /community hub only */}
       {isCommunityHub && isMerchant && user?.id && (
