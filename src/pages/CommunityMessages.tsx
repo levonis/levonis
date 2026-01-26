@@ -1,5 +1,5 @@
-import { useEffect, useState, useCallback } from 'react';
-import { MessageSquare, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { MessageSquare, Users, ArrowRight, Loader2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -139,49 +139,53 @@ export default function CommunityMessages() {
     return () => window.clearTimeout(t);
   }, []);
 
-  return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm">
-      <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
-        <header className="mb-6 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Users className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-primary">محادثات المجتمع</h1>
-              <p className="text-sm text-muted-foreground">تواصل مع التجار والعملاء</p>
-            </div>
-          </div>
+  // Handle dialog close - return to community
+  const handleClose = () => {
+    setOpen(false);
+    navigate('/community');
+  };
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => navigate('/community')} className="gap-2">
-              <MessageSquare className="h-4 w-4" />
-              رجوع
+  return (
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto px-4 py-6 pt-20 max-w-4xl">
+        {/* Header */}
+        <header className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full h-9 w-9"
+              onClick={() => navigate('/community')}
+            >
+              <ArrowRight className="h-4 w-4" />
             </Button>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-foreground">محادثات المجتمع</h1>
+                <p className="text-xs text-muted-foreground">تواصل مع التجار</p>
+              </div>
+            </div>
           </div>
         </header>
 
-        {loading || creatingConversation ? (
-          <section className="rounded-2xl border border-border bg-card p-5">
-            <div className="h-4 w-32 bg-muted rounded animate-pulse" />
-            <div className="mt-4 h-40 w-full bg-muted rounded-xl animate-pulse" />
-            {creatingConversation && (
-              <p className="text-sm text-muted-foreground mt-4 text-center">جاري إنشاء المحادثة...</p>
-            )}
-          </section>
-        ) : (
-          <section className="rounded-2xl border border-border bg-card p-5">
+        {/* Loading State */}
+        {(loading || creatingConversation) && (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">
-              سيتم فتح واجهة المحادثات الآن.
+              {creatingConversation ? 'جاري إنشاء المحادثة...' : 'جاري التحميل...'}
             </p>
-          </section>
+          </div>
         )}
 
-        {/* Reuse existing messaging UI as-is (opens as overlay dialog) */}
+        {/* Conversations Dialog */}
         <ListingConversations
           externalOpen={open}
           onExternalOpenChange={setOpen}
-          onClose={() => navigate('/community')}
+          onClose={handleClose}
           autoOpenConversationId={autoOpenConversationId}
         >
           <span className="sr-only">فتح المحادثات</span>
