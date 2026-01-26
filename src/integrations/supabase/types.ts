@@ -457,6 +457,54 @@ export type Database = {
         }
         Relationships: []
       }
+      community_print_requests: {
+        Row: {
+          admin_notes: string | null
+          colors: string
+          created_at: string
+          description: string
+          id: string
+          image_url: string
+          notes: string | null
+          reference_links: string[] | null
+          size: string
+          status: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          colors: string
+          created_at?: string
+          description: string
+          id?: string
+          image_url: string
+          notes?: string | null
+          reference_links?: string[] | null
+          size: string
+          status?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          colors?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string
+          notes?: string | null
+          reference_links?: string[] | null
+          size?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       competition_prizes: {
         Row: {
           competition_id: string | null

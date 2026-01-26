@@ -1,4 +1,4 @@
- import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { z } from "zod";
@@ -7,10 +7,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
- import { PlusCircle, User as UserIcon, ClipboardList, Store } from "lucide-react";
+import { PlusCircle, User as UserIcon, ClipboardList, Store } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import CommunityCustomerProfileModal from "@/components/community/CommunityCustomerProfileModal";
 import MerchantSignupDialog from "@/components/community/MerchantSignupDialog";
+import NewPrintRequestDialog from "@/components/community/NewPrintRequestDialog";
 
 const profileSchema = z.object({
   full_name: z.string().nullable().optional(),
@@ -38,6 +39,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
   const { user } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const [merchantOpen, setMerchantOpen] = useState(false);
+  const [newRequestOpen, setNewRequestOpen] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["community-profile", user?.id],
@@ -85,13 +87,13 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
      }
    }, [isMerchant, navigate]);
 
-   const handleNewClick = useCallback(() => {
-     if (isMerchant) {
-       navigate("/community/merchant/store");
-     } else {
-       navigate("/community/customer/new");
-     }
-   }, [isMerchant, navigate]);
+  const handleNewClick = useCallback(() => {
+    if (isMerchant) {
+      navigate("/community/merchant/store");
+    } else {
+      setNewRequestOpen(true);
+    }
+  }, [isMerchant, navigate]);
 
   if (!user) return null;
 
@@ -181,6 +183,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
           </Dialog>
 
           <MerchantSignupDialog open={merchantOpen} onOpenChange={setMerchantOpen} />
+          <NewPrintRequestDialog open={newRequestOpen} onOpenChange={setNewRequestOpen} />
 
           {!isLoading && !complete && (
             <p className="mt-3 text-xs text-muted-foreground">
@@ -204,6 +207,7 @@ export function CommunityCustomerActionsInline({
   const { user } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const [merchantOpen, setMerchantOpen] = useState(false);
+  const [newRequestOpen, setNewRequestOpen] = useState(false);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ["community-profile", user?.id],
@@ -251,13 +255,13 @@ export function CommunityCustomerActionsInline({
      }
    }, [isMerchant, navigate]);
 
-   const handleNewClick = useCallback(() => {
-     if (isMerchant) {
-       navigate("/community/merchant/store");
-     } else {
-       navigate("/community/customer/new");
-     }
-   }, [isMerchant, navigate]);
+  const handleNewClick = useCallback(() => {
+    if (isMerchant) {
+      navigate("/community/merchant/store");
+    } else {
+      setNewRequestOpen(true);
+    }
+  }, [isMerchant, navigate]);
 
   if (!user) return null;
 
@@ -353,6 +357,7 @@ export function CommunityCustomerActionsInline({
       </Dialog>
 
       <MerchantSignupDialog open={merchantOpen} onOpenChange={setMerchantOpen} />
+      <NewPrintRequestDialog open={newRequestOpen} onOpenChange={setNewRequestOpen} />
     </>
   );
 
