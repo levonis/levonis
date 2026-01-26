@@ -584,14 +584,23 @@ export type Database = {
       }
       community_print_requests: {
         Row: {
+          accepted_at: string | null
+          accepted_offer_id: string | null
           admin_notes: string | null
+          auto_confirmed_at: string | null
           colors: string
           created_at: string
+          customer_confirmed_at: string | null
+          delivered_at: string | null
           description: string
+          escrow_amount: number | null
+          escrow_held_at: string | null
           id: string
           image_url: string | null
           images: string[] | null
           material_type: string | null
+          merchant_paid_amount: number | null
+          merchant_paid_at: string | null
           notes: string | null
           reference_links: string[] | null
           size: string
@@ -602,14 +611,23 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          accepted_at?: string | null
+          accepted_offer_id?: string | null
           admin_notes?: string | null
+          auto_confirmed_at?: string | null
           colors: string
           created_at?: string
+          customer_confirmed_at?: string | null
+          delivered_at?: string | null
           description: string
+          escrow_amount?: number | null
+          escrow_held_at?: string | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           material_type?: string | null
+          merchant_paid_amount?: number | null
+          merchant_paid_at?: string | null
           notes?: string | null
           reference_links?: string[] | null
           size: string
@@ -620,14 +638,23 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          accepted_at?: string | null
+          accepted_offer_id?: string | null
           admin_notes?: string | null
+          auto_confirmed_at?: string | null
           colors?: string
           created_at?: string
+          customer_confirmed_at?: string | null
+          delivered_at?: string | null
           description?: string
+          escrow_amount?: number | null
+          escrow_held_at?: string | null
           id?: string
           image_url?: string | null
           images?: string[] | null
           material_type?: string | null
+          merchant_paid_amount?: number | null
+          merchant_paid_at?: string | null
           notes?: string | null
           reference_links?: string[] | null
           size?: string
@@ -637,7 +664,15 @@ export type Database = {
           user_id?: string
           video_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "community_print_requests_accepted_offer_id_fkey"
+            columns: ["accepted_offer_id"]
+            isOneToOne: false
+            referencedRelation: "print_offers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       competition_prizes: {
         Row: {
@@ -1266,6 +1301,72 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      escrow_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string
+          held_at: string
+          id: string
+          merchant_id: string
+          merchant_payout: number
+          offer_id: string
+          platform_fee: number
+          refunded_at: string | null
+          released_at: string | null
+          request_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_id: string
+          held_at?: string
+          id?: string
+          merchant_id: string
+          merchant_payout?: number
+          offer_id: string
+          platform_fee?: number
+          refunded_at?: string | null
+          released_at?: string | null
+          request_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string
+          held_at?: string
+          id?: string
+          merchant_id?: string
+          merchant_payout?: number
+          offer_id?: string
+          platform_fee?: number
+          refunded_at?: string | null
+          released_at?: string | null
+          request_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escrow_transactions_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "print_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escrow_transactions_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "community_print_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       favorites: {
         Row: {
@@ -2826,10 +2927,13 @@ export type Database = {
           accepted_at: string | null
           completed_at: string | null
           created_at: string
+          decline_reason: string | null
+          declined_at: string | null
           duration_days: number
           grams: number | null
           id: string
           notes: string | null
+          offer_sent_at: string | null
           price_iqd: number
           request_id: string
           status: Database["public"]["Enums"]["print_offer_status"]
@@ -2840,10 +2944,13 @@ export type Database = {
           accepted_at?: string | null
           completed_at?: string | null
           created_at?: string
+          decline_reason?: string | null
+          declined_at?: string | null
           duration_days: number
           grams?: number | null
           id?: string
           notes?: string | null
+          offer_sent_at?: string | null
           price_iqd: number
           request_id: string
           status?: Database["public"]["Enums"]["print_offer_status"]
@@ -2854,10 +2961,13 @@ export type Database = {
           accepted_at?: string | null
           completed_at?: string | null
           created_at?: string
+          decline_reason?: string | null
+          declined_at?: string | null
           duration_days?: number
           grams?: number | null
           id?: string
           notes?: string | null
+          offer_sent_at?: string | null
           price_iqd?: number
           request_id?: string
           status?: Database["public"]["Enums"]["print_offer_status"]
