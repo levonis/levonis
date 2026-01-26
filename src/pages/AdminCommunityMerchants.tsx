@@ -111,10 +111,149 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
     return c;
   }, [rows]);
 
+  // Mutation to APPROVE merchant - deduct wallet and update status
+  const approveMutation = useMutation({
+    mutationFn: async (payload: { 
+      id: string; 
+      user_id: string;
+      admin_notes?: string | null;
+      is_verified?: boolean;
+      badge_tier?: string;
+      badge_override?: boolean;
+    }) => {
+      // 1. Check wallet balance
+      const { data: wallet, error: walletError } = await supabase
+        .from("user_wallets")
+        .select("balance")
+        .eq("user_id", payload.user_id)
+        .maybeSingle();
+      
+      if (walletError) throw walletError;
+      
+      const MERCHANT_FEE = 25000; // 25,000 IQD
+      const currentBalance = wallet?.balance || 0;
+      
+      if (currentBalance < MERCHANT_FEE) {
+        throw new Error(`رصيد المحفظة غير كافي. المطلوب: ${MERCHANT_FEE.toLocaleString()} IQD، المتوفر: ${currentBalance.toLocaleString()} IQD`);
+      }
+
+      // 2. Deduct from wallet
+      const { error: deductError } = await supabase
+        .from("user_wallets")
+        .update({ balance: currentBalance - MERCHANT_FEE })
+        .eq("user_id", payload.user_id);
+
+      if (deductError) throw deductError;
+
+      // 3. Record wallet transaction
+      await supabase.from("wallet_transactions").insert({
+        user_id: payload.user_id,
+        amount: -MERCHANT_FEE,
+        type: "merchant_fee",
+        description: "رسوم التسجيل كتاجر في مجتمع ليفو",
+        status: "completed",
+      });
+
+      // 4. Update merchant application status
+      const { error: updateError } = await supabase
+        .from("merchant_applications")
+        .update({ 
+          status: "approved", 
+          admin_notes: payload.admin_notes ?? null,
+          is_verified: payload.is_verified ?? false,
+          badge_tier: payload.badge_tier ?? "none",
+          badge_override: payload.badge_override ?? false,
+        })
+        .eq("id", payload.id);
+      
+      if (updateError) throw updateError;
+
+      // 5. Update public profile
+      await supabase
+        .from("merchant_public_profiles")
+        .update({
+          is_verified: payload.is_verified ?? false,
+          badge_tier: payload.badge_tier ?? "none",
+        })
+        .eq("id", payload.user_id);
+
+      // 6. Send notification
+      await supabase.from("notifications").insert({
+        user_id: payload.user_id,
+        title: "تم قبول طلبك كتاجر! 🎉",
+        message: `تهانينا! تم قبول طلبك للانضمام كتاجر في مجتمع ليفو. تم خصم ${MERCHANT_FEE.toLocaleString()} IQD من محفظتك كرسوم تسجيل.`,
+        type: "success",
+      });
+
+      return true;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
+      toast({ title: "تم قبول التاجر", description: "تم خصم رسوم التسجيل من محفظته" });
+      setOpen(false);
+      setActive(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "تعذر القبول", description: err?.message ?? "حدث خطأ", variant: "destructive" });
+    },
+  });
+
+  // Mutation to REJECT merchant - delete record completely
+  const rejectMutation = useMutation({
+    mutationFn: async (payload: { 
+      id: string; 
+      user_id: string;
+      rejection_reason: string;
+    }) => {
+      if (!payload.rejection_reason.trim()) {
+        throw new Error("يجب تحديد سبب الرفض");
+      }
+
+      // 1. Send notification with rejection reason
+      await supabase.from("notifications").insert({
+        user_id: payload.user_id,
+        title: "تم رفض طلب التاجر",
+        message: `للأسف، تم رفض طلبك للانضمام كتاجر. السبب: ${payload.rejection_reason}. يمكنك تقديم طلب جديد بعد معالجة الملاحظات.`,
+        type: "error",
+      });
+
+      // 2. Delete private info first (foreign key)
+      await supabase
+        .from("merchant_application_private")
+        .delete()
+        .eq("application_id", payload.id);
+
+      // 3. Delete public profile if exists
+      await supabase
+        .from("merchant_public_profiles")
+        .delete()
+        .eq("id", payload.user_id);
+
+      // 4. Delete the application record
+      const { error: deleteError } = await supabase
+        .from("merchant_applications")
+        .delete()
+        .eq("id", payload.id);
+
+      if (deleteError) throw deleteError;
+
+      return true;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
+      toast({ title: "تم رفض وحذف الطلب", description: "يمكن للمستخدم تقديم طلب جديد" });
+      setOpen(false);
+      setActive(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "تعذر الرفض", description: err?.message ?? "حدث خطأ", variant: "destructive" });
+    },
+  });
+
+  // Keep old update mutation for updating notes/badges only
   const updateMutation = useMutation({
     mutationFn: async (payload: { 
       id: string; 
-      status: string; 
       admin_notes?: string | null;
       is_verified?: boolean;
       badge_tier?: string;
@@ -123,7 +262,6 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
       const { error } = await supabase
         .from("merchant_applications")
         .update({ 
-          status: payload.status, 
           admin_notes: payload.admin_notes ?? null,
           is_verified: payload.is_verified ?? false,
           badge_tier: payload.badge_tier ?? "none",
@@ -132,23 +270,15 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
         .eq("id", payload.id);
       if (error) throw error;
 
-      // Also update the public profile if approved
-      if (payload.status === "approved") {
-        const { data: app } = await supabase
-          .from("merchant_applications")
-          .select("user_id")
-          .eq("id", payload.id)
-          .single();
-        
-        if (app?.user_id) {
-          await supabase
-            .from("merchant_public_profiles")
-            .update({
-              is_verified: payload.is_verified ?? false,
-              badge_tier: payload.badge_tier ?? "none",
-            })
-            .eq("id", app.user_id);
-        }
+      // Also update the public profile
+      if (active?.user_id) {
+        await supabase
+          .from("merchant_public_profiles")
+          .update({
+            is_verified: payload.is_verified ?? false,
+            badge_tier: payload.badge_tier ?? "none",
+          })
+          .eq("id", active.user_id);
       }
       return true;
     },
@@ -439,38 +569,61 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
             </div>
           )}
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => active && updateMutation.mutate({ 
-                id: active.id, 
-                status: "rejected", 
-                admin_notes: adminNotes || null,
-                is_verified: isVerified,
-                badge_tier: badgeTier,
-                badge_override: badgeOverride,
-              })}
-              disabled={!active || updateMutation.isPending}
-              className="gap-2"
-            >
-              <XCircle className="h-4 w-4" />
-              رفض
-            </Button>
-            <Button
-              onClick={() => active && updateMutation.mutate({ 
-                id: active.id, 
-                status: "approved", 
-                admin_notes: adminNotes || null,
-                is_verified: isVerified,
-                badge_tier: badgeTier,
-                badge_override: badgeOverride,
-              })}
-              disabled={!active || updateMutation.isPending}
-              className="gap-2"
-            >
-              <CheckCircle2 className="h-4 w-4" />
-              موافقة
-            </Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {active?.status === "pending" && (
+              <>
+                <Button
+                  variant="destructive"
+                  onClick={() => {
+                    if (!adminNotes.trim()) {
+                      toast({ title: "يجب تحديد سبب الرفض", variant: "destructive" });
+                      return;
+                    }
+                    active && rejectMutation.mutate({ 
+                      id: active.id, 
+                      user_id: active.user_id,
+                      rejection_reason: adminNotes,
+                    });
+                  }}
+                  disabled={!active || rejectMutation.isPending || !adminNotes.trim()}
+                  className="gap-2"
+                >
+                  <XCircle className="h-4 w-4" />
+                  {rejectMutation.isPending ? "جارٍ الرفض..." : "رفض وحذف الطلب"}
+                </Button>
+                <Button
+                  onClick={() => active && approveMutation.mutate({ 
+                    id: active.id, 
+                    user_id: active.user_id,
+                    admin_notes: adminNotes || null,
+                    is_verified: isVerified,
+                    badge_tier: badgeTier,
+                    badge_override: badgeOverride,
+                  })}
+                  disabled={!active || approveMutation.isPending}
+                  className="gap-2 bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                  {approveMutation.isPending ? "جارٍ القبول..." : "قبول وخصم 25,000 IQD"}
+                </Button>
+              </>
+            )}
+            {active?.status === "approved" && (
+              <Button
+                onClick={() => active && updateMutation.mutate({ 
+                  id: active.id, 
+                  admin_notes: adminNotes || null,
+                  is_verified: isVerified,
+                  badge_tier: badgeTier,
+                  badge_override: badgeOverride,
+                })}
+                disabled={!active || updateMutation.isPending}
+                className="gap-2"
+              >
+                <CheckCircle2 className="h-4 w-4" />
+                {updateMutation.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
