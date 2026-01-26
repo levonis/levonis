@@ -184,15 +184,16 @@ export default function CommunityProductDetailModal({
     }
 
     if (includeProductLink && conversationId) {
-      const productUrl = `${window.location.origin}/store/${product.merchant_id}?product=${product.id}`;
+      // Rich product message without URL (cleaner display)
       const systemMessage = `📦 ${product.title}
-💰 ${product.price_iqd ? `${product.price_iqd.toLocaleString()} د.ع` : "السعر عند التواصل"}
-🔗 ${productUrl}`;
+💰 ${product.price_iqd ? `${product.price_iqd.toLocaleString()} د.ع` : "السعر عند التواصل"}`;
 
       await supabase.from("listing_messages").insert({
         conversation_id: conversationId,
         sender_id: user.id,
         content: systemMessage,
+        // Store product image for rich display
+        image_url: product.image_urls?.[0] || null,
       });
 
       await supabase

@@ -809,7 +809,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       onClick={() => {
                         if (otherUserId) {
                           handleClose();
-                          navigate(`/profile/${otherUserId}`);
+                          navigate(`/store/${otherUserId}`);
                         }
                       }}
                       className="flex-1 min-w-0 text-right hover:opacity-80 transition-opacity cursor-pointer"
@@ -1026,25 +1026,69 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                                      msg.content?.startsWith('✅ تم إلغاء') ||
                                                      msg.content?.startsWith('✅ تم حل') ||
                                                      msg.content?.startsWith('🛡️') ||
-                                                     msg.content?.startsWith('🛒') ||
                                                      msg.content?.startsWith('🚫');
                               
+                              // Check if it's a product message (starts with 📦)
+                              const isProductMessage = msg.content?.startsWith('📦');
+                              
                               if (isSystemMessage) {
-                                // Determine style based on message type
-                                const isOrderMessage = msg.content?.startsWith('🛒');
                                 const isBanMessage = msg.content?.startsWith('🚫');
-                                
                                 return (
                                   <div key={msg.id} className="flex justify-center my-3">
                                     <div className={cn(
                                       "text-xs px-4 py-2 rounded-lg shadow-sm border max-w-[90%] whitespace-pre-wrap text-center font-medium",
-                                      isOrderMessage 
-                                        ? "bg-primary/30 text-primary border-primary/40" 
-                                        : isBanMessage
-                                          ? "bg-red-500/30 text-red-400 border-red-500/40"
-                                          : "bg-amber-500/30 text-amber-400 border-amber-500/40"
+                                      isBanMessage
+                                        ? "bg-red-500/30 text-red-400 border-red-500/40"
+                                        : "bg-amber-500/30 text-amber-400 border-amber-500/40"
                                     )}>
                                       {msg.content}
+                                    </div>
+                                  </div>
+                                );
+                              }
+                              
+                              // Render product message as a rich card
+                              if (isProductMessage) {
+                                const lines = msg.content?.split('\n') || [];
+                                const productName = lines[0]?.replace('📦 ', '') || '';
+                                const priceText = lines[1]?.replace('💰 ', '') || '';
+                                
+                                return (
+                                  <div key={msg.id} className={cn("flex my-2", isMe ? "justify-start" : "justify-end")}>
+                                    <div className={cn(
+                                      "max-w-[85%] sm:max-w-[260px] rounded-xl overflow-hidden shadow-md border",
+                                      isMe ? "bg-primary/10 border-primary/30" : "bg-card border-border/50"
+                                    )}>
+                                      {/* Product Image */}
+                                      {msg.image_url && (
+                                        <div className="aspect-[4/3] bg-muted/20">
+                                          <img 
+                                            src={msg.image_url} 
+                                            alt={productName}
+                                            className="w-full h-full object-cover"
+                                          />
+                                        </div>
+                                      )}
+                                      {/* Product Info */}
+                                      <div className="p-2.5 space-y-1">
+                                        <div className="flex items-center gap-1.5 mb-1">
+                                          <Package className="h-3.5 w-3.5 text-primary" />
+                                          <span className="text-[10px] text-muted-foreground">طلب منتج</span>
+                                        </div>
+                                        <p className="text-xs font-bold text-foreground line-clamp-2">{productName}</p>
+                                        {priceText && (
+                                          <p className="text-sm font-bold text-primary">{priceText}</p>
+                                        )}
+                                      </div>
+                                      {/* Time */}
+                                      <div className={cn("px-2.5 pb-2 flex items-center gap-1", isMe ? "justify-start" : "justify-end")}>
+                                        <span className="text-[10px] text-muted-foreground">
+                                          {format(new Date(msg.created_at), 'HH:mm')}
+                                        </span>
+                                        {isMe && (
+                                          <CheckCheck className={cn("w-3 h-3", msg.is_read ? "text-whatsapp" : "text-muted-foreground/50")} />
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 );
