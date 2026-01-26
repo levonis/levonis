@@ -1,7 +1,7 @@
  import { useState } from "react";
  import { useNavigate } from "react-router-dom";
  import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
- import { Store, Plus, Edit2, X, Star, Facebook, Instagram, ArrowRight, Settings } from "lucide-react";
+ import { Store, Plus, Edit2, X, Star, Facebook, Instagram, ArrowRight, Settings, Droplets, Layers } from "lucide-react";
  import { supabase } from "@/integrations/supabase/client";
  import { useAuth } from "@/hooks/useAuth";
  import { Button } from "@/components/ui/button";
@@ -18,19 +18,22 @@ import MerchantProductMediaUpload from "@/components/merchant/MerchantProductMed
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
  
- interface MerchantProduct {
-   id: string;
-   title: string;
-   description: string | null;
-   price_iqd: number | null;
-   original_price_iqd: number | null;
-   image_urls: string[] | null;
-   video_url: string | null;
-   primary_image_index: number;
-   is_active: boolean;
-   estimated_days: number | null;
+interface MerchantProduct {
+  id: string;
+  title: string;
+  description: string | null;
+  price_iqd: number | null;
+  original_price_iqd: number | null;
+  image_urls: string[] | null;
+  video_url: string | null;
+  primary_image_index: number;
+  is_active: boolean;
+  estimated_days: number | null;
   is_featured: boolean;
- }
+  material_type: "resin" | "filament" | "both";
+}
+
+type MaterialType = "resin" | "filament" | "both";
  
  export default function CommunityMerchantStore() {
    const navigate = useNavigate();
@@ -43,15 +46,16 @@ import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
    const [profileEditorOpen, setProfileEditorOpen] = useState(false);
    const [selectedProduct, setSelectedProduct] = useState<MerchantProduct | null>(null);
  
-   const [formData, setFormData] = useState({
-     title: "",
-     description: "",
-     price_iqd: "",
-     original_price_iqd: "",
-     estimated_days: "",
-     is_active: true,
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    price_iqd: "",
+    original_price_iqd: "",
+    estimated_days: "",
+    is_active: true,
     is_featured: false,
-   });
+    material_type: "both" as MaterialType,
+  });
 
   const [mediaState, setMediaState] = useState({
     image_urls: [] as string[],
@@ -66,7 +70,7 @@ import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
      queryFn: async () => {
        const { data, error } = await supabase
          .from("merchant_applications")
-         .select("id, status, display_name, bio, store_image_url, social_links, selected_frame_id")
+      .select("id, status, display_name, bio, store_image_url, social_links, selected_frame_id, specialty")
          .eq("user_id", user!.id)
          .eq("status", "approved")
          .maybeSingle();
@@ -123,19 +127,20 @@ import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
    // Save product mutation
    const saveMutation = useMutation({
      mutationFn: async () => {
-       const payload = {
-         merchant_id: merchantApp!.id,
-         title: formData.title.trim(),
-         description: formData.description.trim() || null,
-         price_iqd: formData.price_iqd ? parseInt(formData.price_iqd, 10) : null,
-         original_price_iqd: formData.original_price_iqd ? parseInt(formData.original_price_iqd, 10) : null,
-        image_urls: mediaState.image_urls.length > 0 ? mediaState.image_urls : null,
-        video_url: mediaState.video_url || null,
-        primary_image_index: mediaState.primary_image_index,
-         estimated_days: formData.estimated_days ? parseInt(formData.estimated_days, 10) : null,
-         is_active: formData.is_active,
-        is_featured: formData.is_featured,
-       };
+      const payload = {
+          merchant_id: merchantApp!.id,
+          title: formData.title.trim(),
+          description: formData.description.trim() || null,
+          price_iqd: formData.price_iqd ? parseInt(formData.price_iqd, 10) : null,
+          original_price_iqd: formData.original_price_iqd ? parseInt(formData.original_price_iqd, 10) : null,
+          image_urls: mediaState.image_urls.length > 0 ? mediaState.image_urls : null,
+          video_url: mediaState.video_url || null,
+          primary_image_index: mediaState.primary_image_index,
+          estimated_days: formData.estimated_days ? parseInt(formData.estimated_days, 10) : null,
+          is_active: formData.is_active,
+          is_featured: formData.is_featured,
+          material_type: formData.material_type,
+        };
  
        if (selectedProduct) {
          const { error } = await supabase
@@ -152,15 +157,16 @@ import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
        queryClient.invalidateQueries({ queryKey: ["merchant-products"] });
        setProductDialogOpen(false);
        setSelectedProduct(null);
-       setFormData({
-         title: "",
-         description: "",
-         price_iqd: "",
-         original_price_iqd: "",
-         estimated_days: "",
-         is_active: true,
-        is_featured: false,
-       });
+      setFormData({
+          title: "",
+          description: "",
+          price_iqd: "",
+          original_price_iqd: "",
+          estimated_days: "",
+          is_active: true,
+          is_featured: false,
+          material_type: "both",
+        });
       setMediaState({
         image_urls: [],
         video_url: "",
@@ -190,15 +196,16 @@ import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
  
    const handleOpenEdit = (product: MerchantProduct) => {
      setSelectedProduct(product);
-     setFormData({
-       title: product.title,
-       description: product.description || "",
-       price_iqd: product.price_iqd?.toString() || "",
-       original_price_iqd: product.original_price_iqd?.toString() || "",
-       estimated_days: product.estimated_days?.toString() || "",
-       is_active: product.is_active,
-      is_featured: product.is_featured || false,
-     });
+    setFormData({
+        title: product.title,
+        description: product.description || "",
+        price_iqd: product.price_iqd?.toString() || "",
+        original_price_iqd: product.original_price_iqd?.toString() || "",
+        estimated_days: product.estimated_days?.toString() || "",
+        is_active: product.is_active,
+        is_featured: product.is_featured || false,
+        material_type: product.material_type || "both",
+      });
     setMediaState({
       image_urls: product.image_urls || [],
       video_url: product.video_url || "",
@@ -209,15 +216,16 @@ import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
  
    const handleOpenAdd = () => {
      setSelectedProduct(null);
-     setFormData({
-       title: "",
-       description: "",
-       price_iqd: "",
-       original_price_iqd: "",
-       estimated_days: "",
-       is_active: true,
-      is_featured: false,
-     });
+    setFormData({
+        title: "",
+        description: "",
+        price_iqd: "",
+        original_price_iqd: "",
+        estimated_days: "",
+        is_active: true,
+        is_featured: false,
+        material_type: "both",
+      });
     setMediaState({
       image_urls: [],
       video_url: "",
@@ -529,15 +537,59 @@ import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
 
                <div className="flex items-center gap-2">
                  <Switch
-                   id="is_featured"
-                   checked={formData.is_featured}
-                   onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
-                 />
-                 <Label htmlFor="is_featured" className="cursor-pointer">
-                   منتج مميز (يظهر في صفحة التجار، حد أقصى 3)
-                 </Label>
-               </div>
-             </div>
+                    id="is_featured"
+                    checked={formData.is_featured}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
+                  />
+                  <Label htmlFor="is_featured" className="cursor-pointer">
+                    منتج مميز (يظهر في صفحة التجار، حد أقصى 3)
+                  </Label>
+                </div>
+
+                {/* Material Type Selector */}
+                <div>
+                  <Label className="mb-2 block">نوع المادة</Label>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, material_type: "resin" })}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                        formData.material_type === "resin"
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <Droplets className="h-4 w-4" />
+                      <span className="text-sm">رزن</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, material_type: "filament" })}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                        formData.material_type === "filament"
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <Layers className="h-4 w-4" />
+                      <span className="text-sm">فلمنت</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, material_type: "both" })}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                        formData.material_type === "both"
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                    >
+                      <Droplets className="h-4 w-4" />
+                      <Layers className="h-4 w-4 -mr-1" />
+                      <span className="text-sm">كلاهما</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
  
              <div className="flex gap-2 mt-4">
                <Button variant="outline" onClick={() => setProductDialogOpen(false)} className="flex-1">

@@ -1782,6 +1782,7 @@ export type Database = {
           registration_fee: number
           selected_frame_id: string | null
           social_links: Json | null
+          specialty: string | null
           status: string
           store_image_url: string | null
           updated_at: string
@@ -1803,6 +1804,7 @@ export type Database = {
           registration_fee?: number
           selected_frame_id?: string | null
           social_links?: Json | null
+          specialty?: string | null
           status?: string
           store_image_url?: string | null
           updated_at?: string
@@ -1824,6 +1826,7 @@ export type Database = {
           registration_fee?: number
           selected_frame_id?: string | null
           social_links?: Json | null
+          specialty?: string | null
           status?: string
           store_image_url?: string | null
           updated_at?: string
@@ -1903,6 +1906,7 @@ export type Database = {
           image_urls: string[] | null
           is_active: boolean
           is_featured: boolean
+          material_type: string | null
           merchant_id: string
           original_price_iqd: number | null
           price_iqd: number | null
@@ -1920,6 +1924,7 @@ export type Database = {
           image_urls?: string[] | null
           is_active?: boolean
           is_featured?: boolean
+          material_type?: string | null
           merchant_id: string
           original_price_iqd?: number | null
           price_iqd?: number | null
@@ -1937,6 +1942,7 @@ export type Database = {
           image_urls?: string[] | null
           is_active?: boolean
           is_featured?: boolean
+          material_type?: string | null
           merchant_id?: string
           original_price_iqd?: number | null
           price_iqd?: number | null
@@ -1966,6 +1972,7 @@ export type Database = {
           is_verified: boolean
           selected_frame_id: string | null
           social_links: Json | null
+          specialty: string | null
           store_image_url: string | null
           updated_at: string
         }
@@ -1979,6 +1986,7 @@ export type Database = {
           is_verified?: boolean
           selected_frame_id?: string | null
           social_links?: Json | null
+          specialty?: string | null
           store_image_url?: string | null
           updated_at?: string
         }
@@ -1992,6 +2000,7 @@ export type Database = {
           is_verified?: boolean
           selected_frame_id?: string | null
           social_links?: Json | null
+          specialty?: string | null
           store_image_url?: string | null
           updated_at?: string
         }
