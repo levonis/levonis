@@ -1,18 +1,82 @@
-import { Boxes, Store, Users } from "lucide-react";
+import { Boxes, Store, Users, SlidersHorizontal, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import CommunityProductsHub from "@/components/community/hub/CommunityProductsHub";
 import CommunityMerchantsHub from "@/components/community/hub/CommunityMerchantsHub";
+
+// Sort options for each tab
+const PRODUCT_SORTS = [
+  { value: "newest", label: "الأحدث" },
+  { value: "best_selling", label: "الأفضل مبيعاً" },
+  { value: "resin", label: "رزن" },
+  { value: "filament", label: "فلمنت" },
+  { value: "price_low", label: "أقل سعر" },
+  { value: "price_high", label: "أعلى سعر" },
+  { value: "alpha_asc", label: "أ - ي" },
+  { value: "alpha_desc", label: "ي - أ" },
+];
+
+const REQUEST_SORTS_MERCHANT = [
+  { value: "newest", label: "الأحدث" },
+  { value: "not_priced", label: "لم يتم تسعيره" },
+  { value: "resin", label: "رزن" },
+  { value: "filament", label: "فلمنت" },
+];
+
+const REQUEST_SORTS_CUSTOMER = [
+  { value: "newest", label: "الأحدث" },
+  { value: "resin", label: "رزن" },
+  { value: "filament", label: "فلمنت" },
+];
+
+const MERCHANT_SORTS = [
+  { value: "newest", label: "الأحدث" },
+  { value: "filament_specialist", label: "متخصص فلمنت" },
+  { value: "resin_specialist", label: "متخصص رزن" },
+  { value: "verified", label: "الموثوق" },
+];
 
 export default function CommunityExploreStrip({ className }: { className?: string }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const isCommunityHub = location.pathname === "/community";
   const tabFromUrl = searchParams.get("tab") || undefined;
+  const searchFromUrl = searchParams.get("q") || "";
+
+  // Check if user is a merchant
+  const { data: merchantApp } = useQuery({
+    queryKey: ["merchant-status-strip", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data } = await supabase
+        .from("merchant_applications")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "approved")
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
+  const isMerchant = !!merchantApp;
 
   const defaultTab = useMemo(() => {
     if (!isCommunityHub) return "products";
@@ -23,71 +87,122 @@ export default function CommunityExploreStrip({ className }: { className?: strin
   }, [isCommunityHub, tabFromUrl]);
 
   const [activeTab, setActiveTab] = useState<string>(defaultTab);
+  const [searchQuery, setSearchQuery] = useState(searchFromUrl);
+  const [productSort, setProductSort] = useState("newest");
+  const [requestSort, setRequestSort] = useState("newest");
+  const [merchantSort, setMerchantSort] = useState("newest");
 
   useEffect(() => {
     setActiveTab(defaultTab);
   }, [defaultTab]);
 
+  // Sync search from URL
+  useEffect(() => {
+    setSearchQuery(searchFromUrl);
+  }, [searchFromUrl]);
+
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    if (isCommunityHub) {
+      const next = new URLSearchParams(searchParams);
+      if (value.trim()) next.set("q", value);
+      else next.delete("q");
+      setSearchParams(next, { replace: true });
+    }
+  };
+
   const openHubTab = (tab: "products" | "requests" | "merchants") => {
     navigate(`/community?tab=${tab}`);
   };
 
+  const requestSortOptions = isMerchant ? REQUEST_SORTS_MERCHANT : REQUEST_SORTS_CUSTOMER;
+
   return (
     <section className={className} aria-label="استكشاف المجتمع">
+      {/* Unified Search Bar */}
+      <div className="mb-3">
+        <div className="relative">
+          <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder={
+              activeTab === "products"
+                ? "ابحث عن منتج..."
+                : activeTab === "merchants"
+                ? "ابحث عن تاجر..."
+                : "ابحث عن طلب..."
+            }
+            className="pr-8 h-8 text-xs rounded-xl"
+          />
+        </div>
+      </div>
+
       <Tabs
         value={activeTab}
         onValueChange={(v) => {
           setActiveTab(v);
           if (isCommunityHub && (v === "products" || v === "requests" || v === "merchants")) {
-            navigate(`/community?tab=${v}`, { replace: true });
+            navigate(`/community?tab=${v}${searchQuery ? `&q=${encodeURIComponent(searchQuery)}` : ""}`, { replace: true });
           }
         }}
         className="w-full"
       >
-        <TabsList className="levo-strip-frame grid w-full grid-cols-3 bg-transparent border-0 p-1">
+        <TabsList className="levo-strip-frame grid w-full grid-cols-3 bg-transparent border-0 p-0.5 h-auto">
           <TabsTrigger
             value="products"
-            className="levo-tab-frame shrink-0 data-[state=active]:text-primary"
+            className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
           >
-            <Store className="ml-2 h-4 w-4" />
+            <Store className="h-3.5 w-3.5" />
             منتجات التجار
           </TabsTrigger>
           <TabsTrigger
             value="requests"
-            className="levo-tab-frame shrink-0 data-[state=active]:text-primary"
+            className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
           >
-            <Users className="ml-2 h-4 w-4" />
+            <Users className="h-3.5 w-3.5" />
             طلبات الزبائن
           </TabsTrigger>
           <TabsTrigger
             value="merchants"
-            className="levo-tab-frame shrink-0 data-[state=active]:text-primary"
+            className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
           >
-            <Boxes className="ml-2 h-4 w-4" />
+            <Boxes className="h-3.5 w-3.5" />
             صفحات التجار
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="products" className="mt-4">
-          <div className="levo-panel-frame p-4">
-            <div className="mb-4">
-              <h3 className="text-base font-bold text-foreground">منتجات من التجار</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                {isCommunityHub
-                  ? "تحميل تدريجي — 4 ثم 4 حتى 50، ثم يمكنك إظهار المزيد"
-                  : "معاينة سريعة (اختيار عشوائي) — للمزيد استخدم زر العرض"}
-              </p>
+        <TabsContent value="products" className="mt-3">
+          <div className="levo-panel-frame p-3">
+            {/* Header with Sort */}
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h3 className="text-xs font-bold text-foreground">منتجات من التجار</h3>
+              <Select value={productSort} onValueChange={setProductSort}>
+                <SelectTrigger className="w-auto h-6 text-[10px] gap-1 px-2 rounded-lg">
+                  <SlidersHorizontal className="h-3 w-3" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRODUCT_SORTS.map((s) => (
+                    <SelectItem key={s.value} value={s.value} className="text-xs">
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <CommunityProductsHub
               mode={isCommunityHub ? "hub" : "preview"}
               onOpenStore={(merchantId) => navigate(`/store/${merchantId}`)}
+              searchQuery={searchQuery}
+              sortBy={productSort}
             />
 
             {!isCommunityHub && (
               <Button
                 variant="outline"
-                className="mt-4 w-full h-10"
+                className="mt-3 w-full h-8 text-xs"
                 onClick={() => openHubTab("products")}
               >
                 عرض جميع المنتجات
@@ -96,23 +211,36 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           </div>
         </TabsContent>
 
-        <TabsContent value="requests" className="mt-4">
-          <div className="levo-panel-frame p-4">
-            <div className="mb-4">
-              <h3 className="text-base font-bold text-foreground">طلبات لزبائن آخرين</h3>
-              <p className="text-xs text-muted-foreground mt-1">استعرض آخر الطلبات، وللمزيد استخدم زر العرض بالأسفل</p>
+        <TabsContent value="requests" className="mt-3">
+          <div className="levo-panel-frame p-3">
+            {/* Header with Sort */}
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h3 className="text-xs font-bold text-foreground">طلبات لزبائن آخرين</h3>
+              <Select value={requestSort} onValueChange={setRequestSort}>
+                <SelectTrigger className="w-auto h-6 text-[10px] gap-1 px-2 rounded-lg">
+                  <SlidersHorizontal className="h-3 w-3" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {requestSortOptions.map((s) => (
+                    <SelectItem key={s.value} value={s.value} className="text-xs">
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <div className="levo-wall-frame">
-              <p className="text-sm text-muted-foreground text-center py-4">
-                سيتم تفعيل عرض الطلبات داخل /community بنفس مبدأ التحميل التدريجي (مثل المنتجات).
+              <p className="text-[11px] text-muted-foreground text-center py-3">
+                سيتم تفعيل عرض الطلبات قريباً
               </p>
             </div>
 
             {!isCommunityHub && (
               <Button
                 variant="outline"
-                className="mt-4 w-full h-10"
+                className="mt-3 w-full h-8 text-xs"
                 onClick={() => openHubTab("requests")}
               >
                 عرض جميع الطلبات
@@ -121,26 +249,37 @@ export default function CommunityExploreStrip({ className }: { className?: strin
           </div>
         </TabsContent>
 
-        <TabsContent value="merchants" className="mt-4">
-          <div className="levo-panel-frame p-4">
-            <div className="mb-4">
-              <h3 className="text-base font-bold text-foreground">صفحات التجار</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                {isCommunityHub
-                  ? "عرض أكبر — 25 تاجر (تحميل تدريجي) ثم يمكنك إظهار المزيد"
-                  : "معاينة 10 متاجر (اختيار عشوائي)"}
-              </p>
+        <TabsContent value="merchants" className="mt-3">
+          <div className="levo-panel-frame p-3">
+            {/* Header with Sort */}
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <h3 className="text-xs font-bold text-foreground">صفحات التجار</h3>
+              <Select value={merchantSort} onValueChange={setMerchantSort}>
+                <SelectTrigger className="w-auto h-6 text-[10px] gap-1 px-2 rounded-lg">
+                  <SlidersHorizontal className="h-3 w-3" />
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MERCHANT_SORTS.map((s) => (
+                    <SelectItem key={s.value} value={s.value} className="text-xs">
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             
             <CommunityMerchantsHub
               mode={isCommunityHub ? "hub" : "preview"}
               onOpenStore={(merchantId) => navigate(`/store/${merchantId}`)}
+              searchQuery={searchQuery}
+              sortBy={merchantSort}
             />
 
             {!isCommunityHub && (
               <Button
                 variant="outline"
-                className="mt-4 w-full h-10"
+                className="mt-3 w-full h-8 text-xs"
                 onClick={() => openHubTab("merchants")}
               >
                 عرض جميع التجار

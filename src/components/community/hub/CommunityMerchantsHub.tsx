@@ -14,6 +14,8 @@ import { BadgeTier } from "@/components/community/MerchantBadges";
 type Props = {
   mode: "preview" | "hub";
   onOpenStore: (merchantId: string) => void;
+  searchQuery?: string;
+  sortBy?: string;
 };
 
 type MerchantRow = {
@@ -33,7 +35,7 @@ type FeaturedProductRow = {
   primary_image_index: number;
 };
 
-export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
+export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery = "", sortBy = "newest" }: Props) {
   const { isAdmin } = useAuth();
   const navigate = useNavigate();
   const chunkSize = mode === "hub" ? 5 : 10;
@@ -41,16 +43,26 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
   const [targetCount, setTargetCount] = useState(initialTarget);
 
   const query = useInfiniteQuery({
-    queryKey: ["community-merchants", { mode }],
+    queryKey: ["community-merchants", { mode, sortBy }],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const from = Number(pageParam);
       const to = from + chunkSize - 1;
-      const { data, error } = await supabase
+      
+      let q = supabase
         .from("merchant_public_profiles")
-        .select("id, display_name, store_image_url, is_verified, badge_tier, selected_frame_id")
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .select("id, display_name, store_image_url, is_verified, badge_tier, selected_frame_id");
+
+      // Apply sorting
+      if (sortBy === "newest") {
+        q = q.order("created_at", { ascending: false });
+      } else if (sortBy === "verified") {
+        q = q.eq("is_verified", true).order("created_at", { ascending: false });
+      } else {
+        q = q.order("created_at", { ascending: false });
+      }
+
+      const { data, error } = await q.range(from, to);
 
       if (error) throw error;
       return (data || []) as MerchantRow[];
@@ -137,15 +149,25 @@ export default function CommunityMerchantsHub({ mode, onOpenStore }: Props) {
     return new Map((ratingsStats as any[]).map((r) => [r.merchant_id, r]));
   }, [ratingsStats]);
 
+  // Filter by search and apply mode-specific logic
   const items = useMemo(() => {
-    if (mode !== "preview") return loaded;
-    const shuffled = [...loaded];
+    let filtered = loaded;
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((m) => m.display_name.toLowerCase().includes(q));
+    }
+
+    if (mode !== "preview") return filtered;
+    
+    const shuffled = [...filtered];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled.slice(0, 10);
-  }, [loaded, mode]);
+  }, [loaded, mode, searchQuery]);
 
   useAutoFetchUntil({
     count: loaded.length,

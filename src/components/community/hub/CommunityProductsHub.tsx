@@ -12,6 +12,8 @@ import CommunityProductDetailModal from "@/components/community/CommunityProduct
 type Props = {
   mode: "preview" | "hub";
   onOpenStore: (merchantId: string) => void;
+  searchQuery?: string;
+  sortBy?: string;
 };
 
 type ProductRow = {
@@ -31,7 +33,7 @@ function pickMainImage(p: ProductRow) {
   return p.image_urls?.[p.primary_image_index] || p.image_urls?.[0] || null;
 }
 
-export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
+export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = "", sortBy = "newest" }: Props) {
   const navigate = useNavigate();
   const chunkSize = mode === "hub" ? 4 : 12;
   const initialTarget = mode === "hub" ? 50 : 6;
@@ -40,18 +42,33 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
   const [detailOpen, setDetailOpen] = useState(false);
 
   const query = useInfiniteQuery({
-    queryKey: ["community-products", { mode }],
+    queryKey: ["community-products", { mode, sortBy }],
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const from = Number(pageParam);
       const to = from + chunkSize - 1;
 
-      const { data, error } = await supabase
+      let q = supabase
         .from("merchant_products")
         .select("id, title, description, price_iqd, original_price_iqd, image_urls, video_url, primary_image_index, estimated_days, merchant_id")
-        .eq("is_active", true)
-        .order("created_at", { ascending: false })
-        .range(from, to);
+        .eq("is_active", true);
+
+      // Apply sorting
+      if (sortBy === "newest") {
+        q = q.order("created_at", { ascending: false });
+      } else if (sortBy === "price_low") {
+        q = q.order("price_iqd", { ascending: true, nullsFirst: false });
+      } else if (sortBy === "price_high") {
+        q = q.order("price_iqd", { ascending: false });
+      } else if (sortBy === "alpha_asc") {
+        q = q.order("title", { ascending: true });
+      } else if (sortBy === "alpha_desc") {
+        q = q.order("title", { ascending: false });
+      } else {
+        q = q.order("created_at", { ascending: false });
+      }
+
+      const { data, error } = await q.range(from, to);
 
       if (error) throw error;
       return (data || []) as ProductRow[];
@@ -115,17 +132,34 @@ export default function CommunityProductsHub({ mode, onOpenStore }: Props) {
     return map;
   }, [merchantProfiles, framesData]);
 
+  // Filter by search and apply mode-specific logic
   const items = useMemo(() => {
-    if (mode !== "preview") return loaded;
+    let filtered = loaded;
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((p) => p.title.toLowerCase().includes(q));
+    }
 
-    // Preview mode: pick a pseudo-random sample from what we loaded (no heavy random SQL)
-    const shuffled = [...loaded];
+    // Apply category filter (resin/filament from sort)
+    if (sortBy === "resin" || sortBy === "filament") {
+      // Note: This is a placeholder - actual category filtering would need category_ids
+      // For now, we filter by title containing the keyword
+      const keyword = sortBy === "resin" ? "رزن" : "فلمنت";
+      filtered = filtered.filter((p) => p.title.toLowerCase().includes(keyword.toLowerCase()));
+    }
+
+    if (mode !== "preview") return filtered;
+
+    // Preview mode: pick a pseudo-random sample
+    const shuffled = [...filtered];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled.slice(0, 6);
-  }, [loaded, mode]);
+  }, [loaded, mode, searchQuery, sortBy]);
 
   useAutoFetchUntil({
     count: (query.data?.pages || []).flat().length,
