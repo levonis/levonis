@@ -54,7 +54,7 @@ type MaterialType = "resin" | "filament" | "both";
     estimated_days: "",
     is_active: true,
     is_featured: false,
-    material_type: "both" as MaterialType,
+    material_type: "" as MaterialType | "",
   });
 
   const [mediaState, setMediaState] = useState({
@@ -224,7 +224,7 @@ type MaterialType = "resin" | "filament" | "both";
         estimated_days: "",
         is_active: true,
         is_featured: false,
-        material_type: "both",
+        material_type: "",
       });
     setMediaState({
       image_urls: [],
@@ -280,7 +280,7 @@ type MaterialType = "resin" | "filament" | "both";
                <p className="text-sm text-muted-foreground">{merchantApp.display_name}</p>
              </div>
            </div>
-           <Button variant="outline" onClick={() => navigate("/community")}>
+          <Button variant="outline" onClick={() => navigate(-1)}>
              <ArrowRight className="ml-2 h-4 w-4" />
              رجوع
            </Button>

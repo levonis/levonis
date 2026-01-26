@@ -39,11 +39,11 @@ interface MerchantDashboardWidgetsProps {
 type WidgetType = "financial" | "orders" | "conversations" | "ratings" | "requests";
 
 const widgetConfig: Record<WidgetType, { label: string; icon: any; color: string; bgColor: string }> = {
-  financial: { label: "التقرير المالي", icon: TrendingUp, color: "text-emerald-500", bgColor: "bg-emerald-500/10 border-emerald-500/20" },
-  orders: { label: "الطلبات", icon: Package, color: "text-blue-500", bgColor: "bg-blue-500/10 border-blue-500/20" },
-  conversations: { label: "المحادثات", icon: MessageCircle, color: "text-purple-500", bgColor: "bg-purple-500/10 border-purple-500/20" },
+  financial: { label: "التقرير المالي", icon: TrendingUp, color: "text-primary", bgColor: "bg-primary/10 border-primary/20" },
+  orders: { label: "الطلبات", icon: Package, color: "text-primary", bgColor: "bg-primary/10 border-primary/20" },
+  conversations: { label: "المحادثات", icon: MessageCircle, color: "text-primary", bgColor: "bg-primary/10 border-primary/20" },
   ratings: { label: "التقييمات", icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10 border-amber-500/20" },
-  requests: { label: "طلبات جديدة", icon: FileText, color: "text-rose-500", bgColor: "bg-rose-500/10 border-rose-500/20" },
+  requests: { label: "طلبات جديدة", icon: FileText, color: "text-primary", bgColor: "bg-primary/10 border-primary/20" },
 };
 
 const STORAGE_KEY = "merchant-pinned-widget";
@@ -399,16 +399,16 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
   const renderWidgetSelector = () => (
     <Dialog open={selectorOpen} onOpenChange={setSelectorOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2 h-12 w-full border-dashed border-2">
+        <Button variant="outline" className="gap-2 h-12 w-full border-dashed border-2 border-primary/30 bg-[hsl(160_50%_12%)] hover:bg-[hsl(160_50%_15%)]">
           <PinIcon className="h-5 w-5 text-primary" />
           <span className="font-bold">تثبيت نافذة للمتابعة</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="text-center">اختر النافذة للتثبيت</DialogTitle>
+          <DialogTitle className="text-center text-primary">اختر النافذة للتثبيت</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3 py-4">
+        <div className="grid gap-2 py-3">
           {(Object.keys(widgetConfig) as WidgetType[]).map((key) => {
             const config = widgetConfig[key];
             const Icon = config.icon;
@@ -417,18 +417,18 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
               <button
                 key={key}
                 onClick={() => handlePinWidget(key)}
-                className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
                   isPinned 
-                    ? "border-primary bg-primary/5" 
-                    : `${config.bgColor} hover:border-primary/50`
+                    ? "border-primary bg-primary/10" 
+                    : "border-border/50 bg-[hsl(160_50%_12%)] hover:border-primary/40 hover:bg-[hsl(160_50%_14%)]"
                 }`}
               >
-                <div className={`h-10 w-10 rounded-full ${config.bgColor} flex items-center justify-center`}>
-                  <Icon className={`h-5 w-5 ${config.color}`} />
+                <div className={`h-9 w-9 rounded-lg ${isPinned ? "bg-primary/20" : "bg-primary/10"} flex items-center justify-center`}>
+                  <Icon className={`h-4 w-4 ${config.color}`} />
                 </div>
                 <div className="text-right flex-1">
-                  <div className="font-bold">{config.label}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="font-bold text-sm">{config.label}</div>
+                  <div className="text-[10px] text-muted-foreground">
                     {key === "financial" && "تحليل الإيرادات والنمو"}
                     {key === "orders" && "حالة الطلبات والتتبع"}
                     {key === "conversations" && "الرسائل غير المقروءة"}
@@ -436,7 +436,7 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
                     {key === "requests" && "طلبات تحتاج عرض سعر"}
                   </div>
                 </div>
-                {isPinned && <Badge variant="default" className="shrink-0">مُثبت</Badge>}
+                {isPinned && <Badge variant="default" className="shrink-0 text-[10px]">مُثبت</Badge>}
               </button>
             );
           })}
@@ -763,11 +763,11 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
       
       {/* Widget selector dialog */}
       <Dialog open={selectorOpen} onOpenChange={setSelectorOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-center">تغيير النافذة المثبتة</DialogTitle>
+            <DialogTitle className="text-center text-primary">تغيير النافذة المثبتة</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-3 py-4">
+          <div className="grid gap-2 py-3">
             {(Object.keys(widgetConfig) as WidgetType[]).map((key) => {
               const config = widgetConfig[key];
               const Icon = config.icon;
@@ -776,19 +776,19 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
                 <button
                   key={key}
                   onClick={() => handlePinWidget(key)}
-                  className={`flex items-center gap-3 p-4 rounded-xl border-2 transition-all ${
+                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
                     isPinned 
-                      ? "border-primary bg-primary/5" 
-                      : `${config.bgColor} hover:border-primary/50`
+                      ? "border-primary bg-primary/10" 
+                      : "border-border/50 bg-[hsl(160_50%_12%)] hover:border-primary/40 hover:bg-[hsl(160_50%_14%)]"
                   }`}
                 >
-                  <div className={`h-10 w-10 rounded-full ${config.bgColor} flex items-center justify-center`}>
-                    <Icon className={`h-5 w-5 ${config.color}`} />
+                  <div className={`h-9 w-9 rounded-lg ${isPinned ? "bg-primary/20" : "bg-primary/10"} flex items-center justify-center`}>
+                    <Icon className={`h-4 w-4 ${config.color}`} />
                   </div>
                   <div className="text-right flex-1">
-                    <div className="font-bold">{config.label}</div>
+                    <div className="font-bold text-sm">{config.label}</div>
                   </div>
-                  {isPinned && <Badge variant="default" className="shrink-0">مُثبت</Badge>}
+                  {isPinned && <Badge variant="default" className="shrink-0 text-[10px]">مُثبت</Badge>}
                 </button>
               );
             })}

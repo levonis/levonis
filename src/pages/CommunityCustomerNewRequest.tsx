@@ -58,7 +58,7 @@ export default function CommunityCustomerNewRequest() {
             <p className="text-sm text-muted-foreground">واجهة مبدئية فقط — لاحقاً نربطها بالإرسال والمراجعة.</p>
           </div>
 
-          <Button variant="outline" onClick={() => navigate('/community/customer')} className="gap-2">
+          <Button variant="outline" onClick={() => navigate(-1)} className="gap-2">
             <ArrowRight className="h-4 w-4" />
             رجوع
           </Button>
