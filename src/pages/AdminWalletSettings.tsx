@@ -22,6 +22,7 @@ interface PaymentMethod {
 interface WalletSettings {
   min_withdrawal_amount: number;
   max_withdrawal_amount: number;
+  usd_to_iqd_rate: number;
   payment_methods: PaymentMethod[];
 }
 
@@ -33,6 +34,7 @@ export default function AdminWalletSettings() {
   const [settings, setSettings] = useState<WalletSettings>({
     min_withdrawal_amount: 5000,
     max_withdrawal_amount: 1000000,
+    usd_to_iqd_rate: 1460,
     payment_methods: [],
   });
 
@@ -147,6 +149,33 @@ export default function AdminWalletSettings() {
       }
     >
       <div className="space-y-6">
+        {/* إعدادات سعر الصرف */}
+        <AdminCard>
+          <AdminCardHeader 
+            title="سعر صرف الدولار" 
+            description="تحديد سعر صرف الدولار مقابل الدينار العراقي لدفعات Stripe"
+          />
+          <AdminCardContent>
+            <div className="max-w-sm space-y-2">
+              <Label htmlFor="usdRate">كل 1$ دولار أمريكي يساوي (دينار عراقي)</Label>
+              <Input
+                id="usdRate"
+                type="number"
+                value={settings.usd_to_iqd_rate}
+                onChange={(e) => setSettings(prev => ({
+                  ...prev,
+                  usd_to_iqd_rate: Number(e.target.value),
+                }))}
+                min="1"
+                placeholder="1460"
+              />
+              <p className="text-xs text-muted-foreground">
+                مثال: إذا كان السعر 1300، فإن 10$ = 13,000 دينار عراقي
+              </p>
+            </div>
+          </AdminCardContent>
+        </AdminCard>
+
         {/* إعدادات السحب */}
         <AdminCard>
           <AdminCardHeader 

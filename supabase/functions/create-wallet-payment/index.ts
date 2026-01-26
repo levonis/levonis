@@ -20,11 +20,14 @@ serve(async (req) => {
 
   try {
     // Get request body
-    const { amount } = await req.json();
+    const { amount, usdRate } = await req.json();
     
     if (!amount || amount <= 0) {
       throw new Error("Invalid amount");
     }
+    
+    // Use provided rate or default
+    const exchangeRate = usdRate || 1460;
 
     // Retrieve authenticated user
     const authHeader = req.headers.get("Authorization");
@@ -57,13 +60,12 @@ serve(async (req) => {
       customerId = customers.data[0].id;
     }
 
-    // Convert IQD to USD cents (approximate rate: 1 USD = 1460 IQD)
-    // Stripe requires amounts in smallest currency unit (cents)
-    const amountInCents = Math.round((amount / 1460) * 100);
+    // Convert IQD to USD cents using admin-configured rate
+    const amountInCents = Math.round((amount / exchangeRate) * 100);
     
     // Minimum $0.50 USD for Stripe
     if (amountInCents < 50) {
-      throw new Error("Minimum amount is approximately 730 IQD");
+      throw new Error(`Minimum amount is approximately ${Math.ceil(exchangeRate * 0.5)} IQD`);
     }
 
     // Create a one-time payment session with dynamic pricing
