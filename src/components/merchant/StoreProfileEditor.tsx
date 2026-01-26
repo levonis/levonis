@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Check, Coins, Lock, X } from "lucide-react";
+import { Camera, Check, Coins, Droplets, Layers } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import AvatarWithFrame from "./AvatarWithFrame";
+
+type SpecialtyType = "resin" | "filament" | "both";
 
 interface Frame {
   id: string;
@@ -30,6 +32,7 @@ interface StoreProfileEditorProps {
     store_image_url: string | null;
     social_links: { facebook?: string; instagram?: string } | null;
     selected_frame_id: string | null;
+    specialty?: SpecialtyType | null;
   };
 }
 
@@ -44,6 +47,7 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
   const [instagram, setInstagram] = useState(merchantApp.social_links?.instagram || "");
   const [storeImageUrl, setStoreImageUrl] = useState(merchantApp.store_image_url || "");
   const [selectedFrameId, setSelectedFrameId] = useState(merchantApp.selected_frame_id);
+  const [specialty, setSpecialty] = useState<SpecialtyType>(merchantApp.specialty || "both");
   const [frameDialogOpen, setFrameDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
 
@@ -103,6 +107,7 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
           store_image_url: storeImageUrl || null,
           social_links: { facebook: facebook.trim() || null, instagram: instagram.trim() || null },
           selected_frame_id: selectedFrameId,
+          specialty: specialty,
         })
         .eq("id", merchantApp.id);
       if (error) throw error;
@@ -273,6 +278,51 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
                 placeholder="https://instagram.com/..."
                 dir="ltr"
               />
+            </div>
+
+            {/* Specialty Selector */}
+            <div>
+              <Label className="mb-2 block">تخصص الطباعة</Label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSpecialty("resin")}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                    specialty === "resin"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <Droplets className="h-4 w-4" />
+                  <span className="text-sm">رزن فقط</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSpecialty("filament")}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                    specialty === "filament"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <Layers className="h-4 w-4" />
+                  <span className="text-sm">فلمنت فقط</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSpecialty("both")}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+                    specialty === "both"
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:border-primary/50"
+                  }`}
+                >
+                  <Droplets className="h-4 w-4" />
+                  <Layers className="h-4 w-4 -mr-1" />
+                  <span className="text-sm">كلاهما</span>
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">اختر نوع الطباعة التي تقدمها</p>
             </div>
 
             <Button

@@ -17,30 +17,33 @@ interface AvatarWithFrameProps {
   isUser?: boolean;
 }
 
-// Container size = frame size (frame IS the border)
+// Container size = overall size including frame
 const containerSizeClasses = {
-  xs: "h-8 w-8",
-  sm: "h-11 w-11",
-  md: "h-14 w-14",
-  lg: "h-20 w-20",
-  xl: "h-28 w-28",
+  xs: "h-10 w-10",
+  sm: "h-14 w-14",
+  md: "h-18 w-18",
+  lg: "h-24 w-24",
+  xl: "h-32 w-32",
 };
 
-// Avatar fills the container completely, frame overlays as border
-const avatarSizeClasses = {
-  xs: "h-6 w-6",
-  sm: "h-9 w-9",
-  md: "h-12 w-12",
-  lg: "h-16 w-16",
-  xl: "h-24 w-24",
+// Container pixel sizes for calculations
+const containerSizes = {
+  xs: 40,
+  sm: 56,
+  md: 72,
+  lg: 96,
+  xl: 128,
 };
+
+// Avatar should be 70% of container, leaving 15% on each side for frame
+const avatarPercentage = 0.70;
 
 const badgeSizeClasses = {
-  xs: "h-2.5 w-2.5 -bottom-0 -right-0",
-  sm: "h-3 w-3 -bottom-0 -right-0",
-  md: "h-4 w-4 -bottom-0.5 -right-0.5",
-  lg: "h-5 w-5 -bottom-1 -right-1",
-  xl: "h-6 w-6 -bottom-1 -right-1",
+  xs: "h-2.5 w-2.5 -bottom-0.5 -right-0.5",
+  sm: "h-3 w-3 -bottom-0.5 -right-0.5",
+  md: "h-4 w-4 -bottom-1 -right-1",
+  lg: "h-5 w-5 -bottom-1.5 -right-1.5",
+  xl: "h-6 w-6 -bottom-2 -right-2",
 };
 
 function AvatarWithFrameBase({
@@ -60,9 +63,16 @@ function AvatarWithFrameBase({
   const FallbackIcon = isUser ? User : Store;
   const hasFrame = !!frameUrl;
 
+  // Calculate avatar size based on container
+  const containerPx = containerSizes[size];
+  const avatarPx = Math.round(containerPx * avatarPercentage);
+
   return (
-    <div className={`relative flex items-center justify-center ${containerSizeClasses[size]}`}>
-      {/* Frame overlays exactly on the avatar edge - acting as the border */}
+    <div 
+      className={`relative flex items-center justify-center ${containerSizeClasses[size]}`}
+      style={{ width: containerPx, height: containerPx }}
+    >
+      {/* Frame fills the entire container - this IS the border */}
       {hasFrame && (
         <img
           src={frameUrl}
@@ -74,11 +84,15 @@ function AvatarWithFrameBase({
         />
       )}
 
-      {/* Avatar (Circular) - no border when frame exists */}
+      {/* Avatar (Circular) - smaller than container, centered */}
       <div
-        className={`${avatarSizeClasses[size]} rounded-full overflow-hidden ${
+        className={`rounded-full overflow-hidden ${
           hasFrame ? "border-0" : "border-2 border-border"
         } bg-muted/30 z-0 flex items-center justify-center`}
+        style={{ 
+          width: hasFrame ? avatarPx : avatarPx + 4, 
+          height: hasFrame ? avatarPx : avatarPx + 4 
+        }}
       >
         {imageUrl ? (
           <img
