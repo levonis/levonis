@@ -433,7 +433,7 @@ export default function MerchantSignupDialog({
         </div>
 
         {/* Content Area */}
-        <ScrollArea className="max-h-[60vh]">
+        <ScrollArea className="flex-1 max-h-[55vh] min-h-0 overflow-auto">
           <div className="p-6">
             {busy ? (
               <div className="space-y-4">
