@@ -98,18 +98,20 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       </div>
 
-      {/* Search Bar - unified, always visible */}
-      <div className="mb-4">
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="ابحث في المنتجات، الطلبات، التجار..."
-            className="levo-input-frame pr-10 h-10 text-sm"
-          />
+      {/* Search Bar - only on /community hub */}
+      {isCommunityHub && (
+        <div className="mb-4">
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="ابحث في المنتجات، الطلبات، التجار..."
+              className="levo-input-frame pr-10 h-10 text-sm"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Quick Actions - Show on homepage only (legacy navigation preserved) */}
       {!isCommunityHub && user && (

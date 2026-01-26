@@ -17,30 +17,30 @@ interface AvatarWithFrameProps {
   isUser?: boolean;
 }
 
-// The frame IS the border - these are the total sizes (frame fits tightly around avatar)
+// Container size = frame size (frame IS the border)
 const containerSizeClasses = {
-  xs: "h-9 w-9",
-  sm: "h-12 w-12",
-  md: "h-16 w-16",
-  lg: "h-24 w-24",
-  xl: "h-32 w-32",
-};
-
-// Avatar fills most of the container - frame wraps closely
-const avatarSizeClasses = {
-  xs: "h-7 w-7",
-  sm: "h-10 w-10",
+  xs: "h-8 w-8",
+  sm: "h-11 w-11",
   md: "h-14 w-14",
   lg: "h-20 w-20",
   xl: "h-28 w-28",
 };
 
+// Avatar fills the container completely, frame overlays as border
+const avatarSizeClasses = {
+  xs: "h-6 w-6",
+  sm: "h-9 w-9",
+  md: "h-12 w-12",
+  lg: "h-16 w-16",
+  xl: "h-24 w-24",
+};
+
 const badgeSizeClasses = {
-  xs: "h-3 w-3 -bottom-0.5 -right-0.5",
-  sm: "h-4 w-4 -bottom-0.5 -right-0.5",
-  md: "h-5 w-5 -bottom-1 -right-1",
-  lg: "h-6 w-6 -bottom-1 -right-1",
-  xl: "h-8 w-8 -bottom-2 -right-2",
+  xs: "h-2.5 w-2.5 -bottom-0 -right-0",
+  sm: "h-3 w-3 -bottom-0 -right-0",
+  md: "h-4 w-4 -bottom-0.5 -right-0.5",
+  lg: "h-5 w-5 -bottom-1 -right-1",
+  xl: "h-6 w-6 -bottom-1 -right-1",
 };
 
 function AvatarWithFrameBase({
@@ -62,14 +62,14 @@ function AvatarWithFrameBase({
 
   return (
     <div className={`relative flex items-center justify-center ${containerSizeClasses[size]}`}>
-      {/* Frame as the border - scale to wrap tightly around avatar */}
+      {/* Frame overlays exactly on the avatar edge - acting as the border */}
       {hasFrame && (
         <img
           src={frameUrl}
           alt="Frame"
-          className={`absolute inset-[-10%] w-[120%] h-[120%] pointer-events-none z-10 ${animationClass}`}
+          className={`absolute inset-0 w-full h-full pointer-events-none z-10 ${animationClass}`}
           style={animated && !animationType ? {
-            filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.6))",
+            filter: "drop-shadow(0 0 4px hsl(var(--primary) / 0.5))",
           } : undefined}
         />
       )}
