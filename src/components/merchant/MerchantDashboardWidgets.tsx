@@ -38,12 +38,12 @@ interface MerchantDashboardWidgetsProps {
 
 type WidgetType = "financial" | "orders" | "conversations" | "ratings" | "requests";
 
-const widgetConfig: Record<WidgetType, { label: string; icon: any; color: string; bgColor: string }> = {
-  financial: { label: "التقرير المالي", icon: TrendingUp, color: "text-primary", bgColor: "bg-primary/10 border-primary/20" },
-  orders: { label: "الطلبات", icon: Package, color: "text-primary", bgColor: "bg-primary/10 border-primary/20" },
-  conversations: { label: "المحادثات", icon: MessageCircle, color: "text-primary", bgColor: "bg-primary/10 border-primary/20" },
-  ratings: { label: "التقييمات", icon: Star, color: "text-amber-500", bgColor: "bg-amber-500/10 border-amber-500/20" },
-  requests: { label: "طلبات جديدة", icon: FileText, color: "text-primary", bgColor: "bg-primary/10 border-primary/20" },
+const widgetConfig: Record<WidgetType, { label: string; icon: any; description: string }> = {
+  financial: { label: "التقرير المالي", icon: TrendingUp, description: "تحليل الإيرادات والنمو" },
+  orders: { label: "الطلبات", icon: Package, description: "حالة الطلبات والتتبع" },
+  conversations: { label: "المحادثات", icon: MessageCircle, description: "الرسائل غير المقروءة" },
+  ratings: { label: "التقييمات", icon: Star, description: "التقييمات الجديدة" },
+  requests: { label: "طلبات جديدة", icon: FileText, description: "طلبات تحتاج عرض سعر" },
 };
 
 const STORAGE_KEY = "merchant-pinned-widget";
@@ -395,20 +395,23 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
     1
   );
 
-  // Render widget selector
+  // Render widget selector - compact professional design
   const renderWidgetSelector = () => (
     <Dialog open={selectorOpen} onOpenChange={setSelectorOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2 h-12 w-full border-dashed border-2 border-primary/30 bg-[hsl(160_50%_12%)] hover:bg-[hsl(160_50%_15%)]">
-          <PinIcon className="h-5 w-5 text-primary" />
-          <span className="font-bold">تثبيت نافذة للمتابعة</span>
+        <Button 
+          variant="outline" 
+          className="gap-2 h-10 w-full border border-primary/40 bg-gradient-to-b from-background to-muted/30 hover:border-primary/60 hover:bg-muted/20 text-sm"
+        >
+          <PinIcon className="h-4 w-4 text-primary" />
+          <span className="font-semibold">تثبيت نافذة</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="text-center text-primary">اختر النافذة للتثبيت</DialogTitle>
+      <DialogContent className="sm:max-w-[280px] p-0 gap-0 rounded-lg overflow-hidden bg-gradient-to-b from-card to-background border-primary/20">
+        <DialogHeader className="px-3 py-2.5 border-b border-border/50 bg-muted/30">
+          <DialogTitle className="text-xs font-semibold text-center">اختر النافذة</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-2 py-3">
+        <div className="p-2 space-y-1">
           {(Object.keys(widgetConfig) as WidgetType[]).map((key) => {
             const config = widgetConfig[key];
             const Icon = config.icon;
@@ -417,26 +420,24 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
               <button
                 key={key}
                 onClick={() => handlePinWidget(key)}
-                className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                className={`flex items-center gap-2 w-full p-2 rounded-md border transition-all text-right ${
                   isPinned 
-                    ? "border-primary bg-primary/10" 
-                    : "border-border/50 bg-[hsl(160_50%_12%)] hover:border-primary/40 hover:bg-[hsl(160_50%_14%)]"
+                    ? "border-primary/50 bg-primary/10" 
+                    : "border-transparent hover:border-border/60 hover:bg-muted/40"
                 }`}
               >
-                <div className={`h-9 w-9 rounded-lg ${isPinned ? "bg-primary/20" : "bg-primary/10"} flex items-center justify-center`}>
-                  <Icon className={`h-4 w-4 ${config.color}`} />
+                <div className={`h-7 w-7 rounded-md shrink-0 flex items-center justify-center ${
+                  isPinned ? "bg-primary/20" : "bg-muted/50"
+                }`}>
+                  <Icon className={`h-3.5 w-3.5 ${isPinned ? "text-primary" : "text-muted-foreground"}`} />
                 </div>
-                <div className="text-right flex-1">
-                  <div className="font-bold text-sm">{config.label}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {key === "financial" && "تحليل الإيرادات والنمو"}
-                    {key === "orders" && "حالة الطلبات والتتبع"}
-                    {key === "conversations" && "الرسائل غير المقروءة"}
-                    {key === "ratings" && "التقييمات الجديدة"}
-                    {key === "requests" && "طلبات تحتاج عرض سعر"}
-                  </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-xs font-medium truncate">{config.label}</div>
+                  <div className="text-[9px] text-muted-foreground truncate">{config.description}</div>
                 </div>
-                {isPinned && <Badge variant="default" className="shrink-0 text-[10px]">مُثبت</Badge>}
+                {isPinned && (
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                )}
               </button>
             );
           })}
@@ -477,50 +478,53 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
     switch (pinnedWidget) {
       case "financial":
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
-                <div className="text-xs text-muted-foreground mb-1">هذا الشهر</div>
-                <div className="text-xl font-black text-emerald-500 tabular-nums">
+          <div className="space-y-2">
+            {/* Compact financial stats */}
+            <div className="grid grid-cols-2 gap-1.5">
+              <div className="p-2 rounded-md bg-primary/10 border border-primary/20">
+                <div className="text-[9px] text-muted-foreground">هذا الشهر</div>
+                <div className="text-sm font-bold text-primary tabular-nums">
                   {(financials?.thisMonthRevenue || 0).toLocaleString()}
-                  <span className="text-xs font-normal mr-1">د.ع</span>
+                  <span className="text-[9px] font-normal mr-0.5">د.ع</span>
                 </div>
               </div>
-              <div className="p-4 rounded-xl bg-muted/30 border border-border/40">
-                <div className="text-xs text-muted-foreground mb-1">الشهر الماضي</div>
-                <div className="text-xl font-bold text-foreground tabular-nums">
+              <div className="p-2 rounded-md bg-muted/30 border border-border/30">
+                <div className="text-[9px] text-muted-foreground">الشهر الماضي</div>
+                <div className="text-sm font-bold tabular-nums">
                   {(financials?.lastMonthRevenue || 0).toLocaleString()}
-                  <span className="text-xs font-normal mr-1">د.ع</span>
+                  <span className="text-[9px] font-normal mr-0.5">د.ع</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/40">
-              <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                (financials?.growth || 0) >= 0 ? "bg-emerald-500/10" : "bg-rose-500/10"
+            {/* Growth indicator */}
+            <div className="flex items-center gap-2 p-1.5 rounded-md bg-muted/20">
+              <div className={`h-5 w-5 rounded flex items-center justify-center ${
+                (financials?.growth || 0) >= 0 ? "bg-primary/15" : "bg-destructive/15"
               }`}>
                 {(financials?.growth || 0) >= 0 ? (
-                  <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+                  <ArrowUpRight className="h-3 w-3 text-primary" />
                 ) : (
-                  <ArrowDownRight className="h-4 w-4 text-rose-500" />
+                  <ArrowDownRight className="h-3 w-3 text-destructive" />
                 )}
               </div>
-              <div className="flex-1">
-                <div className="text-sm font-bold">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold">
                   {(financials?.growth || 0) >= 0 ? "+" : ""}{financials?.growth?.toFixed(1) || 0}%
-                </div>
-                <div className="text-[10px] text-muted-foreground">نسبة النمو</div>
+                </span>
+                <span className="text-[9px] text-muted-foreground">نسبة النمو</span>
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* Monthly progress bars */}
+            <div className="space-y-1">
               {financials?.monthlyData?.map((m, i) => (
-                <div key={i} className="space-y-1">
-                  <div className="flex items-center justify-between text-xs">
+                <div key={i} className="space-y-0.5">
+                  <div className="flex items-center justify-between text-[9px]">
                     <span className="text-muted-foreground">{m.month}</span>
-                    <span className="font-semibold tabular-nums">{m.revenue.toLocaleString()}</span>
+                    <span className="font-medium tabular-nums">{m.revenue.toLocaleString()}</span>
                   </div>
-                  <Progress value={(m.revenue / maxRevenue) * 100} className="h-1.5" />
+                  <Progress value={(m.revenue / maxRevenue) * 100} className="h-1" />
                 </div>
               ))}
             </div>
@@ -529,43 +533,45 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
 
       case "orders":
         return (
-          <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-2">
-              <div className="text-center p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <CheckCircle className="h-4 w-4 mx-auto text-emerald-500 mb-1" />
-                <div className="text-lg font-bold tabular-nums">{orders?.completed || 0}</div>
-                <div className="text-[10px] text-muted-foreground">مكتمل</div>
+          <div className="space-y-2">
+            {/* Compact order stats */}
+            <div className="grid grid-cols-3 gap-1">
+              <div className="text-center p-1.5 rounded-md bg-primary/10 border border-primary/20">
+                <CheckCircle className="h-3 w-3 mx-auto text-primary mb-0.5" />
+                <div className="text-sm font-bold tabular-nums">{orders?.completed || 0}</div>
+                <div className="text-[8px] text-muted-foreground">مكتمل</div>
               </div>
-              <div className="text-center p-3 rounded-xl bg-blue-500/10 border border-blue-500/20">
-                <Truck className="h-4 w-4 mx-auto text-blue-500 mb-1" />
-                <div className="text-lg font-bold tabular-nums">{orders?.accepted || 0}</div>
-                <div className="text-[10px] text-muted-foreground">قيد التنفيذ</div>
+              <div className="text-center p-1.5 rounded-md bg-muted/40 border border-border/30">
+                <Truck className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
+                <div className="text-sm font-bold tabular-nums">{orders?.accepted || 0}</div>
+                <div className="text-[8px] text-muted-foreground">تنفيذ</div>
               </div>
-              <div className="text-center p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                <Clock className="h-4 w-4 mx-auto text-amber-500 mb-1" />
-                <div className="text-lg font-bold tabular-nums">{orders?.submitted || 0}</div>
-                <div className="text-[10px] text-muted-foreground">معلق</div>
+              <div className="text-center p-1.5 rounded-md bg-muted/40 border border-border/30">
+                <Clock className="h-3 w-3 mx-auto text-muted-foreground mb-0.5" />
+                <div className="text-sm font-bold tabular-nums">{orders?.submitted || 0}</div>
+                <div className="text-[8px] text-muted-foreground">معلق</div>
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* Recent orders list */}
+            <div className="space-y-1">
               {orders?.recentOrders && orders.recentOrders.length > 0 ? (
                 orders.recentOrders.slice(0, 3).map((o: any) => (
-                  <div key={o.id} className="flex items-center justify-between p-2.5 rounded-xl bg-muted/30 border border-border/40">
-                    <div className="flex items-center gap-2">
+                  <div key={o.id} className="flex items-center justify-between p-1.5 rounded-md bg-muted/20 border border-border/20">
+                    <div className="flex items-center gap-1.5">
                       <Badge variant={
                         o.status === "completed" ? "secondary" : 
                         o.status === "accepted" ? "outline" : "destructive"
-                      } className="text-[10px]">
+                      } className="text-[8px] px-1.5 py-0">
                         {o.status === "completed" ? "مكتمل" : o.status === "accepted" ? "نشط" : "معلق"}
                       </Badge>
-                      <span className="text-sm font-semibold tabular-nums">{(o.price_iqd || 0).toLocaleString()}</span>
+                      <span className="text-[10px] font-semibold tabular-nums">{(o.price_iqd || 0).toLocaleString()}</span>
                     </div>
-                    <span className="text-[10px] text-muted-foreground">{formatTime(o.created_at)}</span>
+                    <span className="text-[8px] text-muted-foreground">{formatTime(o.created_at)}</span>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-4 text-muted-foreground text-sm">لا توجد طلبات</div>
+                <div className="text-center py-2 text-muted-foreground text-[10px]">لا توجد طلبات</div>
               )}
             </div>
           </div>
@@ -573,36 +579,38 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
 
       case "conversations":
         return (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-purple-500/10 border border-purple-500/20">
-              <div className="h-10 w-10 rounded-full bg-purple-500/20 flex items-center justify-center">
-                <MessageCircle className={`h-5 w-5 text-purple-500 ${(conversations?.unreadCount || 0) > 0 ? "animate-pulse" : ""}`} />
+          <div className="space-y-2">
+            {/* Compact conversation summary */}
+            <div className="flex items-center gap-2 p-2 rounded-md bg-primary/10 border border-primary/20">
+              <div className="h-7 w-7 rounded-md bg-primary/20 flex items-center justify-center">
+                <MessageCircle className={`h-3.5 w-3.5 text-primary ${(conversations?.unreadCount || 0) > 0 ? "animate-pulse" : ""}`} />
               </div>
-              <div>
-                <div className="text-xl font-black text-purple-500">{conversations?.unreadCount || 0}</div>
-                <div className="text-xs text-muted-foreground">غير مقروءة من {conversations?.totalCount || 0}</div>
+              <div className="flex-1">
+                <div className="text-sm font-bold text-primary">{conversations?.unreadCount || 0}</div>
+                <div className="text-[9px] text-muted-foreground">غير مقروءة من {conversations?.totalCount || 0}</div>
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* Conversation list */}
+            <div className="space-y-1">
               {conversations?.conversations && conversations.conversations.length > 0 ? (
                 conversations.conversations.map((c: any) => (
                   <div 
                     key={c.id} 
-                    className={`p-3 rounded-xl border cursor-pointer hover:bg-muted/50 transition-colors ${
-                      c.isUnread ? "bg-purple-500/5 border-purple-500/20" : "bg-muted/30 border-border/40"
+                    className={`p-1.5 rounded-md border cursor-pointer hover:bg-muted/40 transition-colors ${
+                      c.isUnread ? "bg-primary/5 border-primary/20" : "bg-muted/20 border-border/20"
                     }`}
                     onClick={() => navigate("/community/messages")}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-semibold">{c.buyerName}</span>
-                      {c.isUnread && <span className="h-2 w-2 rounded-full bg-purple-500 animate-pulse" />}
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold">{c.buyerName}</span>
+                      {c.isUnread && <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
                     </div>
-                    <div className="text-xs text-muted-foreground truncate">{c.lastMessage}</div>
+                    <div className="text-[9px] text-muted-foreground truncate">{c.lastMessage}</div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-4 text-muted-foreground text-sm">لا توجد محادثات</div>
+                <div className="text-center py-2 text-muted-foreground text-[10px]">لا توجد محادثات</div>
               )}
             </div>
           </div>
@@ -610,48 +618,50 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
 
       case "ratings":
         return (
-          <div className="space-y-4">
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+          <div className="space-y-2">
+            {/* Compact rating summary */}
+            <div className="flex items-center gap-2 p-2 rounded-md bg-amber-500/10 border border-amber-500/20">
               <div className="text-center">
-                <div className="text-2xl font-black text-amber-500">{ratings?.avgRating?.toFixed(1) || "0.0"}</div>
-                <div className="flex items-center justify-center gap-0.5 mt-1">
+                <div className="text-lg font-bold text-amber-500">{ratings?.avgRating?.toFixed(1) || "0.0"}</div>
+                <div className="flex items-center justify-center gap-0.5">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
-                      className={`h-3 w-3 ${i < Math.round(ratings?.avgRating || 0) ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}`}
+                      className={`h-2 w-2 ${i < Math.round(ratings?.avgRating || 0) ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}`}
                     />
                   ))}
                 </div>
               </div>
-              <div className="h-10 w-px bg-border" />
+              <div className="h-6 w-px bg-border/40" />
               <div>
-                <div className="text-lg font-bold">{ratings?.totalCount || 0}</div>
-                <div className="text-xs text-muted-foreground">إجمالي</div>
-                {(ratings?.newCount || 0) > 0 && (
-                  <Badge variant="secondary" className="mt-1 text-[10px]">
-                    +{ratings?.newCount} جديد
-                  </Badge>
-                )}
+                <div className="text-xs font-bold">{ratings?.totalCount || 0}</div>
+                <div className="text-[9px] text-muted-foreground">إجمالي</div>
               </div>
+              {(ratings?.newCount || 0) > 0 && (
+                <Badge variant="secondary" className="text-[8px] px-1.5 py-0 mr-auto">
+                  +{ratings?.newCount}
+                </Badge>
+              )}
             </div>
 
-            <div className="space-y-2">
+            {/* Rating list */}
+            <div className="space-y-1">
               {ratings?.ratings && ratings.ratings.length > 0 ? (
                 ratings.ratings.map((r: any) => (
-                  <div key={r.id} className={`p-3 rounded-xl border ${r.isNew ? "bg-amber-500/5 border-amber-500/20" : "bg-muted/30 border-border/40"}`}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-semibold">{r.customerName}</span>
-                      <div className="flex gap-0.5">
+                  <div key={r.id} className={`p-1.5 rounded-md border ${r.isNew ? "bg-amber-500/5 border-amber-500/20" : "bg-muted/20 border-border/20"}`}>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold">{r.customerName}</span>
+                      <div className="flex gap-px">
                         {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`h-2.5 w-2.5 ${i < r.rating ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}`} />
+                          <Star key={i} className={`h-2 w-2 ${i < r.rating ? "text-amber-500 fill-amber-500" : "text-muted-foreground"}`} />
                         ))}
                       </div>
                     </div>
-                    {r.review_text && <div className="text-xs text-muted-foreground truncate">{r.review_text}</div>}
+                    {r.review_text && <div className="text-[9px] text-muted-foreground truncate">{r.review_text}</div>}
                   </div>
                 ))
               ) : (
-                <div className="text-center py-4 text-muted-foreground text-sm">لا توجد تقييمات</div>
+                <div className="text-center py-2 text-muted-foreground text-[10px]">لا توجد تقييمات</div>
               )}
             </div>
           </div>
@@ -659,46 +669,48 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
 
       case "requests":
         return (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20">
-              <div className="h-10 w-10 rounded-full bg-rose-500/20 flex items-center justify-center">
+          <div className="space-y-2">
+            {/* Compact request summary */}
+            <div className="flex items-center gap-2 p-2 rounded-md bg-destructive/10 border border-destructive/20">
+              <div className="h-7 w-7 rounded-md bg-destructive/20 flex items-center justify-center">
                 {(newRequests?.count || 0) > 0 ? (
-                  <AlertCircle className="h-5 w-5 text-rose-500 animate-pulse" />
+                  <AlertCircle className="h-3.5 w-3.5 text-destructive animate-pulse" />
                 ) : (
-                  <CheckCircle className="h-5 w-5 text-emerald-500" />
+                  <CheckCircle className="h-3.5 w-3.5 text-primary" />
                 )}
               </div>
               <div>
-                <div className="text-xl font-black">
+                <div className="text-sm font-bold">
                   {(newRequests?.count || 0) > 0 ? (
-                    <span className="text-rose-500">{newRequests?.count} طلب</span>
+                    <span className="text-destructive">{newRequests?.count} طلب</span>
                   ) : (
-                    <span className="text-emerald-500">تم الرد</span>
+                    <span className="text-primary">تم الرد</span>
                   )}
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-[9px] text-muted-foreground">
                   {(newRequests?.count || 0) > 0 ? "بانتظار عرض سعر" : "لا طلبات معلقة"}
                 </div>
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* Request list */}
+            <div className="space-y-1">
               {newRequests?.requests && newRequests.requests.length > 0 ? (
                 newRequests.requests.map((r: any) => (
                   <div 
                     key={r.id} 
-                    className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/20 cursor-pointer hover:bg-rose-500/10 transition-colors"
+                    className="p-1.5 rounded-md bg-destructive/5 border border-destructive/20 cursor-pointer hover:bg-destructive/10 transition-colors"
                     onClick={() => navigate("/community/requests")}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-semibold truncate">{r.title}</span>
-                      <Badge variant="destructive" className="text-[10px] shrink-0">جديد</Badge>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold truncate">{r.title}</span>
+                      <Badge variant="destructive" className="text-[8px] px-1.5 py-0 shrink-0">جديد</Badge>
                     </div>
-                    <div className="text-xs text-muted-foreground">من: {r.userName}</div>
+                    <div className="text-[9px] text-muted-foreground">من: {r.userName}</div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-4 text-muted-foreground text-sm">لا طلبات جديدة</div>
+                <div className="text-center py-2 text-muted-foreground text-[10px]">لا طلبات جديدة</div>
               )}
             </div>
           </div>
@@ -710,45 +722,48 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
   };
 
   return (
-    <Card className={`border-2 ${activeConfig.bgColor}`}>
-      <CardHeader className="pb-2">
+    <Card className="border border-primary/20 bg-gradient-to-b from-card to-background/80 rounded-lg overflow-hidden">
+      {/* Compact Header */}
+      <CardHeader className="p-2.5 pb-2 border-b border-border/30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className={`h-8 w-8 rounded-full ${activeConfig.bgColor} flex items-center justify-center`}>
-              <ActiveIcon className={`h-4 w-4 ${activeConfig.color}`} />
+            <div className="h-6 w-6 rounded-md bg-primary/15 flex items-center justify-center">
+              <ActiveIcon className="h-3.5 w-3.5 text-primary" />
             </div>
-            <CardTitle className="text-base">{activeConfig.label}</CardTitle>
-            <Badge variant="outline" className="text-[10px] gap-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <CardTitle className="text-xs font-semibold">{activeConfig.label}</CardTitle>
+            <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
+              <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
               مباشر
-            </Badge>
+            </span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-7 w-7" 
+              className="h-6 w-6" 
               onClick={() => setSelectorOpen(true)}
             >
-              <Settings2 className="h-4 w-4" />
+              <Settings2 className="h-3 w-3" />
             </Button>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-7 w-7 text-muted-foreground hover:text-destructive" 
+              className="h-6 w-6 text-muted-foreground hover:text-destructive" 
               onClick={handleUnpinWidget}
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-2">
+      
+      {/* Compact Content */}
+      <CardContent className="p-2.5 pt-2">
         {renderWidgetContent()}
         <Button 
           variant="ghost" 
           size="sm"
-          className="w-full mt-4 gap-2 text-xs"
+          className="w-full mt-2 gap-1.5 text-[10px] h-7 text-muted-foreground hover:text-primary"
           onClick={() => {
             if (pinnedWidget === "financial" || pinnedWidget === "orders") navigate("/community/merchant/orders");
             else if (pinnedWidget === "conversations") navigate("/community/messages");
@@ -757,17 +772,17 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
           }}
         >
           عرض التفاصيل
-          <ChevronLeft className="h-3 w-3" />
+          <ChevronLeft className="h-2.5 w-2.5" />
         </Button>
       </CardContent>
       
-      {/* Widget selector dialog */}
+      {/* Widget selector dialog - compact design */}
       <Dialog open={selectorOpen} onOpenChange={setSelectorOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-center text-primary">تغيير النافذة المثبتة</DialogTitle>
+        <DialogContent className="sm:max-w-[280px] p-0 gap-0 rounded-lg overflow-hidden bg-gradient-to-b from-card to-background border-primary/20">
+          <DialogHeader className="px-3 py-2.5 border-b border-border/50 bg-muted/30">
+            <DialogTitle className="text-xs font-semibold text-center">تغيير النافذة</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-2 py-3">
+          <div className="p-2 space-y-1">
             {(Object.keys(widgetConfig) as WidgetType[]).map((key) => {
               const config = widgetConfig[key];
               const Icon = config.icon;
@@ -776,19 +791,24 @@ function MerchantDashboardWidgetsBase({ merchantId }: MerchantDashboardWidgetsPr
                 <button
                   key={key}
                   onClick={() => handlePinWidget(key)}
-                  className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+                  className={`flex items-center gap-2 w-full p-2 rounded-md border transition-all text-right ${
                     isPinned 
-                      ? "border-primary bg-primary/10" 
-                      : "border-border/50 bg-[hsl(160_50%_12%)] hover:border-primary/40 hover:bg-[hsl(160_50%_14%)]"
+                      ? "border-primary/50 bg-primary/10" 
+                      : "border-transparent hover:border-border/60 hover:bg-muted/40"
                   }`}
                 >
-                  <div className={`h-9 w-9 rounded-lg ${isPinned ? "bg-primary/20" : "bg-primary/10"} flex items-center justify-center`}>
-                    <Icon className={`h-4 w-4 ${config.color}`} />
+                  <div className={`h-7 w-7 rounded-md shrink-0 flex items-center justify-center ${
+                    isPinned ? "bg-primary/20" : "bg-muted/50"
+                  }`}>
+                    <Icon className={`h-3.5 w-3.5 ${isPinned ? "text-primary" : "text-muted-foreground"}`} />
                   </div>
-                  <div className="text-right flex-1">
-                    <div className="font-bold text-sm">{config.label}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-medium truncate">{config.label}</div>
+                    <div className="text-[9px] text-muted-foreground truncate">{config.description}</div>
                   </div>
-                  {isPinned && <Badge variant="default" className="shrink-0 text-[10px]">مُثبت</Badge>}
+                  {isPinned && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                  )}
                 </button>
               );
             })}
