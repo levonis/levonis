@@ -156,18 +156,18 @@ const Products = () => {
           backgroundRepeat: 'no-repeat'
         }}
       />
-      <main className="container mx-auto px-4 py-8 pt-28 relative z-10">
-        <div className="mb-8">
+      <main className="container mx-auto px-3 sm:px-4 py-4 pt-24 relative z-10">
+        <div className="mb-4">
           <SearchBar />
         </div>
 
-        <div className="mb-6 flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+        <div className="mb-4 flex flex-col lg:flex-row gap-2 justify-between items-start lg:items-center">
           {searchQuery ? (
             <div>
-              <h2 className="text-xl font-black text-primary">
+              <h2 className="text-base font-bold text-primary">
                 نتائج البحث عن: <span className="text-foreground">{searchQuery}</span>
               </h2>
-              <p className="text-muted-foreground mt-1 text-sm">
+              <p className="text-muted-foreground text-xs">
                 {productsData?.totalCount || 0} منتج
               </p>
             </div>
@@ -175,41 +175,41 @@ const Products = () => {
             <div className="flex-1" />
           )}
 
-          <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-2 border border-border/40 rounded-lg p-1">
+            <div className="flex items-center gap-1 border border-border/40 rounded-md p-0.5">
               <Button
                 variant={viewMode === 'grid' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('grid')}
-                className="h-8 w-8 p-0"
+                className="h-7 w-7 p-0"
               >
-                <Grid3x3 className="h-4 w-4" />
+                <Grid3x3 className="h-3.5 w-3.5" />
               </Button>
               <Button
                 variant={viewMode === 'list' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('list')}
-                className="h-8 w-8 p-0"
+                className="h-7 w-7 p-0"
               >
-                <List className="h-4 w-4" />
+                <List className="h-3.5 w-3.5" />
               </Button>
             </div>
 
             {/* Category Filter */}
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-muted-foreground whitespace-nowrap">الفئة:</label>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-muted-foreground whitespace-nowrap">الفئة:</label>
               <Select value={categoryFilter} onValueChange={(value: string) => {
                 setCategoryFilter(value);
                 setCurrentPage(1);
               }}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[120px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">جميع الفئات</SelectItem>
+                  <SelectItem value="all" className="text-xs">جميع الفئات</SelectItem>
                   {categories?.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
+                    <SelectItem key={category.id} value={category.id} className="text-xs">
                       {category.name_ar}
                     </SelectItem>
                   ))}
@@ -218,39 +218,39 @@ const Products = () => {
             </div>
 
             {/* Stock Filter */}
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-muted-foreground whitespace-nowrap">الحالة:</label>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs text-muted-foreground whitespace-nowrap">الحالة:</label>
               <Select value={stockFilter} onValueChange={(value: 'all' | 'in-stock' | 'out-of-stock') => {
                 setStockFilter(value);
                 setCurrentPage(1);
               }}>
-                <SelectTrigger className="w-[130px]">
+                <SelectTrigger className="w-[100px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">الكل</SelectItem>
-                  <SelectItem value="in-stock">متوفر</SelectItem>
-                  <SelectItem value="out-of-stock">غير متوفر</SelectItem>
+                  <SelectItem value="all" className="text-xs">الكل</SelectItem>
+                  <SelectItem value="in-stock" className="text-xs">متوفر</SelectItem>
+                  <SelectItem value="out-of-stock" className="text-xs">غير متوفر</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Sort Select */}
-            <div className="flex items-center gap-2 flex-1 lg:flex-initial">
-              <label className="text-sm text-muted-foreground whitespace-nowrap">ترتيب:</label>
+            <div className="flex items-center gap-1.5 flex-1 lg:flex-initial">
+              <label className="text-xs text-muted-foreground whitespace-nowrap">ترتيب:</label>
               <Select value={sortBy} onValueChange={(value: 'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc') => {
                 setSortBy(value);
                 setCurrentPage(1);
               }}>
-                <SelectTrigger className="w-full lg:w-[200px]">
+                <SelectTrigger className="w-full lg:w-[160px] h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="default">افتراضي</SelectItem>
-                  <SelectItem value="price-asc">السعر: الأرخص للأغلى</SelectItem>
-                  <SelectItem value="price-desc">السعر: الأغلى للأرخص</SelectItem>
-                  <SelectItem value="name-asc">الاسم: A إلى Z</SelectItem>
-                  <SelectItem value="name-desc">الاسم: Z إلى A</SelectItem>
+                  <SelectItem value="default" className="text-xs">افتراضي</SelectItem>
+                  <SelectItem value="price-asc" className="text-xs">الأرخص للأغلى</SelectItem>
+                  <SelectItem value="price-desc" className="text-xs">الأغلى للأرخص</SelectItem>
+                  <SelectItem value="name-asc" className="text-xs">الاسم: A → Z</SelectItem>
+                  <SelectItem value="name-desc" className="text-xs">الاسم: Z → A</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -258,13 +258,13 @@ const Products = () => {
         </div>
 
         {isLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className="flex justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
           </div>
         ) : products && products.length > 0 ? (
           viewMode === 'grid' ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8 gap-3 sm:gap-4">
-            {products.map((product) => (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-2">
+              {products.map((product) => (
                 <ProductCard
                   key={product.id}
                   id={product.id}
@@ -304,14 +304,14 @@ const Products = () => {
             </div>
           )
         ) : (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">لم يتم العثور على منتجات</p>
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">لم يتم العثور على منتجات</p>
           </div>
         )}
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="mt-12 mb-8">
+          <div className="mt-6 mb-4">
             <Pagination dir="ltr">
               <PaginationContent>
                 <PaginationItem>
