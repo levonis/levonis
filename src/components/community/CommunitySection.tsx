@@ -1,6 +1,6 @@
 import { Suspense, lazy, useMemo, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { Users, MessageCircle, Store, Package, FileText, Search } from 'lucide-react';
+import { Users, MessageCircle, Store, Package, FileText, Search, UserCircle, Sparkles } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -9,6 +9,9 @@ import CommunityExploreStrip from '@/components/community/CommunityExploreStrip'
 import AnimatedDivider from '@/components/ui/animated-divider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import CommunityCustomerProfileModal from '@/components/community/CommunityCustomerProfileModal';
+import MerchantSignupDialog from '@/components/community/MerchantSignupDialog';
 
 const MerchantDashboardWidgets = lazy(() => import('@/components/merchant/MerchantDashboardWidgets'));
 
@@ -23,6 +26,10 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const isCommunityHub = location.pathname === "/community";
+  
+  // Profile completion dialog state
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [merchantOpen, setMerchantOpen] = useState(false);
   
   // Search state
   const searchFromUrl = searchParams.get("q") || "";
@@ -115,25 +122,62 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       )}
 
-      {/* Quick Actions - Show on homepage only if profile is complete */}
-      {!isCommunityHub && user && isProfileComplete && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-          {quickActions.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Button
-                key={action.key}
-                variant="outline"
-                className="h-9 gap-2 text-xs"
-                onClick={() => navigate(action.to)}
-              >
-                <Icon className="h-4 w-4" />
-                {action.label}
-              </Button>
-            );
-          })}
-        </div>
+      {/* Quick Actions or Complete Profile Button */}
+      {!isCommunityHub && user && (
+        isProfileComplete ? (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <Button
+                  key={action.key}
+                  variant="outline"
+                  className="h-9 gap-2 text-xs"
+                  onClick={() => navigate(action.to)}
+                >
+                  <Icon className="h-4 w-4" />
+                  {action.label}
+                </Button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mb-4">
+            <Button
+              onClick={() => setProfileOpen(true)}
+              className="w-full h-12 gap-3 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground font-bold text-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]"
+            >
+              <div className="flex items-center gap-2">
+                <UserCircle className="h-5 w-5" />
+                <span>أكمل ملفك الشخصي للوصول لمجتمع ليفو</span>
+                <Sparkles className="h-4 w-4" />
+              </div>
+            </Button>
+          </div>
+        )
       )}
+
+      {/* Profile Completion Dialog */}
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>الملف الشخصي</DialogTitle>
+          </DialogHeader>
+          <div className="scrollbar-stable max-h-[70vh] overflow-y-auto overflow-x-hidden">
+            <div className="rounded-xl border border-border bg-card">
+              <CommunityCustomerProfileModal
+                onDone={() => setProfileOpen(false)}
+                onOpenMerchantSignup={() => {
+                  setProfileOpen(false);
+                  setMerchantOpen(true);
+                }}
+              />
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <MerchantSignupDialog open={merchantOpen} onOpenChange={setMerchantOpen} />
 
       {/* Merchant Dashboard Widgets - Show on /community hub only */}
       {isCommunityHub && isMerchant && user?.id && (
