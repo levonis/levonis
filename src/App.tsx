@@ -16,6 +16,7 @@ import AdminRoute from "@/components/AdminRoute";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import { Loader2 } from "lucide-react";
 import RequireAuth from "@/components/auth/RequireAuth";
+import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
 
 // Eager load Home page for best initial load
 import Home from "./pages/Home";
@@ -169,21 +170,21 @@ function AppContent() {
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />
             
-            {/* Community (requires login) */}
-            <Route path="/community" element={<RequireAuth><CommunityHome /></RequireAuth>} />
-            <Route path="/community/messages" element={<RequireAuth><CommunityMessages /></RequireAuth>} />
-            <Route path="/community/customer" element={<RequireAuth><CommunityCustomer /></RequireAuth>} />
-            <Route path="/community/customer/requests" element={<RequireAuth><CommunityCustomerRequests /></RequireAuth>} />
-            <Route path="/community/customer/new" element={<RequireAuth><CommunityCustomerNewRequest /></RequireAuth>} />
+            {/* Community (requires login + complete profile) */}
+            <Route path="/community" element={<RequireCommunityProfile><CommunityHome /></RequireCommunityProfile>} />
+            <Route path="/community/messages" element={<RequireCommunityProfile><CommunityMessages /></RequireCommunityProfile>} />
+            <Route path="/community/customer" element={<RequireCommunityProfile><CommunityCustomer /></RequireCommunityProfile>} />
+            <Route path="/community/customer/requests" element={<RequireCommunityProfile><CommunityCustomerRequests /></RequireCommunityProfile>} />
+            <Route path="/community/customer/new" element={<RequireCommunityProfile><CommunityCustomerNewRequest /></RequireCommunityProfile>} />
             <Route path="/community/customer/profile" element={<RequireAuth><CommunityCustomerProfile /></RequireAuth>} />
-            <Route path="/community/merchant/signup" element={<RequireAuth><CommunityMerchantSignup /></RequireAuth>} />
-            <Route path="/community/merchant/store" element={<RequireAuth><CommunityMerchantStore /></RequireAuth>} />
-            <Route path="/community/merchant/orders" element={<RequireAuth><CommunityMerchantOrders /></RequireAuth>} />
-            <Route path="/community/customer/track" element={<RequireAuth><CommunityCustomerTrack /></RequireAuth>} />
-            <Route path="/community/merchants/products" element={<RequireAuth><CommunityMerchantsProducts /></RequireAuth>} />
+            <Route path="/community/merchant/signup" element={<RequireCommunityProfile><CommunityMerchantSignup /></RequireCommunityProfile>} />
+            <Route path="/community/merchant/store" element={<RequireCommunityProfile><CommunityMerchantStore /></RequireCommunityProfile>} />
+            <Route path="/community/merchant/orders" element={<RequireCommunityProfile><CommunityMerchantOrders /></RequireCommunityProfile>} />
+            <Route path="/community/customer/track" element={<RequireCommunityProfile><CommunityCustomerTrack /></RequireCommunityProfile>} />
+            <Route path="/community/merchants/products" element={<RequireCommunityProfile><CommunityMerchantsProducts /></RequireCommunityProfile>} />
             <Route path="/community/merchants/all-products" element={<CommunityAllMerchantsProducts />} />
-            <Route path="/community/requests" element={<RequireAuth><CommunityRequestsBrowse /></RequireAuth>} />
-            <Route path="/community/merchants" element={<RequireAuth><CommunityMerchantsPages /></RequireAuth>} />
+            <Route path="/community/requests" element={<RequireCommunityProfile><CommunityRequestsBrowse /></RequireCommunityProfile>} />
+            <Route path="/community/merchants" element={<RequireCommunityProfile><CommunityMerchantsPages /></RequireCommunityProfile>} />
             <Route path="/store/:merchantId" element={<CommunityMerchantStorePage />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/seller/:id" element={<SellerProfile />} />
