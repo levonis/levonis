@@ -368,7 +368,7 @@ export default function MerchantSignupDialog({
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-      <DialogContent className="sm:max-w-2xl p-0 gap-0 overflow-hidden border-primary/20">
+      <DialogContent className="sm:max-w-2xl p-0 gap-0 border-primary/20 flex flex-col max-h-[90vh] overflow-hidden">
         {/* Premium Header */}
         <div className="relative bg-gradient-to-br from-primary/20 via-accent/10 to-transparent border-b border-primary/20 p-6">
           {/* Decorative elements */}
@@ -433,7 +433,7 @@ export default function MerchantSignupDialog({
         </div>
 
         {/* Content Area */}
-        <ScrollArea className="flex-1 max-h-[55vh] min-h-0 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
           <div className="p-6">
             {busy ? (
               <div className="space-y-4">
@@ -755,7 +755,7 @@ export default function MerchantSignupDialog({
               </>
             )}
           </div>
-        </ScrollArea>
+        </div>
 
         {/* Footer Navigation */}
         <div className="border-t border-border/50 bg-muted/30 p-4 flex items-center justify-between gap-3">
