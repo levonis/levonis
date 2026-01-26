@@ -49,7 +49,7 @@ Deno.serve(async (req) => {
       .from("profiles")
       .select("telegram_chat_id, full_name")
       .eq("id", user_id)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Error fetching user profile:", error);
