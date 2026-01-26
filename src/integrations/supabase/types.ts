@@ -424,6 +424,39 @@ export type Database = {
           },
         ]
       }
+      community_categories: {
+        Row: {
+          created_at: string
+          display_order: number | null
+          icon: string | null
+          id: string
+          is_active: boolean | null
+          name_ar: string
+          name_en: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar: string
+          name_en?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean | null
+          name_ar?: string
+          name_en?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       competition_prizes: {
         Row: {
           competition_id: string | null
@@ -1862,6 +1895,7 @@ export type Database = {
       }
       merchant_products: {
         Row: {
+          category_ids: string[] | null
           created_at: string
           description: string | null
           estimated_days: number | null
@@ -1878,6 +1912,7 @@ export type Database = {
           video_url: string | null
         }
         Insert: {
+          category_ids?: string[] | null
           created_at?: string
           description?: string | null
           estimated_days?: number | null
@@ -1894,6 +1929,7 @@ export type Database = {
           video_url?: string | null
         }
         Update: {
+          category_ids?: string[] | null
           created_at?: string
           description?: string | null
           estimated_days?: number | null
@@ -2772,6 +2808,7 @@ export type Database = {
       print_requests: {
         Row: {
           accepted_offer_id: string | null
+          category_ids: string[] | null
           colors_spec: string | null
           completed_at: string | null
           created_at: string
@@ -2793,6 +2830,7 @@ export type Database = {
         }
         Insert: {
           accepted_offer_id?: string | null
+          category_ids?: string[] | null
           colors_spec?: string | null
           completed_at?: string | null
           created_at?: string
@@ -2814,6 +2852,7 @@ export type Database = {
         }
         Update: {
           accepted_offer_id?: string | null
+          category_ids?: string[] | null
           colors_spec?: string | null
           completed_at?: string | null
           created_at?: string
