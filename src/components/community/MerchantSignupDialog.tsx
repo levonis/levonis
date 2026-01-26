@@ -660,7 +660,7 @@ export default function MerchantSignupDialog({
                             variant={step2.gender === "male" ? "default" : "outline"}
                             disabled={!canEdit}
                             onClick={() => setStep2((p) => ({ ...p, gender: "male" }))}
-                            className="h-12"
+                            className={`h-12 ${step2.gender === "male" ? "bg-primary text-primary-foreground" : "bg-card text-foreground border-border"}`}
                           >
                             ذكر
                           </Button>
@@ -669,7 +669,7 @@ export default function MerchantSignupDialog({
                             variant={step2.gender === "female" ? "default" : "outline"}
                             disabled={!canEdit}
                             onClick={() => setStep2((p) => ({ ...p, gender: "female" }))}
-                            className="h-12"
+                            className={`h-12 ${step2.gender === "female" ? "bg-primary text-primary-foreground" : "bg-card text-foreground border-border"}`}
                           >
                             أنثى
                           </Button>

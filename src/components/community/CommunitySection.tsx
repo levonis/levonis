@@ -126,33 +126,33 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       )}
 
-      {/* Quick Actions or Complete Profile Button */}
+      {/* Quick Actions - Always show for logged in users on homepage */}
       {!isCommunityHub && user && (
-        isProfileComplete ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-            {quickActions.map((action) => {
-              const Icon = action.icon;
-              return (
-                <Button
-                  key={action.key}
-                  variant="outline"
-                  className="h-9 gap-2 text-xs"
-                  onClick={() => {
-                    if ('action' in action && action.action) {
-                      action.action();
-                    } else if ('to' in action && action.to) {
-                      navigate(action.to);
-                    }
-                  }}
-                >
-                  <Icon className="h-4 w-4" />
-                  {action.label}
-                </Button>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="mb-4">
+        <div className="mb-4">
+          {isProfileComplete ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {quickActions.map((action) => {
+                const Icon = action.icon;
+                return (
+                  <Button
+                    key={action.key}
+                    variant="outline"
+                    className="h-10 gap-2 text-xs font-semibold"
+                    onClick={() => {
+                      if ('action' in action && action.action) {
+                        action.action();
+                      } else if ('to' in action && action.to) {
+                        navigate(action.to);
+                      }
+                    }}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {action.label}
+                  </Button>
+                );
+              })}
+            </div>
+          ) : (
             <Button
               onClick={() => setProfileOpen(true)}
               className="w-full h-12 gap-3 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground font-bold text-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]"
@@ -163,8 +163,8 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
                 <Sparkles className="h-4 w-4" />
               </div>
             </Button>
-          </div>
-        )
+          )}
+        </div>
       )}
 
       {/* Profile Completion Dialog */}

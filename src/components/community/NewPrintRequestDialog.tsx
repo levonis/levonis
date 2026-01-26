@@ -92,10 +92,11 @@ export default function NewPrintRequestDialog({
     size: "",
     colors: "",
     notes: "",
-    materialType: "any",
+    materialType: "" as any, // Force manual selection - no default
   });
 
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
+  const [mainImageIndex, setMainImageIndex] = useState(0);
   const [uploadingMedia, setUploadingMedia] = useState(false);
 
   const [hasReferenceLinks, setHasReferenceLinks] = useState(false);
@@ -105,8 +106,9 @@ export default function NewPrintRequestDialog({
   useEffect(() => {
     if (!open) {
       setStep(1);
-      setFormData({ title: "", description: "", size: "", colors: "", notes: "", materialType: "any" });
+      setFormData({ title: "", description: "", size: "", colors: "", notes: "", materialType: "" as any });
       setMediaFiles([]);
+      setMainImageIndex(0);
       setHasReferenceLinks(false);
       setLinks([{ id: safeId(), url: "" }]);
     }
@@ -122,7 +124,17 @@ export default function NewPrintRequestDialog({
   };
 
   const removeMedia = (id: string) => {
+    const idx = mediaFiles.findIndex((m) => m.id === id);
     setMediaFiles((prev) => prev.filter((m) => m.id !== id));
+    // Adjust main image index if needed
+    if (idx <= mainImageIndex && mainImageIndex > 0) {
+      setMainImageIndex((prev) => prev - 1);
+    }
+  };
+
+  const setAsMainImage = (id: string) => {
+    const idx = mediaFiles.findIndex((m) => m.id === id && m.type === "image");
+    if (idx >= 0) setMainImageIndex(idx);
   };
 
   // Upload media mutation
@@ -228,10 +240,12 @@ export default function NewPrintRequestDialog({
       return;
     }
 
-    if (!file.type.startsWith("video/")) {
+    // Check if video format is supported
+    const supportedVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
+    if (!supportedVideoTypes.some(t => file.type.includes(t.split('/')[1])) && !file.type.startsWith("video/")) {
       toast({
         title: "نوع الملف غير مدعوم",
-        description: "الرجاء اختيار فيديو",
+        description: "الرجاء اختيار فيديو بصيغة MP4, WebM, MOV أو AVI",
         variant: "destructive",
       });
       return;
@@ -273,11 +287,21 @@ export default function NewPrintRequestDialog({
         throw new Error("الوصف يحتوي على محتوى غير مناسب");
       }
 
-      const images = mediaFiles.filter((m) => m.type === "image").map((m) => m.url);
+      const imageFiles = mediaFiles.filter((m) => m.type === "image");
+      // Reorder images so main image is first
+      const sortedImages = [
+        imageFiles[mainImageIndex],
+        ...imageFiles.filter((_, i) => i !== mainImageIndex),
+      ].map((m) => m.url);
+
       const video = mediaFiles.find((m) => m.type === "video")?.url || null;
 
-      if (images.length === 0) {
+      if (sortedImages.length === 0) {
         throw new Error("صورة واحدة على الأقل مطلوبة");
+      }
+
+      if (!validated.materialType) {
+        throw new Error("نوع المادة مطلوب");
       }
 
       // Prepare reference links
@@ -295,8 +319,8 @@ export default function NewPrintRequestDialog({
           size: validated.size,
           colors: validated.colors,
           notes: validated.notes?.trim() || null,
-          image_url: images[0], // Keep first image for backward compatibility
-          images: images,
+          image_url: sortedImages[0], // Main image
+          images: sortedImages,
           video_url: video,
           material_type: validated.materialType,
           reference_links: validLinks.length > 0 ? validLinks : null,
@@ -385,8 +409,12 @@ export default function NewPrintRequestDialog({
   }, [formData.title, formData.description, imageCount]);
 
   const step2Valid = useMemo(() => {
-    return formData.size.trim().length >= 1 && formData.colors.trim().length >= 1;
-  }, [formData.size, formData.colors]);
+    return (
+      formData.size.trim().length >= 1 && 
+      formData.colors.trim().length >= 1 &&
+      !!formData.materialType // Material type is required
+    );
+  }, [formData.size, formData.colors, formData.materialType]);
 
   const canSubmit = step1Valid && step2Valid;
   const progressPercent = step === 1 ? 50 : 100;
@@ -478,36 +506,68 @@ export default function NewPrintRequestDialog({
                 {/* Media Grid */}
                 <div className="grid grid-cols-4 gap-2">
                   {/* Existing Media */}
-                  {mediaFiles.map((media) => (
-                    <div
-                      key={media.id}
-                      className="relative aspect-square rounded-xl border-2 border-primary/40 bg-primary/10 overflow-hidden group"
-                    >
-                      {media.type === "image" ? (
-                        <img
-                          src={media.url}
-                          alt="معاينة"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <div className="h-full w-full flex items-center justify-center bg-muted">
-                          <Video className="h-6 w-6 text-primary" />
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeMedia(media.id)}
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  {mediaFiles.map((media, idx) => {
+                    const isMain = media.type === "image" && idx === mainImageIndex;
+                    const imageIdx = mediaFiles.filter((m, i) => m.type === "image" && i <= idx).length - 1;
+                    
+                    return (
+                      <div
+                        key={media.id}
+                        className={`relative aspect-square rounded-xl border-2 overflow-hidden group cursor-pointer ${
+                          isMain ? "border-primary ring-2 ring-primary/30" : "border-primary/40"
+                        } bg-primary/10`}
+                        onClick={() => media.type === "image" && setAsMainImage(media.id)}
                       >
-                        <X className="h-3.5 w-3.5" />
-                      </button>
-                      {media.type === "video" && (
-                        <div className="absolute bottom-1 left-1 text-[9px] bg-black/60 text-white px-1.5 py-0.5 rounded">
-                          فيديو
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                        {media.type === "image" ? (
+                          <img
+                            src={media.url}
+                            alt="معاينة"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <video
+                            src={media.url}
+                            className="h-full w-full object-cover"
+                            muted
+                          />
+                        )}
+                        
+                        {/* Main image badge */}
+                        {isMain && (
+                          <div className="absolute bottom-1 left-1 text-[9px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-bold">
+                            رئيسية
+                          </div>
+                        )}
+                        
+                        {/* Video badge */}
+                        {media.type === "video" && (
+                          <div className="absolute bottom-1 left-1 text-[9px] bg-red-500 text-white px-1.5 py-0.5 rounded flex items-center gap-1">
+                            <Video className="h-3 w-3" />
+                            فيديو
+                          </div>
+                        )}
+                        
+                        {/* Delete button */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeMedia(media.id);
+                          }}
+                          className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                        
+                        {/* Set as main hint for non-main images */}
+                        {media.type === "image" && !isMain && (
+                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <span className="text-[10px] text-white font-medium">اختر كرئيسية</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {/* Add Image Button */}
                   {imageCount < 5 && (
@@ -545,7 +605,7 @@ export default function NewPrintRequestDialog({
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  حد أقصى: 5 صور (5MB لكل صورة) + فيديو واحد (50MB)
+                  حد أقصى: 5 صور (5MB لكل صورة) + فيديو واحد (50MB) | اضغط على صورة لتعيينها كرئيسية
                 </p>
 
                 <input
@@ -625,13 +685,17 @@ export default function NewPrintRequestDialog({
 
           {step === 2 && (
             <div className="space-y-5">
-              {/* Material Type Selection */}
+              {/* Material Type Selection - REQUIRED */}
               <div className="rounded-xl border-2 border-border bg-muted/50 p-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center">
-                    <Layers className="h-4 w-4 text-muted-foreground" />
+                  <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${
+                    formData.materialType ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                  }`}>
+                    <Layers className="h-4 w-4" />
                   </div>
-                  <Label className="text-[11px] font-medium text-muted-foreground">
+                  <Label className={`text-[11px] font-medium ${
+                    formData.materialType ? "text-primary" : "text-muted-foreground"
+                  }`}>
                     نوع المادة المطلوبة
                     <span className="text-destructive mr-1">*</span>
                   </Label>
@@ -641,22 +705,32 @@ export default function NewPrintRequestDialog({
                   onValueChange={(v) => updateField("materialType", v)}
                   className="grid grid-cols-2 gap-2"
                 >
-                  {MATERIAL_TYPES.map((type) => (
-                    <div key={type.value} className="flex items-center">
-                      <RadioGroupItem
-                        value={type.value}
-                        id={`material-${type.value}`}
-                        className="peer sr-only"
-                      />
-                      <Label
-                        htmlFor={`material-${type.value}`}
-                        className="flex-1 flex items-center justify-center gap-2 rounded-lg border-2 border-muted bg-card p-3 cursor-pointer transition-all peer-data-[state=checked]:border-primary peer-data-[state=checked]:bg-primary/10 hover:bg-muted/50"
-                      >
-                        <span className="text-sm font-medium">{type.label}</span>
-                      </Label>
-                    </div>
-                  ))}
+                  {MATERIAL_TYPES.map((type) => {
+                    const isSelected = formData.materialType === type.value;
+                    return (
+                      <div key={type.value} className="flex items-center">
+                        <RadioGroupItem
+                          value={type.value}
+                          id={`material-${type.value}`}
+                          className="peer sr-only"
+                        />
+                        <Label
+                          htmlFor={`material-${type.value}`}
+                          className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 p-3 cursor-pointer transition-all ${
+                            isSelected 
+                              ? "border-primary bg-primary/15 text-foreground" 
+                              : "border-border bg-card text-foreground hover:bg-muted/50"
+                          }`}
+                        >
+                          <span className="text-sm font-medium">{type.label}</span>
+                        </Label>
+                      </div>
+                    );
+                  })}
                 </RadioGroup>
+                {!formData.materialType && (
+                  <p className="text-xs text-destructive mt-2">يرجى اختيار نوع المادة</p>
+                )}
               </div>
 
               {/* Step 2 Fields */}
