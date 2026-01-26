@@ -1,10 +1,14 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 
 import CommunityCustomerProfileModal from "@/components/community/CommunityCustomerProfileModal";
 
 export default function CommunityCustomerProfile() {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get the intended destination from navigation state
+  const from = (location.state as any)?.from || "/community";
 
   // Prevent background scroll + page jitter while the completion overlay is open
   useEffect(() => {
@@ -14,6 +18,16 @@ export default function CommunityCustomerProfile() {
       document.body.style.overflow = prev;
     };
   }, []);
+
+  const handleDone = () => {
+    // Navigate to the original destination after completing profile
+    navigate(from, { replace: true });
+  };
+
+  const handleLater = () => {
+    // If they skip, go to home - they can't access community without profile
+    navigate("/", { replace: true });
+  };
 
   return (
     <div className="fixed inset-0 z-50">
@@ -28,8 +42,8 @@ export default function CommunityCustomerProfile() {
         >
           <CommunityCustomerProfileModal
             showMerchantCta
-            onDone={() => navigate("/community/customer", { replace: true })}
-            onLater={() => navigate("/community/customer")}
+            onDone={handleDone}
+            onLater={handleLater}
           />
         </section>
       </div>
