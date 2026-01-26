@@ -118,11 +118,9 @@ export default {
         "avatar-frame-pulse": {
           "0%, 100%": {
             filter: "drop-shadow(0 0 4px hsl(var(--primary) / 0.5)) brightness(1)",
-            transform: "scale(1)",
           },
           "50%": {
-            filter: "drop-shadow(0 0 12px hsl(var(--primary) / 0.8)) brightness(1.1)",
-            transform: "scale(1.03)",
+            filter: "drop-shadow(0 0 12px hsl(var(--primary) / 0.8)) brightness(1.15)",
           },
         },
         "avatar-frame-rotate": {
@@ -159,11 +157,9 @@ export default {
         "avatar-frame-glow-cyan": {
           "0%, 100%": {
             filter: "drop-shadow(0 0 6px hsl(187 100% 50% / 0.6)) brightness(1)",
-            transform: "scale(1)",
           },
           "50%": {
             filter: "drop-shadow(0 0 16px hsl(187 100% 50% / 0.9)) brightness(1.15)",
-            transform: "scale(1.02)",
           },
         },
         "avatar-frame-sparkle": {

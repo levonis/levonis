@@ -82,7 +82,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       </div>
 
-      {/* Quick Actions - Show on homepage only */}
+      {/* Quick Actions - Show on homepage only (legacy navigation preserved) */}
       {!isCommunityHub && user && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
           {quickActions.map((action) => {

@@ -119,24 +119,26 @@ export default function CommunityExploreStrip({ className }: { className?: strin
 
   return (
     <section className={className} aria-label="استكشاف المجتمع">
-      {/* Unified Search Bar */}
-      <div className="mb-3">
-        <div className="relative">
-          <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input
-            value={searchQuery}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder={
-              activeTab === "products"
-                ? "ابحث عن منتج..."
-                : activeTab === "merchants"
-                ? "ابحث عن تاجر..."
-                : "ابحث عن طلب..."
-            }
-            className="pr-8 h-8 text-xs rounded-xl"
-          />
+      {/* Unified Search Bar - Only show on /community hub, not on homepage */}
+      {isCommunityHub && (
+        <div className="mb-3">
+          <div className="relative">
+            <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder={
+                activeTab === "products"
+                  ? "ابحث عن منتج..."
+                  : activeTab === "merchants"
+                  ? "ابحث عن تاجر..."
+                  : "ابحث عن طلب..."
+              }
+              className="pr-8 h-8 text-xs rounded-xl"
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <Tabs
         value={activeTab}
