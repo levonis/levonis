@@ -137,9 +137,17 @@ export default function ChatInputBar({
     }
   };
 
-  const handleStickerSelect = (stickerSrc: string) => {
-    // Send sticker as an image message with special format
-    onChange(`[sticker:${stickerSrc}]`);
+  const handleStickerSelect = async (stickerSrc: string) => {
+    // Fetch the sticker image and send as a file
+    try {
+      const response = await fetch(stickerSrc);
+      const blob = await response.blob();
+      const fileName = stickerSrc.split('/').pop() || 'sticker.png';
+      const file = new File([blob], fileName, { type: blob.type });
+      await onSendMedia(file);
+    } catch (error) {
+      console.error('Error sending sticker:', error);
+    }
     setStickerPickerOpen(false);
   };
 
