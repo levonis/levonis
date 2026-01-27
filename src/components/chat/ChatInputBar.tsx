@@ -4,17 +4,22 @@ import {
   Smile,
   Plus,
   Send,
-  Camera,
-  Image as ImageIcon,
-  FileText,
-  Package,
   ShoppingBag,
   Loader2,
   X,
+  MapPin,
+  FileText,
+  Camera,
+  Image as ImageIcon,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface ChatInputBarProps {
   value: string;
@@ -22,10 +27,10 @@ interface ChatInputBarProps {
   onSend: () => void;
   onSendMedia: (file: File) => Promise<void>;
   onOpenProducts: () => void;
-  onOpenOrders: () => void;
   isLoading?: boolean;
   isUploadingMedia?: boolean;
   disabled?: boolean;
+  isSeller?: boolean;
 }
 
 export default function ChatInputBar({
@@ -34,12 +39,12 @@ export default function ChatInputBar({
   onSend,
   onSendMedia,
   onOpenProducts,
-  onOpenOrders,
   isLoading = false,
   isUploadingMedia = false,
   disabled = false,
+  isSeller = false,
 }: ChatInputBarProps) {
-  const [showOptions, setShowOptions] = useState(false);
+  const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -58,178 +63,148 @@ export default function ChatInputBar({
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
     if (cameraInputRef.current) cameraInputRef.current.value = '';
-    setShowOptions(false);
+    setAttachMenuOpen(false);
   };
 
   const handleVoiceRecord = () => {
-    // TODO: Implement voice recording
     setIsRecording(!isRecording);
   };
 
-  const optionButtons = [
-    { 
-      icon: Camera, 
-      label: 'كاميرا', 
-      color: 'text-blue-500',
-      onClick: () => cameraInputRef.current?.click() 
-    },
-    { 
-      icon: ImageIcon, 
-      label: 'ألبوم', 
-      color: 'text-green-500',
-      onClick: () => fileInputRef.current?.click() 
-    },
-    { 
-      icon: FileText, 
-      label: 'ملفات', 
-      color: 'text-purple-500',
-      onClick: () => fileInputRef.current?.click() 
-    },
-    { 
-      icon: Package, 
-      label: 'الطلبات', 
-      color: 'text-orange-500',
-      onClick: onOpenOrders 
-    },
-    { 
-      icon: ShoppingBag, 
-      label: 'المنتجات', 
-      color: 'text-primary',
-      onClick: onOpenProducts 
-    },
+  const attachOptions = [
+    { icon: Camera, label: 'كاميرا', onClick: () => cameraInputRef.current?.click() },
+    { icon: ImageIcon, label: 'صور', onClick: () => fileInputRef.current?.click() },
+    { icon: FileText, label: 'ملفات', onClick: () => fileInputRef.current?.click() },
+    { icon: MapPin, label: 'موقع', onClick: () => {} },
   ];
 
   return (
-    <div className="border-t bg-card">
-      {/* Options Panel */}
-      {showOptions && (
-        <div className="p-4 border-b bg-muted/30 animate-in slide-in-from-bottom-2">
-          <div className="grid grid-cols-5 gap-3">
-            {optionButtons.map((btn) => (
-              <button
-                key={btn.label}
-                onClick={btn.onClick}
-                className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-muted transition-colors"
-              >
-                <div className={cn(
-                  "h-12 w-12 rounded-xl flex items-center justify-center",
-                  "bg-background border border-border shadow-sm"
-                )}>
-                  <btn.icon className={cn("h-6 w-6", btn.color)} />
-                </div>
-                <span className="text-[10px] text-muted-foreground font-medium">
-                  {btn.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+    <div className="border-t bg-card p-2">
+      {/* Hidden File Inputs */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        accept="image/*,video/*,.pdf,.doc,.docx"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      <input
+        type="file"
+        ref={cameraInputRef}
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="hidden"
+      />
 
-      {/* Input Row */}
-      <form onSubmit={handleSubmit} className="flex items-end gap-1.5 p-2">
-        {/* Hidden File Inputs */}
-        <input
-          type="file"
-          ref={fileInputRef}
-          accept="image/*,video/*,.pdf,.doc,.docx"
-          onChange={handleFileChange}
-          className="hidden"
-        />
-        <input
-          type="file"
-          ref={cameraInputRef}
-          accept="image/*"
-          capture="environment"
-          onChange={handleFileChange}
-          className="hidden"
-        />
+      <form onSubmit={handleSubmit} className="flex items-center gap-1.5">
+        {/* Right Side: Attachment Menu */}
+        <Popover open={attachMenuOpen} onOpenChange={setAttachMenuOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-9 w-9 rounded-full shrink-0",
+                attachMenuOpen && "bg-muted"
+              )}
+              disabled={disabled}
+            >
+              {attachMenuOpen ? (
+                <X className="h-5 w-5 text-muted-foreground" />
+              ) : (
+                <Plus className="h-5 w-5 text-muted-foreground" />
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent 
+            side="top" 
+            align="start" 
+            className="w-auto p-2"
+          >
+            <div className="flex gap-2">
+              {attachOptions.map((opt) => (
+                <button
+                  key={opt.label}
+                  onClick={opt.onClick}
+                  className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors"
+                >
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <opt.icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
 
-        {/* Voice Button */}
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className={cn(
-            "h-10 w-10 rounded-full shrink-0",
-            isRecording && "bg-red-500/10 text-red-500"
-          )}
-          onClick={handleVoiceRecord}
-          disabled={disabled}
-        >
-          <Mic className="h-5 w-5" />
-        </Button>
+        {/* Send Product Button - Seller Only */}
+        {isSeller && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full shrink-0 text-primary"
+            onClick={onOpenProducts}
+            disabled={disabled}
+          >
+            <ShoppingBag className="h-5 w-5" />
+          </Button>
+        )}
 
-        {/* Text Input */}
+        {/* Center: Text Input with Emoji inside */}
         <div className="flex-1 relative">
           <Input
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder="اكتب رسالة..."
-            className="rounded-full pl-20 pr-4 py-5 bg-muted/50 border-0 focus-visible:ring-1"
+            className="rounded-full pr-10 pl-4 py-5 bg-muted/50 border-0 focus-visible:ring-1"
             disabled={disabled}
           />
           
-          {/* Emoji Button - Inside Input */}
+          {/* Emoji Button - Inside Input on Right */}
           <Button
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute left-10 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full"
+            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full"
             disabled={disabled}
           >
             <Smile className="h-5 w-5 text-muted-foreground" />
           </Button>
+        </div>
 
-          {/* Plus Button - Inside Input */}
+        {/* Left Side: Voice or Send */}
+        {value.trim() ? (
+          <Button
+            type="submit"
+            size="icon"
+            className="h-10 w-10 rounded-full shrink-0 bg-primary"
+            disabled={isLoading || isUploadingMedia || disabled}
+          >
+            {isLoading || isUploadingMedia ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <Send className="h-5 w-5" />
+            )}
+          </Button>
+        ) : (
           <Button
             type="button"
             variant="ghost"
             size="icon"
             className={cn(
-              "absolute left-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full transition-transform",
-              showOptions && "rotate-45"
+              "h-10 w-10 rounded-full shrink-0",
+              isRecording && "bg-red-500/10 text-red-500"
             )}
-            onClick={() => setShowOptions(!showOptions)}
+            onClick={handleVoiceRecord}
             disabled={disabled}
           >
-            {showOptions ? (
-              <X className="h-5 w-5 text-muted-foreground" />
-            ) : (
-              <Plus className="h-5 w-5 text-muted-foreground" />
-            )}
+            <Mic className="h-5 w-5" />
           </Button>
-        </div>
-
-        {/* Send Button */}
-        <Button
-          type="submit"
-          size="icon"
-          className="h-10 w-10 rounded-full shrink-0 bg-primary"
-          disabled={isLoading || isUploadingMedia || !value.trim() || disabled}
-        >
-          {isLoading || isUploadingMedia ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <Send className="h-5 w-5" />
-          )}
-        </Button>
+        )}
       </form>
-
-      {/* Quick Products Button - Always Visible */}
-      <div className="px-2 pb-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="w-full h-9 rounded-full gap-2 text-xs font-semibold border-primary/30 text-primary hover:bg-primary/5"
-          onClick={onOpenProducts}
-          disabled={disabled}
-        >
-          <ShoppingBag className="h-4 w-4" />
-          إرسال منتج من المتجر
-        </Button>
-      </div>
     </div>
   );
 }

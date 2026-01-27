@@ -3,12 +3,11 @@ import {
   ArrowRight, 
   Store, 
   MoreVertical,
-  AlertTriangle,
   Flag,
   FileText,
   MessageSquareWarning,
-  ExternalLink,
   Star,
+  User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -27,11 +26,14 @@ interface ChatTopBarProps {
   storeImage?: string | null;
   storeFrameUrl?: string | null;
   rating?: number;
+  customerId?: string;
   onBack: () => void;
   onReportStore?: () => void;
   onContactAdmin?: () => void;
   onViewPolicies?: () => void;
+  onViewCustomerProfile?: () => void;
   status?: 'open' | 'disputed' | 'resolved';
+  isSeller?: boolean;
 }
 
 export default function ChatTopBar({
@@ -40,16 +42,26 @@ export default function ChatTopBar({
   storeImage,
   storeFrameUrl,
   rating = 0,
+  customerId,
   onBack,
   onReportStore,
   onContactAdmin,
   onViewPolicies,
+  onViewCustomerProfile,
   status = 'open',
+  isSeller = false,
 }: ChatTopBarProps) {
   const navigate = useNavigate();
 
   const goToStore = () => {
     navigate(`/store/${storeId}`);
+  };
+
+  const goToCustomerProfile = () => {
+    if (customerId) {
+      navigate(`/community/customer/${customerId}`);
+    }
+    onViewCustomerProfile?.();
   };
 
   return (
@@ -104,7 +116,7 @@ export default function ChatTopBar({
         <Store className="h-5 w-5 text-primary" />
       </Button>
 
-      {/* More Options Menu */}
+      {/* More Options Menu - Role Based */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full shrink-0">
@@ -112,12 +124,25 @@ export default function ChatTopBar({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem onClick={goToStore} className="gap-2">
-            <Store className="h-4 w-4" />
-            زيارة المتجر
-          </DropdownMenuItem>
-          
-          <DropdownMenuSeparator />
+          {isSeller ? (
+            // Seller sees customer profile option
+            <>
+              <DropdownMenuItem onClick={goToCustomerProfile} className="gap-2">
+                <User className="h-4 w-4" />
+                ملف الزبون
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          ) : (
+            // Customer sees store visit option
+            <>
+              <DropdownMenuItem onClick={goToStore} className="gap-2">
+                <Store className="h-4 w-4" />
+                زيارة المتجر
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           
           <DropdownMenuItem onClick={onReportStore} className="gap-2 text-orange-500">
             <Flag className="h-4 w-4" />
