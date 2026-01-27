@@ -74,14 +74,17 @@ export default function EmojiPicker({ onSelectEmoji, className }: EmojiPickerPro
         <span className="text-xs font-medium text-muted-foreground">رموز تعبيرية</span>
       </div>
       
-      {/* Scrollable Container - Native scroll for full touch support */}
+      {/* Scrollable Container - Full touch scroll support */}
       <div 
-        className="h-72 overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y"
+        className="h-72 overflow-y-scroll overflow-x-hidden"
         style={{ 
           WebkitOverflowScrolling: 'touch',
+          touchAction: 'pan-y',
+          overscrollBehavior: 'contain',
           scrollbarWidth: 'thin',
           scrollbarColor: 'hsl(var(--muted-foreground) / 0.3) transparent'
         }}
+        onTouchStart={(e) => e.stopPropagation()}
       >
         <div className="flex flex-col">
           {/* Recent Emojis Section */}
