@@ -441,27 +441,28 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const { data: otherUserReputation } = useUserPrintReputation(otherUserId ?? undefined);
 
   // Check if current user is a merchant (can send products)
-  // IMPORTANT: merchant_products.merchant_id references merchant_applications.id (which equals merchant_public_profiles.id)
-  // The link is: user.id -> merchant_applications.user_id -> merchant_applications.id -> merchant_products.merchant_id
   const { data: currentUserMerchant } = useQuery({
-    queryKey: ['current-user-merchant-profile', user?.id],
+    queryKey: ['current-user-merchant', user?.id],
     queryFn: async () => {
       if (!user) return null;
+      // Check in merchant_applications first, then merchant_public_profiles
+      const { data: publicProfile } = await supabase
+        .from('merchant_public_profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
       
-      // Get the merchant application ID for this user (this ID is used as merchant_id in products)
+      if (publicProfile) return publicProfile;
+      
+      // Also check approved merchant applications
       const { data: application } = await supabase
         .from('merchant_applications')
-        .select('id, user_id, status')
+        .select('id')
         .eq('user_id', user.id)
         .eq('status', 'approved')
         .maybeSingle();
       
-      if (application) {
-        // application.id is the same as merchant_public_profiles.id and merchant_products.merchant_id
-        return { id: application.id, isMerchant: true };
-      }
-      
-      return null;
+      return application;
     },
     enabled: !!user,
   });
@@ -1113,7 +1114,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 <ProductSelector
                   open={productSelectorOpen}
                   onOpenChange={setProductSelectorOpen}
-                  merchantId={currentUserMerchant?.id || ''}
+                  merchantId={user?.id || ''}
                   onSelectProduct={async (product) => {
                     // Send product as a message
                     const primaryIndex = product.primary_image_index || 0;
