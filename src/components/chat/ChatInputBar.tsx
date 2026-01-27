@@ -22,21 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import { ScrollArea } from '@/components/ui/scroll-area';
-
-// WeChat Sticker-style emoji categories (using popular WeChat emoticon style)
-const WECHAT_STICKERS = [
-  // Smileys - WeChat Classic (no duplicates)
-  ['😄', '😷', '😂', '😝', '😳', '😱', '😔', '😒', '😏', '😍', '😘', '😚', '😜', '🤑', '😎', '🤗', '🤔', '😐', '😑', '😶', '🙄', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱', '😴'],
-  // Gestures  
-  ['👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👋', '🤚', '🖐️', '✋', '👏', '🙌', '🤝', '🙏', '💪', '🤳', '👊', '✊', '🤛', '🤜', '☝️', '👆', '👇', '👈', '👉', '🤌', '🫰', '🫵'],
-  // Hearts & Love
-  ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔', '❤️‍🔥', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '🥰', '💋', '💌', '🌹', '💐', '🎁', '💎', '💍', '👫', '💑', '🫶', '💝'],
-  // Objects & Symbols
-  ['🔥', '✨', '⭐', '🌟', '💫', '⚡', '💥', '💯', '✅', '❌', '⭕', '❗', '❓', '💬', '💭', '🗨️', '📢', '🔔', '🎵', '🎶', '💰', '💵', '📦', '🎉', '🎊', '🏆', '🥇', '🎯', '🚀', '💡']
-];
-
-const STICKER_ICONS = ['😊', '👋', '❤️', '🎉'];
+import StickerPicker from './StickerPicker';
 
 interface ChatInputBarProps {
   value: string;
@@ -62,10 +48,9 @@ export default function ChatInputBar({
   isSeller = false,
 }: ChatInputBarProps) {
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
-  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [selectedEmojiCategory, setSelectedEmojiCategory] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -152,8 +137,10 @@ export default function ChatInputBar({
     }
   };
 
-  const handleEmojiSelect = (emoji: string) => {
-    onChange(value + emoji);
+  const handleStickerSelect = (stickerSrc: string) => {
+    // Send sticker as an image message with special format
+    onChange(`[sticker:${stickerSrc}]`);
+    setStickerPickerOpen(false);
   };
 
   const formatTime = (seconds: number) => {
@@ -267,8 +254,8 @@ export default function ChatInputBar({
                 disabled={disabled}
               />
               
-              {/* Emoji Button - Inside Input on Right */}
-              <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+              {/* Sticker Button - Inside Input on Right */}
+              <Popover open={stickerPickerOpen} onOpenChange={setStickerPickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     type="button"
@@ -283,41 +270,10 @@ export default function ChatInputBar({
                 <PopoverContent 
                   side="top" 
                   align="end" 
-                  className="w-80 p-0 shadow-2xl rounded-2xl overflow-hidden border-0"
+                  className="w-72 p-0 shadow-2xl rounded-2xl overflow-hidden border-0"
                   sideOffset={10}
                 >
-                  {/* Category Tabs - WeChat Style with yellow background */}
-                  <div className="flex border-b bg-[#f5f5f5] dark:bg-muted/50">
-                    {STICKER_ICONS.map((icon, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedEmojiCategory(idx)}
-                        className={cn(
-                          "flex-1 py-3 text-xl transition-all border-b-2",
-                          selectedEmojiCategory === idx 
-                            ? "bg-white dark:bg-card border-primary scale-105" 
-                            : "border-transparent opacity-60 hover:opacity-100 hover:bg-white/50"
-                        )}
-                      >
-                        {icon}
-                      </button>
-                    ))}
-                  </div>
-                  
-                  {/* Emoji Grid - WeChat Style larger stickers */}
-                  <ScrollArea className="h-56 bg-white dark:bg-card">
-                    <div className="grid grid-cols-8 gap-0.5 p-2">
-                      {WECHAT_STICKERS[selectedEmojiCategory]?.map((emoji, index) => (
-                        <button
-                          key={`${emoji}-${index}`}
-                          onClick={() => handleEmojiSelect(emoji)}
-                          className="h-9 w-9 flex items-center justify-center text-xl hover:bg-primary/10 hover:scale-125 rounded-lg transition-all duration-150 active:scale-95"
-                        >
-                          {emoji}
-                        </button>
-                      ))}
-                    </div>
-                  </ScrollArea>
+                  <StickerPicker onSelectSticker={handleStickerSelect} />
                 </PopoverContent>
               </Popover>
             </>
