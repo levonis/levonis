@@ -6,6 +6,7 @@ export { default as ChatTopBar } from './ChatTopBar';
 
 // Input Bar
 export { default as ChatInputBar } from './ChatInputBar';
+export { default as RichTextInput } from './RichTextInput';
 
 // Message Types
 export { default as TextMessage } from './messages/TextMessage';

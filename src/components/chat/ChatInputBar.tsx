@@ -14,7 +14,6 @@ import {
   Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import {
   Popover,
@@ -23,6 +22,7 @@ import {
 } from '@/components/ui/popover';
 import { toast } from 'sonner';
 import EmojiPicker from './EmojiPicker';
+import RichTextInput from './RichTextInput';
 
 interface ChatInputBarProps {
   value: string;
@@ -48,7 +48,7 @@ export default function ChatInputBar({
   isSeller = false,
 }: ChatInputBarProps) {
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
-  const [stickerPickerOpen, setStickerPickerOpen] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -56,6 +56,7 @@ export default function ChatInputBar({
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const richTextRef = useRef<HTMLDivElement>(null);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -138,9 +139,15 @@ export default function ChatInputBar({
   };
 
   const handleEmojiSelect = (emojiCode: string) => {
-    // Insert emoji code into the text input at cursor position
-    onChange(value + emojiCode);
-    setStickerPickerOpen(false);
+    // Insert emoji into the rich text input
+    const richTextElement = document.querySelector('[contenteditable="true"]') as any;
+    if (richTextElement?.insertEmoji) {
+      richTextElement.insertEmoji(emojiCode);
+    } else {
+      // Fallback: append to value
+      onChange(value + emojiCode);
+    }
+    setEmojiPickerOpen(false);
   };
 
   const formatTime = (seconds: number) => {
@@ -207,6 +214,7 @@ export default function ChatInputBar({
                 {attachOptions.map((opt) => (
                   <button
                     key={opt.label}
+                    type="button"
                     onClick={opt.onClick}
                     className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors"
                   >
@@ -236,7 +244,7 @@ export default function ChatInputBar({
           )}
         </div>
 
-        {/* Center: Text Input with Emoji inside OR Recording indicator */}
+        {/* Center: Rich Text Input with Emoji inside OR Recording indicator */}
         <div className="flex-1 relative">
           {isRecording ? (
             <div className="flex items-center justify-center h-[42px] rounded-full bg-red-500/10 px-4 gap-3">
@@ -246,36 +254,38 @@ export default function ChatInputBar({
             </div>
           ) : (
             <>
-              <Input
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder="اكتب رسالة..."
-                className="rounded-full pr-10 pl-4 py-5 bg-muted/50 border-0 focus-visible:ring-1"
-                disabled={disabled}
-              />
-              
-              {/* Sticker Button - Inside Input on Right */}
-              <Popover open={stickerPickerOpen} onOpenChange={setStickerPickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full hover:bg-muted"
-                    disabled={disabled}
+              <div className="relative">
+                <RichTextInput
+                  value={value}
+                  onChange={onChange}
+                  placeholder="اكتب رسالة..."
+                  disabled={disabled}
+                  className="pr-10"
+                />
+                
+                {/* Emoji Button - Inside Input on Right */}
+                <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full hover:bg-transparent"
+                      disabled={disabled}
+                    >
+                      <Smile className="h-5 w-5 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    side="top" 
+                    align="end" 
+                    className="w-80 p-0 shadow-2xl rounded-2xl overflow-hidden border-0"
+                    sideOffset={10}
                   >
-                    <Smile className="h-5 w-5 text-muted-foreground" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent 
-                  side="top" 
-                  align="end" 
-                  className="w-80 p-0 shadow-2xl rounded-2xl overflow-hidden border-0"
-                  sideOffset={10}
-                >
-                  <EmojiPicker onSelectEmoji={handleEmojiSelect} />
-                </PopoverContent>
-              </Popover>
+                    <EmojiPicker onSelectEmoji={handleEmojiSelect} />
+                  </PopoverContent>
+                </Popover>
+              </div>
             </>
           )}
         </div>
