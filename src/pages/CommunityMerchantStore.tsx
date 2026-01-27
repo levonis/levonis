@@ -2,9 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  Store, Plus, Edit2, X, Star, Facebook, Instagram, ArrowRight, Settings, 
-  Droplets, Layers, Package, Eye, EyeOff, Sparkles, BarChart3, Users,
-  ShoppingBag, TrendingUp, Clock, Grid, List, Filter, BadgePercent
+  Store, Plus, Star, Eye, Package, Play, Sparkles, AlertCircle
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,18 +10,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import MerchantProductMediaUpload from "@/components/merchant/MerchantProductMediaUpload";
-import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
-import CompactBadgesDisplay from "@/components/merchant/CompactBadgesDisplay";
-import type { BadgeTier } from "@/components/merchant/CompactBadgesDisplay";
+import StoreHeroSection from "@/components/merchant/StoreHeroSection";
+import StoreStatsGrid from "@/components/merchant/StoreStatsGrid";
+import ProductFilterTabs from "@/components/merchant/ProductFilterTabs";
+import ProductCardEnhanced from "@/components/merchant/ProductCardEnhanced";
+
+import { Droplets, Layers } from "lucide-react";
 
 interface MerchantProduct {
   id: string;
@@ -52,8 +54,10 @@ export default function CommunityMerchantStore() {
 
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<MerchantProduct | null>(null);
+  const [productToDelete, setProductToDelete] = useState<string | null>(null);
   const [productFilter, setProductFilter] = useState<ProductFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
@@ -231,6 +235,8 @@ export default function CommunityMerchantStore() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["merchant-products"] });
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
       toast({ title: "تم الحذف", description: "المنتج حُذف بنجاح." });
     },
     onError: () => {
@@ -287,16 +293,22 @@ export default function CommunityMerchantStore() {
     setDetailDialogOpen(true);
   };
 
+  const handleDeleteClick = (productId: string) => {
+    setProductToDelete(productId);
+    setDeleteDialogOpen(true);
+  };
+
   const socialLinks = merchantApp?.social_links as { facebook?: string; instagram?: string } | undefined;
 
   if (appLoading || productsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
         <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
-          <Skeleton className="h-72 rounded-3xl mb-6" />
+          <Skeleton className="h-80 rounded-[2rem] mb-8" />
+          <Skeleton className="h-24 rounded-2xl mb-6" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-64 rounded-2xl" />
+              <Skeleton key={i} className="aspect-square rounded-2xl" />
             ))}
           </div>
         </main>
@@ -308,11 +320,13 @@ export default function CommunityMerchantStore() {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
         <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
-          <Card className="border-border bg-card p-8 text-center">
-            <Store className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-lg font-medium mb-2">لا يمكن الوصول لهذه الصفحة</p>
-            <p className="text-sm text-muted-foreground mb-6">هذه الصفحة متاحة للتجار المقبولين فقط</p>
-            <Button variant="outline" onClick={() => navigate("/community")}>
+          <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 p-12 text-center rounded-3xl">
+            <div className="h-20 w-20 rounded-3xl bg-muted/30 flex items-center justify-center mx-auto mb-6">
+              <Store className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <p className="text-xl font-bold mb-2">لا يمكن الوصول لهذه الصفحة</p>
+            <p className="text-sm text-muted-foreground mb-8">هذه الصفحة متاحة للتجار المقبولين فقط</p>
+            <Button variant="outline" size="lg" onClick={() => navigate("/community")}>
               العودة للمجتمع
             </Button>
           </Card>
@@ -322,638 +336,360 @@ export default function CommunityMerchantStore() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/10">
+    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/5">
       <main className="container mx-auto px-4 py-8 pt-20 max-w-6xl">
-        {/* Premium Hero Header */}
-        <div className="relative mb-8 overflow-hidden rounded-3xl">
-          {/* Background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-background" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary/30 via-transparent to-transparent" />
-          
-          {/* Decorative */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-primary/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-          
-          <div className="relative z-10 p-8 sm:p-10">
-            <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start">
-              {/* Store Avatar */}
-              <div className="flex flex-col items-center">
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/50 to-primary/20 rounded-full blur-2xl opacity-50" />
-                  <AvatarWithFrame
-                    imageUrl={merchantApp.store_image_url}
-                    frameUrl={selectedFrame?.image_url}
-                    size="xl"
-                    animated
-                  />
-                  <Button
-                    size="icon"
-                    variant="secondary"
-                    className="absolute -bottom-2 -right-2 h-10 w-10 rounded-full shadow-xl border-2 border-background hover:scale-110 transition-transform"
-                    onClick={() => setProfileEditorOpen(true)}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </div>
-                
-                {/* Specialty Badge */}
-                {merchantApp.specialty && (
-                  <Badge variant="outline" className="mt-4 gap-1.5 bg-background/50 backdrop-blur-sm">
-                    {merchantApp.specialty === "resin" && <Droplets className="h-3 w-3" />}
-                    {merchantApp.specialty === "filament" && <Layers className="h-3 w-3" />}
-                    {merchantApp.specialty === "both" && (
-                      <>
-                        <Droplets className="h-3 w-3" />
-                        <Layers className="h-3 w-3" />
-                      </>
-                    )}
-                    {merchantApp.specialty === "resin" ? "متخصص رزن" : merchantApp.specialty === "filament" ? "متخصص فلمنت" : "رزن وفلمنت"}
-                  </Badge>
-                )}
-              </div>
+        {/* Hero Section */}
+        <StoreHeroSection
+          merchantApp={{
+            display_name: merchantApp.display_name,
+            bio: merchantApp.bio,
+            store_image_url: merchantApp.store_image_url,
+            specialty: merchantApp.specialty,
+            is_verified: merchantApp.is_verified,
+            badge_tier: merchantApp.badge_tier,
+          }}
+          selectedFrame={selectedFrame}
+          socialLinks={socialLinks}
+          isOwner
+          username={profile?.username}
+          onSettingsClick={() => setProfileEditorOpen(true)}
+          showContactButton={false}
+        />
 
-              {/* Store Info */}
-              <div className="flex-1 text-center lg:text-right">
-                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3 mb-2">
-                  <h1 className="text-3xl sm:text-4xl font-black bg-gradient-to-l from-primary via-primary to-primary/70 bg-clip-text text-transparent">
-                    {merchantApp.display_name}
-                  </h1>
-                  <CompactBadgesDisplay
-                    isVerified={merchantApp.is_verified}
-                    badgeTier={(merchantApp.badge_tier || "none") as BadgeTier}
-                  />
-                </div>
-                
-                <p className="text-sm text-muted-foreground mb-1">@{profile?.username || "—"}</p>
-                <p className="text-xs text-muted-foreground mb-4">لوحة إدارة المتجر</p>
-
-                {merchantApp.bio && (
-                  <p className="text-sm text-foreground/80 mb-6 whitespace-pre-wrap leading-relaxed max-w-2xl mx-auto lg:mx-0">
-                    {merchantApp.bio}
-                  </p>
-                )}
-
-                {/* Stats Dashboard */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-                  <div className="bg-background/60 backdrop-blur-sm rounded-2xl p-4 border border-border/50">
-                    <Package className="h-5 w-5 text-primary mx-auto lg:mx-0 mb-2" />
-                    <p className="text-xl font-bold text-foreground">{productCounts.active}</p>
-                    <p className="text-[10px] text-muted-foreground">منتج نشط</p>
-                  </div>
-                  <div className="bg-background/60 backdrop-blur-sm rounded-2xl p-4 border border-border/50">
-                    <ShoppingBag className="h-5 w-5 text-green-500 mx-auto lg:mx-0 mb-2" />
-                    <p className="text-xl font-bold text-foreground">{storeStats?.completedOrders || 0}</p>
-                    <p className="text-[10px] text-muted-foreground">طلب مكتمل</p>
-                  </div>
-                  <div className="bg-background/60 backdrop-blur-sm rounded-2xl p-4 border border-border/50">
-                    <Star className="h-5 w-5 text-yellow-500 fill-yellow-500 mx-auto lg:mx-0 mb-2" />
-                    <p className="text-xl font-bold text-foreground">{storeStats?.avgRating?.toFixed(1) || "0.0"}</p>
-                    <p className="text-[10px] text-muted-foreground">{storeStats?.totalRatings || 0} تقييم</p>
-                  </div>
-                  <div className="bg-background/60 backdrop-blur-sm rounded-2xl p-4 border border-border/50">
-                    <Users className="h-5 w-5 text-blue-500 mx-auto lg:mx-0 mb-2" />
-                    <p className="text-xl font-bold text-foreground">{storeStats?.conversations || 0}</p>
-                    <p className="text-[10px] text-muted-foreground">محادثة عميل</p>
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
-                  <Button size="lg" onClick={handleOpenAdd} className="gap-2 shadow-lg">
-                    <Plus className="h-4 w-4" />
-                    إضافة منتج جديد
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="gap-2 bg-background/50 backdrop-blur-sm"
-                    onClick={() => setProfileEditorOpen(true)}
-                  >
-                    <Edit2 className="h-4 w-4" />
-                    تعديل المتجر
-                  </Button>
-                  {(socialLinks?.facebook || socialLinks?.instagram) && (
-                    <div className="flex gap-2">
-                      {socialLinks.facebook && (
-                        <Button variant="ghost" size="icon" asChild>
-                          <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer">
-                            <Facebook className="h-4 w-4" />
-                          </a>
-                        </Button>
-                      )}
-                      {socialLinks.instagram && (
-                        <Button variant="ghost" size="icon" asChild>
-                          <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer">
-                            <Instagram className="h-4 w-4" />
-                          </a>
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                  <Button variant="ghost" size="lg" onClick={() => navigate(-1)}>
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                    رجوع
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Stats Grid */}
+        <div className="mb-8">
+          <StoreStatsGrid
+            stats={{
+              activeProducts: productCounts.active,
+              completedOrders: storeStats?.completedOrders || 0,
+              avgRating: storeStats?.avgRating || 0,
+              totalRatings: storeStats?.totalRatings || 0,
+              conversations: storeStats?.conversations || 0,
+            }}
+            variant="merchant"
+          />
         </div>
 
-        {/* Products Management Section */}
-        <Card className="border-border/50 bg-card/80 backdrop-blur-sm mb-6">
-          <CardContent className="p-5">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              {/* Filter Tabs */}
-              <Tabs value={productFilter} onValueChange={(v) => setProductFilter(v as ProductFilter)}>
-                <TabsList className="bg-muted/50">
-                  <TabsTrigger value="all" className="gap-1.5 text-xs">
-                    <Filter className="h-3 w-3" />
-                    الكل
-                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{productCounts.all}</Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="active" className="gap-1.5 text-xs">
-                    <Eye className="h-3 w-3" />
-                    نشط
-                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{productCounts.active}</Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="hidden" className="gap-1.5 text-xs">
-                    <EyeOff className="h-3 w-3" />
-                    مخفي
-                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{productCounts.hidden}</Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="featured" className="gap-1.5 text-xs">
-                    <Sparkles className="h-3 w-3" />
-                    مميز
-                    <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{productCounts.featured}</Badge>
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
-
-              {/* View Mode Toggle */}
-              <div className="flex items-center gap-2">
-                <Button
-                  variant={viewMode === "grid" ? "default" : "outline"}
-                  size="icon"
-                  className="h-9 w-9"
-                  onClick={() => setViewMode("grid")}
-                >
-                  <Grid className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  size="icon"
-                  className="h-9 w-9"
-                  onClick={() => setViewMode("list")}
-                >
-                  <List className="h-4 w-4" />
-                </Button>
+        {/* Products Section */}
+        <div className="space-y-6">
+          {/* Header & Add Button */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Package className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">إدارة المنتجات</h2>
+                <p className="text-xs text-muted-foreground">أضف وعدل منتجاتك</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Products Grid/List */}
-        {filteredProducts.length === 0 ? (
-          <Card className="border-border/50 bg-card/50 p-12">
-            <div className="text-center">
-              <div className="h-20 w-20 rounded-3xl bg-muted/30 flex items-center justify-center mx-auto mb-4">
-                <Package className="h-10 w-10 text-muted-foreground" />
-              </div>
-              <p className="text-lg font-medium mb-2">
-                {productFilter === "all" ? "لا توجد منتجات بعد" : `لا توجد منتجات ${productFilter === "active" ? "نشطة" : productFilter === "hidden" ? "مخفية" : "مميزة"}`}
-              </p>
-              <p className="text-sm text-muted-foreground mb-6">ابدأ بإضافة منتج جديد لمتجرك</p>
-              <Button onClick={handleOpenAdd} className="gap-2">
-                <Plus className="h-4 w-4" />
-                إضافة منتج
-              </Button>
-            </div>
-          </Card>
-        ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {filteredProducts.map((p) => {
-              const mainImg = p.image_urls?.[p.primary_image_index] || p.image_urls?.[0];
-              const hasDiscount = p.original_price_iqd && p.price_iqd && p.original_price_iqd > p.price_iqd;
-              
-              return (
-                <Card
-                  key={p.id}
-                  className="group border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden cursor-pointer hover:shadow-2xl hover:border-primary/30 transition-all duration-300"
-                  onClick={() => handleOpenDetail(p)}
-                >
-                  <div className="relative aspect-square bg-gradient-to-br from-muted/30 to-muted/10 overflow-hidden">
-                    {mainImg ? (
-                      <img src={mainImg} alt={p.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    ) : (
-                      <div className="flex items-center justify-center w-full h-full">
-                        <Package className="h-12 w-12 text-muted-foreground/50" />
-                      </div>
-                    )}
-                    
-                    {/* Status Badges */}
-                    <div className="absolute top-2 right-2 flex flex-col gap-1">
-                      {!p.is_active && (
-                        <Badge variant="secondary" className="text-[10px] gap-1">
-                          <EyeOff className="h-3 w-3" />
-                          مخفي
-                        </Badge>
-                      )}
-                      {p.is_featured && (
-                        <Badge className="bg-primary text-primary-foreground text-[10px] gap-1">
-                          <Sparkles className="h-3 w-3" />
-                          مميز
-                        </Badge>
-                      )}
-                      {hasDiscount && (
-                        <Badge className="bg-destructive text-destructive-foreground text-[10px]">
-                          خصم
-                        </Badge>
-                      )}
-                    </div>
-                    
-                    {/* Quick Actions */}
-                    <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="h-8 w-8 rounded-lg shadow-lg"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenEdit(p);
-                        }}
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="icon"
-                        variant="destructive"
-                        className="h-8 w-8 rounded-lg shadow-lg"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm("متأكد من حذف هذا المنتج؟")) deleteMutation.mutate(p.id);
-                        }}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <CardContent className="p-4">
-                    <p className="text-sm font-semibold line-clamp-1 mb-2 group-hover:text-primary transition-colors">
-                      {p.title}
-                    </p>
-                    {p.price_iqd && (
-                      <div className="flex items-baseline gap-2 mb-2">
-                        <span className="text-base font-bold text-primary">
-                          {p.price_iqd.toLocaleString()}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">د.ع</span>
-                        {hasDiscount && (
-                          <span className="text-xs text-muted-foreground line-through">
-                            {p.original_price_iqd?.toLocaleString()}
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {p.estimated_days && (
-                      <div className="flex items-center gap-1.5 text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        <span className="text-[11px]">{p.estimated_days} يوم</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        ) : (
-          // List View
-          <div className="space-y-3">
-            {filteredProducts.map((p) => {
-              const mainImg = p.image_urls?.[p.primary_image_index] || p.image_urls?.[0];
-              
-              return (
-                <Card
-                  key={p.id}
-                  className="group border-border/50 bg-card/80 backdrop-blur-sm overflow-hidden cursor-pointer hover:shadow-lg hover:border-primary/30 transition-all"
-                  onClick={() => handleOpenDetail(p)}
-                >
-                  <CardContent className="p-4 flex items-center gap-4">
-                    <div className="h-20 w-20 rounded-xl overflow-hidden bg-muted/20 shrink-0">
-                      {mainImg ? (
-                        <img src={mainImg} alt={p.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="flex items-center justify-center w-full h-full">
-                          <Package className="h-8 w-8 text-muted-foreground/50" />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="font-semibold line-clamp-1">{p.title}</p>
-                        {!p.is_active && <Badge variant="secondary" className="text-[10px]">مخفي</Badge>}
-                        {p.is_featured && <Badge className="bg-primary text-primary-foreground text-[10px]">مميز</Badge>}
-                      </div>
-                      {p.price_iqd && (
-                        <p className="text-primary font-bold">{p.price_iqd.toLocaleString()} د.ع</p>
-                      )}
-                      {p.estimated_days && (
-                        <p className="text-xs text-muted-foreground">{p.estimated_days} يوم للتنفيذ</p>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenEdit(p);
-                        }}
-                      >
-                        <Edit2 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm("متأكد من حذف هذا المنتج؟")) deleteMutation.mutate(p.id);
-                        }}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Add/Edit Product Dialog */}
-        <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
-          <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-hidden">
-            <DialogHeader className="pb-4 border-b border-border/50">
-              <DialogTitle className="text-lg font-bold flex items-center gap-2">
-                {selectedProduct ? <Edit2 className="h-5 w-5" /> : <Plus className="h-5 w-5" />}
-                {selectedProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
-              </DialogTitle>
-            </DialogHeader>
             
-            <div className="space-y-5 max-h-[60vh] overflow-y-auto py-4 px-1">
-              <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-medium">عنوان المنتج *</Label>
-                <Input
-                  id="title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="مثلاً: طباعة 3D مخصصة"
-                  className="h-11"
-                />
-              </div>
+            <Button size="lg" onClick={handleOpenAdd} className="gap-2 shadow-lg hover:shadow-xl transition-all">
+              <Plus className="h-5 w-5" />
+              إضافة منتج جديد
+            </Button>
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium">وصف المنتج</Label>
-                <Textarea
-                  id="description"
-                  rows={3}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="وصف تفصيلي للمنتج..."
-                />
-              </div>
+          {/* Filter Tabs */}
+          <ProductFilterTabs
+            activeFilter={productFilter}
+            onFilterChange={setProductFilter}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            counts={productCounts}
+          />
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="price" className="text-sm font-medium">السعر (د.ع)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price_iqd}
-                    onChange={(e) => setFormData({ ...formData, price_iqd: e.target.value })}
-                    placeholder="50000"
-                    className="h-11"
-                  />
+          {/* Products Grid/List */}
+          {filteredProducts.length === 0 ? (
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 p-16 rounded-3xl">
+              <div className="text-center">
+                <div className="h-24 w-24 rounded-3xl bg-muted/20 flex items-center justify-center mx-auto mb-6">
+                  <Sparkles className="h-12 w-12 text-muted-foreground/30" />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="original_price" className="text-sm font-medium">السعر قبل الخصم</Label>
-                  <Input
-                    id="original_price"
-                    type="number"
-                    value={formData.original_price_iqd}
-                    onChange={(e) => setFormData({ ...formData, original_price_iqd: e.target.value })}
-                    placeholder="70000"
-                    className="h-11"
-                  />
-                </div>
+                <p className="text-lg font-bold mb-2">
+                  {productFilter === "all" ? "لا توجد منتجات بعد" : `لا توجد منتجات ${productFilter === "active" ? "نشطة" : productFilter === "hidden" ? "مخفية" : "مميزة"}`}
+                </p>
+                <p className="text-sm text-muted-foreground mb-6">أضف منتجك الأول لبدء البيع</p>
+                <Button onClick={handleOpenAdd} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  إضافة منتج
+                </Button>
               </div>
+            </Card>
+          ) : (
+            <div className={viewMode === "grid" 
+              ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" 
+              : "flex flex-col gap-3"
+            }>
+              {filteredProducts.map((product) => (
+                <ProductCardEnhanced
+                  key={product.id}
+                  product={product}
+                  variant="merchant"
+                  viewMode={viewMode}
+                  onView={() => handleOpenDetail(product)}
+                  onEdit={() => handleOpenEdit(product)}
+                  onDelete={() => handleDeleteClick(product.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
 
+      {/* Product Dialog */}
+      <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-hidden rounded-3xl border-border/50">
+          <DialogHeader className="pb-4 border-b border-border/50">
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              {selectedProduct ? "تعديل المنتج" : "إضافة منتج جديد"}
+            </DialogTitle>
+            <DialogDescription>أضف تفاصيل منتجك ليظهر في متجرك</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 max-h-[55vh] overflow-y-auto py-4 px-1">
+            {/* Media Upload */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">الصور والفيديو</Label>
               <MerchantProductMediaUpload
                 imageUrls={mediaState.image_urls}
-                onImagesChange={(urls) => setMediaState({ ...mediaState, image_urls: urls })}
-                primaryImageIndex={mediaState.primary_image_index}
-                onPrimaryImageChange={(idx) => setMediaState({ ...mediaState, primary_image_index: idx })}
+                onImagesChange={(urls) => setMediaState(prev => ({ ...prev, image_urls: urls }))}
                 videoUrl={mediaState.video_url}
-                onVideoUrlChange={(url) => setMediaState({ ...mediaState, video_url: url })}
+                onVideoUrlChange={(url) => setMediaState(prev => ({ ...prev, video_url: url }))}
+                primaryImageIndex={mediaState.primary_image_index}
+                onPrimaryImageChange={(idx) => setMediaState(prev => ({ ...prev, primary_image_index: idx }))}
               />
+            </div>
 
+            {/* Title */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">اسم المنتج *</Label>
+              <Input
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="مثال: مجسم شخصية أنمي"
+                maxLength={100}
+                className="h-11"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">الوصف</Label>
+              <Textarea
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="وصف تفصيلي للمنتج..."
+                rows={3}
+                maxLength={500}
+              />
+            </div>
+
+            {/* Material Type */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">نوع المادة *</Label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: "resin", label: "رزن", icon: Droplets, color: "text-blue-400" },
+                  { value: "filament", label: "فلمنت", icon: Layers, color: "text-orange-400" },
+                  { value: "both", label: "كلاهما", icons: [Droplets, Layers] },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFormData({ ...formData, material_type: opt.value as MaterialType })}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                      formData.material_type === opt.value
+                        ? "bg-primary text-primary-foreground border-primary shadow-md"
+                        : "bg-background border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {"icons" in opt ? (
+                      <>
+                        <Droplets className="h-4 w-4 text-blue-400" />
+                        <Layers className="h-4 w-4 text-orange-400" />
+                      </>
+                    ) : (
+                      <opt.icon className={`h-4 w-4 ${opt.color}`} />
+                    )}
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Price Fields */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="estimated_days" className="text-sm font-medium">وقت التنفيذ (بالأيام)</Label>
+                <Label className="text-sm font-medium">السعر (د.ع)</Label>
                 <Input
-                  id="estimated_days"
                   type="number"
-                  value={formData.estimated_days}
-                  onChange={(e) => setFormData({ ...formData, estimated_days: e.target.value })}
-                  placeholder="7"
+                  value={formData.price_iqd}
+                  onChange={(e) => setFormData({ ...formData, price_iqd: e.target.value })}
+                  placeholder="25000"
                   className="h-11"
                 />
               </div>
-
-              {/* Material Type */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">نوع المادة *</Label>
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    { value: "resin", label: "رزن", icon: Droplets },
-                    { value: "filament", label: "فلمنت", icon: Layers },
-                    { value: "both", label: "كلاهما", icons: [Droplets, Layers] },
-                  ].map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, material_type: opt.value as MaterialType })}
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                        formData.material_type === opt.value
-                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                          : "bg-background border-border hover:border-primary/50"
-                      }`}
-                    >
-                      {"icons" in opt ? (
-                        <>
-                          {opt.icons.map((Icon, i) => (
-                            <Icon key={i} className="h-4 w-4" />
-                          ))}
-                        </>
-                      ) : (
-                        <opt.icon className="h-4 w-4" />
-                      )}
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Toggles */}
-              <div className="flex flex-wrap gap-6 p-4 rounded-xl bg-muted/30 border border-border/50">
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="is_active"
-                    checked={formData.is_active}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                  />
-                  <Label htmlFor="is_active" className="cursor-pointer">
-                    <span className="font-medium">نشر المنتج</span>
-                    <p className="text-xs text-muted-foreground">إظهار المنتج للعملاء</p>
-                  </Label>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Switch
-                    id="is_featured"
-                    checked={formData.is_featured}
-                    onCheckedChange={(checked) => setFormData({ ...formData, is_featured: checked })}
-                  />
-                  <Label htmlFor="is_featured" className="cursor-pointer">
-                    <span className="font-medium">منتج مميز</span>
-                    <p className="text-xs text-muted-foreground">يظهر في الأعلى (حد 3)</p>
-                  </Label>
-                </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">السعر قبل الخصم</Label>
+                <Input
+                  type="number"
+                  value={formData.original_price_iqd}
+                  onChange={(e) => setFormData({ ...formData, original_price_iqd: e.target.value })}
+                  placeholder="30000"
+                  className="h-11"
+                />
               </div>
             </div>
 
-            <div className="flex gap-3 pt-4 border-t border-border/50">
-              <Button variant="outline" onClick={() => setProductDialogOpen(false)} className="flex-1">
-                إلغاء
-              </Button>
-              <Button
-                onClick={() => saveMutation.mutate()}
-                disabled={!formData.title.trim() || !formData.material_type || saveMutation.isPending}
-                className="flex-1"
-              >
-                {saveMutation.isPending ? "جارٍ الحفظ..." : selectedProduct ? "حفظ التعديل" : "إضافة المنتج"}
-              </Button>
+            {/* Estimated Days */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">مدة التنفيذ (أيام)</Label>
+              <Input
+                type="number"
+                value={formData.estimated_days}
+                onChange={(e) => setFormData({ ...formData, estimated_days: e.target.value })}
+                placeholder="3"
+                className="h-11"
+              />
             </div>
-          </DialogContent>
-        </Dialog>
 
-        {/* Product Detail Dialog */}
-        <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader className="pb-4 border-b border-border/50">
-              <DialogTitle className="text-lg font-bold line-clamp-1">{selectedProduct?.title}</DialogTitle>
-            </DialogHeader>
-            {selectedProduct && (
-              <div className="space-y-4 max-h-[60vh] overflow-y-auto py-4">
-                {selectedProduct.image_urls && selectedProduct.image_urls.length > 0 && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedProduct.image_urls.map((url, idx) => (
-                      <img
-                        key={idx}
-                        src={url}
-                        alt=""
-                        className="w-full aspect-square rounded-xl object-cover border border-border/50"
-                      />
-                    ))}
-                  </div>
-                )}
-
-                {selectedProduct.video_url && (
-                  <video controls className="w-full rounded-xl border border-border/50">
-                    <source src={selectedProduct.video_url} />
-                  </video>
-                )}
-
-                {selectedProduct.description && (
-                  <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                    <Label className="text-xs text-muted-foreground">الوصف</Label>
-                    <p className="text-sm mt-2 whitespace-pre-wrap">{selectedProduct.description}</p>
-                  </div>
-                )}
-
-                <div className="grid grid-cols-2 gap-3">
-                  {selectedProduct.price_iqd && (
-                    <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-                      <Label className="text-xs text-muted-foreground">السعر</Label>
-                      <p className="text-lg font-bold text-primary mt-1">
-                        {selectedProduct.price_iqd.toLocaleString()} د.ع
-                      </p>
-                    </div>
-                  )}
-                  {selectedProduct.estimated_days && (
-                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                      <Label className="text-xs text-muted-foreground">وقت التنفيذ</Label>
-                      <p className="text-lg font-bold mt-1">{selectedProduct.estimated_days} يوم</p>
-                    </div>
-                  )}
+            {/* Switches */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm">نشط للعرض</Label>
                 </div>
+                <Switch
+                  checked={formData.is_active}
+                  onCheckedChange={(c) => setFormData({ ...formData, is_active: c })}
+                />
+              </div>
+              <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-muted/20">
+                <div className="flex items-center gap-2">
+                  <Star className="h-4 w-4 text-muted-foreground" />
+                  <Label className="text-sm">منتج مميز</Label>
+                </div>
+                <Switch
+                  checked={formData.is_featured}
+                  onCheckedChange={(c) => setFormData({ ...formData, is_featured: c })}
+                />
+              </div>
+            </div>
+          </div>
 
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant={selectedProduct.is_active ? "default" : "secondary"}>
-                    {selectedProduct.is_active ? "نشط" : "مخفي"}
-                  </Badge>
+          <div className="pt-4 border-t border-border/50">
+            <Button
+              onClick={() => saveMutation.mutate()}
+              disabled={!formData.title.trim() || !formData.material_type || saveMutation.isPending}
+              className="w-full h-12 text-base"
+            >
+              {saveMutation.isPending ? "جاري الحفظ..." : selectedProduct ? "حفظ التغييرات" : "إضافة المنتج"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail Dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden rounded-3xl border-border/50">
+          <DialogHeader className="pb-4 border-b border-border/50">
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              {selectedProduct?.title}
+            </DialogTitle>
+            <DialogDescription>معاينة المنتج</DialogDescription>
+          </DialogHeader>
+          
+          {selectedProduct && (
+            <div className="space-y-4 max-h-[60vh] overflow-y-auto py-4">
+              {selectedProduct.image_urls?.[0] && (
+                <div className="relative rounded-2xl overflow-hidden bg-muted">
+                  <AspectRatio ratio={1}>
+                    <img
+                      src={selectedProduct.image_urls[selectedProduct.primary_image_index] || selectedProduct.image_urls[0]}
+                      alt={selectedProduct.title}
+                      className="w-full h-full object-contain"
+                    />
+                  </AspectRatio>
+                  {!selectedProduct.is_active && (
+                    <Badge className="absolute top-3 right-3" variant="secondary">مخفي</Badge>
+                  )}
                   {selectedProduct.is_featured && (
-                    <Badge className="bg-primary/20 text-primary border-primary/30">مميز</Badge>
-                  )}
-                  {selectedProduct.material_type && (
-                    <Badge variant="outline">
-                      {selectedProduct.material_type === "resin" ? "رزن" : selectedProduct.material_type === "filament" ? "فلمنت" : "رزن وفلمنت"}
-                    </Badge>
+                    <Badge className="absolute top-3 left-3 bg-amber-500 text-white">مميز</Badge>
                   )}
                 </div>
+              )}
 
-                <div className="flex gap-3 pt-2">
-                  <Button variant="outline" className="flex-1" onClick={() => handleOpenEdit(selectedProduct)}>
-                    <Edit2 className="ml-2 h-4 w-4" />
-                    تعديل
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="flex-1"
-                    onClick={() => {
-                      if (confirm("متأكد من حذف هذا المنتج؟")) {
-                        deleteMutation.mutate(selectedProduct.id);
-                        setDetailDialogOpen(false);
-                      }
-                    }}
-                  >
-                    <X className="ml-2 h-4 w-4" />
-                    حذف
-                  </Button>
-                </div>
+              {selectedProduct.description && (
+                <p className="text-sm text-muted-foreground">{selectedProduct.description}</p>
+              )}
+
+              <div className="flex items-baseline gap-2 p-4 rounded-2xl bg-primary/5 border border-primary/20">
+                {selectedProduct.price_iqd ? (
+                  <>
+                    <span className="text-2xl font-bold text-primary">
+                      {selectedProduct.price_iqd.toLocaleString()}
+                    </span>
+                    <span className="text-sm text-muted-foreground">د.ع</span>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground">لم يتم تحديد السعر</span>
+                )}
               </div>
-            )}
-          </DialogContent>
-        </Dialog>
 
-        {/* Store Profile Editor */}
-        {merchantApp && (
-          <StoreProfileEditor
-            open={profileEditorOpen}
-            onOpenChange={setProfileEditorOpen}
-            merchantApp={{
-              id: merchantApp.id,
-              display_name: merchantApp.display_name,
-              bio: merchantApp.bio,
-              store_image_url: merchantApp.store_image_url,
-              social_links: socialLinks || null,
-              selected_frame_id: merchantApp.selected_frame_id || null,
-              specialty: merchantApp.specialty as "resin" | "filament" | "both" | undefined,
-            }}
-          />
-        )}
-      </main>
+              <div className="flex gap-3">
+                <Button className="flex-1" onClick={() => { setDetailDialogOpen(false); handleOpenEdit(selectedProduct); }}>
+                  تعديل المنتج
+                </Button>
+                <Button variant="outline" onClick={() => navigate(`/store/${merchantApp.id}`)}>
+                  عرض المتجر
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-3xl border-border/50">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              تأكيد الحذف
+            </DialogTitle>
+            <DialogDescription>هل أنت متأكد من حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-3 sm:gap-0">
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>إلغاء</Button>
+            <Button 
+              variant="destructive" 
+              onClick={() => productToDelete && deleteMutation.mutate(productToDelete)}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "جاري الحذف..." : "حذف المنتج"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Profile Editor */}
+      <StoreProfileEditor
+        open={profileEditorOpen}
+        onOpenChange={setProfileEditorOpen}
+        merchantApp={{
+          id: merchantApp.id,
+          display_name: merchantApp.display_name,
+          bio: merchantApp.bio,
+          store_image_url: merchantApp.store_image_url,
+          social_links: socialLinks || null,
+          selected_frame_id: merchantApp.selected_frame_id,
+          specialty: (merchantApp.specialty as "resin" | "filament" | "both") || undefined,
+        }}
+      />
     </div>
   );
 }
