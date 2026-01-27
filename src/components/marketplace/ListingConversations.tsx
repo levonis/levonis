@@ -1201,65 +1201,94 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   initialPrice={merchantOrderInitialData?.price}
                   initialImage={merchantOrderInitialData?.image}
                   onSubmit={async (data) => {
-                    if (!selectedConversation || !user) return;
+                    if (!selectedConversation || !user) {
+                      toast.error('يرجى تسجيل الدخول أولاً');
+                      return;
+                    }
+                    
+                    if (!selectedConv) {
+                      toast.error('المحادثة غير موجودة');
+                      return;
+                    }
                     
                     const totalWithShipping = (data.price * data.quantity) + data.shippingPrice;
                     
-                    // Create order in database
-                    const { data: order, error } = await supabase
-                      .from('chat_orders')
-                      .insert({
-                        conversation_id: selectedConversation,
-                        product_title: data.title,
-                        product_image: merchantOrderInitialData?.image,
-                        description: data.description || null,
-                        quantity: data.quantity,
-                        unit_price: data.price,
-                        total_price: totalWithShipping,
-                        notes: data.notes || null,
-                        seller_id: user.id,
-                        customer_id: selectedConv?.buyer_id === user.id ? selectedConv?.seller_id : selectedConv?.buyer_id,
-                        status: 'waiting_payment',
-                        payment_method: data.paymentMethod,
-                        partial_payment_percent: data.paymentMethod === 'partial' ? data.partialPaymentPercent : null,
-                        commission_rate: data.paymentMethod === 'cod' ? 10 : (data.paymentMethod === 'partial' ? 5 : 0),
-                      })
-                      .select()
-                      .single();
-
-                    if (error) {
-                      toast.error('فشل إنشاء الطلب');
+                    // Determine customer_id - the other participant in the conversation
+                    const customerId = selectedConv.buyer_id === user.id 
+                      ? selectedConv.seller_id 
+                      : selectedConv.buyer_id;
+                    
+                    if (!customerId) {
+                      toast.error('لا يمكن تحديد الزبون');
                       return;
                     }
-
-                    // Send order card message
-                    await supabase.from('listing_messages').insert({
-                      conversation_id: selectedConversation,
-                      sender_id: user.id,
-                      content: JSON.stringify({
-                        type: 'order_card',
-                        order_id: order.id,
-                        product_title: data.title,
-                        product_image: merchantOrderInitialData?.image,
-                        quantity: data.quantity,
-                        total_price: totalWithShipping,
-                        status: 'waiting_payment',
-                      }),
-                    });
-
-                    // Send system message
-                    await supabase.from('listing_messages').insert({
-                      conversation_id: selectedConversation,
-                      sender_id: user.id,
-                      content: `🔔 تم إنشاء طلب جديد بقيمة ${totalWithShipping.toLocaleString()} د.ع. يرجى مراجعة الطلب والدفع.`,
-                    });
-
-                    queryClient.invalidateQueries({ queryKey: ['chat-orders', selectedConversation] });
-                    queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
                     
-                    toast.success('تم إنشاء الطلب وإرساله للزبون');
-                    setMerchantOrderDialogOpen(false);
-                    setMerchantOrderInitialData(null);
+                    try {
+                      // Create order in database
+                      const { data: order, error } = await supabase
+                        .from('chat_orders')
+                        .insert({
+                          conversation_id: selectedConversation,
+                          product_title: data.title,
+                          product_image: merchantOrderInitialData?.image || null,
+                          description: data.description || null,
+                          quantity: data.quantity,
+                          unit_price: data.price,
+                          total_price: totalWithShipping,
+                          notes: data.notes || null,
+                          seller_id: user.id,
+                          customer_id: customerId,
+                          status: 'waiting_payment',
+                          payment_method: data.paymentMethod,
+                          partial_payment_percent: data.paymentMethod === 'partial' ? data.partialPaymentPercent : null,
+                          commission_rate: data.paymentMethod === 'cod' ? 10 : (data.paymentMethod === 'partial' ? 5 : 0),
+                        })
+                        .select()
+                        .single();
+
+                      if (error) {
+                        console.error('Order creation error:', error);
+                        toast.error(`فشل إنشاء الطلب: ${error.message}`);
+                        return;
+                      }
+
+                      if (!order) {
+                        toast.error('فشل إنشاء الطلب - لم يتم إرجاع بيانات');
+                        return;
+                      }
+
+                      // Send order card message
+                      await supabase.from('listing_messages').insert({
+                        conversation_id: selectedConversation,
+                        sender_id: user.id,
+                        content: JSON.stringify({
+                          type: 'order_card',
+                          order_id: order.id,
+                          product_title: data.title,
+                          product_image: merchantOrderInitialData?.image,
+                          quantity: data.quantity,
+                          total_price: totalWithShipping,
+                          status: 'waiting_payment',
+                        }),
+                      });
+
+                      // Send system message
+                      await supabase.from('listing_messages').insert({
+                        conversation_id: selectedConversation,
+                        sender_id: user.id,
+                        content: `🔔 تم إنشاء طلب جديد بقيمة ${totalWithShipping.toLocaleString()} د.ع. يرجى مراجعة الطلب والدفع.`,
+                      });
+
+                      queryClient.invalidateQueries({ queryKey: ['chat-orders', selectedConversation] });
+                      queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+                      
+                      toast.success('تم إنشاء الطلب وإرساله للزبون');
+                      setMerchantOrderDialogOpen(false);
+                      setMerchantOrderInitialData(null);
+                    } catch (err) {
+                      console.error('Unexpected error:', err);
+                      toast.error('حدث خطأ غير متوقع');
+                    }
                   }}
                   isLoading={false}
                 />
