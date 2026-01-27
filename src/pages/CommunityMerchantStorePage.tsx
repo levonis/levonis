@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  Store, Play, Star, Package, Sparkles, ShoppingBag
+  Store, Play, Star, Package, Sparkles, ShoppingBag, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,7 +17,9 @@ import RatingsPreview from "@/components/merchant/RatingsPreview";
 import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
 import MinimalStoreHero from "@/components/merchant/MinimalStoreHero";
 import CompactProductCard from "@/components/merchant/CompactProductCard";
-import CustomerOrderDialog from "@/components/merchant/CustomerOrderDialog";
+import ProfessionalCustomerOrderDialog from "@/components/merchant/ProfessionalCustomerOrderDialog";
+
+const PRODUCTS_PER_PAGE = 20;
 
 interface MerchantProduct {
   id: string;
@@ -45,6 +47,7 @@ export default function CommunityMerchantStorePage() {
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Check if current user owns this store
   const { data: isOwner } = useQuery({
@@ -120,6 +123,13 @@ export default function CommunityMerchantStorePage() {
       return data as MerchantProduct[];
     },
   });
+
+  // Pagination
+  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return products.slice(start, start + PRODUCTS_PER_PAGE);
+  }, [products, currentPage]);
 
   // Fetch store stats
   const { data: storeStats } = useQuery({
@@ -256,21 +266,19 @@ export default function CommunityMerchantStorePage() {
           showContactButton
         />
 
-        {/* Stats Row */}
-        <div className="flex gap-4 mb-6 overflow-x-auto pb-1">
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 shrink-0">
-            <Package className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium">{products.length} منتج</span>
+        {/* Stats Row - Compact */}
+        <div className="flex gap-3 mb-5 overflow-x-auto pb-1">
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 shrink-0 text-xs">
+            <Package className="h-3.5 w-3.5 text-primary" />
+            <span className="font-medium">{products.length} منتج</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 shrink-0">
-            <ShoppingBag className="h-4 w-4 text-emerald-500" />
-            <span className="text-sm font-medium">{storeStats?.totalOrders || 0} طلب مكتمل</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 shrink-0 text-xs">
+            <ShoppingBag className="h-3.5 w-3.5 text-emerald-500" />
+            <span className="font-medium">{storeStats?.totalOrders || 0} طلب</span>
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 shrink-0">
-            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-            <span className="text-sm font-medium">
-              {storeStats?.avgRating?.toFixed(1) || "0"} ({storeStats?.totalRatings || 0})
-            </span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 shrink-0 text-xs">
+            <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+            <span className="font-medium">{storeStats?.avgRating?.toFixed(1) || "0"} ({storeStats?.totalRatings || 0})</span>
           </div>
         </div>
 
@@ -279,10 +287,10 @@ export default function CommunityMerchantStorePage() {
           {/* Sidebar */}
           <div className="lg:col-span-1 order-2 lg:order-1">
             <Card className="rounded-xl overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
-                  <span className="text-sm font-semibold">التقييمات</span>
+              <CardContent className="p-3">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                  <span className="text-xs font-semibold">التقييمات</span>
                 </div>
                 <RatingsPreview merchantId={merchantId!} />
               </CardContent>
@@ -290,7 +298,7 @@ export default function CommunityMerchantStorePage() {
           </div>
 
           {/* Products Grid */}
-          <div className="lg:col-span-3 order-1 lg:order-2">
+          <div className="lg:col-span-3 order-1 lg:order-2 space-y-4">
             {products.length === 0 ? (
               <Card className="p-8 rounded-xl text-center">
                 <Sparkles className="h-10 w-10 text-muted-foreground/20 mx-auto mb-3" />
@@ -298,43 +306,76 @@ export default function CommunityMerchantStorePage() {
                 <p className="text-xs text-muted-foreground">سيتم عرضها بمجرد إضافتها</p>
               </Card>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {products.map((product) => (
-                  <CompactProductCard
-                    key={product.id}
-                    product={product}
-                    onView={() => handleOpenDetail(product)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                  {paginatedProducts.map((product) => (
+                    <CompactProductCard
+                      key={product.id}
+                      product={product}
+                      onView={() => handleOpenDetail(product)}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 pt-4">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <Button
+                          key={page}
+                          size="sm"
+                          variant={currentPage === page ? "default" : "ghost"}
+                          className="h-8 w-8 p-0 text-xs"
+                          onClick={() => setCurrentPage(page)}
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-8 w-8 p-0"
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
       </main>
 
-      {/* Product Detail Dialog */}
+      {/* Product Detail Dialog - Compact */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-hidden">
-          <DialogHeader className="pb-3 border-b border-border/50">
-            <DialogTitle className="text-base font-bold truncate pr-6">
-              {selectedProduct?.title}
-            </DialogTitle>
+        <DialogContent className="sm:max-w-sm max-h-[85vh] overflow-hidden p-0">
+          <DialogHeader className="p-3 pb-2 border-b border-border/50">
+            <DialogTitle className="text-sm font-bold truncate pr-6">{selectedProduct?.title}</DialogTitle>
             <DialogDescription className="sr-only">تفاصيل المنتج</DialogDescription>
           </DialogHeader>
           
           {selectedProduct && (
-            <div className="space-y-3 max-h-[55vh] overflow-y-auto py-2">
+            <div className="space-y-3 max-h-[55vh] overflow-y-auto p-3">
               {/* Media */}
               {(selectedProduct.image_urls?.length || selectedProduct.video_url) && (
                 <div className="space-y-2">
-                  <div className="relative rounded-xl overflow-hidden bg-muted">
+                  <div className="relative rounded-lg overflow-hidden bg-muted">
                     <AspectRatio ratio={1}>
                       {selectedProduct.video_url && activeMediaIndex === (selectedProduct.image_urls?.length || 0) ? (
-                        <video
-                          src={selectedProduct.video_url}
-                          controls
-                          className="w-full h-full object-contain bg-black"
-                        />
+                        <video src={selectedProduct.video_url} controls className="w-full h-full object-contain bg-black" />
                       ) : (
                         <img
                           src={selectedProduct.image_urls?.[activeMediaIndex]}
@@ -347,12 +388,12 @@ export default function CommunityMerchantStorePage() {
                   
                   {/* Thumbnails */}
                   {(selectedProduct.image_urls?.length || 0) + (selectedProduct.video_url ? 1 : 0) > 1 && (
-                    <div className="flex gap-1.5 overflow-x-auto pb-1">
+                    <div className="flex gap-1 overflow-x-auto pb-1">
                       {selectedProduct.image_urls?.map((url, i) => (
                         <button
                           key={i}
                           onClick={() => setActiveMediaIndex(i)}
-                          className={`w-12 h-12 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
+                          className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
                             activeMediaIndex === i ? "border-primary" : "border-transparent opacity-60"
                           }`}
                         >
@@ -362,10 +403,8 @@ export default function CommunityMerchantStorePage() {
                       {selectedProduct.video_url && (
                         <button
                           onClick={() => setActiveMediaIndex(selectedProduct.image_urls?.length || 0)}
-                          className={`w-12 h-12 rounded-lg overflow-hidden shrink-0 border-2 bg-black flex items-center justify-center ${
-                            activeMediaIndex === (selectedProduct.image_urls?.length || 0)
-                              ? "border-primary"
-                              : "border-transparent opacity-60"
+                          className={`w-10 h-10 rounded-lg overflow-hidden shrink-0 border-2 bg-black flex items-center justify-center ${
+                            activeMediaIndex === (selectedProduct.image_urls?.length || 0) ? "border-primary" : "border-transparent opacity-60"
                           }`}
                         >
                           <Play className="h-4 w-4 text-white fill-white" />
@@ -378,18 +417,14 @@ export default function CommunityMerchantStorePage() {
 
               {/* Description */}
               {selectedProduct.description && (
-                <p className="text-xs text-muted-foreground">
-                  {selectedProduct.description}
-                </p>
+                <p className="text-xs text-muted-foreground">{selectedProduct.description}</p>
               )}
 
               {/* Price */}
-              <div className="flex items-baseline gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
+              <div className="flex items-baseline gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
                 {selectedProduct.price_iqd ? (
                   <>
-                    <span className="text-xl font-bold text-primary">
-                      {selectedProduct.price_iqd.toLocaleString()}
-                    </span>
+                    <span className="text-lg font-bold text-primary">{selectedProduct.price_iqd.toLocaleString()}</span>
                     <span className="text-xs text-muted-foreground">د.ع</span>
                     {selectedProduct.original_price_iqd && selectedProduct.original_price_iqd > selectedProduct.price_iqd && (
                       <span className="text-xs text-muted-foreground line-through mr-auto">
@@ -403,7 +438,7 @@ export default function CommunityMerchantStorePage() {
               </div>
 
               {/* Order Button */}
-              <Button className="w-full h-10 gap-2" onClick={handleOrderProduct}>
+              <Button className="w-full h-9 gap-2 text-sm" onClick={handleOrderProduct}>
                 <ShoppingBag className="h-4 w-4" />
                 طلب المنتج
               </Button>
@@ -412,8 +447,8 @@ export default function CommunityMerchantStorePage() {
         </DialogContent>
       </Dialog>
 
-      {/* Order Dialog */}
-      <CustomerOrderDialog
+      {/* Order Dialog - Using Professional Version */}
+      <ProfessionalCustomerOrderDialog
         open={orderDialogOpen}
         onOpenChange={setOrderDialogOpen}
         product={selectedProduct}
