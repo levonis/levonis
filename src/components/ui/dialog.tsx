@@ -35,11 +35,18 @@ interface DialogContentProps
 const DialogContent = React.forwardRef<
   React.ElementRef<typeof DialogPrimitive.Content>,
   DialogContentProps
->(({ className, children, hideClose, ...props }, ref) => (
+>(({ className, children, hideClose, onOpenAutoFocus, ...props }, ref) => (
   <DialogPortal>
     <DialogOverlay />
     <DialogPrimitive.Content
       ref={ref}
+      onOpenAutoFocus={(e) => {
+        // Prevent auto-focus on mobile to avoid keyboard popup
+        if (window.innerWidth < 768) {
+          e.preventDefault();
+        }
+        onOpenAutoFocus?.(e);
+      }}
       className={cn(
         // Base layout
         "fixed left-[50%] top-[50%] z-50 flex flex-col translate-x-[-50%] translate-y-[-50%]",
