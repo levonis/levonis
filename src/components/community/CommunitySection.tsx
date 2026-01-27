@@ -126,18 +126,16 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       )}
 
-      {/* Quick Actions - Always show for logged in users on homepage */}
-      {!isCommunityHub && user && (
+      {/* Quick Actions - Always show for logged in users */}
+      {user && (
         <div className="mb-4">
           {isProfileComplete ? (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {quickActions.map((action) => {
                 const Icon = action.icon;
                 return (
-                  <Button
+                  <button
                     key={action.key}
-                    variant="outline"
-                    className="h-10 gap-2 text-xs font-semibold"
                     onClick={() => {
                       if ('action' in action && action.action) {
                         action.action();
@@ -145,10 +143,13 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
                         navigate(action.to);
                       }
                     }}
+                    className="group relative flex flex-col items-center justify-center gap-2 p-4 rounded-2xl border border-border/60 bg-gradient-to-b from-card to-muted/30 hover:from-primary/10 hover:to-primary/5 hover:border-primary/40 transition-all duration-300 shadow-sm hover:shadow-md"
                   >
-                    <Icon className="h-4 w-4" />
-                    {action.label}
-                  </Button>
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20 group-hover:scale-110 transition-transform duration-300">
+                      <Icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className="text-xs font-bold text-foreground">{action.label}</span>
+                  </button>
                 );
               })}
             </div>
