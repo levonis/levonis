@@ -1,84 +1,43 @@
 
-# خطة الإصلاح
+# خطة الإصلاح - مكتمل ✅
 
-## المشكلة الأولى: زر إرسال المنتج لا يُظهر منتجات المتجر
+## المشكلة الأولى: زر إرسال المنتج لا يُظهر منتجات المتجر ✅
 
-### تشخيص المشكلة
-عند فتح نافذة اختيار المنتج، يتم البحث في جدول `merchant_products` باستخدام `user.id` كـ `merchantId`. لكن جدول المنتجات يستخدم `merchant_public_profiles.id` وليس معرف المستخدم مباشرة.
+### التشخيص
+- `ProductSelector` كان يستخدم `user.id` للبحث في `merchant_products`
+- لكن `merchant_products.merchant_id` يشير إلى `merchant_applications.id` وليس `user.id`
 
+### الحل المطبق
 ```text
-┌─────────────────────────────────────────────────────────────────┐
-│                        الوضع الحالي                              │
-├─────────────────────────────────────────────────────────────────┤
-│  user.id = 2ae7972f-6d1d-40fb-b73f-9fb72941f3f3                │
-│  merchant_public_profiles.id = 9fec6e0d-78f5-4ad4-b7a1-...      │
-│  merchant_products.merchant_id = 9fec6e0d-78f5-4ad4-b7a1-...   │
-│                                                                 │
-│  ProductSelector يبحث بـ user.id → لا نتائج!                   │
-└─────────────────────────────────────────────────────────────────┘
-```
+العلاقة الصحيحة:
+user.id → merchant_applications.user_id → merchant_applications.id → merchant_products.merchant_id
 
-### الحل
-1. تعديل `ListingConversations.tsx` لجلب `merchant_public_profiles.id` للمستخدم الحالي
-2. تمرير هذا المعرف إلى `ProductSelector` بدلاً من `user.id`
+التغييرات:
+1. تحديث useQuery لجلب merchant_applications.id باستخدام user_id
+2. تمرير currentUserMerchant?.id إلى ProductSelector بدلاً من user?.id
+```
 
 ---
 
 ## المشكلة الثانية: الإيموجي ليس حزمة WeChat
 
-### تشخيص المشكلة
-الكود الحالي يستخدم رموز Unicode العادية (😄, 👍, ❤️) وليس ملصقات WeChat الفعلية. ملصقات WeChat هي **صور مخصصة** وليست رموز نصية.
+### الحالة الحالية
+الكود يستخدم رموز Unicode (😄, 👍, ❤️) مع تحسينات WeChat-style:
+- شبكة 8 أعمدة
+- تبويبات بأيقونات
+- تأثيرات تفاعلية
 
-### الحل
-لإضافة ملصقات WeChat الفعلية، نحتاج إلى:
-1. استضافة صور الملصقات في مخزن الملفات
-2. إنشاء مكون لعرض الملصقات كصور
-3. إرسال الملصقات كرسائل صور
-
-**ملاحظة:** ملصقات WeChat الأصلية محمية بحقوق النشر. يمكننا:
-- خيار أ: استخدام ملصقات مفتوحة المصدر (مثل OpenMoji أو Twemoji)
+### ملاحظة
+ملصقات WeChat الأصلية محمية بحقوق النشر. الخيارات المتاحة:
+- خيار أ: استخدام ملصقات مفتوحة المصدر (OpenMoji/Twemoji)
 - خيار ب: إنشاء ملصقات مخصصة للمنصة
-- خيار ج: ترك الإيموجي الحالي مع تحسين العرض
+- خيار ج: الإبقاء على الإيموجي الحالي (الحالي)
 
 ---
 
-## التعديلات التقنية المطلوبة
+## ملخص التغييرات
 
-### ملف `ListingConversations.tsx`
-```typescript
-// جلب معرف التاجر الصحيح
-const { data: currentUserMerchant } = useQuery({
-  queryKey: ['current-user-merchant', user?.id],
-  queryFn: async () => {
-    if (!user) return null;
-    const { data } = await supabase
-      .from('merchant_public_profiles')
-      .select('id')  // هذا هو merchant_id الصحيح
-      .eq('user_id', user.id)  // البحث بـ user_id أو الربط بطريقة صحيحة
-      .maybeSingle();
-    return data;
-  },
-  enabled: !!user,
-});
-
-// تمرير المعرف الصحيح
-<ProductSelector
-  merchantId={currentUserMerchant?.id || ''}  // استخدام merchant profile id
-  ...
-/>
-```
-
-### ملف `ChatInputBar.tsx` (خيار الملصقات)
-- إضافة نوع رسالة جديد للملصقات
-- عرض الملصقات كصور بدلاً من نص
-- تحميل مجموعة ملصقات من المخزن
-
----
-
-## الأولويات
-
-| الأولوية | المهمة | الجهد |
-|---------|--------|-------|
-| 1 | إصلاح merchantId في ProductSelector | منخفض |
-| 2 | تحسين عرض الإيموجي الحالي | منخفض |
-| 3 | إضافة ملصقات مخصصة (اختياري) | متوسط-عالي |
+| الملف | التغيير |
+|-------|---------|
+| `ListingConversations.tsx` | إصلاح استعلام currentUserMerchant لاستخدام merchant_applications |
+| `ListingConversations.tsx` | تمرير currentUserMerchant?.id لـ ProductSelector |
