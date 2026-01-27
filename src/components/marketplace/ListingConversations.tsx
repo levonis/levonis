@@ -283,6 +283,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       
       const messageContent = messageInput.trim() || (mediaUrl ? '📷 وسائط' : '');
       
+      // Send message - this is the only blocking operation
       const { error } = await supabase.from('listing_messages').insert({
         conversation_id: selectedConversation,
         sender_id: user.id,
@@ -291,40 +292,47 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       });
       if (error) throw error;
       
-      await supabase.from('listing_conversations')
+      // Fire-and-forget: update conversation timestamp and send notifications
+      // These run in background without blocking the UI
+      supabase.from('listing_conversations')
         .update({ updated_at: new Date().toISOString() })
-        .eq('id', selectedConversation);
+        .eq('id', selectedConversation)
+        .then(() => {});
 
-      // Send Telegram notification to the other party
+      // Background notification
       if (selectedConv) {
         const otherUserId = selectedConv.buyer_id === user.id 
           ? selectedConv.seller_id 
           : selectedConv.buyer_id;
         
-        const { data: senderProfile } = await supabase
+        // Fire and forget - don't await
+        supabase
           .from('profiles')
           .select('full_name, username')
           .eq('id', user.id)
-          .single();
+          .single()
+          .then(({ data: senderProfile }) => {
+            const senderName = senderProfile?.full_name || senderProfile?.username || 'مستخدم';
+            const listingTitle = selectedConv.conversation_code ? `محادثة #${selectedConv.conversation_code}` : 'محادثة';
 
-        const senderName = senderProfile?.full_name || senderProfile?.username || 'مستخدم';
-        const listingTitle = selectedConv.conversation_code ? `محادثة #${selectedConv.conversation_code}` : 'محادثة';
-
-        // Call the telegram notification function
-        await supabase.functions.invoke('notify-marketplace-telegram', {
-          body: {
-            user_id: otherUserId,
-            event_type: 'new_message',
-            listing_title: listingTitle,
-            sender_name: senderName,
-            message_content: messageContent,
-            conversation_id: selectedConversation,
-          },
-        });
+            supabase.functions.invoke('notify-marketplace-telegram', {
+              body: {
+                user_id: otherUserId,
+                event_type: 'new_message',
+                listing_title: listingTitle,
+                sender_name: senderName,
+                message_content: messageContent,
+                conversation_id: selectedConversation,
+              },
+            });
+          });
       }
     },
-    onSuccess: () => {
+    onMutate: () => {
+      // Optimistically clear input immediately
       setMessageInput('');
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
       queryClient.invalidateQueries({ queryKey: ['last-messages'] });
