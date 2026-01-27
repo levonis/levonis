@@ -20,3 +20,8 @@ export type { ChangeType } from './messages/ConfirmationCard';
 export { default as ProductSelector } from './ProductSelector';
 export { default as PriceChangeDialog } from './PriceChangeDialog';
 export { default as CreateOrderDialog } from './CreateOrderDialog';
+
+// Emoji
+export { default as EmojiPicker } from './EmojiPicker';
+export { WECHAT_EMOJIS, parseEmojisInText } from './emojiData';
+export type { EmojiItem } from './emojiData';

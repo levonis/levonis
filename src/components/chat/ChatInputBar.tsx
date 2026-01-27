@@ -22,7 +22,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { toast } from 'sonner';
-import StickerPicker from './StickerPicker';
+import EmojiPicker from './EmojiPicker';
 
 interface ChatInputBarProps {
   value: string;
@@ -137,17 +137,9 @@ export default function ChatInputBar({
     }
   };
 
-  const handleStickerSelect = async (stickerSrc: string) => {
-    // Fetch the sticker image and send as a file
-    try {
-      const response = await fetch(stickerSrc);
-      const blob = await response.blob();
-      const fileName = stickerSrc.split('/').pop() || 'sticker.png';
-      const file = new File([blob], fileName, { type: blob.type });
-      await onSendMedia(file);
-    } catch (error) {
-      console.error('Error sending sticker:', error);
-    }
+  const handleEmojiSelect = (emojiCode: string) => {
+    // Insert emoji code into the text input at cursor position
+    onChange(value + emojiCode);
     setStickerPickerOpen(false);
   };
 
@@ -278,10 +270,10 @@ export default function ChatInputBar({
                 <PopoverContent 
                   side="top" 
                   align="end" 
-                  className="w-72 p-0 shadow-2xl rounded-2xl overflow-hidden border-0"
+                  className="w-80 p-0 shadow-2xl rounded-2xl overflow-hidden border-0"
                   sideOffset={10}
                 >
-                  <StickerPicker onSelectSticker={handleStickerSelect} />
+                  <EmojiPicker onSelectEmoji={handleEmojiSelect} />
                 </PopoverContent>
               </Popover>
             </>
