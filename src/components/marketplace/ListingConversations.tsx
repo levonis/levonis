@@ -440,6 +440,24 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
   const { data: otherUserReputation } = useUserPrintReputation(otherUserId ?? undefined);
 
+  // Check if current user is a merchant (can send products)
+  const { data: currentUserMerchant } = useQuery({
+    queryKey: ['current-user-merchant', user?.id],
+    queryFn: async () => {
+      if (!user) return null;
+      const { data } = await supabase
+        .from('merchant_public_profiles')
+        .select('id')
+        .eq('id', user.id)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!user,
+  });
+  
+  // User can send products if they are the seller OR if they are a registered merchant
+  const canSendProducts = isSeller || !!currentUserMerchant;
+
   // Chat Commerce Hook
   const chatCommerce = useChatCommerce({
     conversationId: selectedConversation,
@@ -781,13 +799,13 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
             </div>
           </div>
 
-          {/* Messages Area - Telegram/WhatsApp Style */}
+          {/* Messages Area - Fixed for large screens */}
           <div className={cn(
-            "flex-1 flex flex-col min-h-0 bg-background h-full",
-            !selectedConversation ? 'hidden md:flex' : 'flex w-full'
+            "flex-1 flex flex-col min-h-0 bg-background h-full overflow-hidden",
+            !selectedConversation ? 'hidden md:flex md:items-center md:justify-center' : 'flex'
           )}
             style={{
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.08'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
             }}
           >
             {selectedConversation ? (
@@ -1076,14 +1094,14 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   onOpenProducts={() => setProductSelectorOpen(true)}
                   isLoading={sendMessageMutation.isPending}
                   isUploadingMedia={uploadingMedia}
-                  isSeller={isSeller}
+                  isSeller={canSendProducts}
                 />
                 
                 {/* Product Selector Dialog */}
                 <ProductSelector
                   open={productSelectorOpen}
                   onOpenChange={setProductSelectorOpen}
-                  merchantId={chatCommerce.isSeller ? user?.id || '' : otherUserId || ''}
+                  merchantId={user?.id || ''}
                   onSelectProduct={async (product) => {
                     // Send product as a message
                     const primaryIndex = product.primary_image_index || 0;
