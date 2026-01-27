@@ -1,11 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { WECHAT_EMOJIS, EmojiItem } from './emojiData';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clock } from 'lucide-react';
 
 const RECENT_EMOJIS_KEY = 'chat_recent_emojis';
-const MAX_RECENT_EMOJIS = 8;
+const MAX_RECENT_EMOJIS = 7;
 
 interface EmojiPickerProps {
   onSelectEmoji: (emojiCode: string) => void;
@@ -26,11 +25,8 @@ function getRecentEmojis(): string[] {
 function saveRecentEmoji(emojiCode: string): string[] {
   try {
     let recent = getRecentEmojis();
-    // Remove if already exists
     recent = recent.filter(code => code !== emojiCode);
-    // Add to beginning
     recent.unshift(emojiCode);
-    // Keep only last MAX_RECENT_EMOJIS
     recent = recent.slice(0, MAX_RECENT_EMOJIS);
     localStorage.setItem(RECENT_EMOJIS_KEY, JSON.stringify(recent));
     return recent;
@@ -46,7 +42,6 @@ export default function EmojiPicker({ onSelectEmoji, className }: EmojiPickerPro
   const [recentEmojis, setRecentEmojis] = useState<EmojiItem[]>([]);
   const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
 
-  // Load recent emojis on mount
   useEffect(() => {
     const recentCodes = getRecentEmojis();
     const emojis = recentCodes
@@ -63,7 +58,6 @@ export default function EmojiPicker({ onSelectEmoji, className }: EmojiPickerPro
     e.preventDefault();
     e.stopPropagation();
     
-    // Save to recent and update state
     const updatedRecent = saveRecentEmoji(code);
     const emojis = updatedRecent
       .map(c => emojiMap.get(c))
@@ -80,23 +74,30 @@ export default function EmojiPicker({ onSelectEmoji, className }: EmojiPickerPro
         <span className="text-xs font-medium text-muted-foreground">رموز تعبيرية</span>
       </div>
       
-      <ScrollArea className="h-72">
-        {/* Recent Emojis Section */}
+      {/* Scrollable Container with smooth scroll */}
+      <div 
+        className="h-72 overflow-y-auto overscroll-contain"
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'hsl(var(--muted-foreground) / 0.3) transparent',
+          scrollBehavior: 'smooth'
+        }}
+      >
+        {/* Recent Emojis Section - Sticky */}
         {recentEmojis.length > 0 && (
-          <div className="p-2 border-b border-border/50">
+          <div className="p-2 border-b border-border/50 sticky top-0 bg-card/95 backdrop-blur-sm z-10">
             <div className="flex items-center gap-1.5 mb-2 px-1">
               <Clock className="w-3 h-3 text-muted-foreground" />
               <span className="text-[10px] font-medium text-muted-foreground">الأخيرة</span>
             </div>
-            <div className="flex gap-1 flex-wrap">
+            <div className="flex gap-1">
               {recentEmojis.map((emoji) => (
                 <button
                   key={`recent-${emoji.id}`}
                   type="button"
                   onClick={(e) => handleEmojiClick(e, emoji.code)}
-                  className={cn(
-                    "w-9 h-9 p-1 rounded-lg hover:bg-primary/10 active:scale-90 transition-all duration-150 flex items-center justify-center touch-manipulation"
-                  )}
+                  className="w-9 h-9 p-1 rounded-lg hover:bg-primary/10 active:scale-90 transition-all duration-150 flex items-center justify-center touch-manipulation"
                   title={emoji.alt}
                 >
                   <img
@@ -135,7 +136,7 @@ export default function EmojiPicker({ onSelectEmoji, className }: EmojiPickerPro
             ))}
           </div>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

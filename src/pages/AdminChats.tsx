@@ -485,7 +485,6 @@ export default function AdminChats() {
                       value={productSearchQuery}
                       onChange={(e) => setProductSearchQuery(e.target.value)}
                       className="pr-10 h-8 text-sm"
-                      autoFocus
                     />
                   </div>
                   <ScrollArea className="h-32">

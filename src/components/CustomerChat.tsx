@@ -615,7 +615,6 @@ export default function CustomerChat({
                   value={productSearchQuery}
                   onChange={(e) => setProductSearchQuery(e.target.value)}
                   className="pr-10 bg-background border-border text-foreground placeholder:text-foreground/50"
-                  autoFocus
                 />
               </div>
               <ScrollArea className="h-40">
