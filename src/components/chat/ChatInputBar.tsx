@@ -26,12 +26,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 // WeChat Sticker-style emoji categories (using popular WeChat emoticon style)
 const WECHAT_STICKERS = [
-  // Smileys - WeChat Classic
-  ['😄', '😷', '😂', '😝', '😳', '😱', '😔', '😒', '😏', '😍', '😘', '😚', '😜', '🤑', '😎', '🤗', '🤔', '😐', '😑', '😶', '🙄', '😏', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱'],
+  // Smileys - WeChat Classic (no duplicates)
+  ['😄', '😷', '😂', '😝', '😳', '😱', '😔', '😒', '😏', '😍', '😘', '😚', '😜', '🤑', '😎', '🤗', '🤔', '😐', '😑', '😶', '🙄', '😣', '😥', '😮', '🤐', '😯', '😪', '😫', '🥱', '😴'],
   // Gestures  
-  ['👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👋', '🤚', '🖐️', '✋', '👏', '🙌', '🤝', '🙏', '💪', '🤳', '👊', '✊', '🤛', '🤜', '☝️', '👆', '👇', '👈', '👉', '🖕', '🤌', '🫰'],
+  ['👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙', '👋', '🤚', '🖐️', '✋', '👏', '🙌', '🤝', '🙏', '💪', '🤳', '👊', '✊', '🤛', '🤜', '☝️', '👆', '👇', '👈', '👉', '🤌', '🫰', '🫵'],
   // Hearts & Love
-  ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔', '❤️‍🔥', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '😍', '🥰', '😘', '💋', '💌', '🌹', '💐', '🎁', '💎', '💍', '👫', '💑'],
+  ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '💔', '❤️‍🔥', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '🥰', '💋', '💌', '🌹', '💐', '🎁', '💎', '💍', '👫', '💑', '🫶', '💝'],
   // Objects & Symbols
   ['🔥', '✨', '⭐', '🌟', '💫', '⚡', '💥', '💯', '✅', '❌', '⭕', '❗', '❓', '💬', '💭', '🗨️', '📢', '🔔', '🎵', '🎶', '💰', '💵', '📦', '🎉', '🎊', '🏆', '🥇', '🎯', '🚀', '💡']
 ];
@@ -233,13 +233,13 @@ export default function ChatInputBar({
             </PopoverContent>
           </Popover>
 
-          {/* Send Product Button - Seller Only */}
+          {/* Send Product Button - Merchant Only */}
           {isSeller && (
             <Button
               type="button"
-              variant="ghost"
+              variant="default"
               size="icon"
-              className="h-9 w-9 rounded-full text-primary hover:bg-primary/10"
+              className="h-9 w-9 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
               onClick={onOpenProducts}
               disabled={disabled || isRecording}
               title="إرسال منتج"
