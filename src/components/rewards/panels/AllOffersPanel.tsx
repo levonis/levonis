@@ -127,25 +127,16 @@ export default function AllOffersPanel() {
       if (purchaseError) throw purchaseError;
 
       // Award tickets
+      // Add gift tickets using secure function
       if (offer.gift_tickets && offer.gift_tickets > 0) {
         const totalTickets = offer.gift_tickets * qty;
         
-        const { data: existingTickets } = await supabase
-          .from('user_tickets')
-          .select('ticket_count')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        
-        if (existingTickets) {
-          await supabase
-            .from('user_tickets')
-            .update({ ticket_count: existingTickets.ticket_count + totalTickets })
-            .eq('user_id', user.id);
-        } else {
-          await supabase
-            .from('user_tickets')
-            .insert({ user_id: user.id, ticket_count: totalTickets });
-        }
+        const { error: ticketError } = await supabase.rpc('add_user_tickets', {
+          p_user_id: user.id,
+          p_amount: totalTickets,
+          p_source: 'offer_purchase'
+        });
+        if (ticketError) console.error('Failed to add tickets:', ticketError);
       }
 
       // Update stock

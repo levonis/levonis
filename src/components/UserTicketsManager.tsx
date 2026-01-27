@@ -98,32 +98,27 @@ export default function UserTicketsManager({ open, onOpenChange }: UserTicketsMa
     );
   });
 
-  // Mutation to update tickets
+  // Mutation to update tickets using secure admin function
   const updateTicketsMutation = useMutation({
     mutationFn: async ({ userId, amount, isAdd }: { userId: string; amount: number; isAdd: boolean }) => {
-      const { data: existing } = await supabase
+      const adjustAmount = isAdd ? amount : -amount;
+      
+      const { error } = await supabase.rpc('admin_adjust_tickets', {
+        p_user_id: userId,
+        p_amount: adjustAmount,
+        p_source: 'admin'
+      });
+      
+      if (error) throw error;
+
+      // Fetch updated count
+      const { data: updated } = await supabase
         .from('user_tickets')
         .select('ticket_count')
         .eq('user_id', userId)
         .maybeSingle();
 
-      const currentCount = existing?.ticket_count || 0;
-      const newCount = isAdd ? currentCount + amount : Math.max(0, currentCount - amount);
-
-      if (existing) {
-        const { error } = await supabase
-          .from('user_tickets')
-          .update({ ticket_count: newCount, updated_at: new Date().toISOString() })
-          .eq('user_id', userId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_tickets')
-          .insert({ user_id: userId, ticket_count: newCount });
-        if (error) throw error;
-      }
-
-      return { userId, newCount };
+      return { userId, newCount: updated?.ticket_count || 0 };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['users-with-tickets'] });

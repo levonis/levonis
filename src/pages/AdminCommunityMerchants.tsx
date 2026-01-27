@@ -137,22 +137,15 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
         throw new Error(`رصيد المحفظة غير كافي. المطلوب: ${MERCHANT_FEE.toLocaleString()} IQD، المتوفر: ${currentBalance.toLocaleString()} IQD`);
       }
 
-      // 2. Deduct from wallet
-      const { error: deductError } = await supabase
-        .from("user_wallets")
-        .update({ balance: currentBalance - MERCHANT_FEE })
-        .eq("user_id", payload.user_id);
-
-      if (deductError) throw deductError;
-
-      // 3. Record wallet transaction
-      await supabase.from("wallet_transactions").insert({
-        user_id: payload.user_id,
-        amount: -MERCHANT_FEE,
-        type: "merchant_fee",
-        description: "رسوم التسجيل كتاجر في مجتمع ليفو",
-        status: "completed",
+      // 2. Deduct from wallet using secure admin function
+      const { error: deductError } = await supabase.rpc('admin_adjust_wallet', {
+        p_user_id: payload.user_id,
+        p_amount: -MERCHANT_FEE,
+        p_type: 'merchant_fee',
+        p_description: 'رسوم التسجيل كتاجر في مجتمع ليفو'
       });
+
+      if (deductError) throw new Error(deductError.message || 'فشل خصم رسوم التسجيل');
 
       // 4. Update merchant application status
       const { error: updateError } = await supabase

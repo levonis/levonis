@@ -177,35 +177,14 @@ export default function AdminWallet() {
 
   const addFundsToUser = useMutation({
     mutationFn: async ({ userId, amount, notes }: { userId: string; amount: number; notes: string }) => {
-      const { data: existingWallet } = await supabase
-        .from('user_wallets')
-        .select('id, balance')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (existingWallet) {
-        const { error } = await supabase
-          .from('user_wallets')
-          .update({ balance: existingWallet.balance + amount, updated_at: new Date().toISOString() })
-          .eq('user_id', userId);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('user_wallets')
-          .insert({ user_id: userId, balance: amount, currency: 'دينار عراقي' });
-        if (error) throw error;
-      }
-
-      const { error: transactionError } = await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: userId,
-          type: 'deposit',
-          amount: amount,
-          status: 'completed',
-          admin_notes: notes || 'تم إضافة الرصيد من قبل الإدارة',
-        });
-      if (transactionError) throw transactionError;
+      // Use secure admin function
+      const { error } = await supabase.rpc('admin_adjust_wallet', {
+        p_user_id: userId,
+        p_amount: amount,
+        p_type: 'deposit',
+        p_description: notes || 'تم إضافة الرصيد من قبل الإدارة'
+      });
+      if (error) throw error;
 
       await supabase.from('notifications').insert({
         user_id: userId,
@@ -233,32 +212,14 @@ export default function AdminWallet() {
 
   const deductFundsFromUser = useMutation({
     mutationFn: async ({ userId, amount, notes }: { userId: string; amount: number; notes: string }) => {
-      const { data: wallet } = await supabase
-        .from('user_wallets')
-        .select('balance')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (!wallet || wallet.balance < amount) {
-        throw new Error('رصيد المستخدم غير كافٍ');
-      }
-
-      const { error: transactionError } = await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: userId,
-          type: 'admin_deduction',
-          amount: amount,
-          status: 'completed',
-          admin_notes: notes || 'تم خصم الرصيد من قبل الإدارة',
-        });
-      if (transactionError) throw transactionError;
-
-      const { error: updateError } = await supabase
-        .from('user_wallets')
-        .update({ balance: wallet.balance - amount, updated_at: new Date().toISOString() })
-        .eq('user_id', userId);
-      if (updateError) throw updateError;
+      // Use secure admin function (negative amount for deduction)
+      const { error } = await supabase.rpc('admin_adjust_wallet', {
+        p_user_id: userId,
+        p_amount: -amount,
+        p_type: 'admin_deduction',
+        p_description: notes || 'تم خصم الرصيد من قبل الإدارة'
+      });
+      if (error) throw error;
 
       await supabase.from('notifications').insert({
         user_id: userId,
