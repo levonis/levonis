@@ -20,6 +20,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import data from '@emoji-mart/data';
+import Picker from '@emoji-mart/react';
 
 interface ChatInputBarProps {
   value: string;
@@ -45,6 +47,7 @@ export default function ChatInputBar({
   isSeller = false,
 }: ChatInputBarProps) {
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +71,11 @@ export default function ChatInputBar({
 
   const handleVoiceRecord = () => {
     setIsRecording(!isRecording);
+  };
+
+  const handleEmojiSelect = (emoji: any) => {
+    onChange(value + emoji.native);
+    setEmojiPickerOpen(false);
   };
 
   const attachOptions = [
@@ -97,61 +105,64 @@ export default function ChatInputBar({
       />
 
       <form onSubmit={handleSubmit} className="flex items-center gap-1.5">
-        {/* Right Side: Attachment Menu */}
-        <Popover open={attachMenuOpen} onOpenChange={setAttachMenuOpen}>
-          <PopoverTrigger asChild>
+        {/* Right Side: Attachment Menu + Product Selector (Seller Only) */}
+        <div className="flex items-center gap-0.5 shrink-0">
+          {/* Attachment Menu */}
+          <Popover open={attachMenuOpen} onOpenChange={setAttachMenuOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "h-9 w-9 rounded-full",
+                  attachMenuOpen && "bg-muted"
+                )}
+                disabled={disabled}
+              >
+                {attachMenuOpen ? (
+                  <X className="h-5 w-5 text-muted-foreground" />
+                ) : (
+                  <Plus className="h-5 w-5 text-muted-foreground" />
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent 
+              side="top" 
+              align="start" 
+              className="w-auto p-2"
+            >
+              <div className="flex gap-2">
+                {attachOptions.map((opt) => (
+                  <button
+                    key={opt.label}
+                    onClick={opt.onClick}
+                    className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors"
+                  >
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <opt.icon className="h-5 w-5 text-primary" />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          {/* Send Product Button - Seller Only (next to +) */}
+          {isSeller && (
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className={cn(
-                "h-9 w-9 rounded-full shrink-0",
-                attachMenuOpen && "bg-muted"
-              )}
+              className="h-9 w-9 rounded-full text-primary"
+              onClick={onOpenProducts}
               disabled={disabled}
             >
-              {attachMenuOpen ? (
-                <X className="h-5 w-5 text-muted-foreground" />
-              ) : (
-                <Plus className="h-5 w-5 text-muted-foreground" />
-              )}
+              <ShoppingBag className="h-5 w-5" />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent 
-            side="top" 
-            align="start" 
-            className="w-auto p-2"
-          >
-            <div className="flex gap-2">
-              {attachOptions.map((opt) => (
-                <button
-                  key={opt.label}
-                  onClick={opt.onClick}
-                  className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors"
-                >
-                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                    <opt.icon className="h-5 w-5 text-primary" />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">{opt.label}</span>
-                </button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
-
-        {/* Send Product Button - Seller Only */}
-        {isSeller && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="h-9 w-9 rounded-full shrink-0 text-primary"
-            onClick={onOpenProducts}
-            disabled={disabled}
-          >
-            <ShoppingBag className="h-5 w-5" />
-          </Button>
-        )}
+          )}
+        </div>
 
         {/* Center: Text Input with Emoji inside */}
         <div className="flex-1 relative">
@@ -164,18 +175,42 @@ export default function ChatInputBar({
           />
           
           {/* Emoji Button - Inside Input on Right */}
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full"
-            disabled={disabled}
-          >
-            <Smile className="h-5 w-5 text-muted-foreground" />
-          </Button>
+          <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full"
+                disabled={disabled}
+              >
+                <Smile className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent 
+              side="top" 
+              align="end" 
+              className="w-auto p-0 border-0 shadow-lg"
+              sideOffset={10}
+            >
+              <Picker
+                data={data}
+                onEmojiSelect={handleEmojiSelect}
+                theme="light"
+                locale="ar"
+                previewPosition="none"
+                skinTonePosition="none"
+                navPosition="bottom"
+                perLine={8}
+                emojiSize={24}
+                emojiButtonSize={32}
+                maxFrequentRows={2}
+              />
+            </PopoverContent>
+          </Popover>
         </div>
 
-        {/* Left Side: Voice or Send */}
+        {/* Left Side: Voice or Send (outside input) */}
         {value.trim() ? (
           <Button
             type="submit"
