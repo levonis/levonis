@@ -55,6 +55,7 @@ import ConfirmationCard from '@/components/chat/messages/ConfirmationCard';
 import ProductSelector from '@/components/chat/ProductSelector';
 import PriceChangeDialog from '@/components/chat/PriceChangeDialog';
 import CreateOrderDialog from '@/components/chat/CreateOrderDialog';
+import MerchantOrderDialog from '@/components/chat/MerchantOrderDialog';
 import { useChatCommerce, type ChatOrder } from '@/hooks/useChatCommerce';
 import { parseEmojisInText } from '@/components/chat/emojiData';
 
@@ -94,12 +95,18 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const [productSelectorOpen, setProductSelectorOpen] = useState(false);
   const [priceChangeDialogOpen, setPriceChangeDialogOpen] = useState(false);
   const [createOrderDialogOpen, setCreateOrderDialogOpen] = useState(false);
+  const [merchantOrderDialogOpen, setMerchantOrderDialogOpen] = useState(false);
   const [selectedOrderForPriceChange, setSelectedOrderForPriceChange] = useState<ChatOrder | null>(null);
   const [selectedProductForOrder, setSelectedProductForOrder] = useState<{
     id: string;
     title: string;
     image?: string;
     price: number;
+  } | null>(null);
+  const [merchantOrderInitialData, setMerchantOrderInitialData] = useState<{
+    title?: string;
+    price?: number;
+    image?: string;
   } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -922,9 +929,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       isMe={isMe}
                                       timestamp={timestamp}
                                       userRole={chatCommerce.userRole}
-                                      onPayNow={() => {
-                                        toast.info('سيتم توجيهك لصفحة الدفع');
-                                        // TODO: Integrate payment
+                                      onPayNow={(orderId) => {
+                                        navigate(`/community/checkout/${orderId}`);
                                       }}
                                       onTrack={() => toast.info('تتبع الشحن قريبًا')}
                                       onConfirmReceipt={() => {
@@ -1008,6 +1014,15 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                         price: price,
                                       });
                                       setCreateOrderDialogOpen(true);
+                                    }}
+                                    onEditOrder={() => {
+                                      // Merchant edits product to create custom order
+                                      setMerchantOrderInitialData({
+                                        title: productName,
+                                        price: price,
+                                        image: msg.image_url,
+                                      });
+                                      setMerchantOrderDialogOpen(true);
                                     }}
                                   />
                                 );
@@ -1147,6 +1162,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       toast.success('تم إرسال المنتج');
                     }
                   }}
+                  onCreateCustomOrder={() => {
+                    setMerchantOrderInitialData(null);
+                    setMerchantOrderDialogOpen(true);
+                  }}
                 />
                 
                 {/* Price Change Dialog - Seller Only */}
@@ -1170,6 +1189,79 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     isLoading={chatCommerce.isProposingPrice}
                   />
                 )}
+                
+                {/* Merchant Order Dialog - Create Custom Order */}
+                <MerchantOrderDialog
+                  open={merchantOrderDialogOpen}
+                  onOpenChange={(open) => {
+                    setMerchantOrderDialogOpen(open);
+                    if (!open) setMerchantOrderInitialData(null);
+                  }}
+                  initialTitle={merchantOrderInitialData?.title}
+                  initialPrice={merchantOrderInitialData?.price}
+                  initialImage={merchantOrderInitialData?.image}
+                  onSubmit={async (data) => {
+                    if (!selectedConversation || !user) return;
+                    
+                    const totalWithShipping = (data.price * data.quantity) + data.shippingPrice;
+                    
+                    // Create order in database
+                    const { data: order, error } = await supabase
+                      .from('chat_orders')
+                      .insert({
+                        conversation_id: selectedConversation,
+                        product_title: data.title,
+                        product_image: merchantOrderInitialData?.image,
+                        description: data.description || null,
+                        quantity: data.quantity,
+                        unit_price: data.price,
+                        total_price: totalWithShipping,
+                        notes: data.notes || null,
+                        seller_id: user.id,
+                        customer_id: selectedConv?.buyer_id === user.id ? selectedConv?.seller_id : selectedConv?.buyer_id,
+                        status: 'waiting_payment',
+                        partial_payment_percent: data.requirePartialPayment ? data.partialPaymentPercent : null,
+                        commission_rate: data.requirePartialPayment ? 5 : 0,
+                      })
+                      .select()
+                      .single();
+
+                    if (error) {
+                      toast.error('فشل إنشاء الطلب');
+                      return;
+                    }
+
+                    // Send order card message
+                    await supabase.from('listing_messages').insert({
+                      conversation_id: selectedConversation,
+                      sender_id: user.id,
+                      content: JSON.stringify({
+                        type: 'order_card',
+                        order_id: order.id,
+                        product_title: data.title,
+                        product_image: merchantOrderInitialData?.image,
+                        quantity: data.quantity,
+                        total_price: totalWithShipping,
+                        status: 'waiting_payment',
+                      }),
+                    });
+
+                    // Send system message
+                    await supabase.from('listing_messages').insert({
+                      conversation_id: selectedConversation,
+                      sender_id: user.id,
+                      content: `🔔 تم إنشاء طلب جديد بقيمة ${totalWithShipping.toLocaleString()} د.ع. يرجى مراجعة الطلب والدفع.`,
+                    });
+
+                    queryClient.invalidateQueries({ queryKey: ['chat-orders', selectedConversation] });
+                    queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+                    
+                    toast.success('تم إنشاء الطلب وإرساله للزبون');
+                    setMerchantOrderDialogOpen(false);
+                    setMerchantOrderInitialData(null);
+                  }}
+                  isLoading={false}
+                />
                 
                 {/* Create Order Dialog - Customer Only */}
                 {selectedProductForOrder && (

@@ -1,4 +1,4 @@
-import { Package, ShoppingCart } from 'lucide-react';
+import { Package, ShoppingCart, Edit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -15,6 +15,7 @@ interface ProductCardProps {
   timestamp: string;
   userRole?: ChatRole;
   onCreateOrder?: () => void;
+  onEditOrder?: () => void;
 }
 
 export default function ProductCard({
@@ -28,6 +29,7 @@ export default function ProductCard({
   timestamp,
   userRole = 'customer',
   onCreateOrder,
+  onEditOrder,
 }: ProductCardProps) {
   const isSeller = userRole === 'seller';
   const isCustomer = userRole === 'customer';
@@ -68,9 +70,23 @@ export default function ProductCard({
           </div>
         </div>
 
-        {/* Single Action Button */}
-        {isCustomer && onCreateOrder && (
-          <div className="px-2 pb-2">
+        {/* Action Button - Role Based */}
+        <div className="px-2 pb-2">
+          {/* Seller sees "Edit Order" to create custom order from this product */}
+          {isSeller && onEditOrder && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full h-7 text-[10px] rounded-lg border-primary/30 text-primary hover:bg-primary/10"
+              onClick={onEditOrder}
+            >
+              <Edit className="h-3 w-3 ml-1" />
+              تعديل وإنشاء طلب
+            </Button>
+          )}
+          
+          {/* Customer sees "Create Order" */}
+          {isCustomer && onCreateOrder && (
             <Button
               size="sm"
               className="w-full h-7 text-[10px] rounded-lg"
@@ -79,8 +95,8 @@ export default function ProductCard({
               <ShoppingCart className="h-3 w-3 ml-1" />
               إنشاء طلب
             </Button>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Timestamp */}
         <div className="px-2 pb-1.5 text-[9px] text-muted-foreground text-left">

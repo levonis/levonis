@@ -131,6 +131,10 @@ const getAvailableActions = (status: OrderStatus, role: ChatRole) => {
     addNotes?: boolean;
   } = { viewDetails: true };
 
+  // Statuses where order is considered "paid" - merchant cannot edit
+  const paidStatuses: OrderStatus[] = ['paid', 'shipped', 'completed'];
+  const isPaid = paidStatuses.includes(status);
+
   if (role === 'customer') {
     switch (status) {
       case 'created':
@@ -150,15 +154,23 @@ const getAvailableActions = (status: OrderStatus, role: ChatRole) => {
         break;
     }
   } else if (role === 'seller') {
-    switch (status) {
-      case 'created':
-        actions.proposeChange = true;
-        actions.addNotes = true;
+    // After payment, seller can ONLY add notes
+    if (isPaid) {
+      actions.addNotes = true;
+    } else {
+      switch (status) {
+        case 'created':
+        case 'waiting_customer_approval':
+        case 'approved':
+        case 'waiting_payment':
+          actions.proposeChange = true;
+          actions.addNotes = true;
+          break;
+      }
+      // Can cancel only before payment
+      if (!isPaid && status !== 'canceled') {
         actions.cancel = true;
-        break;
-      case 'paid':
-        // Seller can mark as shipped (handled externally)
-        break;
+      }
     }
   }
 
