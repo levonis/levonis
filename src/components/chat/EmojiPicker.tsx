@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { WECHAT_EMOJIS, EmojiItem } from './emojiData';
 import { Clock } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 const RECENT_EMOJIS_KEY = 'chat_recent_emojis';
 const MAX_RECENT_EMOJIS = 7;
@@ -75,8 +74,15 @@ export default function EmojiPicker({ onSelectEmoji, className }: EmojiPickerPro
         <span className="text-xs font-medium text-muted-foreground">رموز تعبيرية</span>
       </div>
       
-      {/* Scrollable Container using ScrollArea */}
-      <ScrollArea className="h-72">
+      {/* Scrollable Container - Native scroll for full touch support */}
+      <div 
+        className="h-72 overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y"
+        style={{ 
+          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'thin',
+          scrollbarColor: 'hsl(var(--muted-foreground) / 0.3) transparent'
+        }}
+      >
         <div className="flex flex-col">
           {/* Recent Emojis Section */}
           {recentEmojis.length > 0 && (
@@ -97,7 +103,7 @@ export default function EmojiPicker({ onSelectEmoji, className }: EmojiPickerPro
                     <img
                       src={emoji.src}
                       alt={emoji.alt}
-                      className="w-6 h-6 object-contain"
+                      className="w-6 h-6 object-contain pointer-events-none"
                     />
                   </button>
                 ))}
@@ -122,7 +128,7 @@ export default function EmojiPicker({ onSelectEmoji, className }: EmojiPickerPro
                   <img
                     src={emoji.src}
                     alt={emoji.alt}
-                    className="w-6 h-6 object-contain"
+                    className="w-6 h-6 object-contain pointer-events-none"
                     loading="lazy"
                     onLoad={() => handleImageLoad(emoji.id)}
                   />
@@ -131,7 +137,7 @@ export default function EmojiPicker({ onSelectEmoji, className }: EmojiPickerPro
             </div>
           </div>
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
