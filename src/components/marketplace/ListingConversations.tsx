@@ -56,6 +56,7 @@ import ProductSelector from '@/components/chat/ProductSelector';
 import PriceChangeDialog from '@/components/chat/PriceChangeDialog';
 import CreateOrderDialog from '@/components/chat/CreateOrderDialog';
 import { useChatCommerce, type ChatOrder } from '@/hooks/useChatCommerce';
+import { parseEmojisInText } from '@/components/chat/emojiData';
 
 interface ListingConversationsProps {
   children?: React.ReactNode;
@@ -1042,10 +1043,14 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       </div>
                                     )}
                                     
-                                    {/* Text */}
+                                    {/* Text with inline emojis */}
                                     {msg.content && msg.content !== '📷 وسائط' && msg.content !== '📷 صورة' && !msg.content.startsWith('{') && (
                                       <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-                                        {msg.content}
+                                        {parseEmojisInText(msg.content).map((item, idx) => 
+                                          typeof item === 'string' 
+                                            ? <span key={idx}>{item}</span>
+                                            : <img key={idx} src={item.src} alt={item.alt} className="inline-block w-5 h-5 align-text-bottom mx-0.5" loading="lazy" />
+                                        )}
                                       </p>
                                     )}
                                     
