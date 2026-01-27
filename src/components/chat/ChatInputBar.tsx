@@ -276,6 +276,10 @@ export default function ChatInputBar({
                     align="end" 
                     className="w-80 p-0 shadow-2xl rounded-2xl overflow-hidden border-0"
                     sideOffset={10}
+                    onOpenAutoFocus={(e) => e.preventDefault()}
+                    onCloseAutoFocus={(e) => e.preventDefault()}
+                    onPointerDownOutside={(e) => e.preventDefault()}
+                    onInteractOutside={(e) => e.preventDefault()}
                   >
                     <EmojiPicker onSelectEmoji={handleEmojiSelect} />
                   </PopoverContent>
