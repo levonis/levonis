@@ -32,11 +32,17 @@ interface MerchantOrderDialogProps {
     description: string;
     price: number;
     quantity: number;
+    notes: string;
+    shippingPrice: number;
     requirePartialPayment: boolean;
     partialPaymentPercent: number;
   }) => void;
   isLoading?: boolean;
   currency?: string;
+  // Pre-fill data for editing from product
+  initialTitle?: string;
+  initialPrice?: number;
+  initialImage?: string;
 }
 
 export default function MerchantOrderDialog({
@@ -45,15 +51,28 @@ export default function MerchantOrderDialog({
   onSubmit,
   isLoading = false,
   currency = 'د.ع',
+  initialTitle = '',
+  initialPrice = 0,
+  initialImage,
 }: MerchantOrderDialogProps) {
-  const [title, setTitle] = useState('');
+  const [title, setTitle] = useState(initialTitle);
   const [description, setDescription] = useState('');
-  const [price, setPrice] = useState<number>(0);
+  const [price, setPrice] = useState<number>(initialPrice);
   const [quantity, setQuantity] = useState(1);
+  const [notes, setNotes] = useState('');
+  const [shippingPrice, setShippingPrice] = useState<number>(0);
   const [requirePartialPayment, setRequirePartialPayment] = useState(false);
   const [partialPaymentPercent, setPartialPaymentPercent] = useState(50);
 
-  const totalPrice = price * quantity;
+  // Update form when initial values change (e.g., opening with product data)
+  useState(() => {
+    if (open) {
+      setTitle(initialTitle);
+      setPrice(initialPrice);
+    }
+  });
+
+  const totalPrice = (price * quantity) + shippingPrice;
   const partialAmount = Math.round(totalPrice * (partialPaymentPercent / 100));
   const remainingAmount = totalPrice - partialAmount;
 
@@ -64,6 +83,8 @@ export default function MerchantOrderDialog({
       description: description.trim(),
       price,
       quantity,
+      notes: notes.trim(),
+      shippingPrice,
       requirePartialPayment,
       partialPaymentPercent: requirePartialPayment ? partialPaymentPercent : 0,
     });
@@ -76,6 +97,8 @@ export default function MerchantOrderDialog({
     setDescription('');
     setPrice(0);
     setQuantity(1);
+    setNotes('');
+    setShippingPrice(0);
     setRequirePartialPayment(false);
     setPartialPaymentPercent(50);
   };
@@ -116,26 +139,48 @@ export default function MerchantOrderDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="وصف تفصيلي للمنتج أو الخدمة..."
-              className="text-right min-h-[80px]"
+              className="text-right min-h-[60px]"
             />
           </div>
 
-          {/* Price */}
-          <div className="space-y-2">
-            <Label htmlFor="price">السعر *</Label>
-            <div className="relative">
-              <Input
-                id="price"
-                type="number"
-                value={price || ''}
-                onChange={(e) => setPrice(Math.max(0, parseInt(e.target.value) || 0))}
-                placeholder="0"
-                className="pl-12 text-right"
-                min={0}
-              />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
-                {currency}
-              </span>
+          {/* Price & Shipping in row */}
+          <div className="grid grid-cols-2 gap-3">
+            {/* Price */}
+            <div className="space-y-2">
+              <Label htmlFor="price">السعر *</Label>
+              <div className="relative">
+                <Input
+                  id="price"
+                  type="number"
+                  value={price || ''}
+                  onChange={(e) => setPrice(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  className="pl-10 text-right"
+                  min={0}
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  {currency}
+                </span>
+              </div>
+            </div>
+
+            {/* Shipping Price */}
+            <div className="space-y-2">
+              <Label htmlFor="shippingPrice">سعر التوصيل</Label>
+              <div className="relative">
+                <Input
+                  id="shippingPrice"
+                  type="number"
+                  value={shippingPrice || ''}
+                  onChange={(e) => setShippingPrice(Math.max(0, parseInt(e.target.value) || 0))}
+                  placeholder="0"
+                  className="pl-10 text-right"
+                  min={0}
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                  {currency}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -169,6 +214,18 @@ export default function MerchantOrderDialog({
                 +
               </Button>
             </div>
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-2">
+            <Label htmlFor="notes">ملاحظات إضافية</Label>
+            <Textarea
+              id="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="ملاحظات للزبون..."
+              className="text-right min-h-[50px]"
+            />
           </div>
 
           {/* Total Display */}

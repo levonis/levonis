@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Package, Loader2, X } from 'lucide-react';
+import { Search, Package, Loader2, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ interface ProductSelectorProps {
   onOpenChange: (open: boolean) => void;
   merchantId: string;
   onSelectProduct: (product: MerchantProduct) => void;
+  onCreateCustomOrder?: () => void;
 }
 
 export default function ProductSelector({
@@ -33,6 +34,7 @@ export default function ProductSelector({
   onOpenChange,
   merchantId,
   onSelectProduct,
+  onCreateCustomOrder,
 }: ProductSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -68,10 +70,26 @@ export default function ProductSelector({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md p-0 gap-0 max-h-[80vh] flex flex-col">
         <DialogHeader className="p-4 pb-0 shrink-0">
-          <DialogTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" />
-            اختر منتج للإرسال
-          </DialogTitle>
+          <div className="flex items-center justify-between gap-2">
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5 text-primary" />
+              اختر منتج للإرسال
+            </DialogTitle>
+            {onCreateCustomOrder && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => {
+                  onOpenChange(false);
+                  onCreateCustomOrder();
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                إنشاء طلب
+              </Button>
+            )}
+          </div>
         </DialogHeader>
 
         {/* Search */}
