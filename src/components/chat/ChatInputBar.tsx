@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   Mic,
   Smile,
@@ -11,6 +11,7 @@ import {
   FileText,
   Camera,
   Image as ImageIcon,
+  Square,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/popover';
 import data from '@emoji-mart/data';
 import Picker from '@emoji-mart/react';
+import { toast } from 'sonner';
 
 interface ChatInputBarProps {
   value: string;
@@ -49,8 +51,22 @@ export default function ChatInputBar({
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +85,61 @@ export default function ChatInputBar({
     setAttachMenuOpen(false);
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioFile = new File([audioBlob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Send audio file
+        await onSendMedia(audioFile);
+        setRecordingTime(0);
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      
+      // Start timer
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
+    } catch (error) {
+      toast.error('لا يمكن الوصول إلى الميكروفون');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+  };
+
   const handleVoiceRecord = () => {
-    setIsRecording(!isRecording);
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
   };
 
   const handleEmojiSelect = (emoji: any) => {
@@ -78,11 +147,17 @@ export default function ChatInputBar({
     setEmojiPickerOpen(false);
   };
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const attachOptions = [
     { icon: Camera, label: 'كاميرا', onClick: () => cameraInputRef.current?.click() },
     { icon: ImageIcon, label: 'صور', onClick: () => fileInputRef.current?.click() },
     { icon: FileText, label: 'ملفات', onClick: () => fileInputRef.current?.click() },
-    { icon: MapPin, label: 'موقع', onClick: () => {} },
+    { icon: MapPin, label: 'موقع', onClick: () => toast.info('خدمة الموقع قريباً') },
   ];
 
   return (
@@ -118,7 +193,7 @@ export default function ChatInputBar({
                   "h-9 w-9 rounded-full",
                   attachMenuOpen && "bg-muted"
                 )}
-                disabled={disabled}
+                disabled={disabled || isRecording}
               >
                 {attachMenuOpen ? (
                   <X className="h-5 w-5 text-muted-foreground" />
@@ -149,69 +224,80 @@ export default function ChatInputBar({
             </PopoverContent>
           </Popover>
 
-          {/* Send Product Button - Seller Only (next to +) */}
+          {/* Send Product Button - Always show for sellers */}
           {isSeller && (
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full text-primary"
+              className="h-9 w-9 rounded-full text-primary hover:bg-primary/10"
               onClick={onOpenProducts}
-              disabled={disabled}
+              disabled={disabled || isRecording}
+              title="إرسال منتج"
             >
               <ShoppingBag className="h-5 w-5" />
             </Button>
           )}
         </div>
 
-        {/* Center: Text Input with Emoji inside */}
+        {/* Center: Text Input with Emoji inside OR Recording indicator */}
         <div className="flex-1 relative">
-          <Input
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="اكتب رسالة..."
-            className="rounded-full pr-10 pl-4 py-5 bg-muted/50 border-0 focus-visible:ring-1"
-            disabled={disabled}
-          />
-          
-          {/* Emoji Button - Inside Input on Right */}
-          <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full"
+          {isRecording ? (
+            <div className="flex items-center justify-center h-[42px] rounded-full bg-red-500/10 px-4 gap-3">
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-red-500 font-medium text-sm">{formatTime(recordingTime)}</span>
+              <span className="text-red-500/70 text-xs">جاري التسجيل...</span>
+            </div>
+          ) : (
+            <>
+              <Input
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="اكتب رسالة..."
+                className="rounded-full pr-10 pl-4 py-5 bg-muted/50 border-0 focus-visible:ring-1"
                 disabled={disabled}
-              >
-                <Smile className="h-5 w-5 text-muted-foreground" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent 
-              side="top" 
-              align="end" 
-              className="w-auto p-0 border-0 shadow-lg"
-              sideOffset={10}
-            >
-              <Picker
-                data={data}
-                onEmojiSelect={handleEmojiSelect}
-                theme="light"
-                locale="ar"
-                previewPosition="none"
-                skinTonePosition="none"
-                navPosition="bottom"
-                perLine={8}
-                emojiSize={24}
-                emojiButtonSize={32}
-                maxFrequentRows={2}
               />
-            </PopoverContent>
-          </Popover>
+              
+              {/* Emoji Button - Inside Input on Right */}
+              <Popover open={emojiPickerOpen} onOpenChange={setEmojiPickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full hover:bg-muted"
+                    disabled={disabled}
+                  >
+                    <Smile className="h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  side="top" 
+                  align="end" 
+                  className="w-auto p-0 border-0 shadow-xl rounded-xl overflow-hidden"
+                  sideOffset={10}
+                >
+                  <Picker
+                    data={data}
+                    onEmojiSelect={handleEmojiSelect}
+                    theme="light"
+                    locale="ar"
+                    previewPosition="none"
+                    skinTonePosition="none"
+                    navPosition="bottom"
+                    perLine={8}
+                    emojiSize={24}
+                    emojiButtonSize={32}
+                    maxFrequentRows={2}
+                  />
+                </PopoverContent>
+              </Popover>
+            </>
+          )}
         </div>
 
         {/* Left Side: Voice or Send (outside input) */}
-        {value.trim() ? (
+        {value.trim() && !isRecording ? (
           <Button
             type="submit"
             size="icon"
@@ -227,16 +313,20 @@ export default function ChatInputBar({
         ) : (
           <Button
             type="button"
-            variant="ghost"
+            variant={isRecording ? "destructive" : "ghost"}
             size="icon"
             className={cn(
               "h-10 w-10 rounded-full shrink-0",
-              isRecording && "bg-red-500/10 text-red-500"
+              isRecording && "bg-red-500 hover:bg-red-600 text-white"
             )}
             onClick={handleVoiceRecord}
             disabled={disabled}
           >
-            <Mic className="h-5 w-5" />
+            {isRecording ? (
+              <Square className="h-4 w-4 fill-current" />
+            ) : (
+              <Mic className="h-5 w-5" />
+            )}
           </Button>
         )}
       </form>
