@@ -101,7 +101,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
     <section className={className} aria-label="لوحة مجتمع ليفو">
       <Card className="border-border bg-card">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base">مجتمع ليفو — الزبون</CardTitle>
+          <CardTitle className="text-base">مجتمع ليفو — العميل</CardTitle>
           <CardDescription>
             {complete
               ? "اختصارات سريعة للطلبات والمحادثات والملف الشخصي"
@@ -144,7 +144,7 @@ export default function CommunityCustomerStrip({ className }: { className?: stri
                 className="h-9 shrink-0 rounded-xl"
               >
                 <ClipboardList className="ml-2 h-4 w-4" />
-                {isMerchant ? "طلبات الزبائن" : "طلباتي"}
+                {isMerchant ? "طلبات العملاء" : "طلباتي"}
               </Button>
 
               <Button
@@ -267,7 +267,7 @@ export function CommunityCustomerActionsInline({
 
   if (isLoading) {
     return (
-      <div className={className} aria-label="اختصارات الزبون">
+      <div className={className} aria-label="اختصارات العميل">
         {mode === "items" ? (
           <>
             {[1, 2, 3].map((i) => (
@@ -324,7 +324,7 @@ export function CommunityCustomerActionsInline({
         className="h-10 w-full shrink-0"
       >
         <ClipboardList className="ml-2 h-4 w-4" />
-        {isMerchant ? "طلبات الزبائن" : "طلباتي"}
+        {isMerchant ? "طلبات العملاء" : "طلباتي"}
       </Button>
 
       <Button
@@ -364,7 +364,7 @@ export function CommunityCustomerActionsInline({
   if (mode === "items") return <>{content}</>;
 
   return (
-    <div className={className} aria-label="اختصارات الزبون">
+    <div className={className} aria-label="اختصارات العميل">
       {/* Mobile: exactly 2 rows (2 buttons per row). Desktop: inline */}
       <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
         {content}

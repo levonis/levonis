@@ -335,7 +335,7 @@ export default function AdminCommunityComplaints({ embedded }: Props) {
   return (
     <AdminLayout
       title="الشكاوى والنزاعات"
-      description="مراجعة الشكاوى والتدخل في النزاعات بين التجار والزبائن"
+      description="مراجعة الشكاوى والتدخل في النزاعات بين التجار والعملاء"
       icon={<AlertTriangle className="h-5 w-5" />}
       backTo={ADMIN_ROUTES.levoCommunity}
       maxWidth="6xl"

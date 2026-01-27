@@ -16,7 +16,7 @@ export default function CommunityCustomer() {
               <User className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-primary">لوحة الزبون</h1>
+              <h1 className="text-2xl sm:text-3xl font-black text-primary">لوحة العميل</h1>
               <p className="text-sm text-muted-foreground">واجهة مبدئية قابلة للتطوير لاحقاً</p>
             </div>
           </div>

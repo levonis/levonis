@@ -393,7 +393,7 @@ export default function MerchantOrderDialog({
                       </div>
                       <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
                         <ShieldCheck className="h-3 w-3 text-emerald-500" />
-                        <span>حماية كاملة للتاجر والزبون</span>
+                        <span>حماية كاملة للتاجر والعميل</span>
                       </div>
                     </div>
                   </button>

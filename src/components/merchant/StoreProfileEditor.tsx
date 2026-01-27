@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Check, Coins, Droplets, Layers } from "lucide-react";
+import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import AvatarWithFrame from "./AvatarWithFrame";
@@ -114,6 +114,7 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["merchant-app"] });
+      queryClient.invalidateQueries({ queryKey: ["merchant-store"] });
       toast({ title: "تم الحفظ", description: "تم تحديث معلومات المتجر بنجاح." });
       onOpenChange(false);
     },
@@ -127,12 +128,10 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
     mutationFn: async (frame: Frame) => {
       if (!user?.id) throw new Error("Not authenticated");
       
-      // Check points
       if ((userPoints || 0) < frame.points_cost) {
         throw new Error("نقاط غير كافية");
       }
 
-      // Deduct points
       const { error: pointsError } = await supabase.from("points_transactions").insert({
         user_id: user.id,
         points: -frame.points_cost,
@@ -142,7 +141,6 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
       });
       if (pointsError) throw pointsError;
 
-      // Recalculate points
       const { data: txns } = await supabase
         .from("points_transactions")
         .select("points")
@@ -156,7 +154,6 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
         available_points: total,
       });
 
-      // Add frame to user
       const { error: frameError } = await supabase.from("user_avatar_frames").insert({
         user_id: user.id,
         frame_id: frame.id,
@@ -191,6 +188,7 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
 
       const { data: urlData } = supabase.storage.from("public-assets").getPublicUrl(path);
       setStoreImageUrl(urlData.publicUrl);
+      toast({ title: "تم الرفع", description: "تم رفع صورة المتجر بنجاح." });
     } catch {
       toast({ title: "خطأ", description: "فشل رفع الصورة.", variant: "destructive" });
     } finally {
@@ -205,22 +203,30 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader className="pb-3 border-b border-border/50">
-            <DialogTitle className="text-lg">تعديل المتجر</DialogTitle>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden">
+          <DialogHeader className="pb-4 border-b border-border/50">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              إعدادات المتجر
+            </DialogTitle>
+            <DialogDescription>
+              قم بتخصيص مظهر متجرك ومعلوماته
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 max-h-[55vh] overflow-y-auto px-0.5 py-2">
-            {/* Store Image with Frame */}
-            <div className="flex flex-col items-center gap-3">
-              <div className="relative">
+          <div className="space-y-6 max-h-[55vh] overflow-y-auto py-4 px-1">
+            {/* Store Image with Frame - Premium Design */}
+            <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
                 <AvatarWithFrame
                   imageUrl={storeImageUrl}
                   frameUrl={selectedFrame?.image_url}
                   size="xl"
+                  animated
                 />
-                <label className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-colors z-20 shadow-md">
-                  <Camera className="h-3.5 w-3.5" />
+                <label className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-pointer hover:bg-primary/90 transition-all z-20 shadow-lg hover:scale-110">
+                  <Camera className="h-4 w-4" />
                   <input
                     type="file"
                     accept="image/*"
@@ -231,110 +237,119 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
                 </label>
               </div>
               
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setFrameDialogOpen(true)}
-                className="gap-1.5 h-8 text-xs"
-              >
-                اختيار إطار
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFrameDialogOpen(true)}
+                  className="gap-2 bg-background/50"
+                >
+                  <Image className="h-4 w-4" />
+                  اختيار إطار
+                </Button>
+                {selectedFrame && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedFrameId(null)}
+                    className="text-muted-foreground"
+                  >
+                    إزالة الإطار
+                  </Button>
+                )}
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-foreground/80">اسم المتجر *</Label>
+            {/* Store Name */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">اسم المتجر *</Label>
               <Input
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="اسم المتجر"
-                className="h-9 text-sm bg-background/50 border-border/60 focus:border-primary/50"
+                maxLength={15}
+                className="h-11"
               />
+              <p className="text-[11px] text-muted-foreground">{displayName.length}/15 حرف</p>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-foreground/80">نبذة عن المتجر</Label>
+            {/* Bio */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">نبذة عن المتجر</Label>
               <Textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="وصف قصير عن متجرك..."
-                rows={2}
-                className="text-sm bg-background/50 border-border/60 focus:border-primary/50 resize-none"
+                placeholder="وصف قصير عن متجرك وخدماتك..."
+                rows={3}
+                maxLength={200}
               />
+              <p className="text-[11px] text-muted-foreground">{bio.length}/200 حرف</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-foreground/80">فيسبوك</Label>
+            {/* Social Links */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">فيسبوك</Label>
                 <Input
                   value={facebook}
                   onChange={(e) => setFacebook(e.target.value)}
-                  placeholder="الرابط..."
+                  placeholder="https://facebook.com/..."
                   dir="ltr"
-                  className="h-9 text-xs bg-background/50 border-border/60 focus:border-primary/50"
+                  className="h-11"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-foreground/80">إنستقرام</Label>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">إنستقرام</Label>
                 <Input
                   value={instagram}
                   onChange={(e) => setInstagram(e.target.value)}
-                  placeholder="الرابط..."
+                  placeholder="https://instagram.com/..."
                   dir="ltr"
-                  className="h-9 text-xs bg-background/50 border-border/60 focus:border-primary/50"
+                  className="h-11"
                 />
               </div>
             </div>
 
             {/* Specialty Selector */}
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-foreground/80">تخصص الطباعة</Label>
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">تخصص الطباعة</Label>
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setSpecialty("resin")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                    specialty === "resin"
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-background/30 border-border/60 hover:border-primary/50 hover:bg-background/50"
-                  }`}
-                >
-                  <Droplets className="h-3.5 w-3.5" />
-                  رزن فقط
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSpecialty("filament")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                    specialty === "filament"
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-background/30 border-border/60 hover:border-primary/50 hover:bg-background/50"
-                  }`}
-                >
-                  <Layers className="h-3.5 w-3.5" />
-                  فلمنت فقط
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSpecialty("both")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
-                    specialty === "both"
-                      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                      : "bg-background/30 border-border/60 hover:border-primary/50 hover:bg-background/50"
-                  }`}
-                >
-                  <Droplets className="h-3.5 w-3.5" />
-                  <Layers className="h-3.5 w-3.5 -mr-0.5" />
-                  كلاهما
-                </button>
+                {[
+                  { value: "resin", label: "رزن فقط", icon: Droplets },
+                  { value: "filament", label: "فلمنت فقط", icon: Layers },
+                  { value: "both", label: "كلاهما", icons: [Droplets, Layers] },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setSpecialty(opt.value as SpecialtyType)}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                      specialty === opt.value
+                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                        : "bg-background border-border hover:border-primary/50"
+                    }`}
+                  >
+                    {"icons" in opt ? (
+                      <>
+                        {opt.icons.map((Icon, i) => (
+                          <Icon key={i} className="h-4 w-4" />
+                        ))}
+                      </>
+                    ) : (
+                      <opt.icon className="h-4 w-4" />
+                    )}
+                    {opt.label}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-border/50">
+          <div className="pt-4 border-t border-border/50">
             <Button
               onClick={() => saveMutation.mutate()}
               disabled={!displayName.trim() || saveMutation.isPending}
-              className="w-full h-9 text-sm"
+              className="w-full h-11 text-base"
             >
               {saveMutation.isPending ? "جاري الحفظ..." : "حفظ التغييرات"}
             </Button>
@@ -342,22 +357,34 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
         </DialogContent>
       </Dialog>
 
-      {/* Frame Selection Dialog */}
+      {/* Frame Selection Dialog - Premium Design */}
       <Dialog open={frameDialogOpen} onOpenChange={setFrameDialogOpen}>
-        <DialogContent className="sm:max-w-sm">
-          <DialogHeader className="pb-3 border-b border-border/50">
-            <DialogTitle className="text-lg">اختيار إطار الصورة</DialogTitle>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden">
+          <DialogHeader className="pb-4 border-b border-border/50">
+            <DialogTitle className="text-lg font-bold flex items-center gap-2">
+              <Image className="h-5 w-5 text-primary" />
+              اختيار إطار الصورة
+            </DialogTitle>
+            <DialogDescription>
+              اختر إطاراً مميزاً لصورة متجرك
+            </DialogDescription>
           </DialogHeader>
 
-          <div className="flex items-center justify-between p-2.5 rounded-lg bg-primary/10 border border-primary/20">
-            <span className="text-xs font-medium">نقاطك الحالية</span>
-            <div className="flex items-center gap-1">
-              <Coins className="h-3.5 w-3.5 text-primary" />
-              <span className="text-sm font-bold text-primary">{userPoints?.toLocaleString() || 0}</span>
+          {/* Points Balance */}
+          <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                <Coins className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">رصيد النقاط</p>
+                <p className="text-lg font-bold text-primary">{userPoints?.toLocaleString() || 0}</p>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2 max-h-[45vh] overflow-y-auto py-2">
+          {/* Frames Grid */}
+          <div className="grid grid-cols-3 gap-3 max-h-[45vh] overflow-y-auto py-3">
             {frames.map((frame) => {
               const owned = canUseFrame(frame);
               const isSelected = selectedFrameId === frame.id;
@@ -374,38 +401,38 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
                     }
                   }}
                   disabled={purchaseFrameMutation.isPending}
-                  className={`relative p-2 rounded-lg border-2 transition-all ${
+                  className={`relative p-3 rounded-2xl border-2 transition-all hover:scale-105 ${
                     isSelected
-                      ? "border-primary bg-primary/10"
-                      : "border-border/50 hover:border-primary/50 bg-background/30"
+                      ? "border-primary bg-primary/10 shadow-lg"
+                      : "border-border/50 hover:border-primary/50 bg-card"
                   }`}
                 >
-                  <div className="flex flex-col items-center gap-1.5">
+                  <div className="flex flex-col items-center gap-2">
                     <AvatarWithFrame
                       imageUrl={storeImageUrl}
                       frameUrl={frame.image_url}
                       size="sm"
                     />
-                    <span className="text-[9px] font-medium text-center line-clamp-1">
+                    <span className="text-[10px] font-medium text-center line-clamp-1">
                       {frame.name_ar}
                     </span>
                   </div>
 
                   {isSelected && (
-                    <div className="absolute top-1 right-1 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                      <Check className="h-2.5 w-2.5" />
+                    <div className="absolute top-1.5 right-1.5 h-5 w-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-sm">
+                      <Check className="h-3 w-3" />
                     </div>
                   )}
 
                   {!owned && (
-                    <Badge className="absolute bottom-0.5 left-0.5 right-0.5 text-[8px] gap-0.5 justify-center py-0">
-                      <Coins className="h-2 w-2" />
+                    <Badge className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] gap-0.5 px-2 shadow-sm">
+                      <Coins className="h-2.5 w-2.5" />
                       {frame.points_cost}
                     </Badge>
                   )}
 
                   {frame.is_free && !isSelected && (
-                    <Badge variant="secondary" className="absolute top-0.5 left-0.5 text-[8px] py-0">
+                    <Badge variant="secondary" className="absolute top-1.5 left-1.5 text-[9px] px-1.5">
                       مجاني
                     </Badge>
                   )}
@@ -414,12 +441,12 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
             })}
           </div>
 
-          <div className="pt-3 border-t border-border/50">
+          <div className="pt-4 border-t border-border/50">
             <Button
               onClick={() => setFrameDialogOpen(false)}
-              className="w-full h-9 text-sm"
+              className="w-full h-11"
             >
-              تم
+              تم الاختيار
             </Button>
           </div>
         </DialogContent>

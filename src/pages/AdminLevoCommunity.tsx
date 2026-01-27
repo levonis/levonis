@@ -38,7 +38,7 @@ const tabs: TabConfig[] = [
   {
     value: "customers",
     icon: Users,
-    label: "الزبائن",
+    label: "العملاء",
     colorClass: "text-blue-500",
     bgClass: "bg-blue-500/15",
   },
@@ -136,7 +136,7 @@ export default function AdminLevoCommunity() {
   return (
     <AdminLayout
       title="مجتمع ليفو"
-      description="إدارة التجار والزبائن والمحادثات"
+      description="إدارة التجار والعملاء والمحادثات"
       icon={<Users className="h-5 w-5" />}
       backTo={ADMIN_ROUTES.dashboard}
       maxWidth="7xl"
@@ -160,7 +160,7 @@ export default function AdminLevoCommunity() {
         <StatsCard
           icon={Users}
           value={stats?.totalCustomers ?? 0}
-          label="الزبائن"
+          label="العملاء"
           colorClass="text-blue-500"
           bgClass="bg-blue-500/15"
         />
