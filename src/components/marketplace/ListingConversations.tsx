@@ -276,12 +276,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   }, [selectedConversation, user?.id, queryClient]);
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (mediaUrl?: string) => {
-      if (!user || !selectedConversation || (!messageInput.trim() && !mediaUrl)) {
+    mutationFn: async ({ content, mediaUrl }: { content: string; mediaUrl?: string }) => {
+      if (!user || !selectedConversation || (!content.trim() && !mediaUrl)) {
         throw new Error('لا يمكن إرسال رسالة فارغة');
       }
       
-      const messageContent = messageInput.trim() || (mediaUrl ? '📷 وسائط' : '');
+      const messageContent = content.trim() || (mediaUrl ? '📷 وسائط' : '');
       
       // Send message - this is the only blocking operation
       const { error } = await supabase.from('listing_messages').insert({
@@ -293,7 +293,6 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       if (error) throw error;
       
       // Fire-and-forget: update conversation timestamp and send notifications
-      // These run in background without blocking the UI
       supabase.from('listing_conversations')
         .update({ updated_at: new Date().toISOString() })
         .eq('id', selectedConversation)
@@ -305,7 +304,6 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           ? selectedConv.seller_id 
           : selectedConv.buyer_id;
         
-        // Fire and forget - don't await
         supabase
           .from('profiles')
           .select('full_name, username')
@@ -328,11 +326,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           });
       }
     },
-    onMutate: () => {
-      // Optimistically clear input immediately
-      setMessageInput('');
-    },
     onSuccess: () => {
+      setMessageInput('');
       queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
       queryClient.invalidateQueries({ queryKey: ['last-messages'] });
@@ -634,7 +629,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       if (error) throw error;
       
       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
-      await sendMessageMutation.mutateAsync(publicUrl);
+      await sendMessageMutation.mutateAsync({ content: '', mediaUrl: publicUrl });
     } catch (error) {
       toast.error('فشل رفع الملف');
     } finally {
@@ -645,7 +640,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (messageInput.trim()) sendMessageMutation.mutate(undefined);
+    const content = messageInput.trim();
+    if (content) {
+      setMessageInput('');
+      sendMessageMutation.mutate({ content });
+    }
   };
 
   const handleClose = () => {
@@ -1099,7 +1098,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   value={messageInput}
                   onChange={setMessageInput}
                   onSend={() => {
-                    if (messageInput.trim()) sendMessageMutation.mutate(undefined);
+                    const content = messageInput.trim();
+                    if (content) {
+                      setMessageInput('');
+                      sendMessageMutation.mutate({ content });
+                    }
                   }}
                   onSendMedia={async (file: File) => {
                     setUploadingMedia(true);
@@ -1109,7 +1112,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       const { error } = await supabase.storage.from('product-images').upload(fileName, file);
                       if (error) throw error;
                       const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
-                      await sendMessageMutation.mutateAsync(publicUrl);
+                      await sendMessageMutation.mutateAsync({ content: '', mediaUrl: publicUrl });
                     } catch (error) {
                       toast.error('فشل رفع الملف');
                     } finally {
