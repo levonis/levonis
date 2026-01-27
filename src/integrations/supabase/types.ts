@@ -850,6 +850,48 @@ export type Database = {
           },
         ]
       }
+      competition_entry_log: {
+        Row: {
+          competition_id: string
+          created_at: string | null
+          error_message: string | null
+          id: string
+          ip_hash: string | null
+          success: boolean | null
+          tickets_deducted: number | null
+          tickets_requested: number
+          user_balance_after: number | null
+          user_balance_before: number | null
+          user_id: string
+        }
+        Insert: {
+          competition_id: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          ip_hash?: string | null
+          success?: boolean | null
+          tickets_deducted?: number | null
+          tickets_requested: number
+          user_balance_after?: number | null
+          user_balance_before?: number | null
+          user_id: string
+        }
+        Update: {
+          competition_id?: string
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          ip_hash?: string | null
+          success?: boolean | null
+          tickets_deducted?: number | null
+          tickets_requested?: number
+          user_balance_after?: number | null
+          user_balance_before?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       competition_prizes: {
         Row: {
           competition_id: string | null
@@ -5442,7 +5484,7 @@ export type Database = {
           p_letter_awarded?: string
           p_prize_won?: Json
           p_team?: string
-          p_ticket_count?: number
+          p_ticket_count: number
           p_user_id: string
         }
         Returns: {
@@ -5519,6 +5561,7 @@ export type Database = {
           user_printer_id: string
         }[]
       }
+      get_user_lock_key: { Args: { p_user_id: string }; Returns: number }
       has_purchased_product: {
         Args: { p_product_id: string; p_user_id: string }
         Returns: boolean
