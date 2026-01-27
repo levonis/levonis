@@ -283,20 +283,20 @@ export default function ChatInputBar({
                 <PopoverContent 
                   side="top" 
                   align="end" 
-                  className="w-72 p-0 shadow-xl rounded-xl overflow-hidden"
+                  className="w-80 p-0 shadow-2xl rounded-2xl overflow-hidden border-0"
                   sideOffset={10}
                 >
-                  {/* Category Tabs - WeChat Style */}
-                  <div className="flex border-b bg-muted/30 px-1">
+                  {/* Category Tabs - WeChat Style with yellow background */}
+                  <div className="flex border-b bg-[#f5f5f5] dark:bg-muted/50">
                     {STICKER_ICONS.map((icon, idx) => (
                       <button
                         key={idx}
                         onClick={() => setSelectedEmojiCategory(idx)}
                         className={cn(
-                          "flex-1 py-2.5 text-lg transition-all",
+                          "flex-1 py-3 text-xl transition-all border-b-2",
                           selectedEmojiCategory === idx 
-                            ? "scale-110 bg-background rounded-t-lg shadow-sm" 
-                            : "opacity-60 hover:opacity-100"
+                            ? "bg-white dark:bg-card border-primary scale-105" 
+                            : "border-transparent opacity-60 hover:opacity-100 hover:bg-white/50"
                         )}
                       >
                         {icon}
@@ -304,14 +304,14 @@ export default function ChatInputBar({
                     ))}
                   </div>
                   
-                  {/* Emoji Grid - WeChat Style larger emojis */}
-                  <ScrollArea className="h-52">
-                    <div className="grid grid-cols-6 gap-1.5 p-3">
-                      {WECHAT_STICKERS[selectedEmojiCategory]?.map((emoji) => (
+                  {/* Emoji Grid - WeChat Style larger stickers */}
+                  <ScrollArea className="h-56 bg-white dark:bg-card">
+                    <div className="grid grid-cols-8 gap-0.5 p-2">
+                      {WECHAT_STICKERS[selectedEmojiCategory]?.map((emoji, index) => (
                         <button
-                          key={emoji}
+                          key={`${emoji}-${index}`}
                           onClick={() => handleEmojiSelect(emoji)}
-                          className="h-10 w-10 flex items-center justify-center text-2xl hover:bg-primary/10 hover:scale-110 rounded-lg transition-all"
+                          className="h-9 w-9 flex items-center justify-center text-xl hover:bg-primary/10 hover:scale-125 rounded-lg transition-all duration-150 active:scale-95"
                         >
                           {emoji}
                         </button>
