@@ -5304,6 +5304,32 @@ export type Database = {
         }
         Returns: Json
       }
+      add_user_tickets: {
+        Args: { p_amount: number; p_source?: string; p_user_id: string }
+        Returns: boolean
+      }
+      admin_adjust_points: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_source?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      admin_adjust_tickets: {
+        Args: { p_amount: number; p_source?: string; p_user_id: string }
+        Returns: boolean
+      }
+      admin_adjust_wallet: {
+        Args: {
+          p_amount: number
+          p_description: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_merchant_badge_tier:
         | { Args: { p_merchant_id: string }; Returns: string }
@@ -5347,6 +5373,23 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      deduct_user_points: {
+        Args: {
+          p_amount: number
+          p_description?: string
+          p_source?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      deduct_user_tickets: {
+        Args: { p_amount: number; p_user_id: string }
+        Returns: boolean
+      }
+      deduct_wallet_balance: {
+        Args: { p_amount: number; p_description?: string; p_user_id: string }
+        Returns: string
       }
       delete_old_notifications: { Args: never; Returns: undefined }
       draw_competition_winner: { Args: { comp_id: string }; Returns: Json }

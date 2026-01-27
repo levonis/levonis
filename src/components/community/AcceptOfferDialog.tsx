@@ -104,22 +104,14 @@ export default function AcceptOfferDialog({
       const platformFee = Math.floor(offer.price_iqd * commissionRate);
       const merchantPayout = offer.price_iqd - platformFee;
 
-      // 1. Deduct from customer wallet
-      const { error: deductError } = await supabase
-        .from("user_wallets")
-        .update({ balance: currentWallet.balance - offer.price_iqd })
-        .eq("user_id", user.id);
-
-      if (deductError) throw deductError;
-
-      // 2. Record wallet transaction
-      await supabase.from("wallet_transactions").insert({
-        user_id: user.id,
-        amount: -offer.price_iqd,
-        type: "escrow_hold",
-        status: "completed",
-        description: `حجز مبلغ لطلب الطباعة - ${offer.merchant?.display_name || "تاجر"}`,
+      // 1. Deduct from customer wallet using secure RPC function
+      const { error: deductError } = await supabase.rpc('deduct_wallet_balance', {
+        p_user_id: user.id,
+        p_amount: offer.price_iqd,
+        p_description: `حجز مبلغ لطلب الطباعة - ${offer.merchant?.display_name || "تاجر"}`
       });
+
+      if (deductError) throw new Error(deductError.message || 'فشل خصم المحفظة');
 
       // 3. Create escrow transaction
       const { error: escrowError } = await supabase.from("escrow_transactions").insert({

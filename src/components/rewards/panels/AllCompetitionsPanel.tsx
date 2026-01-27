@@ -318,12 +318,12 @@ export default function AllCompetitionsPanel() {
         results.push({ letter, isNew, ticketNumber: result.ticketNumber });
       }
 
-      // Deduct tickets
-      const { error: updateError } = await supabase
-        .from('user_tickets')
-        .update({ ticket_count: currentBalance - requiredTickets })
-        .eq('user_id', user.id);
-      if (updateError) throw updateError;
+      // Deduct tickets using secure RPC function
+      const { error: deductError } = await supabase.rpc('deduct_user_tickets', {
+        p_user_id: user.id,
+        p_amount: requiredTickets
+      });
+      if (deductError) throw new Error(deductError.message || 'فشل خصم التذاكر');
 
       // Insert all tickets
       const ticketRecords = results.map(r => ({
@@ -395,11 +395,12 @@ export default function AllCompetitionsPanel() {
       const result = simulateResult(comp);
 
       if (requiredTickets > 0) {
-        const { error: updateError } = await supabase
-          .from('user_tickets')
-          .update({ ticket_count: currentBalance - requiredTickets })
-          .eq('user_id', user.id);
-        if (updateError) throw updateError;
+        // Deduct tickets using secure RPC function
+        const { error: deductError } = await supabase.rpc('deduct_user_tickets', {
+          p_user_id: user.id,
+          p_amount: requiredTickets
+        });
+        if (deductError) throw new Error(deductError.message || 'فشل خصم التذاكر');
       }
 
       const ticketRecord: any = {

@@ -158,22 +158,14 @@ export default function ChatOrderCheckout() {
       if (!user || !order || !selectedAddress) throw new Error('بيانات ناقصة');
       if (insufficientBalance) throw new Error('رصيد المحفظة غير كافٍ');
 
-      // Deduct from wallet if needed
+      // Deduct from wallet using secure RPC function
       if (amountToPay > 0) {
-        const { error: walletError } = await supabase
-          .from('user_wallets')
-          .update({ balance: walletBalance - amountToPay })
-          .eq('user_id', user.id);
-        if (walletError) throw walletError;
-
-        // Record wallet transaction
-        await supabase.from('wallet_transactions').insert({
-          user_id: user.id,
-          amount: -amountToPay,
-          type: 'purchase',
-          description: `دفع طلب محادثة #${order.id.slice(0, 8)}`,
-          status: 'completed',
+        const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
+          p_user_id: user.id,
+          p_amount: amountToPay,
+          p_description: `دفع طلب محادثة #${order.id.slice(0, 8)}`
         });
+        if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
       }
 
       // Update order

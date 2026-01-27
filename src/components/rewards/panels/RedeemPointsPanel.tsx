@@ -111,43 +111,25 @@ export default function RedeemPointsPanel() {
           });
         if (couponError) throw couponError;
       } else if (selectedOption === 'tickets') {
-        // Add tickets to user
-        const { data: existingTickets } = await supabase
-          .from('user_tickets')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (existingTickets) {
-          await supabase
-            .from('user_tickets')
-            .update({ ticket_count: existingTickets.ticket_count + value })
-            .eq('user_id', user.id);
-        } else {
-          await supabase
-            .from('user_tickets')
-            .insert({ user_id: user.id, ticket_count: value });
-        }
+        // Add tickets using secure function
+        const { error: ticketError } = await supabase.rpc('add_user_tickets', {
+          p_user_id: user.id,
+          p_amount: value,
+          p_source: 'points_redemption'
+        });
+        if (ticketError) throw ticketError;
       }
 
-      // Deduct points
-      const { error: pointsError } = await supabase
-        .from('user_points')
-        .update({ 
-          available_points: availablePoints - points,
-          redeemed_points: (userPoints as any)?.redeemed_points || 0 + points,
-        })
-        .eq('user_id', user.id);
+      // Deduct points using secure function
+      const { error: pointsError } = await supabase.rpc('deduct_user_points', {
+        p_user_id: user.id,
+        p_amount: points,
+        p_source: 'redemption',
+        p_description: `استبدال ${points} نقطة`
+      });
       if (pointsError) throw pointsError;
 
-      // Log transaction
-      await supabase.from('points_transactions').insert({
-        user_id: user.id,
-        points: points,
-        type: 'spent',
-        source: 'redemption',
-        description: `استبدال إلى ${option.name_ar}`,
-      });
+      // Note: Points transaction already logged by deduct_user_points function
 
       // Log daily redemption
       await supabase.from('daily_redemption_log').insert({
