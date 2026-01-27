@@ -971,12 +971,6 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       });
                                       setCreateOrderDialogOpen(true);
                                     }}
-                                    onSendToCustomer={() => {
-                                      // Already sent, this is display only
-                                    }}
-                                    onViewProduct={() => {
-                                      // Could navigate to product page
-                                    }}
                                   />
                                 );
                               }
@@ -1080,12 +1074,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     }
                   }}
                   onOpenProducts={() => setProductSelectorOpen(true)}
-                  onOpenOrders={() => {
-                    // TODO: Open orders list
-                    toast.info('قريبًا: عرض الطلبات');
-                  }}
                   isLoading={sendMessageMutation.isPending}
                   isUploadingMedia={uploadingMedia}
+                  isSeller={chatCommerce.isSeller}
                 />
                 
                 {/* Product Selector Dialog */}
