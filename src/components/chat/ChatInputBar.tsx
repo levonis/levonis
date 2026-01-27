@@ -24,23 +24,23 @@ import {
 import { toast } from 'sonner';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-// WeChat-style emoji set
+// WeChat-style emoji categories with sticker-like emojis
 const EMOJI_CATEGORIES = [
   {
-    name: 'وجوه',
-    emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '🥸', '😎', '🤓', '🧐']
+    icon: '😊',
+    emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '🥸', '😎', '🤓', '🧐', '😭', '😢', '😥', '😰', '😨', '😱', '😳', '🤬', '😡', '😠', '🤯']
   },
   {
-    name: 'يدين',
-    emojis: ['👍', '👎', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👋', '🤚', '🖐️', '✋', '🖖', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪', '🦾', '🙆', '🙅', '🙋', '💁', '🤷']
+    icon: '👋',
+    emojis: ['👍', '👎', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👋', '🤚', '🖐️', '✋', '🖖', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '💪', '🦾', '🙆', '🙅', '🙋', '💁', '🤷', '🙇', '🤦', '🤴', '👸', '👼', '🎅', '🤶']
   },
   {
-    name: 'قلوب',
-    emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟']
+    icon: '❤️',
+    emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '💌', '💋', '💍', '💎', '🌹', '🌸', '🌺', '🌻', '🌼', '💐']
   },
   {
-    name: 'رموز',
-    emojis: ['✅', '❌', '⭐', '🌟', '💫', '✨', '⚡', '🔥', '💥', '💯', '💢', '💬', '🗨️', '💭', '🔔', '🔕', '📢', '📣', '💰', '💵', '📦', '🎁', '🏷️', '📌', '📍', '🔗', '📱', '💻', '⌚', '📷', '🎬', '🎵', '🎶']
+    icon: '🎉',
+    emojis: ['✅', '❌', '⭐', '🌟', '💫', '✨', '⚡', '🔥', '💥', '💯', '🎉', '🎊', '🎁', '🏆', '🥇', '🥈', '🥉', '🎯', '🎮', '🎲', '🎭', '🎨', '🎬', '🎵', '🎶', '🔔', '📢', '💰', '💵', '📦', '🏷️', '📌', '📍', '🔗', '📱', '💻', '⌚', '📷', '🚀', '✈️', '🚗', '🏠', '☀️', '🌙', '⭐', '🌈', '☁️', '❄️', '🍕', '🍔', '🍟', '🍦', '🍰', '🍩', '☕', '🍵']
   }
 ];
 
@@ -292,20 +292,20 @@ export default function ChatInputBar({
                   className="w-72 p-0 shadow-xl rounded-xl overflow-hidden"
                   sideOffset={10}
                 >
-                  {/* Category Tabs */}
-                  <div className="flex border-b bg-muted/30">
+                  {/* Category Tabs - WeChat Style */}
+                  <div className="flex border-b bg-muted/30 px-1">
                     {EMOJI_CATEGORIES.map((cat, idx) => (
                       <button
-                        key={cat.name}
+                        key={idx}
                         onClick={() => setSelectedEmojiCategory(idx)}
                         className={cn(
-                          "flex-1 py-2 text-xs font-medium transition-colors",
+                          "flex-1 py-2.5 text-lg transition-all",
                           selectedEmojiCategory === idx 
-                            ? "text-primary border-b-2 border-primary bg-background" 
-                            : "text-muted-foreground hover:text-foreground"
+                            ? "scale-110 bg-background rounded-t-lg shadow-sm" 
+                            : "opacity-60 hover:opacity-100"
                         )}
                       >
-                        {cat.name}
+                        {cat.icon}
                       </button>
                     ))}
                   </div>

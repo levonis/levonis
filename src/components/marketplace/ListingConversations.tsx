@@ -1076,7 +1076,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   onOpenProducts={() => setProductSelectorOpen(true)}
                   isLoading={sendMessageMutation.isPending}
                   isUploadingMedia={uploadingMedia}
-                  isSeller={chatCommerce.isSeller}
+                  isSeller={isSeller}
                 />
                 
                 {/* Product Selector Dialog */}
