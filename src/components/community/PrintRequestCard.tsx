@@ -31,6 +31,9 @@ interface PrintRequest {
   status: string;
   created_at: string;
   accepted_offer_id: string | null;
+  quantity?: number;
+  payment_method?: string;
+  customer_governorate?: string;
 }
 
 interface PrintRequestCardProps {
@@ -142,6 +145,17 @@ export default function PrintRequestCard({
             <Palette className="h-3 w-3" />
             {request.colors}
           </span>
+          {request.quantity && request.quantity > 1 && (
+            <span className="flex items-center gap-1">
+              <Package className="h-3 w-3" />
+              {request.quantity}×
+            </span>
+          )}
+          {request.customer_governorate && (
+            <span className="flex items-center gap-1 text-primary">
+              📍 {request.customer_governorate}
+            </span>
+          )}
         </div>
 
         {/* Offers Count */}
