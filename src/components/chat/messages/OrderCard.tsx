@@ -42,7 +42,7 @@ interface OrderCardProps {
   timestamp: string;
   userRole: ChatRole;
   // Actions
-  onPayNow?: () => void;
+  onPayNow?: (orderId: string) => void;
   onTrack?: () => void;
   onConfirmReceipt?: () => void;
   onCancel?: () => void;
@@ -267,7 +267,7 @@ export default function OrderCard({
               <Button
                 size="sm"
                 className="flex-1 h-9 text-xs rounded-lg bg-gradient-to-b from-green-600 to-green-700"
-                onClick={onPayNow}
+                onClick={() => onPayNow(orderId)}
               >
                 <CreditCard className="h-3.5 w-3.5 ml-1" />
                 ادفع الآن
