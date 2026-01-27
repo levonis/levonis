@@ -1,4 +1,3 @@
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 // WeChat sticker pack - 24 stickers from the official pack
@@ -39,15 +38,16 @@ export default function StickerPicker({ onSelectSticker, className }: StickerPic
     <div className={cn("bg-card rounded-2xl overflow-hidden shadow-xl border", className)}>
       {/* Header */}
       <div className="px-3 py-2 border-b bg-muted/30">
-        <span className="text-xs font-medium text-muted-foreground">ملصقات WeChat</span>
+        <span className="text-xs font-medium text-muted-foreground">ملصقات</span>
       </div>
       
-      {/* Sticker Grid */}
-      <ScrollArea className="h-52">
+      {/* Sticker Grid - scrollable */}
+      <div className="max-h-52 overflow-y-auto overscroll-contain">
         <div className="grid grid-cols-6 gap-1 p-2">
           {WECHAT_STICKERS.map((sticker) => (
             <button
               key={sticker.id}
+              type="button"
               onClick={() => onSelectSticker(sticker.src)}
               className="aspect-square p-1 rounded-lg hover:bg-primary/10 active:scale-90 transition-all duration-150 flex items-center justify-center"
               title={sticker.alt}
@@ -61,7 +61,7 @@ export default function StickerPicker({ onSelectSticker, className }: StickerPic
             </button>
           ))}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
