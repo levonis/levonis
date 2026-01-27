@@ -766,7 +766,9 @@ export type Database = {
           auto_confirmed_at: string | null
           colors: string
           created_at: string
+          customer_address_id: string | null
           customer_confirmed_at: string | null
+          customer_governorate: string | null
           delivered_at: string | null
           description: string
           escrow_amount: number | null
@@ -778,6 +780,10 @@ export type Database = {
           merchant_paid_amount: number | null
           merchant_paid_at: string | null
           notes: string | null
+          payment_commission_amount: number | null
+          payment_commission_rate: number | null
+          payment_method: string | null
+          quantity: number | null
           reference_links: string[] | null
           size: string
           status: string
@@ -793,7 +799,9 @@ export type Database = {
           auto_confirmed_at?: string | null
           colors: string
           created_at?: string
+          customer_address_id?: string | null
           customer_confirmed_at?: string | null
+          customer_governorate?: string | null
           delivered_at?: string | null
           description: string
           escrow_amount?: number | null
@@ -805,6 +813,10 @@ export type Database = {
           merchant_paid_amount?: number | null
           merchant_paid_at?: string | null
           notes?: string | null
+          payment_commission_amount?: number | null
+          payment_commission_rate?: number | null
+          payment_method?: string | null
+          quantity?: number | null
           reference_links?: string[] | null
           size: string
           status?: string
@@ -820,7 +832,9 @@ export type Database = {
           auto_confirmed_at?: string | null
           colors?: string
           created_at?: string
+          customer_address_id?: string | null
           customer_confirmed_at?: string | null
+          customer_governorate?: string | null
           delivered_at?: string | null
           description?: string
           escrow_amount?: number | null
@@ -832,6 +846,10 @@ export type Database = {
           merchant_paid_amount?: number | null
           merchant_paid_at?: string | null
           notes?: string | null
+          payment_commission_amount?: number | null
+          payment_commission_rate?: number | null
+          payment_method?: string | null
+          quantity?: number | null
           reference_links?: string[] | null
           size?: string
           status?: string
@@ -846,6 +864,13 @@ export type Database = {
             columns: ["accepted_offer_id"]
             isOneToOne: false
             referencedRelation: "print_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "community_print_requests_customer_address_id_fkey"
+            columns: ["customer_address_id"]
+            isOneToOne: false
+            referencedRelation: "user_addresses"
             referencedColumns: ["id"]
           },
         ]

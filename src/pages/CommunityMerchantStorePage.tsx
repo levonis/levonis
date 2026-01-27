@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  Store, Play, MessageCircle, Link as LinkIcon, Star, Package, Sparkles
+  Store, Play, Star, Package, Sparkles, ShoppingBag
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -10,15 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
+import { useToast } from "@/hooks/use-toast";
 import RatingsPreview from "@/components/merchant/RatingsPreview";
 import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
-import StoreHeroSection from "@/components/merchant/StoreHeroSection";
-import StoreStatsGrid from "@/components/merchant/StoreStatsGrid";
-import ProductCardEnhanced from "@/components/merchant/ProductCardEnhanced";
+import MinimalStoreHero from "@/components/merchant/MinimalStoreHero";
+import CompactProductCard from "@/components/merchant/CompactProductCard";
+import CustomerOrderDialog from "@/components/merchant/CustomerOrderDialog";
 
 interface MerchantProduct {
   id: string;
@@ -30,6 +29,7 @@ interface MerchantProduct {
   video_url: string | null;
   primary_image_index: number;
   estimated_days: number | null;
+  is_featured?: boolean;
   material_type?: "resin" | "filament" | "both" | null;
 }
 
@@ -37,11 +37,13 @@ export default function CommunityMerchantStorePage() {
   const navigate = useNavigate();
   const { merchantId } = useParams<{ merchantId: string }>();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<MerchantProduct | null>(null);
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
-  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
-  const [includeProductLink, setIncludeProductLink] = useState(true);
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
 
   // Check if current user owns this store
@@ -152,40 +154,64 @@ export default function CommunityMerchantStorePage() {
     setDetailDialogOpen(true);
   };
 
+  const handleOrderProduct = () => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    setDetailDialogOpen(false);
+    setOrderDialogOpen(true);
+  };
+
   const handleContactMerchant = () => {
     if (!user) {
       navigate("/auth");
       return;
     }
-    setMessageDialogOpen(true);
-  };
-
-  const handleStartConversation = () => {
-    const productUrl = selectedProduct 
-      ? `${window.location.origin}/store/${merchantId}?product=${selectedProduct.id}`
-      : null;
-    
     const params = new URLSearchParams();
     params.set("merchant_id", merchantId!);
-    if (includeProductLink && selectedProduct) {
-      params.set("product_title", selectedProduct.title);
-      params.set("product_url", productUrl!);
-    }
-    
     navigate(`/community/messages?${params.toString()}`);
   };
 
-  const socialLinks = merchantApp?.social_links as { facebook?: string; instagram?: string } | undefined;
+  // Submit order mutation
+  const submitOrderMutation = useMutation({
+    mutationFn: async (orderData: {
+      quantity: number;
+      paymentMethod: string;
+      addressId: string;
+      governorate: string;
+      commissionRate: number;
+      totalWithCommission: number;
+    }) => {
+      if (!selectedProduct || !user) throw new Error("Missing data");
+      
+      const params = new URLSearchParams();
+      params.set("merchant_id", merchantId!);
+      params.set("product_id", selectedProduct.id);
+      params.set("product_title", selectedProduct.title);
+      params.set("product_price", String(selectedProduct.price_iqd || 0));
+      params.set("quantity", String(orderData.quantity));
+      params.set("payment_method", orderData.paymentMethod);
+      params.set("governorate", orderData.governorate);
+      params.set("address_id", orderData.addressId);
+      params.set("total", String(orderData.totalWithCommission));
+      
+      navigate(`/community/messages?${params.toString()}`);
+    },
+    onSuccess: () => {
+      setOrderDialogOpen(false);
+      toast({ title: "تم بدء المحادثة", description: "سيتم إرسال تفاصيل طلبك للتاجر" });
+    },
+  });
 
   if (appLoading || productsLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-6xl">
-          <Skeleton className="h-80 rounded-[2rem] mb-8" />
-          <Skeleton className="h-24 rounded-2xl mb-6" />
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="min-h-screen bg-background">
+        <main className="container mx-auto px-4 py-6 pt-20 max-w-5xl">
+          <Skeleton className="h-32 rounded-2xl mb-4" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Skeleton key={i} className="aspect-square rounded-2xl" />
+              <Skeleton key={i} className="aspect-square rounded-xl" />
             ))}
           </div>
         </main>
@@ -195,15 +221,13 @@ export default function CommunityMerchantStorePage() {
 
   if (!merchantApp) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
-        <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
-          <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 p-12 text-center rounded-3xl">
-            <div className="h-20 w-20 rounded-3xl bg-muted/30 flex items-center justify-center mx-auto mb-6">
-              <Store className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <p className="text-xl font-bold mb-2">لا يمكن العثور على هذا المتجر</p>
-            <p className="text-sm text-muted-foreground mb-8">قد يكون المتجر غير موجود أو تم إلغاؤه</p>
-            <Button variant="outline" size="lg" onClick={() => navigate("/community")}>
+      <div className="min-h-screen bg-background">
+        <main className="container mx-auto px-4 py-6 pt-20 max-w-3xl">
+          <Card className="p-8 text-center rounded-2xl">
+            <Store className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+            <p className="text-lg font-bold mb-1">لا يمكن العثور على المتجر</p>
+            <p className="text-sm text-muted-foreground mb-4">قد يكون غير موجود أو تم إلغاؤه</p>
+            <Button variant="outline" onClick={() => navigate("/community")}>
               العودة للمجتمع
             </Button>
           </Card>
@@ -213,10 +237,10 @@ export default function CommunityMerchantStorePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/5">
-      <main className="container mx-auto px-4 py-8 pt-20 max-w-6xl">
-        {/* Hero Section */}
-        <StoreHeroSection
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto px-4 py-6 pt-20 max-w-5xl">
+        {/* Minimal Hero */}
+        <MinimalStoreHero
           merchantApp={{
             display_name: merchantApp.display_name,
             bio: merchantApp.bio,
@@ -226,75 +250,59 @@ export default function CommunityMerchantStorePage() {
             badge_tier: merchantApp.badge_tier,
           }}
           selectedFrame={selectedFrame}
-          socialLinks={socialLinks}
           isOwner={isOwner}
           onSettingsClick={() => setProfileEditorOpen(true)}
           onContactClick={handleContactMerchant}
           showContactButton
         />
 
-        {/* Stats Grid */}
-        <div className="mb-8">
-          <StoreStatsGrid
-            stats={{
-              activeProducts: products.length,
-              completedOrders: storeStats?.totalOrders || 0,
-              avgRating: storeStats?.avgRating || 0,
-              totalRatings: storeStats?.totalRatings || 0,
-            }}
-            variant="client"
-          />
+        {/* Stats Row */}
+        <div className="flex gap-4 mb-6 overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 shrink-0">
+            <Package className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">{products.length} منتج</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 shrink-0">
+            <ShoppingBag className="h-4 w-4 text-emerald-500" />
+            <span className="text-sm font-medium">{storeStats?.totalOrders || 0} طلب مكتمل</span>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 shrink-0">
+            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+            <span className="text-sm font-medium">
+              {storeStats?.avgRating?.toFixed(1) || "0"} ({storeStats?.totalRatings || 0})
+            </span>
+          </div>
         </div>
 
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar: Ratings */}
-          <div className="lg:col-span-1 space-y-4">
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 overflow-hidden rounded-2xl shadow-lg">
-              <CardContent className="p-5">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                    <Star className="h-5 w-5 text-amber-500 fill-amber-500" />
-                  </div>
-                  <div>
-                    <h2 className="text-sm font-bold text-foreground">تقييمات العملاء</h2>
-                    <p className="text-[10px] text-muted-foreground">آخر التقييمات</p>
-                  </div>
+        {/* Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          {/* Sidebar */}
+          <div className="lg:col-span-1 order-2 lg:order-1">
+            <Card className="rounded-xl overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+                  <span className="text-sm font-semibold">التقييمات</span>
                 </div>
                 <RatingsPreview merchantId={merchantId!} />
               </CardContent>
             </Card>
           </div>
 
-          {/* Main: Products */}
-          <div className="lg:col-span-3">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <Package className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">منتجات المتجر</h2>
-                <p className="text-xs text-muted-foreground">{products.length} منتج متاح للطلب</p>
-              </div>
-            </div>
-
+          {/* Products Grid */}
+          <div className="lg:col-span-3 order-1 lg:order-2">
             {products.length === 0 ? (
-              <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 p-16 rounded-3xl">
-                <div className="text-center">
-                  <div className="h-24 w-24 rounded-3xl bg-muted/20 flex items-center justify-center mx-auto mb-6">
-                    <Sparkles className="h-12 w-12 text-muted-foreground/30" />
-                  </div>
-                  <p className="text-lg font-bold mb-2">لا توجد منتجات متاحة</p>
-                  <p className="text-sm text-muted-foreground">سيتم عرض المنتجات هنا بمجرد إضافتها</p>
-                </div>
+              <Card className="p-8 rounded-xl text-center">
+                <Sparkles className="h-10 w-10 text-muted-foreground/20 mx-auto mb-3" />
+                <p className="font-medium">لا توجد منتجات</p>
+                <p className="text-xs text-muted-foreground">سيتم عرضها بمجرد إضافتها</p>
               </Card>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {products.map((product) => (
-                  <ProductCardEnhanced
+                  <CompactProductCard
                     key={product.id}
                     product={product}
-                    variant="client"
                     onView={() => handleOpenDetail(product)}
                   />
                 ))}
@@ -306,21 +314,20 @@ export default function CommunityMerchantStorePage() {
 
       {/* Product Detail Dialog */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden rounded-3xl border-border/50">
-          <DialogHeader className="pb-4 border-b border-border/50">
-            <DialogTitle className="text-lg font-bold flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" />
+        <DialogContent className="sm:max-w-md max-h-[85vh] overflow-hidden">
+          <DialogHeader className="pb-3 border-b border-border/50">
+            <DialogTitle className="text-base font-bold truncate pr-6">
               {selectedProduct?.title}
             </DialogTitle>
-            <DialogDescription>تفاصيل المنتج</DialogDescription>
+            <DialogDescription className="sr-only">تفاصيل المنتج</DialogDescription>
           </DialogHeader>
           
           {selectedProduct && (
-            <div className="space-y-4 max-h-[60vh] overflow-y-auto py-4">
-              {/* Media Section */}
+            <div className="space-y-3 max-h-[55vh] overflow-y-auto py-2">
+              {/* Media */}
               {(selectedProduct.image_urls?.length || selectedProduct.video_url) && (
-                <div className="space-y-3">
-                  <div className="relative rounded-2xl overflow-hidden bg-muted">
+                <div className="space-y-2">
+                  <div className="relative rounded-xl overflow-hidden bg-muted">
                     <AspectRatio ratio={1}>
                       {selectedProduct.video_url && activeMediaIndex === (selectedProduct.image_urls?.length || 0) ? (
                         <video
@@ -340,13 +347,13 @@ export default function CommunityMerchantStorePage() {
                   
                   {/* Thumbnails */}
                   {(selectedProduct.image_urls?.length || 0) + (selectedProduct.video_url ? 1 : 0) > 1 && (
-                    <div className="flex gap-2 overflow-x-auto pb-2">
+                    <div className="flex gap-1.5 overflow-x-auto pb-1">
                       {selectedProduct.image_urls?.map((url, i) => (
                         <button
                           key={i}
                           onClick={() => setActiveMediaIndex(i)}
-                          className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all ${
-                            activeMediaIndex === i ? "border-primary shadow-lg" : "border-transparent opacity-60 hover:opacity-100"
+                          className={`w-12 h-12 rounded-lg overflow-hidden shrink-0 border-2 transition-all ${
+                            activeMediaIndex === i ? "border-primary" : "border-transparent opacity-60"
                           }`}
                         >
                           <img src={url} alt="" className="w-full h-full object-cover" />
@@ -355,13 +362,13 @@ export default function CommunityMerchantStorePage() {
                       {selectedProduct.video_url && (
                         <button
                           onClick={() => setActiveMediaIndex(selectedProduct.image_urls?.length || 0)}
-                          className={`relative w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border-2 transition-all bg-black flex items-center justify-center ${
+                          className={`w-12 h-12 rounded-lg overflow-hidden shrink-0 border-2 bg-black flex items-center justify-center ${
                             activeMediaIndex === (selectedProduct.image_urls?.length || 0)
-                              ? "border-primary shadow-lg"
-                              : "border-transparent opacity-60 hover:opacity-100"
+                              ? "border-primary"
+                              : "border-transparent opacity-60"
                           }`}
                         >
-                          <Play className="h-6 w-6 text-white fill-white" />
+                          <Play className="h-4 w-4 text-white fill-white" />
                         </button>
                       )}
                     </div>
@@ -371,93 +378,49 @@ export default function CommunityMerchantStorePage() {
 
               {/* Description */}
               {selectedProduct.description && (
-                <p className="text-sm text-muted-foreground leading-relaxed">
+                <p className="text-xs text-muted-foreground">
                   {selectedProduct.description}
                 </p>
               )}
 
               {/* Price */}
-              <div className="flex items-baseline gap-2 p-4 rounded-2xl bg-primary/5 border border-primary/20">
+              <div className="flex items-baseline gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
                 {selectedProduct.price_iqd ? (
                   <>
-                    <span className="text-2xl font-bold text-primary">
+                    <span className="text-xl font-bold text-primary">
                       {selectedProduct.price_iqd.toLocaleString()}
                     </span>
-                    <span className="text-sm text-muted-foreground">د.ع</span>
+                    <span className="text-xs text-muted-foreground">د.ع</span>
                     {selectedProduct.original_price_iqd && selectedProduct.original_price_iqd > selectedProduct.price_iqd && (
-                      <span className="text-sm text-muted-foreground line-through mr-auto">
-                        {selectedProduct.original_price_iqd.toLocaleString()} د.ع
+                      <span className="text-xs text-muted-foreground line-through mr-auto">
+                        {selectedProduct.original_price_iqd.toLocaleString()}
                       </span>
                     )}
                   </>
                 ) : (
-                  <span className="text-muted-foreground">تواصل مع التاجر للسعر</span>
+                  <span className="text-sm text-muted-foreground">تواصل للسعر</span>
                 )}
               </div>
 
-              {/* Contact Button */}
-              <Button className="w-full h-12 text-base gap-2" onClick={handleContactMerchant}>
-                <MessageCircle className="h-5 w-5" />
-                طلب هذا المنتج
+              {/* Order Button */}
+              <Button className="w-full h-10 gap-2" onClick={handleOrderProduct}>
+                <ShoppingBag className="h-4 w-4" />
+                طلب المنتج
               </Button>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Message Dialog */}
-      <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-3xl border-border/50">
-          <DialogHeader className="pb-4 border-b border-border/50">
-            <DialogTitle className="text-lg font-bold flex items-center gap-2">
-              <MessageCircle className="h-5 w-5 text-primary" />
-              بدء محادثة
-            </DialogTitle>
-            <DialogDescription>تواصل مع التاجر لطلب المنتج</DialogDescription>
-          </DialogHeader>
-          
-          <div className="space-y-4 py-4">
-            {selectedProduct && (
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-muted/50 border border-border/50">
-                {selectedProduct.image_urls?.[0] && (
-                  <img
-                    src={selectedProduct.image_urls[0]}
-                    alt=""
-                    className="h-14 w-14 rounded-xl object-cover"
-                  />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{selectedProduct.title}</p>
-                  {selectedProduct.price_iqd && (
-                    <p className="text-sm text-primary font-bold">
-                      {selectedProduct.price_iqd.toLocaleString()} د.ع
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {selectedProduct && (
-              <div className="flex items-center gap-3 p-4 rounded-2xl bg-primary/5 border border-primary/20">
-                <Checkbox
-                  id="include-link"
-                  checked={includeProductLink}
-                  onCheckedChange={(c) => setIncludeProductLink(!!c)}
-                />
-                <Label htmlFor="include-link" className="text-sm cursor-pointer flex items-center gap-2">
-                  <LinkIcon className="h-4 w-4" />
-                  إرسال رابط المنتج مع الرسالة
-                </Label>
-              </div>
-            )}
-
-            <Button className="w-full h-12 text-base gap-2" onClick={handleStartConversation}>
-              <MessageCircle className="h-5 w-5" />
-              بدء المحادثة
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Order Dialog */}
+      <CustomerOrderDialog
+        open={orderDialogOpen}
+        onOpenChange={setOrderDialogOpen}
+        product={selectedProduct}
+        merchantName={merchantApp.display_name}
+        onSubmit={(data) => submitOrderMutation.mutate(data)}
+        isSubmitting={submitOrderMutation.isPending}
+      />
 
       {/* Profile Editor */}
       {editableMerchantApp && (
