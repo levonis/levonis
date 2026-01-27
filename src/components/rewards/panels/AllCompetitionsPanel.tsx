@@ -295,49 +295,40 @@ export default function AllCompetitionsPanel() {
     }
   };
 
-  // Multiple bags participation for letter competitions
+  // Multiple bags participation for letter competitions - uses atomic server function
   const participateMultipleBagsMutation = useMutation({
     mutationFn: async ({ comp, count }: { comp: any; count: number }) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
       
-      const requiredTickets = (comp.required_tickets || 1) * count;
-      const currentBalance = userTickets || 0;
-      
-      if (currentBalance < requiredTickets) {
-        throw new Error('رصيد التذاكر غير كافٍ');
-      }
-
       const results: { letter: string | null; isNew: boolean; ticketNumber: string }[] = [];
       const existingLetters = [...(userLetters?.[comp.id] || [])];
       
+      // Use atomic server function for each entry
       for (let i = 0; i < count; i++) {
         const result = simulateResult(comp);
         const letter = result.letter || null;
+        
+        // Call secure atomic function
+        const { data: entryResult, error } = await supabase.rpc('enter_competition', {
+          p_user_id: user.id,
+          p_competition_id: comp.id,
+          p_ticket_count: 1,
+          p_letter_awarded: letter,
+          p_team: null,
+          p_prize_won: null
+        });
+        
+        if (error) throw new Error(error.message || 'فشل الدخول في المسابقة');
+        
+        const row = entryResult?.[0];
+        if (!row?.success) {
+          throw new Error(row?.error_message || 'فشل الدخول في المسابقة');
+        }
+        
         const isNew = letter ? !existingLetters.includes(letter) : false;
         if (letter) existingLetters.push(letter);
-        results.push({ letter, isNew, ticketNumber: result.ticketNumber });
+        results.push({ letter, isNew, ticketNumber: row.ticket_number });
       }
-
-      // Deduct tickets using secure RPC function
-      const { error: deductError } = await supabase.rpc('deduct_user_tickets', {
-        p_user_id: user.id,
-        p_amount: requiredTickets
-      });
-      if (deductError) throw new Error(deductError.message || 'فشل خصم التذاكر');
-
-      // Insert all tickets
-      const ticketRecords = results.map(r => ({
-        user_id: user.id,
-        competition_id: comp.id,
-        ticket_number: r.ticketNumber,
-        is_winner: !!r.letter,
-        letter_awarded: r.letter,
-      }));
-
-      const { error: ticketError } = await supabase
-        .from('competition_tickets')
-        .insert(ticketRecords);
-      if (ticketError) throw ticketError;
 
       const config = comp.letters_config as any;
       return {
@@ -381,44 +372,26 @@ export default function AllCompetitionsPanel() {
       if (!user) throw new Error('يجب تسجيل الدخول');
       
       const type = comp.competition_type as CompetitionType;
-      const requiredTickets = type === 'free' ? 0 : (comp.required_tickets || 1);
-      const currentBalance = userTickets || 0;
-      
-      if (type === 'free' && !canParticipateFree(comp.id)) {
-        throw new Error('لقد شاركت بالفعل في هذه المسابقة المجانية');
-      }
-      
-      if (requiredTickets > 0 && currentBalance < requiredTickets) {
-        throw new Error('رصيد التذاكر غير كافٍ');
-      }
-
       const result = simulateResult(comp);
 
-      if (requiredTickets > 0) {
-        // Deduct tickets using secure RPC function
-        const { error: deductError } = await supabase.rpc('deduct_user_tickets', {
-          p_user_id: user.id,
-          p_amount: requiredTickets
-        });
-        if (deductError) throw new Error(deductError.message || 'فشل خصم التذاكر');
+      // Use atomic server function for secure entry
+      const { data: entryResult, error } = await supabase.rpc('enter_competition', {
+        p_user_id: user.id,
+        p_competition_id: comp.id,
+        p_ticket_count: 1,
+        p_letter_awarded: result.letter || null,
+        p_team: result.team || null,
+        p_prize_won: result.prize || null
+      });
+
+      if (error) throw new Error(error.message || 'فشل الدخول في المسابقة');
+      
+      const row = entryResult?.[0];
+      if (!row?.success) {
+        throw new Error(row?.error_message || 'فشل الدخول في المسابقة');
       }
 
-      const ticketRecord: any = {
-        user_id: user.id,
-        competition_id: comp.id,
-        ticket_number: result.ticketNumber,
-        is_winner: result.isWinner || false,
-      };
-
-      if (result.letter) ticketRecord.letter_awarded = result.letter;
-      if (result.team) ticketRecord.team = result.team;
-      if (result.prize) ticketRecord.prize_won = result.prize;
-
-      const { error: ticketError } = await supabase
-        .from('competition_tickets')
-        .insert(ticketRecord);
-      if (ticketError) throw ticketError;
-
+      // Update team counts if needed
       if (type === 'team_battle' && result.team) {
         const updateField = result.team === 'A' ? 'team_a_count' : 'team_b_count';
         const currentCount = result.team === 'A' ? (comp.team_a_count || 0) : (comp.team_b_count || 0);
@@ -428,7 +401,13 @@ export default function AllCompetitionsPanel() {
           .eq('id', comp.id);
       }
 
-      return { ...result, competitionType: type, competition: comp, boxes: comp.mystery_boxes || [] };
+      return { 
+        ...result, 
+        ticketNumber: row.ticket_number,
+        competitionType: type, 
+        competition: comp, 
+        boxes: comp.mystery_boxes || [] 
+      };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['user-tickets-balance'] });
