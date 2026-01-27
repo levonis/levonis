@@ -71,6 +71,8 @@ const AdminCommunityComplaints = lazy(() => import("./pages/AdminCommunityCompla
 const AdminCommunityMessages = lazy(() => import("./pages/AdminCommunityMessages"));
 const CommunityMessages = lazy(() => import("./pages/CommunityMessages"));
 const CommunityCustomer = lazy(() => import("./pages/CommunityCustomer"));
+const CommunityCustomerDashboard = lazy(() => import("./pages/CommunityCustomerDashboard"));
+const CommunityMerchantProfessionalDashboard = lazy(() => import("./pages/CommunityMerchantProfessionalDashboard"));
 const CommunityCustomerNewRequest = lazy(() => import("./pages/CommunityCustomerNewRequest"));
 const CommunityCustomerRequests = lazy(() => import("./pages/CommunityCustomerRequests"));
 const CommunityCustomerProfile = lazy(() => import("./pages/CommunityCustomerProfile"));
@@ -176,6 +178,8 @@ function AppContent() {
             <Route path="/community" element={<RequireCommunityProfile><CommunityHome /></RequireCommunityProfile>} />
             <Route path="/community/messages" element={<RequireCommunityProfile><CommunityMessages /></RequireCommunityProfile>} />
             <Route path="/community/customer" element={<RequireCommunityProfile><CommunityCustomer /></RequireCommunityProfile>} />
+            <Route path="/community/customer/dashboard" element={<RequireCommunityProfile><CommunityCustomerDashboard /></RequireCommunityProfile>} />
+            <Route path="/community/merchant/dashboard" element={<RequireCommunityProfile><CommunityMerchantProfessionalDashboard /></RequireCommunityProfile>} />
             <Route path="/community/customer/requests" element={<RequireCommunityProfile><CommunityCustomerRequests /></RequireCommunityProfile>} />
             <Route path="/community/customer/new" element={<RequireCommunityProfile><CommunityCustomerNewRequest /></RequireCommunityProfile>} />
             <Route path="/community/customer/profile" element={<RequireAuth><CommunityCustomerProfile /></RequireAuth>} />
