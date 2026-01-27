@@ -2,6 +2,7 @@ import { Package, ShoppingCart, MessageSquare, ExternalLink } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import type { ChatRole } from '@/hooks/useChatCommerce';
 
 interface ProductCardProps {
   productId: string;
@@ -13,8 +14,10 @@ interface ProductCardProps {
   stockStatus?: 'in_stock' | 'low_stock' | 'out_of_stock';
   isMe: boolean;
   timestamp: string;
-  onSendProduct?: () => void;
+  userRole?: ChatRole;
+  // Actions
   onCreateOrder?: () => void;
+  onSendToCustomer?: () => void;
   onViewProduct?: () => void;
 }
 
@@ -34,11 +37,14 @@ export default function ProductCard({
   stockStatus = 'in_stock',
   isMe,
   timestamp,
-  onSendProduct,
+  userRole = 'customer',
   onCreateOrder,
+  onSendToCustomer,
   onViewProduct,
 }: ProductCardProps) {
   const stock = STOCK_LABELS[stockStatus];
+  const isSeller = userRole === 'seller';
+  const isCustomer = userRole === 'customer';
 
   return (
     <div className={cn("flex my-2", isMe ? "justify-start" : "justify-end")}>
@@ -58,10 +64,17 @@ export default function ProductCard({
             <Badge className={cn("absolute top-2 right-2 text-[10px]", stock.color)}>
               {stock.label}
             </Badge>
+            {/* Product Badge */}
+            <Badge className="absolute top-2 left-2 text-[10px] bg-primary/90 text-primary-foreground">
+              منتج من المتجر
+            </Badge>
           </div>
         ) : (
-          <div className="aspect-[4/3] bg-muted flex items-center justify-center">
+          <div className="aspect-[4/3] bg-muted flex items-center justify-center relative">
             <Package className="h-12 w-12 text-muted-foreground/30" />
+            <Badge className="absolute top-2 left-2 text-[10px] bg-primary/90 text-primary-foreground">
+              منتج من المتجر
+            </Badge>
           </div>
         )}
 
@@ -82,29 +95,32 @@ export default function ProductCard({
               {price.toLocaleString()}
               <span className="text-xs font-normal mr-1">{currency}</span>
             </p>
+            <span className="text-[10px] text-muted-foreground">السعر مرجعي</span>
           </div>
 
-          {/* Action Buttons */}
+          {/* Action Buttons - Role Based */}
           <div className="flex gap-2 pt-1">
-            {onSendProduct && (
+            {/* Customer: Can create order */}
+            {isCustomer && onCreateOrder && (
               <Button
                 size="sm"
-                variant="outline"
-                className="flex-1 h-8 text-xs rounded-lg"
-                onClick={onSendProduct}
-              >
-                <MessageSquare className="h-3 w-3 ml-1" />
-                إرسال
-              </Button>
-            )}
-            {onCreateOrder && (
-              <Button
-                size="sm"
-                className="flex-1 h-8 text-xs rounded-lg bg-gradient-to-b from-primary to-accent"
+                className="flex-1 h-9 text-xs rounded-lg bg-gradient-to-b from-primary to-accent"
                 onClick={onCreateOrder}
               >
-                <ShoppingCart className="h-3 w-3 ml-1" />
-                طلب
+                <ShoppingCart className="h-3.5 w-3.5 ml-1" />
+                إنشاء طلب
+              </Button>
+            )}
+            
+            {/* Seller: Can send to customer */}
+            {isSeller && onSendToCustomer && (
+              <Button
+                size="sm"
+                className="flex-1 h-9 text-xs rounded-lg bg-gradient-to-b from-primary to-accent"
+                onClick={onSendToCustomer}
+              >
+                <MessageSquare className="h-3.5 w-3.5 ml-1" />
+                إرسال للعميل
               </Button>
             )}
           </div>

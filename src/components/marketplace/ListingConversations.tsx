@@ -50,7 +50,12 @@ import ChatInputBar from '@/components/chat/ChatInputBar';
 import SystemMessage from '@/components/chat/messages/SystemMessage';
 import TextMessage from '@/components/chat/messages/TextMessage';
 import ProductCard from '@/components/chat/messages/ProductCard';
+import OrderCard from '@/components/chat/messages/OrderCard';
+import ConfirmationCard from '@/components/chat/messages/ConfirmationCard';
 import ProductSelector from '@/components/chat/ProductSelector';
+import PriceChangeDialog from '@/components/chat/PriceChangeDialog';
+import CreateOrderDialog from '@/components/chat/CreateOrderDialog';
+import { useChatCommerce, type ChatOrder } from '@/hooks/useChatCommerce';
 
 interface ListingConversationsProps {
   children?: React.ReactNode;
@@ -86,6 +91,15 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const [messageInput, setMessageInput] = useState('');
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [productSelectorOpen, setProductSelectorOpen] = useState(false);
+  const [priceChangeDialogOpen, setPriceChangeDialogOpen] = useState(false);
+  const [createOrderDialogOpen, setCreateOrderDialogOpen] = useState(false);
+  const [selectedOrderForPriceChange, setSelectedOrderForPriceChange] = useState<ChatOrder | null>(null);
+  const [selectedProductForOrder, setSelectedProductForOrder] = useState<{
+    id: string;
+    title: string;
+    image?: string;
+    price: number;
+  } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -426,6 +440,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
   const { data: otherUserReputation } = useUserPrintReputation(otherUserId ?? undefined);
 
+  // Chat Commerce Hook
+  const chatCommerce = useChatCommerce({
+    conversationId: selectedConversation,
+    sellerId: selectedConv?.seller_id,
+    buyerId: selectedConv?.buyer_id,
+  });
   // Check if user is blocked
   const { data: isUserBlocked } = useQuery({
     queryKey: ['user-blocked', user?.id, otherUserId],
@@ -814,80 +834,154 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               const isMe = msg.sender_id === user?.id;
                               const sender = profiles?.[msg.sender_id];
                               const showTail = idx === 0 || msgs[idx - 1]?.sender_id !== msg.sender_id;
+                              const timestamp = format(new Date(msg.created_at), 'HH:mm');
                               
-                              // Check if it's a system message
+                              // Check if it's a system message (starts with emoji or 🔔)
                               const isSystemMessage = msg.content?.startsWith('⚠️') || 
-                                                     msg.content?.startsWith('✅ تم إلغاء') ||
-                                                     msg.content?.startsWith('✅ تم حل') ||
+                                                     msg.content?.startsWith('✅') ||
                                                      msg.content?.startsWith('🛡️') ||
-                                                     msg.content?.startsWith('🚫');
+                                                     msg.content?.startsWith('🚫') ||
+                                                     msg.content?.startsWith('🔔');
                               
                               // Check if it's a product message (starts with 📦)
                               const isProductMessage = msg.content?.startsWith('📦');
                               
+                              // Check if it's a JSON message (order_card or confirmation_card)
+                              let parsedContent: any = null;
+                              try {
+                                if (msg.content?.startsWith('{')) {
+                                  parsedContent = JSON.parse(msg.content);
+                                }
+                              } catch {}
+                              
+                              // Render system message
                               if (isSystemMessage) {
-                                const isBanMessage = msg.content?.startsWith('🚫');
                                 return (
-                                  <div key={msg.id} className="flex justify-center my-3">
-                                    <div className={cn(
-                                      "text-xs px-4 py-2 rounded-lg shadow-sm border max-w-[90%] whitespace-pre-wrap text-center font-medium",
-                                      isBanMessage
-                                        ? "bg-red-500/30 text-red-400 border-red-500/40"
-                                        : "bg-amber-500/30 text-amber-400 border-amber-500/40"
-                                    )}>
-                                      {msg.content}
-                                    </div>
-                                  </div>
+                                  <SystemMessage
+                                    key={msg.id}
+                                    content={msg.content.replace('🔔 ', '')}
+                                    timestamp={timestamp}
+                                  />
                                 );
                               }
                               
-                              // Render product message as a rich card
+                              // Render Order Card
+                              if (parsedContent?.type === 'order_card') {
+                                const order = chatCommerce.orders.find(o => o.id === parsedContent.order_id);
+                                if (order) {
+                                  return (
+                                    <OrderCard
+                                      key={msg.id}
+                                      orderId={order.id}
+                                      productId={order.product_id}
+                                      productTitle={order.product_title}
+                                      productImage={order.product_image}
+                                      quantity={order.quantity}
+                                      unitPrice={order.unit_price}
+                                      totalPrice={order.total_price}
+                                      notes={order.notes}
+                                      status={order.status}
+                                      isMe={isMe}
+                                      timestamp={timestamp}
+                                      userRole={chatCommerce.userRole}
+                                      onPayNow={() => {
+                                        toast.info('سيتم توجيهك لصفحة الدفع');
+                                        // TODO: Integrate payment
+                                      }}
+                                      onTrack={() => toast.info('تتبع الشحن قريبًا')}
+                                      onConfirmReceipt={() => {
+                                        chatCommerce.updateOrderStatus({
+                                          orderId: order.id,
+                                          status: 'completed',
+                                        });
+                                      }}
+                                      onCancel={() => {
+                                        chatCommerce.updateOrderStatus({
+                                          orderId: order.id,
+                                          status: 'canceled',
+                                        });
+                                      }}
+                                      onProposeChange={() => {
+                                        setSelectedOrderForPriceChange(order);
+                                        setPriceChangeDialogOpen(true);
+                                      }}
+                                      onViewDetails={() => toast.info('تفاصيل الطلب')}
+                                      onAddNotes={() => toast.info('إضافة ملاحظة')}
+                                    />
+                                  );
+                                }
+                              }
+                              
+                              // Render Confirmation Card
+                              if (parsedContent?.type === 'confirmation_card') {
+                                const modification = chatCommerce.pendingModifications.find(
+                                  m => m.id === parsedContent.modification_id
+                                );
+                                return (
+                                  <ConfirmationCard
+                                    key={msg.id}
+                                    modificationId={parsedContent.modification_id}
+                                    orderId={parsedContent.order_id}
+                                    changeType={parsedContent.change_type}
+                                    oldValue={parsedContent.old_value}
+                                    newValue={parsedContent.new_value}
+                                    sellerNote={parsedContent.seller_note}
+                                    isMe={isMe}
+                                    timestamp={timestamp}
+                                    isPending={modification?.status === 'pending'}
+                                    userRole={chatCommerce.userRole}
+                                    onApprove={() => {
+                                      chatCommerce.approveModification({
+                                        modificationId: parsedContent.modification_id,
+                                      });
+                                    }}
+                                    onReject={() => {
+                                      chatCommerce.rejectModification({
+                                        modificationId: parsedContent.modification_id,
+                                      });
+                                    }}
+                                  />
+                                );
+                              }
+                              
+                              // Render product message as a rich ProductCard
                               if (isProductMessage) {
                                 const lines = msg.content?.split('\n') || [];
                                 const productName = lines[0]?.replace('📦 ', '') || '';
-                                const priceText = lines[1]?.replace('💰 ', '') || '';
+                                const priceMatch = lines[1]?.match(/(\d[\d,]*)/);
+                                const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, '')) : 0;
                                 
                                 return (
-                                  <div key={msg.id} className={cn("flex my-2", isMe ? "justify-start" : "justify-end")}>
-                                    <div className={cn(
-                                      "max-w-[85%] sm:max-w-[260px] rounded-xl overflow-hidden shadow-md border",
-                                      isMe ? "bg-primary/10 border-primary/30" : "bg-card border-border/50"
-                                    )}>
-                                      {/* Product Image */}
-                                      {msg.image_url && (
-                                        <div className="aspect-[4/3] bg-muted/20">
-                                          <img 
-                                            src={msg.image_url} 
-                                            alt={productName}
-                                            className="w-full h-full object-cover"
-                                          />
-                                        </div>
-                                      )}
-                                      {/* Product Info */}
-                                      <div className="p-2.5 space-y-1">
-                                        <div className="flex items-center gap-1.5 mb-1">
-                                          <Package className="h-3.5 w-3.5 text-primary" />
-                                          <span className="text-[10px] text-muted-foreground">طلب منتج</span>
-                                        </div>
-                                        <p className="text-xs font-bold text-foreground line-clamp-2">{productName}</p>
-                                        {priceText && (
-                                          <p className="text-sm font-bold text-primary">{priceText}</p>
-                                        )}
-                                      </div>
-                                      {/* Time */}
-                                      <div className={cn("px-2.5 pb-2 flex items-center gap-1", isMe ? "justify-start" : "justify-end")}>
-                                        <span className="text-[10px] text-muted-foreground">
-                                          {format(new Date(msg.created_at), 'HH:mm')}
-                                        </span>
-                                        {isMe && (
-                                          <CheckCheck className={cn("w-3 h-3", msg.is_read ? "text-whatsapp" : "text-muted-foreground/50")} />
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
+                                  <ProductCard
+                                    key={msg.id}
+                                    productId={msg.id}
+                                    storeId={otherUserId || ''}
+                                    imageUrl={msg.image_url}
+                                    title={productName}
+                                    price={price}
+                                    isMe={isMe}
+                                    timestamp={timestamp}
+                                    userRole={chatCommerce.userRole}
+                                    onCreateOrder={() => {
+                                      setSelectedProductForOrder({
+                                        id: msg.id,
+                                        title: productName,
+                                        image: msg.image_url,
+                                        price: price,
+                                      });
+                                      setCreateOrderDialogOpen(true);
+                                    }}
+                                    onSendToCustomer={() => {
+                                      // Already sent, this is display only
+                                    }}
+                                    onViewProduct={() => {
+                                      // Could navigate to product page
+                                    }}
+                                  />
                                 );
                               }
                               
+                              // Regular text message
                               return (
                                 <div 
                                   key={msg.id} 
@@ -925,7 +1019,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     )}
                                     
                                     {/* Text */}
-                                    {msg.content && msg.content !== '📷 وسائط' && msg.content !== '📷 صورة' && (
+                                    {msg.content && msg.content !== '📷 وسائط' && msg.content !== '📷 صورة' && !msg.content.startsWith('{') && (
                                       <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
                                         {msg.content}
                                       </p>
@@ -940,7 +1034,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                         "text-[10px]",
                                         isMe ? "text-primary-foreground/70" : "text-muted-foreground"
                                       )}>
-                                        {format(new Date(msg.created_at), 'HH:mm')}
+                                        {timestamp}
                                       </span>
                                       {isMe && (
                                         <CheckCheck
@@ -998,7 +1092,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 <ProductSelector
                   open={productSelectorOpen}
                   onOpenChange={setProductSelectorOpen}
-                  merchantId={otherUserId || ''}
+                  merchantId={chatCommerce.isSeller ? user?.id || '' : otherUserId || ''}
                   onSelectProduct={async (product) => {
                     // Send product as a message
                     const primaryIndex = product.primary_image_index || 0;
@@ -1017,6 +1111,55 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     }
                   }}
                 />
+                
+                {/* Price Change Dialog - Seller Only */}
+                {selectedOrderForPriceChange && (
+                  <PriceChangeDialog
+                    open={priceChangeDialogOpen}
+                    onOpenChange={(open) => {
+                      setPriceChangeDialogOpen(open);
+                      if (!open) setSelectedOrderForPriceChange(null);
+                    }}
+                    currentPrice={selectedOrderForPriceChange.total_price}
+                    onSubmit={(newPrice, reason) => {
+                      chatCommerce.proposePriceChange({
+                        orderId: selectedOrderForPriceChange.id,
+                        newPrice,
+                        reason,
+                      });
+                      setPriceChangeDialogOpen(false);
+                      setSelectedOrderForPriceChange(null);
+                    }}
+                    isLoading={chatCommerce.isProposingPrice}
+                  />
+                )}
+                
+                {/* Create Order Dialog - Customer Only */}
+                {selectedProductForOrder && (
+                  <CreateOrderDialog
+                    open={createOrderDialogOpen}
+                    onOpenChange={(open) => {
+                      setCreateOrderDialogOpen(open);
+                      if (!open) setSelectedProductForOrder(null);
+                    }}
+                    productId={selectedProductForOrder.id}
+                    productTitle={selectedProductForOrder.title}
+                    productImage={selectedProductForOrder.image}
+                    productPrice={selectedProductForOrder.price}
+                    onSubmit={(quantity) => {
+                      chatCommerce.createOrder({
+                        productId: selectedProductForOrder.id,
+                        productTitle: selectedProductForOrder.title,
+                        productImage: selectedProductForOrder.image,
+                        price: selectedProductForOrder.price,
+                        quantity,
+                      });
+                      setCreateOrderDialogOpen(false);
+                      setSelectedProductForOrder(null);
+                    }}
+                    isLoading={chatCommerce.isCreatingOrder}
+                  />
+                )}
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center">
