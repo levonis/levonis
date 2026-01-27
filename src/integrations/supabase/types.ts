@@ -850,6 +850,69 @@ export type Database = {
           },
         ]
       }
+      community_rate_limits: {
+        Row: {
+          action_count: number | null
+          action_type: string
+          created_at: string | null
+          id: string
+          user_id: string
+          window_start: string | null
+        }
+        Insert: {
+          action_count?: number | null
+          action_type: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+          window_start?: string | null
+        }
+        Update: {
+          action_count?: number | null
+          action_type?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          window_start?: string | null
+        }
+        Relationships: []
+      }
+      community_security_log: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_hash: string | null
+          severity: string | null
+          target_id: string | null
+          target_table: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_hash?: string | null
+          severity?: string | null
+          target_id?: string | null
+          target_table?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_hash?: string | null
+          severity?: string | null
+          target_id?: string | null
+          target_table?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       competition_entry_log: {
         Row: {
           competition_id: string
@@ -5450,11 +5513,21 @@ export type Database = {
           }
       calculate_user_level: { Args: { points: number }; Returns: string }
       can_read_print_file: { Args: { object_name: string }; Returns: boolean }
+      check_rate_limit: {
+        Args: {
+          p_action_type: string
+          p_max_count: number
+          p_user_id: string
+          p_window_minutes: number
+        }
+        Returns: boolean
+      }
       check_username_available: {
         Args: { username_to_check: string }
         Returns: boolean
       }
       cleanup_old_coupon_attempts: { Args: never; Returns: undefined }
+      cleanup_rate_limits: { Args: never; Returns: undefined }
       complete_daily_task: { Args: { task_key_param: string }; Returns: Json }
       compute_overall_print_score: {
         Args: {
@@ -5664,10 +5737,10 @@ export type Database = {
       verify_printer_serial: {
         Args: { p_serial_number: string }
         Returns: {
+          id: string
           is_available: boolean
           model_name: string
           model_name_ar: string
-          store_printer_id: string
         }[]
       }
     }
