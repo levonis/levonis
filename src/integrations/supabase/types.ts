@@ -467,15 +467,25 @@ export type Database = {
       }
       chat_orders: {
         Row: {
+          checkout_completed_at: string | null
+          commission_amount: number | null
+          commission_rate: number | null
           conversation_id: string
           created_at: string
           customer_id: string
+          delivery_address_id: string | null
+          delivery_notes: string | null
+          description: string | null
           id: string
           notes: string | null
+          paid_amount: number | null
+          partial_payment_percent: number | null
+          payment_method: string | null
           product_id: string | null
           product_image: string | null
           product_title: string
           quantity: number
+          remaining_amount: number | null
           seller_id: string
           status: string
           total_price: number
@@ -483,15 +493,25 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          checkout_completed_at?: string | null
+          commission_amount?: number | null
+          commission_rate?: number | null
           conversation_id: string
           created_at?: string
           customer_id: string
+          delivery_address_id?: string | null
+          delivery_notes?: string | null
+          description?: string | null
           id?: string
           notes?: string | null
+          paid_amount?: number | null
+          partial_payment_percent?: number | null
+          payment_method?: string | null
           product_id?: string | null
           product_image?: string | null
           product_title: string
           quantity?: number
+          remaining_amount?: number | null
           seller_id: string
           status?: string
           total_price: number
@@ -499,15 +519,25 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          checkout_completed_at?: string | null
+          commission_amount?: number | null
+          commission_rate?: number | null
           conversation_id?: string
           created_at?: string
           customer_id?: string
+          delivery_address_id?: string | null
+          delivery_notes?: string | null
+          description?: string | null
           id?: string
           notes?: string | null
+          paid_amount?: number | null
+          partial_payment_percent?: number | null
+          payment_method?: string | null
           product_id?: string | null
           product_image?: string | null
           product_title?: string
           quantity?: number
+          remaining_amount?: number | null
           seller_id?: string
           status?: string
           total_price?: number
@@ -520,6 +550,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "listing_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_orders_delivery_address_id_fkey"
+            columns: ["delivery_address_id"]
+            isOneToOne: false
+            referencedRelation: "user_addresses"
             referencedColumns: ["id"]
           },
         ]

@@ -94,6 +94,7 @@ const AdminRedeemableProducts = lazy(() => import("./pages/AdminRedeemableProduc
 const AdminCartRequests = lazy(() => import("./pages/AdminCartRequests"));
 const CommunityHome = lazy(() => import("./pages/CommunityHome"));
 const WalletSuccess = lazy(() => import("./pages/WalletSuccess"));
+const ChatOrderCheckout = lazy(() => import("./pages/ChatOrderCheckout"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component
@@ -198,6 +199,7 @@ function AppContent() {
             <Route path="/my-offer-purchases" element={<MyOfferPurchases />} />
             <Route path="/product-offers" element={<ProductOffersPage />} />
             <Route path="/wallet-success" element={<RequireAuth><WalletSuccess /></RequireAuth>} />
+            <Route path="/community/checkout/:orderId" element={<RequireAuth><ChatOrderCheckout /></RequireAuth>} />
             
             {/* Redirect old routes to rewards hub */}
             <Route path="/my-points" element={<Navigate to="/rewards" replace />} />
