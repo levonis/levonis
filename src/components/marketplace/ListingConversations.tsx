@@ -637,7 +637,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           )}
         </DialogTrigger>
       )}
-      <DialogContent hideClose className="max-w-5xl h-[100dvh] sm:h-[85vh] w-full sm:w-[95vw] p-0 flex flex-col overflow-hidden">
+      <DialogContent hideClose className="max-w-6xl h-[100dvh] sm:h-[90vh] w-full sm:w-[95vw] lg:w-[85vw] xl:w-[75vw] p-0 flex flex-col overflow-hidden">
         {/* Close Button - always visible on desktop, only when no conversation on mobile */}
         <button
           onClick={handleClose}
@@ -653,7 +653,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         <div className="flex flex-1 min-h-0 h-full">
           {/* Conversations List - WhatsApp Style */}
           <div className={cn(
-            "flex flex-col w-full md:w-80 lg:w-96 md:border-l bg-card h-full min-h-0",
+            "flex flex-col w-full md:w-80 lg:w-[320px] xl:w-[360px] md:border-l bg-card h-full min-h-0 flex-shrink-0",
             selectedConversation ? 'hidden md:flex' : 'flex'
           )}>
             {/* Header */}
@@ -783,7 +783,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
           {/* Messages Area - Telegram/WhatsApp Style */}
           <div className={cn(
-            "flex-1 flex flex-col min-h-0 bg-background-2 h-full",
+            "flex-1 flex flex-col min-h-0 bg-background h-full",
             !selectedConversation ? 'hidden md:flex' : 'flex w-full'
           )}
             style={{
@@ -805,7 +805,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 />
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-2 sm:p-4">
+                <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
                   {loadingMessages ? (
                     <div className="flex items-center justify-center h-full">
                       <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
