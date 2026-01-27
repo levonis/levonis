@@ -21,9 +21,28 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import data from '@emoji-mart/data';
-import Picker from '@emoji-mart/react';
 import { toast } from 'sonner';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+// WeChat-style emoji set
+const EMOJI_CATEGORIES = [
+  {
+    name: 'وجوه',
+    emojis: ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥', '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '🥸', '😎', '🤓', '🧐']
+  },
+  {
+    name: 'يدين',
+    emojis: ['👍', '👎', '👌', '🤌', '🤏', '✌️', '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '👇', '☝️', '👋', '🤚', '🖐️', '✋', '🖖', '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💪', '🦾', '🙆', '🙅', '🙋', '💁', '🤷']
+  },
+  {
+    name: 'قلوب',
+    emojis: ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❤️‍🔥', '❤️‍🩹', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟']
+  },
+  {
+    name: 'رموز',
+    emojis: ['✅', '❌', '⭐', '🌟', '💫', '✨', '⚡', '🔥', '💥', '💯', '💢', '💬', '🗨️', '💭', '🔔', '🔕', '📢', '📣', '💰', '💵', '📦', '🎁', '🏷️', '📌', '📍', '🔗', '📱', '💻', '⌚', '📷', '🎬', '🎵', '🎶']
+  }
+];
 
 interface ChatInputBarProps {
   value: string;
@@ -52,6 +71,7 @@ export default function ChatInputBar({
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [selectedEmojiCategory, setSelectedEmojiCategory] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -102,10 +122,7 @@ export default function ChatInputBar({
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         const audioFile = new File([audioBlob], `voice_${Date.now()}.webm`, { type: 'audio/webm' });
         
-        // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
-        
-        // Send audio file
         await onSendMedia(audioFile);
         setRecordingTime(0);
       };
@@ -113,7 +130,6 @@ export default function ChatInputBar({
       mediaRecorder.start();
       setIsRecording(true);
       
-      // Start timer
       timerRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
@@ -142,9 +158,8 @@ export default function ChatInputBar({
     }
   };
 
-  const handleEmojiSelect = (emoji: any) => {
-    onChange(value + emoji.native);
-    setEmojiPickerOpen(false);
+  const handleEmojiSelect = (emoji: string) => {
+    onChange(value + emoji);
   };
 
   const formatTime = (seconds: number) => {
@@ -224,7 +239,7 @@ export default function ChatInputBar({
             </PopoverContent>
           </Popover>
 
-          {/* Send Product Button - Always show for sellers */}
+          {/* Send Product Button - Seller Only */}
           {isSeller && (
             <Button
               type="button"
@@ -274,22 +289,41 @@ export default function ChatInputBar({
                 <PopoverContent 
                   side="top" 
                   align="end" 
-                  className="w-auto p-0 border-0 shadow-xl rounded-xl overflow-hidden"
+                  className="w-72 p-0 shadow-xl rounded-xl overflow-hidden"
                   sideOffset={10}
                 >
-                  <Picker
-                    data={data}
-                    onEmojiSelect={handleEmojiSelect}
-                    theme="light"
-                    locale="ar"
-                    previewPosition="none"
-                    skinTonePosition="none"
-                    navPosition="bottom"
-                    perLine={8}
-                    emojiSize={24}
-                    emojiButtonSize={32}
-                    maxFrequentRows={2}
-                  />
+                  {/* Category Tabs */}
+                  <div className="flex border-b bg-muted/30">
+                    {EMOJI_CATEGORIES.map((cat, idx) => (
+                      <button
+                        key={cat.name}
+                        onClick={() => setSelectedEmojiCategory(idx)}
+                        className={cn(
+                          "flex-1 py-2 text-xs font-medium transition-colors",
+                          selectedEmojiCategory === idx 
+                            ? "text-primary border-b-2 border-primary bg-background" 
+                            : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {cat.name}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Emoji Grid */}
+                  <ScrollArea className="h-48">
+                    <div className="grid grid-cols-8 gap-1 p-2">
+                      {EMOJI_CATEGORIES[selectedEmojiCategory].emojis.map((emoji) => (
+                        <button
+                          key={emoji}
+                          onClick={() => handleEmojiSelect(emoji)}
+                          className="h-8 w-8 flex items-center justify-center text-xl hover:bg-muted rounded transition-colors"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </PopoverContent>
               </Popover>
             </>
