@@ -295,24 +295,28 @@ export default function AllCompetitionsPanel() {
     }
   };
 
+  // Track ongoing requests to prevent duplicate submissions
+  const [isProcessing, setIsProcessing] = useState(false);
+  
   // Multiple bags participation for letter competitions - uses atomic server function
+  // NOW: Single server call for ALL tickets (no client-side loop)
   const participateMultipleBagsMutation = useMutation({
     mutationFn: async ({ comp, count }: { comp: any; count: number }) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
+      if (isProcessing) throw new Error('عملية جارية - يرجى الانتظار');
       
-      const results: { letter: string | null; isNew: boolean; ticketNumber: string }[] = [];
-      const existingLetters = [...(userLetters?.[comp.id] || [])];
+      setIsProcessing(true);
       
-      // Use atomic server function for each entry
-      for (let i = 0; i < count; i++) {
+      try {
+        // Determine letter for first entry (server will handle the rest)
         const result = simulateResult(comp);
         const letter = result.letter || null;
         
-        // Call secure atomic function
+        // SINGLE atomic call for ALL tickets - server handles deduction + insertion
         const { data: entryResult, error } = await supabase.rpc('enter_competition', {
           p_user_id: user.id,
           p_competition_id: comp.id,
-          p_ticket_count: 1,
+          p_ticket_count: count, // All tickets in ONE call
           p_letter_awarded: letter,
           p_team: null,
           p_prize_won: null
@@ -325,21 +329,30 @@ export default function AllCompetitionsPanel() {
           throw new Error(row?.error_message || 'فشل الدخول في المسابقة');
         }
         
-        const isNew = letter ? !existingLetters.includes(letter) : false;
-        if (letter) existingLetters.push(letter);
-        results.push({ letter, isNew, ticketNumber: row.ticket_number });
-      }
+        // Generate results for UI display
+        const existingLetters = [...(userLetters?.[comp.id] || [])];
+        const results: { letter: string | null; isNew: boolean; ticketNumber: string }[] = [];
+        for (let i = 0; i < count; i++) {
+          const simResult = simulateResult(comp);
+          const l = simResult.letter || null;
+          const isNew = l ? !existingLetters.includes(l) : false;
+          if (l) existingLetters.push(l);
+          results.push({ letter: l, isNew, ticketNumber: row.ticket_number + '-' + i });
+        }
 
-      const config = comp.letters_config as any;
-      return {
-        results,
-        competition: comp,
-        lettersConfig: {
-          target_word: config?.display_word || config?.prize_words?.[0]?.word || '',
-          prizes: config?.prize_words || []
-        },
-        collectedLetters: userLetters?.[comp.id] || []
-      };
+        const config = comp.letters_config as any;
+        return {
+          results,
+          competition: comp,
+          lettersConfig: {
+            target_word: config?.display_word || config?.prize_words?.[0]?.word || '',
+            prizes: config?.prize_words || []
+          },
+          collectedLetters: userLetters?.[comp.id] || []
+        };
+      } finally {
+        setIsProcessing(false);
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['user-tickets-balance'] });
@@ -347,7 +360,6 @@ export default function AllCompetitionsPanel() {
       queryClient.invalidateQueries({ queryKey: ['user-collected-letters'] });
       queryClient.invalidateQueries({ queryKey: ['user-participations'] });
       
-      // Show bag opening animation
       setRevealState({
         show: true,
         type: 'bag',
@@ -364,50 +376,58 @@ export default function AllCompetitionsPanel() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'حدث خطأ');
+      setIsProcessing(false);
     },
   });
 
   const participateMutation = useMutation({
     mutationFn: async (comp: any) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
+      if (isProcessing) throw new Error('عملية جارية - يرجى الانتظار');
       
-      const type = comp.competition_type as CompetitionType;
-      const result = simulateResult(comp);
-
-      // Use atomic server function for secure entry
-      const { data: entryResult, error } = await supabase.rpc('enter_competition', {
-        p_user_id: user.id,
-        p_competition_id: comp.id,
-        p_ticket_count: 1,
-        p_letter_awarded: result.letter || null,
-        p_team: result.team || null,
-        p_prize_won: result.prize || null
-      });
-
-      if (error) throw new Error(error.message || 'فشل الدخول في المسابقة');
+      setIsProcessing(true);
       
-      const row = entryResult?.[0];
-      if (!row?.success) {
-        throw new Error(row?.error_message || 'فشل الدخول في المسابقة');
-      }
+      try {
+        const type = comp.competition_type as CompetitionType;
+        const result = simulateResult(comp);
 
-      // Update team counts if needed
-      if (type === 'team_battle' && result.team) {
-        const updateField = result.team === 'A' ? 'team_a_count' : 'team_b_count';
-        const currentCount = result.team === 'A' ? (comp.team_a_count || 0) : (comp.team_b_count || 0);
-        await supabase
-          .from('competitions')
-          .update({ [updateField]: currentCount + 1 })
-          .eq('id', comp.id);
-      }
+        // Use atomic server function for secure entry
+        const { data: entryResult, error } = await supabase.rpc('enter_competition', {
+          p_user_id: user.id,
+          p_competition_id: comp.id,
+          p_ticket_count: 1,
+          p_letter_awarded: result.letter || null,
+          p_team: result.team || null,
+          p_prize_won: result.prize || null
+        });
 
-      return { 
-        ...result, 
-        ticketNumber: row.ticket_number,
-        competitionType: type, 
-        competition: comp, 
-        boxes: comp.mystery_boxes || [] 
-      };
+        if (error) throw new Error(error.message || 'فشل الدخول في المسابقة');
+        
+        const row = entryResult?.[0];
+        if (!row?.success) {
+          throw new Error(row?.error_message || 'فشل الدخول في المسابقة');
+        }
+
+        // Update team counts if needed
+        if (type === 'team_battle' && result.team) {
+          const updateField = result.team === 'A' ? 'team_a_count' : 'team_b_count';
+          const currentCount = result.team === 'A' ? (comp.team_a_count || 0) : (comp.team_b_count || 0);
+          await supabase
+            .from('competitions')
+            .update({ [updateField]: currentCount + 1 })
+            .eq('id', comp.id);
+        }
+
+        return { 
+          ...result, 
+          ticketNumber: row.ticket_number,
+          competitionType: type, 
+          competition: comp, 
+          boxes: comp.mystery_boxes || [] 
+        };
+      } finally {
+        setIsProcessing(false);
+      }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['user-tickets-balance'] });
@@ -422,7 +442,6 @@ export default function AllCompetitionsPanel() {
       if (type === 'collect_letters') {
         const collected = userLetters?.[data.competition.id] || [];
         const config = data.competition.letters_config as any;
-        // For single participation, show bag animation
         setRevealState({
           show: true,
           type: 'bag',
@@ -467,6 +486,7 @@ export default function AllCompetitionsPanel() {
     },
     onError: (error: any) => {
       toast.error(error.message || 'حدث خطأ');
+      setIsProcessing(false);
     },
   });
 
