@@ -1,5 +1,6 @@
 import { CheckCheck, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { parseEmojisInText } from '../emojiData';
 
 interface TextMessageProps {
   content: string;
@@ -10,6 +11,30 @@ interface TextMessageProps {
   senderName?: string;
   showSenderName?: boolean;
   showTail?: boolean;
+}
+
+// Component to render text with inline emojis
+function RenderTextWithEmojis({ text }: { text: string }) {
+  const parsed = parseEmojisInText(text);
+  
+  return (
+    <>
+      {parsed.map((item, index) => {
+        if (typeof item === 'string') {
+          return <span key={index}>{item}</span>;
+        }
+        return (
+          <img
+            key={index}
+            src={item.src}
+            alt={item.alt}
+            className="inline-block w-5 h-5 align-text-bottom mx-0.5"
+            loading="lazy"
+          />
+        );
+      })}
+    </>
+  );
 }
 
 export default function TextMessage({
@@ -50,10 +75,10 @@ export default function TextMessage({
           </div>
         )}
 
-        {/* Text Content */}
+        {/* Text Content with Inline Emojis */}
         {content && content !== '📷 وسائط' && content !== '📷 صورة' && (
           <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">
-            {content}
+            <RenderTextWithEmojis text={content} />
           </p>
         )}
 
