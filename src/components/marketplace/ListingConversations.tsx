@@ -445,17 +445,30 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     queryKey: ['current-user-merchant', user?.id],
     queryFn: async () => {
       if (!user) return null;
-      const { data } = await supabase
+      // Check in merchant_applications first, then merchant_public_profiles
+      const { data: publicProfile } = await supabase
         .from('merchant_public_profiles')
         .select('id')
         .eq('id', user.id)
         .maybeSingle();
-      return data;
+      
+      if (publicProfile) return publicProfile;
+      
+      // Also check approved merchant applications
+      const { data: application } = await supabase
+        .from('merchant_applications')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'approved')
+        .maybeSingle();
+      
+      return application;
     },
     enabled: !!user,
   });
   
   // User can send products if they are the seller OR if they are a registered merchant
+  // Always show for seller in this conversation, or any registered merchant
   const canSendProducts = isSeller || !!currentUserMerchant;
 
   // Chat Commerce Hook
@@ -655,7 +668,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           )}
         </DialogTrigger>
       )}
-      <DialogContent hideClose className="max-w-6xl h-[100dvh] sm:h-[90vh] w-full sm:w-[95vw] lg:w-[85vw] xl:w-[75vw] p-0 flex flex-col overflow-hidden">
+      <DialogContent hideClose className="max-w-6xl h-[100dvh] sm:h-[90vh] w-full sm:w-[95vw] lg:w-[80vw] xl:w-[70vw] p-0 flex flex-col overflow-hidden border-0">
         {/* Close Button - always visible on desktop, only when no conversation on mobile */}
         <button
           onClick={handleClose}
