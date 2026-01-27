@@ -1,8 +1,8 @@
-import { Package, ShoppingCart, Send } from 'lucide-react';
+import { Package, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import type { ChatRole } from '@/hooks/useChatCommerce';
+
+type ChatRole = 'seller' | 'customer';
 
 interface ProductCardProps {
   productId: string;
