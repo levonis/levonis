@@ -7,40 +7,30 @@ import { useNavigate } from 'react-router-dom';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   MessageSquare,
-  Send,
   ArrowRight,
   AlertTriangle,
   ShieldCheck,
   Loader2,
-  Image as ImageIcon,
   Package,
   X,
-  Phone,
-  MoreVertical,
   Check,
   CheckCheck,
-  Mic,
-  Video,
-  Smile,
-  Paperclip,
   Star,
-  User,
   ShoppingBag,
   ExternalLink,
   Ban,
   UserX,
+  MoreVertical,
+  Paperclip,
+  Send,
   AlertOctagon,
-  ChevronLeft,
   Hash,
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
@@ -54,6 +44,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+// Chat Commerce Components - Taobao Style
+import ChatTopBar from '@/components/chat/ChatTopBar';
+import ChatInputBar from '@/components/chat/ChatInputBar';
+import SystemMessage from '@/components/chat/messages/SystemMessage';
+import TextMessage from '@/components/chat/messages/TextMessage';
+import ProductCard from '@/components/chat/messages/ProductCard';
+import ProductSelector from '@/components/chat/ProductSelector';
 
 interface ListingConversationsProps {
   children?: React.ReactNode;
@@ -88,6 +85,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messageInput, setMessageInput] = useState('');
   const [uploadingMedia, setUploadingMedia] = useState(false);
+  const [productSelectorOpen, setProductSelectorOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -774,221 +772,17 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           >
             {selectedConversation ? (
               <>
-                {/* Chat Header with User Info */}
-                <div className="border-b bg-card flex-shrink-0 shadow-sm">
-                  {/* Main Header Row */}
-                  <div className="p-2 sm:p-3 flex items-center gap-2 sm:gap-3">
-                    {/* Back Button - Mobile only, goes back to conversations list */}
-                    <button 
-                      onClick={() => setSelectedConversation(null)} 
-                      className="p-1.5 hover:bg-muted rounded-full md:hidden text-foreground"
-                      aria-label="رجوع"
-                    >
-                      <ArrowRight className="w-5 h-5" />
-                    </button>
-                    
-                    {/* Avatar with Frame - Clickable */}
-                    <button 
-                      onClick={() => {
-                        if (otherUserId) {
-                          handleClose();
-                          navigate(`/profile/${otherUserId}`);
-                        }
-                      }}
-                      className="relative flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
-                    >
-                      <AvatarWithFrame
-                        imageUrl={otherUser?.avatar_url}
-                        frameUrl={(otherUser as any)?.selected_frame_url}
-                        size="xs"
-                      />
-                    </button>
-
-                    {/* User Info - Clickable */}
-                    <button 
-                      onClick={() => {
-                        if (otherUserId) {
-                          handleClose();
-                          navigate(`/store/${otherUserId}`);
-                        }
-                      }}
-                      className="flex-1 min-w-0 text-right hover:opacity-80 transition-opacity cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-sm truncate">
-                          {otherUser?.username || otherUser?.full_name || 'مستخدم'}
-                        </p>
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                          {selectedConv?.buyer_id === user?.id ? 'البائع' : 'المشتري'}
-                        </Badge>
-                        <ExternalLink className="w-3 h-3 text-muted-foreground" />
-                      </div>
-                      {/* Reputation Summary (Community printing) */}
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                        <span className="flex items-center gap-0.5">
-                          <Star className="w-3 h-3 fill-primary text-primary" />
-                          {Number(otherUserReputation?.avg_stars ?? 0).toFixed(1)}/5
-                        </span>
-                        <span className="text-muted-foreground/70">•</span>
-                        <span className="flex items-center gap-1">
-                          <ShoppingBag className="w-3 h-3" />
-                          إكمال {Number(otherUserReputation?.merchant_completion_percent ?? 0).toFixed(0)}%
-                        </span>
-                      </div>
-                    </button>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1">
-                      {selectedConv?.status === 'disputed' && (
-                        <Badge variant="destructive" className="text-xs">نزاع</Badge>
-                      )}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {/* User block options */}
-                          {(isBuyer || isSeller) && !isUserBlocked && (
-                            <DropdownMenuItem 
-                              className="text-orange-500 gap-2"
-                              onClick={() => blockUserMutation.mutate(undefined)}
-                            >
-                              <UserX className="w-4 h-4" />
-                              حظر المستخدم
-                            </DropdownMenuItem>
-                          )}
-                          {(isBuyer || isSeller) && isUserBlocked && (
-                            <DropdownMenuItem 
-                              className="text-green-500 gap-2"
-                              onClick={() => unblockUserMutation.mutate()}
-                            >
-                              <Check className="w-4 h-4" />
-                              إلغاء حظر المستخدم
-                            </DropdownMenuItem>
-                          )}
-                          
-                          {/* Dispute options */}
-                          {(isBuyer || isSeller) && selectedConv?.status !== 'disputed' && (
-                            <DropdownMenuItem 
-                              className="text-destructive gap-2"
-                              onClick={() => requestAdminMutation.mutate()}
-                            >
-                              <AlertTriangle className="w-4 h-4" />
-                              طلب تدخل الإدارة
-                            </DropdownMenuItem>
-                          )}
-                          {(isBuyer || isSeller) && selectedConv?.status === 'disputed' && (
-                            <DropdownMenuItem 
-                              className="text-primary gap-2"
-                              onClick={() => cancelDisputeMutation.mutate()}
-                            >
-                              <Check className="w-4 h-4" />
-                              إلغاء طلب التدخل
-                            </DropdownMenuItem>
-                          )}
-                          
-                          {/* Admin options */}
-                          {isAdmin && selectedConv?.status === 'disputed' && !selectedConv?.admin_joined && (
-                            <DropdownMenuItem 
-                              className="text-primary gap-2"
-                              onClick={async () => {
-                                await supabase
-                                  .from('listing_conversations')
-                                  .update({ admin_joined: true })
-                                  .eq('id', selectedConversation);
-                                
-                                // Add system message
-                                await supabase.from('listing_messages').insert({
-                                  conversation_id: selectedConversation,
-                                  sender_id: user?.id,
-                                  content: '🛡️ انضمت الإدارة للمحادثة',
-                                });
-                                
-                                queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
-                                queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
-                                toast.success('تم الانضمام للمحادثة');
-                              }}
-                            >
-                              <ShieldCheck className="w-4 h-4" />
-                              الانضمام للنزاع
-                            </DropdownMenuItem>
-                          )}
-                          {isAdmin && selectedConv?.status === 'disputed' && (
-                            <DropdownMenuItem 
-                              className="text-emerald-500 gap-2"
-                              onClick={async () => {
-                                await supabase
-                                  .from('listing_conversations')
-                                  .update({ status: 'resolved', admin_joined: false })
-                                  .eq('id', selectedConversation);
-                                
-                                // Add system message
-                                await supabase.from('listing_messages').insert({
-                                  conversation_id: selectedConversation,
-                                  sender_id: user?.id,
-                                  content: '✅ تم حل النزاع بواسطة الإدارة',
-                                });
-                                
-                                queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
-                                queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
-                                toast.success('تم حل النزاع');
-                              }}
-                            >
-                              <CheckCheck className="w-4 h-4" />
-                              حل النزاع
-                            </DropdownMenuItem>
-                          )}
-                          
-                          {/* Admin moderation options */}
-                          {isAdmin && otherUserId && (
-                            <>
-                              <DropdownMenuItem 
-                                className="text-amber-500 gap-2"
-                                onClick={() => {
-                                  const reason = prompt('أدخل سبب التحذير:');
-                                  if (reason) {
-                                    banUserMutation.mutate({ userId: otherUserId, reason, isBan: false });
-                                  }
-                                }}
-                              >
-                                <AlertOctagon className="w-4 h-4" />
-                                إرسال تحذير للمستخدم
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="text-red-600 gap-2"
-                                onClick={() => {
-                                  const reason = prompt('أدخل سبب الحظر النهائي:');
-                                  if (reason) {
-                                    banUserMutation.mutate({ userId: otherUserId, reason, isBan: true });
-                                  }
-                                }}
-                              >
-                                <Ban className="w-4 h-4" />
-                                حظر المستخدم نهائياً
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </div>
-                  
-                   {/* Info Bar */}
-                   <div className="px-3 py-2 bg-muted/30 border-t flex items-center gap-2 text-xs">
-                     <Hash className="w-4 h-4 text-primary" />
-                     <div className="flex-1 min-w-0">
-                       <p className="truncate text-foreground font-medium">
-                         {selectedConv?.conversation_code ? `رمز المحادثة: ${selectedConv.conversation_code}` : 'محادثة'}
-                       </p>
-                       <p className="text-muted-foreground">
-                         {otherUser?.full_name || otherUser?.username || ''}
-                       </p>
-                     </div>
-                   </div>
-                  
-                </div>
+                {/* Chat Top Bar - Taobao Style */}
+                <ChatTopBar
+                  storeName={otherUser?.display_name || otherUser?.full_name || otherUser?.username || 'المتجر'}
+                  storeId={otherUserId || ''}
+                  storeImage={otherUser?.avatar_url}
+                  storeFrameUrl={(otherUser as any)?.selected_frame_url}
+                  rating={Number(otherUserReputation?.avg_stars ?? 0)}
+                  status={selectedConv?.status as 'open' | 'disputed' | 'resolved' | undefined}
+                  onBack={() => setSelectedConversation(null)}
+                  onContactAdmin={() => requestAdminMutation.mutate()}
+                />
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-2 sm:p-4">
@@ -1169,57 +963,60 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   )}
                 </div>
 
-                {/* Input Area - WhatsApp Style */}
-                <form onSubmit={handleSend} className="p-2 border-t bg-card flex items-end gap-2 flex-shrink-0">
-                  {/* Attachment */}
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    accept="image/*,video/*" 
-                    onChange={handleMediaUpload} 
-                    className="hidden" 
-                  />
-                  
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-10 w-10 rounded-full flex-shrink-0"
-                    onClick={() => fileInputRef.current?.click()} 
-                    disabled={uploadingMedia}
-                  >
-                    {uploadingMedia ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Paperclip className="w-5 h-5 text-muted-foreground" />
-                    )}
-                  </Button>
-
-                  {/* Input */}
-                  <div className="flex-1 relative">
-                    <Input 
-                      ref={inputRef}
-                      value={messageInput} 
-                      onChange={(e) => setMessageInput(e.target.value)} 
-                      placeholder="اكتب رسالة..." 
-                      className="rounded-full pl-10 pr-4 py-5 bg-muted/50 border-0 focus-visible:ring-1"
-                    />
-                  </div>
-
-                  {/* Send */}
-                  <Button 
-                    type="submit" 
-                    size="icon" 
-                    className="h-10 w-10 rounded-full flex-shrink-0"
-                    disabled={sendMessageMutation.isPending || !messageInput.trim()}
-                  >
-                    {sendMessageMutation.isPending ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : (
-                      <Send className="w-5 h-5" />
-                    )}
-                  </Button>
-                </form>
+                {/* Input Area - Taobao Style */}
+                <ChatInputBar
+                  value={messageInput}
+                  onChange={setMessageInput}
+                  onSend={() => {
+                    if (messageInput.trim()) sendMessageMutation.mutate(undefined);
+                  }}
+                  onSendMedia={async (file: File) => {
+                    setUploadingMedia(true);
+                    try {
+                      const fileExt = file.name.split('.').pop();
+                      const fileName = `chat/listing/${user?.id}/${Date.now()}.${fileExt}`;
+                      const { error } = await supabase.storage.from('product-images').upload(fileName, file);
+                      if (error) throw error;
+                      const { data: { publicUrl } } = supabase.storage.from('product-images').getPublicUrl(fileName);
+                      await sendMessageMutation.mutateAsync(publicUrl);
+                    } catch (error) {
+                      toast.error('فشل رفع الملف');
+                    } finally {
+                      setUploadingMedia(false);
+                    }
+                  }}
+                  onOpenProducts={() => setProductSelectorOpen(true)}
+                  onOpenOrders={() => {
+                    // TODO: Open orders list
+                    toast.info('قريبًا: عرض الطلبات');
+                  }}
+                  isLoading={sendMessageMutation.isPending}
+                  isUploadingMedia={uploadingMedia}
+                />
+                
+                {/* Product Selector Dialog */}
+                <ProductSelector
+                  open={productSelectorOpen}
+                  onOpenChange={setProductSelectorOpen}
+                  merchantId={otherUserId || ''}
+                  onSelectProduct={async (product) => {
+                    // Send product as a message
+                    const primaryIndex = product.primary_image_index || 0;
+                    const imageUrl = product.image_urls?.[primaryIndex] || product.image_urls?.[0];
+                    const productMessage = `📦 ${product.title}\n💰 ${product.price_iqd?.toLocaleString() || 0} د.ع`;
+                    const { error } = await supabase.from('listing_messages').insert({
+                      conversation_id: selectedConversation,
+                      sender_id: user?.id,
+                      content: productMessage,
+                      image_url: imageUrl,
+                    });
+                    if (!error) {
+                      queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+                      setProductSelectorOpen(false);
+                      toast.success('تم إرسال المنتج');
+                    }
+                  }}
+                />
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center">
