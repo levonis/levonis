@@ -10,10 +10,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import type { ChatRole } from '@/hooks/useChatCommerce';
 
 export type ChangeType = 'price_change' | 'notes_change' | 'shipping_change';
 
 interface ConfirmationCardProps {
+  modificationId: string;
   orderId: string;
   changeType: ChangeType;
   oldValue: string;
@@ -22,6 +24,8 @@ interface ConfirmationCardProps {
   isMe: boolean;
   timestamp: string;
   isPending?: boolean;
+  userRole: ChatRole;
+  // Actions
   onApprove?: () => void;
   onReject?: () => void;
 }
@@ -49,6 +53,7 @@ const CHANGE_CONFIG: Record<ChangeType, {
 };
 
 export default function ConfirmationCard({
+  modificationId,
   orderId,
   changeType,
   oldValue,
@@ -57,11 +62,16 @@ export default function ConfirmationCard({
   isMe,
   timestamp,
   isPending = true,
+  userRole,
   onApprove,
   onReject,
 }: ConfirmationCardProps) {
   const changeConfig = CHANGE_CONFIG[changeType];
   const ChangeIcon = changeConfig.icon;
+  const isCustomer = userRole === 'customer';
+  
+  // Only customer can approve/reject, and only if pending
+  const canTakeAction = isCustomer && isPending && !isMe;
 
   return (
     <div className={cn("flex my-2", isMe ? "justify-start" : "justify-end")}>
@@ -124,8 +134,8 @@ export default function ConfirmationCard({
           )}
         </div>
 
-        {/* Action Buttons - Only show if pending and not the sender */}
-        {isPending && !isMe && (
+        {/* Action Buttons - Only for Customer when pending */}
+        {canTakeAction && (
           <div className="p-3 pt-0 flex gap-2">
             <Button
               size="sm"
@@ -152,9 +162,10 @@ export default function ConfirmationCard({
           <div className="px-3 pb-3">
             <Badge className={cn(
               "w-full justify-center py-1.5",
-              isMe ? "bg-green-500/10 text-green-600" : "bg-red-500/10 text-red-600"
+              "bg-muted text-muted-foreground"
             )}>
-              {isMe ? "✓ تمت الموافقة" : "✗ تم الرفض"}
+              {/* Status will be shown based on the result */}
+              تم معالجة هذا الطلب
             </Badge>
           </div>
         )}

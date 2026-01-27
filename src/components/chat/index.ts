@@ -12,9 +12,11 @@ export { default as TextMessage } from './messages/TextMessage';
 export { default as SystemMessage } from './messages/SystemMessage';
 export { default as ProductCard } from './messages/ProductCard';
 export { default as OrderCard } from './messages/OrderCard';
-export type { OrderStatus } from './messages/OrderCard';
+export type { OrderStatus, ChatRole } from './messages/OrderCard';
 export { default as ConfirmationCard } from './messages/ConfirmationCard';
 export type { ChangeType } from './messages/ConfirmationCard';
 
-// Selectors
+// Selectors & Dialogs
 export { default as ProductSelector } from './ProductSelector';
+export { default as PriceChangeDialog } from './PriceChangeDialog';
+export { default as CreateOrderDialog } from './CreateOrderDialog';

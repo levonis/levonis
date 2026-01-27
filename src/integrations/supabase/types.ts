@@ -424,6 +424,106 @@ export type Database = {
           },
         ]
       }
+      chat_order_modifications: {
+        Row: {
+          change_type: string
+          created_at: string
+          id: string
+          new_value: string
+          old_value: string
+          order_id: string
+          seller_note: string | null
+          status: string
+        }
+        Insert: {
+          change_type?: string
+          created_at?: string
+          id?: string
+          new_value: string
+          old_value: string
+          order_id: string
+          seller_note?: string | null
+          status?: string
+        }
+        Update: {
+          change_type?: string
+          created_at?: string
+          id?: string
+          new_value?: string
+          old_value?: string
+          order_id?: string
+          seller_note?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_order_modifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "chat_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_orders: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          customer_id: string
+          id: string
+          notes: string | null
+          product_id: string | null
+          product_image: string | null
+          product_title: string
+          quantity: number
+          seller_id: string
+          status: string
+          total_price: number
+          unit_price: number
+          updated_at: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          customer_id: string
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          product_image?: string | null
+          product_title: string
+          quantity?: number
+          seller_id: string
+          status?: string
+          total_price: number
+          unit_price: number
+          updated_at?: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          customer_id?: string
+          id?: string
+          notes?: string | null
+          product_id?: string | null
+          product_image?: string | null
+          product_title?: string
+          quantity?: number
+          seller_id?: string
+          status?: string
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_orders_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "listing_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_categories: {
         Row: {
           created_at: string
@@ -1768,6 +1868,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_read: boolean | null
+          message_type: string | null
           sender_id: string
         }
         Insert: {
@@ -1777,6 +1878,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_read?: boolean | null
+          message_type?: string | null
           sender_id: string
         }
         Update: {
@@ -1786,6 +1888,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_read?: boolean | null
+          message_type?: string | null
           sender_id?: string
         }
         Relationships: [

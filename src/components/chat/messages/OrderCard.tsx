@@ -1,13 +1,13 @@
 import { 
   Package, 
-  CreditCard, 
-  Truck, 
-  CheckCircle, 
   Clock, 
-  AlertCircle,
-  MapPin,
-  MessageSquare,
+  CheckCircle, 
+  Truck, 
+  CreditCard,
+  XCircle,
+  Edit,
   Eye,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,26 +25,30 @@ export type OrderStatus =
   | 'completed'
   | 'canceled';
 
+export type ChatRole = 'seller' | 'customer';
+
 interface OrderCardProps {
   orderId: string;
   productId: string;
   productTitle: string;
-  productThumbnail?: string | null;
+  productImage?: string | null;
   quantity: number;
   unitPrice: number;
   totalPrice: number;
-  currency?: string;
   notes?: string | null;
-  shippingAddress?: string | null;
   status: OrderStatus;
+  currency?: string;
   isMe: boolean;
   timestamp: string;
-  isMerchant?: boolean;
-  onPay?: () => void;
-  onConfirm?: () => void;
+  userRole: ChatRole;
+  // Actions
+  onPayNow?: () => void;
   onTrack?: () => void;
-  onViewDetails?: () => void;
+  onConfirmReceipt?: () => void;
   onCancel?: () => void;
+  onProposeChange?: () => void;
+  onViewDetails?: () => void;
+  onAddNotes?: () => void;
 }
 
 const STATUS_CONFIG: Record<OrderStatus, { 
@@ -54,96 +58,138 @@ const STATUS_CONFIG: Record<OrderStatus, {
   bgColor: string;
 }> = {
   created: { 
-    label: 'تم الإنشاء', 
-    color: 'text-blue-500', 
+    label: 'جديد', 
+    color: 'text-blue-600', 
     icon: Package,
-    bgColor: 'bg-blue-500/10'
+    bgColor: 'bg-blue-500/10 border-blue-500/20',
   },
   waiting_seller_confirmation: { 
-    label: 'بانتظار التاجر', 
-    color: 'text-amber-500', 
+    label: 'بانتظار التأكيد', 
+    color: 'text-amber-600', 
     icon: Clock,
-    bgColor: 'bg-amber-500/10'
+    bgColor: 'bg-amber-500/10 border-amber-500/20',
   },
   modification_proposed: { 
     label: 'تعديل مقترح', 
-    color: 'text-orange-500', 
-    icon: AlertCircle,
-    bgColor: 'bg-orange-500/10'
+    color: 'text-orange-600', 
+    icon: Edit,
+    bgColor: 'bg-orange-500/10 border-orange-500/20',
   },
   waiting_customer_approval: { 
     label: 'بانتظار الموافقة', 
-    color: 'text-amber-500', 
+    color: 'text-orange-600', 
     icon: Clock,
-    bgColor: 'bg-amber-500/10'
+    bgColor: 'bg-orange-500/10 border-orange-500/20',
   },
   approved: { 
     label: 'تمت الموافقة', 
-    color: 'text-green-500', 
+    color: 'text-green-600', 
     icon: CheckCircle,
-    bgColor: 'bg-green-500/10'
+    bgColor: 'bg-green-500/10 border-green-500/20',
   },
   waiting_payment: { 
     label: 'بانتظار الدفع', 
-    color: 'text-purple-500', 
+    color: 'text-purple-600', 
     icon: CreditCard,
-    bgColor: 'bg-purple-500/10'
+    bgColor: 'bg-purple-500/10 border-purple-500/20',
   },
   paid: { 
-    label: 'تم الدفع', 
-    color: 'text-emerald-500', 
+    label: 'مدفوع', 
+    color: 'text-green-600', 
     icon: CheckCircle,
-    bgColor: 'bg-emerald-500/10'
+    bgColor: 'bg-green-500/10 border-green-500/20',
   },
   shipped: { 
     label: 'تم الشحن', 
-    color: 'text-cyan-500', 
+    color: 'text-indigo-600', 
     icon: Truck,
-    bgColor: 'bg-cyan-500/10'
+    bgColor: 'bg-indigo-500/10 border-indigo-500/20',
   },
   completed: { 
     label: 'مكتمل', 
     color: 'text-green-600', 
     icon: CheckCircle,
-    bgColor: 'bg-green-500/10'
+    bgColor: 'bg-green-500/10 border-green-500/20',
   },
   canceled: { 
     label: 'ملغي', 
-    color: 'text-red-500', 
-    icon: AlertCircle,
-    bgColor: 'bg-red-500/10'
+    color: 'text-red-600', 
+    icon: XCircle,
+    bgColor: 'bg-red-500/10 border-red-500/20',
   },
+};
+
+// Define which buttons are available for each role at each status
+const getAvailableActions = (status: OrderStatus, role: ChatRole) => {
+  const actions: {
+    payNow?: boolean;
+    track?: boolean;
+    confirmReceipt?: boolean;
+    cancel?: boolean;
+    proposeChange?: boolean;
+    viewDetails?: boolean;
+    addNotes?: boolean;
+  } = { viewDetails: true };
+
+  if (role === 'customer') {
+    switch (status) {
+      case 'created':
+      case 'approved':
+        actions.cancel = true;
+        break;
+      case 'waiting_payment':
+        actions.payNow = true;
+        actions.cancel = true;
+        break;
+      case 'paid':
+        actions.track = true;
+        break;
+      case 'shipped':
+        actions.track = true;
+        actions.confirmReceipt = true;
+        break;
+    }
+  } else if (role === 'seller') {
+    switch (status) {
+      case 'created':
+        actions.proposeChange = true;
+        actions.addNotes = true;
+        actions.cancel = true;
+        break;
+      case 'paid':
+        // Seller can mark as shipped (handled externally)
+        break;
+    }
+  }
+
+  return actions;
 };
 
 export default function OrderCard({
   orderId,
   productId,
   productTitle,
-  productThumbnail,
+  productImage,
   quantity,
   unitPrice,
   totalPrice,
-  currency = 'د.ع',
   notes,
-  shippingAddress,
   status,
+  currency = 'د.ع',
   isMe,
   timestamp,
-  isMerchant = false,
-  onPay,
-  onConfirm,
+  userRole,
+  onPayNow,
   onTrack,
-  onViewDetails,
+  onConfirmReceipt,
   onCancel,
+  onProposeChange,
+  onViewDetails,
+  onAddNotes,
 }: OrderCardProps) {
-  const statusConfig = STATUS_CONFIG[status];
+  const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.created;
   const StatusIcon = statusConfig.icon;
-
-  // Determine which actions to show based on status
-  const showPayButton = status === 'waiting_payment' && !isMerchant;
-  const showConfirmButton = status === 'shipped' && !isMerchant;
-  const showTrackButton = ['paid', 'shipped'].includes(status);
-  const showCancelButton = ['created', 'waiting_seller_confirmation'].includes(status) && !isMerchant;
+  const availableActions = getAvailableActions(status, userRole);
 
   return (
     <div className={cn("flex my-2", isMe ? "justify-start" : "justify-end")}>
@@ -151,134 +197,162 @@ export default function OrderCard({
         "w-[300px] rounded-2xl overflow-hidden shadow-lg border",
         "bg-gradient-to-b from-card to-background"
       )}>
-        {/* Header */}
-        <div className={cn("px-3 py-2 flex items-center justify-between", statusConfig.bgColor)}>
+        {/* Header with Status */}
+        <div className={cn("px-3 py-2 flex items-center justify-between border-b", statusConfig.bgColor)}>
           <div className="flex items-center gap-2">
-            <StatusIcon className={cn("h-4 w-4", statusConfig.color)} />
-            <span className={cn("text-xs font-bold", statusConfig.color)}>
-              {statusConfig.label}
-            </span>
+            <Package className="h-4 w-4 text-primary" />
+            <span className="text-xs font-bold">بطاقة طلب</span>
           </div>
-          <span className="text-[10px] text-muted-foreground font-mono">
-            #{orderId.slice(0, 8)}
-          </span>
+          <Badge className={cn("text-[10px]", statusConfig.bgColor, statusConfig.color)}>
+            <StatusIcon className="h-3 w-3 ml-1" />
+            {statusConfig.label}
+          </Badge>
         </div>
 
         {/* Product Info */}
-        <div className="p-3 flex gap-3 border-b border-border/50">
-          {productThumbnail ? (
-            <img
-              src={productThumbnail}
-              alt={productTitle}
-              className="h-16 w-16 rounded-lg object-cover bg-muted"
-            />
-          ) : (
-            <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center">
-              <Package className="h-6 w-6 text-muted-foreground/30" />
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-bold text-sm line-clamp-2 leading-snug mb-1">
-              {productTitle}
-            </h3>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span>الكمية: {quantity}</span>
-              <span>•</span>
-              <span>{unitPrice.toLocaleString()} {currency}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Order Details */}
         <div className="p-3 space-y-2">
-          {/* Total */}
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">الإجمالي</span>
-            <span className="text-lg font-black text-primary">
-              {totalPrice.toLocaleString()}
-              <span className="text-xs font-normal mr-1">{currency}</span>
-            </span>
+          <div className="flex gap-3">
+            {/* Thumbnail */}
+            {productImage ? (
+              <img
+                src={productImage}
+                alt={productTitle}
+                className="h-16 w-16 rounded-lg object-cover bg-muted flex-shrink-0"
+              />
+            ) : (
+              <div className="h-16 w-16 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                <Package className="h-6 w-6 text-muted-foreground/30" />
+              </div>
+            )}
+
+            {/* Details */}
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-sm line-clamp-2 leading-tight mb-1">
+                {productTitle}
+              </h4>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>الكمية: {quantity}</span>
+                <span>×</span>
+                <span>{unitPrice.toLocaleString()} {currency}</span>
+              </div>
+            </div>
           </div>
 
           {/* Notes */}
           {notes && (
-            <div className="p-2 rounded-lg bg-muted/50 text-xs text-muted-foreground">
-              <span className="font-medium">ملاحظات:</span> {notes}
+            <div className="p-2 rounded-lg bg-muted/50 border border-border">
+              <div className="text-[10px] text-muted-foreground mb-0.5 flex items-center gap-1">
+                <MessageSquare className="h-3 w-3" />
+                ملاحظات
+              </div>
+              <p className="text-xs text-foreground line-clamp-2">{notes}</p>
             </div>
           )}
 
-          {/* Shipping Address */}
-          {shippingAddress && (
-            <div className="flex items-start gap-2 text-xs text-muted-foreground">
-              <MapPin className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-              <span className="line-clamp-2">{shippingAddress}</span>
-            </div>
-          )}
+          {/* Total Price */}
+          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+            <span className="text-xs text-muted-foreground">الإجمالي</span>
+            <p className="text-lg font-black text-primary">
+              {totalPrice.toLocaleString()}
+              <span className="text-xs font-normal mr-1">{currency}</span>
+            </p>
+          </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="p-3 pt-0 flex flex-wrap gap-2">
-          {showPayButton && onPay && (
-            <Button
-              size="sm"
-              className="flex-1 h-9 text-xs rounded-lg bg-gradient-to-b from-green-600 to-green-700"
-              onClick={onPay}
-            >
-              <CreditCard className="h-3.5 w-3.5 ml-1" />
-              الدفع الآن
-            </Button>
-          )}
+        {/* Action Buttons - Role & Status Based */}
+        <div className="p-3 pt-0 space-y-2">
+          {/* Primary Actions Row */}
+          <div className="flex gap-2">
+            {availableActions.payNow && onPayNow && (
+              <Button
+                size="sm"
+                className="flex-1 h-9 text-xs rounded-lg bg-gradient-to-b from-green-600 to-green-700"
+                onClick={onPayNow}
+              >
+                <CreditCard className="h-3.5 w-3.5 ml-1" />
+                ادفع الآن
+              </Button>
+            )}
+            
+            {availableActions.track && onTrack && (
+              <Button
+                size="sm"
+                className="flex-1 h-9 text-xs rounded-lg"
+                onClick={onTrack}
+              >
+                <Truck className="h-3.5 w-3.5 ml-1" />
+                تتبع الشحن
+              </Button>
+            )}
+            
+            {availableActions.confirmReceipt && onConfirmReceipt && (
+              <Button
+                size="sm"
+                className="flex-1 h-9 text-xs rounded-lg bg-gradient-to-b from-primary to-accent"
+                onClick={onConfirmReceipt}
+              >
+                <CheckCircle className="h-3.5 w-3.5 ml-1" />
+                تأكيد الاستلام
+              </Button>
+            )}
+            
+            {availableActions.proposeChange && onProposeChange && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-1 h-9 text-xs rounded-lg border-primary/30 text-primary"
+                onClick={onProposeChange}
+              >
+                <Edit className="h-3.5 w-3.5 ml-1" />
+                تعديل السعر
+              </Button>
+            )}
+          </div>
 
-          {showConfirmButton && onConfirm && (
-            <Button
-              size="sm"
-              className="flex-1 h-9 text-xs rounded-lg bg-gradient-to-b from-primary to-accent"
-              onClick={onConfirm}
-            >
-              <CheckCircle className="h-3.5 w-3.5 ml-1" />
-              تأكيد الاستلام
-            </Button>
-          )}
-
-          {showTrackButton && onTrack && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 h-9 text-xs rounded-lg"
-              onClick={onTrack}
-            >
-              <Truck className="h-3.5 w-3.5 ml-1" />
-              تتبع
-            </Button>
-          )}
-
-          {onViewDetails && (
-            <Button
-              size="sm"
-              variant="outline"
-              className="flex-1 h-9 text-xs rounded-lg"
-              onClick={onViewDetails}
-            >
-              <Eye className="h-3.5 w-3.5 ml-1" />
-              التفاصيل
-            </Button>
-          )}
-
-          {showCancelButton && onCancel && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-destructive hover:text-destructive hover:bg-destructive/10 text-xs"
-              onClick={onCancel}
-            >
-              إلغاء
-            </Button>
-          )}
+          {/* Secondary Actions Row */}
+          <div className="flex gap-2">
+            {availableActions.addNotes && onAddNotes && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="flex-1 h-8 text-xs"
+                onClick={onAddNotes}
+              >
+                <MessageSquare className="h-3 w-3 ml-1" />
+                إضافة ملاحظة
+              </Button>
+            )}
+            
+            {availableActions.viewDetails && onViewDetails && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="flex-1 h-8 text-xs"
+                onClick={onViewDetails}
+              >
+                <Eye className="h-3 w-3 ml-1" />
+                التفاصيل
+              </Button>
+            )}
+            
+            {availableActions.cancel && onCancel && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={onCancel}
+              >
+                <XCircle className="h-3 w-3 ml-1" />
+                إلغاء
+              </Button>
+            )}
+          </div>
         </div>
 
-        {/* Timestamp */}
-        <div className="px-3 pb-2 text-[10px] text-muted-foreground text-left">
-          {timestamp}
+        {/* Order Reference & Timestamp */}
+        <div className="px-3 pb-2 flex items-center justify-between text-[10px] text-muted-foreground">
+          <span className="font-mono">#{orderId.slice(0, 8)}</span>
+          <span>{timestamp}</span>
         </div>
       </div>
     </div>
