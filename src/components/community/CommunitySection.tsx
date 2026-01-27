@@ -126,7 +126,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       )}
 
-      {/* Quick Actions - Always show for logged in users on homepage */}
+      {/* Quick Actions for Homepage - Show for logged in users */}
       {!isCommunityHub && user && (
         <div className="mb-4">
           {isProfileComplete ? (
@@ -164,6 +164,35 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
               </div>
             </Button>
           )}
+        </div>
+      )}
+
+      {/* Quick Actions for Community Hub - Customer Only (NOT merchant) */}
+      {isCommunityHub && user && isProfileComplete && !isMerchant && (
+        <div className="mb-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {quickActions.map((action) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={action.key}
+                  onClick={() => {
+                    if ('action' in action && action.action) {
+                      action.action();
+                    } else if ('to' in action && action.to) {
+                      navigate(action.to);
+                    }
+                  }}
+                  className="group relative flex items-center gap-2.5 h-12 px-4 rounded-xl border border-primary/20 bg-gradient-to-b from-card to-background hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 transition-all duration-200"
+                >
+                  <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                    <Icon className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="text-sm font-semibold text-foreground">{action.label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       )}
 
