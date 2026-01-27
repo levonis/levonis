@@ -1643,7 +1643,7 @@ const Admin = () => {
                 { icon: Trophy, title: 'المسابقات والعروض', desc: 'إدارة المسابقات وعروض المنتجات', path: ADMIN_ROUTES.competitions },
                 { icon: Shield, title: 'حماية الطابعات', desc: 'إدارة اشتراكات الحماية', path: ADMIN_ROUTES.printerProtection },
                 { icon: Truck, title: 'إعدادات الشحن', desc: 'أسعار وحساب تكلفة الشحن', path: ADMIN_ROUTES.shippingSettings },
-                { icon: Sparkles, title: 'مجتمع ليفو', desc: 'إدارة التجار والزبائن والمحادثات', path: ADMIN_ROUTES.levoCommunity },
+                { icon: Sparkles, title: 'مجتمع ليفو', desc: 'إدارة التجار والعملاء والمحادثات', path: ADMIN_ROUTES.levoCommunity },
               ].map((item, idx) => (
                 <button
                   key={idx}
@@ -2129,7 +2129,7 @@ const Admin = () => {
                             defaultValue={editingProduct?.points_reward || 0}
                             placeholder="0"
                           />
-                          <p className="text-xs text-muted-foreground">النقاط التي يحصل عليها الزبون عند الشراء (تحسب تلقائياً: 1 نقطة لكل 1000 دينار)</p>
+                          <p className="text-xs text-muted-foreground">النقاط التي يحصل عليها العميل عند الشراء (تحسب تلقائياً: 1 نقطة لكل 1000 دينار)</p>
                         </div>
                         
                         {/* Multiple Card Discounts */}

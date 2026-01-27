@@ -103,7 +103,7 @@ const CommunityTopBar = memo(() => {
               <div className="min-w-0">
                 <p className="text-sm font-black text-foreground truncate">مجتمع ليفو</p>
                 <p className="text-[11px] text-muted-foreground truncate">
-                  {tab === "products" ? "منتجات التجار" : tab === "merchants" ? "صفحات التجار" : "طلبات الزبائن"}
+                  {tab === "products" ? "منتجات التجار" : tab === "merchants" ? "صفحات التجار" : "طلبات العملاء"}
                 </p>
               </div>
             </Link>

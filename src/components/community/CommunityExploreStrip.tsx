@@ -135,7 +135,7 @@ export default function CommunityExploreStrip({ className, searchQuery: external
             className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
           >
             <Users className="h-3.5 w-3.5" />
-            طلبات الزبائن
+            طلبات العملاء
           </TabsTrigger>
           <TabsTrigger
             value="merchants"

@@ -412,12 +412,12 @@ export default function CommunityMerchantOrders() {
             </div>
             <p className="text-sm text-muted-foreground mb-4">
               {activeFilter === "all" 
-                ? "لا توجد طلبات بعد. تصفح طلبات الزبائن وقدّم عروضاً."
+                ? "لا توجد طلبات بعد. تصفح طلبات العملاء وقدّم عروضاً."
                 : `لا توجد طلبات بحالة "${statusFilters.find(f => f.key === activeFilter)?.label}"`}
             </p>
             {activeFilter === "all" && (
               <Button className="rounded-xl" onClick={() => navigate("/community/requests")}>
-                تصفح طلبات الزبائن
+                تصفح طلبات العملاء
               </Button>
             )}
           </Card>
@@ -498,8 +498,8 @@ export default function CommunityMerchantOrders() {
           <AlertDialogHeader>
             <AlertDialogTitle>تحديث حالة الطلب</AlertDialogTitle>
             <AlertDialogDescription>
-              {newStatus === "in_progress" && "هل تريد بدء تنفيذ هذا الطلب؟ سيتم إعلام الزبون."}
-              {newStatus === "delivered" && "هل تم توصيل الطلب للزبون؟ سيتم إعلامه لتأكيد الاستلام."}
+              {newStatus === "in_progress" && "هل تريد بدء تنفيذ هذا الطلب؟ سيتم إعلام العميل."}
+              {newStatus === "delivered" && "هل تم توصيل الطلب للعميل؟ سيتم إعلامه لتأكيد الاستلام."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

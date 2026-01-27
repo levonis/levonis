@@ -129,7 +129,7 @@ export default function ChatTopBar({
             <>
               <DropdownMenuItem onClick={goToCustomerProfile} className="gap-2">
                 <User className="h-4 w-4" />
-                ملف الزبون
+                ملف العميل
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </>

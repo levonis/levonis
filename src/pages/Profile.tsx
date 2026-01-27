@@ -234,14 +234,14 @@ export default function Profile() {
             <CardContent className="p-4 sm:p-5">
               <h2 className="text-sm font-bold text-foreground">لوحة التاجر (ملخص)</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                هذه الواجهة للعرض حالياً. سيتم توسيعها لاحقاً لإدارة المنتجات والطلبات والزبائن والمالية.
+                هذه الواجهة للعرض حالياً. سيتم توسيعها لاحقاً لإدارة المنتجات والطلبات والعملاء والمالية.
               </p>
 
               <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                   { title: "إدارة المنتجات", desc: "إضافة / تعديل المنتجات واختيار منتجات مميزة." },
                   { title: "إدارة الطلبات", desc: "متابعة الطلبات وحالات التنفيذ والتسليم." },
-                  { title: "إدارة الزبائن", desc: "عرض العملاء ومحادثات الطلبات." },
+                  { title: "إدارة العملاء", desc: "عرض العملاء ومحادثات الطلبات." },
                   { title: "المالية والتقارير", desc: "ملخص الأرباح والعمولات والمدفوعات." },
                 ].map((c) => (
                   <div key={c.title} className="rounded-xl border border-border/60 bg-card p-3">

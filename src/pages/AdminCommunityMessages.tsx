@@ -221,7 +221,7 @@ function MessagesContent() {
           <CardContent className="p-12 text-center">
             <MessageCircle className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold">لا توجد محادثات</h3>
-            <p className="text-sm text-muted-foreground">لم تبدأ أي محادثات بين التجار والزبائن بعد</p>
+            <p className="text-sm text-muted-foreground">لم تبدأ أي محادثات بين التجار والعملاء بعد</p>
           </CardContent>
         </Card>
       ) : (
@@ -239,7 +239,7 @@ function MessagesContent() {
                     </div>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <span>
-                        <span className="text-foreground/70">الزبون:</span> {conv.customer_name}
+                        <span className="text-foreground/70">العميل:</span> {conv.customer_name}
                       </span>
                       <span>↔</span>
                       <span>
@@ -345,7 +345,7 @@ export default function AdminCommunityMessages({ embedded }: Props) {
   return (
     <AdminLayout
       title="محادثات المجتمع"
-      description="مراقبة محادثات مجتمع ليفو بين التجار والزبائن"
+      description="مراقبة محادثات مجتمع ليفو بين التجار والعملاء"
       icon={<MessageCircle className="h-5 w-5" />}
       backTo={ADMIN_ROUTES.levoCommunity}
       maxWidth="6xl"

@@ -17,9 +17,9 @@ export default function PrintReputationSummary({ userId }: { userId: string }) {
     return [
       {
         key: "customer_receive",
-        label: "نسبة استلام الزبون",
+        label: "نسبة استلام العميل",
         percent: receiveRate == null ? null : Number(receiveRate),
-        hint: "نسبة الطلبات التي استلمها الزبون من مجموع ما قدّمه.",
+        hint: "نسبة الطلبات التي استلمها العميل من مجموع ما قدّمه.",
         rightText: submitted ? `${received} من ${submitted}` : "—",
       },
       {

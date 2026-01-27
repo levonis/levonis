@@ -106,7 +106,7 @@ function CustomersContent() {
     mutationFn: async ({ userId, suspend, reason }: { userId: string; suspend: boolean; reason?: string }) => {
       // For now, we'll just show a toast - in production, this would update a real suspension table
       if (suspend) {
-        toast.success(`تم إيقاف الزبون مؤقتاً: ${reason}`);
+        toast.success(`تم إيقاف العميل مؤقتاً: ${reason}`);
       } else {
         toast.success("تم إلغاء الإيقاف");
       }
@@ -132,7 +132,7 @@ function CustomersContent() {
         <Card className="levo-card-frame">
           <CardContent className="p-4 text-center">
             <div className="text-2xl font-bold text-foreground">{stats.total}</div>
-            <div className="text-xs text-muted-foreground">إجمالي الزبائن</div>
+            <div className="text-xs text-muted-foreground">إجمالي العملاء</div>
           </CardContent>
         </Card>
         <Card className="levo-card-frame border-green-500/30">
@@ -240,7 +240,7 @@ function CustomersContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Users className="h-5 w-5" />
-              إدارة الزبون
+              إدارة العميل
             </DialogTitle>
           </DialogHeader>
 
@@ -333,8 +333,8 @@ export default function AdminCommunityCustomers({ embedded }: Props) {
 
   return (
     <AdminLayout
-      title="إدارة الزبائن"
-      description="عرض وإدارة حسابات زبائن مجتمع ليفو"
+      title="إدارة العملاء"
+      description="عرض وإدارة حسابات عملاء مجتمع ليفو"
       icon={<Users className="h-5 w-5" />}
       backTo={ADMIN_ROUTES.levoCommunity}
       maxWidth="6xl"
