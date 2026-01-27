@@ -133,6 +133,45 @@ export type Database = {
         }
         Relationships: []
       }
+      balance_audit_log: {
+        Row: {
+          change_amount: number | null
+          created_at: string | null
+          function_name: string | null
+          id: string
+          ip_address: string | null
+          new_balance: number | null
+          old_balance: number | null
+          operation: string
+          table_name: string
+          user_id: string
+        }
+        Insert: {
+          change_amount?: number | null
+          created_at?: string | null
+          function_name?: string | null
+          id?: string
+          ip_address?: string | null
+          new_balance?: number | null
+          old_balance?: number | null
+          operation: string
+          table_name: string
+          user_id: string
+        }
+        Update: {
+          change_amount?: number | null
+          created_at?: string | null
+          function_name?: string | null
+          id?: string
+          ip_address?: string | null
+          new_balance?: number | null
+          old_balance?: number | null
+          operation?: string
+          table_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       banners: {
         Row: {
           action_type: string
@@ -5397,6 +5436,22 @@ export type Database = {
       enter_collect_letters_competition:
         | { Args: { comp_id: string }; Returns: Json }
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }
+      enter_competition: {
+        Args: {
+          p_competition_id: string
+          p_letter_awarded?: string
+          p_prize_won?: Json
+          p_team?: string
+          p_ticket_count?: number
+          p_user_id: string
+        }
+        Returns: {
+          error_message: string
+          success: boolean
+          ticket_id: string
+          ticket_number: string
+        }[]
+      }
       enter_competition_with_tickets: {
         Args: { comp_id: string }
         Returns: Json
