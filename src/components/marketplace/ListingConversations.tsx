@@ -1220,8 +1220,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         seller_id: user.id,
                         customer_id: selectedConv?.buyer_id === user.id ? selectedConv?.seller_id : selectedConv?.buyer_id,
                         status: 'waiting_payment',
-                        partial_payment_percent: data.requirePartialPayment ? data.partialPaymentPercent : null,
-                        commission_rate: data.requirePartialPayment ? 5 : 0,
+                        payment_method: data.paymentMethod,
+                        partial_payment_percent: data.paymentMethod === 'partial' ? data.partialPaymentPercent : null,
+                        commission_rate: data.paymentMethod === 'cod' ? 10 : (data.paymentMethod === 'partial' ? 5 : 0),
                       })
                       .select()
                       .single();
