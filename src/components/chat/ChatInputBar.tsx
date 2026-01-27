@@ -71,6 +71,7 @@ export default function ChatInputBar({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (value.trim() && !isLoading) {
+      setEmojiPickerOpen(false);
       onSend();
     }
   };
@@ -139,15 +140,9 @@ export default function ChatInputBar({
   };
 
   const handleEmojiSelect = (emojiCode: string) => {
-    // Insert emoji into the rich text input
-    const richTextElement = document.querySelector('[contenteditable="true"]') as any;
-    if (richTextElement?.insertEmoji) {
-      richTextElement.insertEmoji(emojiCode);
-    } else {
-      // Fallback: append to value
-      onChange(value + emojiCode);
-    }
-    setEmojiPickerOpen(false);
+    // Fast append emoji to value directly
+    onChange(value + emojiCode);
+    // Don't close picker - allow multiple emoji selection
   };
 
   const formatTime = (seconds: number) => {
