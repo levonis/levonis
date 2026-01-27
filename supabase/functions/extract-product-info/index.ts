@@ -515,6 +515,48 @@ serve(async (req) => {
       );
     }
 
+    // SECURITY: Validate URL format to prevent SSRF and XSS attacks
+    url = String(url).trim();
+    
+    // Block dangerous protocols
+    const lowerUrl = url.toLowerCase();
+    if (lowerUrl.startsWith('javascript:') || 
+        lowerUrl.startsWith('data:') || 
+        lowerUrl.startsWith('file:') ||
+        lowerUrl.startsWith('ftp:') ||
+        lowerUrl.startsWith('vbscript:') ||
+        lowerUrl.includes('<script') ||
+        lowerUrl.includes('onerror=') ||
+        lowerUrl.includes('onclick=')) {
+      return new Response(
+        JSON.stringify({ success: false, error: 'رابط غير صالح', requiresManualInput: true }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Ensure URL has proper protocol
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      // Try to fix URLs without protocol
+      if (url.includes('.com') || url.includes('.cn') || url.includes('.')) {
+        url = 'https://' + url;
+      } else {
+        return new Response(
+          JSON.stringify({ success: false, error: 'الرجاء إدخال رابط صحيح', requiresManualInput: true }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+    
+    // Validate URL can be parsed
+    try {
+      new URL(url);
+    } catch {
+      return new Response(
+        JSON.stringify({ success: false, error: 'صيغة الرابط غير صحيحة', requiresManualInput: true }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('Original URL:', url);
 
     // STEP 1: If URL is a short URL, follow it to get the real URL
