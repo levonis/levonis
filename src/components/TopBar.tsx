@@ -73,34 +73,37 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
   const pointsStatus = pointsSettings?.points_status || 'active';
   const showPointsMenu = pointsStatus === 'active';
 
-  // Optimized: Admin unread messages - only fetch when admin
+  // Optimized: Admin unread messages - fetch from both systems
   const { data: adminUnreadMessages } = useQuery({
     queryKey: ['admin-unread-messages', user?.id],
     queryFn: async () => {
       if (!isAdmin) return 0;
 
+      // Get official site unread messages
       const { data: conversations } = await supabase
         .from('conversations')
         .select('id')
-        .limit(50); // Limit conversations for performance
+        .limit(50);
 
-      if (!conversations || conversations.length === 0) return 0;
+      let officialUnread = 0;
+      if (conversations && conversations.length > 0) {
+        const conversationIds = conversations.map(c => c.id);
+        const { count } = await supabase
+          .from('messages')
+          .select('*', { count: 'exact', head: true })
+          .in('conversation_id', conversationIds)
+          .neq('sender_id', user?.id || '')
+          .eq('is_read', false);
+        officialUnread = count || 0;
+      }
 
-      const conversationIds = conversations.map(c => c.id);
-
-      const { count, error } = await supabase
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .in('conversation_id', conversationIds)
-        .neq('sender_id', user?.id || '')
-        .eq('is_read', false);
-
-      if (error) throw error;
-      return count || 0;
+      // Get community unread messages (optional - if tracking exists)
+      // For now just return official unread
+      return officialUnread;
     },
     enabled: !!user?.id && isAdmin,
-    refetchInterval: 120000, // Increased to 2 minutes
-    staleTime: 60000,
+    refetchInterval: 60000, // Check every minute
+    staleTime: 30000,
     gcTime: 300000,
   });
 

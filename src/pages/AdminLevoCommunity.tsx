@@ -2,10 +2,10 @@ import { useState, Suspense, lazy, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Store, Users, MessageCircle, AlertTriangle, Award, ImageIcon, 
-  Clock, Loader2, Settings, FileText, TrendingUp, 
+  Clock, Loader2, Settings, FileText, 
   Wallet, Trash2, Save, RefreshCw, ShieldCheck
 } from "lucide-react";
-import AdminLayout, { AdminSection } from "@/components/admin/AdminLayout";
+import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -94,45 +94,12 @@ const tabs: TabConfig[] = [
 
 function TabLoader() {
   return (
-    <div className="flex items-center justify-center py-16">
-      <div className="text-center space-y-3">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-        <p className="text-sm text-muted-foreground">جارٍ التحميل...</p>
+    <div className="flex items-center justify-center py-12">
+      <div className="text-center space-y-2">
+        <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
+        <p className="text-xs text-muted-foreground">جارٍ التحميل...</p>
       </div>
     </div>
-  );
-}
-
-interface StatsCardProps {
-  icon: React.ElementType;
-  value: number;
-  label: string;
-  colorClass: string;
-  bgClass: string;
-  trend?: string;
-}
-
-function StatsCard({ icon: Icon, value, label, colorClass, bgClass, trend }: StatsCardProps) {
-  return (
-    <Card className="border-border/50 bg-gradient-to-br from-card to-muted/20 hover:shadow-lg transition-all duration-300">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className={cn("p-2.5 rounded-xl", bgClass)}>
-            <Icon className={cn("h-5 w-5", colorClass)} />
-          </div>
-          {trend && (
-            <div className="flex items-center gap-1 text-emerald-500 text-xs">
-              <TrendingUp className="h-3 w-3" />
-              {trend}
-            </div>
-          )}
-        </div>
-        <div className="mt-3">
-          <p className="text-2xl font-bold text-foreground">{value.toLocaleString("ar-IQ")}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 
@@ -168,11 +135,26 @@ function CommunitySettings() {
 
   const updateSettingMutation = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: any }) => {
-      const { error } = await supabase
+      // First try to update
+      const { data: existing } = await supabase
         .from("community_settings")
-        .update({ value })
-        .eq("key", key);
-      if (error) throw error;
+        .select("id")
+        .eq("key", key)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("community_settings")
+          .update({ value, updated_at: new Date().toISOString() })
+          .eq("key", key);
+        if (error) throw error;
+      } else {
+        // Insert if not exists
+        const { error } = await supabase
+          .from("community_settings")
+          .insert({ key, value });
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["community-settings"] });
@@ -233,27 +215,27 @@ function CommunitySettings() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Registration Fee Settings */}
       <Card className="border-primary/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Wallet className="h-5 w-5 text-primary" />
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Wallet className="h-4 w-4 text-primary" />
             رسوم التسجيل كتاجر
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-xs">
             الرسوم التي يتم خصمها من محفظة المستخدم عند قبوله كتاجر
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-end gap-3">
+        <CardContent className="pt-2">
+          <div className="flex items-end gap-2">
             <div className="flex-1">
-              <Label className="text-sm">المبلغ (دينار عراقي)</Label>
+              <Label className="text-xs">المبلغ (دينار عراقي)</Label>
               <Input
                 type="number"
                 value={merchantFee}
                 onChange={(e) => setMerchantFee(Number(e.target.value))}
-                className="mt-1.5"
+                className="mt-1 h-9"
                 min={0}
                 step={1000}
               />
@@ -265,13 +247,13 @@ function CommunitySettings() {
               })}
               disabled={updateSettingMutation.isPending}
               size="sm"
-              className="gap-2"
+              className="gap-1.5 h-9"
             >
-              <Save className="h-4 w-4" />
+              <Save className="h-3.5 w-3.5" />
               حفظ
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[10px] text-muted-foreground mt-2">
             القيمة الحالية: {(settings?.merchant_registration_fee?.amount || 25000).toLocaleString()} د.ع
           </p>
         </CardContent>
@@ -279,24 +261,24 @@ function CommunitySettings() {
 
       {/* Auto-Delete Settings */}
       <Card className="border-orange-500/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Trash2 className="h-5 w-5 text-orange-500" />
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Trash2 className="h-4 w-4 text-orange-500" />
             حذف الطلبات المرفوضة تلقائياً
           </CardTitle>
-          <CardDescription>
-            يتم حذف طلبات التسجيل المرفوضة تلقائياً بعد المدة المحددة لتنظيف النظام
+          <CardDescription className="text-xs">
+            يتم حذف طلبات التسجيل المرفوضة تلقائياً بعد المدة المحددة
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-end gap-3">
+        <CardContent className="pt-2">
+          <div className="flex items-end gap-2">
             <div className="flex-1">
-              <Label className="text-sm">عدد الأيام</Label>
+              <Label className="text-xs">عدد الأيام</Label>
               <Input
                 type="number"
                 value={autoDeleteDays}
                 onChange={(e) => setAutoDeleteDays(Number(e.target.value))}
-                className="mt-1.5"
+                className="mt-1 h-9"
                 min={1}
                 max={90}
               />
@@ -308,9 +290,9 @@ function CommunitySettings() {
               })}
               disabled={updateSettingMutation.isPending}
               size="sm"
-              className="gap-2"
+              className="gap-1.5 h-9"
             >
-              <Save className="h-4 w-4" />
+              <Save className="h-3.5 w-3.5" />
               حفظ
             </Button>
           </div>
@@ -319,24 +301,24 @@ function CommunitySettings() {
 
       {/* Max Requests Per Day */}
       <Card className="border-blue-500/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <FileText className="h-5 w-5 text-blue-500" />
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <FileText className="h-4 w-4 text-blue-500" />
             الحد الأقصى لطلبات العميل
           </CardTitle>
-          <CardDescription>
-            الحد الأقصى لعدد طلبات الطباعة التي يمكن للعميل نشرها يومياً
+          <CardDescription className="text-xs">
+            الحد الأقصى لعدد طلبات الطباعة يومياً
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-end gap-3">
+        <CardContent className="pt-2">
+          <div className="flex items-end gap-2">
             <div className="flex-1">
-              <Label className="text-sm">عدد الطلبات يومياً</Label>
+              <Label className="text-xs">عدد الطلبات</Label>
               <Input
                 type="number"
                 value={maxRequestsPerDay}
                 onChange={(e) => setMaxRequestsPerDay(Number(e.target.value))}
-                className="mt-1.5"
+                className="mt-1 h-9"
                 min={1}
                 max={50}
               />
@@ -348,9 +330,9 @@ function CommunitySettings() {
               })}
               disabled={updateSettingMutation.isPending}
               size="sm"
-              className="gap-2"
+              className="gap-1.5 h-9"
             >
-              <Save className="h-4 w-4" />
+              <Save className="h-3.5 w-3.5" />
               حفظ
             </Button>
           </div>
@@ -359,29 +341,28 @@ function CommunitySettings() {
 
       {/* Cleanup Actions */}
       <Card className="border-destructive/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <RefreshCw className="h-5 w-5 text-destructive" />
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <RefreshCw className="h-4 w-4 text-destructive" />
             تنظيف النظام
           </CardTitle>
-          <CardDescription>
-            إجراءات للتنظيف اليدوي للسجلات القديمة وغير المكتملة
+          <CardDescription className="text-xs">
+            حذف السجلات القديمة وغير المكتملة
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              variant="outline"
-              onClick={() => cleanupDraftsMutation.mutate()}
-              disabled={cleanupDraftsMutation.isPending}
-              className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-4 w-4" />
-              {cleanupDraftsMutation.isPending ? "جارٍ التنظيف..." : "حذف المسودات الفارغة"}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            يحذف المسودات بدون اسم متجر (أقدم من 24 ساعة) والطلبات المرفوضة (أقدم من {autoDeleteDays} أيام)
+        <CardContent className="pt-2">
+          <Button
+            variant="outline"
+            onClick={() => cleanupDraftsMutation.mutate()}
+            disabled={cleanupDraftsMutation.isPending}
+            className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
+            size="sm"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {cleanupDraftsMutation.isPending ? "جارٍ التنظيف..." : "حذف المسودات الفارغة"}
+          </Button>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            يحذف المسودات الفارغة والطلبات المرفوضة القديمة
           </p>
         </CardContent>
       </Card>
@@ -433,61 +414,39 @@ export default function AdminLevoCommunity() {
   return (
     <AdminLayout
       title="مجتمع ليفو"
-      description="إدارة شاملة للتجار والعملاء والطلبات"
+      description="إدارة التجار والعملاء والطلبات"
       icon={<ShieldCheck className="h-5 w-5" />}
       backTo={ADMIN_ROUTES.dashboard}
       maxWidth="7xl"
     >
-      {/* Enhanced Stats Strip */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <StatsCard
-          icon={Store}
-          value={stats?.totalMerchants ?? 0}
-          label="تجار معتمدون"
-          colorClass="text-emerald-500"
-          bgClass="bg-emerald-500/15"
-        />
-        <StatsCard
-          icon={Clock}
-          value={stats?.pendingMerchants ?? 0}
-          label="طلبات تجار"
-          colorClass="text-amber-500"
-          bgClass="bg-amber-500/15"
-        />
-        <StatsCard
-          icon={Users}
-          value={stats?.totalCustomers ?? 0}
-          label="العملاء"
-          colorClass="text-blue-500"
-          bgClass="bg-blue-500/15"
-        />
-        <StatsCard
-          icon={FileText}
-          value={stats?.totalRequests ?? 0}
-          label="طلبات الطباعة"
-          colorClass="text-purple-500"
-          bgClass="bg-purple-500/15"
-        />
-        <StatsCard
-          icon={Clock}
-          value={stats?.pendingRequests ?? 0}
-          label="طلبات قيد المراجعة"
-          colorClass="text-orange-500"
-          bgClass="bg-orange-500/15"
-        />
-        <StatsCard
-          icon={AlertTriangle}
-          value={stats?.pendingComplaints ?? 0}
-          label="شكاوى معلقة"
-          colorClass="text-red-500"
-          bgClass="bg-red-500/15"
-        />
+      {/* Compact Stats Strip */}
+      <div className="flex items-center gap-2 flex-wrap mb-4">
+        <Badge variant="outline" className="px-3 py-1.5 gap-2">
+          <Store className="h-3.5 w-3.5 text-emerald-500" />
+          {stats?.totalMerchants ?? 0} تاجر
+        </Badge>
+        <Badge variant="outline" className="px-3 py-1.5 gap-2 border-amber-500/30">
+          <Clock className="h-3.5 w-3.5 text-amber-500" />
+          {stats?.pendingMerchants ?? 0} معلق
+        </Badge>
+        <Badge variant="outline" className="px-3 py-1.5 gap-2">
+          <Users className="h-3.5 w-3.5 text-blue-500" />
+          {stats?.totalCustomers ?? 0} عميل
+        </Badge>
+        <Badge variant="outline" className="px-3 py-1.5 gap-2">
+          <FileText className="h-3.5 w-3.5 text-purple-500" />
+          {stats?.totalRequests ?? 0} طلب
+        </Badge>
+        <Badge variant="outline" className="px-3 py-1.5 gap-2 border-red-500/30">
+          <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+          {stats?.pendingComplaints ?? 0} شكوى
+        </Badge>
       </div>
 
-      {/* Navigation Strip - Scrollable on mobile */}
-      <div className="sticky top-[calc(4rem+4.5rem)] z-30 -mx-4 md:-mx-6 px-4 md:px-6 mb-6">
-        <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl p-1.5 shadow-sm">
-          <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide pb-0.5">
+      {/* Navigation Strip - Compact */}
+      <div className="sticky top-[calc(4rem+4.5rem)] z-30 -mx-4 md:-mx-6 px-4 md:px-6 mb-4">
+        <div className="bg-card/95 backdrop-blur-sm border border-border/50 rounded-lg p-1 shadow-sm">
+          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.value;
               const hasPending = pendingCounts[tab.value as keyof typeof pendingCounts];
@@ -497,21 +456,18 @@ export default function AdminLevoCommunity() {
                   key={tab.value}
                   onClick={() => setActiveTab(tab.value)}
                   className={cn(
-                    "flex items-center gap-1.5 px-3 py-2 rounded-lg whitespace-nowrap transition-all duration-200 shrink-0 text-sm",
+                    "relative flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all whitespace-nowrap",
                     isActive
-                      ? "bg-primary text-primary-foreground shadow-md"
+                      ? "bg-primary text-primary-foreground shadow-sm"
                       : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                   )}
                 >
-                  <tab.icon className={cn("h-4 w-4", isActive ? "" : tab.colorClass)} />
-                  <span className="font-medium">{tab.label}</span>
-                  {hasPending > 0 && (
-                    <Badge 
-                      variant={isActive ? "secondary" : "destructive"} 
-                      className="h-5 min-w-5 px-1.5 text-[10px]"
-                    >
+                  <tab.icon className={cn("h-3.5 w-3.5", isActive ? "" : tab.colorClass)} />
+                  <span>{tab.label}</span>
+                  {hasPending > 0 && !isActive && (
+                    <span className="absolute -top-1 -right-1 h-4 min-w-4 px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center">
                       {hasPending}
-                    </Badge>
+                    </span>
                   )}
                 </button>
               );
@@ -521,16 +477,18 @@ export default function AdminLevoCommunity() {
       </div>
 
       {/* Tab Content */}
-      <Suspense fallback={<TabLoader />}>
-        {activeTab === "merchants" && <AdminCommunityMerchants embedded />}
-        {activeTab === "customers" && <AdminCommunityCustomers embedded />}
-        {activeTab === "requests" && <AdminCommunityRequests />}
-        {activeTab === "complaints" && <AdminCommunityComplaints embedded />}
-        {activeTab === "messages" && <AdminCommunityMessages embedded />}
-        {activeTab === "badges" && <AdminBadgeSettings embedded />}
-        {activeTab === "frames" && <AdminAvatarFrames embedded />}
-        {activeTab === "settings" && <CommunitySettings />}
-      </Suspense>
+      <div className="min-h-[400px]">
+        <Suspense fallback={<TabLoader />}>
+          {activeTab === "merchants" && <AdminCommunityMerchants embedded />}
+          {activeTab === "customers" && <AdminCommunityCustomers embedded />}
+          {activeTab === "requests" && <AdminCommunityRequests />}
+          {activeTab === "complaints" && <AdminCommunityComplaints embedded />}
+          {activeTab === "messages" && <AdminCommunityMessages embedded />}
+          {activeTab === "badges" && <AdminBadgeSettings embedded />}
+          {activeTab === "frames" && <AdminAvatarFrames embedded />}
+          {activeTab === "settings" && <CommunitySettings />}
+        </Suspense>
+      </div>
     </AdminLayout>
   );
 }

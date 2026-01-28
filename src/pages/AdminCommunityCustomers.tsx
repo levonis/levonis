@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Users, Search, Ban, CheckCircle, Eye, Star, FileText, 
-  MessageCircle, Download, Loader2, AlertTriangle, Clock,
-  ShoppingBag, User, MapPin, Calendar, RefreshCw, Filter
+  MessageCircle, Download, Loader2, Trash2, AlertTriangle,
+  User, MapPin, Calendar, RefreshCw, Package
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import AdminLayout, { AdminSection } from "@/components/admin/AdminLayout";
+import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +45,9 @@ interface CustomerRequest {
   created_at: string;
   quantity: number | null;
   customer_governorate: string | null;
+  description: string | null;
+  colors: string | null;
+  size: string | null;
 }
 
 interface Props {
@@ -58,6 +61,8 @@ function CustomersContent() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerProfile | null>(null);
   const [suspensionReason, setSuspensionReason] = useState("");
   const [activeDetailTab, setActiveDetailTab] = useState("info");
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Fetch customers from community_customer_profiles
   const { data: customers = [], isLoading, refetch } = useQuery({
@@ -91,7 +96,7 @@ function CustomersContent() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("community_print_requests")
-        .select("id, title, status, created_at, quantity, customer_governorate")
+        .select("id, title, status, created_at, quantity, customer_governorate, description, colors, size")
         .eq("user_id", selectedCustomer!.user_id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -166,6 +171,29 @@ function CustomersContent() {
     },
   });
 
+  // Delete customer mutation
+  const deleteCustomer = useMutation({
+    mutationFn: async (userId: string) => {
+      // Delete community profile
+      const { error } = await supabase
+        .from("community_customer_profiles")
+        .delete()
+        .eq("user_id", userId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-community-customers"] });
+      toast.success("تم حذف سجل العميل");
+      setSelectedCustomer(null);
+      setShowDeleteDialog(false);
+      setDeleteConfirmName("");
+    },
+    onError: () => {
+      toast.error("فشل حذف العميل");
+    },
+  });
+
   const exportCustomerData = async () => {
     if (!selectedCustomer) return;
 
@@ -193,104 +221,76 @@ function CustomersContent() {
     verified: customers.filter(c => c.is_verified).length,
   };
 
+  const canDelete = selectedCustomer && 
+    deleteConfirmName.trim().toLowerCase() === (selectedCustomer.display_name || "").toLowerCase();
+
   return (
-    <div className="space-y-6">
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card className="border-border/50">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-foreground">{stats.total}</div>
-            <div className="text-xs text-muted-foreground">إجمالي العملاء</div>
-          </CardContent>
-        </Card>
-        <Card className="border-emerald-500/30">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-emerald-500">{stats.active}</div>
-            <div className="text-xs text-muted-foreground">نشط</div>
-          </CardContent>
-        </Card>
-        <Card className="border-red-500/30">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-500">{stats.suspended}</div>
-            <div className="text-xs text-muted-foreground">موقوف</div>
-          </CardContent>
-        </Card>
-        <Card className="border-blue-500/30">
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-500">{stats.verified}</div>
-            <div className="text-xs text-muted-foreground">موثق</div>
-          </CardContent>
-        </Card>
+    <div className="space-y-4">
+      {/* Compact Stats */}
+      <div className="flex items-center gap-3 flex-wrap text-sm">
+        <Badge variant="outline" className="px-3 py-1.5 gap-2">
+          <Users className="h-3.5 w-3.5" />
+          {stats.total} عميل
+        </Badge>
+        <Badge variant="outline" className="px-3 py-1.5 gap-2 border-emerald-500/30 text-emerald-500">
+          <CheckCircle className="h-3.5 w-3.5" />
+          {stats.active} نشط
+        </Badge>
+        <Badge variant="outline" className="px-3 py-1.5 gap-2 border-red-500/30 text-red-500">
+          <Ban className="h-3.5 w-3.5" />
+          {stats.suspended} موقوف
+        </Badge>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3">
+      <div className="flex flex-col sm:flex-row gap-2">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="البحث بالاسم أو المعرف..."
-            className="pr-10"
+            className="pr-10 h-9"
           />
         </div>
-        <div className="flex rounded-lg border border-border overflow-hidden">
-          <button
-            className={cn(
-              "px-4 py-2 text-sm font-medium transition-colors",
-              filterSuspended === "all" 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-background hover:bg-muted"
-            )}
-            onClick={() => setFilterSuspended("all")}
-          >
-            الكل
-          </button>
-          <button
-            className={cn(
-              "px-4 py-2 text-sm font-medium transition-colors",
-              filterSuspended === "active" 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-background hover:bg-muted"
-            )}
-            onClick={() => setFilterSuspended("active")}
-          >
-            نشط
-          </button>
-          <button
-            className={cn(
-              "px-4 py-2 text-sm font-medium transition-colors",
-              filterSuspended === "suspended" 
-                ? "bg-primary text-primary-foreground" 
-                : "bg-background hover:bg-muted"
-            )}
-            onClick={() => setFilterSuspended("suspended")}
-          >
-            موقوف
-          </button>
+        <div className="flex rounded-lg border border-border overflow-hidden h-9">
+          {(["all", "active", "suspended"] as const).map((f) => (
+            <button
+              key={f}
+              className={cn(
+                "px-3 text-xs font-medium transition-colors",
+                filterSuspended === f 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-background hover:bg-muted"
+              )}
+              onClick={() => setFilterSuspended(f)}
+            >
+              {f === "all" ? "الكل" : f === "active" ? "نشط" : "موقوف"}
+            </button>
+          ))}
         </div>
-        <Button variant="outline" onClick={() => refetch()} size="icon">
+        <Button variant="outline" onClick={() => refetch()} size="sm" className="h-9">
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Customers List */}
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-20 w-full rounded-xl" />
+            <Skeleton key={i} className="h-16 w-full rounded-lg" />
           ))}
         </div>
       ) : filteredCustomers.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="p-12 text-center">
-            <Users className="h-12 w-12 mx-auto text-muted-foreground/30 mb-4" />
-            <h3 className="text-lg font-semibold">لا يوجد عملاء</h3>
+          <CardContent className="p-8 text-center">
+            <Users className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+            <h3 className="font-semibold">لا يوجد عملاء</h3>
             <p className="text-sm text-muted-foreground">لم يسجل أي عميل في المجتمع بعد</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {filteredCustomers.map((customer) => (
             <Card 
               key={customer.id} 
@@ -303,43 +303,43 @@ function CustomersContent() {
                 setActiveDetailTab("info");
               }}
             >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-4">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-12 w-12">
+                    <Avatar className="h-10 w-10">
                       <AvatarImage src={customer.avatar_url || undefined} />
-                      <AvatarFallback>
+                      <AvatarFallback className="text-sm">
                         {customer.display_name?.charAt(0) || "؟"}
                       </AvatarFallback>
                     </Avatar>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{customer.display_name || "بدون اسم"}</h3>
+                        <h3 className="font-medium text-sm">{customer.display_name || "بدون اسم"}</h3>
                         {customer.is_verified && (
-                          <CheckCircle className="h-4 w-4 text-blue-500" />
+                          <CheckCircle className="h-3.5 w-3.5 text-blue-500" />
                         )}
                         {customer.is_suspended && (
-                          <Badge variant="destructive" className="text-xs">موقوف</Badge>
+                          <Badge variant="destructive" className="text-[10px] h-4">موقوف</Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
                         <span className="flex items-center gap-1">
                           <FileText className="h-3 w-3" />
-                          {customer.total_requests_made || 0} طلب
+                          {customer.total_requests_made || 0}
                         </span>
                         <span className="flex items-center gap-1">
                           <Star className="h-3 w-3" />
                           {(customer.reputation_score || 0).toFixed(1)}
                         </span>
                         <span>
-                          انضم {format(new Date(customer.created_at), "dd MMM yyyy", { locale: ar })}
+                          {format(new Date(customer.created_at), "dd/MM/yy", { locale: ar })}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="gap-2">
-                    <Eye className="h-4 w-4" />
-                    إدارة
+                  <Button variant="ghost" size="sm" className="gap-1.5 h-8 text-xs">
+                    <Eye className="h-3.5 w-3.5" />
+                    عرض
                   </Button>
                 </div>
               </CardContent>
@@ -352,8 +352,8 @@ function CustomersContent() {
       <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-primary" />
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4 text-primary" />
               إدارة العميل
             </DialogTitle>
           </DialogHeader>
@@ -361,59 +361,59 @@ function CustomersContent() {
           {selectedCustomer && (
             <div className="flex-1 overflow-hidden flex flex-col">
               {/* Customer Header */}
-              <div className="flex items-center gap-4 p-4 bg-muted/30 rounded-xl mb-4">
-                <Avatar className="h-16 w-16">
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg mb-3">
+                <Avatar className="h-12 w-12">
                   <AvatarImage src={selectedCustomer.avatar_url || undefined} />
-                  <AvatarFallback className="text-xl">
+                  <AvatarFallback>
                     {selectedCustomer.display_name?.charAt(0) || "؟"}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg">{selectedCustomer.display_name || "بدون اسم"}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    ID: {selectedCustomer.user_id.slice(0, 8)}...
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold">{selectedCustomer.display_name || "بدون اسم"}</h3>
+                  <p className="text-xs text-muted-foreground truncate">
+                    ID: {selectedCustomer.user_id.slice(0, 12)}...
                   </p>
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex items-center gap-2 mt-1">
                     {selectedCustomer.is_verified && (
-                      <Badge className="bg-blue-500/20 text-blue-500">موثق</Badge>
+                      <Badge className="bg-blue-500/20 text-blue-500 text-[10px] h-5">موثق</Badge>
                     )}
                     {selectedCustomer.is_suspended && (
-                      <Badge variant="destructive">موقوف</Badge>
+                      <Badge variant="destructive" className="text-[10px] h-5">موقوف</Badge>
                     )}
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={exportCustomerData} className="gap-2">
-                  <Download className="h-4 w-4" />
+                <Button variant="outline" size="sm" onClick={exportCustomerData} className="gap-1.5">
+                  <Download className="h-3.5 w-3.5" />
                   تصدير
                 </Button>
               </div>
 
               {/* Tabs */}
               <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab} className="flex-1 flex flex-col overflow-hidden">
-                <TabsList className="grid w-full grid-cols-3">
-                  <TabsTrigger value="info" className="gap-2">
-                    <User className="h-4 w-4" />
+                <TabsList className="grid w-full grid-cols-3 h-9">
+                  <TabsTrigger value="info" className="gap-1.5 text-xs">
+                    <User className="h-3.5 w-3.5" />
                     المعلومات
                   </TabsTrigger>
-                  <TabsTrigger value="requests" className="gap-2">
-                    <FileText className="h-4 w-4" />
+                  <TabsTrigger value="requests" className="gap-1.5 text-xs">
+                    <Package className="h-3.5 w-3.5" />
                     الطلبات ({customerRequests.length})
                   </TabsTrigger>
-                  <TabsTrigger value="conversations" className="gap-2">
-                    <MessageCircle className="h-4 w-4" />
+                  <TabsTrigger value="conversations" className="gap-1.5 text-xs">
+                    <MessageCircle className="h-3.5 w-3.5" />
                     المحادثات ({customerConversations.length})
                   </TabsTrigger>
                 </TabsList>
 
-                <ScrollArea className="flex-1 mt-4">
+                <ScrollArea className="flex-1 mt-3">
                   <TabsContent value="info" className="m-0">
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="p-3 bg-muted/20 rounded-lg">
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-muted/20 rounded-lg text-center">
                           <div className="text-xl font-bold">{selectedCustomer.total_requests_made || 0}</div>
-                          <div className="text-xs text-muted-foreground">طلبات مقدمة</div>
+                          <div className="text-xs text-muted-foreground">طلبات</div>
                         </div>
-                        <div className="p-3 bg-muted/20 rounded-lg">
+                        <div className="p-3 bg-muted/20 rounded-lg text-center">
                           <div className="text-xl font-bold">{(selectedCustomer.reputation_score || 0).toFixed(1)}</div>
                           <div className="text-xs text-muted-foreground">التقييم</div>
                         </div>
@@ -421,13 +421,13 @@ function CustomersContent() {
 
                       {selectedCustomer.bio && (
                         <div className="p-3 bg-muted/20 rounded-lg">
-                          <span className="text-sm text-muted-foreground">النبذة</span>
+                          <span className="text-xs text-muted-foreground">النبذة</span>
                           <p className="text-sm mt-1">{selectedCustomer.bio}</p>
                         </div>
                       )}
 
                       <div className="p-3 bg-muted/20 rounded-lg">
-                        <span className="text-sm text-muted-foreground flex items-center gap-1">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
                           تاريخ الانضمام
                         </span>
@@ -450,12 +450,13 @@ function CustomersContent() {
                       )}
 
                       {!selectedCustomer.is_suspended && (
-                        <div className="space-y-3 pt-4 border-t">
+                        <div className="space-y-2 pt-3 border-t">
                           <label className="text-sm font-medium">سبب الإيقاف</label>
                           <Textarea
                             value={suspensionReason}
                             onChange={(e) => setSuspensionReason(e.target.value)}
                             placeholder="اكتب سبب إيقاف الحساب..."
+                            className="h-20"
                           />
                         </div>
                       )}
@@ -465,7 +466,7 @@ function CustomersContent() {
                   <TabsContent value="requests" className="m-0">
                     {requestsLoading ? (
                       <div className="space-y-2">
-                        {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
+                        {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
                       </div>
                     ) : customerRequests.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
@@ -477,32 +478,41 @@ function CustomersContent() {
                         {customerRequests.map(request => (
                           <div 
                             key={request.id} 
-                            className="p-3 bg-muted/20 rounded-lg flex items-center justify-between"
+                            className="p-3 bg-muted/20 rounded-lg"
                           >
-                            <div>
-                              <p className="font-medium text-sm">{request.title}</p>
-                              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                                <span>{format(new Date(request.created_at), "dd MMM", { locale: ar })}</span>
-                                {request.customer_governorate && (
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    {request.customer_governorate}
-                                  </span>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-sm">{request.title}</p>
+                                {request.description && (
+                                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                                    {request.description}
+                                  </p>
                                 )}
-                                {request.quantity && <span>الكمية: {request.quantity}</span>}
+                                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2 flex-wrap">
+                                  <span>{format(new Date(request.created_at), "dd MMM yyyy", { locale: ar })}</span>
+                                  {request.customer_governorate && (
+                                    <span className="flex items-center gap-1">
+                                      <MapPin className="h-3 w-3" />
+                                      {request.customer_governorate}
+                                    </span>
+                                  )}
+                                  {request.quantity && <span>الكمية: {request.quantity}</span>}
+                                  {request.size && <span>الحجم: {request.size}</span>}
+                                  {request.colors && <span>اللون: {request.colors}</span>}
+                                </div>
                               </div>
+                              <Badge variant={
+                                request.status === "approved" ? "default" :
+                                request.status === "pending" ? "secondary" :
+                                request.status === "completed" ? "outline" :
+                                "destructive"
+                              } className="text-[10px] shrink-0">
+                                {request.status === "approved" ? "منشور" :
+                                 request.status === "pending" ? "قيد المراجعة" :
+                                 request.status === "completed" ? "مكتمل" :
+                                 "مرفوض"}
+                              </Badge>
                             </div>
-                            <Badge variant={
-                              request.status === "approved" ? "default" :
-                              request.status === "pending" ? "secondary" :
-                              request.status === "completed" ? "outline" :
-                              "destructive"
-                            }>
-                              {request.status === "approved" ? "منشور" :
-                               request.status === "pending" ? "قيد المراجعة" :
-                               request.status === "completed" ? "مكتمل" :
-                               "مرفوض"}
-                            </Badge>
                           </div>
                         ))}
                       </div>
@@ -544,7 +554,16 @@ function CustomersContent() {
                 </ScrollArea>
               </Tabs>
 
-              <DialogFooter className="mt-4 pt-4 border-t">
+              <DialogFooter className="mt-3 pt-3 border-t flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowDeleteDialog(true)}
+                  className="gap-2 text-destructive border-destructive/30 hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  حذف السجل
+                </Button>
+                
                 {selectedCustomer.is_suspended ? (
                   <Button
                     onClick={() => toggleSuspension.mutate({ 
@@ -575,6 +594,52 @@ function CustomersContent() {
               </DialogFooter>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              تأكيد حذف العميل
+            </DialogTitle>
+            <DialogDescription>
+              هذا الإجراء لا يمكن التراجع عنه. سيتم حذف سجل العميل نهائياً.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <p className="text-sm">
+              للتأكيد، اكتب اسم العميل: <strong>{selectedCustomer?.display_name || "بدون اسم"}</strong>
+            </p>
+            <Input
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.target.value)}
+              placeholder="اكتب اسم العميل للتأكيد..."
+              className="text-center"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowDeleteDialog(false); setDeleteConfirmName(""); }}>
+              إلغاء
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedCustomer && deleteCustomer.mutate(selectedCustomer.user_id)}
+              disabled={!canDelete || deleteCustomer.isPending}
+              className="gap-2"
+            >
+              {deleteCustomer.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="h-4 w-4" />
+              )}
+              حذف نهائياً
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
