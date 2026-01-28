@@ -15,6 +15,10 @@ import {
   Filter,
   Lock,
   Tag,
+  Eye,
+  Scale,
+  Layers,
+  Users,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -29,6 +33,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import AcceptOfferDialog from "./AcceptOfferDialog";
 import EditOfferDialog from "./EditOfferDialog";
 
@@ -42,12 +52,14 @@ interface MerchantOffer {
   status: string;
   created_at: string;
   edit_count?: number;
+  offer_sent_at?: string | null;
   merchant?: {
     id?: string;
     display_name: string | null;
     store_image_url: string | null;
     badge_tier?: string | null;
     is_verified?: boolean;
+    followers_count?: number;
   } | null;
   rating?: {
     average_rating: number;
@@ -63,15 +75,16 @@ interface OffersListSectionProps {
   currentUserId?: string;
   merchantId?: string;
   onRefetch?: () => void;
+  onAddOffer?: () => void;
 }
 
-const BADGE_COLORS: Record<string, string> = {
-  bronze: "bg-amber-700/80",
-  silver: "bg-slate-400/80",
-  gold: "bg-yellow-500/80",
-  platinum: "bg-violet-500/80",
-  diamond: "bg-cyan-400/80",
-  emerald: "bg-emerald-500/80",
+const BADGE_CONFIG: Record<string, { bg: string; text: string }> = {
+  bronze: { bg: "bg-amber-700/30", text: "text-amber-400" },
+  silver: { bg: "bg-slate-400/30", text: "text-slate-300" },
+  gold: { bg: "bg-yellow-500/30", text: "text-yellow-400" },
+  platinum: { bg: "bg-violet-500/30", text: "text-violet-300" },
+  diamond: { bg: "bg-cyan-400/30", text: "text-cyan-300" },
+  emerald: { bg: "bg-emerald-500/30", text: "text-emerald-300" },
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -86,6 +99,7 @@ export default function OffersListSection({
   currentUserId,
   merchantId,
   onRefetch,
+  onAddOffer,
 }: OffersListSectionProps) {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -131,6 +145,7 @@ export default function OffersListSection({
   const paginatedOffers = sortedOffers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const isCustomer = user?.id === customerId;
+  const isMerchant = !!merchantId && user?.id === merchantId;
   const isAccepted = !!acceptedOfferId;
 
   // Find lowest price for "best" badge
@@ -165,178 +180,232 @@ export default function OffersListSection({
   };
 
   const sortLabels: Record<SortOption, string> = {
-    price_asc: "السعر: الأقل أولاً",
-    price_desc: "السعر: الأعلى أولاً",
-    duration_asc: "مدة التنفيذ: الأسرع",
-    rating_desc: "التقييم: الأعلى",
+    price_asc: "السعر ↑",
+    price_desc: "السعر ↓",
+    duration_asc: "الأسرع",
+    rating_desc: "الأعلى تقييماً",
   };
 
-  const renderOfferCard = (offer: MerchantOffer, isMyOffer = false) => {
+  // Offer Strip Card - Radically Redesigned
+  const OfferStrip = ({ offer, isMyOffer = false }: { offer: MerchantOffer; isMyOffer?: boolean }) => {
     const isBestPrice = offer.price_iqd === lowestPrice && !acceptedOfferId;
     const isThisAccepted = acceptedOfferId === offer.id;
     const canEdit = offer.trader_id === merchantId && (offer.edit_count ?? 0) < 1 && !isAccepted;
     const hasEdited = (offer.edit_count ?? 0) >= 1;
 
+    const merchantName = offer.merchant?.display_name || "تاجر";
+    const badgeTier = offer.merchant?.badge_tier;
+    const badgeConfig = badgeTier ? BADGE_CONFIG[badgeTier] : null;
+    const followersCount = offer.merchant?.followers_count || 0;
+
     return (
       <div
-        key={offer.id}
-        className={`group relative rounded-xl border transition-all ${
+        className={`relative rounded-xl border overflow-hidden transition-all ${
           isThisAccepted
-            ? "bg-gradient-to-r from-green-500/10 to-green-500/5 border-green-500/40"
+            ? "bg-gradient-to-l from-green-500/15 via-green-500/8 to-transparent border-green-500/40"
             : isMyOffer
-            ? "bg-gradient-to-r from-primary/10 to-primary/5 border-primary/40"
+            ? "bg-gradient-to-l from-primary/15 via-primary/8 to-transparent border-primary/50"
             : isBestPrice
-            ? "bg-gradient-to-r from-amber-500/10 to-amber-500/5 border-amber-500/40"
-            : "bg-card/50 border-border/50 hover:border-primary/30"
+            ? "bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/30"
+            : "bg-[hsl(160_45%_11%)] border-white/5 hover:border-primary/20"
         }`}
       >
         {/* My Offer Label */}
         {isMyOffer && (
-          <div className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full bg-primary text-[10px] font-bold text-white">
+          <div className="absolute -top-px right-4 px-2.5 py-0.5 rounded-b-md bg-primary text-[9px] font-bold text-white z-10">
             عرضك الخاص
           </div>
         )}
 
-        <div className="p-3 flex items-center gap-3">
-          {/* Avatar & Merchant Info */}
-          <div
-            className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
+        <div className="flex items-stretch">
+          {/* Left: Avatar Section */}
+          <div 
+            className="shrink-0 w-16 flex items-center justify-center bg-black/20 cursor-pointer hover:bg-black/30 transition-colors"
             onClick={() => handleVisitStore(offer)}
           >
-            <Avatar className="h-10 w-10 shrink-0 border-2 border-primary/20">
+            <Avatar className="h-11 w-11 border-2 border-primary/30">
               <AvatarImage src={offer.merchant?.store_image_url || undefined} />
-              <AvatarFallback className="bg-primary/10 text-primary">
-                <Store className="h-4 w-4" />
+              <AvatarFallback className="bg-primary/20 text-primary text-sm">
+                <Store className="h-5 w-5" />
               </AvatarFallback>
             </Avatar>
+          </div>
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="font-semibold text-sm truncate max-w-[120px] hover:text-primary transition-colors">
-                  {offer.merchant?.display_name || "تاجر"}
+          {/* Middle: Info Sections */}
+          <div className="flex-1 min-w-0 py-2 px-3">
+            {/* Top Row: Store Info */}
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <span 
+                className="font-semibold text-[11px] truncate max-w-[90px] cursor-pointer hover:text-primary transition-colors"
+                onClick={() => handleVisitStore(offer)}
+              >
+                {merchantName}
+              </span>
+              
+              {offer.merchant?.is_verified && (
+                <ShieldCheck className="h-3 w-3 text-primary shrink-0" />
+              )}
+              
+              {badgeConfig && (
+                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${badgeConfig.bg} ${badgeConfig.text}`}>
+                  {badgeTier}
                 </span>
-                {offer.merchant?.is_verified && (
-                  <ShieldCheck className="h-3.5 w-3.5 text-primary shrink-0" />
-                )}
-                {offer.merchant?.badge_tier && BADGE_COLORS[offer.merchant.badge_tier] && (
-                  <Badge
-                    className={`text-[9px] px-1.5 py-0 h-4 ${BADGE_COLORS[offer.merchant.badge_tier]} text-white border-0`}
-                  >
-                    {offer.merchant.badge_tier}
-                  </Badge>
-                )}
+              )}
+
+              {/* Rating - Small */}
+              {offer.rating && offer.rating.total_ratings > 0 && (
+                <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                  <Star className="h-2.5 w-2.5 fill-yellow-500 text-yellow-500" />
+                  {offer.rating.average_rating.toFixed(1)}
+                  <span className="opacity-50">({offer.rating.total_ratings})</span>
+                </span>
+              )}
+
+              {/* Followers - Small */}
+              {followersCount > 0 && (
+                <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                  <Users className="h-2.5 w-2.5" />
+                  {followersCount}
+                </span>
+              )}
+
+              {/* Status Badges */}
+              {isBestPrice && !isThisAccepted && (
+                <Badge className="text-[8px] px-1 py-0 h-3.5 bg-amber-500/20 text-amber-400 border-0 mr-auto">
+                  الأفضل
+                </Badge>
+              )}
+              {isThisAccepted && (
+                <Badge className="text-[8px] px-1 py-0 h-3.5 bg-green-500 text-white border-0 gap-0.5 mr-auto">
+                  <CheckCircle className="h-2 w-2" />
+                  مقبول
+                </Badge>
+              )}
+            </div>
+
+            {/* Bottom Row: Main Stats */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Price - Primary */}
+              <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-primary/15 border border-primary/30">
+                <span className="font-bold text-sm text-primary">
+                  {offer.price_iqd.toLocaleString("ar-IQ")}
+                </span>
+                <span className="text-[9px] text-primary/70">د.ع</span>
               </div>
 
-              {/* Rating */}
-              {offer.rating && offer.rating.total_ratings > 0 && (
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                  <Star className="h-3 w-3 fill-yellow-500 text-yellow-500" />
-                  <span>{offer.rating.average_rating.toFixed(1)}</span>
-                  <span className="opacity-60">({offer.rating.total_ratings})</span>
+              {/* Duration */}
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span>{offer.duration_days} يوم</span>
+              </div>
+
+              {/* Grams if available */}
+              {offer.grams && (
+                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Scale className="h-3 w-3" />
+                  <span>{offer.grams}g</span>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Duration */}
-          <div className="shrink-0 flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10">
-            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-            <span className="text-xs font-medium">{offer.duration_days} يوم</span>
-          </div>
+          {/* Right: Actions Section */}
+          <div className="shrink-0 flex items-center gap-1.5 px-2 border-r border-white/5">
+            {/* Notes Tooltip */}
+            {offer.notes && (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+                      <Eye className="h-3.5 w-3.5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    side="top" 
+                    className="max-w-[200px] text-[11px] bg-card border-border p-2"
+                  >
+                    <p className="text-muted-foreground">{offer.notes}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
 
-          {/* Price */}
-          <div className="shrink-0 flex flex-col items-center gap-0.5 px-4 py-2 rounded-lg bg-primary/10 border border-primary/30">
-            <span className="text-lg font-bold text-primary">
-              {offer.price_iqd.toLocaleString("ar-IQ")}
-            </span>
-            <span className="text-[10px] text-primary/70">د.ع</span>
-          </div>
+            {/* Message Button */}
+            <button
+              className="h-7 w-7 flex items-center justify-center rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
+              onClick={() => handleMessage(offer)}
+              title="مراسلة"
+            >
+              <Send className="h-3.5 w-3.5" />
+            </button>
 
-          {/* Actions */}
-          <div className="shrink-0 flex flex-col gap-1">
-            {/* Customer Actions */}
+            {/* Visit Store Button */}
+            <button
+              className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              onClick={() => handleVisitStore(offer)}
+              title="زيارة المتجر"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Customer: Accept Button */}
             {isCustomer && !isAccepted && (
               <Button
                 size="sm"
-                className="h-8 px-3 text-xs font-bold bg-green-600 hover:bg-green-700 text-white"
+                className="h-7 px-2.5 text-[10px] font-bold bg-green-600 hover:bg-green-700 text-white"
                 onClick={() => handleAccept(offer)}
               >
-                قبول العرض
+                قبول
               </Button>
             )}
 
-            {/* Merchant Edit Actions */}
-            {isMyOffer && (
+            {/* Merchant: Edit/Lock Button - 3 States */}
+            {isMyOffer && !isAccepted && (
               canEdit ? (
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-8 px-3 text-xs gap-1.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                  className="h-7 px-2 text-[10px] gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
                   onClick={() => handleEdit(offer)}
                 >
                   <Edit3 className="h-3 w-3" />
-                  تعديل العرض
+                  تعديل
                 </Button>
               ) : hasEdited ? (
-                <div className="flex items-center gap-1 px-2 py-1 rounded bg-muted/50 text-[10px] text-muted-foreground">
-                  <Lock className="h-3 w-3" />
-                  تم التعديل
+                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/30 text-[9px] text-muted-foreground">
+                  <Lock className="h-2.5 w-2.5" />
+                  تم التسعير
                 </div>
               ) : null
             )}
-
-            {/* Quick Actions */}
-            <div className="flex items-center gap-1">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-primary/70 hover:text-primary hover:bg-primary/10"
-                onClick={() => handleMessage(offer)}
-                title="مراسلة"
-              >
-                <Send className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-white/5"
-                onClick={() => handleVisitStore(offer)}
-                title="زيارة المتجر"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Status Badges */}
-          <div className="absolute top-2 left-2 flex items-center gap-1">
-            {isBestPrice && !isThisAccepted && (
-              <Badge className="text-[9px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-400 border-0">
-                الأفضل سعراً
-              </Badge>
-            )}
-            {isThisAccepted && (
-              <Badge className="text-[9px] px-1.5 py-0 h-4 bg-green-500 text-white border-0 gap-0.5">
-                <CheckCircle className="h-2.5 w-2.5" />
-                مقبول
-              </Badge>
-            )}
           </div>
         </div>
-
-        {/* Notes Preview */}
-        {offer.notes && (
-          <div className="px-3 pb-3 pt-0">
-            <p className="text-[11px] text-muted-foreground bg-white/5 rounded-lg p-2 line-clamp-2">
-              {offer.notes}
-            </p>
-          </div>
-        )}
       </div>
     );
   };
 
-  if (offers.length === 0) {
+  // Merchant Pricing Button - 3 States (when no offer exists)
+  const MerchantPricingButton = () => {
+    if (!isMerchant || isAccepted) return null;
+    
+    if (myOffer) {
+      // Already has offer - states handled in OfferStrip
+      return null;
+    }
+
+    // State 1: No offer yet - can price
+    return (
+      <Button
+        className="w-full h-9 text-xs font-bold bg-gradient-to-r from-primary to-[hsl(160_60%_25%)] hover:from-primary/90 hover:to-[hsl(160_60%_30%)]"
+        onClick={onAddOffer}
+      >
+        <Tag className="h-3.5 w-3.5 ml-1.5" />
+        تسعير الطلب
+      </Button>
+    );
+  };
+
+  if (offers.length === 0 && !isMerchant) {
     return (
       <div className="text-center py-6 text-muted-foreground text-sm">
         لا توجد عروض أسعار حتى الآن
@@ -348,92 +417,115 @@ export default function OffersListSection({
     <div className="space-y-3">
       {/* Header with Sort/Filter */}
       <div className="flex items-center justify-between">
-        <h3 className="font-bold text-sm text-foreground flex items-center gap-2">
-          <Tag className="h-4 w-4 text-primary" />
+        <h3 className="font-bold text-xs text-foreground flex items-center gap-1.5">
+          <Tag className="h-3.5 w-3.5 text-primary" />
           عروض الأسعار
-          <span className="text-xs font-normal text-muted-foreground">({offers.length})</span>
+          <span className="text-[10px] font-normal text-muted-foreground">({offers.length})</span>
         </h3>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="h-8 text-xs gap-1.5">
-              <Filter className="h-3 w-3" />
-              {sortLabels[sortBy]}
-              <ArrowUpDown className="h-3 w-3" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {(Object.entries(sortLabels) as [SortOption, string][]).map(([key, label]) => (
-              <DropdownMenuItem
-                key={key}
-                onClick={() => {
-                  setSortBy(key);
-                  setCurrentPage(1);
-                }}
-                className={sortBy === key ? "bg-primary/10" : ""}
-              >
-                {label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {offers.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1 px-2 text-muted-foreground hover:text-foreground">
+                <Filter className="h-3 w-3" />
+                {sortLabels[sortBy]}
+                <ArrowUpDown className="h-2.5 w-2.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="text-xs">
+              {(Object.entries(sortLabels) as [SortOption, string][]).map(([key, label]) => (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => {
+                    setSortBy(key);
+                    setCurrentPage(1);
+                  }}
+                  className={`text-xs ${sortBy === key ? "bg-primary/10" : ""}`}
+                >
+                  {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
+
+      {/* Merchant Pricing Button */}
+      <MerchantPricingButton />
 
       {/* My Offer - Pinned */}
       {myOffer && (
         <div className="space-y-1">
-          {renderOfferCard(myOffer, true)}
+          <OfferStrip offer={myOffer} isMyOffer />
         </div>
       )}
 
       {/* Other Offers */}
-      <div className="space-y-2">
-        {paginatedOffers.map((offer) => renderOfferCard(offer))}
-      </div>
+      {paginatedOffers.length > 0 && (
+        <div className="space-y-2">
+          {paginatedOffers.map((offer) => (
+            <OfferStrip key={offer.id} offer={offer} />
+          ))}
+        </div>
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-2">
+        <div className="flex items-center justify-center gap-1.5 pt-2">
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-7 w-7"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((p) => p - 1)}
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3.5 w-3.5" />
           </Button>
 
-          <div className="flex items-center gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                variant={page === currentPage ? "default" : "ghost"}
-                size="icon"
-                className={`h-8 w-8 text-xs ${page === currentPage ? "bg-primary" : ""}`}
-                onClick={() => setCurrentPage(page)}
-              >
-                {page}
-              </Button>
-            ))}
+          <div className="flex items-center gap-0.5">
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let page: number;
+              if (totalPages <= 5) {
+                page = i + 1;
+              } else if (currentPage <= 3) {
+                page = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                page = totalPages - 4 + i;
+              } else {
+                page = currentPage - 2 + i;
+              }
+              return (
+                <Button
+                  key={page}
+                  variant={page === currentPage ? "default" : "ghost"}
+                  size="icon"
+                  className={`h-7 w-7 text-[10px] ${page === currentPage ? "bg-primary" : ""}`}
+                  onClick={() => setCurrentPage(page)}
+                >
+                  {page}
+                </Button>
+              );
+            })}
           </div>
 
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className="h-7 w-7"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((p) => p + 1)}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
         </div>
       )}
 
       {/* Results info */}
-      <div className="text-center text-[10px] text-muted-foreground">
-        عرض {startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, sortedOffers.length)} من {sortedOffers.length} عرض
-      </div>
+      {sortedOffers.length > ITEMS_PER_PAGE && (
+        <div className="text-center text-[9px] text-muted-foreground">
+          {startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, sortedOffers.length)} من {sortedOffers.length}
+        </div>
+      )}
 
       {/* Accept Dialog */}
       {selectedOffer && (
