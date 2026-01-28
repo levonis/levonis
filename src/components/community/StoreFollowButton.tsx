@@ -93,8 +93,8 @@ export default function StoreFollowButton({
           disabled={toggleFollowMutation.isPending || !user}
           className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full transition-all font-medium ${
             isFollowing
-              ? "bg-primary/20 text-primary border border-primary/30"
-              : "bg-muted/80 text-muted-foreground hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/30"
+              ? "bg-primary text-primary-foreground"
+              : "bg-white/10 text-white hover:bg-white/20 border border-white/20"
           }`}
         >
           {toggleFollowMutation.isPending ? (
@@ -107,7 +107,7 @@ export default function StoreFollowButton({
           {isFollowing ? "متابَع" : "متابعة"}
         </button>
         {showCount && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+          <div className="flex items-center gap-1 text-xs text-white/80 bg-white/10 px-2 py-1 rounded-full border border-white/20">
             <Users className="h-3 w-3" />
             <span className="font-medium">{followersCount}</span>
           </div>

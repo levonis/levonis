@@ -44,13 +44,13 @@ export default function PrinterModelsCard({ merchantId }: PrinterModelsCardProps
 
   return (
     <Card className="rounded-xl overflow-hidden border-border/50 bg-gradient-to-br from-[hsl(160_52%_16%)] to-[hsl(160_48%_12%)]">
-      <CardContent className="p-3">
-        <div className="flex items-center gap-1.5 mb-2">
-          <div className="p-1 rounded-md bg-primary/20">
-            <Printer className="h-3.5 w-3.5 text-primary" />
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-1.5 rounded-lg bg-primary/20">
+            <Printer className="h-4 w-4 text-primary" />
           </div>
-          <span className="text-xs font-bold text-foreground">الطابعات</span>
-          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-4 bg-white/10 text-muted-foreground">
+          <span className="text-sm font-bold text-white">الطابعات</span>
+          <Badge variant="secondary" className="text-[9px] px-1.5 py-0 h-5 bg-white/10 text-white/70 border-white/20">
             {printerModels.length}
           </Badge>
         </div>
@@ -59,9 +59,9 @@ export default function PrinterModelsCard({ merchantId }: PrinterModelsCardProps
             <Badge
               key={model.id}
               variant="outline"
-              className="text-[10px] px-2 py-0.5 gap-1 border-primary/30 bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+              className="text-[10px] px-2.5 py-1 gap-1.5 border-primary/40 bg-primary/20 text-white hover:bg-primary/30 transition-colors"
             >
-              <Printer className="h-2.5 w-2.5" />
+              <Printer className="h-3 w-3" />
               {model.model_name}
             </Badge>
           ))}
