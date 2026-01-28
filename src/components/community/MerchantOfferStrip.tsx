@@ -126,17 +126,17 @@ export default function MerchantOfferStrip({
       <div
         className={`relative rounded-xl border overflow-hidden transition-all ${
           isAccepted
-            ? "bg-gradient-to-l from-green-500/15 via-green-500/8 to-transparent border-green-500/40"
+            ? "bg-gradient-to-l from-emerald-500/15 via-emerald-500/8 to-transparent border-emerald-500/40"
             : isMerchantOwner
             ? "bg-gradient-to-l from-primary/15 via-primary/8 to-transparent border-primary/50"
             : isBestPrice
             ? "bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/30"
-            : "bg-[hsl(160_45%_11%)] border-white/5 hover:border-primary/20"
+            : "bg-card border-border/50 hover:border-primary/30"
         }`}
       >
         {/* My Offer Label */}
         {isMerchantOwner && (
-          <div className="absolute -top-px right-4 px-2.5 py-0.5 rounded-b-md bg-primary text-[9px] font-bold text-white z-10">
+          <div className="absolute -top-px right-4 px-2.5 py-0.5 rounded-b-md bg-primary text-[9px] font-bold text-primary-foreground z-10">
             عرضك الخاص
           </div>
         )}
@@ -194,12 +194,12 @@ export default function MerchantOfferStrip({
 
               {/* Status Badges */}
               {isBestPrice && !isAccepted && (
-                <Badge className="text-[7px] px-1 py-0 h-3 bg-amber-500/20 text-amber-400 border-0 mr-auto">
+                <Badge className="text-[7px] px-1 py-0 h-3 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-0 mr-auto">
                   الأفضل
                 </Badge>
               )}
               {isAccepted && (
-                <Badge className="text-[7px] px-1 py-0 h-3 bg-green-500 text-white border-0 gap-0.5 mr-auto">
+                <Badge className="text-[7px] px-1 py-0 h-3 bg-emerald-500 text-white border-0 gap-0.5 mr-auto">
                   <CheckCircle className="h-2 w-2" />
                   مقبول
                 </Badge>
@@ -209,7 +209,7 @@ export default function MerchantOfferStrip({
             {/* Bottom Row: Main Stats */}
             <div className="flex items-center gap-1.5 flex-wrap">
               {/* Price - Primary */}
-              <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/15 border border-primary/30">
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20">
                 <span className="font-bold text-xs text-primary">
                   {offer.price_iqd.toLocaleString("ar-IQ")}
                 </span>
@@ -230,12 +230,12 @@ export default function MerchantOfferStrip({
                 </div>
               )}
 
-              {/* Material Type - NEW */}
+              {/* Material Type */}
               {offer.material_type && (
                 <div className={`flex items-center gap-0.5 text-[9px] px-1 py-0.5 rounded ${
                   offer.material_type === 'filament' 
-                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
-                    : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                    ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
+                    : 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20'
                 }`}>
                   <span>{offer.material_type === 'filament' ? 'FDM' : 'SLA'}</span>
                 </div>
@@ -286,7 +286,7 @@ export default function MerchantOfferStrip({
             {isCustomer && !isAccepted && (
               <Button
                 size="sm"
-                className="h-6 px-2 text-[9px] font-bold bg-green-600 hover:bg-green-700 text-white"
+                className="h-6 px-2 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={() => setShowAcceptDialog(true)}
               >
                 قبول
@@ -299,16 +299,16 @@ export default function MerchantOfferStrip({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-6 px-1.5 text-[9px] gap-0.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                  className="h-6 px-1.5 text-[9px] gap-0.5 border-amber-500/30 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
                   onClick={() => setShowEditDialog(true)}
                 >
                   <Edit3 className="h-2.5 w-2.5" />
                   تعديل
                 </Button>
               ) : hasEdited ? (
-                <div className="flex items-center gap-0.5 px-1.5 py-1 rounded bg-muted/30 text-[8px] text-muted-foreground">
+                <div className="flex items-center gap-0.5 px-1.5 py-1 rounded bg-muted/50 text-[8px] text-muted-foreground">
                   <Lock className="h-2 w-2" />
-                  تم التسعير
+                  تم التعديل
                 </div>
               ) : null
             )}
