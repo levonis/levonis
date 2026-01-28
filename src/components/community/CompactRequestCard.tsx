@@ -223,37 +223,37 @@ export default function CompactRequestCard({
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-1.5">
-          {/* Chat Button - Show for everyone */}
+        {/* Action Buttons - Single row */}
+        <div className="flex items-center gap-2">
+          {/* Chat Button */}
           <Button
             size="sm"
             variant="ghost"
-            className={`text-[9px] h-7 px-2 bg-white/5 hover:bg-white/10 text-muted-foreground ${isMerchant && !isOwner && !isAccepted ? 'flex-none w-auto' : 'flex-1'}`}
+            className="h-8 px-3 text-[10px] bg-white/5 hover:bg-white/10 text-muted-foreground rounded-lg flex-shrink-0"
             onClick={handleChat}
           >
-            <MessageSquare className="h-3 w-3 ml-0.5" />
+            <MessageSquare className="h-3 w-3 ml-1" />
             تواصل
           </Button>
 
-          {/* Price Button - ONLY for merchants who don't own the request */}
+          {/* Price Button - ONLY visible for merchants who don't own the request */}
           {isMerchant && !isOwner && !isAccepted && onAddOffer && (
             myOffer ? (
               <div
-                className="flex-1 flex items-center justify-center gap-1 text-[10px] h-7 px-3 rounded-lg bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/40 text-emerald-400"
+                className="flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg bg-primary/10 border border-primary/30 text-primary"
                 onClick={(e) => e.stopPropagation()}
               >
-                <CheckCircle2 className="h-3 w-3" />
-                <span className="font-bold">{(myOffer.price_iqd / 1000).toFixed(0)}k د.ع</span>
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                <span className="text-[10px] font-bold">{myOffer.price_iqd.toLocaleString()} د.ع</span>
               </div>
             ) : (
               <Button
                 size="sm"
-                className="flex-1 text-[10px] h-7 px-4 font-bold bg-gradient-to-r from-primary via-emerald-500 to-teal-500 hover:from-primary/90 hover:via-emerald-500/90 hover:to-teal-500/90 text-white shadow-lg shadow-primary/30 rounded-lg"
+                className="flex-1 h-8 px-4 text-[10px] font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
                 onClick={handlePrice}
               >
                 <DollarSign className="h-3.5 w-3.5 ml-1" />
-                سعّر الآن
+                تسعير
               </Button>
             )
           )}
