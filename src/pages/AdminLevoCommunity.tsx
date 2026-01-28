@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Store, Users, MessageCircle, AlertTriangle, Award, ImageIcon, 
   Clock, Loader2, Settings, FileText, 
-  Wallet, Trash2, Save, RefreshCw, ShieldCheck
+  Wallet, Trash2, Save, RefreshCw, ShieldCheck, Percent
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
@@ -123,15 +123,17 @@ function CommunitySettings() {
   const [merchantFee, setMerchantFee] = useState<number>(25000);
   const [autoDeleteDays, setAutoDeleteDays] = useState<number>(7);
   const [maxRequestsPerDay, setMaxRequestsPerDay] = useState<number>(5);
+  const [commissionRate, setCommissionRate] = useState<number>(5);
+  const [settingsInitialized, setSettingsInitialized] = useState(false);
 
-  // Sync with fetched settings
-  useMemo(() => {
-    if (settings) {
-      setMerchantFee(settings.merchant_registration_fee?.amount || 25000);
-      setAutoDeleteDays(settings.rejected_application_auto_delete_days?.days || 7);
-      setMaxRequestsPerDay(settings.max_customer_requests_per_day?.limit || 5);
-    }
-  }, [settings]);
+  // Sync with fetched settings - only once when data loads
+  if (settings && !settingsInitialized) {
+    setMerchantFee(settings.merchant_registration_fee?.amount || 25000);
+    setAutoDeleteDays(settings.rejected_application_auto_delete_days?.days || 7);
+    setMaxRequestsPerDay(settings.max_customer_requests_per_day?.limit || 5);
+    setCommissionRate(settings.commission_rate?.percent || 5);
+    setSettingsInitialized(true);
+  }
 
   const updateSettingMutation = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: any }) => {
@@ -336,6 +338,50 @@ function CommunitySettings() {
               حفظ
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Commission Rate */}
+      <Card className="border-emerald-500/20">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <Percent className="h-4 w-4 text-emerald-500" />
+            نسبة العمولة
+          </CardTitle>
+          <CardDescription className="text-xs">
+            النسبة المئوية التي يتم خصمها من كل عملية بيع
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-2">
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <Label className="text-xs">النسبة (%)</Label>
+              <Input
+                type="number"
+                value={commissionRate}
+                onChange={(e) => setCommissionRate(Number(e.target.value))}
+                className="mt-1 h-9"
+                min={0}
+                max={100}
+                step={0.5}
+              />
+            </div>
+            <Button
+              onClick={() => updateSettingMutation.mutate({
+                key: "commission_rate",
+                value: { percent: commissionRate }
+              })}
+              disabled={updateSettingMutation.isPending}
+              size="sm"
+              className="gap-1.5 h-9"
+            >
+              <Save className="h-3.5 w-3.5" />
+              حفظ
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            القيمة الحالية: {settings?.commission_rate?.percent || 5}%
+          </p>
         </CardContent>
       </Card>
 
