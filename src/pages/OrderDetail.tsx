@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import generatePDF, { Margin, Resolution } from 'react-to-pdf';
 import { OrderInvoice } from '@/components/OrderInvoice';
-import CustomerChat from '@/components/CustomerChat';
+import UnifiedChatButton from '@/components/UnifiedChatButton';
 import AdminUserChat from '@/components/AdminUserChat';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -716,7 +716,7 @@ const OrderDetail = () => {
       </div>
       
       {/* User Chat */}
-      {!isAdmin && <CustomerChat orderId={orderId} />}
+      {!isAdmin && <UnifiedChatButton />}
       
       {/* Admin Chat with Customer */}
       {isAdmin && order && (
