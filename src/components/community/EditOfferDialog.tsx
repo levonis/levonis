@@ -88,6 +88,17 @@ export default function EditOfferDialog({
         throw new Error("لا يمكنك تعديل العرض أكثر من مرة واحدة");
       }
 
+      // Double-check edit_count from DB to prevent race conditions
+      const { data: currentOffer } = await supabase
+        .from("print_offers")
+        .select("edit_count")
+        .eq("id", offerId)
+        .single();
+
+      if (currentOffer && (currentOffer.edit_count || 0) >= 1) {
+        throw new Error("لقد تم تعديل هذا العرض مسبقاً. لا يمكنك التعديل أكثر من مرة واحدة.");
+      }
+
       const priceNum = parseInt(price, 10);
       const durationNum = parseInt(duration, 10);
       const gramsNum = grams ? parseInt(grams, 10) : null;
@@ -106,7 +117,7 @@ export default function EditOfferDialog({
           duration_days: durationNum,
           grams: gramsNum,
           notes: notes.trim() || null,
-          edit_count: editCount + 1,
+          edit_count: (currentOffer?.edit_count || 0) + 1,
         })
         .eq("id", offerId);
 

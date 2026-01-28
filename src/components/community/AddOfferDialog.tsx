@@ -108,6 +108,18 @@ export default function AddOfferDialog({
         throw new Error("مدة التنفيذ مطلوبة");
       }
 
+      // Check if merchant already has an offer on this request (DB constraint also enforces this)
+      const { data: existingOffer } = await supabase
+        .from("print_offers")
+        .select("id")
+        .eq("request_id", requestId)
+        .eq("trader_id", user.id)
+        .maybeSingle();
+
+      if (existingOffer) {
+        throw new Error("لقد قمت بتسعير هذا الطلب مسبقاً. لا يمكنك التسعير أكثر من مرة واحدة.");
+      }
+
       // Use user.id (auth.uid()) as trader_id, NOT merchantId
       const { data, error } = await supabase
         .from("print_offers")
@@ -124,7 +136,13 @@ export default function AddOfferDialog({
         .select("id")
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Handle unique constraint violation gracefully
+        if (error.code === '23505') {
+          throw new Error("لقد قمت بتسعير هذا الطلب مسبقاً.");
+        }
+        throw error;
+      }
       return data;
     },
     onSuccess: () => {

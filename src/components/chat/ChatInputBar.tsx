@@ -24,6 +24,13 @@ import { toast } from 'sonner';
 import EmojiPicker from './EmojiPicker';
 import RichTextInput from './RichTextInput';
 
+interface ContextBarData {
+  type: 'product' | 'request';
+  title: string;
+  imageUrl?: string | null;
+  price?: number | null;
+}
+
 interface ChatInputBarProps {
   value: string;
   onChange: (value: string) => void;
@@ -34,6 +41,9 @@ interface ChatInputBarProps {
   isUploadingMedia?: boolean;
   disabled?: boolean;
   isSeller?: boolean;
+  contextBar?: ContextBarData | null;
+  onSendContext?: () => void;
+  onCloseContext?: () => void;
 }
 
 export default function ChatInputBar({
@@ -46,6 +56,9 @@ export default function ChatInputBar({
   isUploadingMedia = false,
   disabled = false,
   isSeller = false,
+  contextBar,
+  onSendContext,
+  onCloseContext,
 }: ChatInputBarProps) {
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
@@ -159,7 +172,52 @@ export default function ChatInputBar({
   ];
 
   return (
-    <div className="border-t bg-card p-2">
+    <div className="border-t bg-card">
+      {/* Context Bar - Shows product/request that user entered through */}
+      {contextBar && (
+        <div className="flex items-center gap-2 px-3 py-2 border-b bg-gradient-to-l from-primary/10 via-primary/5 to-transparent">
+          {/* Close Button */}
+          <button
+            type="button"
+            onClick={onCloseContext}
+            className="shrink-0 h-6 w-6 rounded-full flex items-center justify-center bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <X className="h-3 w-3" />
+          </button>
+
+          {/* Image */}
+          {contextBar.imageUrl && (
+            <div className="shrink-0 h-10 w-10 rounded-lg overflow-hidden border border-border/50">
+              <img src={contextBar.imageUrl} alt={contextBar.title} className="h-full w-full object-cover" />
+            </div>
+          )}
+
+          {/* Info */}
+          <div className="flex-1 min-w-0">
+            <p className="text-[10px] text-muted-foreground">
+              {contextBar.type === 'product' ? 'إرسال منتج' : 'إرسال طلب طباعة'}
+            </p>
+            <p className="text-xs font-medium truncate">{contextBar.title}</p>
+            {contextBar.price && (
+              <p className="text-[10px] text-primary font-bold">
+                {contextBar.price.toLocaleString('ar-IQ')} د.ع
+              </p>
+            )}
+          </div>
+
+          {/* Send Button */}
+          <Button
+            size="sm"
+            className="shrink-0 h-8 gap-1.5 px-3 text-xs"
+            onClick={onSendContext}
+          >
+            <Send className="h-3 w-3" />
+            إرسال
+          </Button>
+        </div>
+      )}
+
+      <div className="p-2">
       {/* Hidden File Inputs */}
       <input
         type="file"
@@ -323,6 +381,7 @@ export default function ChatInputBar({
           </Button>
         )}
       </form>
+      </div>
     </div>
   );
 }

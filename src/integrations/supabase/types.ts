@@ -2098,6 +2098,7 @@ export type Database = {
           buyer_id: string
           conversation_code: string | null
           created_at: string
+          entry_context: Json | null
           id: string
           listing_id: string
           seller_id: string
@@ -2109,6 +2110,7 @@ export type Database = {
           buyer_id: string
           conversation_code?: string | null
           created_at?: string
+          entry_context?: Json | null
           id?: string
           listing_id: string
           seller_id: string
@@ -2120,6 +2122,7 @@ export type Database = {
           buyer_id?: string
           conversation_code?: string | null
           created_at?: string
+          entry_context?: Json | null
           id?: string
           listing_id?: string
           seller_id?: string
@@ -2461,6 +2464,7 @@ export type Database = {
       merchant_applications: {
         Row: {
           admin_notes: string | null
+          away_message: string | null
           badge_override: boolean
           badge_tier: string
           bio: string | null
@@ -2470,6 +2474,8 @@ export type Database = {
           fee_status: string
           fee_transaction_id: string | null
           id: string
+          inquiry_template: string | null
+          is_away: boolean | null
           is_verified: boolean
           phone_number: string | null
           registration_fee: number
@@ -2481,9 +2487,11 @@ export type Database = {
           store_image_url: string | null
           updated_at: string
           user_id: string
+          welcome_message: string | null
         }
         Insert: {
           admin_notes?: string | null
+          away_message?: string | null
           badge_override?: boolean
           badge_tier?: string
           bio?: string | null
@@ -2493,6 +2501,8 @@ export type Database = {
           fee_status?: string
           fee_transaction_id?: string | null
           id?: string
+          inquiry_template?: string | null
+          is_away?: boolean | null
           is_verified?: boolean
           phone_number?: string | null
           registration_fee?: number
@@ -2504,9 +2514,11 @@ export type Database = {
           store_image_url?: string | null
           updated_at?: string
           user_id: string
+          welcome_message?: string | null
         }
         Update: {
           admin_notes?: string | null
+          away_message?: string | null
           badge_override?: boolean
           badge_tier?: string
           bio?: string | null
@@ -2516,6 +2528,8 @@ export type Database = {
           fee_status?: string
           fee_transaction_id?: string | null
           id?: string
+          inquiry_template?: string | null
+          is_away?: boolean | null
           is_verified?: boolean
           phone_number?: string | null
           registration_fee?: number
@@ -2527,6 +2541,7 @@ export type Database = {
           store_image_url?: string | null
           updated_at?: string
           user_id?: string
+          welcome_message?: string | null
         }
         Relationships: [
           {
