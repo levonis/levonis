@@ -269,23 +269,28 @@ export default function CommunityMerchantStorePage() {
         />
 
         {/* Stats Row - Compact with Follow Button */}
-        <div className="flex items-center gap-3 mb-5 overflow-x-auto pb-1">
-          {/* Follow Button */}
-          {!isOwner && (
-            <StoreFollowButton storeId={merchantId!} compact />
+        <div className="flex items-center gap-2 mb-5 overflow-x-auto pb-1">
+          {/* Follow Button - Always visible for non-owners */}
+          {!isOwner && merchantId && (
+            <StoreFollowButton storeId={merchantId} compact showCount />
           )}
           
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 shrink-0 text-xs">
+          {/* Followers count for owner */}
+          {isOwner && merchantId && (
+            <StoreFollowButton storeId={merchantId} compact showCount />
+          )}
+          
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-primary/20 to-primary/10 border border-primary/20 shrink-0 text-xs">
             <Package className="h-3.5 w-3.5 text-primary" />
-            <span className="font-medium">{products.length} منتج</span>
+            <span className="font-medium text-primary">{products.length} منتج</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 shrink-0 text-xs">
-            <ShoppingBag className="h-3.5 w-3.5 text-emerald-500" />
-            <span className="font-medium">{storeStats?.totalOrders || 0} طلب</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-emerald-500/20 to-emerald-500/10 border border-emerald-500/20 shrink-0 text-xs">
+            <ShoppingBag className="h-3.5 w-3.5 text-emerald-400" />
+            <span className="font-medium text-emerald-400">{storeStats?.totalOrders || 0} طلب</span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 shrink-0 text-xs">
-            <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-            <span className="font-medium">{storeStats?.avgRating?.toFixed(1) || "0"} ({storeStats?.totalRatings || 0})</span>
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/20 to-amber-500/10 border border-amber-500/20 shrink-0 text-xs">
+            <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+            <span className="font-medium text-amber-400">{storeStats?.avgRating?.toFixed(1) || "0"} ({storeStats?.totalRatings || 0})</span>
           </div>
         </div>
 
@@ -297,11 +302,13 @@ export default function CommunityMerchantStorePage() {
             <PrinterModelsCard merchantId={merchantId!} />
             
             {/* Ratings Card */}
-            <Card className="rounded-xl overflow-hidden">
+            <Card className="rounded-xl overflow-hidden border-border/50 bg-gradient-to-br from-[hsl(160_52%_16%)] to-[hsl(160_48%_12%)]">
               <CardContent className="p-3">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
-                  <span className="text-xs font-semibold">التقييمات</span>
+                  <div className="p-1 rounded-md bg-amber-500/20">
+                    <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                  </div>
+                  <span className="text-xs font-bold text-foreground">التقييمات</span>
                 </div>
                 <RatingsPreview merchantId={merchantId!} />
               </CardContent>

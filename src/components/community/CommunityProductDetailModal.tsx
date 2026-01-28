@@ -244,9 +244,9 @@ export default function CommunityProductDetailModal({
           className="sm:max-w-md p-0 gap-0 overflow-hidden rounded-3xl border border-border/30 bg-background shadow-2xl"
           hideClose
         >
-          <div className="flex flex-col max-h-[90vh]">
-            {/* Sticky Hero Image */}
-            <div className="relative aspect-[5/3] bg-muted/20 overflow-hidden shrink-0 sticky top-0 z-10">
+          <div className="flex flex-col max-h-[90vh] overflow-y-auto">
+            {/* Hero Image - Scrolls with content */}
+            <div className="relative aspect-[5/3] bg-muted/20 overflow-hidden shrink-0">
               {activeUrl ? (
                 <>
                   <img
@@ -339,8 +339,8 @@ export default function CommunityProductDetailModal({
               </div>
             )}
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto overscroll-contain">
+            {/* Content */}
+            <div className="flex-1">
               <div className="p-2.5 space-y-2">
                 {/* Title & Price */}
                 <div className="flex items-start justify-between gap-2">

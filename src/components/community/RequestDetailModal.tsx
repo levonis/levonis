@@ -68,6 +68,8 @@ interface PrintOffer {
   status: string;
   created_at: string;
   edit_count?: number;
+  material_type?: string | null;
+  material_subtypes?: string[] | null;
   merchant?: {
     display_name: string | null;
     store_image_url: string | null;
@@ -124,7 +126,9 @@ export default function RequestDetailModal({
           notes,
           status,
           created_at,
-          edit_count
+          edit_count,
+          material_type,
+          material_subtypes
         `)
         .eq("request_id", request!.id)
         .order("price_iqd", { ascending: true });
@@ -184,9 +188,9 @@ export default function RequestDetailModal({
           hideClose
           className="!p-0 !gap-0 sm:max-w-lg max-h-[90vh] overflow-hidden"
         >
-          <div className="flex flex-col max-h-[90vh]">
-            {/* Sticky Hero Image Section */}
-            <div className="relative shrink-0 sticky top-0 z-10 bg-background">
+          <div className="flex flex-col max-h-[90vh] overflow-y-auto">
+            {/* Hero Image Section - Scrolls with content */}
+            <div className="relative shrink-0">
               {hasImages ? (
                 <div className="relative aspect-[16/9] bg-black/30">
                   <img
@@ -260,8 +264,8 @@ export default function RequestDetailModal({
               )}
             </div>
 
-            {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto overscroll-contain">
+            {/* Content */}
+            <div className="flex-1">
               <div className="p-4 space-y-4">
               
               {/* Title & Quick Stats */}
@@ -434,7 +438,7 @@ export default function RequestDetailModal({
                       {offers.map((offer, index) => (
                         <div
                           key={offer.id}
-                          className={`shrink-0 w-52 rounded-2xl border p-3 space-y-2.5 transition-all ${
+                          className={`shrink-0 w-60 rounded-2xl border p-3 space-y-2 transition-all ${
                             request.accepted_offer_id === offer.id
                               ? "border-green-500/50 bg-green-500/10 shadow-[0_0_20px_hsl(142_76%_36%/0.2)]"
                               : index === 0
@@ -444,7 +448,7 @@ export default function RequestDetailModal({
                         >
                           {/* Best price badge */}
                           {index === 0 && !request.accepted_offer_id && (
-                            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[9px] mb-1">
+                            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[9px]">
                               <Star className="h-2.5 w-2.5 ml-0.5" />
                               أفضل سعر
                             </Badge>
@@ -467,55 +471,96 @@ export default function RequestDetailModal({
                                   <CheckCircle2 className="h-3 w-3 text-primary" />
                                 )}
                                 {offer.merchant?.badge_tier && offer.merchant.badge_tier !== "none" && (
-                                  <Star className="h-3 w-3 text-amber-400" />
+                                  <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
                                 )}
                               </div>
                             </div>
                           </div>
 
-                          {/* Price & Duration */}
-                          <div className="flex items-end justify-between pt-1">
-                            <div>
-                              <p className="text-lg font-bold text-primary">
+                          {/* Stats Grid: Price, Duration, Material, Grams */}
+                          <div className="grid grid-cols-2 gap-1.5">
+                            <div className="bg-primary/10 rounded-lg p-1.5 text-center">
+                              <p className="text-sm font-bold text-primary">
                                 {offer.price_iqd.toLocaleString()}
                               </p>
-                              <p className="text-[9px] text-muted-foreground">دينار عراقي</p>
+                              <p className="text-[8px] text-muted-foreground">د.ع</p>
                             </div>
-                            <div className="text-left bg-white/5 rounded-lg px-2 py-1">
+                            <div className="bg-white/5 rounded-lg p-1.5 text-center">
                               <p className="font-bold text-sm">{offer.duration_days}</p>
-                              <p className="text-[9px] text-muted-foreground">يوم</p>
+                              <p className="text-[8px] text-muted-foreground">يوم</p>
                             </div>
+                            {offer.material_type && (
+                              <div className="bg-purple-500/10 rounded-lg p-1.5 text-center">
+                                <p className="text-[10px] font-semibold text-purple-300">
+                                  {offer.material_type === "filament" ? "FDM" : offer.material_type === "resin" ? "SLA" : offer.material_type}
+                                </p>
+                                <p className="text-[8px] text-muted-foreground">المادة</p>
+                              </div>
+                            )}
+                            {offer.grams && (
+                              <div className="bg-cyan-500/10 rounded-lg p-1.5 text-center">
+                                <p className="font-bold text-[10px] text-cyan-300">{offer.grams}g</p>
+                                <p className="text-[8px] text-muted-foreground">الوزن</p>
+                              </div>
+                            )}
                           </div>
+
+                          {/* Material subtypes */}
+                          {offer.material_subtypes && offer.material_subtypes.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {offer.material_subtypes.slice(0, 3).map((sub, i) => (
+                                <Badge key={i} variant="outline" className="text-[8px] px-1.5 py-0 h-4 border-white/20">
+                                  {sub}
+                                </Badge>
+                              ))}
+                              {offer.material_subtypes.length > 3 && (
+                                <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 border-white/20">
+                                  +{offer.material_subtypes.length - 3}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
 
                           {/* Notes preview */}
                           {offer.notes && (
-                            <p className="text-[10px] text-muted-foreground line-clamp-2 whitespace-normal bg-white/5 rounded-lg p-2">
+                            <p className="text-[9px] text-muted-foreground line-clamp-2 whitespace-normal bg-white/5 rounded-lg p-1.5">
                               {offer.notes}
                             </p>
                           )}
 
-                          {/* Actions for Owner */}
-                          {isOwner && !isAccepted && (
-                            <div className="flex gap-1.5 pt-1">
+                          {/* Actions */}
+                          <div className="flex gap-1.5 pt-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="flex-1 text-[9px] h-6 px-1.5 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
+                              onClick={() => handleChatWithMerchant(offer.trader_id)}
+                            >
+                              <Send className="h-2.5 w-2.5 ml-0.5" />
+                              تواصل
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-[9px] h-6 px-1.5 border-white/20 hover:bg-white/10"
+                              onClick={() => {
+                                navigate(`/store/${offer.trader_id}`);
+                                onOpenChange(false);
+                              }}
+                            >
+                              <ExternalLink className="h-2.5 w-2.5" />
+                            </Button>
+                            {isOwner && !isAccepted && (
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="flex-1 text-[10px] h-7 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
-                                onClick={() => handleChatWithMerchant(offer.trader_id)}
-                              >
-                                <Send className="h-3 w-3 ml-0.5" />
-                                تواصل
-                              </Button>
-                              <Button
-                                size="sm"
-                                className="flex-1 text-[10px] h-7 bg-green-600 hover:bg-green-700"
+                                className="flex-1 text-[9px] h-6 px-1.5 bg-green-600 hover:bg-green-700"
                                 onClick={() => handleAcceptOffer(offer)}
                               >
-                                <CheckCircle2 className="h-3 w-3 ml-0.5" />
+                                <CheckCircle2 className="h-2.5 w-2.5 ml-0.5" />
                                 قبول
                               </Button>
-                            </div>
-                          )}
+                            )}
+                          </div>
 
                           {request.accepted_offer_id === offer.id && (
                             <Badge className="w-full justify-center bg-green-600 text-white text-[10px] border-0 py-1">
