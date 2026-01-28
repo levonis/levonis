@@ -42,6 +42,8 @@ interface MerchantOffer {
   created_at: string;
   edit_count?: number;
   offer_sent_at?: string | null;
+  material_type?: string | null;
+  material_subtypes?: string[] | null;
   merchant?: {
     id?: string;
     display_name: string | null;
@@ -225,6 +227,17 @@ export default function MerchantOfferStrip({
                 <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
                   <Scale className="h-2.5 w-2.5" />
                   <span>{offer.grams}g</span>
+                </div>
+              )}
+
+              {/* Material Type - NEW */}
+              {offer.material_type && (
+                <div className={`flex items-center gap-0.5 text-[9px] px-1 py-0.5 rounded ${
+                  offer.material_type === 'filament' 
+                    ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' 
+                    : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                }`}>
+                  <span>{offer.material_type === 'filament' ? 'FDM' : 'SLA'}</span>
                 </div>
               )}
             </div>
