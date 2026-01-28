@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { MessageSquare, Users, ArrowRight, Loader2 } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { ListingConversations } from '@/components/marketplace/ListingConversations';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 export default function CommunityMessages() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -172,8 +174,8 @@ export default function CommunityMessages() {
     },
     onSuccess: (conversationId) => {
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
-      // Update URL to auto-open the conversation without navigation
-      window.history.replaceState(null, '', `/community/messages?auto_open=${conversationId}`);
+      // Update URL to auto-open the conversation
+      navigate(`/community/messages?auto_open=${conversationId}`, { replace: true });
       setCreatingConversation(false);
     },
     onError: (error: Error) => {
@@ -195,26 +197,49 @@ export default function CommunityMessages() {
     return () => window.clearTimeout(t);
   }, []);
 
-  // Handle dialog close - go back in history
+  // Handle dialog close - return to community
   const handleClose = () => {
     setOpen(false);
-    window.history.back();
+    navigate('/community');
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Loading State */}
-      {(loading || creatingConversation) && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">
-            {creatingConversation ? 'جاري إنشاء المحادثة...' : 'جاري التحميل...'}
-          </p>
-        </div>
-      )}
+      <main className="container mx-auto px-4 py-6 pt-20 max-w-4xl">
+        {/* Header */}
+        <header className="mb-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="rounded-full h-9 w-9"
+              onClick={() => navigate('/community')}
+            >
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-lg font-bold text-foreground">محادثات المجتمع</h1>
+                <p className="text-xs text-muted-foreground">تواصل مع التجار</p>
+              </div>
+            </div>
+          </div>
+        </header>
 
-      {/* Conversations Dialog - Full Screen */}
-      {!loading && !creatingConversation && (
+        {/* Loading State */}
+        {(loading || creatingConversation) && (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground">
+              {creatingConversation ? 'جاري إنشاء المحادثة...' : 'جاري التحميل...'}
+            </p>
+          </div>
+        )}
+
+        {/* Conversations Dialog */}
         <ListingConversations
           externalOpen={open}
           onExternalOpenChange={setOpen}
@@ -224,7 +249,7 @@ export default function CommunityMessages() {
         >
           <span className="sr-only">فتح المحادثات</span>
         </ListingConversations>
-      )}
+      </main>
     </div>
   );
 }

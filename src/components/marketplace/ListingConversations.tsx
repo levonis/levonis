@@ -32,7 +32,6 @@ import {
   Send,
   AlertOctagon,
   Hash,
-  Headphones,
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -139,9 +138,6 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     }
   }, [listingId]);
 
-  // Support User ID - pinned at top
-  const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
-
   // Fetch conversations
   const { data: conversations, isLoading: loadingConversations } = useQuery({
     queryKey: ['listing-conversations', user?.id, listingId, isAdmin],
@@ -162,20 +158,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       
       const { data, error } = await query;
       if (error) throw error;
-      
-      // Deduplicate conversations: Keep only one conversation per unique partner
-      const seenPartners = new Set<string>();
-      const dedupedConversations = [];
-      
-      for (const conv of data || []) {
-        const partnerId = conv.buyer_id === user.id ? conv.seller_id : conv.buyer_id;
-        if (!seenPartners.has(partnerId)) {
-          seenPartners.add(partnerId);
-          dedupedConversations.push(conv);
-        }
-      }
-      
-      return dedupedConversations;
+      return data;
     },
     enabled: !!user && open,
   });
@@ -718,7 +701,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           )}
         </DialogTrigger>
       )}
-      <DialogContent hideClose className="max-w-7xl h-[100dvh] sm:h-[95vh] w-full sm:w-[98vw] lg:w-[90vw] xl:w-[85vw] 2xl:w-[80vw] p-0 flex flex-col overflow-hidden border-0">
+      <DialogContent hideClose className="max-w-6xl h-[100dvh] sm:h-[90vh] w-full sm:w-[95vw] lg:w-[80vw] xl:w-[70vw] p-0 flex flex-col overflow-hidden border-0">
         {/* Close Button - always visible on desktop, only when no conversation on mobile */}
         <button
           onClick={handleClose}
@@ -734,7 +717,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         <div className="flex flex-1 min-h-0 h-full">
           {/* Conversations List - WhatsApp Style */}
           <div className={cn(
-            "flex flex-col w-full md:w-[280px] lg:w-[320px] xl:w-[380px] md:border-l bg-card h-full min-h-0 flex-shrink-0",
+            "flex flex-col w-full md:w-80 lg:w-[320px] xl:w-[360px] md:border-l bg-card h-full min-h-0 flex-shrink-0",
             selectedConversation ? 'hidden md:flex' : 'flex'
           )}>
             {/* Header */}
@@ -767,15 +750,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   </div>
                 </div>
               ) : (
-              <div>
-                  {/* Sort conversations: Support first, then by last message time */}
+                <div>
+                  {/* Sort conversations by last message time */}
                   {[...(conversations || [])].sort((a, b) => {
-                    // Pin support conversation at top
-                    const aIsSupport = a.buyer_id === SUPPORT_USER_ID || a.seller_id === SUPPORT_USER_ID;
-                    const bIsSupport = b.buyer_id === SUPPORT_USER_ID || b.seller_id === SUPPORT_USER_ID;
-                    if (aIsSupport && !bIsSupport) return -1;
-                    if (!aIsSupport && bIsSupport) return 1;
-                    
                     const lastMsgA = lastMessages?.[a.id];
                     const lastMsgB = lastMessages?.[b.id];
                     const timeA = lastMsgA ? new Date(lastMsgA.created_at).getTime() : new Date(a.updated_at).getTime();
@@ -784,7 +761,6 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   }).map(conv => {
                     const convOtherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
                     const convOtherUser = profiles?.[convOtherUserId];
-                    const isSupport = convOtherUserId === SUPPORT_USER_ID;
                     const lastMsg = lastMessages?.[conv.id];
                     const isActive = selectedConversation === conv.id;
                     
@@ -799,19 +775,13 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           isActive && "bg-muted"
                         )}
                       >
-                        {/* Avatar with Frame - Support has special styling */}
+                        {/* Avatar with Frame */}
                         <div className="relative flex-shrink-0">
-                          {isSupport ? (
-                            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center">
-                              <Headphones className="h-5 w-5 text-primary-foreground" />
-                            </div>
-                          ) : (
-                            <AvatarWithFrame
-                              imageUrl={convOtherUser?.avatar_url}
-                              frameUrl={(convOtherUser as any)?.selected_frame_url}
-                              size="sm"
-                            />
-                          )}
+                          <AvatarWithFrame
+                            imageUrl={convOtherUser?.avatar_url}
+                            frameUrl={(convOtherUser as any)?.selected_frame_url}
+                            size="sm"
+                          />
                           {conv.status === 'disputed' && (
                             <div className="absolute -bottom-1 -right-1 bg-destructive rounded-full p-0.5">
                               <AlertTriangle className="w-3 h-3 text-white" />
@@ -825,16 +795,13 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           <div className="flex items-center justify-between gap-2 mb-0.5">
                             <div className="flex items-center gap-1.5 min-w-0">
                               <p className="font-semibold text-sm truncate max-w-[120px]">
-                                {isSupport ? 'خدمة العملاء' : (convOtherUser?.display_name || convOtherUser?.full_name || convOtherUser?.username || 'محادثة')}
+                                {convOtherUser?.display_name || convOtherUser?.full_name || convOtherUser?.username || 'محادثة'}
                               </p>
                               {/* Badges */}
-                              {isSupport && (
-                                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-primary/20 text-primary font-bold shrink-0">دعم</span>
-                              )}
                               {conv.admin_joined && (
                                 <ShieldCheck className="w-3 h-3 text-primary shrink-0" />
                               )}
-                              {!isSupport && (conv as any).conversation_code && (
+                              {(conv as any).conversation_code && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
@@ -895,9 +862,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
             </div>
           </div>
 
-          {/* Messages Area - Fixed for large screens - takes remaining space */}
+          {/* Messages Area - Fixed for large screens */}
           <div className={cn(
-            "flex-1 flex flex-col min-h-0 bg-background h-full overflow-hidden",
+            "flex-1 flex flex-col min-h-0 bg-background h-full overflow-hidden min-w-0",
             !selectedConversation && 'hidden md:flex'
           )}
             style={{
