@@ -204,12 +204,31 @@ export default function MerchantSignupDialog({
         }
       }
 
-      // Ensure application row exists (draft)
+      // IMPORTANT: Only create/update application if we have meaningful data
+      // This prevents empty draft records from appearing in admin
+      const hasStep1Data = payload.step1 && payload.step1.display_name?.trim();
+      const hasImageData = payload.store_image_url;
+      
+      if (!app?.id && !hasStep1Data && !hasImageData) {
+        // Don't create empty drafts - require at least display_name or image
+        throw new Error("يجب إدخال اسم المتجر أو رفع صورة المتجر أولاً");
+      }
+
+      // Ensure application row exists (draft) - only if we have data
       let appId = app?.id as string | undefined;
       if (!appId) {
+        // Validate minimum required fields before creating draft
+        if (!payload.step1?.display_name?.trim()) {
+          throw new Error("يجب إدخال اسم المتجر لحفظ المسودة");
+        }
+
         const { data, error } = await supabase
           .from("merchant_applications")
-          .insert({ user_id: user.id, status: "draft" })
+          .insert({ 
+            user_id: user.id, 
+            status: "draft",
+            display_name: payload.step1.display_name.trim(),
+          })
           .select("id")
           .single();
         if (error) throw error;

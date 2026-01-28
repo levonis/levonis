@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { Store, Filter, RefreshCw, CheckCircle2, XCircle, Image as ImageIcon, ExternalLink, Calculator } from "lucide-react";
+import { Store, Filter, RefreshCw, CheckCircle2, XCircle, Image as ImageIcon, ExternalLink, Calculator, Trash2 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout, { AdminSection } from "@/components/admin/AdminLayout";
@@ -65,7 +65,18 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
         )
         .order("created_at", { ascending: false });
 
-      if (status !== "all") query = query.eq("status", status);
+      // IMPORTANT: Filter out empty drafts (no display_name)
+      // Only show drafts that have meaningful data
+      if (status === "all") {
+        // Exclude empty drafts when showing all
+        query = query.or('status.neq.draft,display_name.neq.null');
+      } else if (status === "draft") {
+        // When explicitly filtering drafts, only show non-empty ones
+        query = query.eq("status", "draft").not("display_name", "is", null);
+      } else {
+        query = query.eq("status", status);
+      }
+      
       if (q.trim()) query = query.ilike("display_name", `%${q.trim()}%`);
 
       const { data, error } = await query;
@@ -304,18 +315,81 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
     },
   });
 
+  // Mutation to DELETE application (admin can delete rejected/draft applications)
+  const deleteMutation = useMutation({
+    mutationFn: async (appId: string) => {
+      // First delete private info
+      await supabase
+        .from("merchant_application_private")
+        .delete()
+        .eq("application_id", appId);
+      
+      // Then delete the application
+      const { error } = await supabase
+        .from("merchant_applications")
+        .delete()
+        .eq("id", appId);
+      
+      if (error) throw error;
+      return true;
+    },
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
+      toast({ title: "تم حذف الطلب نهائياً" });
+      setOpen(false);
+      setActive(null);
+    },
+    onError: (err: any) => {
+      toast({ title: "تعذر الحذف", description: err?.message ?? "حدث خطأ", variant: "destructive" });
+    },
+  });
+
+  // Mutation to cleanup empty drafts
+  const cleanupDraftsMutation = useMutation({
+    mutationFn: async () => {
+      // Delete drafts with no display_name (empty)
+      const { data, error } = await supabase
+        .from("merchant_applications")
+        .delete()
+        .eq("status", "draft")
+        .is("display_name", null)
+        .select("id");
+      
+      if (error) throw error;
+      return data?.length || 0;
+    },
+    onSuccess: async (count) => {
+      await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
+      toast({ title: "تم التنظيف", description: `تم حذف ${count} سجل فارغ` });
+    },
+    onError: (err: any) => {
+      toast({ title: "فشل التنظيف", description: err?.message ?? "حدث خطأ", variant: "destructive" });
+    },
+  });
+
   const actionButtons = (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-wrap">
+      <Button 
+        variant="outline" 
+        onClick={() => cleanupDraftsMutation.mutate()} 
+        disabled={cleanupDraftsMutation.isPending}
+        className="gap-2"
+        size="sm"
+      >
+        <Trash2 className="h-4 w-4" />
+        {cleanupDraftsMutation.isPending ? "جارٍ التنظيف..." : "تنظيف الفارغة"}
+      </Button>
       <Button 
         variant="outline" 
         onClick={() => recalculateBadgesMutation.mutate()} 
         disabled={recalculateBadgesMutation.isPending}
         className="gap-2"
+        size="sm"
       >
         <Calculator className="h-4 w-4" />
         {recalculateBadgesMutation.isPending ? "جارٍ الحساب..." : "حساب الشارات"}
       </Button>
-      <Button variant="outline" onClick={() => refetch()} className="gap-2">
+      <Button variant="outline" onClick={() => refetch()} className="gap-2" size="sm">
         <RefreshCw className="h-4 w-4" />
         تحديث
       </Button>
@@ -563,6 +637,19 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
           )}
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
+            {/* Delete button for rejected/draft applications */}
+            {(active?.status === "rejected" || active?.status === "draft") && (
+              <Button
+                variant="destructive"
+                onClick={() => active && deleteMutation.mutate(active.id)}
+                disabled={!active || deleteMutation.isPending}
+                className="gap-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                {deleteMutation.isPending ? "جارٍ الحذف..." : "حذف نهائياً"}
+              </Button>
+            )}
+            
             {active?.status === "pending" && (
               <>
                 <Button
