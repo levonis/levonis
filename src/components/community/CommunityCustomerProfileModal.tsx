@@ -134,17 +134,19 @@ export default function CommunityCustomerProfileModal({
       if (!user?.id) throw new Error("Not authenticated");
       
       const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const fileName = `${Date.now()}.${fileExt}`;
+      // Path format: avatars/{user_id}/{filename} to match storage policy
+      const filePath = `avatars/${user.id}/${fileName}`;
       
       const { error: uploadError } = await supabase.storage
         .from('product-images')
-        .upload(`avatars/${fileName}`, file, { upsert: true });
+        .upload(filePath, file, { upsert: true });
       
       if (uploadError) throw uploadError;
       
       const { data: { publicUrl } } = supabase.storage
         .from('product-images')
-        .getPublicUrl(`avatars/${fileName}`);
+        .getPublicUrl(filePath);
       
       return publicUrl;
     },
