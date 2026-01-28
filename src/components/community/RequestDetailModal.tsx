@@ -21,6 +21,8 @@ import {
   Plus,
   Play,
   Edit3,
+  Sparkles,
+  Send,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -80,11 +82,11 @@ interface RequestDetailModalProps {
   onAddOffer?: () => void;
 }
 
-const MATERIAL_LABELS: Record<string, { label: string; color: string }> = {
-  filament: { label: "فلمنت (FDM)", color: "bg-blue-600/30 text-blue-300 border-blue-500/30" },
-  resin: { label: "رزن (SLA/DLP)", color: "bg-purple-600/30 text-purple-300 border-purple-500/30" },
-  both: { label: "كلاهما", color: "bg-emerald-600/30 text-emerald-300 border-emerald-500/30" },
-  any: { label: "لا يهم", color: "bg-slate-600/30 text-slate-300 border-slate-500/30" },
+const MATERIAL_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+  filament: { label: "فلمنت (FDM)", icon: "🔧", color: "from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-300" },
+  resin: { label: "رزن (SLA/DLP)", icon: "💎", color: "from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-300" },
+  both: { label: "كلا النوعين", icon: "⚡", color: "from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 text-emerald-300" },
+  any: { label: "لا يهم النوع", icon: "✨", color: "from-slate-500/20 to-slate-600/10 border-slate-500/30 text-slate-300" },
 };
 
 export default function RequestDetailModal({
@@ -122,11 +124,10 @@ export default function RequestDetailModal({
           edit_count
         `)
         .eq("request_id", request!.id)
-        .order("created_at", { ascending: true });
+        .order("price_iqd", { ascending: true });
 
       if (error) throw error;
 
-      // Fetch merchant profiles separately
       const traderIds = [...new Set((data || []).map((o) => o.trader_id))];
       if (traderIds.length === 0) return [];
 
@@ -144,7 +145,6 @@ export default function RequestDetailModal({
     },
   });
 
-  // Check if current merchant already has an offer
   const myOffer = offers.find((o) => o.trader_id === merchantId);
 
   if (!request) return null;
@@ -153,6 +153,7 @@ export default function RequestDetailModal({
   const hasImages = images.length > 0;
   const isOwner = user?.id === request.user_id;
   const isAccepted = !!request.accepted_offer_id;
+  const material = request.material_type ? MATERIAL_CONFIG[request.material_type] : null;
 
   const nextImage = () => setCurrentImageIndex((i) => (i + 1) % images.length);
   const prevImage = () => setCurrentImageIndex((i) => (i - 1 + images.length) % images.length);
@@ -167,46 +168,52 @@ export default function RequestDetailModal({
     onOpenChange(false);
   };
 
-  const material = request.material_type ? MATERIAL_LABELS[request.material_type] : null;
+  const handleChatAboutRequest = () => {
+    navigate(`/community/messages?request=${request.id}`);
+    onOpenChange(false);
+  };
+
+  const lowestPrice = offers.length > 0 ? Math.min(...offers.map(o => o.price_iqd)) : null;
 
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent 
           hideClose
-          className="!p-0 !gap-0 sm:max-w-xl overflow-hidden"
+          className="!p-0 !gap-0 sm:max-w-lg max-h-[90vh] overflow-hidden"
         >
-          {/* Header with Image Gallery */}
+          {/* Hero Image Section */}
           <div className="relative">
             {hasImages ? (
-              <div className="relative aspect-[16/10] bg-black/20">
+              <div className="relative aspect-[16/9] bg-black/30">
                 <img
                   src={images[currentImageIndex]}
                   alt={request.title}
                   className="w-full h-full object-contain"
                 />
                 
+                {/* Navigation arrows */}
                 {images.length > 1 && (
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110"
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110"
                     >
                       <ChevronRight className="h-5 w-5" />
                     </button>
-                    <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                       {images.map((_, i) => (
                         <button
                           key={i}
                           onClick={() => setCurrentImageIndex(i)}
                           className={`h-1.5 rounded-full transition-all ${
-                            i === currentImageIndex ? "w-6 bg-white" : "w-1.5 bg-white/50"
+                            i === currentImageIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60"
                           }`}
                         />
                       ))}
@@ -214,98 +221,113 @@ export default function RequestDetailModal({
                   </>
                 )}
 
-                {/* Video indicator */}
+                {/* Video badge */}
                 {request.video_url && (
                   <a
                     href={request.video_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="absolute bottom-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500 text-white text-xs font-medium"
+                    className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500 text-white text-xs font-medium hover:bg-red-600 transition-colors"
                   >
                     <Play className="h-3 w-3" />
-                    فيديو
+                    مشاهدة الفيديو
                   </a>
                 )}
               </div>
             ) : (
-              <div className="aspect-[16/10] bg-muted/30 flex items-center justify-center">
-                <Package className="h-14 w-14 text-muted-foreground/20" />
+              <div className="aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                <Package className="h-16 w-16 text-primary/20" />
               </div>
             )}
 
-            {/* Close button - single button */}
+            {/* Close button */}
             <button
               onClick={() => onOpenChange(false)}
-              className="absolute top-2 left-2 h-8 w-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors z-10"
+              className="absolute top-3 left-3 h-9 w-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110 z-10"
             >
               <X className="h-4 w-4" />
             </button>
 
             {/* Status Badge */}
             {isAccepted && (
-              <Badge className="absolute top-2 right-2 bg-green-500 text-white border-0">
+              <Badge className="absolute top-3 right-3 bg-green-500 text-white border-0 gap-1">
+                <CheckCircle2 className="h-3 w-3" />
                 تم القبول
               </Badge>
             )}
           </div>
 
           {/* Scrollable Content */}
-          <div className="max-h-[50vh] overflow-y-auto overscroll-contain">
+          <div className="max-h-[55vh] overflow-y-auto overscroll-contain">
             <div className="p-4 space-y-4">
-              {/* Title & Badges */}
-              <div>
-                <h2 className="text-base font-bold text-foreground mb-2">{request.title}</h2>
-                <div className="flex flex-wrap gap-1.5">
+              
+              {/* Title & Quick Stats */}
+              <div className="space-y-3">
+                <h2 className="text-lg font-bold text-foreground leading-tight">{request.title}</h2>
+                
+                {/* Stats Row */}
+                <div className="flex items-center gap-3 flex-wrap">
                   {material && (
-                    <Badge className={`text-[10px] border ${material.color}`}>
-                      <Layers className="h-3 w-3 ml-1" />
-                      {material.label}
-                    </Badge>
-                  )}
-                  <Badge className="text-[10px] bg-primary/20 text-primary border border-primary/30">
-                    <Ruler className="h-3 w-3 ml-1" />
-                    {request.size}
-                  </Badge>
-                  <Badge className="text-[10px] bg-amber-600/20 text-amber-300 border border-amber-500/30">
-                    <Palette className="h-3 w-3 ml-1" />
-                    {request.colors}
-                  </Badge>
-                  {request.quantity && (
-                    <Badge className="text-[10px] bg-cyan-600/20 text-cyan-300 border border-cyan-500/30">
-                      <Hash className="h-3 w-3 ml-1" />
-                      {request.quantity} قطعة
-                    </Badge>
+                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r border ${material.color}`}>
+                      <Layers className="h-3.5 w-3.5" />
+                      <span className="text-xs font-medium">{material.label}</span>
+                    </div>
                   )}
                   {request.customer_governorate && (
-                    <Badge className="text-[10px] bg-rose-600/20 text-rose-300 border border-rose-500/30">
-                      <MapPin className="h-3 w-3 ml-1" />
-                      {request.customer_governorate}
-                    </Badge>
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-rose-500/20 to-rose-600/10 border border-rose-500/30 text-rose-300">
+                      <MapPin className="h-3.5 w-3.5" />
+                      <span className="text-xs font-medium">{request.customer_governorate}</span>
+                    </div>
                   )}
-                  <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                    <Clock className="h-3 w-3 ml-1" />
-                    {new Date(request.created_at).toLocaleDateString("ar-IQ")}
-                  </Badge>
+                  {request.quantity && (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-cyan-500/20 to-cyan-600/10 border border-cyan-500/30 text-cyan-300">
+                      <Hash className="h-3.5 w-3.5" />
+                      <span className="text-xs font-medium">{request.quantity} قطعة</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Specs Grid */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="rounded-xl bg-white/5 border border-white/10 p-3">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Ruler className="h-3.5 w-3.5" />
+                    <span className="text-[10px]">الحجم</span>
+                  </div>
+                  <p className="font-semibold text-sm text-foreground">{request.size}</p>
+                </div>
+                <div className="rounded-xl bg-white/5 border border-white/10 p-3">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Palette className="h-3.5 w-3.5" />
+                    <span className="text-[10px]">الألوان</span>
+                  </div>
+                  <p className="font-semibold text-sm text-foreground">{request.colors}</p>
                 </div>
               </div>
 
               {/* Description */}
-              <div className="text-sm text-foreground/80 leading-relaxed whitespace-pre-wrap bg-muted/20 rounded-lg p-3 border border-border/50">
-                {request.description}
+              <div className="rounded-xl bg-white/5 border border-white/10 p-4">
+                <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap">
+                  {request.description}
+                </p>
               </div>
 
               {/* Notes */}
               {request.notes && (
-                <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3">
-                  <p className="text-[10px] text-amber-400 font-medium mb-1">ملاحظات العميل</p>
-                  <p className="text-xs text-foreground/90">{request.notes}</p>
+                <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-4">
+                  <div className="flex items-center gap-2 text-amber-400 mb-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span className="text-xs font-medium">ملاحظات العميل</span>
+                  </div>
+                  <p className="text-sm text-foreground/90">{request.notes}</p>
                 </div>
               )}
 
               {/* Reference Links */}
               {request.reference_links && request.reference_links.length > 0 && (
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-medium text-muted-foreground">روابط مرجعية</p>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">روابط مرجعية</p>
                   <div className="flex flex-wrap gap-2">
                     {request.reference_links.map((link, i) => (
                       <a
@@ -313,7 +335,7 @@ export default function RequestDetailModal({
                         href={link}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1 text-xs text-primary hover:underline bg-primary/10 px-2 py-1 rounded-md"
+                        className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-full transition-colors"
                       >
                         <ExternalLink className="h-3 w-3" />
                         رابط {i + 1}
@@ -323,18 +345,28 @@ export default function RequestDetailModal({
                 </div>
               )}
 
-              {/* Merchant Action */}
-              {isMerchant && !isOwner && !isAccepted && onAddOffer && (
-                <div className="pt-2">
-                  {myOffer ? (
-                    <div className="rounded-lg bg-primary/10 border border-primary/30 p-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs text-primary font-medium">عرضك الحالي</p>
+              {/* Action Buttons - Chat & Price */}
+              {!isAccepted && (
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-10 gap-2 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
+                    onClick={handleChatAboutRequest}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    تواصل حول الطلب
+                  </Button>
+                  
+                  {isMerchant && !isOwner && onAddOffer && (
+                    myOffer ? (
+                      <div className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2 text-center">
+                        <p className="text-[10px] text-emerald-400 mb-0.5">عرضك</p>
+                        <p className="font-bold text-emerald-300">{myOffer.price_iqd.toLocaleString()} د.ع</p>
                         {(myOffer.edit_count ?? 0) < 1 && (
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-6 px-2 text-[10px] gap-1 text-primary hover:bg-primary/20"
+                            className="h-6 px-2 text-[10px] gap-1 text-emerald-400 hover:bg-emerald-500/20 mt-1"
                             onClick={() => {
                               setEditOffer(myOffer);
                               setShowEditDialog(true);
@@ -345,89 +377,97 @@ export default function RequestDetailModal({
                           </Button>
                         )}
                       </div>
-                      <div className="flex items-center gap-4">
-                        <div>
-                          <p className="font-bold text-lg text-primary">{myOffer.price_iqd.toLocaleString()} <span className="text-xs">د.ع</span></p>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {myOffer.duration_days} يوم
-                        </div>
-                      </div>
-                      {(myOffer.edit_count ?? 0) >= 1 && (
-                        <p className="text-[10px] text-amber-400">تم تعديل هذا العرض (الحد الأقصى مرة واحدة)</p>
-                      )}
-                    </div>
-                  ) : (
-                    <Button
-                      className="w-full gap-2 bg-gradient-to-b from-primary to-accent h-9"
-                      onClick={onAddOffer}
-                    >
-                      <Plus className="h-4 w-4" />
-                      تقديم عرض سعر
-                    </Button>
+                    ) : (
+                      <Button
+                        className="flex-1 h-10 gap-2 bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-600/90"
+                        onClick={onAddOffer}
+                      >
+                        <Plus className="h-4 w-4" />
+                        تقديم عرض سعر
+                      </Button>
+                    )
                   )}
                 </div>
               )}
 
-              {/* Offers Section - Horizontal Strip */}
+              {/* Offers Section */}
               {offers.length > 0 && (
-                <div className="pt-3 border-t border-border/50 space-y-2">
+                <div className="pt-3 border-t border-white/10 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-sm text-foreground">عروض الأسعار</h3>
-                    <Badge variant="secondary" className="text-[10px]">{offers.length} عرض</Badge>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-sm text-foreground">عروض الأسعار</h3>
+                      <Badge className="bg-primary/20 text-primary border-0 text-[10px]">
+                        {offers.length} عرض
+                      </Badge>
+                    </div>
+                    {lowestPrice && (
+                      <span className="text-xs text-emerald-400">
+                        أقل سعر: {lowestPrice.toLocaleString()} د.ع
+                      </span>
+                    )}
                   </div>
                   
                   <ScrollArea className="w-full">
-                    <div className="flex gap-2 pb-2">
-                      {offers.map((offer) => (
+                    <div className="flex gap-3 pb-2">
+                      {offers.map((offer, index) => (
                         <div
                           key={offer.id}
-                          className={`shrink-0 w-48 rounded-xl border p-2.5 space-y-2 ${
+                          className={`shrink-0 w-52 rounded-2xl border p-3 space-y-2.5 transition-all ${
                             request.accepted_offer_id === offer.id
-                              ? "border-green-500/50 bg-green-500/10"
-                              : "border-border/50 bg-muted/20"
+                              ? "border-green-500/50 bg-green-500/10 shadow-[0_0_20px_hsl(142_76%_36%/0.2)]"
+                              : index === 0
+                              ? "border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-transparent"
+                              : "border-white/10 bg-white/5"
                           }`}
                         >
+                          {/* Best price badge */}
+                          {index === 0 && !request.accepted_offer_id && (
+                            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[9px] mb-1">
+                              <Star className="h-2.5 w-2.5 ml-0.5" />
+                              أفضل سعر
+                            </Badge>
+                          )}
+                          
                           {/* Merchant Info */}
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7 border border-border/50">
+                          <div className="flex items-center gap-2.5">
+                            <Avatar className="h-9 w-9 border-2 border-white/10">
                               <AvatarImage src={offer.merchant?.store_image_url || undefined} />
-                              <AvatarFallback className="text-[10px] bg-primary/20">
-                                <User className="h-3 w-3" />
+                              <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                                <User className="h-4 w-4" />
                               </AvatarFallback>
                             </Avatar>
                             <div className="min-w-0 flex-1">
-                              <p className="font-medium text-[11px] truncate text-foreground">
+                              <p className="font-semibold text-xs truncate text-foreground">
                                 {offer.merchant?.display_name || "تاجر"}
                               </p>
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 mt-0.5">
                                 {offer.merchant?.is_verified && (
-                                  <CheckCircle2 className="h-2.5 w-2.5 text-primary" />
+                                  <CheckCircle2 className="h-3 w-3 text-primary" />
                                 )}
                                 {offer.merchant?.badge_tier && offer.merchant.badge_tier !== "none" && (
-                                  <Star className="h-2.5 w-2.5 text-amber-400" />
+                                  <Star className="h-3 w-3 text-amber-400" />
                                 )}
                               </div>
                             </div>
                           </div>
 
                           {/* Price & Duration */}
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-end justify-between pt-1">
                             <div>
-                              <p className="text-sm font-bold text-primary">
+                              <p className="text-lg font-bold text-primary">
                                 {offer.price_iqd.toLocaleString()}
                               </p>
-                              <p className="text-[9px] text-muted-foreground">دينار</p>
+                              <p className="text-[9px] text-muted-foreground">دينار عراقي</p>
                             </div>
-                            <div className="text-left">
-                              <p className="font-bold text-xs">{offer.duration_days}</p>
+                            <div className="text-left bg-white/5 rounded-lg px-2 py-1">
+                              <p className="font-bold text-sm">{offer.duration_days}</p>
                               <p className="text-[9px] text-muted-foreground">يوم</p>
                             </div>
                           </div>
 
                           {/* Notes preview */}
                           {offer.notes && (
-                            <p className="text-[9px] text-muted-foreground line-clamp-2 whitespace-normal">
+                            <p className="text-[10px] text-muted-foreground line-clamp-2 whitespace-normal bg-white/5 rounded-lg p-2">
                               {offer.notes}
                             </p>
                           )}
@@ -438,25 +478,26 @@ export default function RequestDetailModal({
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="flex-1 text-[9px] h-6 px-1"
+                                className="flex-1 text-[10px] h-7 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
                                 onClick={() => handleChatWithMerchant(offer.trader_id)}
                               >
-                                <MessageSquare className="h-2.5 w-2.5 ml-0.5" />
-                                محادثة
+                                <Send className="h-3 w-3 ml-0.5" />
+                                تواصل
                               </Button>
                               <Button
                                 size="sm"
-                                className="flex-1 text-[9px] h-6 px-1 bg-green-600 hover:bg-green-700"
+                                className="flex-1 text-[10px] h-7 bg-green-600 hover:bg-green-700"
                                 onClick={() => handleAcceptOffer(offer)}
                               >
-                                <CheckCircle2 className="h-2.5 w-2.5 ml-0.5" />
+                                <CheckCircle2 className="h-3 w-3 ml-0.5" />
                                 قبول
                               </Button>
                             </div>
                           )}
 
                           {request.accepted_offer_id === offer.id && (
-                            <Badge className="w-full justify-center bg-green-600 text-white text-[9px] border-0">
+                            <Badge className="w-full justify-center bg-green-600 text-white text-[10px] border-0 py-1">
+                              <CheckCircle2 className="h-3 w-3 ml-1" />
                               العرض المقبول
                             </Badge>
                           )}
@@ -467,6 +508,16 @@ export default function RequestDetailModal({
                   </ScrollArea>
                 </div>
               )}
+
+              {/* Timestamp */}
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground pt-2">
+                <Clock className="h-3 w-3" />
+                تم النشر: {new Date(request.created_at).toLocaleDateString("ar-IQ", { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </div>
             </div>
           </div>
         </DialogContent>
