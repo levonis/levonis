@@ -19,6 +19,7 @@ import {
   Scale,
   Layers,
   Users,
+  AlertCircle,
 } from "lucide-react";
 
 import { useAuth } from "@/hooks/useAuth";
@@ -33,12 +34,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import AcceptOfferDialog from "./AcceptOfferDialog";
 import EditOfferDialog from "./EditOfferDialog";
 
@@ -80,13 +75,13 @@ interface OffersListSectionProps {
   onAddOffer?: () => void;
 }
 
-const BADGE_CONFIG: Record<string, { bg: string; text: string }> = {
-  bronze: { bg: "bg-amber-700/30", text: "text-amber-400" },
-  silver: { bg: "bg-slate-400/30", text: "text-slate-300" },
-  gold: { bg: "bg-yellow-500/30", text: "text-yellow-400" },
-  platinum: { bg: "bg-violet-500/30", text: "text-violet-300" },
-  diamond: { bg: "bg-cyan-400/30", text: "text-cyan-300" },
-  emerald: { bg: "bg-emerald-500/30", text: "text-emerald-300" },
+const BADGE_CONFIG: Record<string, { label: string; color: string }> = {
+  bronze: { label: "برونز", color: "text-amber-600" },
+  silver: { label: "فضي", color: "text-slate-400" },
+  gold: { label: "ذهبي", color: "text-yellow-500" },
+  platinum: { label: "بلاتين", color: "text-violet-400" },
+  diamond: { label: "ماسي", color: "text-cyan-400" },
+  emerald: { label: "زمردي", color: "text-emerald-400" },
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -112,6 +107,7 @@ export default function OffersListSection({
   const [selectedOffer, setSelectedOffer] = useState<MerchantOffer | null>(null);
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showingNotes, setShowingNotes] = useState<string | null>(null);
 
   // Separate my offer from others
   const myOffer = offers.find((o) => o.trader_id === merchantId);
@@ -181,6 +177,11 @@ export default function OffersListSection({
     setShowEditDialog(true);
   };
 
+  const showNotesToast = (notes: string) => {
+    setShowingNotes(notes);
+    setTimeout(() => setShowingNotes(null), 4000);
+  };
+
   const sortLabels: Record<SortOption, string> = {
     price_asc: "السعر ↑",
     price_desc: "السعر ↓",
@@ -188,7 +189,7 @@ export default function OffersListSection({
     rating_desc: "الأعلى تقييماً",
   };
 
-  // Offer Strip Card - Professional Theme with better notes visibility
+  // Radically redesigned Offer Strip Card
   const OfferStrip = ({ offer, isMyOffer = false }: { offer: MerchantOffer; isMyOffer?: boolean }) => {
     const isBestPrice = offer.price_iqd === lowestPrice && !acceptedOfferId;
     const isThisAccepted = acceptedOfferId === offer.id;
@@ -202,199 +203,185 @@ export default function OffersListSection({
 
     return (
       <div
-        className={`relative rounded-xl border overflow-hidden transition-all ${
+        className={`relative rounded-lg border transition-all duration-200 ${
           isThisAccepted
-            ? "bg-gradient-to-l from-emerald-500/15 via-emerald-500/8 to-transparent border-emerald-500/40 dark:border-emerald-500/40"
+            ? "bg-emerald-500/10 border-emerald-500/50 ring-1 ring-emerald-500/30"
             : isMyOffer
-            ? "bg-gradient-to-l from-primary/15 via-primary/8 to-transparent border-primary/50"
+            ? "bg-primary/8 border-primary/50 ring-1 ring-primary/20"
             : isBestPrice
-            ? "bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/30"
-            : "bg-card border-border/50 hover:border-primary/30"
+            ? "bg-amber-500/5 border-amber-500/40"
+            : "bg-card/80 border-border/60 hover:border-primary/40 hover:bg-card"
         }`}
       >
-        {/* My Offer Label */}
+        {/* My Offer Pinned Label */}
         {isMyOffer && (
-          <div className="absolute -top-px right-4 px-2.5 py-0.5 rounded-b-md bg-primary text-[9px] font-bold text-primary-foreground z-10">
+          <div className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-md bg-primary text-[8px] font-bold text-primary-foreground shadow-sm">
             عرضك الخاص
           </div>
         )}
 
-        <div className="flex items-stretch">
-          {/* Left: Avatar Section */}
+        <div className="flex items-stretch h-[72px]">
+          {/* LEFT: Store Avatar */}
           <div 
-            className="shrink-0 w-16 flex items-center justify-center bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+            className="shrink-0 w-[60px] flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity border-l border-border/30"
             onClick={() => handleVisitStore(offer)}
           >
-            <Avatar className="h-11 w-11 border-2 border-primary/30">
+            <Avatar className="h-10 w-10 border-2 border-background shadow-md">
               <AvatarImage src={offer.merchant?.store_image_url || undefined} />
-              <AvatarFallback className="bg-primary/20 text-primary text-sm">
-                <Store className="h-5 w-5" />
+              <AvatarFallback className="bg-muted text-muted-foreground text-xs">
+                <Store className="h-4 w-4" />
               </AvatarFallback>
             </Avatar>
           </div>
 
-          {/* Middle: Info Sections */}
-          <div className="flex-1 min-w-0 py-2 px-3">
-            {/* Top Row: Store Info */}
-            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+          {/* CENTER: Two-Row Info */}
+          <div className="flex-1 min-w-0 flex flex-col justify-center py-1.5 px-2.5">
+            {/* Row 1: Store Name, Badges, Rating, Followers */}
+            <div className="flex items-center gap-1 mb-1 overflow-hidden">
               <span 
-                className="font-semibold text-[11px] truncate max-w-[90px] cursor-pointer hover:text-primary transition-colors"
+                className="font-bold text-[10px] text-foreground truncate max-w-[70px] cursor-pointer hover:text-primary transition-colors"
                 onClick={() => handleVisitStore(offer)}
               >
                 {merchantName}
               </span>
               
               {offer.merchant?.is_verified && (
-                <ShieldCheck className="h-3 w-3 text-primary shrink-0" />
+                <ShieldCheck className="h-2.5 w-2.5 text-primary shrink-0" />
               )}
               
               {badgeConfig && (
-                <span className={`text-[8px] font-bold px-1.5 py-0.5 rounded ${badgeConfig.bg} ${badgeConfig.text}`}>
-                  {badgeTier}
+                <span className={`text-[7px] font-bold ${badgeConfig.color} shrink-0`}>
+                  {badgeConfig.label}
                 </span>
               )}
 
-              {/* Rating - Small */}
-              {offer.rating && offer.rating.total_ratings > 0 && (
-                <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
-                  <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" />
-                  {offer.rating.average_rating.toFixed(1)}
-                  <span className="opacity-50">({offer.rating.total_ratings})</span>
-                </span>
-              )}
+              <span className="w-px h-2.5 bg-border/50 mx-0.5 shrink-0" />
 
-              {/* Followers - Small */}
-              {followersCount > 0 && (
-                <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
-                  <Users className="h-2.5 w-2.5" />
-                  {followersCount}
-                </span>
-              )}
+              {/* Rating */}
+              <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground shrink-0">
+                <Star className="h-2 w-2 fill-amber-500 text-amber-500" />
+                {offer.rating && offer.rating.total_ratings > 0 
+                  ? `${offer.rating.average_rating.toFixed(1)}` 
+                  : "0.0"
+                }
+              </span>
 
-              {/* Status Badges */}
-              {isBestPrice && !isThisAccepted && (
-                <Badge className="text-[8px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-0 mr-auto font-bold">
-                  الأفضل
+              {/* Followers */}
+              <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground shrink-0">
+                <Users className="h-2 w-2" />
+                {followersCount}
+              </span>
+
+              {/* Status Badge */}
+              {isThisAccepted && (
+                <Badge className="text-[7px] px-1 py-0 h-3.5 bg-emerald-500 text-white border-0 gap-0.5 mr-auto shrink-0">
+                  <CheckCircle className="h-2 w-2" />
+                  مقبول
                 </Badge>
               )}
-              {isThisAccepted && (
-                <Badge className="text-[8px] px-1.5 py-0 h-4 bg-emerald-500 text-white border-0 gap-0.5 mr-auto font-bold">
-                  <CheckCircle className="h-2.5 w-2.5" />
-                  مقبول
+              {isBestPrice && !isThisAccepted && (
+                <Badge className="text-[7px] px-1 py-0 h-3.5 bg-amber-500/80 text-white border-0 mr-auto shrink-0">
+                  الأفضل
                 </Badge>
               )}
             </div>
 
-            {/* Bottom Row: Main Stats */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Price - Primary */}
-              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/15 border border-primary/30">
-                <span className="font-bold text-sm text-primary">
+            {/* Row 2: Price, Duration, Material, Grams */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Price - Primary Highlight */}
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/15 border border-primary/30">
+                <span className="font-extrabold text-xs text-primary tabular-nums">
                   {offer.price_iqd.toLocaleString("ar-IQ")}
                 </span>
-                <span className="text-[9px] text-primary/70">د.ع</span>
+                <span className="text-[7px] text-primary/70">د.ع</span>
               </div>
 
               {/* Duration */}
-              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Clock className="h-3 w-3" />
+              <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                <Clock className="h-2.5 w-2.5" />
                 <span>{offer.duration_days} يوم</span>
               </div>
 
-              {/* Grams if available */}
-              {offer.grams && (
-                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <Scale className="h-3 w-3" />
-                  <span>{offer.grams}g</span>
-                </div>
-              )}
-
-              {/* Material Type Badge */}
+              {/* Material Type */}
               {offer.material_type && (
-                <div className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-md font-medium ${
+                <div className={`flex items-center gap-0.5 text-[8px] px-1 py-0.5 rounded font-medium ${
                   offer.material_type === 'filament' 
-                    ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30' 
-                    : 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
+                    ? 'bg-blue-500/15 text-blue-500 border border-blue-500/30' 
+                    : 'bg-purple-500/15 text-purple-500 border border-purple-500/30'
                 }`}>
-                  <Layers className="h-2.5 w-2.5" />
+                  <Layers className="h-2 w-2" />
                   <span>{offer.material_type === 'filament' ? 'FDM' : 'SLA'}</span>
                 </div>
               )}
-              
-              {/* Notes Badge - Always visible when there are notes */}
-              {offer.notes && (
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 cursor-pointer hover:bg-amber-500/25 transition-colors">
-                        <Eye className="h-3 w-3" />
-                        <span className="text-[9px] font-medium">ملاحظة</span>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent 
-                      side="top" 
-                      className="max-w-[250px] text-[11px] bg-popover border-border p-3 shadow-xl z-50"
-                    >
-                      <p className="font-bold text-foreground mb-1.5 text-xs flex items-center gap-1.5">
-                        <Eye className="h-3 w-3 text-amber-500" />
-                        ملاحظات التاجر:
-                      </p>
-                      <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{offer.notes}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+
+              {/* Grams */}
+              {offer.grams && (
+                <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                  <Scale className="h-2.5 w-2.5" />
+                  <span>{offer.grams}g</span>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Right: Actions Section */}
-          <div className="shrink-0 flex items-center gap-1.5 px-2 border-r border-border/30">
-            {/* Message Button */}
-            <button
-              className="h-7 w-7 flex items-center justify-center rounded-lg text-primary hover:text-primary bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20"
-              onClick={() => handleMessage(offer)}
-              title="مراسلة"
-            >
-              <Send className="h-3.5 w-3.5" />
-            </button>
+          {/* RIGHT: Action Buttons */}
+          <div className="shrink-0 flex items-center gap-1 px-2 border-r border-border/30">
+            {/* Notes Button - Shows toast on click */}
+            {offer.notes && (
+              <button
+                className="h-6 w-6 flex items-center justify-center rounded text-amber-500 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition-colors"
+                onClick={() => showNotesToast(offer.notes!)}
+                title="عرض الملاحظات"
+              >
+                <Eye className="h-3 w-3" />
+              </button>
+            )}
 
-            {/* Visit Store Button */}
+            {/* Visit Store */}
             <button
-              className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/50 transition-colors border border-border/30"
+              className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground bg-muted/50 hover:bg-muted border border-border/50 transition-colors"
               onClick={() => handleVisitStore(offer)}
               title="زيارة المتجر"
             >
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink className="h-3 w-3" />
             </button>
 
-            {/* Customer: Accept Button - ALWAYS VISIBLE for customer when not accepted */}
+            {/* Message */}
+            <button
+              className="h-6 w-6 flex items-center justify-center rounded text-primary bg-primary/10 hover:bg-primary/20 border border-primary/30 transition-colors"
+              onClick={() => handleMessage(offer)}
+              title="مراسلة"
+            >
+              <Send className="h-3 w-3" />
+            </button>
+
+            {/* Customer: Accept Button */}
             {isCustomer && !isAccepted && (
               <Button
                 size="sm"
-                className="h-7 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                className="h-6 px-2 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                 onClick={() => handleAccept(offer)}
               >
-                <CheckCircle className="h-3 w-3 ml-1" />
                 قبول
               </Button>
             )}
 
-            {/* Merchant: Edit/Lock Button - 3 States */}
+            {/* Merchant: 3-State Pricing Button */}
             {isMyOffer && !isAccepted && (
               canEdit ? (
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 px-2.5 text-[10px] gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 font-medium"
+                  className="h-6 px-2 text-[9px] gap-0.5 border-amber-500/50 text-amber-600 hover:bg-amber-500/15"
                   onClick={() => handleEdit(offer)}
                 >
-                  <Edit3 className="h-3 w-3" />
+                  <Edit3 className="h-2.5 w-2.5" />
                   تعديل
                 </Button>
               ) : hasEdited ? (
-                <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-muted/50 border border-border/50 text-[9px] text-muted-foreground font-medium">
-                  <Lock className="h-2.5 w-2.5" />
-                  تم التسعير
+                <div className="flex items-center gap-0.5 px-2 py-1 rounded bg-muted/60 border border-border/50 text-[8px] text-muted-foreground">
+                  <Lock className="h-2 w-2" />
+                  مغلق
                 </div>
               ) : null
             )}
@@ -404,7 +391,7 @@ export default function OffersListSection({
     );
   };
 
-  // Merchant Pricing Button - Shows edit if offer exists
+  // Merchant Pricing Button - 3 States
   const MerchantPricingButton = () => {
     if (!isMerchant || isAccepted) return null;
     
@@ -413,19 +400,21 @@ export default function OffersListSection({
       const hasEdited = (myOffer.edit_count ?? 0) >= 1;
       
       if (canEdit) {
+        // State 2: Can edit once
         return (
           <Button
-            className="w-full h-9 text-xs font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600"
+            className="w-full h-8 text-[10px] font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 shadow-sm"
             onClick={() => handleEdit(myOffer)}
           >
-            <Edit3 className="h-3.5 w-3.5 ml-1.5" />
+            <Edit3 className="h-3 w-3 ml-1" />
             تعديل السعر ({myOffer.price_iqd.toLocaleString()} د.ع)
           </Button>
         );
       } else if (hasEdited) {
+        // State 3: Locked - no more edits
         return (
-          <div className="w-full h-9 rounded-lg bg-muted/50 border border-border/50 flex items-center justify-center gap-2 text-xs text-muted-foreground font-medium">
-            <Lock className="h-3.5 w-3.5" />
+          <div className="w-full h-8 rounded-lg bg-muted/50 border border-border/50 flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
+            <Lock className="h-3 w-3" />
             تم التسعير ({myOffer.price_iqd.toLocaleString()} د.ع) - لا يمكن التعديل
           </div>
         );
@@ -436,10 +425,10 @@ export default function OffersListSection({
     // State 1: No offer yet - can price
     return (
       <Button
-        className="w-full h-9 text-xs font-bold bg-gradient-to-r from-primary to-[hsl(160_60%_25%)] hover:from-primary/90 hover:to-[hsl(160_60%_30%)]"
+        className="w-full h-8 text-[10px] font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 shadow-sm"
         onClick={onAddOffer}
       >
-        <Tag className="h-3.5 w-3.5 ml-1.5" />
+        <Tag className="h-3 w-3 ml-1" />
         تسعير الطلب
       </Button>
     );
@@ -454,25 +443,42 @@ export default function OffersListSection({
   }
 
   return (
-    <div className="space-y-3">
-      {/* Header with Sort/Filter */}
+    <div className="space-y-2 relative">
+      {/* Floating Notes Toast */}
+      {showingNotes && (
+        <div className="absolute top-0 left-0 right-0 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+          <div className="mx-auto max-w-[280px] p-3 rounded-lg bg-popover border border-border shadow-xl">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] font-bold text-foreground mb-1">ملاحظات التاجر</p>
+                <p className="text-[10px] text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  {showingNotes}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Header with Sort */}
       <div className="flex items-center justify-between">
-        <h3 className="font-bold text-xs text-foreground flex items-center gap-1.5">
-          <Tag className="h-3.5 w-3.5 text-primary" />
+        <h3 className="font-bold text-[11px] text-foreground flex items-center gap-1">
+          <Tag className="h-3 w-3 text-primary" />
           عروض الأسعار
-          <span className="text-[10px] font-normal text-muted-foreground">({offers.length})</span>
+          <span className="text-[9px] font-normal text-muted-foreground">({offers.length})</span>
         </h3>
 
         {offers.length > 0 && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1 px-2 text-muted-foreground hover:text-foreground">
-                <Filter className="h-3 w-3" />
+              <Button variant="ghost" size="sm" className="h-6 text-[9px] gap-0.5 px-1.5 text-muted-foreground hover:text-foreground">
+                <Filter className="h-2.5 w-2.5" />
                 {sortLabels[sortBy]}
-                <ArrowUpDown className="h-2.5 w-2.5" />
+                <ArrowUpDown className="h-2 w-2" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="text-xs">
+            <DropdownMenuContent align="end" className="text-xs min-w-[100px]">
               {(Object.entries(sortLabels) as [SortOption, string][]).map(([key, label]) => (
                 <DropdownMenuItem
                   key={key}
@@ -480,7 +486,7 @@ export default function OffersListSection({
                     setSortBy(key);
                     setCurrentPage(1);
                   }}
-                  className={`text-xs ${sortBy === key ? "bg-primary/10" : ""}`}
+                  className={`text-[10px] ${sortBy === key ? "bg-primary/10" : ""}`}
                 >
                   {label}
                 </DropdownMenuItem>
@@ -493,16 +499,16 @@ export default function OffersListSection({
       {/* Merchant Pricing Button */}
       <MerchantPricingButton />
 
-      {/* My Offer - Pinned */}
+      {/* My Offer - Pinned at Top */}
       {myOffer && (
-        <div className="space-y-1">
+        <div className="pt-1">
           <OfferStrip offer={myOffer} isMyOffer />
         </div>
       )}
 
       {/* Other Offers */}
       {paginatedOffers.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {paginatedOffers.map((offer) => (
             <OfferStrip key={offer.id} offer={offer} />
           ))}
@@ -511,15 +517,15 @@ export default function OffersListSection({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-1.5 pt-2">
+        <div className="flex items-center justify-center gap-1 pt-1.5">
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-6 w-6"
             disabled={currentPage === 1}
             onClick={() => setCurrentPage((p) => p - 1)}
           >
-            <ChevronRight className="h-3.5 w-3.5" />
+            <ChevronRight className="h-3 w-3" />
           </Button>
 
           <div className="flex items-center gap-0.5">
@@ -539,7 +545,7 @@ export default function OffersListSection({
                   key={page}
                   variant={page === currentPage ? "default" : "ghost"}
                   size="icon"
-                  className={`h-7 w-7 text-[10px] ${page === currentPage ? "bg-primary" : ""}`}
+                  className={`h-6 w-6 text-[9px] ${page === currentPage ? "bg-primary" : ""}`}
                   onClick={() => setCurrentPage(page)}
                 >
                   {page}
@@ -551,18 +557,18 @@ export default function OffersListSection({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7"
+            className="h-6 w-6"
             disabled={currentPage === totalPages}
             onClick={() => setCurrentPage((p) => p + 1)}
           >
-            <ChevronLeft className="h-3.5 w-3.5" />
+            <ChevronLeft className="h-3 w-3" />
           </Button>
         </div>
       )}
 
       {/* Results info */}
       {sortedOffers.length > ITEMS_PER_PAGE && (
-        <div className="text-center text-[9px] text-muted-foreground">
+        <div className="text-center text-[8px] text-muted-foreground">
           {startIndex + 1} - {Math.min(startIndex + ITEMS_PER_PAGE, sortedOffers.length)} من {sortedOffers.length}
         </div>
       )}
