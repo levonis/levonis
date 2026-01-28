@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -16,7 +17,9 @@ import { Loader2, MessageCircle, ClipboardCopy, Check, ShoppingCart } from 'luci
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
 import { CartItem } from '@/hooks/useCart';
-import CustomerChat from './CustomerChat';
+
+// Support account ID (admin)
+const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
 
 interface CartRequestDialogProps {
   open: boolean;
@@ -32,11 +35,12 @@ export default function CartRequestDialog({
   total 
 }: CartRequestDialogProps) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
-  const [showChat, setShowChat] = useState(false);
+  const [contactingSupport, setContactingSupport] = useState(false);
 
-  // جلب طلب السلة الحالي للمستخدم
+  // Check for existing pending request
   const { data: existingRequest, isLoading } = useQuery({
     queryKey: ['cart-request', user?.id],
     queryFn: async () => {
@@ -46,7 +50,7 @@ export default function CartRequestDialog({
         .from('cart_requests')
         .select('*')
         .eq('user_id', user.id)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'adjusted'])
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -57,35 +61,37 @@ export default function CartRequestDialog({
     enabled: !!user && open,
   });
 
-  // إنشاء طلب سلة جديد
+  // Create cart request mutation
   const createRequestMutation = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('يجب تسجيل الدخول');
 
-      // توليد رمز السلة
-      const { data: cartCode } = await supabase.rpc('generate_cart_code');
+      // Generate unique cart code
+      const cartCode = `CART-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-      // تحويل منتجات السلة إلى JSON
-      const cartItemsJson = cartItems.map(item => ({
-        id: item.id,
+      // Prepare cart items data
+      const cartItemsData = cartItems.map(item => ({
         product_id: item.product_id,
-        custom_request_id: item.custom_request_id,
+        name_ar: item.products?.name_ar,
+        image_url: item.products?.image_url,
+        price: item.products?.price || 0,
         quantity: item.quantity,
-        product_name: item.products?.name_ar || (item as any).custom_product_requests?.product_name || 'منتج',
-        image_url: item.products?.image_url || (item as any).custom_product_requests?.image_url,
-        price: item.products?.price || (item as any).custom_product_requests?.suggested_price,
-        selected_color: (item as any).selected_color,
-        shipping_option_name_ar: (item as any).shipping_option_name_ar,
+        selected_color: item.selected_color,
+        color_image_url: item.color_image_url,
         product_option_id: item.product_option_id,
+        option_name_ar: item.product_options?.name_ar,
+        option_image_url: item.option_image_url,
+        shipping_option_name_ar: item.shipping_option_name_ar,
+        custom_request_id: item.custom_request_id,
       }));
 
       const { data, error } = await supabase
         .from('cart_requests')
         .insert({
           user_id: user.id,
-          cart_code: cartCode || `CART-${Date.now()}`,
+          cart_code: cartCode,
+          cart_items: cartItemsData,
           original_total: total,
-          cart_items: cartItemsJson,
           status: 'pending',
         })
         .select()
@@ -113,9 +119,70 @@ export default function CartRequestDialog({
     }
   };
 
-  const handleContactSupport = () => {
-    onOpenChange(false);
-    setShowChat(true);
+  const handleContactSupport = async () => {
+    if (!user || !existingRequest) return;
+    
+    setContactingSupport(true);
+    
+    try {
+      // Check if support conversation exists
+      const { data: existing } = await supabase
+        .from("listing_conversations")
+        .select("id")
+        .or(`and(buyer_id.eq.${user.id},seller_id.eq.${SUPPORT_USER_ID}),and(buyer_id.eq.${SUPPORT_USER_ID},seller_id.eq.${user.id})`)
+        .maybeSingle();
+
+      let conversationId: string;
+
+      if (existing) {
+        conversationId = existing.id;
+      } else {
+        // Create new support conversation
+        const convCode = `SUPPORT-${Date.now().toString(36).toUpperCase()}`;
+        const { data: newConv, error } = await supabase
+          .from("listing_conversations")
+          .insert([{
+            buyer_id: user.id,
+            seller_id: SUPPORT_USER_ID,
+            listing_id: SUPPORT_USER_ID,
+            conversation_code: convCode,
+            status: "open",
+          }])
+          .select("id")
+          .single();
+
+        if (error) throw error;
+        conversationId = newConv.id;
+      }
+
+      // Send cart request message
+      const cartMessage = `🛒 طلب تعديل سلة التسوق
+
+📋 رمز السلة: ${existingRequest.cart_code}
+💰 المبلغ الأصلي: ${formatPrice(existingRequest.original_total)} د.ع
+
+أرجو مراجعة السلة وتعديل السعر`;
+
+      await supabase.from("listing_messages").insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        content: cartMessage,
+      });
+
+      // Update conversation timestamp
+      await supabase.from("listing_conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", conversationId);
+
+      onOpenChange(false);
+      navigate(`/community/messages?auto_open=${conversationId}`);
+      toast.success('تم إرسال طلب السلة للدعم');
+    } catch (error) {
+      console.error('Error contacting support:', error);
+      toast.error('فشل التواصل مع الدعم');
+    } finally {
+      setContactingSupport(false);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -132,37 +199,37 @@ export default function CartRequestDialog({
   };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-primary" />
-              رمز السلة
-            </DialogTitle>
-            <DialogDescription>
-              أنشئ رمزاً لسلتك للتواصل مع الدعم لتعديل الأسعار
-            </DialogDescription>
-          </DialogHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md" dir="rtl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <ShoppingCart className="h-5 w-5 text-primary" />
+            رمز السلة
+          </DialogTitle>
+          <DialogDescription>
+            أنشئ رمزاً لسلتك للتواصل مع الدعم لتعديل الأسعار
+          </DialogDescription>
+        </DialogHeader>
 
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : existingRequest ? (
-            <div className="space-y-4">
-              {/* رمز السلة */}
-              <div className="bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl p-5 text-center border border-primary/20">
-                <p className="text-sm text-muted-foreground mb-2">رمز السلة</p>
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-3xl font-black text-primary tracking-widest">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : existingRequest ? (
+          <div className="space-y-4">
+            {/* Existing request */}
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">رمز السلة:</span>
+                <div className="flex items-center gap-2">
+                  <code className="bg-primary/10 text-primary px-3 py-1 rounded font-mono text-sm">
                     {existingRequest.cart_code}
-                  </span>
+                  </code>
                   <Button
-                    variant="ghost"
                     size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
                     onClick={copyCode}
-                    className="h-9 w-9 rounded-full hover:bg-primary/20"
                   >
                     {copied ? (
                       <Check className="h-4 w-4 text-green-500" />
@@ -173,81 +240,72 @@ export default function CartRequestDialog({
                 </div>
               </div>
 
-              {/* حالة الطلب */}
-              <div className="flex items-center justify-between p-3 bg-card rounded-lg border">
+              <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">الحالة:</span>
                 {getStatusBadge(existingRequest.status)}
               </div>
 
-              {/* الأسعار */}
-              <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">الإجمالي الأصلي:</span>
-                  <span className="font-bold">{formatPrice(existingRequest.original_total)} د.ع</span>
-                </div>
-                {existingRequest.adjusted_total && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">الإجمالي بعد التعديل:</span>
-                    <span className="font-bold text-green-600 text-lg">{formatPrice(existingRequest.adjusted_total)} د.ع</span>
-                  </div>
-                )}
-                {existingRequest.admin_notes && (
-                  <div className="mt-3 p-3 bg-primary/5 rounded-lg border border-primary/20">
-                    <p className="text-xs text-muted-foreground mb-1">ملاحظات الإدارة:</p>
-                    <p className="text-sm font-medium">{existingRequest.admin_notes}</p>
-                  </div>
-                )}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">المبلغ الأصلي:</span>
+                <span className="font-semibold">{formatPrice(existingRequest.original_total)} د.ع</span>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <ShoppingCart className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="font-semibold mb-2">لم تنشئ رمزاً لسلتك بعد</h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                الإجمالي الحالي: <span className="font-bold text-primary text-lg">{formatPrice(total)} د.ع</span>
-              </p>
-            </div>
-          )}
 
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            {!existingRequest ? (
+              {existingRequest.adjusted_total && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">المبلغ المعدّل:</span>
+                  <span className="font-semibold text-green-600">{formatPrice(existingRequest.adjusted_total)} د.ع</span>
+                </div>
+              )}
+            </div>
+
+            <Button
+              className="w-full gap-2"
+              onClick={handleContactSupport}
+              disabled={contactingSupport}
+            >
+              {contactingSupport ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <MessageCircle className="h-4 w-4" />
+              )}
+              التواصل مع الدعم
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* New request */}
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">عدد المنتجات:</span>
+                <span className="font-semibold">{cartItems.length}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">المبلغ الإجمالي:</span>
+                <span className="font-semibold">{formatPrice(total)} د.ع</span>
+              </div>
+            </div>
+
+            <p className="text-sm text-muted-foreground">
+              سيتم إنشاء رمز خاص بسلتك يمكنك مشاركته مع فريق الدعم لطلب تعديل الأسعار أو الاستفسار.
+            </p>
+
+            <DialogFooter>
               <Button
                 onClick={() => createRequestMutation.mutate()}
                 disabled={createRequestMutation.isPending || cartItems.length === 0}
-                className="w-full"
+                className="w-full gap-2"
               >
                 {createRequestMutation.isPending ? (
-                  <>
-                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                    جاري الإنشاء...
-                  </>
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  'إنشاء رمز السلة'
+                  <ShoppingCart className="h-4 w-4" />
                 )}
+                إنشاء رمز السلة
               </Button>
-            ) : (
-              <Button
-                onClick={handleContactSupport}
-                className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-              >
-                <MessageCircle className="ml-2 h-4 w-4" />
-                التواصل مع الدعم
-              </Button>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Chat Component */}
-      {showChat && (
-        <CustomerChat 
-          cartRequestCode={existingRequest?.cart_code}
-          defaultOpen={true}
-          onClose={() => setShowChat(false)}
-        />
-      )}
-    </>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
