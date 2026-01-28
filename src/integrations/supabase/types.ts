@@ -3166,6 +3166,13 @@ export type Database = {
             foreignKeyName: "orders_user_id_fkey_profiles"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_user_id_fkey_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_print_reputation"
             referencedColumns: ["user_id"]
           },
@@ -3505,6 +3512,13 @@ export type Database = {
             foreignKeyName: "print_ratings_ratee_id_fkey"
             columns: ["ratee_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_ratings_ratee_id_fkey"
+            columns: ["ratee_id"]
+            isOneToOne: false
             referencedRelation: "user_print_reputation"
             referencedColumns: ["user_id"]
           },
@@ -3513,6 +3527,13 @@ export type Database = {
             columns: ["rater_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "print_ratings_rater_id_fkey"
+            columns: ["rater_id"]
+            isOneToOne: false
+            referencedRelation: "profiles_public"
             referencedColumns: ["id"]
           },
           {
@@ -5217,6 +5238,13 @@ export type Database = {
             foreignKeyName: "user_profile_preferences_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_profile_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "user_print_reputation"
             referencedColumns: ["user_id"]
           },
@@ -5649,8 +5677,56 @@ export type Database = {
             foreignKeyName: "orders_user_id_fkey_profiles"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "profiles_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_user_id_fkey_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_print_reputation"
             referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      profiles_public: {
+        Row: {
+          active_card_frame_url: string | null
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          full_name: string | null
+          id: string | null
+          selected_frame_id: string | null
+          username: string | null
+        }
+        Insert: {
+          active_card_frame_url?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          selected_frame_id?: string | null
+          username?: string | null
+        }
+        Update: {
+          active_card_frame_url?: string | null
+          avatar_url?: string | null
+          bio?: string | null
+          created_at?: string | null
+          full_name?: string | null
+          id?: string | null
+          selected_frame_id?: string | null
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_selected_frame_id_fkey"
+            columns: ["selected_frame_id"]
+            isOneToOne: false
+            referencedRelation: "avatar_frames"
+            referencedColumns: ["id"]
           },
         ]
       }

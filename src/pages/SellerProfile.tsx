@@ -20,8 +20,9 @@ export default function SellerProfile() {
     queryKey: ["seller-profile", id],
     enabled: !!id,
     queryFn: async () => {
+      // Use profiles_public view to protect sensitive user data
       const { data, error } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id, full_name, username, avatar_url, created_at")
         .eq("id", id)
         .single();

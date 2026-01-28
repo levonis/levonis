@@ -42,8 +42,9 @@ export default function MerchantRatingsModal({ merchantId, open, onOpenChange }:
       if (!ratingsData || ratingsData.length === 0) return [];
 
       const customerIds = Array.from(new Set(ratingsData.map((r) => r.customer_id)));
+      // Use profiles_public view to protect sensitive user data
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id, full_name, avatar_url")
         .in("id", customerIds);
 

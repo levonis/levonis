@@ -58,8 +58,9 @@ export default function CommentsSection({
       const userIds = [...new Set((data || []).map(c => c.user_id))];
       if (userIds.length === 0) return [];
 
+      // Use profiles_public view to protect sensitive user data
       const { data: profiles } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id, full_name, avatar_url")
         .in("id", userIds);
 
