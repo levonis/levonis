@@ -188,7 +188,7 @@ export default function OffersListSection({
     rating_desc: "الأعلى تقييماً",
   };
 
-  // Offer Strip Card - Radically Redesigned with Professional Theme
+  // Offer Strip Card - Professional Theme with better notes visibility
   const OfferStrip = ({ offer, isMyOffer = false }: { offer: MerchantOffer; isMyOffer?: boolean }) => {
     const isBestPrice = offer.price_iqd === lowestPrice && !acceptedOfferId;
     const isThisAccepted = acceptedOfferId === offer.id;
@@ -320,31 +320,35 @@ export default function OffersListSection({
                   <span>{offer.material_type === 'filament' ? 'FDM' : 'SLA'}</span>
                 </div>
               )}
+              
+              {/* Notes Badge - Always visible when there are notes */}
+              {offer.notes && (
+                <TooltipProvider delayDuration={100}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 cursor-pointer hover:bg-amber-500/25 transition-colors">
+                        <Eye className="h-3 w-3" />
+                        <span className="text-[9px] font-medium">ملاحظة</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent 
+                      side="top" 
+                      className="max-w-[250px] text-[11px] bg-popover border-border p-3 shadow-xl z-50"
+                    >
+                      <p className="font-bold text-foreground mb-1.5 text-xs flex items-center gap-1.5">
+                        <Eye className="h-3 w-3 text-amber-500" />
+                        ملاحظات التاجر:
+                      </p>
+                      <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{offer.notes}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </div>
           </div>
 
           {/* Right: Actions Section */}
           <div className="shrink-0 flex items-center gap-1.5 px-2 border-r border-border/30">
-            {/* Notes Tooltip - Always visible when there are notes */}
-            {offer.notes && (
-              <TooltipProvider delayDuration={100}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button className="h-7 w-7 flex items-center justify-center rounded-lg text-amber-500 hover:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors border border-amber-500/20">
-                      <Eye className="h-3.5 w-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent 
-                    side="top" 
-                    className="max-w-[220px] text-[11px] bg-popover border-border p-3 shadow-xl"
-                  >
-                    <p className="font-medium text-foreground mb-1 text-xs">ملاحظات التاجر:</p>
-                    <p className="text-muted-foreground leading-relaxed">{offer.notes}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-
             {/* Message Button */}
             <button
               className="h-7 w-7 flex items-center justify-center rounded-lg text-primary hover:text-primary bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20"
@@ -363,14 +367,15 @@ export default function OffersListSection({
               <ExternalLink className="h-3.5 w-3.5" />
             </button>
 
-            {/* Customer: Accept Button */}
+            {/* Customer: Accept Button - ALWAYS VISIBLE for customer when not accepted */}
             {isCustomer && !isAccepted && (
               <Button
                 size="sm"
                 className="h-7 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                 onClick={() => handleAccept(offer)}
               >
-                قبول العرض
+                <CheckCircle className="h-3 w-3 ml-1" />
+                قبول
               </Button>
             )}
 
@@ -384,7 +389,7 @@ export default function OffersListSection({
                   onClick={() => handleEdit(offer)}
                 >
                   <Edit3 className="h-3 w-3" />
-                  تعديل السعر
+                  تعديل
                 </Button>
               ) : hasEdited ? (
                 <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-muted/50 border border-border/50 text-[9px] text-muted-foreground font-medium">
@@ -399,12 +404,32 @@ export default function OffersListSection({
     );
   };
 
-  // Merchant Pricing Button - 3 States (when no offer exists)
+  // Merchant Pricing Button - Shows edit if offer exists
   const MerchantPricingButton = () => {
     if (!isMerchant || isAccepted) return null;
     
     if (myOffer) {
-      // Already has offer - states handled in OfferStrip
+      const canEdit = (myOffer.edit_count ?? 0) < 1;
+      const hasEdited = (myOffer.edit_count ?? 0) >= 1;
+      
+      if (canEdit) {
+        return (
+          <Button
+            className="w-full h-9 text-xs font-bold bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600"
+            onClick={() => handleEdit(myOffer)}
+          >
+            <Edit3 className="h-3.5 w-3.5 ml-1.5" />
+            تعديل السعر ({myOffer.price_iqd.toLocaleString()} د.ع)
+          </Button>
+        );
+      } else if (hasEdited) {
+        return (
+          <div className="w-full h-9 rounded-lg bg-muted/50 border border-border/50 flex items-center justify-center gap-2 text-xs text-muted-foreground font-medium">
+            <Lock className="h-3.5 w-3.5" />
+            تم التسعير ({myOffer.price_iqd.toLocaleString()} د.ع) - لا يمكن التعديل
+          </div>
+        );
+      }
       return null;
     }
 

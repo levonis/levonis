@@ -106,7 +106,8 @@ function TabLoader() {
 function CommunitySettings() {
   const queryClient = useQueryClient();
   
-  const { data: settings, isLoading } = useQuery({
+  // Fetch community settings
+  const { data: communitySettings, isLoading: communityLoading } = useQuery({
     queryKey: ["community-settings"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -119,25 +120,39 @@ function CommunitySettings() {
       }, {} as Record<string, any>) || {};
     },
   });
+  
+  // Fetch platform commission rate from default_settings (the actual one used in offers)
+  const { data: platformCommission } = useQuery({
+    queryKey: ["platform-commission"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("default_settings")
+        .select("setting_value")
+        .eq("setting_key", "platform_commission_rate")
+        .maybeSingle();
+      return data?.setting_value as { rate: number } | null;
+    },
+  });
 
   const [merchantFee, setMerchantFee] = useState<number>(25000);
   const [autoDeleteDays, setAutoDeleteDays] = useState<number>(7);
   const [maxRequestsPerDay, setMaxRequestsPerDay] = useState<number>(5);
-  const [commissionRate, setCommissionRate] = useState<number>(5);
+  const [commissionRate, setCommissionRate] = useState<number>(0.7);
   const [settingsInitialized, setSettingsInitialized] = useState(false);
 
   // Sync with fetched settings - only once when data loads
-  if (settings && !settingsInitialized) {
-    setMerchantFee(settings.merchant_registration_fee?.amount || 25000);
-    setAutoDeleteDays(settings.rejected_application_auto_delete_days?.days || 7);
-    setMaxRequestsPerDay(settings.max_customer_requests_per_day?.limit || 5);
-    setCommissionRate(settings.commission_rate?.percent || 5);
+  if (communitySettings && platformCommission && !settingsInitialized) {
+    setMerchantFee(communitySettings.merchant_registration_fee?.amount || 25000);
+    setAutoDeleteDays(communitySettings.rejected_application_auto_delete_days?.days || 7);
+    setMaxRequestsPerDay(communitySettings.max_customer_requests_per_day?.limit || 5);
+    // Use the actual platform commission rate (stored as decimal like 0.007 = 0.7%)
+    setCommissionRate((platformCommission?.rate || 0.007) * 100);
     setSettingsInitialized(true);
   }
 
   const updateSettingMutation = useMutation({
     mutationFn: async ({ key, value }: { key: string; value: any }) => {
-      // First try to update
+      // First try to update in community_settings
       const { data: existing } = await supabase
         .from("community_settings")
         .select("id")
@@ -164,6 +179,46 @@ function CommunitySettings() {
     },
     onError: () => {
       toast.error("فشل حفظ الإعداد");
+    },
+  });
+  
+  // Separate mutation for platform commission (stored in default_settings)
+  const updateCommissionMutation = useMutation({
+    mutationFn: async (ratePercent: number) => {
+      const rateDecimal = ratePercent / 100; // Convert 0.7% to 0.007
+      
+      // Check if exists
+      const { data: existing } = await supabase
+        .from("default_settings")
+        .select("id")
+        .eq("setting_key", "platform_commission_rate")
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("default_settings")
+          .update({ 
+            setting_value: { rate: rateDecimal },
+            updated_at: new Date().toISOString() 
+          })
+          .eq("setting_key", "platform_commission_rate");
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("default_settings")
+          .insert({ 
+            setting_key: "platform_commission_rate", 
+            setting_value: { rate: rateDecimal } 
+          });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["platform-commission"] });
+      toast.success("تم حفظ نسبة العمولة");
+    },
+    onError: () => {
+      toast.error("فشل حفظ نسبة العمولة");
     },
   });
 
@@ -212,6 +267,8 @@ function CommunitySettings() {
     },
   });
 
+  const isLoading = communityLoading;
+
   if (isLoading) {
     return <TabLoader />;
   }
@@ -256,7 +313,7 @@ function CommunitySettings() {
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
-            القيمة الحالية: {(settings?.merchant_registration_fee?.amount || 25000).toLocaleString()} د.ع
+            القيمة الحالية: {(communitySettings?.merchant_registration_fee?.amount || 25000).toLocaleString()} د.ع
           </p>
         </CardContent>
       </Card>
@@ -367,11 +424,8 @@ function CommunitySettings() {
               />
             </div>
             <Button
-              onClick={() => updateSettingMutation.mutate({
-                key: "commission_rate",
-                value: { percent: commissionRate }
-              })}
-              disabled={updateSettingMutation.isPending}
+              onClick={() => updateCommissionMutation.mutate(commissionRate)}
+              disabled={updateCommissionMutation.isPending}
               size="sm"
               className="gap-1.5 h-9"
             >
@@ -380,7 +434,7 @@ function CommunitySettings() {
             </Button>
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
-            القيمة الحالية: {settings?.commission_rate?.percent || 5}%
+            القيمة الحالية: {((platformCommission?.rate || 0.007) * 100).toFixed(1)}%
           </p>
         </CardContent>
       </Card>
