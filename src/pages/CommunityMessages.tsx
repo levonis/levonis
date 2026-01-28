@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
-import { MessageSquare, Users, ArrowRight, Loader2 } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { MessageSquare, ArrowRight, Loader2, Headphones, Send } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { ListingConversations } from '@/components/marketplace/ListingConversations';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { ListingConversations } from '@/components/marketplace/ListingConversations';
+
+// Support account ID
+const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
 
 export default function CommunityMessages() {
   const navigate = useNavigate();
@@ -205,30 +208,7 @@ export default function CommunityMessages() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-6 pt-20 max-w-4xl">
-        {/* Header */}
-        <header className="mb-4 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-full h-9 w-9"
-              onClick={() => navigate('/community')}
-            >
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Users className="h-4 w-4 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold text-foreground">محادثات المجتمع</h1>
-                <p className="text-xs text-muted-foreground">تواصل مع التجار</p>
-              </div>
-            </div>
-          </div>
-        </header>
-
+      <main className="container mx-auto px-4 py-6 pt-20 max-w-6xl">
         {/* Loading State */}
         {(loading || creatingConversation) && (
           <div className="flex flex-col items-center justify-center py-12 gap-3">

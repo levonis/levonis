@@ -2,7 +2,7 @@ import { memo, useState, useEffect, useCallback } from 'react';
 import logoNew from '@/assets/new-logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy, Shield, Users } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
@@ -73,56 +73,31 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
   const pointsStatus = pointsSettings?.points_status || 'active';
   const showPointsMenu = pointsStatus === 'active';
 
-  // Optimized: Admin unread messages - fetch from both systems (official + community)
-  const { data: adminUnreadMessages } = useQuery({
+  // Optimized: Admin unread messages from community system only
+  const { data: adminUnreadMessages = 0 } = useQuery({
     queryKey: ['admin-unread-messages', user?.id],
     queryFn: async () => {
-      if (!isAdmin) return { total: 0, official: 0, community: 0 };
+      if (!isAdmin) return 0;
 
-      // Get official site unread messages
-      const { data: conversations } = await supabase
-        .from('conversations')
-        .select('id')
-        .limit(100);
-
-      let officialUnread = 0;
-      if (conversations && conversations.length > 0) {
-        const conversationIds = conversations.map(c => c.id);
-        const { count } = await supabase
-          .from('messages')
-          .select('*', { count: 'exact', head: true })
-          .in('conversation_id', conversationIds)
-          .neq('sender_id', user?.id || '')
-          .eq('is_read', false);
-        officialUnread = count || 0;
-      }
-
-      // Get community unread messages
+      // Get all community conversations
       const { data: communityConvs } = await supabase
         .from('listing_conversations')
         .select('id')
-        .limit(100);
+        .limit(200);
 
-      let communityUnread = 0;
-      if (communityConvs && communityConvs.length > 0) {
-        const communityConvIds = communityConvs.map(c => c.id);
-        const { count } = await supabase
-          .from('listing_messages')
-          .select('*', { count: 'exact', head: true })
-          .in('conversation_id', communityConvIds)
-          .neq('sender_id', user?.id || '')
-          .eq('is_read', false);
-        communityUnread = count || 0;
-      }
+      if (!communityConvs?.length) return 0;
 
-      return { 
-        total: officialUnread + communityUnread, 
-        official: officialUnread, 
-        community: communityUnread 
-      };
+      const { count } = await supabase
+        .from('listing_messages')
+        .select('*', { count: 'exact', head: true })
+        .in('conversation_id', communityConvs.map(c => c.id))
+        .neq('sender_id', user?.id || '')
+        .eq('is_read', false);
+      
+      return count || 0;
     },
     enabled: !!user?.id && isAdmin,
-    refetchInterval: 60000, // Check every minute
+    refetchInterval: 60000,
     staleTime: 30000,
     gcTime: 300000,
   });
@@ -273,53 +248,23 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
               )}
             </Button>
 
-            {/* Admin Chat Button - Links to unified chats */}
+            {/* Admin Chat Button - Direct link to community messages */}
             {isAdmin && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="relative rounded-full border-primary/30 hover:border-primary"
-                    title="محادثات العملاء"
-                    aria-label="محادثات العملاء"
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    {adminUnreadMessages && adminUnreadMessages.total > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
-                        {adminUnreadMessages.total > 9 ? '9+' : adminUnreadMessages.total}
-                      </span>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-background backdrop-blur-sm border-border z-50">
-                  <DropdownMenuLabel>محادثات العملاء</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate(ADMIN_ROUTES.chats)}>
-                    <MessageCircle className="ml-2 h-3.5 w-3.5" />
-                    <span>محادثات الموقع الرسمي</span>
-                    {adminUnreadMessages && adminUnreadMessages.official > 0 && (
-                      <span className="mr-auto bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full font-bold">
-                        {adminUnreadMessages.official}
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/admin/community-messages')}>
-                    <Users className="ml-2 h-3.5 w-3.5" />
-                    <span>محادثات مجتمع ليفو</span>
-                    {adminUnreadMessages && adminUnreadMessages.community > 0 && (
-                      <span className="mr-auto bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
-                        {adminUnreadMessages.community}
-                      </span>
-                    )}
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate(ADMIN_ROUTES.levoCommunity)}>
-                    <Shield className="ml-2 h-3.5 w-3.5" />
-                    <span>إدارة مجتمع ليفو</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => navigate('/community/messages')}
+                className="relative rounded-full border-primary/30 hover:border-primary"
+                title="محادثات العملاء"
+                aria-label="محادثات العملاء"
+              >
+                <MessageCircle className="h-4 w-4" />
+                {adminUnreadMessages > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
+                    {adminUnreadMessages > 9 ? '9+' : adminUnreadMessages}
+                  </span>
+                )}
+              </Button>
             )}
 
             {user ? (
