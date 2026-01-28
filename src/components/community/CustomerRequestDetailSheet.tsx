@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Package, Palette, Ruler, Clock, DollarSign, Layers,
+  Package, Palette, Ruler, Clock, Layers,
   Link2, Video, ChevronLeft, ChevronRight, MapPin, Hash,
   Pencil, Trash2, ExternalLink
 } from "lucide-react";
@@ -33,7 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import AcceptOfferDialog from "./AcceptOfferDialog";
-import MerchantOfferStrip from "./MerchantOfferStrip";
+import OffersListSection from "./OffersListSection";
 
 interface PrintRequest {
   id: string;
@@ -334,37 +334,15 @@ export default function CustomerRequestDetailSheet({
 
             <Separator />
 
-            {/* Offers Section */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h4 className="font-bold text-xs flex items-center gap-1.5">
-                  <DollarSign className="h-3 w-3 text-primary" />
-                  عروض التجار
-                  <span className="text-[10px] font-normal text-muted-foreground">({offers.length})</span>
-                </h4>
-              </div>
-
-              {offers.length === 0 ? (
-                <div className="text-center py-4 text-muted-foreground text-[10px]">
-                  لا توجد عروض بعد
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {offers.map((offer: any, index: number) => (
-                    <MerchantOfferStrip
-                      key={offer.id}
-                      offer={offer}
-                      isOwner={isOwner}
-                      isAccepted={offer.id === request.accepted_offer_id}
-                      isBestPrice={index === 0 && !request.accepted_offer_id}
-                      requestId={request.id}
-                      customerId={request.user_id}
-                      onRefetch={refetchOffers}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            {/* Offers Section with Pagination & Filtering */}
+            <OffersListSection
+              offers={offers}
+              requestId={request.id}
+              customerId={request.user_id}
+              acceptedOfferId={request.accepted_offer_id}
+              currentUserId={user?.id}
+              onRefetch={refetchOffers}
+            />
           </div>
 
           {/* Footer Actions */}
