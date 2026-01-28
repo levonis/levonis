@@ -119,7 +119,10 @@ export default function PrintRequestDetailModal({
           notes,
           status,
           created_at,
-          offer_sent_at
+          offer_sent_at,
+          edit_count,
+          material_type,
+          material_subtypes
         `)
         .eq("request_id", request!.id)
         .order("created_at", { ascending: true });
@@ -391,6 +394,7 @@ export default function PrintRequestDetailModal({
                           isAccepted={myOffer.id === request.accepted_offer_id}
                           requestId={request.id}
                           customerId={request.user_id}
+                          onRefetch={refetchOffers}
                         />
                       </div>
                     )}
@@ -409,6 +413,7 @@ export default function PrintRequestDetailModal({
                                   isAccepted={offer.id === request.accepted_offer_id}
                                   requestId={request.id}
                                   customerId={request.user_id}
+                                  onRefetch={refetchOffers}
                                 />
                               </div>
                             ))}
