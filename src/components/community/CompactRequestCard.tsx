@@ -225,35 +225,35 @@ export default function CompactRequestCard({
 
         {/* Action Buttons */}
         <div className="flex gap-1.5">
-          {/* Chat Button */}
+          {/* Chat Button - Show for everyone */}
           <Button
             size="sm"
             variant="ghost"
-            className="flex-1 text-[9px] h-7 px-2 bg-white/5 hover:bg-white/10 text-muted-foreground"
+            className={`text-[9px] h-7 px-2 bg-white/5 hover:bg-white/10 text-muted-foreground ${isMerchant && !isOwner && !isAccepted ? 'flex-none w-auto' : 'flex-1'}`}
             onClick={handleChat}
           >
             <MessageSquare className="h-3 w-3 ml-0.5" />
             تواصل
           </Button>
 
-          {/* Price Button - Only for merchants who don't own the request */}
+          {/* Price Button - ONLY for merchants who don't own the request */}
           {isMerchant && !isOwner && !isAccepted && onAddOffer && (
             myOffer ? (
               <div
-                className="flex-1 flex items-center justify-center gap-1 text-[9px] h-7 px-2 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
+                className="flex-1 flex items-center justify-center gap-1 text-[10px] h-7 px-3 rounded-lg bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/40 text-emerald-400"
                 onClick={(e) => e.stopPropagation()}
               >
                 <CheckCircle2 className="h-3 w-3" />
-                <span className="font-bold">{(myOffer.price_iqd / 1000).toFixed(0)}k</span>
+                <span className="font-bold">{(myOffer.price_iqd / 1000).toFixed(0)}k د.ع</span>
               </div>
             ) : (
               <Button
                 size="sm"
-                className="flex-1 text-[9px] h-7 px-3 font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25"
+                className="flex-1 text-[10px] h-7 px-4 font-bold bg-gradient-to-r from-primary via-emerald-500 to-teal-500 hover:from-primary/90 hover:via-emerald-500/90 hover:to-teal-500/90 text-white shadow-lg shadow-primary/30 rounded-lg"
                 onClick={handlePrice}
               >
-                <DollarSign className="h-3 w-3 ml-0.5" />
-                تسعير
+                <DollarSign className="h-3.5 w-3.5 ml-1" />
+                سعّر الآن
               </Button>
             )
           )}
