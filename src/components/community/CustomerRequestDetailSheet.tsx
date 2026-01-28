@@ -2,9 +2,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Package, Palette, Ruler, Clock, DollarSign, Layers, Eye,
-  Calendar, Link2, Video, ChevronLeft, ChevronRight, MapPin, Hash,
-  Pencil, Trash2, MessageCircle, ExternalLink, CheckCircle, Star, Send, User
+  Package, Palette, Ruler, Clock, DollarSign, Layers,
+  Link2, Video, ChevronLeft, ChevronRight, MapPin, Hash,
+  Pencil, Trash2, ExternalLink
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -34,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import AcceptOfferDialog from "./AcceptOfferDialog";
+import MerchantOfferStrip from "./MerchantOfferStrip";
 
 interface PrintRequest {
   id: string;
@@ -90,7 +90,7 @@ export default function CustomerRequestDetailSheet({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("print_offers")
-        .select("id, trader_id, price_iqd, duration_days, grams, notes, status, created_at")
+        .select("id, trader_id, price_iqd, duration_days, grams, notes, status, created_at, edit_count")
         .eq("request_id", request!.id)
         .order("created_at", { ascending: true });
 
@@ -99,25 +99,35 @@ export default function CustomerRequestDetailSheet({
       const traderIds = data?.map((o) => o.trader_id) || [];
       if (traderIds.length === 0) return [];
 
+      // Fetch merchant applications by user_id (trader_id)
       const [merchantsRes, ratingsRes] = await Promise.all([
         supabase
-          .from("merchant_public_profiles")
-          .select("id, display_name, store_image_url, badge_tier, is_verified")
-          .in("id", traderIds),
+          .from("merchant_applications")
+          .select("id, user_id, display_name, store_image_url, status")
+          .in("user_id", traderIds)
+          .eq("status", "approved"),
         supabase
           .from("merchant_rating_stats")
-          .select("merchant_id, average_rating, total_ratings")
-          .in("merchant_id", traderIds),
+          .select("merchant_id, average_rating, total_ratings"),
       ]);
 
-      const merchantsMap = new Map(merchantsRes.data?.map((m) => [m.id, m]) || []);
+      const merchantByUserId = new Map(merchantsRes.data?.map((m) => [m.user_id, m]) || []);
       const ratingsMap = new Map(ratingsRes.data?.map((r) => [r.merchant_id, r]) || []);
 
-      return data.map((offer) => ({
-        ...offer,
-        merchant: merchantsMap.get(offer.trader_id),
-        rating: ratingsMap.get(offer.trader_id),
-      }));
+      return data.map((offer) => {
+        const merchant = merchantByUserId.get(offer.trader_id);
+        return {
+          ...offer,
+          merchant: merchant ? {
+            id: merchant.id,
+            display_name: merchant.display_name,
+            store_image_url: merchant.store_image_url,
+            is_verified: true,
+            badge_tier: null,
+          } : null,
+          rating: merchant ? ratingsMap.get(merchant.id) || null : null,
+        };
+      });
     },
   });
 
@@ -339,83 +349,19 @@ export default function CustomerRequestDetailSheet({
                   لا توجد عروض بعد
                 </div>
               ) : (
-                <div className="space-y-1.5">
-                  {offers.map((offer: any, index: number) => {
-                    const isOfferAccepted = offer.id === request.accepted_offer_id;
-                    const isBestPrice = index === 0 && !request.accepted_offer_id;
-                    
-                    return (
-                      <div
-                        key={offer.id}
-                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all ${
-                          isOfferAccepted
-                            ? "bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/40"
-                            : isBestPrice
-                            ? "bg-gradient-to-r from-[hsl(160_52%_18%)] to-[hsl(160_48%_14%)] border border-primary/30"
-                            : "bg-[hsl(160_50%_12%)] border border-white/5 hover:border-white/10"
-                        }`}
-                      >
-                        {/* Avatar */}
-                        <Avatar className="h-7 w-7 shrink-0 border border-white/10">
-                          <AvatarImage src={offer.merchant?.store_image_url} />
-                          <AvatarFallback className="text-[8px] bg-primary/20 text-primary">
-                            <User className="h-3 w-3" />
-                          </AvatarFallback>
-                        </Avatar>
-
-                        {/* Name & Badges */}
-                        <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                          <span className="font-medium text-[10px] truncate text-foreground max-w-[70px]">
-                            {offer.merchant?.display_name || "تاجر"}
-                          </span>
-                          {isBestPrice && (
-                            <span className="text-[7px] px-1 py-0.5 rounded bg-primary/20 text-primary font-bold shrink-0">
-                              الأفضل
-                            </span>
-                          )}
-                          {isOfferAccepted && (
-                            <span className="text-[7px] px-1 py-0.5 rounded bg-primary text-white font-bold shrink-0">
-                              مقبول
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Duration */}
-                        <span className="text-[9px] text-muted-foreground shrink-0">{offer.duration_days}ي</span>
-
-                        {/* Price */}
-                        <div className="shrink-0 px-2 py-1 rounded-md bg-primary/20 border border-primary/30">
-                          <span className="font-bold text-[11px] text-primary">
-                            {(offer.price_iqd / 1000).toFixed(0)}k
-                          </span>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-0.5 shrink-0">
-                          <button
-                            className="h-6 w-6 flex items-center justify-center rounded text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
-                            onClick={() => handleStartChat(offer.trader_id)}
-                          >
-                            <Send className="h-3 w-3" />
-                          </button>
-                          <button
-                            className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-                            onClick={() => navigate(`/store/${offer.trader_id}`)}
-                          >
-                            <ExternalLink className="h-3 w-3" />
-                          </button>
-                          {!isAccepted && (
-                            <button
-                              className="h-6 px-2 flex items-center justify-center rounded text-[9px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                              onClick={() => setAcceptOfferDialog(offer)}
-                            >
-                              قبول
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="space-y-2">
+                  {offers.map((offer: any, index: number) => (
+                    <MerchantOfferStrip
+                      key={offer.id}
+                      offer={offer}
+                      isOwner={isOwner}
+                      isAccepted={offer.id === request.accepted_offer_id}
+                      isBestPrice={index === 0 && !request.accepted_offer_id}
+                      requestId={request.id}
+                      customerId={request.user_id}
+                      onRefetch={refetchOffers}
+                    />
+                  ))}
                 </div>
               )}
             </div>

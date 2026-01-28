@@ -14,15 +14,10 @@ import {
   ChevronLeft,
   ChevronRight,
   X,
-  User,
-  Star,
-  CheckCircle2,
   Plus,
   Play,
   Edit3,
   Sparkles,
-  Send,
-  Tag,
   Lock,
 } from "lucide-react";
 
@@ -31,10 +26,10 @@ import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import AcceptOfferDialog from "@/components/community/AcceptOfferDialog";
 import EditOfferDialog from "@/components/community/EditOfferDialog";
+import MerchantOfferStrip from "@/components/community/MerchantOfferStrip";
 import SocialActions from "@/components/community/SocialActions";
 import CommentsSection from "@/components/community/CommentsSection";
 
@@ -138,17 +133,37 @@ export default function RequestDetailModal({
       const traderIds = [...new Set((data || []).map((o) => o.trader_id))];
       if (traderIds.length === 0) return [];
 
+      // Fetch merchant applications by user_id (trader_id)
       const { data: merchants } = await supabase
-        .from("merchant_public_profiles")
-        .select("id, display_name, store_image_url, is_verified, badge_tier")
-        .in("id", traderIds);
+        .from("merchant_applications")
+        .select("id, user_id, display_name, store_image_url, status")
+        .in("user_id", traderIds)
+        .eq("status", "approved");
 
-      const merchantMap = new Map((merchants || []).map((m) => [m.id, m]));
+      // Fetch ratings
+      const merchantIds = (merchants || []).map(m => m.id);
+      const { data: ratings } = await supabase
+        .from("merchant_rating_stats")
+        .select("merchant_id, average_rating, total_ratings")
+        .in("merchant_id", merchantIds);
 
-      return (data || []).map((offer) => ({
-        ...offer,
-        merchant: merchantMap.get(offer.trader_id) || null,
-      })) as PrintOffer[];
+      const merchantByUserId = new Map((merchants || []).map((m) => [m.user_id, m]));
+      const ratingsMap = new Map((ratings || []).map((r) => [r.merchant_id, r]));
+
+      return (data || []).map((offer) => {
+        const merchant = merchantByUserId.get(offer.trader_id);
+        return {
+          ...offer,
+          merchant: merchant ? {
+            id: merchant.id, // merchant_applications.id for store URL
+            display_name: merchant.display_name,
+            store_image_url: merchant.store_image_url,
+            is_verified: true, // approved merchants are verified
+            badge_tier: null,
+          } : null,
+          rating: merchant ? ratingsMap.get(merchant.id) || null : null,
+        };
+      }) as PrintOffer[];
     },
   });
 
@@ -430,97 +445,20 @@ export default function RequestDetailModal({
                     )}
                   </div>
                   
-                  {/* Ultra-Compact Horizontal Offer Strips */}
-                  <div className="space-y-1.5">
-                    {offers.map((offer, index) => {
-                      const isAcceptedOffer = request.accepted_offer_id === offer.id;
-                      const isBestPrice = index === 0 && !request.accepted_offer_id;
-                      
-                      return (
-                        <div
-                          key={offer.id}
-                          className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all ${
-                            isAcceptedOffer
-                              ? "bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/40"
-                              : isBestPrice
-                              ? "bg-gradient-to-r from-[hsl(160_52%_18%)] to-[hsl(160_48%_14%)] border border-primary/30"
-                              : "bg-[hsl(160_50%_12%)] border border-white/5 hover:border-white/10"
-                          }`}
-                        >
-                          {/* Avatar - Smaller */}
-                          <Avatar className="h-7 w-7 shrink-0 border border-white/10">
-                            <AvatarImage src={offer.merchant?.store_image_url || undefined} />
-                            <AvatarFallback className="text-[8px] bg-primary/20 text-primary">
-                              <User className="h-3 w-3" />
-                            </AvatarFallback>
-                          </Avatar>
-
-                          {/* Merchant Name & Badges */}
-                          <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                            <span className="font-medium text-[10px] truncate text-foreground max-w-[80px]">
-                              {offer.merchant?.display_name || "تاجر"}
-                            </span>
-                            {offer.merchant?.is_verified && (
-                              <CheckCircle2 className="h-2.5 w-2.5 text-primary shrink-0" />
-                            )}
-                            {isBestPrice && (
-                              <span className="text-[7px] px-1 py-0.5 rounded bg-primary/20 text-primary font-bold shrink-0">
-                                الأفضل
-                              </span>
-                            )}
-                            {isAcceptedOffer && (
-                              <span className="text-[7px] px-1 py-0.5 rounded bg-primary text-white font-bold shrink-0">
-                                مقبول
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Duration & Material - Compact */}
-                          <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground shrink-0">
-                            <span>{offer.duration_days}ي</span>
-                            {offer.material_type && (
-                              <span className={offer.material_type === 'filament' ? 'text-blue-400' : 'text-purple-400'}>
-                                {offer.material_type === "filament" ? "FDM" : "SLA"}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Price - Highlighted */}
-                          <div className="shrink-0 px-2 py-1 rounded-md bg-primary/20 border border-primary/30">
-                            <span className="font-bold text-[11px] text-primary">
-                              {(offer.price_iqd / 1000).toFixed(0)}k
-                            </span>
-                          </div>
-
-                          {/* Actions - Icon buttons */}
-                          <div className="flex items-center gap-0.5 shrink-0">
-                            <button
-                              className="h-6 w-6 flex items-center justify-center rounded text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
-                              onClick={() => handleChatWithMerchant(offer.trader_id)}
-                            >
-                              <Send className="h-3 w-3" />
-                            </button>
-                            <button
-                              className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
-                              onClick={() => {
-                                navigate(`/store/${offer.trader_id}`);
-                                onOpenChange(false);
-                              }}
-                            >
-                              <ExternalLink className="h-3 w-3" />
-                            </button>
-                            {isOwner && !isAccepted && (
-                              <button
-                                className="h-6 px-2 flex items-center justify-center rounded text-[9px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-                                onClick={() => handleAcceptOffer(offer)}
-                              >
-                                قبول
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                  {/* Offer Strips using MerchantOfferStrip Component */}
+                  <div className="space-y-2">
+                    {offers.map((offer, index) => (
+                      <MerchantOfferStrip
+                        key={offer.id}
+                        offer={offer}
+                        isOwner={isOwner}
+                        isAccepted={request.accepted_offer_id === offer.id}
+                        isBestPrice={index === 0 && !request.accepted_offer_id}
+                        requestId={request.id}
+                        customerId={request.user_id}
+                        onRefetch={refetchOffers}
+                      />
+                    ))}
                   </div>
                 </div>
               )}

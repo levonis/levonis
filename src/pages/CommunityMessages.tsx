@@ -22,6 +22,7 @@ export default function CommunityMessages() {
   const merchantId = searchParams.get('merchant_id');
   const productTitle = searchParams.get('product_title');
   const productUrl = searchParams.get('product_url');
+  const requestId = searchParams.get('request_id');
 
   // Create or find existing conversation with merchant
   const createConversationMutation = useMutation({
@@ -41,6 +42,17 @@ export default function CommunityMessages() {
 
       const sellerId = merchantApp.user_id;
 
+      // If request_id is provided, fetch request details
+      let requestDetails: { title: string; description: string; size: string; colors: string } | null = null;
+      if (requestId) {
+        const { data: reqData } = await supabase
+          .from('community_print_requests')
+          .select('title, description, size, colors')
+          .eq('id', requestId)
+          .maybeSingle();
+        requestDetails = reqData;
+      }
+
       // Check if conversation already exists between buyer and seller
       const { data: existingConv } = await supabase
         .from('listing_conversations')
@@ -50,8 +62,18 @@ export default function CommunityMessages() {
         .maybeSingle();
 
       if (existingConv) {
-        // Conversation exists - send initial message if product info provided
-        if (productTitle && productUrl) {
+        // Conversation exists - send initial message if product or request info provided
+        if (requestDetails) {
+          await supabase.from('listing_messages').insert({
+            conversation_id: existingConv.id,
+            sender_id: user.id,
+            content: `📦 أهلاً، أريد التواصل بخصوص طلب الطباعة:\n\n📝 العنوان: ${requestDetails.title}\n📐 الحجم: ${requestDetails.size}\n🎨 الألوان: ${requestDetails.colors}\n\n${requestDetails.description}`,
+          });
+          
+          await supabase.from('listing_conversations')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', existingConv.id);
+        } else if (productTitle && productUrl) {
           await supabase.from('listing_messages').insert({
             conversation_id: existingConv.id,
             sender_id: user.id,
@@ -81,10 +103,15 @@ export default function CommunityMessages() {
 
       if (convError) throw convError;
 
-      // Send initial message with product info if available
-      const initialMessage = productTitle && productUrl
-        ? `🛒 أهلاً، أنا مهتم بالمنتج:\n${productTitle}\n\n🔗 ${productUrl}`
-        : `أهلاً، أريد التواصل معكم بخصوص منتجاتكم.`;
+      // Send initial message with request or product info
+      let initialMessage: string;
+      if (requestDetails) {
+        initialMessage = `📦 أهلاً، أريد التواصل بخصوص طلب الطباعة:\n\n📝 العنوان: ${requestDetails.title}\n📐 الحجم: ${requestDetails.size}\n🎨 الألوان: ${requestDetails.colors}\n\n${requestDetails.description}`;
+      } else if (productTitle && productUrl) {
+        initialMessage = `🛒 أهلاً، أنا مهتم بالمنتج:\n${productTitle}\n\n🔗 ${productUrl}`;
+      } else {
+        initialMessage = `أهلاً، أريد التواصل معكم بخصوص منتجاتكم.`;
+      }
 
       await supabase.from('listing_messages').insert({
         conversation_id: newConv.id,
