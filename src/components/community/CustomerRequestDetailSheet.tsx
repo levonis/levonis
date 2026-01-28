@@ -325,18 +325,21 @@ export default function CustomerRequestDetailSheet({
             <Separator />
 
             {/* Offers Section */}
-            <div className="space-y-3">
-              <h4 className="font-bold text-xs flex items-center gap-1.5">
-                <DollarSign className="h-3.5 w-3.5 text-primary" />
-                عروض التجار ({offers.length})
-              </h4>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-xs flex items-center gap-1.5">
+                  <DollarSign className="h-3 w-3 text-primary" />
+                  عروض التجار
+                  <span className="text-[10px] font-normal text-muted-foreground">({offers.length})</span>
+                </h4>
+              </div>
 
               {offers.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground text-xs">
+                <div className="text-center py-4 text-muted-foreground text-[10px]">
                   لا توجد عروض بعد
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {offers.map((offer: any, index: number) => {
                     const isOfferAccepted = offer.id === request.accepted_offer_id;
                     const isBestPrice = index === 0 && !request.accepted_offer_id;
@@ -344,86 +347,70 @@ export default function CustomerRequestDetailSheet({
                     return (
                       <div
                         key={offer.id}
-                        className={`relative flex items-center gap-3 rounded-xl border p-2.5 transition-all ${
+                        className={`flex items-center gap-2 px-2 py-1.5 rounded-lg transition-all ${
                           isOfferAccepted
-                            ? "border-green-500/50 bg-gradient-to-r from-green-500/10 to-transparent"
+                            ? "bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/40"
                             : isBestPrice
-                            ? "border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-transparent"
-                            : "border-white/10 bg-white/[0.02] hover:bg-white/[0.04]"
+                            ? "bg-gradient-to-r from-[hsl(160_52%_18%)] to-[hsl(160_48%_14%)] border border-primary/30"
+                            : "bg-[hsl(160_50%_12%)] border border-white/5 hover:border-white/10"
                         }`}
                       >
-                        {/* Merchant Avatar */}
-                        <Avatar className="h-9 w-9 shrink-0 border border-white/10">
+                        {/* Avatar */}
+                        <Avatar className="h-7 w-7 shrink-0 border border-white/10">
                           <AvatarImage src={offer.merchant?.store_image_url} />
-                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
-                            <User className="h-3.5 w-3.5" />
+                          <AvatarFallback className="text-[8px] bg-primary/20 text-primary">
+                            <User className="h-3 w-3" />
                           </AvatarFallback>
                         </Avatar>
 
-                        {/* Main Info */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="font-semibold text-[11px] truncate text-foreground">
-                              {offer.merchant?.display_name || "تاجر"}
+                        {/* Name & Badges */}
+                        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                          <span className="font-medium text-[10px] truncate text-foreground max-w-[70px]">
+                            {offer.merchant?.display_name || "تاجر"}
+                          </span>
+                          {isBestPrice && (
+                            <span className="text-[7px] px-1 py-0.5 rounded bg-primary/20 text-primary font-bold shrink-0">
+                              الأفضل
                             </span>
-                            {isBestPrice && (
-                              <Badge className="h-4 px-1.5 bg-amber-500/20 text-amber-300 border-0 text-[8px] gap-0.5 shrink-0">
-                                <Star className="h-2 w-2" />
-                                الأفضل
-                              </Badge>
-                            )}
-                            {isOfferAccepted && (
-                              <Badge className="h-4 px-1.5 bg-green-500 text-white border-0 text-[8px] gap-0.5 shrink-0">
-                                <CheckCircle className="h-2 w-2" />
-                                مقبول
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
-                            <span className="flex items-center gap-0.5">
-                              <Clock className="h-2.5 w-2.5" />
-                              {offer.duration_days} يوم
+                          )}
+                          {isOfferAccepted && (
+                            <span className="text-[7px] px-1 py-0.5 rounded bg-primary text-white font-bold shrink-0">
+                              مقبول
                             </span>
-                            {offer.grams && (
-                              <span className="text-cyan-400">{offer.grams}g</span>
-                            )}
-                          </div>
+                          )}
                         </div>
 
+                        {/* Duration */}
+                        <span className="text-[9px] text-muted-foreground shrink-0">{offer.duration_days}ي</span>
+
                         {/* Price */}
-                        <div className="text-center shrink-0 px-2.5 py-1 rounded-lg bg-primary/10">
-                          <p className="font-bold text-sm text-primary leading-tight">
-                            {offer.price_iqd?.toLocaleString()}
-                          </p>
-                          <p className="text-[7px] text-muted-foreground">د.ع</p>
+                        <div className="shrink-0 px-2 py-1 rounded-md bg-primary/20 border border-primary/30">
+                          <span className="font-bold text-[11px] text-primary">
+                            {(offer.price_iqd / 1000).toFixed(0)}k
+                          </span>
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-1 shrink-0">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0 text-blue-400 hover:bg-blue-500/20"
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <button
+                            className="h-6 w-6 flex items-center justify-center rounded text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
                             onClick={() => handleStartChat(offer.trader_id)}
                           >
-                            <Send className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:bg-white/10"
+                            <Send className="h-3 w-3" />
+                          </button>
+                          <button
+                            className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
                             onClick={() => navigate(`/store/${offer.trader_id}`)}
                           >
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Button>
+                            <ExternalLink className="h-3 w-3" />
+                          </button>
                           {!isAccepted && (
-                            <Button
-                              size="sm"
-                              className="h-7 px-2.5 text-[9px] bg-primary hover:bg-primary/90"
+                            <button
+                              className="h-6 px-2 flex items-center justify-center rounded text-[9px] font-bold bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
                               onClick={() => setAcceptOfferDialog(offer)}
                             >
                               قبول
-                            </Button>
+                            </button>
                           )}
                         </div>
                       </div>
