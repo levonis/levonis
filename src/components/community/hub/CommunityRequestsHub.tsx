@@ -148,9 +148,9 @@ export default function CommunityRequestsHub({
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <Skeleton key={i} className="h-36 rounded-xl" />
+          <Skeleton key={i} className="aspect-[4/3] rounded-xl" />
         ))}
       </div>
     );
@@ -185,7 +185,7 @@ export default function CommunityRequestsHub({
 
   return (
     <>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
         {displayRequests.map((request) => (
           <CompactRequestCard
             key={request.id}
