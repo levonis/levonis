@@ -69,16 +69,28 @@ export default function CommunityRequestsBrowse() {
   const [showAddOfferDialog, setShowAddOfferDialog] = useState(false);
   const [offerTargetRequest, setOfferTargetRequest] = useState<PrintRequest | null>(null);
 
-  // Check if user is a merchant
+  // Check if user is a merchant - need to join with merchant_applications
   const { data: merchantProfile } = useQuery({
     queryKey: ["my-merchant-profile", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
+      // First get merchant application for this user
+      const { data: merchantApp } = await supabase
+        .from("merchant_applications")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("status", "approved")
+        .maybeSingle();
+      
+      if (!merchantApp) return null;
+      
+      // Then get merchant public profile using the application ID
       const { data } = await supabase
         .from("merchant_public_profiles")
         .select("id, display_name")
-        .eq("id", user!.id)
+        .eq("id", merchantApp.id)
         .maybeSingle();
+      
       return data;
     },
   });
