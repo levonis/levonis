@@ -53,6 +53,8 @@ interface MerchantOffer {
   created_at: string;
   edit_count?: number;
   offer_sent_at?: string | null;
+  material_type?: string | null;
+  material_subtypes?: string[] | null;
   merchant?: {
     id?: string;
     display_name: string | null;
@@ -186,7 +188,7 @@ export default function OffersListSection({
     rating_desc: "الأعلى تقييماً",
   };
 
-  // Offer Strip Card - Radically Redesigned
+  // Offer Strip Card - Radically Redesigned with Professional Theme
   const OfferStrip = ({ offer, isMyOffer = false }: { offer: MerchantOffer; isMyOffer?: boolean }) => {
     const isBestPrice = offer.price_iqd === lowestPrice && !acceptedOfferId;
     const isThisAccepted = acceptedOfferId === offer.id;
@@ -202,17 +204,17 @@ export default function OffersListSection({
       <div
         className={`relative rounded-xl border overflow-hidden transition-all ${
           isThisAccepted
-            ? "bg-gradient-to-l from-green-500/15 via-green-500/8 to-transparent border-green-500/40"
+            ? "bg-gradient-to-l from-emerald-500/15 via-emerald-500/8 to-transparent border-emerald-500/40 dark:border-emerald-500/40"
             : isMyOffer
             ? "bg-gradient-to-l from-primary/15 via-primary/8 to-transparent border-primary/50"
             : isBestPrice
             ? "bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/30"
-            : "bg-[hsl(160_45%_11%)] border-white/5 hover:border-primary/20"
+            : "bg-card border-border/50 hover:border-primary/30"
         }`}
       >
         {/* My Offer Label */}
         {isMyOffer && (
-          <div className="absolute -top-px right-4 px-2.5 py-0.5 rounded-b-md bg-primary text-[9px] font-bold text-white z-10">
+          <div className="absolute -top-px right-4 px-2.5 py-0.5 rounded-b-md bg-primary text-[9px] font-bold text-primary-foreground z-10">
             عرضك الخاص
           </div>
         )}
@@ -220,7 +222,7 @@ export default function OffersListSection({
         <div className="flex items-stretch">
           {/* Left: Avatar Section */}
           <div 
-            className="shrink-0 w-16 flex items-center justify-center bg-black/20 cursor-pointer hover:bg-black/30 transition-colors"
+            className="shrink-0 w-16 flex items-center justify-center bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
             onClick={() => handleVisitStore(offer)}
           >
             <Avatar className="h-11 w-11 border-2 border-primary/30">
@@ -234,7 +236,7 @@ export default function OffersListSection({
           {/* Middle: Info Sections */}
           <div className="flex-1 min-w-0 py-2 px-3">
             {/* Top Row: Store Info */}
-            <div className="flex items-center gap-1.5 mb-1.5">
+            <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
               <span 
                 className="font-semibold text-[11px] truncate max-w-[90px] cursor-pointer hover:text-primary transition-colors"
                 onClick={() => handleVisitStore(offer)}
@@ -255,7 +257,7 @@ export default function OffersListSection({
               {/* Rating - Small */}
               {offer.rating && offer.rating.total_ratings > 0 && (
                 <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
-                  <Star className="h-2.5 w-2.5 fill-yellow-500 text-yellow-500" />
+                  <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" />
                   {offer.rating.average_rating.toFixed(1)}
                   <span className="opacity-50">({offer.rating.total_ratings})</span>
                 </span>
@@ -271,13 +273,13 @@ export default function OffersListSection({
 
               {/* Status Badges */}
               {isBestPrice && !isThisAccepted && (
-                <Badge className="text-[8px] px-1 py-0 h-3.5 bg-amber-500/20 text-amber-400 border-0 mr-auto">
+                <Badge className="text-[8px] px-1.5 py-0 h-4 bg-amber-500/20 text-amber-600 dark:text-amber-400 border-0 mr-auto font-bold">
                   الأفضل
                 </Badge>
               )}
               {isThisAccepted && (
-                <Badge className="text-[8px] px-1 py-0 h-3.5 bg-green-500 text-white border-0 gap-0.5 mr-auto">
-                  <CheckCircle className="h-2 w-2" />
+                <Badge className="text-[8px] px-1.5 py-0 h-4 bg-emerald-500 text-white border-0 gap-0.5 mr-auto font-bold">
+                  <CheckCircle className="h-2.5 w-2.5" />
                   مقبول
                 </Badge>
               )}
@@ -286,7 +288,7 @@ export default function OffersListSection({
             {/* Bottom Row: Main Stats */}
             <div className="flex items-center gap-2 flex-wrap">
               {/* Price - Primary */}
-              <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-primary/15 border border-primary/30">
+              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/15 border border-primary/30">
                 <span className="font-bold text-sm text-primary">
                   {offer.price_iqd.toLocaleString("ar-IQ")}
                 </span>
@@ -306,25 +308,38 @@ export default function OffersListSection({
                   <span>{offer.grams}g</span>
                 </div>
               )}
+
+              {/* Material Type Badge */}
+              {offer.material_type && (
+                <div className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded-md font-medium ${
+                  offer.material_type === 'filament' 
+                    ? 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border border-blue-500/30' 
+                    : 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
+                }`}>
+                  <Layers className="h-2.5 w-2.5" />
+                  <span>{offer.material_type === 'filament' ? 'FDM' : 'SLA'}</span>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Right: Actions Section */}
-          <div className="shrink-0 flex items-center gap-1.5 px-2 border-r border-white/5">
-            {/* Notes Tooltip */}
+          <div className="shrink-0 flex items-center gap-1.5 px-2 border-r border-border/30">
+            {/* Notes Tooltip - Always visible when there are notes */}
             {offer.notes && (
-              <TooltipProvider delayDuration={200}>
+              <TooltipProvider delayDuration={100}>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+                    <button className="h-7 w-7 flex items-center justify-center rounded-lg text-amber-500 hover:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 transition-colors border border-amber-500/20">
                       <Eye className="h-3.5 w-3.5" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent 
                     side="top" 
-                    className="max-w-[200px] text-[11px] bg-card border-border p-2"
+                    className="max-w-[220px] text-[11px] bg-popover border-border p-3 shadow-xl"
                   >
-                    <p className="text-muted-foreground">{offer.notes}</p>
+                    <p className="font-medium text-foreground mb-1 text-xs">ملاحظات التاجر:</p>
+                    <p className="text-muted-foreground leading-relaxed">{offer.notes}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -332,7 +347,7 @@ export default function OffersListSection({
 
             {/* Message Button */}
             <button
-              className="h-7 w-7 flex items-center justify-center rounded-md text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
+              className="h-7 w-7 flex items-center justify-center rounded-lg text-primary hover:text-primary bg-primary/10 hover:bg-primary/20 transition-colors border border-primary/20"
               onClick={() => handleMessage(offer)}
               title="مراسلة"
             >
@@ -341,7 +356,7 @@ export default function OffersListSection({
 
             {/* Visit Store Button */}
             <button
-              className="h-7 w-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              className="h-7 w-7 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground bg-muted/30 hover:bg-muted/50 transition-colors border border-border/30"
               onClick={() => handleVisitStore(offer)}
               title="زيارة المتجر"
             >
@@ -352,10 +367,10 @@ export default function OffersListSection({
             {isCustomer && !isAccepted && (
               <Button
                 size="sm"
-                className="h-7 px-2.5 text-[10px] font-bold bg-green-600 hover:bg-green-700 text-white"
+                className="h-7 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
                 onClick={() => handleAccept(offer)}
               >
-                قبول
+                قبول العرض
               </Button>
             )}
 
@@ -365,14 +380,14 @@ export default function OffersListSection({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-7 px-2 text-[10px] gap-1 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                  className="h-7 px-2.5 text-[10px] gap-1 border-amber-500/40 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 font-medium"
                   onClick={() => handleEdit(offer)}
                 >
                   <Edit3 className="h-3 w-3" />
-                  تعديل
+                  تعديل السعر
                 </Button>
               ) : hasEdited ? (
-                <div className="flex items-center gap-1 px-2 py-1 rounded-md bg-muted/30 text-[9px] text-muted-foreground">
+                <div className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-muted/50 border border-border/50 text-[9px] text-muted-foreground font-medium">
                   <Lock className="h-2.5 w-2.5" />
                   تم التسعير
                 </div>

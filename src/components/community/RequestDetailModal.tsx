@@ -19,7 +19,6 @@ import {
   Edit3,
   Sparkles,
   Lock,
-  User,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -27,13 +26,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import AcceptOfferDialog from "@/components/community/AcceptOfferDialog";
 import EditOfferDialog from "@/components/community/EditOfferDialog";
 import OffersListSection from "@/components/community/OffersListSection";
 import SocialActions from "@/components/community/SocialActions";
 import CommentsSection from "@/components/community/CommentsSection";
+import CustomerRequestStrip from "@/components/community/CustomerRequestStrip";
 
 interface PrintRequest {
   id: string;
@@ -298,26 +297,13 @@ export default function RequestDetailModal({
             <div className="flex-1">
               <div className="p-4 space-y-4">
               
-              {/* Customer Info Strip */}
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                <Avatar className="h-10 w-10 border-2 border-primary/30">
-                  <AvatarImage src={customerProfile?.avatar_url || undefined} />
-                  <AvatarFallback className="bg-primary/20 text-primary">
-                    <User className="h-5 w-5" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm text-foreground truncate">
-                    {customerProfile?.full_name || customerProfile?.username || "عميل"}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">صاحب الطلب</p>
-                </div>
-                {isOwner && (
-                  <Badge variant="outline" className="text-[9px] border-primary/30 text-primary">
-                    طلبك
-                  </Badge>
-                )}
-              </div>
+              {/* Customer Info Strip - Redesigned */}
+              <CustomerRequestStrip
+                customerId={request.user_id}
+                customerProfile={customerProfile}
+                isOwner={isOwner}
+                onViewProfile={() => navigate(`/profile/${request.user_id}`)}
+              />
 
               {/* Title & Quick Stats */}
               <div className="space-y-3">

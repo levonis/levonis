@@ -69,34 +69,39 @@ export default function CommunityMessages() {
             price: null,
           });
         }
-      } else if (productTitle) {
+      } else if (productTitle || productUrl) {
         setEntryContext({
           type: 'product',
-          title: productTitle,
-          imageUrl: null,
+          title: productTitle || 'منتج',
+          imageUrl: productUrl || null,
           price: null,
         });
       }
 
-      // Check if conversation already exists between buyer and seller (both directions)
-      const { data: existingConv } = await supabase
+      // Check if conversation already exists between buyer and seller
+      const { data: existingConvs } = await supabase
         .from('listing_conversations')
-        .select('id')
-        .or(`and(buyer_id.eq.${user.id},seller_id.eq.${sellerId}),and(buyer_id.eq.${sellerId},seller_id.eq.${user.id})`)
-        .maybeSingle();
+        .select('id, buyer_id, seller_id')
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
+
+      // Find if there's already a conversation with this merchant (seller)
+      const existingConv = existingConvs?.find(c => 
+        c.seller_id === sellerId || c.buyer_id === sellerId
+      );
 
       let conversationId: string;
       let isNewConversation = false;
 
       if (existingConv) {
         conversationId = existingConv.id;
-        // Update conversation context
+        // Update conversation context and bring it to top
         await supabase.from('listing_conversations')
           .update({ 
             updated_at: new Date().toISOString(),
             entry_context: requestDetails || productTitle ? {
               type: requestDetails ? 'request' : 'product',
               title: requestDetails?.title || productTitle,
+              imageUrl: requestDetails?.image_url || null,
               requestId: requestId,
             } : null
           })
@@ -116,6 +121,7 @@ export default function CommunityMessages() {
             entry_context: requestDetails || productTitle ? {
               type: requestDetails ? 'request' : 'product',
               title: requestDetails?.title || productTitle,
+              imageUrl: requestDetails?.image_url || null,
               requestId: requestId,
             } : null
           })
