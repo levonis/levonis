@@ -179,19 +179,21 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
     setUploading(true);
     try {
       const ext = file.name.split(".").pop();
-      const path = `merchants/${user.id}/store-${Date.now()}.${ext}`;
+      // Use merchant_stores bucket with user_id as first folder for RLS policy
+      const path = `${user.id}/store-${Date.now()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("public-assets")
+        .from("merchant_stores")
         .upload(path, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from("public-assets").getPublicUrl(path);
+      const { data: urlData } = supabase.storage.from("merchant_stores").getPublicUrl(path);
       setStoreImageUrl(urlData.publicUrl);
       toast({ title: "تم الرفع", description: "تم رفع صورة المتجر بنجاح." });
-    } catch {
-      toast({ title: "خطأ", description: "فشل رفع الصورة.", variant: "destructive" });
+    } catch (err: any) {
+      console.error("Upload error:", err);
+      toast({ title: "خطأ", description: err?.message || "فشل رفع الصورة.", variant: "destructive" });
     } finally {
       setUploading(false);
     }

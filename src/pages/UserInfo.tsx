@@ -81,16 +81,18 @@ const UserInfo = () => {
       if (avatarFile) {
         setUploadingAvatar(true);
         const fileExt = avatarFile.name.split('.').pop();
-        const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+        const fileName = `${Date.now()}.${fileExt}`;
+        // Path format: avatars/{user_id}/{filename} to match storage policy
+        const filePath = `avatars/${user?.id}/${fileName}`;
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('product-images')
-          .upload(`avatars/${fileName}`, avatarFile);
+          .upload(filePath, avatarFile, { upsert: true });
 
         if (uploadError) throw uploadError;
 
         const { data: { publicUrl } } = supabase.storage
           .from('product-images')
-          .getPublicUrl(`avatars/${fileName}`);
+          .getPublicUrl(filePath);
 
         avatarUrl = publicUrl;
         setUploadingAvatar(false);
