@@ -1,9 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { Package, Layers, MapPin, DollarSign, Clock, Eye, Plus, Hash, Ruler, Palette } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { 
+  Package, Layers, MapPin, DollarSign, Clock, Eye, Plus, Hash, 
+  Ruler, Palette, MessageSquare, CheckCircle2, Star 
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface PrintRequest {
   id: string;
@@ -30,11 +35,11 @@ interface CompactRequestCardProps {
   isOwner?: boolean;
 }
 
-const MATERIAL_CONFIG: Record<string, { label: string; color: string }> = {
-  filament: { label: "فلمنت", color: "bg-blue-600/40 text-blue-200" },
-  resin: { label: "رزن", color: "bg-purple-600/40 text-purple-200" },
-  both: { label: "كلاهما", color: "bg-emerald-600/40 text-emerald-200" },
-  any: { label: "أي نوع", color: "bg-slate-600/40 text-slate-200" },
+const MATERIAL_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  filament: { label: "FDM", color: "text-blue-300", bg: "bg-blue-500/20" },
+  resin: { label: "SLA", color: "text-purple-300", bg: "bg-purple-500/20" },
+  both: { label: "الكل", color: "text-emerald-300", bg: "bg-emerald-500/20" },
+  any: { label: "أي", color: "text-slate-300", bg: "bg-slate-500/20" },
 };
 
 export default function CompactRequestCard({
@@ -44,147 +49,203 @@ export default function CompactRequestCard({
   isMerchant = false,
   isOwner = false,
 }: CompactRequestCardProps) {
-  // Get offers count
-  const { data: offersCount = 0 } = useQuery({
-    queryKey: ["offers-count", request.id],
+  const navigate = useNavigate();
+
+  // Get offers count and best offer
+  const { data: offersData } = useQuery({
+    queryKey: ["offers-summary", request.id],
     queryFn: async () => {
-      const { count } = await supabase
+      const { data, count } = await supabase
         .from("print_offers")
-        .select("id", { count: "exact", head: true })
-        .eq("request_id", request.id);
-      return count ?? 0;
+        .select("price_iqd, trader_id", { count: "exact" })
+        .eq("request_id", request.id)
+        .order("price_iqd", { ascending: true })
+        .limit(1);
+      
+      return {
+        count: count ?? 0,
+        lowestPrice: data?.[0]?.price_iqd || null,
+      };
     },
   });
 
   // Check if merchant already has an offer
-  const { data: hasMyOffer } = useQuery({
-    queryKey: ["has-my-offer", request.id, request.user_id],
-    enabled: isMerchant,
+  const { data: myOffer } = useQuery({
+    queryKey: ["my-offer-check", request.id],
+    enabled: isMerchant && !isOwner,
     queryFn: async () => {
-      const { count } = await supabase
+      const { data } = await supabase
         .from("print_offers")
-        .select("id", { count: "exact", head: true })
-        .eq("request_id", request.id);
-      return (count ?? 0) > 0;
+        .select("id, price_iqd")
+        .eq("request_id", request.id)
+        .limit(1)
+        .maybeSingle();
+      return data;
     },
   });
 
   const mainImage = request.images?.[0] || request.image_url;
   const isAccepted = !!request.accepted_offer_id;
   const material = request.material_type ? MATERIAL_CONFIG[request.material_type] : null;
+  const offersCount = offersData?.count ?? 0;
   
   const timeDiff = Date.now() - new Date(request.created_at).getTime();
   const hoursAgo = Math.floor(timeDiff / (1000 * 60 * 60));
   const daysAgo = Math.floor(hoursAgo / 24);
-  const timeLabel = daysAgo > 0 ? `${daysAgo} يوم` : hoursAgo > 0 ? `${hoursAgo} ساعة` : "الآن";
+  const timeLabel = daysAgo > 0 ? `${daysAgo}ي` : hoursAgo > 0 ? `${hoursAgo}س` : "جديد";
+
+  const handleChat = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/community/messages?request=${request.id}`);
+  };
+
+  const handlePrice = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onAddOffer?.(request);
+  };
 
   return (
     <div 
       onClick={() => onViewDetails(request)}
-      className="group relative rounded-xl border border-border/50 bg-gradient-to-b from-card to-background overflow-hidden hover:border-primary/40 hover:shadow-xl transition-all duration-300 cursor-pointer"
+      className="group relative rounded-2xl border border-border/40 bg-gradient-to-br from-[hsl(160_52%_16%)] to-[hsl(160_48%_12%)] overflow-hidden hover:border-primary/50 hover:shadow-[0_8px_30px_hsl(160_50%_10%/0.4)] transition-all duration-300 cursor-pointer"
     >
       {/* Image Section */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-[5/4] overflow-hidden">
         {mainImage ? (
           <img
             src={mainImage}
             alt={request.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
             loading="lazy"
           />
         ) : (
-          <div className="w-full h-full bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center">
-            <Package className="h-10 w-10 text-muted-foreground/20" />
+          <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+            <Package className="h-12 w-12 text-primary/30" />
           </div>
         )}
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+        {/* Overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-        {/* Status overlay */}
+        {/* Accepted overlay */}
         {isAccepted && (
-          <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-            <Badge className="bg-green-500 text-white border-0">تم القبول</Badge>
+          <div className="absolute inset-0 bg-green-900/70 backdrop-blur-sm flex items-center justify-center">
+            <Badge className="bg-green-500 text-white border-0 gap-1">
+              <CheckCircle2 className="h-3 w-3" />
+              تم القبول
+            </Badge>
           </div>
         )}
 
-        {/* Top badges row */}
-        <div className="absolute top-1.5 left-1.5 right-1.5 flex justify-between items-start">
-          {/* Material Badge */}
+        {/* Top row - Material & Time */}
+        <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
           {material && (
-            <Badge className={`text-[8px] px-1.5 h-4 ${material.color} border-0`}>
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${material.bg} ${material.color} backdrop-blur-sm`}>
               {material.label}
-            </Badge>
+            </span>
           )}
-          
-          {/* Quantity Badge */}
-          {request.quantity && request.quantity > 1 && (
-            <Badge className="text-[8px] px-1.5 h-4 bg-cyan-600/60 text-white border-0">
-              <Hash className="h-2 w-2 ml-0.5" />
-              {request.quantity}
-            </Badge>
-          )}
+          <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-black/50 text-white/90 backdrop-blur-sm flex items-center gap-0.5">
+            <Clock className="h-2.5 w-2.5" />
+            {timeLabel}
+          </span>
         </div>
 
-        {/* Bottom info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-2">
-          <div className="flex items-center justify-between text-white">
-            {request.customer_governorate && (
-              <span className="flex items-center gap-0.5 text-[9px] bg-black/40 px-1.5 py-0.5 rounded">
-                <MapPin className="h-2.5 w-2.5" />
-                {request.customer_governorate}
-              </span>
-            )}
-            <span className="flex items-center gap-0.5 text-[9px] bg-black/40 px-1.5 py-0.5 rounded">
-              <Clock className="h-2.5 w-2.5" />
-              {timeLabel}
+        {/* Bottom row - Location & Quantity */}
+        <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end">
+          {request.customer_governorate && (
+            <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-primary/80 text-white backdrop-blur-sm flex items-center gap-0.5">
+              <MapPin className="h-2.5 w-2.5" />
+              {request.customer_governorate}
             </span>
-          </div>
+          )}
+          {request.quantity && request.quantity > 1 && (
+            <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-cyan-500/80 text-white backdrop-blur-sm">
+              ×{request.quantity}
+            </span>
+          )}
         </div>
       </div>
 
       {/* Content Section */}
       <div className="p-2.5 space-y-2">
         {/* Title */}
-        <h3 className="font-bold text-xs line-clamp-1 text-foreground">{request.title}</h3>
+        <h3 className="font-bold text-[11px] line-clamp-1 text-foreground group-hover:text-primary transition-colors">
+          {request.title}
+        </h3>
 
-        {/* Quick Info Tags */}
-        <div className="flex flex-wrap gap-1">
-          <span className="inline-flex items-center gap-0.5 text-[8px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+        {/* Specs Row */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-0.5 text-[8px] text-muted-foreground bg-white/5 px-1.5 py-0.5 rounded-md">
             <Ruler className="h-2 w-2" />
             {request.size}
           </span>
-          <span className="inline-flex items-center gap-0.5 text-[8px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
+          <span className="inline-flex items-center gap-0.5 text-[8px] text-muted-foreground bg-white/5 px-1.5 py-0.5 rounded-md">
             <Palette className="h-2 w-2" />
             {request.colors}
           </span>
-          <span className="inline-flex items-center gap-0.5 text-[8px] text-primary bg-primary/10 px-1.5 py-0.5 rounded font-medium">
-            <DollarSign className="h-2 w-2" />
-            {offersCount} عرض
-          </span>
+        </div>
+
+        {/* Offers Info */}
+        <div className="flex items-center justify-between py-1.5 border-t border-white/5">
+          <div className="flex items-center gap-1">
+            <DollarSign className="h-3 w-3 text-primary" />
+            <span className="text-[10px] font-bold text-primary">{offersCount}</span>
+            <span className="text-[9px] text-muted-foreground">عرض</span>
+          </div>
+          {offersData?.lowestPrice && (
+            <span className="text-[9px] text-emerald-400 font-medium">
+              من {offersData.lowestPrice.toLocaleString()}
+            </span>
+          )}
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-1.5 pt-0.5">
+        <div className="flex gap-1.5">
+          {/* Details Button */}
           <Button
             size="sm"
-            variant="outline"
-            className="flex-1 text-[10px] h-7 px-2 border-border/50"
+            variant="ghost"
+            className="flex-1 text-[9px] h-7 px-2 bg-white/5 hover:bg-white/10"
             onClick={(e) => { e.stopPropagation(); onViewDetails(request); }}
           >
             <Eye className="h-3 w-3 ml-0.5" />
-            التفاصيل
+            عرض
           </Button>
 
+          {/* Chat Button */}
+          <Button
+            size="sm"
+            variant="ghost"
+            className="flex-1 text-[9px] h-7 px-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300"
+            onClick={handleChat}
+          >
+            <MessageSquare className="h-3 w-3 ml-0.5" />
+            تواصل
+          </Button>
+
+          {/* Price Button - Only for merchants */}
           {isMerchant && !isOwner && !isAccepted && onAddOffer && (
-            <Button
-              size="sm"
-              className="flex-1 text-[10px] h-7 px-2 bg-gradient-to-b from-primary to-accent"
-              onClick={(e) => { e.stopPropagation(); onAddOffer(request); }}
-            >
-              <Plus className="h-3 w-3 ml-0.5" />
-              تسعير
-            </Button>
+            myOffer ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="flex-1 text-[9px] h-7 px-2 bg-emerald-500/20 text-emerald-300"
+                disabled
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Star className="h-3 w-3 ml-0.5" />
+                {(myOffer.price_iqd / 1000).toFixed(0)}k
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="flex-1 text-[9px] h-7 px-2 bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-600/90"
+                onClick={handlePrice}
+              >
+                <Plus className="h-3 w-3 ml-0.5" />
+                سعّر
+              </Button>
+            )
           )}
         </div>
       </div>
