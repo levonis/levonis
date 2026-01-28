@@ -178,17 +178,17 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     }
   }, [autoOpenConversationId, conversations]);
 
-  // Fetch profiles (بدون seller_profiles لأن سوق المستعمل تم حذفه)
+  // Fetch profiles (use profiles_public view to protect sensitive data)
   const { data: profiles } = useQuery({
     queryKey: ['conversation-profiles-full', conversations?.map(c => [c.buyer_id, c.seller_id]).flat()],
     queryFn: async () => {
       if (!conversations?.length) return {};
       const userIds = [...new Set(conversations.flatMap(c => [c.buyer_id, c.seller_id]))];
       
-      // First get profiles
+      // Use profiles_public view to protect sensitive user data (excludes phone, email, etc.)
       const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, full_name, username, avatar_url, phone_number')
+        .from('profiles_public')
+        .select('id, full_name, username, avatar_url')
         .in('id', userIds);
       
       // Then check if any are merchants and get their frames
