@@ -2,12 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { 
   Package, Layers, MapPin, DollarSign, Clock, Hash, 
-  Ruler, MessageSquare, CheckCircle2, Tag, Edit3, Lock
+  Ruler, MessageSquare, CheckCircle2, Tag, Edit3, Lock, User
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SocialActions from "@/components/community/SocialActions";
 
 interface PrintRequest {
@@ -50,6 +51,19 @@ export default function CompactRequestCard({
   isOwner = false,
 }: CompactRequestCardProps) {
   const navigate = useNavigate();
+
+  // Fetch customer profile info
+  const { data: customerProfile } = useQuery({
+    queryKey: ["customer-profile-compact", request.user_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url, username")
+        .eq("id", request.user_id)
+        .maybeSingle();
+      return data;
+    },
+  });
 
   // Get offers count and lowest offer price
   const { data: offersData } = useQuery({
@@ -177,6 +191,19 @@ export default function CompactRequestCard({
 
       {/* Content Section */}
       <div className="p-2.5 space-y-2">
+        {/* Customer Info */}
+        <div className="flex items-center gap-2 mb-1">
+          <Avatar className="h-5 w-5 border border-primary/30">
+            <AvatarImage src={customerProfile?.avatar_url || undefined} />
+            <AvatarFallback className="bg-primary/20 text-primary text-[8px]">
+              <User className="h-3 w-3" />
+            </AvatarFallback>
+          </Avatar>
+          <span className="text-[9px] text-muted-foreground truncate max-w-[80px]">
+            {customerProfile?.full_name || customerProfile?.username || "عميل"}
+          </span>
+        </div>
+
         {/* Title */}
         <h3 className="font-bold text-[11px] line-clamp-1 text-foreground group-hover:text-primary transition-colors">
           {request.title}

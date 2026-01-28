@@ -19,6 +19,7 @@ import {
   Edit3,
   Sparkles,
   Lock,
+  User,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 import AcceptOfferDialog from "@/components/community/AcceptOfferDialog";
 import EditOfferDialog from "@/components/community/EditOfferDialog";
@@ -104,6 +106,20 @@ export default function RequestDetailModal({
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const [editOffer, setEditOffer] = useState<PrintOffer | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+
+  // Fetch customer profile
+  const { data: customerProfile } = useQuery({
+    queryKey: ["request-customer-profile", request?.user_id],
+    enabled: open && !!request?.user_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url, username")
+        .eq("id", request!.user_id)
+        .maybeSingle();
+      return data;
+    },
+  });
 
   // Fetch offers for this request
   const { data: offers = [], refetch: refetchOffers } = useQuery({
@@ -282,6 +298,27 @@ export default function RequestDetailModal({
             <div className="flex-1">
               <div className="p-4 space-y-4">
               
+              {/* Customer Info Strip */}
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                <Avatar className="h-10 w-10 border-2 border-primary/30">
+                  <AvatarImage src={customerProfile?.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/20 text-primary">
+                    <User className="h-5 w-5" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-foreground truncate">
+                    {customerProfile?.full_name || customerProfile?.username || "عميل"}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">صاحب الطلب</p>
+                </div>
+                {isOwner && (
+                  <Badge variant="outline" className="text-[9px] border-primary/30 text-primary">
+                    طلبك
+                  </Badge>
+                )}
+              </div>
+
               {/* Title & Quick Stats */}
               <div className="space-y-3">
                 <h2 className="text-lg font-bold text-foreground leading-tight">{request.title}</h2>
@@ -429,20 +466,19 @@ export default function RequestDetailModal({
                 </div>
               )}
 
-              {/* Offers Section with Pagination & Filtering */}
-              {offers.length > 0 && (
-                <div className="pt-3 border-t border-white/10">
-                  <OffersListSection
-                    offers={offers}
-                    requestId={request.id}
-                    customerId={request.user_id}
-                    acceptedOfferId={request.accepted_offer_id}
-                    currentUserId={user?.id}
-                    merchantId={merchantId}
-                    onRefetch={refetchOffers}
-                  />
-                </div>
-              )}
+              {/* Offers Section with Pagination & Filtering - Show for all users */}
+              <div className="pt-3 border-t border-white/10">
+                <OffersListSection
+                  offers={offers}
+                  requestId={request.id}
+                  customerId={request.user_id}
+                  acceptedOfferId={request.accepted_offer_id}
+                  currentUserId={user?.id}
+                  merchantId={merchantId}
+                  onRefetch={refetchOffers}
+                  onAddOffer={onAddOffer}
+                />
+              </div>
 
               {/* Comments Section */}
               <div className="pt-3 border-t border-white/10">
