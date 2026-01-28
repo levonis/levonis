@@ -715,6 +715,8 @@ export type Database = {
           is_suspended: boolean | null
           is_verified: boolean | null
           reputation_score: number | null
+          suspended_at: string | null
+          suspended_by: string | null
           suspension_reason: string | null
           total_requests_made: number | null
           total_requests_received: number | null
@@ -732,6 +734,8 @@ export type Database = {
           is_suspended?: boolean | null
           is_verified?: boolean | null
           reputation_score?: number | null
+          suspended_at?: string | null
+          suspended_by?: string | null
           suspension_reason?: string | null
           total_requests_made?: number | null
           total_requests_received?: number | null
@@ -749,6 +753,8 @@ export type Database = {
           is_suspended?: boolean | null
           is_verified?: boolean | null
           reputation_score?: number | null
+          suspended_at?: string | null
+          suspended_by?: string | null
           suspension_reason?: string | null
           total_requests_made?: number | null
           total_requests_received?: number | null
@@ -935,6 +941,33 @@ export type Database = {
           target_id?: string | null
           target_table?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      community_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json
         }
         Relationships: []
       }
@@ -2372,6 +2405,7 @@ export type Database = {
           is_verified: boolean
           phone_number: string | null
           registration_fee: number
+          rejected_at: string | null
           selected_frame_id: string | null
           social_links: Json | null
           specialty: string | null
@@ -2394,6 +2428,7 @@ export type Database = {
           is_verified?: boolean
           phone_number?: string | null
           registration_fee?: number
+          rejected_at?: string | null
           selected_frame_id?: string | null
           social_links?: Json | null
           specialty?: string | null
@@ -2416,6 +2451,7 @@ export type Database = {
           is_verified?: boolean
           phone_number?: string | null
           registration_fee?: number
+          rejected_at?: string | null
           selected_frame_id?: string | null
           social_links?: Json | null
           specialty?: string | null

@@ -121,7 +121,16 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
       badge_tier?: string;
       badge_override?: boolean;
     }) => {
-      // 1. Check wallet balance
+      // 1. Get registration fee from settings
+      const { data: feeSettings } = await supabase
+        .from("community_settings")
+        .select("value")
+        .eq("key", "merchant_registration_fee")
+        .maybeSingle();
+      
+      const MERCHANT_FEE = (feeSettings?.value as any)?.amount || 25000;
+
+      // 2. Check wallet balance
       const { data: wallet, error: walletError } = await supabase
         .from("user_wallets")
         .select("balance")
@@ -130,14 +139,13 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
       
       if (walletError) throw walletError;
       
-      const MERCHANT_FEE = 25000; // 25,000 IQD
       const currentBalance = wallet?.balance || 0;
       
       if (currentBalance < MERCHANT_FEE) {
         throw new Error(`رصيد المحفظة غير كافي. المطلوب: ${MERCHANT_FEE.toLocaleString()} IQD، المتوفر: ${currentBalance.toLocaleString()} IQD`);
       }
 
-      // 2. Deduct from wallet using secure admin function
+      // 3. Deduct from wallet using secure admin function
       const { error: deductError } = await supabase.rpc('admin_adjust_wallet', {
         p_user_id: payload.user_id,
         p_amount: -MERCHANT_FEE,
@@ -191,7 +199,7 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
     },
   });
 
-  // Mutation to REJECT merchant - delete record completely
+  // Mutation to REJECT merchant - mark as rejected (auto-delete after X days)
   const rejectMutation = useMutation({
     mutationFn: async (payload: { 
       id: string; 
@@ -202,7 +210,19 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
         throw new Error("يجب تحديد سبب الرفض");
       }
 
-      // 1. Send notification with rejection reason
+      // 1. Mark application as rejected (will be auto-deleted after configured days)
+      const { error: updateError } = await supabase
+        .from("merchant_applications")
+        .update({ 
+          status: "rejected", 
+          admin_notes: payload.rejection_reason,
+          rejected_at: new Date().toISOString(),
+        })
+        .eq("id", payload.id);
+
+      if (updateError) throw updateError;
+
+      // 2. Send notification with rejection reason
       await supabase.from("notifications").insert({
         user_id: payload.user_id,
         title: "تم رفض طلب التاجر",
@@ -210,31 +230,11 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
         type: "error",
       });
 
-      // 2. Delete private info first (foreign key)
-      await supabase
-        .from("merchant_application_private")
-        .delete()
-        .eq("application_id", payload.id);
-
-      // 3. Delete public profile if exists
-      await supabase
-        .from("merchant_public_profiles")
-        .delete()
-        .eq("id", payload.user_id);
-
-      // 4. Delete the application record
-      const { error: deleteError } = await supabase
-        .from("merchant_applications")
-        .delete()
-        .eq("id", payload.id);
-
-      if (deleteError) throw deleteError;
-
       return true;
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
-      toast({ title: "تم رفض وحذف الطلب", description: "يمكن للمستخدم تقديم طلب جديد" });
+      toast({ title: "تم رفض الطلب", description: "سيتم حذفه تلقائياً بعد أسبوع" });
       setOpen(false);
       setActive(null);
     },
@@ -579,10 +579,9 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
                     });
                   }}
                   disabled={!active || rejectMutation.isPending || !adminNotes.trim()}
-                  className="gap-2"
                 >
                   <XCircle className="h-4 w-4" />
-                  {rejectMutation.isPending ? "جارٍ الرفض..." : "رفض وحذف الطلب"}
+                  {rejectMutation.isPending ? "جارٍ الرفض..." : "رفض الطلب"}
                 </Button>
                 <Button
                   onClick={() => active && approveMutation.mutate({ 
