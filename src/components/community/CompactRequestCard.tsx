@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { 
-  Package, Layers, MapPin, DollarSign, Clock, Plus, Hash, 
-  Ruler, MessageSquare, CheckCircle2, Star, Tag
+  Package, Layers, MapPin, DollarSign, Clock, Hash, 
+  Ruler, MessageSquare, CheckCircle2, Tag
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -229,7 +229,7 @@ export default function CompactRequestCard({
           <Button
             size="sm"
             variant="ghost"
-            className="flex-1 text-[9px] h-7 px-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-300"
+            className="flex-1 text-[9px] h-7 px-2 bg-white/5 hover:bg-white/10 text-muted-foreground"
             onClick={handleChat}
           >
             <MessageSquare className="h-3 w-3 ml-0.5" />
@@ -239,23 +239,20 @@ export default function CompactRequestCard({
           {/* Price Button - Only for merchants who don't own the request */}
           {isMerchant && !isOwner && !isAccepted && onAddOffer && (
             myOffer ? (
-              <Button
-                size="sm"
-                variant="ghost"
-                className="flex-1 text-[9px] h-7 px-2 bg-emerald-500/20 text-emerald-300"
-                disabled
+              <div
+                className="flex-1 flex items-center justify-center gap-1 text-[9px] h-7 px-2 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-emerald-400"
                 onClick={(e) => e.stopPropagation()}
               >
-                <Star className="h-3 w-3 ml-0.5" />
-                {(myOffer.price_iqd / 1000).toFixed(0)}k
-              </Button>
+                <CheckCircle2 className="h-3 w-3" />
+                <span className="font-bold">{(myOffer.price_iqd / 1000).toFixed(0)}k</span>
+              </div>
             ) : (
               <Button
                 size="sm"
-                className="flex-1 text-[9px] h-7 px-2 bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-600/90"
+                className="flex-1 text-[9px] h-7 px-3 font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md shadow-amber-500/25"
                 onClick={handlePrice}
               >
-                <Plus className="h-3 w-3 ml-0.5" />
+                <DollarSign className="h-3 w-3 ml-0.5" />
                 تسعير
               </Button>
             )

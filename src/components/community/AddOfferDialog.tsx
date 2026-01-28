@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { FILAMENT_MATERIALS, RESIN_MATERIALS, MaterialType } from "@/lib/printingMaterials";
 
@@ -34,7 +35,7 @@ interface AddOfferDialogProps {
   onOpenChange: (open: boolean) => void;
   requestId: string;
   requestTitle: string;
-  merchantId: string;
+  merchantId: string; // Keep for reference but use auth.uid() for trader_id
   onSuccess: () => void;
 }
 
@@ -46,6 +47,7 @@ export default function AddOfferDialog({
   merchantId,
   onSuccess,
 }: AddOfferDialogProps) {
+  const { user } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
 
@@ -93,6 +95,8 @@ export default function AddOfferDialog({
 
   const createOfferMutation = useMutation({
     mutationFn: async () => {
+      if (!user?.id) throw new Error("يجب تسجيل الدخول");
+      
       const priceNum = parseInt(price, 10);
       const durationNum = parseInt(duration, 10);
       const gramsNum = grams ? parseInt(grams, 10) : null;
@@ -104,11 +108,12 @@ export default function AddOfferDialog({
         throw new Error("مدة التنفيذ مطلوبة");
       }
 
+      // Use user.id (auth.uid()) as trader_id, NOT merchantId
       const { data, error } = await supabase
         .from("print_offers")
         .insert({
           request_id: requestId,
-          trader_id: merchantId,
+          trader_id: user.id, // IMPORTANT: Use actual user ID for RLS
           price_iqd: priceNum,
           duration_days: durationNum,
           grams: gramsNum,
