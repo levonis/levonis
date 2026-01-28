@@ -78,12 +78,11 @@ export default function CommunityMessages() {
         });
       }
 
-      // Check if conversation already exists between buyer and seller
+      // Check if conversation already exists between buyer and seller (both directions)
       const { data: existingConv } = await supabase
         .from('listing_conversations')
         .select('id')
-        .eq('buyer_id', user.id)
-        .eq('seller_id', sellerId)
+        .or(`and(buyer_id.eq.${user.id},seller_id.eq.${sellerId}),and(buyer_id.eq.${sellerId},seller_id.eq.${user.id})`)
         .maybeSingle();
 
       let conversationId: string;
@@ -240,6 +239,7 @@ export default function CommunityMessages() {
           onExternalOpenChange={setOpen}
           onClose={handleClose}
           autoOpenConversationId={autoOpenConversationId}
+          entryContext={entryContext}
         >
           <span className="sr-only">فتح المحادثات</span>
         </ListingConversations>
