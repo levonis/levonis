@@ -1,14 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { 
-  Package, Layers, MapPin, DollarSign, Clock, Eye, Plus, Hash, 
-  Ruler, Palette, MessageSquare, CheckCircle2, Star 
+  Package, Layers, MapPin, DollarSign, Clock, Plus, Hash, 
+  Ruler, MessageSquare, CheckCircle2, Star, Tag
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface PrintRequest {
   id: string;
@@ -51,7 +50,7 @@ export default function CompactRequestCard({
 }: CompactRequestCardProps) {
   const navigate = useNavigate();
 
-  // Get offers count and best offer
+  // Get offers count and lowest offer price
   const { data: offersData } = useQuery({
     queryKey: ["offers-summary", request.id],
     queryFn: async () => {
@@ -88,6 +87,7 @@ export default function CompactRequestCard({
   const isAccepted = !!request.accepted_offer_id;
   const material = request.material_type ? MATERIAL_CONFIG[request.material_type] : null;
   const offersCount = offersData?.count ?? 0;
+  const lowestPrice = offersData?.lowestPrice;
   
   const timeDiff = Date.now() - new Date(request.created_at).getTime();
   const hoursAgo = Math.floor(timeDiff / (1000 * 60 * 60));
@@ -109,6 +109,15 @@ export default function CompactRequestCard({
       onClick={() => onViewDetails(request)}
       className="group relative rounded-2xl border border-border/40 bg-gradient-to-br from-[hsl(160_52%_16%)] to-[hsl(160_48%_12%)] overflow-hidden hover:border-primary/50 hover:shadow-[0_8px_30px_hsl(160_50%_10%/0.4)] transition-all duration-300 cursor-pointer"
     >
+      {/* Diagonal Ribbon for Accepted Requests */}
+      {isAccepted && (
+        <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+          <div className="absolute -right-12 top-5 w-40 h-6 bg-gradient-to-r from-green-600 to-emerald-500 transform rotate-45 flex items-center justify-center shadow-lg">
+            <span className="text-[9px] font-bold text-white tracking-wide">تم الطلب</span>
+          </div>
+        </div>
+      )}
+
       {/* Image Section */}
       <div className="relative aspect-[5/4] overflow-hidden">
         {mainImage ? (
@@ -129,12 +138,7 @@ export default function CompactRequestCard({
 
         {/* Accepted overlay */}
         {isAccepted && (
-          <div className="absolute inset-0 bg-green-900/70 backdrop-blur-sm flex items-center justify-center">
-            <Badge className="bg-green-500 text-white border-0 gap-1">
-              <CheckCircle2 className="h-3 w-3" />
-              تم القبول
-            </Badge>
-          </div>
+          <div className="absolute inset-0 bg-green-900/50 backdrop-blur-[2px]" />
         )}
 
         {/* Top row - Material & Time */}
@@ -150,7 +154,7 @@ export default function CompactRequestCard({
           </span>
         </div>
 
-        {/* Bottom row - Location & Quantity */}
+        {/* Bottom row - Governorate & Quantity */}
         <div className="absolute bottom-2 left-2 right-2 flex justify-between items-end">
           {request.customer_governorate && (
             <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-primary/80 text-white backdrop-blur-sm flex items-center gap-0.5">
@@ -173,45 +177,41 @@ export default function CompactRequestCard({
           {request.title}
         </h3>
 
-        {/* Specs Row */}
+        {/* Specs Row - Governorate & Size */}
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="inline-flex items-center gap-0.5 text-[8px] text-muted-foreground bg-white/5 px-1.5 py-0.5 rounded-md">
             <Ruler className="h-2 w-2" />
             {request.size}
           </span>
-          <span className="inline-flex items-center gap-0.5 text-[8px] text-muted-foreground bg-white/5 px-1.5 py-0.5 rounded-md">
-            <Palette className="h-2 w-2" />
-            {request.colors}
-          </span>
+          {request.customer_governorate && (
+            <span className="inline-flex items-center gap-0.5 text-[8px] text-primary bg-primary/10 px-1.5 py-0.5 rounded-md font-medium">
+              <MapPin className="h-2 w-2" />
+              {request.customer_governorate}
+            </span>
+          )}
         </div>
 
-        {/* Offers Info */}
+        {/* Lowest Price Display */}
         <div className="flex items-center justify-between py-1.5 border-t border-white/5">
-          <div className="flex items-center gap-1">
-            <DollarSign className="h-3 w-3 text-primary" />
-            <span className="text-[10px] font-bold text-primary">{offersCount}</span>
-            <span className="text-[9px] text-muted-foreground">عرض</span>
+          <div className="flex items-center gap-1.5">
+            <Tag className="h-3 w-3 text-emerald-400" />
+            {lowestPrice ? (
+              <span className="text-[10px] font-bold text-emerald-400">
+                {lowestPrice.toLocaleString()} د.ع
+              </span>
+            ) : (
+              <span className="text-[9px] text-muted-foreground">لا توجد عروض</span>
+            )}
           </div>
-          {offersData?.lowestPrice && (
-            <span className="text-[9px] text-emerald-400 font-medium">
-              من {offersData.lowestPrice.toLocaleString()}
+          {offersCount > 0 && (
+            <span className="text-[9px] text-muted-foreground">
+              {offersCount} عرض
             </span>
           )}
         </div>
 
         {/* Action Buttons */}
         <div className="flex gap-1.5">
-          {/* Details Button */}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="flex-1 text-[9px] h-7 px-2 bg-white/5 hover:bg-white/10"
-            onClick={(e) => { e.stopPropagation(); onViewDetails(request); }}
-          >
-            <Eye className="h-3 w-3 ml-0.5" />
-            عرض
-          </Button>
-
           {/* Chat Button */}
           <Button
             size="sm"
@@ -223,7 +223,7 @@ export default function CompactRequestCard({
             تواصل
           </Button>
 
-          {/* Price Button - Only for merchants */}
+          {/* Price Button - Only for merchants who don't own the request */}
           {isMerchant && !isOwner && !isAccepted && onAddOffer && (
             myOffer ? (
               <Button
@@ -243,7 +243,7 @@ export default function CompactRequestCard({
                 onClick={handlePrice}
               >
                 <Plus className="h-3 w-3 ml-0.5" />
-                سعّر
+                تسعير
               </Button>
             )
           )}

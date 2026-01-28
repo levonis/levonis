@@ -8,7 +8,6 @@ import {
   Layers,
   MapPin,
   Clock,
-  DollarSign,
   MessageSquare,
   ExternalLink,
   Hash,
@@ -23,6 +22,8 @@ import {
   Edit3,
   Sparkles,
   Send,
+  Tag,
+  Lock,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -154,6 +155,7 @@ export default function RequestDetailModal({
   const isOwner = user?.id === request.user_id;
   const isAccepted = !!request.accepted_offer_id;
   const material = request.material_type ? MATERIAL_CONFIG[request.material_type] : null;
+  const lowestPrice = offers.length > 0 ? Math.min(...offers.map(o => o.price_iqd)) : null;
 
   const nextImage = () => setCurrentImageIndex((i) => (i + 1) % images.length);
   const prevImage = () => setCurrentImageIndex((i) => (i - 1 + images.length) % images.length);
@@ -172,8 +174,6 @@ export default function RequestDetailModal({
     navigate(`/community/messages?request=${request.id}`);
     onOpenChange(false);
   };
-
-  const lowestPrice = offers.length > 0 ? Math.min(...offers.map(o => o.price_iqd)) : null;
 
   return (
     <>
@@ -251,8 +251,8 @@ export default function RequestDetailModal({
             {/* Status Badge */}
             {isAccepted && (
               <Badge className="absolute top-3 right-3 bg-green-500 text-white border-0 gap-1">
-                <CheckCircle2 className="h-3 w-3" />
-                تم القبول
+                <Lock className="h-3 w-3" />
+                تم الطلب - العروض مقفلة
               </Badge>
             )}
           </div>
@@ -346,47 +346,57 @@ export default function RequestDetailModal({
               )}
 
               {/* Action Buttons - Chat & Price */}
-              {!isAccepted && (
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1 h-10 gap-2 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
-                    onClick={handleChatAboutRequest}
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    تواصل حول الطلب
-                  </Button>
-                  
-                  {isMerchant && !isOwner && onAddOffer && (
-                    myOffer ? (
-                      <div className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2 text-center">
-                        <p className="text-[10px] text-emerald-400 mb-0.5">عرضك</p>
-                        <p className="font-bold text-emerald-300">{myOffer.price_iqd.toLocaleString()} د.ع</p>
-                        {(myOffer.edit_count ?? 0) < 1 && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 px-2 text-[10px] gap-1 text-emerald-400 hover:bg-emerald-500/20 mt-1"
-                            onClick={() => {
-                              setEditOffer(myOffer);
-                              setShowEditDialog(true);
-                            }}
-                          >
-                            <Edit3 className="h-3 w-3" />
-                            تعديل
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
-                      <Button
-                        className="flex-1 h-10 gap-2 bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-600/90"
-                        onClick={onAddOffer}
-                      >
-                        <Plus className="h-4 w-4" />
-                        تقديم عرض سعر
-                      </Button>
-                    )
-                  )}
+              <div className="flex gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 h-10 gap-2 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
+                  onClick={handleChatAboutRequest}
+                >
+                  <MessageSquare className="h-4 w-4" />
+                  تواصل حول الطلب
+                </Button>
+                
+                {/* Pricing Button for Merchants */}
+                {isMerchant && !isOwner && !isAccepted && onAddOffer && (
+                  myOffer ? (
+                    <div className="flex-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 p-2 text-center">
+                      <p className="text-[10px] text-emerald-400 mb-0.5">عرضك</p>
+                      <p className="font-bold text-emerald-300">{myOffer.price_iqd.toLocaleString()} د.ع</p>
+                      {(myOffer.edit_count ?? 0) < 1 && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-2 text-[10px] gap-1 text-emerald-400 hover:bg-emerald-500/20 mt-1"
+                          onClick={() => {
+                            setEditOffer(myOffer);
+                            setShowEditDialog(true);
+                          }}
+                        >
+                          <Edit3 className="h-3 w-3" />
+                          تعديل
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <Button
+                      className="flex-1 h-10 gap-2 bg-gradient-to-r from-primary to-emerald-600 hover:from-primary/90 hover:to-emerald-600/90"
+                      onClick={onAddOffer}
+                    >
+                      <Plus className="h-4 w-4" />
+                      تسعير الطلب
+                    </Button>
+                  )
+                )}
+              </div>
+
+              {/* Offers Locked Notice */}
+              {isAccepted && (
+                <div className="rounded-xl bg-green-500/10 border border-green-500/30 p-3 flex items-center gap-3">
+                  <Lock className="h-5 w-5 text-green-400 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-green-300">العروض مقفلة</p>
+                    <p className="text-[10px] text-muted-foreground">تم قبول عرض لهذا الطلب - لم يعد بالإمكان تقديم عروض جديدة</p>
+                  </div>
                 </div>
               )}
 
@@ -401,9 +411,10 @@ export default function RequestDetailModal({
                       </Badge>
                     </div>
                     {lowestPrice && (
-                      <span className="text-xs text-emerald-400">
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-400">
+                        <Tag className="h-3.5 w-3.5" />
                         أقل سعر: {lowestPrice.toLocaleString()} د.ع
-                      </span>
+                      </div>
                     )}
                   </div>
                   
@@ -472,7 +483,7 @@ export default function RequestDetailModal({
                             </p>
                           )}
 
-                          {/* Actions */}
+                          {/* Actions for Owner */}
                           {isOwner && !isAccepted && (
                             <div className="flex gap-1.5 pt-1">
                               <Button
