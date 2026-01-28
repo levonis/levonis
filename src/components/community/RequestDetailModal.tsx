@@ -29,7 +29,7 @@ import { Badge } from "@/components/ui/badge";
 
 import AcceptOfferDialog from "@/components/community/AcceptOfferDialog";
 import EditOfferDialog from "@/components/community/EditOfferDialog";
-import MerchantOfferStrip from "@/components/community/MerchantOfferStrip";
+import OffersListSection from "@/components/community/OffersListSection";
 import SocialActions from "@/components/community/SocialActions";
 import CommentsSection from "@/components/community/CommentsSection";
 
@@ -176,7 +176,6 @@ export default function RequestDetailModal({
   const isOwner = user?.id === request.user_id;
   const isAccepted = !!request.accepted_offer_id;
   const material = request.material_type ? MATERIAL_CONFIG[request.material_type] : null;
-  const lowestPrice = offers.length > 0 ? Math.min(...offers.map(o => o.price_iqd)) : null;
 
   const nextImage = () => setCurrentImageIndex((i) => (i + 1) % images.length);
   const prevImage = () => setCurrentImageIndex((i) => (i - 1 + images.length) % images.length);
@@ -430,36 +429,18 @@ export default function RequestDetailModal({
                 </div>
               )}
 
-              {/* Offers Section */}
+              {/* Offers Section with Pagination & Filtering */}
               {offers.length > 0 && (
-                <div className="pt-3 border-t border-white/10 space-y-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <h3 className="font-bold text-xs text-foreground flex items-center gap-1.5">
-                      عروض الأسعار
-                      <span className="text-[10px] font-normal text-muted-foreground">({offers.length})</span>
-                    </h3>
-                    {lowestPrice && (
-                      <span className="text-[10px] text-primary font-medium">
-                        يبدأ من {lowestPrice.toLocaleString()} د.ع
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Offer Strips using MerchantOfferStrip Component */}
-                  <div className="space-y-2">
-                    {offers.map((offer, index) => (
-                      <MerchantOfferStrip
-                        key={offer.id}
-                        offer={offer}
-                        isOwner={isOwner}
-                        isAccepted={request.accepted_offer_id === offer.id}
-                        isBestPrice={index === 0 && !request.accepted_offer_id}
-                        requestId={request.id}
-                        customerId={request.user_id}
-                        onRefetch={refetchOffers}
-                      />
-                    ))}
-                  </div>
+                <div className="pt-3 border-t border-white/10">
+                  <OffersListSection
+                    offers={offers}
+                    requestId={request.id}
+                    customerId={request.user_id}
+                    acceptedOfferId={request.accepted_offer_id}
+                    currentUserId={user?.id}
+                    merchantId={merchantId}
+                    onRefetch={refetchOffers}
+                  />
                 </div>
               )}
 

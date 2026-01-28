@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { 
   Package, Layers, MapPin, DollarSign, Clock, Hash, 
-  Ruler, MessageSquare, CheckCircle2, Tag
+  Ruler, MessageSquare, CheckCircle2, Tag, Edit3, Lock
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -69,7 +69,7 @@ export default function CompactRequestCard({
     },
   });
 
-  // Check if merchant already has an offer - need to pass merchantId through hub
+  // Check if merchant already has an offer - includes edit_count for state tracking
   const { data: myOffer } = useQuery({
     queryKey: ["my-offer-check", request.id, isMerchant],
     enabled: isMerchant && !isOwner,
@@ -80,7 +80,7 @@ export default function CompactRequestCard({
       
       const { data } = await supabase
         .from("print_offers")
-        .select("id, price_iqd")
+        .select("id, price_iqd, edit_count")
         .eq("request_id", request.id)
         .eq("trader_id", user.id)
         .maybeSingle();
@@ -237,13 +237,25 @@ export default function CompactRequestCard({
           {/* Price Button - ONLY visible for merchants who don't own the request */}
           {isMerchant && !isOwner && !isAccepted && onAddOffer && (
             myOffer ? (
-              <div
-                className="flex-1 flex items-center justify-center gap-1 h-7 px-2 rounded-md bg-primary/10 border border-primary/30 text-primary"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <CheckCircle2 className="h-3 w-3" />
-                <span className="text-[9px] font-bold">{(myOffer.price_iqd / 1000).toFixed(0)}k د.ع</span>
-              </div>
+              (myOffer.edit_count ?? 0) < 1 ? (
+                // Can still edit once
+                <button
+                  className="flex-1 h-7 px-2.5 flex items-center justify-center gap-1 rounded-md text-[9px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-400 hover:bg-amber-500/30 transition-colors"
+                  onClick={handlePrice}
+                >
+                  <Edit3 className="h-3 w-3" />
+                  تعديل التسعير
+                </button>
+              ) : (
+                // Already edited - locked
+                <div
+                  className="flex-1 flex items-center justify-center gap-1 h-7 px-2 rounded-md bg-muted/30 border border-border text-muted-foreground"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Lock className="h-2.5 w-2.5" />
+                  <span className="text-[8px]">تم التسعير</span>
+                </div>
+              )
             ) : (
               <button
                 className="flex-1 h-7 px-3 flex items-center justify-center gap-1 rounded-md text-[9px] font-bold bg-gradient-to-r from-primary to-[hsl(160_60%_30%)] hover:from-primary/90 hover:to-[hsl(160_60%_35%)] text-primary-foreground shadow-sm transition-all"
