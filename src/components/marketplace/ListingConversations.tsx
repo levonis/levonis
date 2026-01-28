@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -32,6 +32,7 @@ import {
   Send,
   AlertOctagon,
   Hash,
+  Headphones,
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -46,6 +47,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 // Chat Commerce Components - Taobao Style
 import ChatTopBar from '@/components/chat/ChatTopBar';
+import ChatSupportTopBar from '@/components/chat/ChatSupportTopBar';
 import ChatInputBar from '@/components/chat/ChatInputBar';
 import SystemMessage from '@/components/chat/messages/SystemMessage';
 import TextMessage from '@/components/chat/messages/TextMessage';
@@ -58,6 +60,9 @@ import CreateOrderDialog from '@/components/chat/CreateOrderDialog';
 import MerchantOrderDialog from '@/components/chat/MerchantOrderDialog';
 import { useChatCommerce, type ChatOrder } from '@/hooks/useChatCommerce';
 import { parseEmojisInText } from '@/components/chat/emojiData';
+
+// Support account ID
+const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
 
 interface EntryContextData {
   type: 'product' | 'request';
@@ -751,112 +756,209 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 </div>
               ) : (
                 <div>
-                  {/* Sort conversations by last message time */}
-                  {[...(conversations || [])].sort((a, b) => {
-                    const lastMsgA = lastMessages?.[a.id];
-                    const lastMsgB = lastMessages?.[b.id];
-                    const timeA = lastMsgA ? new Date(lastMsgA.created_at).getTime() : new Date(a.updated_at).getTime();
-                    const timeB = lastMsgB ? new Date(lastMsgB.created_at).getTime() : new Date(b.updated_at).getTime();
-                    return timeB - timeA;
-                  }).map(conv => {
-                    const convOtherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
-                    const convOtherUser = profiles?.[convOtherUserId];
-                    const lastMsg = lastMessages?.[conv.id];
-                    const isActive = selectedConversation === conv.id;
+                  {/* Support conversation pinned at top */}
+                  {(() => {
+                    // Find support conversation
+                    const supportConv = conversations?.find(c => 
+                      c.buyer_id === SUPPORT_USER_ID || c.seller_id === SUPPORT_USER_ID
+                    );
                     
-                    const convEntryContext = (conv as any).entry_context;
+                    // Deduplicate conversations by other user ID (prevent showing same user multiple times)
+                    const seenUserIds = new Set<string>();
+                    const uniqueConversations = [...(conversations || [])].filter(conv => {
+                      const otherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
+                      if (seenUserIds.has(otherUserId)) return false;
+                      seenUserIds.add(otherUserId);
+                      return true;
+                    });
+                    
+                    // Sort by last message time  
+                    const sortedConvs = uniqueConversations
+                      .filter(c => c.buyer_id !== SUPPORT_USER_ID && c.seller_id !== SUPPORT_USER_ID)
+                      .sort((a, b) => {
+                        const lastMsgA = lastMessages?.[a.id];
+                        const lastMsgB = lastMessages?.[b.id];
+                        const timeA = lastMsgA ? new Date(lastMsgA.created_at).getTime() : new Date(a.updated_at).getTime();
+                        const timeB = lastMsgB ? new Date(lastMsgB.created_at).getTime() : new Date(b.updated_at).getTime();
+                        return timeB - timeA;
+                      });
                     
                     return (
-                      <button
-                        key={conv.id}
-                        onClick={() => setSelectedConversation(conv.id)}
-                        className={cn(
-                          "w-full p-3 flex gap-3 hover:bg-muted/50 transition-colors border-b border-border/50",
-                          isActive && "bg-muted"
-                        )}
-                      >
-                        {/* Avatar with Frame */}
-                        <div className="relative flex-shrink-0">
-                          <AvatarWithFrame
-                            imageUrl={convOtherUser?.avatar_url}
-                            frameUrl={(convOtherUser as any)?.selected_frame_url}
-                            size="sm"
-                          />
-                          {conv.status === 'disputed' && (
-                            <div className="absolute -bottom-1 -right-1 bg-destructive rounded-full p-0.5">
-                              <AlertTriangle className="w-3 h-3 text-white" />
-                            </div>
-                          )}
-                        </div>
+                      <>
+                        {/* Pinned Support Conversation */}
+                        <button
+                          onClick={async () => {
+                            if (supportConv) {
+                              setSelectedConversation(supportConv.id);
+                            } else {
+                              // Create support conversation
+                              const convCode = `SUPPORT-${Date.now().toString(36).toUpperCase()}`;
+                              const { data: newConv, error } = await supabase
+                                .from('listing_conversations')
+                                .insert({
+                                  buyer_id: user?.id,
+                                  seller_id: SUPPORT_USER_ID,
+                                  listing_id: SUPPORT_USER_ID,
+                                  conversation_code: convCode,
+                                  status: 'open',
+                                })
+                                .select('id')
+                                .single();
 
-                        {/* Content - Three Sections */}
-                        <div className="flex-1 min-w-0 text-right">
-                          {/* Section 1: Name with badges and conversation code */}
-                          <div className="flex items-center justify-between gap-2 mb-0.5">
-                            <div className="flex items-center gap-1.5 min-w-0">
-                              <p className="font-semibold text-sm truncate max-w-[120px]">
-                                {convOtherUser?.display_name || convOtherUser?.full_name || convOtherUser?.username || 'محادثة'}
-                              </p>
-                              {/* Badges */}
-                              {conv.admin_joined && (
-                                <ShieldCheck className="w-3 h-3 text-primary shrink-0" />
-                              )}
-                              {(conv as any).conversation_code && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    navigator.clipboard.writeText((conv as any).conversation_code);
-                                    toast.success('تم نسخ رمز المحادثة');
-                                  }}
-                                  className="text-[8px] px-1 py-0 font-mono text-muted-foreground hover:text-primary transition-colors"
-                                  title="انقر للنسخ"
-                                >
-                                  #{(conv as any).conversation_code}
-                                </button>
-                              )}
-                            </div>
-                            {lastMsg && (
-                              <span className="text-[10px] text-muted-foreground flex-shrink-0">
-                                {format(new Date(lastMsg.created_at), 'HH:mm')}
-                              </span>
-                            )}
+                              if (!error && newConv) {
+                                // Send welcome message
+                                await supabase.from('listing_messages').insert({
+                                  conversation_id: newConv.id,
+                                  sender_id: SUPPORT_USER_ID,
+                                  content: '👋 مرحباً بك! كيف يمكنني مساعدتك اليوم؟',
+                                });
+                                queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+                                setSelectedConversation(newConv.id);
+                              }
+                            }
+                          }}
+                          className={cn(
+                            "w-full p-3 flex gap-3 hover:bg-primary/10 transition-colors border-b-2 border-primary/20 bg-gradient-to-l from-primary/5 to-transparent",
+                            selectedConversation && (
+                              (supportConv && selectedConversation === supportConv.id)
+                            ) && "bg-primary/10"
+                          )}
+                        >
+                          {/* Support Avatar */}
+                          <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center shrink-0">
+                            <Headphones className="h-6 w-6 text-primary-foreground" />
                           </div>
                           
-                          {/* Section 2: Last message */}
-                          {lastMsg && (
-                            <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                              {lastMsg.sender_id === user?.id && (
-                                <CheckCheck
-                                  className={cn(
-                                    "w-3 h-3 flex-shrink-0",
-                                    lastMsg.is_read ? "text-whatsapp" : "text-muted-foreground"
-                                  )}
-                                />
-                              )}
-                              {lastMsg.image_url ? '📷 صورة' : lastMsg.content?.slice(0, 40)}
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Section 3: Entry context (last product/request entered through) */}
-                        {convEntryContext?.title && (
-                          <div className="shrink-0 flex items-center gap-1.5 max-w-[80px]">
-                            <div className="h-8 w-8 rounded-lg overflow-hidden border border-border/50 bg-muted/50 flex items-center justify-center">
-                              {convEntryContext.imageUrl ? (
-                                <img 
-                                  src={convEntryContext.imageUrl} 
-                                  alt="" 
-                                  className="h-full w-full object-cover" 
-                                />
-                              ) : (
-                                <Package className="h-4 w-4 text-muted-foreground" />
+                          {/* Support Info */}
+                          <div className="flex-1 min-w-0 text-right">
+                            <div className="flex items-center justify-between gap-2 mb-0.5">
+                              <p className="font-bold text-sm">خدمة العملاء</p>
+                              {supportConv && lastMessages?.[supportConv.id] && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  {format(new Date(lastMessages[supportConv.id].created_at), 'HH:mm')}
+                                </span>
                               )}
                             </div>
+                            <p className="text-xs text-muted-foreground truncate">
+                              {supportConv && lastMessages?.[supportConv.id] 
+                                ? lastMessages[supportConv.id].content?.slice(0, 40)
+                                : 'تحدث مع فريق الدعم'}
+                            </p>
                           </div>
-                        )}
-                      </button>
+                          
+                          {/* Unread indicator */}
+                          {supportConv && lastMessages?.[supportConv.id] && 
+                           !lastMessages[supportConv.id].is_read && 
+                           lastMessages[supportConv.id].sender_id !== user?.id && (
+                            <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                              <span className="text-[9px] font-bold text-primary-foreground">!</span>
+                            </div>
+                          )}
+                        </button>
+                        
+                        {/* Other conversations */}
+                        {sortedConvs.map(conv => {
+                          const convOtherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
+                          const convOtherUser = profiles?.[convOtherUserId];
+                          const lastMsg = lastMessages?.[conv.id];
+                          const isActive = selectedConversation === conv.id;
+                          
+                          const convEntryContext = (conv as any).entry_context;
+                          
+                          return (
+                            <button
+                              key={conv.id}
+                              onClick={() => setSelectedConversation(conv.id)}
+                              className={cn(
+                                "w-full p-3 flex gap-3 hover:bg-muted/50 transition-colors border-b border-border/50",
+                                isActive && "bg-muted"
+                              )}
+                            >
+                              {/* Avatar with Frame */}
+                              <div className="relative flex-shrink-0">
+                                <AvatarWithFrame
+                                  imageUrl={convOtherUser?.avatar_url}
+                                  frameUrl={(convOtherUser as any)?.selected_frame_url}
+                                  size="sm"
+                                />
+                                {conv.status === 'disputed' && (
+                                  <div className="absolute -bottom-1 -right-1 bg-destructive rounded-full p-0.5">
+                                    <AlertTriangle className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Content - Three Sections */}
+                              <div className="flex-1 min-w-0 text-right">
+                                {/* Section 1: Name with badges and conversation code */}
+                                <div className="flex items-center justify-between gap-2 mb-0.5">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <p className="font-semibold text-sm truncate max-w-[120px]">
+                                      {convOtherUser?.display_name || convOtherUser?.full_name || convOtherUser?.username || 'محادثة'}
+                                    </p>
+                                    {/* Badges */}
+                                    {conv.admin_joined && (
+                                      <ShieldCheck className="w-3 h-3 text-primary shrink-0" />
+                                    )}
+                                    {(conv as any).conversation_code && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          navigator.clipboard.writeText((conv as any).conversation_code);
+                                          toast.success('تم نسخ رمز المحادثة');
+                                        }}
+                                        className="text-[8px] px-1 py-0 font-mono text-muted-foreground hover:text-primary transition-colors"
+                                        title="انقر للنسخ"
+                                      >
+                                        #{(conv as any).conversation_code}
+                                      </button>
+                                    )}
+                                  </div>
+                                  {lastMsg && (
+                                    <span className="text-[10px] text-muted-foreground flex-shrink-0">
+                                      {format(new Date(lastMsg.created_at), 'HH:mm')}
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {/* Section 2: Last message */}
+                                {lastMsg && (
+                                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                    {lastMsg.sender_id === user?.id && (
+                                      <CheckCheck
+                                        className={cn(
+                                          "w-3 h-3 flex-shrink-0",
+                                          lastMsg.is_read ? "text-whatsapp" : "text-muted-foreground"
+                                        )}
+                                      />
+                                    )}
+                                    {lastMsg.image_url ? '📷 صورة' : lastMsg.content?.slice(0, 40)}
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Section 3: Entry context (last product/request entered through) */}
+                              {convEntryContext?.title && (
+                                <div className="shrink-0 flex items-center gap-1.5 max-w-[80px]">
+                                  <div className="h-8 w-8 rounded-lg overflow-hidden border border-border/50 bg-muted/50 flex items-center justify-center">
+                                    {convEntryContext.imageUrl ? (
+                                      <img 
+                                        src={convEntryContext.imageUrl} 
+                                        alt="" 
+                                        className="h-full w-full object-cover" 
+                                      />
+                                    ) : (
+                                      <Package className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </>
                     );
-                  })}
+                  })()}
                 </div>
               )}
             </div>
@@ -871,19 +973,33 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
             }}
           >
-            {selectedConversation ? (
+          {selectedConversation ? (
               <>
-                {/* Chat Top Bar - Taobao Style */}
-                <ChatTopBar
-                  storeName={otherUser?.display_name || otherUser?.full_name || otherUser?.username || 'المتجر'}
-                  storeId={otherUserId || ''}
-                  storeImage={otherUser?.avatar_url}
-                  storeFrameUrl={(otherUser as any)?.selected_frame_url}
-                  rating={Number(otherUserReputation?.avg_stars ?? 0)}
-                  status={selectedConv?.status as 'open' | 'disputed' | 'resolved' | undefined}
-                  onBack={() => setSelectedConversation(null)}
-                  onContactAdmin={() => requestAdminMutation.mutate()}
-                />
+                {/* Chat Top Bar - Use Support bar for support conversation */}
+                {(() => {
+                  const isSupportChat = otherUserId === SUPPORT_USER_ID;
+                  
+                  if (isSupportChat) {
+                    return (
+                      <ChatSupportTopBar
+                        onBack={() => setSelectedConversation(null)}
+                      />
+                    );
+                  }
+                  
+                  return (
+                    <ChatTopBar
+                      storeName={otherUser?.display_name || otherUser?.full_name || otherUser?.username || 'المتجر'}
+                      storeId={otherUserId || ''}
+                      storeImage={otherUser?.avatar_url}
+                      storeFrameUrl={(otherUser as any)?.selected_frame_url}
+                      rating={Number(otherUserReputation?.avg_stars ?? 0)}
+                      status={selectedConv?.status as 'open' | 'disputed' | 'resolved' | undefined}
+                      onBack={() => setSelectedConversation(null)}
+                      onContactAdmin={() => requestAdminMutation.mutate()}
+                    />
+                  );
+                })()}
 
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6">
