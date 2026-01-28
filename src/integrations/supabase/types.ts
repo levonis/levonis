@@ -3433,7 +3433,7 @@ export type Database = {
             foreignKeyName: "print_offers_request_id_fkey"
             columns: ["request_id"]
             isOneToOne: false
-            referencedRelation: "print_requests"
+            referencedRelation: "community_print_requests"
             referencedColumns: ["id"]
           },
         ]
