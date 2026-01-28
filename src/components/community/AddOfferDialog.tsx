@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { DollarSign, Clock, Scale, MessageSquare, Loader2, AlertCircle, Percent } from "lucide-react";
+import { 
+  DollarSign, Clock, Scale, MessageSquare, Loader2, 
+  Percent, Layers, Droplets, ChevronDown, Plus, X, Check
+} from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { FILAMENT_MATERIALS, RESIN_MATERIALS, MaterialType } from "@/lib/printingMaterials";
 
 import {
   Dialog,
@@ -18,6 +22,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface AddOfferDialogProps {
   open: boolean;
@@ -43,6 +53,11 @@ export default function AddOfferDialog({
   const [duration, setDuration] = useState("");
   const [grams, setGrams] = useState("");
   const [notes, setNotes] = useState("");
+  
+  // Material selection state
+  const [materialType, setMaterialType] = useState<MaterialType | null>(null);
+  const [selectedSubtypes, setSelectedSubtypes] = useState<string[]>([]);
+  const [subtypeOpen, setSubtypeOpen] = useState(false);
 
   // Fetch platform commission rate
   const { data: commissionSetting } = useQuery({
@@ -61,6 +76,20 @@ export default function AddOfferDialog({
   const priceNum = parseInt(price, 10) || 0;
   const platformFee = Math.floor(priceNum * commissionRate);
   const merchantPayout = priceNum - platformFee;
+
+  const availableMaterials = materialType === "filament" 
+    ? FILAMENT_MATERIALS 
+    : materialType === "resin" 
+    ? RESIN_MATERIALS 
+    : [];
+
+  const handleToggleSubtype = (value: string) => {
+    setSelectedSubtypes(prev => 
+      prev.includes(value) 
+        ? prev.filter(v => v !== value)
+        : [...prev, value]
+    );
+  };
 
   const createOfferMutation = useMutation({
     mutationFn: async () => {
@@ -84,6 +113,8 @@ export default function AddOfferDialog({
           duration_days: durationNum,
           grams: gramsNum,
           notes: notes.trim() || null,
+          material_type: materialType,
+          material_subtypes: selectedSubtypes.length > 0 ? selectedSubtypes : null,
         } as any)
         .select("id")
         .single();
@@ -101,6 +132,8 @@ export default function AddOfferDialog({
       setDuration("");
       setGrams("");
       setNotes("");
+      setMaterialType(null);
+      setSelectedSubtypes([]);
       onSuccess();
     },
     onError: (err: any) => {
@@ -116,7 +149,7 @@ export default function AddOfferDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5 text-primary" />
@@ -125,12 +158,12 @@ export default function AddOfferDialog({
           <DialogDescription className="truncate">{requestTitle}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-4 py-2 max-h-[55vh] overflow-y-auto">
           {/* Commission Notice */}
           <Alert className="border-amber-500/30 bg-amber-500/10">
             <Percent className="h-4 w-4 text-amber-500" />
             <AlertDescription className="text-xs text-amber-600 dark:text-amber-400">
-              عمولة المنصة: <strong>{(commissionRate * 100).toFixed(1)}%</strong> تُخصم من السعر الذي تحدده
+              عمولة المنصة: <strong>{(commissionRate * 100).toFixed(1)}%</strong> تُخصم من السعر
             </AlertDescription>
           </Alert>
 
@@ -157,6 +190,116 @@ export default function AddOfferDialog({
               </div>
             )}
           </div>
+
+          {/* Material Type Selection */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-2 text-sm font-semibold">
+              <Layers className="h-4 w-4 text-primary" />
+              نوع مادة الطباعة
+            </Label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setMaterialType("filament");
+                  setSelectedSubtypes([]);
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
+                  materialType === "filament"
+                    ? "bg-blue-500/20 border-blue-500/50 text-blue-300"
+                    : "bg-background border-border hover:border-blue-500/30"
+                }`}
+              >
+                <Layers className="h-4 w-4" />
+                فلمنت (FDM)
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMaterialType("resin");
+                  setSelectedSubtypes([]);
+                }}
+                className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-xl border text-sm font-medium transition-all ${
+                  materialType === "resin"
+                    ? "bg-purple-500/20 border-purple-500/50 text-purple-300"
+                    : "bg-background border-border hover:border-purple-500/30"
+                }`}
+              >
+                <Droplets className="h-4 w-4" />
+                رزن (SLA)
+              </button>
+            </div>
+          </div>
+
+          {/* Material Subtypes */}
+          {materialType && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                نوع المادة المحدد (اختياري)
+              </Label>
+              
+              {/* Selected subtypes */}
+              {selectedSubtypes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedSubtypes.map(subtype => {
+                    const material = availableMaterials.find(m => m.value === subtype);
+                    return (
+                      <Badge
+                        key={subtype}
+                        variant="secondary"
+                        className="gap-1 px-2 py-1 text-xs"
+                      >
+                        {material?.label || subtype}
+                        <button
+                          onClick={() => handleToggleSubtype(subtype)}
+                          className="hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    );
+                  })}
+                </div>
+              )}
+
+              <Popover open={subtypeOpen} onOpenChange={setSubtypeOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between text-xs"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Plus className="h-3 w-3" />
+                      إضافة نوع مادة
+                    </span>
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-2 max-h-60 overflow-y-auto">
+                  <div className="space-y-1">
+                    {availableMaterials.map((material) => {
+                      const isSelected = selectedSubtypes.includes(material.value);
+                      return (
+                        <button
+                          key={material.value}
+                          onClick={() => handleToggleSubtype(material.value)}
+                          className={`w-full text-right px-2 py-1.5 text-xs rounded-md transition-colors flex items-center justify-between ${
+                            isSelected
+                              ? "bg-primary/10 text-primary"
+                              : "hover:bg-muted"
+                          }`}
+                        >
+                          {material.label}
+                          {isSelected && <Check className="h-3 w-3" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
 
           {/* Duration */}
           <div className="space-y-2">

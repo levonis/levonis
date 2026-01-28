@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  Store, Play, Star, Package, Sparkles, ShoppingBag, ChevronLeft, ChevronRight
+  Store, Play, Star, Package, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, Printer, Users
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +18,8 @@ import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
 import MinimalStoreHero from "@/components/merchant/MinimalStoreHero";
 import CompactProductCard from "@/components/merchant/CompactProductCard";
 import ProfessionalCustomerOrderDialog from "@/components/merchant/ProfessionalCustomerOrderDialog";
+import StoreFollowButton from "@/components/community/StoreFollowButton";
+import PrinterModelsCard from "@/components/merchant/PrinterModelsCard";
 
 const PRODUCTS_PER_PAGE = 20;
 
@@ -266,8 +268,13 @@ export default function CommunityMerchantStorePage() {
           showContactButton
         />
 
-        {/* Stats Row - Compact */}
-        <div className="flex gap-3 mb-5 overflow-x-auto pb-1">
+        {/* Stats Row - Compact with Follow Button */}
+        <div className="flex items-center gap-3 mb-5 overflow-x-auto pb-1">
+          {/* Follow Button */}
+          {!isOwner && (
+            <StoreFollowButton storeId={merchantId!} compact />
+          )}
+          
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/50 shrink-0 text-xs">
             <Package className="h-3.5 w-3.5 text-primary" />
             <span className="font-medium">{products.length} منتج</span>
@@ -285,7 +292,11 @@ export default function CommunityMerchantStorePage() {
         {/* Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Sidebar */}
-          <div className="lg:col-span-1 order-2 lg:order-1">
+          <div className="lg:col-span-1 order-2 lg:order-1 space-y-3">
+            {/* Printer Models Card */}
+            <PrinterModelsCard merchantId={merchantId!} />
+            
+            {/* Ratings Card */}
             <Card className="rounded-xl overflow-hidden">
               <CardContent className="p-3">
                 <div className="flex items-center gap-1.5 mb-2">

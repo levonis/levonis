@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image } from "lucide-react";
+import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import AvatarWithFrame from "./AvatarWithFrame";
+import PrinterModelsEditor from "./PrinterModelsEditor";
 
 type SpecialtyType = "resin" | "filament" | "both";
 
@@ -342,6 +343,11 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Printer Models Editor */}
+            <div className="pt-2 border-t border-border/50">
+              <PrinterModelsEditor merchantId={merchantApp.id} />
             </div>
           </div>
 
