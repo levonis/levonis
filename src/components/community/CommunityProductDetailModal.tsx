@@ -25,6 +25,8 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
+import SocialActions from "@/components/community/SocialActions";
+import CommentsSection from "@/components/community/CommentsSection";
 
 interface MerchantProduct {
   id: string;
@@ -242,280 +244,302 @@ export default function CommunityProductDetailModal({
           className="sm:max-w-md p-0 gap-0 overflow-hidden rounded-3xl border border-border/30 bg-background shadow-2xl"
           hideClose
         >
-          {/* Hero Image - Smaller aspect ratio */}
-          <div className="relative aspect-[5/3] bg-muted/20 overflow-hidden">
-            {activeUrl ? (
-              <>
-                <img
-                  src={activeUrl}
-                  alt={product.title}
-                  className="w-full h-full object-contain bg-muted/10 cursor-zoom-in"
-                  onClick={() => setFullscreenImage(true)}
-                />
-                
-                {/* Navigation */}
-                {product.image_urls && product.image_urls.length > 1 && (
-                  <>
-                    <button
-                      onClick={() => navigateMedia("next")}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors shadow"
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => navigateMedia("prev")}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors shadow"
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
-                  </>
-                )}
+          <div className="flex flex-col max-h-[90vh]">
+            {/* Sticky Hero Image */}
+            <div className="relative aspect-[5/3] bg-muted/20 overflow-hidden shrink-0 sticky top-0 z-10">
+              {activeUrl ? (
+                <>
+                  <img
+                    src={activeUrl}
+                    alt={product.title}
+                    className="w-full h-full object-contain bg-muted/10 cursor-zoom-in"
+                    onClick={() => setFullscreenImage(true)}
+                  />
+                  
+                  {/* Navigation */}
+                  {product.image_urls && product.image_urls.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => navigateMedia("next")}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors shadow"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => navigateMedia("prev")}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors shadow"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
 
-                {/* Fullscreen */}
-                <button
-                  onClick={() => setFullscreenImage(true)}
-                  className="absolute top-2 left-2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
-                >
-                  <Maximize2 className="h-3.5 w-3.5" />
-                </button>
-              </>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center">
-                <Package className="h-12 w-12 text-muted-foreground/30" />
-              </div>
-            )}
+                  {/* Fullscreen */}
+                  <button
+                    onClick={() => setFullscreenImage(true)}
+                    className="absolute top-2 left-2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                  </button>
+                </>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Package className="h-12 w-12 text-muted-foreground/30" />
+                </div>
+              )}
 
-            {/* Close */}
-            <button
-              onClick={() => onOpenChange(false)}
-              className="absolute top-2 right-2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-
-            {/* Discount */}
-            {discountPercent > 0 && (
-              <Badge className="absolute top-2 left-11 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0 gap-0.5">
-                <BadgePercent className="h-3 w-3" />
-                {discountPercent}%
-              </Badge>
-            )}
-
-            {/* Video Badge */}
-            {product.video_url && (
-              <Badge variant="secondary" className="absolute bottom-2 left-2 text-[10px] gap-1">
-                <Play className="h-3 w-3" />
-                فيديو
-              </Badge>
-            )}
-
-            {/* Counter */}
-            {product.image_urls && product.image_urls.length > 1 && (
-              <Badge variant="secondary" className="absolute bottom-2 right-2 text-[10px] tabular-nums">
-                {activeMediaIndex + 1}/{product.image_urls.length}
-              </Badge>
-            )}
-          </div>
-
-          {/* Thumbnails */}
-          {product.image_urls && product.image_urls.length > 1 && (
-            <div className="flex gap-1 p-2 border-b border-border/50 overflow-x-auto">
-              {product.image_urls.slice(0, 8).map((url, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveMediaIndex(idx)}
-                  className={`shrink-0 h-10 w-10 rounded-md overflow-hidden border transition-all ${
-                    idx === activeMediaIndex 
-                      ? "border-primary ring-1 ring-primary/30" 
-                      : "border-border/50 hover:border-primary/50"
-                  }`}
-                >
-                  <img src={url} alt="" className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Content - More compact */}
-          <div className="p-2.5 space-y-2 max-h-[40vh] overflow-y-auto">
-            {/* Title & Price */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <h2 className="text-xs font-bold text-foreground line-clamp-2 leading-tight">
-                  {product.title}
-                </h2>
-                {product.estimated_days && (
-                  <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    {product.estimated_days} يوم
-                  </div>
-                )}
-              </div>
-              
-              <div className="shrink-0 text-left">
-                {product.original_price_iqd && product.price_iqd && product.original_price_iqd > product.price_iqd && (
-                  <div className="text-[10px] text-muted-foreground line-through">
-                    {product.original_price_iqd.toLocaleString()}
-                  </div>
-                )}
-                {product.price_iqd ? (
-                  <div className="text-base font-bold text-primary tabular-nums">
-                    {product.price_iqd.toLocaleString()}
-                    <span className="text-[10px] font-medium mr-0.5">د.ع</span>
-                  </div>
-                ) : (
-                  <span className="text-[11px] text-muted-foreground">عند التواصل</span>
-                )}
-              </div>
-            </div>
-
-            {/* Merchant */}
-            {merchantApp && (
+              {/* Close */}
               <button
-                onClick={handleVisitStore}
-                className="w-full rounded-lg border border-border/50 bg-muted/20 p-2 hover:bg-muted/40 transition-colors group"
+                onClick={() => onOpenChange(false)}
+                className="absolute top-2 right-2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
               >
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <AvatarWithFrame
-                      imageUrl={merchantApp.store_image_url}
-                      frameUrl={selectedFrame?.image_url}
-                      size="xs"
-                    />
-                    {merchantApp.is_verified && (
-                      <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center ring-1 ring-background">
-                        <Shield className="h-2 w-2 text-primary-foreground" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0 text-right">
-                    <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
-                      {merchantApp.display_name}
-                    </p>
-                    {merchantRatings && (
-                      <div className="flex items-center gap-1 justify-end">
-                        <span className="text-[11px] font-medium">{merchantRatings.avg.toFixed(1)}</span>
-                        <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />
-                        <span className="text-[10px] text-muted-foreground">({merchantRatings.count})</span>
-                      </div>
-                    )}
-                  </div>
-                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
-                </div>
+                <X className="h-3.5 w-3.5" />
               </button>
-            )}
 
-            {/* Description */}
-            {product.description && (
-              <div className="rounded-lg border border-border/50 bg-muted/10 p-2">
-                <Label className="text-[10px] text-muted-foreground">الوصف</Label>
-                <p className="text-xs text-foreground/80 mt-1 whitespace-pre-wrap leading-relaxed line-clamp-4">
-                  {product.description}
-                </p>
+              {/* Discount */}
+              {discountPercent > 0 && (
+                <Badge className="absolute top-2 left-11 bg-destructive text-destructive-foreground text-[10px] px-1.5 py-0 gap-0.5">
+                  <BadgePercent className="h-3 w-3" />
+                  {discountPercent}%
+                </Badge>
+              )}
+
+              {/* Video Badge */}
+              {product.video_url && (
+                <Badge variant="secondary" className="absolute bottom-2 left-2 text-[10px] gap-1">
+                  <Play className="h-3 w-3" />
+                  فيديو
+                </Badge>
+              )}
+
+              {/* Counter */}
+              {product.image_urls && product.image_urls.length > 1 && (
+                <Badge variant="secondary" className="absolute bottom-2 right-2 text-[10px] tabular-nums">
+                  {activeMediaIndex + 1}/{product.image_urls.length}
+                </Badge>
+              )}
+            </div>
+
+            {/* Thumbnails */}
+            {product.image_urls && product.image_urls.length > 1 && (
+              <div className="flex gap-1 p-2 border-b border-border/50 overflow-x-auto shrink-0">
+                {product.image_urls.slice(0, 8).map((url, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveMediaIndex(idx)}
+                    className={`shrink-0 h-10 w-10 rounded-md overflow-hidden border transition-all ${
+                      idx === activeMediaIndex 
+                        ? "border-primary ring-1 ring-primary/30" 
+                        : "border-border/50 hover:border-primary/50"
+                    }`}
+                  >
+                    <img src={url} alt="" className="w-full h-full object-cover" />
+                  </button>
+                ))}
               </div>
             )}
 
-            {/* Video */}
-            {product.video_url && (
-              <div className="rounded-lg border border-border/50 overflow-hidden">
-                <video controls className="w-full max-h-40" preload="metadata">
-                  <source src={product.video_url} />
-                </video>
-              </div>
-            )}
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              <div className="p-2.5 space-y-2">
+                {/* Title & Price */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-xs font-bold text-foreground line-clamp-2 leading-tight">
+                      {product.title}
+                    </h2>
+                    {product.estimated_days && (
+                      <div className="flex items-center gap-1 mt-1 text-[11px] text-muted-foreground">
+                        <Clock className="h-3 w-3" />
+                        {product.estimated_days} يوم
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="shrink-0 text-left">
+                    {product.original_price_iqd && product.price_iqd && product.original_price_iqd > product.price_iqd && (
+                      <div className="text-[10px] text-muted-foreground line-through">
+                        {product.original_price_iqd.toLocaleString()}
+                      </div>
+                    )}
+                    {product.price_iqd ? (
+                      <div className="text-base font-bold text-primary tabular-nums">
+                        {product.price_iqd.toLocaleString()}
+                        <span className="text-[10px] font-medium mr-0.5">د.ع</span>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">عند التواصل</span>
+                    )}
+                  </div>
+                </div>
 
-            {/* Similar Products - Same Merchant */}
-            {similarProducts?.sameMerchant && similarProducts.sameMerchant.length > 0 && (
-              <div className="pt-1">
-                <Label className="text-[10px] text-muted-foreground mb-2 block">منتجات أخرى من نفس التاجر</Label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {similarProducts.sameMerchant.slice(0, 4).map((p: any) => (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        setActiveMediaIndex(0);
-                        // Navigate to the product in store
-                        navigate(`/store/${p.merchant_id}?product=${p.id}`);
-                        onOpenChange(false);
-                      }}
-                      className="rounded-md border border-border/40 bg-muted/20 overflow-hidden hover:border-primary/40 transition-colors"
-                    >
-                      <div className="aspect-square bg-muted/30">
-                        {p.image_urls?.[0] ? (
-                          <img src={p.image_urls[0]} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="h-4 w-4 text-muted-foreground/30" />
+                {/* Social Actions */}
+                <div className="flex justify-end">
+                  <SocialActions 
+                    targetType="product" 
+                    targetId={product.id}
+                    showComments={false}
+                    compact
+                  />
+                </div>
+
+                {/* Merchant */}
+                {merchantApp && (
+                  <button
+                    onClick={handleVisitStore}
+                    className="w-full rounded-lg border border-border/50 bg-muted/20 p-2 hover:bg-muted/40 transition-colors group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="relative">
+                        <AvatarWithFrame
+                          imageUrl={merchantApp.store_image_url}
+                          frameUrl={selectedFrame?.image_url}
+                          size="xs"
+                        />
+                        {merchantApp.is_verified && (
+                          <div className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full bg-primary flex items-center justify-center ring-1 ring-background">
+                            <Shield className="h-2 w-2 text-primary-foreground" />
                           </div>
                         )}
                       </div>
-                      <div className="p-1">
-                        <p className="text-[9px] font-medium line-clamp-1">{p.title}</p>
-                        {p.price_iqd && (
-                          <p className="text-[9px] text-primary font-bold">{p.price_iqd.toLocaleString()}</p>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Similar Products - Other Merchants */}
-            {similarProducts?.otherMerchants && similarProducts.otherMerchants.length > 0 && (
-              <div className="pt-1">
-                <Label className="text-[10px] text-muted-foreground mb-2 block">منتجات مشابهة من تجار آخرين</Label>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {similarProducts.otherMerchants.slice(0, 4).map((p: any) => (
-                    <button
-                      key={p.id}
-                      onClick={() => {
-                        navigate(`/store/${p.merchant_id}?product=${p.id}`);
-                        onOpenChange(false);
-                      }}
-                      className="rounded-md border border-border/40 bg-muted/20 overflow-hidden hover:border-primary/40 transition-colors"
-                    >
-                      <div className="aspect-square bg-muted/30">
-                        {p.image_urls?.[0] ? (
-                          <img src={p.image_urls[0]} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Package className="h-4 w-4 text-muted-foreground/30" />
+                      <div className="flex-1 min-w-0 text-right">
+                        <p className="text-xs font-semibold truncate group-hover:text-primary transition-colors">
+                          {merchantApp.display_name}
+                        </p>
+                        {merchantRatings && (
+                          <div className="flex items-center gap-1 justify-end">
+                            <span className="text-[11px] font-medium">{merchantRatings.avg.toFixed(1)}</span>
+                            <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />
+                            <span className="text-[10px] text-muted-foreground">({merchantRatings.count})</span>
                           </div>
                         )}
                       </div>
-                      <div className="p-1">
-                        <p className="text-[9px] font-medium line-clamp-1">{p.title}</p>
-                        <p className="text-[8px] text-muted-foreground truncate">{p.merchant?.display_name}</p>
-                        {p.price_iqd && (
-                          <p className="text-[9px] text-primary font-bold">{p.price_iqd.toLocaleString()}</p>
-                        )}
-                      </div>
-                    </button>
-                  ))}
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
+                    </div>
+                  </button>
+                )}
+
+                {/* Description */}
+                {product.description && (
+                  <div className="rounded-lg border border-border/50 bg-muted/10 p-2">
+                    <Label className="text-[10px] text-muted-foreground">الوصف</Label>
+                    <p className="text-xs text-foreground/80 mt-1 whitespace-pre-wrap leading-relaxed line-clamp-4">
+                      {product.description}
+                    </p>
+                  </div>
+                )}
+
+                {/* Video */}
+                {product.video_url && (
+                  <div className="rounded-lg border border-border/50 overflow-hidden">
+                    <video controls className="w-full max-h-40" preload="metadata">
+                      <source src={product.video_url} />
+                    </video>
+                  </div>
+                )}
+
+                {/* Similar Products - Same Merchant */}
+                {similarProducts?.sameMerchant && similarProducts.sameMerchant.length > 0 && (
+                  <div className="pt-1">
+                    <Label className="text-[10px] text-muted-foreground mb-2 block">منتجات أخرى من نفس التاجر</Label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {similarProducts.sameMerchant.slice(0, 4).map((p: any) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            setActiveMediaIndex(0);
+                            navigate(`/store/${p.merchant_id}?product=${p.id}`);
+                            onOpenChange(false);
+                          }}
+                          className="rounded-md border border-border/40 bg-muted/20 overflow-hidden hover:border-primary/40 transition-colors"
+                        >
+                          <div className="aspect-square bg-muted/30">
+                            {p.image_urls?.[0] ? (
+                              <img src={p.image_urls[0]} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="h-4 w-4 text-muted-foreground/30" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-1">
+                            <p className="text-[9px] font-medium line-clamp-1">{p.title}</p>
+                            {p.price_iqd && (
+                              <p className="text-[9px] text-primary font-bold">{p.price_iqd.toLocaleString()}</p>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Similar Products - Other Merchants */}
+                {similarProducts?.otherMerchants && similarProducts.otherMerchants.length > 0 && (
+                  <div className="pt-1">
+                    <Label className="text-[10px] text-muted-foreground mb-2 block">منتجات مشابهة من تجار آخرين</Label>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {similarProducts.otherMerchants.slice(0, 4).map((p: any) => (
+                        <button
+                          key={p.id}
+                          onClick={() => {
+                            navigate(`/store/${p.merchant_id}?product=${p.id}`);
+                            onOpenChange(false);
+                          }}
+                          className="rounded-md border border-border/40 bg-muted/20 overflow-hidden hover:border-primary/40 transition-colors"
+                        >
+                          <div className="aspect-square bg-muted/30">
+                            {p.image_urls?.[0] ? (
+                              <img src={p.image_urls[0]} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="h-4 w-4 text-muted-foreground/30" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="p-1">
+                            <p className="text-[9px] font-medium line-clamp-1">{p.title}</p>
+                            <p className="text-[8px] text-muted-foreground truncate">{p.merchant?.display_name}</p>
+                            {p.price_iqd && (
+                              <p className="text-[9px] text-primary font-bold">{p.price_iqd.toLocaleString()}</p>
+                            )}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Comments Section */}
+                <div className="pt-3 border-t border-white/10">
+                  <CommentsSection 
+                    targetType="product" 
+                    targetId={product.id}
+                    initialVisibleCount={3}
+                  />
+                </div>
+
+                {/* Actions - Compact */}
+                <div className="flex gap-1.5 pt-0.5 sticky bottom-0 bg-background pb-2">
+                  <Button 
+                    size="sm"
+                    className="flex-1 gap-1 h-8 text-[11px] font-bold rounded-xl" 
+                    onClick={handleContactMerchant}
+                  >
+                    <MessageCircle className="h-3 w-3" />
+                    تواصل للطلب
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="gap-1 h-8 text-[11px] rounded-xl" 
+                    onClick={handleVisitStore}
+                  >
+                    <Store className="h-3 w-3" />
+                    المتجر
+                  </Button>
                 </div>
               </div>
-            )}
-
-            {/* Actions - Compact */}
-            <div className="flex gap-1.5 pt-0.5">
-              <Button 
-                size="sm"
-                className="flex-1 gap-1 h-8 text-[11px] font-bold rounded-xl" 
-                onClick={handleContactMerchant}
-              >
-                <MessageCircle className="h-3 w-3" />
-                تواصل للطلب
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                className="gap-1 h-8 text-[11px] rounded-xl" 
-                onClick={handleVisitStore}
-              >
-                <Store className="h-3 w-3" />
-                المتجر
-              </Button>
             </div>
           </div>
         </DialogContent>

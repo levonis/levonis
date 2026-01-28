@@ -35,6 +35,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import AcceptOfferDialog from "@/components/community/AcceptOfferDialog";
 import EditOfferDialog from "@/components/community/EditOfferDialog";
+import SocialActions from "@/components/community/SocialActions";
+import CommentsSection from "@/components/community/CommentsSection";
 
 interface PrintRequest {
   id: string;
@@ -182,84 +184,85 @@ export default function RequestDetailModal({
           hideClose
           className="!p-0 !gap-0 sm:max-w-lg max-h-[90vh] overflow-hidden"
         >
-          {/* Hero Image Section */}
-          <div className="relative">
-            {hasImages ? (
-              <div className="relative aspect-[16/9] bg-black/30">
-                <img
-                  src={images[currentImageIndex]}
-                  alt={request.title}
-                  className="w-full h-full object-contain"
-                />
-                
-                {/* Navigation arrows */}
-                {images.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevImage}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110"
+          <div className="flex flex-col max-h-[90vh]">
+            {/* Sticky Hero Image Section */}
+            <div className="relative shrink-0 sticky top-0 z-10 bg-background">
+              {hasImages ? (
+                <div className="relative aspect-[16/9] bg-black/30">
+                  <img
+                    src={images[currentImageIndex]}
+                    alt={request.title}
+                    className="w-full h-full object-contain"
+                  />
+                  
+                  {/* Navigation arrows */}
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        onClick={prevImage}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={nextImage}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
+                        {images.map((_, i) => (
+                          <button
+                            key={i}
+                            onClick={() => setCurrentImageIndex(i)}
+                            className={`h-1.5 rounded-full transition-all ${
+                              i === currentImageIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Video badge */}
+                  {request.video_url && (
+                    <a
+                      href={request.video_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500 text-white text-xs font-medium hover:bg-red-600 transition-colors"
                     >
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                    <button
-                      onClick={nextImage}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
-                      {images.map((_, i) => (
-                        <button
-                          key={i}
-                          onClick={() => setCurrentImageIndex(i)}
-                          className={`h-1.5 rounded-full transition-all ${
-                            i === currentImageIndex ? "w-6 bg-white" : "w-1.5 bg-white/40 hover:bg-white/60"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
+                      <Play className="h-3 w-3" />
+                      مشاهدة الفيديو
+                    </a>
+                  )}
+                </div>
+              ) : (
+                <div className="aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                  <Package className="h-16 w-16 text-primary/20" />
+                </div>
+              )}
 
-                {/* Video badge */}
-                {request.video_url && (
-                  <a
-                    href={request.video_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-500 text-white text-xs font-medium hover:bg-red-600 transition-colors"
-                  >
-                    <Play className="h-3 w-3" />
-                    مشاهدة الفيديو
-                  </a>
-                )}
-              </div>
-            ) : (
-              <div className="aspect-[16/9] bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                <Package className="h-16 w-16 text-primary/20" />
-              </div>
-            )}
+              {/* Close button */}
+              <button
+                onClick={() => onOpenChange(false)}
+                className="absolute top-3 left-3 h-9 w-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110 z-10"
+              >
+                <X className="h-4 w-4" />
+              </button>
 
-            {/* Close button */}
-            <button
-              onClick={() => onOpenChange(false)}
-              className="absolute top-3 left-3 h-9 w-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-all hover:scale-110 z-10"
-            >
-              <X className="h-4 w-4" />
-            </button>
+              {/* Status Badge */}
+              {isAccepted && (
+                <Badge className="absolute top-3 right-3 bg-green-500 text-white border-0 gap-1">
+                  <Lock className="h-3 w-3" />
+                  تم الطلب - العروض مقفلة
+                </Badge>
+              )}
+            </div>
 
-            {/* Status Badge */}
-            {isAccepted && (
-              <Badge className="absolute top-3 right-3 bg-green-500 text-white border-0 gap-1">
-                <Lock className="h-3 w-3" />
-                تم الطلب - العروض مقفلة
-              </Badge>
-            )}
-          </div>
-
-          {/* Scrollable Content */}
-          <div className="max-h-[55vh] overflow-y-auto overscroll-contain">
-            <div className="p-4 space-y-4">
+            {/* Scrollable Content */}
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              <div className="p-4 space-y-4">
               
               {/* Title & Quick Stats */}
               <div className="space-y-3">
@@ -285,6 +288,14 @@ export default function RequestDetailModal({
                       <span className="text-xs font-medium">{request.quantity} قطعة</span>
                     </div>
                   )}
+                  
+                  {/* Social Actions */}
+                  <SocialActions 
+                    targetType="request" 
+                    targetId={request.id}
+                    showComments={false}
+                    compact
+                  />
                 </div>
               </div>
 
@@ -520,6 +531,15 @@ export default function RequestDetailModal({
                 </div>
               )}
 
+              {/* Comments Section */}
+              <div className="pt-3 border-t border-white/10">
+                <CommentsSection 
+                  targetType="request" 
+                  targetId={request.id}
+                  initialVisibleCount={3}
+                />
+              </div>
+
               {/* Timestamp */}
               <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground pt-2">
                 <Clock className="h-3 w-3" />
@@ -530,6 +550,7 @@ export default function RequestDetailModal({
                 })}
               </div>
             </div>
+          </div>
           </div>
         </DialogContent>
       </Dialog>
