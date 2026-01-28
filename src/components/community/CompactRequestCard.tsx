@@ -223,38 +223,35 @@ export default function CompactRequestCard({
           </div>
         </div>
 
-        {/* Action Buttons - Single row */}
-        <div className="flex items-center gap-2">
-          {/* Chat Button */}
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-8 px-3 text-[10px] bg-white/5 hover:bg-white/10 text-muted-foreground rounded-lg flex-shrink-0"
+        {/* Action Buttons - Compact row */}
+        <div className="flex items-center gap-1.5">
+          {/* Chat Button - Small icon */}
+          <button
+            className="h-7 px-2.5 flex items-center gap-1 rounded-md text-[9px] bg-[hsl(160_50%_14%)] hover:bg-[hsl(160_50%_18%)] text-muted-foreground border border-white/5 transition-colors"
             onClick={handleChat}
           >
-            <MessageSquare className="h-3 w-3 ml-1" />
+            <MessageSquare className="h-3 w-3" />
             تواصل
-          </Button>
+          </button>
 
           {/* Price Button - ONLY visible for merchants who don't own the request */}
           {isMerchant && !isOwner && !isAccepted && onAddOffer && (
             myOffer ? (
               <div
-                className="flex-1 flex items-center justify-center gap-1.5 h-8 px-3 rounded-lg bg-primary/10 border border-primary/30 text-primary"
+                className="flex-1 flex items-center justify-center gap-1 h-7 px-2 rounded-md bg-primary/10 border border-primary/30 text-primary"
                 onClick={(e) => e.stopPropagation()}
               >
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                <span className="text-[10px] font-bold">{myOffer.price_iqd.toLocaleString()} د.ع</span>
+                <CheckCircle2 className="h-3 w-3" />
+                <span className="text-[9px] font-bold">{(myOffer.price_iqd / 1000).toFixed(0)}k د.ع</span>
               </div>
             ) : (
-              <Button
-                size="sm"
-                className="flex-1 h-8 px-4 text-[10px] font-bold bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg"
+              <button
+                className="flex-1 h-7 px-3 flex items-center justify-center gap-1 rounded-md text-[9px] font-bold bg-gradient-to-r from-primary to-[hsl(160_60%_30%)] hover:from-primary/90 hover:to-[hsl(160_60%_35%)] text-primary-foreground shadow-sm transition-all"
                 onClick={handlePrice}
               >
-                <DollarSign className="h-3.5 w-3.5 ml-1" />
-                تسعير
-              </Button>
+                <DollarSign className="h-3 w-3" />
+                سعّر
+              </button>
             )
           )}
         </div>
