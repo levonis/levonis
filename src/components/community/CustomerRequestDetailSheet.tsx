@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Package, Palette, Ruler, Clock, DollarSign, Layers, Eye,
   Calendar, Link2, Video, ChevronLeft, ChevronRight, MapPin, Hash,
-  Pencil, Trash2, MessageCircle, ExternalLink, CheckCircle, Star
+  Pencil, Trash2, MessageCircle, ExternalLink, CheckCircle, Star, Send, User
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -337,79 +337,95 @@ export default function CustomerRequestDetailSheet({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {offers.map((offer: any) => {
+                  {offers.map((offer: any, index: number) => {
                     const isOfferAccepted = offer.id === request.accepted_offer_id;
+                    const isBestPrice = index === 0 && !request.accepted_offer_id;
+                    
                     return (
                       <div
                         key={offer.id}
-                        className={`p-3 rounded-xl border ${
-                          isOfferAccepted ? "border-emerald-500 bg-emerald-500/5" : "border-border bg-card"
+                        className={`relative flex items-center gap-3 rounded-xl border p-2.5 transition-all ${
+                          isOfferAccepted
+                            ? "border-green-500/50 bg-gradient-to-r from-green-500/10 to-transparent"
+                            : isBestPrice
+                            ? "border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-transparent"
+                            : "border-white/10 bg-white/[0.02] hover:bg-white/[0.04]"
                         }`}
                       >
-                        <div className="flex items-center gap-2.5 mb-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={offer.merchant?.store_image_url} />
-                            <AvatarFallback className="text-[10px]">
-                              {offer.merchant?.display_name?.[0] || "T"}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-xs truncate">
+                        {/* Merchant Avatar */}
+                        <Avatar className="h-9 w-9 shrink-0 border border-white/10">
+                          <AvatarImage src={offer.merchant?.store_image_url} />
+                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                            <User className="h-3.5 w-3.5" />
+                          </AvatarFallback>
+                        </Avatar>
+
+                        {/* Main Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="font-semibold text-[11px] truncate text-foreground">
                               {offer.merchant?.display_name || "تاجر"}
-                            </p>
-                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                              <Star className="h-2.5 w-2.5 text-amber-500 fill-amber-500" />
-                              <span>{offer.rating?.average_rating?.toFixed(1) || "0"}</span>
-                              <span>({offer.rating?.total_ratings || 0})</span>
-                            </div>
-                          </div>
-                          {isOfferAccepted && (
-                            <Badge className="bg-emerald-500 text-white text-[9px] gap-0.5">
-                              <CheckCircle className="h-2.5 w-2.5" />
-                              مقبول
-                            </Badge>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-3 text-xs mb-2">
-                          <span className="font-bold text-primary">
-                            {offer.price_iqd?.toLocaleString()} د.ع
-                          </span>
-                          <span className="text-muted-foreground">
-                            <Clock className="h-3 w-3 inline ml-0.5" />
-                            {offer.duration_days} أيام
-                          </span>
-                          {offer.grams && (
-                            <span className="text-muted-foreground">
-                              {offer.grams}g
                             </span>
-                          )}
+                            {isBestPrice && (
+                              <Badge className="h-4 px-1.5 bg-amber-500/20 text-amber-300 border-0 text-[8px] gap-0.5 shrink-0">
+                                <Star className="h-2 w-2" />
+                                الأفضل
+                              </Badge>
+                            )}
+                            {isOfferAccepted && (
+                              <Badge className="h-4 px-1.5 bg-green-500 text-white border-0 text-[8px] gap-0.5 shrink-0">
+                                <CheckCircle className="h-2 w-2" />
+                                مقبول
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
+                            <span className="flex items-center gap-0.5">
+                              <Clock className="h-2.5 w-2.5" />
+                              {offer.duration_days} يوم
+                            </span>
+                            {offer.grams && (
+                              <span className="text-cyan-400">{offer.grams}g</span>
+                            )}
+                          </div>
                         </div>
 
-                        {offer.notes && (
-                          <p className="text-[10px] text-muted-foreground mb-2">{offer.notes}</p>
-                        )}
+                        {/* Price */}
+                        <div className="text-center shrink-0 px-2.5 py-1 rounded-lg bg-primary/10">
+                          <p className="font-bold text-sm text-primary leading-tight">
+                            {offer.price_iqd?.toLocaleString()}
+                          </p>
+                          <p className="text-[7px] text-muted-foreground">د.ع</p>
+                        </div>
 
-                        {!isAccepted && (
-                          <div className="flex gap-2">
+                        {/* Actions */}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-blue-400 hover:bg-blue-500/20"
+                            onClick={() => handleStartChat(offer.trader_id)}
+                          >
+                            <Send className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:bg-white/10"
+                            onClick={() => navigate(`/store/${offer.trader_id}`)}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Button>
+                          {!isAccepted && (
                             <Button
                               size="sm"
-                              variant="outline"
-                              className="flex-1 h-7 text-[10px]"
-                              onClick={() => handleStartChat(offer.trader_id)}
-                            >
-                              <MessageCircle className="h-3 w-3 ml-1" />
-                              محادثة
-                            </Button>
-                            <Button
-                              size="sm"
-                              className="flex-1 h-7 text-[10px]"
+                              className="h-7 px-2.5 text-[9px] bg-primary hover:bg-primary/90"
                               onClick={() => setAcceptOfferDialog(offer)}
                             >
-                              قبول العرض
+                              قبول
                             </Button>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     );
                   })}

@@ -32,7 +32,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+
 import AcceptOfferDialog from "@/components/community/AcceptOfferDialog";
 import EditOfferDialog from "@/components/community/EditOfferDialog";
 import SocialActions from "@/components/community/SocialActions";
@@ -433,146 +433,112 @@ export default function RequestDetailModal({
                     )}
                   </div>
                   
-                  <ScrollArea className="w-full">
-                    <div className="flex gap-3 pb-2">
-                      {offers.map((offer, index) => (
+                  {/* Horizontal Offer Cards */}
+                  <div className="space-y-2">
+                    {offers.map((offer, index) => {
+                      const isAcceptedOffer = request.accepted_offer_id === offer.id;
+                      const isBestPrice = index === 0 && !request.accepted_offer_id;
+                      
+                      return (
                         <div
                           key={offer.id}
-                          className={`shrink-0 w-60 rounded-2xl border p-3 space-y-2 transition-all ${
-                            request.accepted_offer_id === offer.id
-                              ? "border-green-500/50 bg-green-500/10 shadow-[0_0_20px_hsl(142_76%_36%/0.2)]"
-                              : index === 0
-                              ? "border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-transparent"
-                              : "border-white/10 bg-white/5"
+                          className={`relative flex items-center gap-3 rounded-xl border p-2.5 transition-all ${
+                            isAcceptedOffer
+                              ? "border-green-500/50 bg-gradient-to-r from-green-500/10 to-transparent"
+                              : isBestPrice
+                              ? "border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-transparent"
+                              : "border-white/10 bg-white/[0.02] hover:bg-white/[0.04]"
                           }`}
                         >
-                          {/* Best price badge */}
-                          {index === 0 && !request.accepted_offer_id && (
-                            <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/30 text-[9px]">
-                              <Star className="h-2.5 w-2.5 ml-0.5" />
-                              أفضل سعر
-                            </Badge>
-                          )}
-                          
-                          {/* Merchant Info */}
-                          <div className="flex items-center gap-2.5">
-                            <Avatar className="h-9 w-9 border-2 border-white/10">
-                              <AvatarImage src={offer.merchant?.store_image_url || undefined} />
-                              <AvatarFallback className="text-xs bg-primary/20 text-primary">
-                                <User className="h-4 w-4" />
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-xs truncate text-foreground">
+                          {/* Merchant Avatar */}
+                          <Avatar className="h-10 w-10 shrink-0 border border-white/10">
+                            <AvatarImage src={offer.merchant?.store_image_url || undefined} />
+                            <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                              <User className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+
+                          {/* Main Info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-xs truncate text-foreground">
                                 {offer.merchant?.display_name || "تاجر"}
-                              </p>
-                              <div className="flex items-center gap-1 mt-0.5">
-                                {offer.merchant?.is_verified && (
-                                  <CheckCircle2 className="h-3 w-3 text-primary" />
-                                )}
-                                {offer.merchant?.badge_tier && offer.merchant.badge_tier !== "none" && (
-                                  <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-                                )}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Stats Grid: Price, Duration, Material, Grams */}
-                          <div className="grid grid-cols-2 gap-1.5">
-                            <div className="bg-primary/10 rounded-lg p-1.5 text-center">
-                              <p className="text-sm font-bold text-primary">
-                                {offer.price_iqd.toLocaleString()}
-                              </p>
-                              <p className="text-[8px] text-muted-foreground">د.ع</p>
-                            </div>
-                            <div className="bg-white/5 rounded-lg p-1.5 text-center">
-                              <p className="font-bold text-sm">{offer.duration_days}</p>
-                              <p className="text-[8px] text-muted-foreground">يوم</p>
-                            </div>
-                            {offer.material_type && (
-                              <div className="bg-purple-500/10 rounded-lg p-1.5 text-center">
-                                <p className="text-[10px] font-semibold text-purple-300">
-                                  {offer.material_type === "filament" ? "FDM" : offer.material_type === "resin" ? "SLA" : offer.material_type}
-                                </p>
-                                <p className="text-[8px] text-muted-foreground">المادة</p>
-                              </div>
-                            )}
-                            {offer.grams && (
-                              <div className="bg-cyan-500/10 rounded-lg p-1.5 text-center">
-                                <p className="font-bold text-[10px] text-cyan-300">{offer.grams}g</p>
-                                <p className="text-[8px] text-muted-foreground">الوزن</p>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Material subtypes */}
-                          {offer.material_subtypes && offer.material_subtypes.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
-                              {offer.material_subtypes.slice(0, 3).map((sub, i) => (
-                                <Badge key={i} variant="outline" className="text-[8px] px-1.5 py-0 h-4 border-white/20">
-                                  {sub}
+                              </span>
+                              {offer.merchant?.is_verified && (
+                                <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
+                              )}
+                              {isBestPrice && (
+                                <Badge className="h-4 px-1.5 bg-amber-500/20 text-amber-300 border-0 text-[8px] gap-0.5 shrink-0">
+                                  <Star className="h-2 w-2" />
+                                  الأفضل
                                 </Badge>
-                              ))}
-                              {offer.material_subtypes.length > 3 && (
-                                <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 border-white/20">
-                                  +{offer.material_subtypes.length - 3}
+                              )}
+                              {isAcceptedOffer && (
+                                <Badge className="h-4 px-1.5 bg-green-500 text-white border-0 text-[8px] gap-0.5 shrink-0">
+                                  <CheckCircle2 className="h-2 w-2" />
+                                  مقبول
                                 </Badge>
                               )}
                             </div>
-                          )}
+                            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-2.5 w-2.5" />
+                                {offer.duration_days} يوم
+                              </span>
+                              {offer.material_type && (
+                                <span className={`font-medium ${offer.material_type === 'filament' ? 'text-blue-400' : 'text-purple-400'}`}>
+                                  {offer.material_type === "filament" ? "FDM" : "SLA"}
+                                </span>
+                              )}
+                              {offer.grams && (
+                                <span className="text-cyan-400">{offer.grams}g</span>
+                              )}
+                            </div>
+                          </div>
 
-                          {/* Notes preview */}
-                          {offer.notes && (
-                            <p className="text-[9px] text-muted-foreground line-clamp-2 whitespace-normal bg-white/5 rounded-lg p-1.5">
-                              {offer.notes}
+                          {/* Price */}
+                          <div className="text-left shrink-0 px-3 py-1.5 rounded-lg bg-primary/10">
+                            <p className="font-bold text-sm text-primary leading-tight">
+                              {offer.price_iqd.toLocaleString()}
                             </p>
-                          )}
+                            <p className="text-[8px] text-muted-foreground">د.ع</p>
+                          </div>
 
                           {/* Actions */}
-                          <div className="flex gap-1.5 pt-1">
+                          <div className="flex items-center gap-1 shrink-0">
                             <Button
                               size="sm"
-                              variant="outline"
-                              className="flex-1 text-[9px] h-6 px-1.5 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
+                              variant="ghost"
+                              className="h-7 w-7 p-0 text-blue-400 hover:bg-blue-500/20"
                               onClick={() => handleChatWithMerchant(offer.trader_id)}
                             >
-                              <Send className="h-2.5 w-2.5 ml-0.5" />
-                              تواصل
+                              <Send className="h-3.5 w-3.5" />
                             </Button>
                             <Button
                               size="sm"
-                              variant="outline"
-                              className="text-[9px] h-6 px-1.5 border-white/20 hover:bg-white/10"
+                              variant="ghost"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:bg-white/10"
                               onClick={() => {
                                 navigate(`/store/${offer.trader_id}`);
                                 onOpenChange(false);
                               }}
                             >
-                              <ExternalLink className="h-2.5 w-2.5" />
+                              <ExternalLink className="h-3.5 w-3.5" />
                             </Button>
                             {isOwner && !isAccepted && (
                               <Button
                                 size="sm"
-                                className="flex-1 text-[9px] h-6 px-1.5 bg-green-600 hover:bg-green-700"
+                                className="h-7 px-3 text-[10px] bg-primary hover:bg-primary/90"
                                 onClick={() => handleAcceptOffer(offer)}
                               >
-                                <CheckCircle2 className="h-2.5 w-2.5 ml-0.5" />
                                 قبول
                               </Button>
                             )}
                           </div>
-
-                          {request.accepted_offer_id === offer.id && (
-                            <Badge className="w-full justify-center bg-green-600 text-white text-[10px] border-0 py-1">
-                              <CheckCircle2 className="h-3 w-3 ml-1" />
-                              العرض المقبول
-                            </Badge>
-                          )}
                         </div>
-                      ))}
-                    </div>
-                    <ScrollBar orientation="horizontal" />
-                  </ScrollArea>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
