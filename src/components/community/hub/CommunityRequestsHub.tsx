@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Package, Loader2, AlertCircle } from "lucide-react";
+import { Package, AlertCircle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -64,7 +64,10 @@ export default function CommunityRequestsHub({
   });
 
   const isMerchant = !!merchantProfile;
-  const limit = mode === "preview" ? 6 : 20;
+  const limit = mode === "preview" ? 6 : 50;
+
+  // Determine if we're showing completed (accepted) requests
+  const showCompleted = sortBy === "completed";
 
   // Fetch requests
   const { data: requests = [], isLoading, error } = useQuery({
@@ -92,9 +95,18 @@ export default function CommunityRequestsHub({
           customer_governorate
         `)
         .eq("status", "approved")
-        .is("accepted_offer_id", null) // Only show open requests
-        .order("created_at", { ascending: false })
         .limit(limit);
+
+      // Filter based on sortBy
+      if (showCompleted) {
+        // Show only accepted/completed requests - for "منتهي" filter
+        query = query.not("accepted_offer_id", "is", null)
+          .order("accepted_at", { ascending: false, nullsFirst: false });
+      } else {
+        // Default: Only show open requests (not accepted) - hide from merchants in newest/not_priced
+        query = query.is("accepted_offer_id", null)
+          .order("created_at", { ascending: false });
+      }
 
       // Apply material filter
       if (sortBy === "resin") {
@@ -169,7 +181,9 @@ export default function CommunityRequestsHub({
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <Package className="h-10 w-10 text-muted-foreground/30 mb-2" />
-        <p className="text-sm text-muted-foreground">لا توجد طلبات متاحة</p>
+        <p className="text-sm text-muted-foreground">
+          {showCompleted ? "لا توجد طلبات منتهية" : "لا توجد طلبات متاحة"}
+        </p>
         {!user && (
           <Button
             variant="link"
