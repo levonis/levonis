@@ -9,7 +9,6 @@ import { Loader2 } from 'lucide-react';
 import AnimatedDivider from '@/components/ui/animated-divider';
 
 // Lazy load non-critical components
-const UnifiedChatButton = lazy(() => import('@/components/UnifiedChatButton'));
 const CommunitySection = lazy(() => import('@/components/community/CommunitySection'));
 
 // Memoized category card for performance
@@ -179,9 +178,6 @@ const Home = () => {
 
         <Footer />
       </main>
-      <Suspense fallback={null}>
-        <UnifiedChatButton />
-      </Suspense>
     </div>
   );
 };

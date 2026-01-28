@@ -81,6 +81,8 @@ interface ListingConversationsProps {
   onExternalOpenChange?: (open: boolean) => void;
   autoOpenConversationId?: string | null;
   entryContext?: EntryContextData | null;
+  /** When true, renders content directly without Dialog wrapper (for embedding in other dialogs) */
+  embedded?: boolean;
 }
 
 const formatMessageDate = (date: Date) => {
@@ -89,7 +91,7 @@ const formatMessageDate = (date: Date) => {
   return format(date, 'dd MMM yyyy', { locale: ar });
 };
 
-export const ListingConversations = ({ children, listingId, onClose, isAdmin: propIsAdmin, externalOpen, onExternalOpenChange, autoOpenConversationId, entryContext: propsEntryContext }: ListingConversationsProps) => {
+export const ListingConversations = ({ children, listingId, onClose, isAdmin: propIsAdmin, externalOpen, onExternalOpenChange, autoOpenConversationId, entryContext: propsEntryContext, embedded = false }: ListingConversationsProps) => {
   const { user, isAdmin: authIsAdmin } = useAuth();
   const isAdmin = propIsAdmin || authIsAdmin;
   const queryClient = useQueryClient();
