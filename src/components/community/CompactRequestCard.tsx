@@ -8,6 +8,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import SocialActions from "@/components/community/SocialActions";
 
 interface PrintRequest {
   id: string;
@@ -203,11 +204,19 @@ export default function CompactRequestCard({
               <span className="text-[9px] text-muted-foreground">لا توجد عروض</span>
             )}
           </div>
-          {offersCount > 0 && (
-            <span className="text-[9px] text-muted-foreground">
-              {offersCount} عرض
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {offersCount > 0 && (
+              <span className="text-[9px] text-muted-foreground">
+                {offersCount} عرض
+              </span>
+            )}
+            <SocialActions 
+              targetType="request" 
+              targetId={request.id} 
+              showComments={false}
+              compact 
+            />
+          </div>
         </div>
 
         {/* Action Buttons */}

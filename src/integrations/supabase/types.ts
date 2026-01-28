@@ -633,6 +633,50 @@ export type Database = {
         }
         Relationships: []
       }
+      community_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_hidden: boolean
+          parent_id: string | null
+          target_id: string
+          target_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          parent_id?: string | null
+          target_id: string
+          target_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_hidden?: boolean
+          parent_id?: string | null
+          target_id?: string
+          target_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "community_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_complaints: {
         Row: {
           admin_notes: string | null
@@ -760,6 +804,30 @@ export type Database = {
           total_requests_received?: number | null
           total_spent?: number | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      community_likes: {
+        Row: {
+          created_at: string
+          id: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          target_id?: string
+          target_type?: string
           user_id?: string
         }
         Relationships: []
@@ -2524,6 +2592,38 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_printer_models: {
+        Row: {
+          brand: string | null
+          created_at: string
+          id: string
+          merchant_id: string
+          model_name: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          merchant_id: string
+          model_name: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          id?: string
+          merchant_id?: string
+          model_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_printer_models_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_products: {
         Row: {
           category_ids: string[] | null
@@ -3278,6 +3378,8 @@ export type Database = {
           edit_count: number
           grams: number | null
           id: string
+          material_subtypes: string[] | null
+          material_type: string | null
           notes: string | null
           offer_sent_at: string | null
           price_iqd: number
@@ -3296,6 +3398,8 @@ export type Database = {
           edit_count?: number
           grams?: number | null
           id?: string
+          material_subtypes?: string[] | null
+          material_type?: string | null
           notes?: string | null
           offer_sent_at?: string | null
           price_iqd: number
@@ -3314,6 +3418,8 @@ export type Database = {
           edit_count?: number
           grams?: number | null
           id?: string
+          material_subtypes?: string[] | null
+          material_type?: string | null
           notes?: string | null
           offer_sent_at?: string | null
           price_iqd?: number
@@ -4512,6 +4618,35 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      store_followers: {
+        Row: {
+          created_at: string
+          id: string
+          store_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          store_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          store_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_followers_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_applications"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       store_printers: {
         Row: {
