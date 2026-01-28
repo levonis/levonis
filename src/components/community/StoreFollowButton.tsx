@@ -84,27 +84,35 @@ export default function StoreFollowButton({
 
   if (compact) {
     return (
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          toggleFollowMutation.mutate();
-        }}
-        disabled={toggleFollowMutation.isPending || !user}
-        className={`flex items-center gap-1 text-[9px] px-2 py-1 rounded-full transition-all ${
-          isFollowing
-            ? "bg-primary/20 text-primary"
-            : "bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary"
-        }`}
-      >
-        {toggleFollowMutation.isPending ? (
-          <Loader2 className="h-2.5 w-2.5 animate-spin" />
-        ) : isFollowing ? (
-          <UserCheck className="h-2.5 w-2.5" />
-        ) : (
-          <UserPlus className="h-2.5 w-2.5" />
+      <div className="flex items-center gap-2">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleFollowMutation.mutate();
+          }}
+          disabled={toggleFollowMutation.isPending || !user}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full transition-all font-medium ${
+            isFollowing
+              ? "bg-primary/20 text-primary border border-primary/30"
+              : "bg-muted/80 text-muted-foreground hover:bg-primary/10 hover:text-primary border border-transparent hover:border-primary/30"
+          }`}
+        >
+          {toggleFollowMutation.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : isFollowing ? (
+            <UserCheck className="h-3.5 w-3.5" />
+          ) : (
+            <UserPlus className="h-3.5 w-3.5" />
+          )}
+          {isFollowing ? "متابَع" : "متابعة"}
+        </button>
+        {showCount && (
+          <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded-full">
+            <Users className="h-3 w-3" />
+            <span className="font-medium">{followersCount}</span>
+          </div>
         )}
-        {showCount && followersCount > 0 && followersCount}
-      </button>
+      </div>
     );
   }
 

@@ -69,16 +69,20 @@ export default function CompactRequestCard({
     },
   });
 
-  // Check if merchant already has an offer
+  // Check if merchant already has an offer - need to pass merchantId through hub
   const { data: myOffer } = useQuery({
-    queryKey: ["my-offer-check", request.id],
+    queryKey: ["my-offer-check", request.id, isMerchant],
     enabled: isMerchant && !isOwner,
     queryFn: async () => {
+      // Get current user's merchant ID from auth
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.id) return null;
+      
       const { data } = await supabase
         .from("print_offers")
         .select("id, price_iqd")
         .eq("request_id", request.id)
-        .limit(1)
+        .eq("trader_id", user.id)
         .maybeSingle();
       return data;
     },
