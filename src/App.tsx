@@ -1,4 +1,4 @@
-// App component - main application entry point - v7 (community profile check)
+// App component - main application entry point - v8 (global floating chat button)
 import { Suspense, lazy, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -17,6 +17,9 @@ import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import { Loader2 } from "lucide-react";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
+
+// Lazy load unified chat button (global floating button)
+const UnifiedChatButton = lazy(() => import("@/components/UnifiedChatButton"));
 
 // Eager load Home page for best initial load
 import Home from "./pages/Home";
@@ -216,6 +219,10 @@ function AppContent() {
           </Routes>
         </Suspense>
       </main>
+      {/* Global floating chat button - visible on all pages */}
+      <Suspense fallback={null}>
+        <UnifiedChatButton />
+      </Suspense>
     </>
   );
 }
