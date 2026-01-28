@@ -73,17 +73,17 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
   const pointsStatus = pointsSettings?.points_status || 'active';
   const showPointsMenu = pointsStatus === 'active';
 
-  // Optimized: Admin unread messages - fetch from both systems
+  // Optimized: Admin unread messages - fetch from both systems (official + community)
   const { data: adminUnreadMessages } = useQuery({
     queryKey: ['admin-unread-messages', user?.id],
     queryFn: async () => {
-      if (!isAdmin) return 0;
+      if (!isAdmin) return { total: 0, official: 0, community: 0 };
 
       // Get official site unread messages
       const { data: conversations } = await supabase
         .from('conversations')
         .select('id')
-        .limit(50);
+        .limit(100);
 
       let officialUnread = 0;
       if (conversations && conversations.length > 0) {
@@ -97,9 +97,29 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
         officialUnread = count || 0;
       }
 
-      // Get community unread messages (optional - if tracking exists)
-      // For now just return official unread
-      return officialUnread;
+      // Get community unread messages
+      const { data: communityConvs } = await supabase
+        .from('listing_conversations')
+        .select('id')
+        .limit(100);
+
+      let communityUnread = 0;
+      if (communityConvs && communityConvs.length > 0) {
+        const communityConvIds = communityConvs.map(c => c.id);
+        const { count } = await supabase
+          .from('listing_messages')
+          .select('*', { count: 'exact', head: true })
+          .in('conversation_id', communityConvIds)
+          .neq('sender_id', user?.id || '')
+          .eq('is_read', false);
+        communityUnread = count || 0;
+      }
+
+      return { 
+        total: officialUnread + communityUnread, 
+        official: officialUnread, 
+        community: communityUnread 
+      };
     },
     enabled: !!user?.id && isAdmin,
     refetchInterval: 60000, // Check every minute
@@ -253,23 +273,53 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
               )}
             </Button>
 
-            {/* Admin Chat Button */}
+            {/* Admin Chat Button - Links to unified chats */}
             {isAdmin && (
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={() => navigate(ADMIN_ROUTES.chats)}
-                className="relative rounded-full border-primary/30 hover:border-primary"
-                title="محادثات العملاء"
-                aria-label="محادثات العملاء"
-              >
-                <MessageCircle className="h-4 w-4" />
-                {adminUnreadMessages && adminUnreadMessages > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
-                    {adminUnreadMessages > 9 ? '9+' : adminUnreadMessages}
-                  </span>
-                )}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="relative rounded-full border-primary/30 hover:border-primary"
+                    title="محادثات العملاء"
+                    aria-label="محادثات العملاء"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    {adminUnreadMessages && adminUnreadMessages.total > 0 && (
+                      <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
+                        {adminUnreadMessages.total > 9 ? '9+' : adminUnreadMessages.total}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-background backdrop-blur-sm border-border z-50">
+                  <DropdownMenuLabel>محادثات العملاء</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate(ADMIN_ROUTES.chats)}>
+                    <MessageCircle className="ml-2 h-3.5 w-3.5" />
+                    <span>محادثات الموقع الرسمي</span>
+                    {adminUnreadMessages && adminUnreadMessages.official > 0 && (
+                      <span className="mr-auto bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full font-bold">
+                        {adminUnreadMessages.official}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/admin/community-messages')}>
+                    <Users className="ml-2 h-3.5 w-3.5" />
+                    <span>محادثات مجتمع ليفو</span>
+                    {adminUnreadMessages && adminUnreadMessages.community > 0 && (
+                      <span className="mr-auto bg-purple-500 text-white text-xs px-2 py-0.5 rounded-full font-bold">
+                        {adminUnreadMessages.community}
+                      </span>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate(ADMIN_ROUTES.levoCommunity)}>
+                    <Shield className="ml-2 h-3.5 w-3.5" />
+                    <span>إدارة مجتمع ليفو</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
 
             {user ? (
