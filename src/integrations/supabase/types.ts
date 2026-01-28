@@ -3275,6 +3275,7 @@ export type Database = {
           decline_reason: string | null
           declined_at: string | null
           duration_days: number
+          edit_count: number
           grams: number | null
           id: string
           notes: string | null
@@ -3292,6 +3293,7 @@ export type Database = {
           decline_reason?: string | null
           declined_at?: string | null
           duration_days: number
+          edit_count?: number
           grams?: number | null
           id?: string
           notes?: string | null
@@ -3309,6 +3311,7 @@ export type Database = {
           decline_reason?: string | null
           declined_at?: string | null
           duration_days?: number
+          edit_count?: number
           grams?: number | null
           id?: string
           notes?: string | null

@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/select";
 import CommunityProductsHub from "@/components/community/hub/CommunityProductsHub";
 import CommunityMerchantsHub from "@/components/community/hub/CommunityMerchantsHub";
+import CommunityRequestsHub from "@/components/community/hub/CommunityRequestsHub";
 
 // Sort options for each tab
 const PRODUCT_SORTS = [
@@ -205,11 +206,11 @@ export default function CommunityExploreStrip({ className, searchQuery: external
               </Select>
             </div>
             
-            <div className="levo-wall-frame">
-              <p className="text-[11px] text-muted-foreground text-center py-3">
-                سيتم تفعيل عرض الطلبات قريباً
-              </p>
-            </div>
+            <CommunityRequestsHub
+              mode={isCommunityHub ? "hub" : "preview"}
+              searchQuery={searchQuery}
+              sortBy={requestSort}
+            />
 
             {!isCommunityHub && (
               <Button
