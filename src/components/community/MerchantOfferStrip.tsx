@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Store,
   Star,
   Clock,
-  MessageSquare,
   Send,
   CheckCircle,
-  Loader2,
   Edit3,
   ExternalLink,
   ShieldCheck,
+  Lock,
+  Eye,
+  Scale,
+  Users,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +22,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import AcceptOfferDialog from "./AcceptOfferDialog";
 import EditOfferDialog from "./EditOfferDialog";
 
@@ -41,6 +48,7 @@ interface MerchantOffer {
     store_image_url: string | null;
     badge_tier?: string | null;
     is_verified?: boolean;
+    followers_count?: number;
   } | null;
   rating?: {
     average_rating: number;
@@ -58,13 +66,13 @@ interface MerchantOfferStripProps {
   onRefetch?: () => void;
 }
 
-const BADGE_COLORS: Record<string, string> = {
-  bronze: "bg-amber-700/80",
-  silver: "bg-slate-400/80",
-  gold: "bg-yellow-500/80",
-  platinum: "bg-violet-500/80",
-  diamond: "bg-cyan-400/80",
-  emerald: "bg-emerald-500/80",
+const BADGE_CONFIG: Record<string, { bg: string; text: string }> = {
+  bronze: { bg: "bg-amber-700/30", text: "text-amber-400" },
+  silver: { bg: "bg-slate-400/30", text: "text-slate-300" },
+  gold: { bg: "bg-yellow-500/30", text: "text-yellow-400" },
+  platinum: { bg: "bg-violet-500/30", text: "text-violet-300" },
+  diamond: { bg: "bg-cyan-400/30", text: "text-cyan-300" },
+  emerald: { bg: "bg-emerald-500/30", text: "text-emerald-300" },
 };
 
 export default function MerchantOfferStrip({
@@ -79,7 +87,6 @@ export default function MerchantOfferStrip({
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const qc = useQueryClient();
 
   const [showAcceptDialog, setShowAcceptDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -87,21 +94,17 @@ export default function MerchantOfferStrip({
   const isMerchantOwner = user?.id === offer.trader_id;
   const isCustomer = user?.id === customerId;
   const canEdit = isMerchantOwner && (offer.edit_count ?? 0) < 1 && !isAccepted;
+  const hasEdited = (offer.edit_count ?? 0) >= 1;
 
-  // Navigate to chat with merchant and auto-share request
   const handleMessage = () => {
     const merchantAppId = offer.merchant?.id;
     if (!merchantAppId) {
       toast({ title: "لا يمكن بدء المحادثة", variant: "destructive" });
       return;
     }
-    const params = new URLSearchParams();
-    params.set("merchant_id", merchantAppId);
-    params.set("request_id", requestId);
-    navigate(`/community/messages?${params.toString()}`);
+    navigate(`/community/messages?merchant_id=${merchantAppId}&request_id=${requestId}`);
   };
 
-  // Navigate to merchant store using merchant.id (merchant_applications.id)
   const handleVisitStore = () => {
     const storeId = offer.merchant?.id;
     if (storeId) {
@@ -112,137 +115,191 @@ export default function MerchantOfferStrip({
   };
 
   const merchantName = offer.merchant?.display_name || "تاجر";
-  const merchantAvatar = offer.merchant?.store_image_url;
   const badgeTier = offer.merchant?.badge_tier;
-  const isVerified = offer.merchant?.is_verified;
+  const badgeConfig = badgeTier ? BADGE_CONFIG[badgeTier] : null;
+  const followersCount = offer.merchant?.followers_count || 0;
 
   return (
     <>
       <div
-        className={`flex items-center gap-2 px-3 py-2 rounded-xl transition-all ${
+        className={`relative rounded-xl border overflow-hidden transition-all ${
           isAccepted
-            ? "bg-gradient-to-r from-green-500/15 to-green-500/5 border border-green-500/40"
+            ? "bg-gradient-to-l from-green-500/15 via-green-500/8 to-transparent border-green-500/40"
+            : isMerchantOwner
+            ? "bg-gradient-to-l from-primary/15 via-primary/8 to-transparent border-primary/50"
             : isBestPrice
-            ? "bg-gradient-to-r from-primary/15 to-primary/5 border border-primary/40"
-            : "bg-card border border-border hover:border-primary/30"
+            ? "bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent border-amber-500/30"
+            : "bg-[hsl(160_45%_11%)] border-white/5 hover:border-primary/20"
         }`}
       >
-        {/* Avatar */}
-        <Avatar 
-          className="h-9 w-9 shrink-0 border-2 border-primary/20 cursor-pointer hover:border-primary/40 transition-colors"
-          onClick={handleVisitStore}
-        >
-          <AvatarImage src={merchantAvatar || undefined} />
-          <AvatarFallback className="bg-primary/10 text-primary">
-            <Store className="h-4 w-4" />
-          </AvatarFallback>
-        </Avatar>
+        {/* My Offer Label */}
+        {isMerchantOwner && (
+          <div className="absolute -top-px right-4 px-2.5 py-0.5 rounded-b-md bg-primary text-[9px] font-bold text-white z-10">
+            عرضك الخاص
+          </div>
+        )}
 
-        {/* Merchant Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span 
-              className="font-semibold text-xs truncate max-w-[100px] cursor-pointer hover:text-primary transition-colors"
-              onClick={handleVisitStore}
+        <div className="flex items-stretch">
+          {/* Left: Avatar Section */}
+          <div 
+            className="shrink-0 w-14 flex items-center justify-center bg-black/20 cursor-pointer hover:bg-black/30 transition-colors"
+            onClick={handleVisitStore}
+          >
+            <Avatar className="h-10 w-10 border-2 border-primary/30">
+              <AvatarImage src={offer.merchant?.store_image_url || undefined} />
+              <AvatarFallback className="bg-primary/20 text-primary text-sm">
+                <Store className="h-4 w-4" />
+              </AvatarFallback>
+            </Avatar>
+          </div>
+
+          {/* Middle: Info Sections */}
+          <div className="flex-1 min-w-0 py-2 px-2.5">
+            {/* Top Row: Store Info */}
+            <div className="flex items-center gap-1 mb-1 flex-wrap">
+              <span 
+                className="font-semibold text-[10px] truncate max-w-[80px] cursor-pointer hover:text-primary transition-colors"
+                onClick={handleVisitStore}
+              >
+                {merchantName}
+              </span>
+              
+              {offer.merchant?.is_verified && (
+                <ShieldCheck className="h-2.5 w-2.5 text-primary shrink-0" />
+              )}
+              
+              {badgeConfig && (
+                <span className={`text-[7px] font-bold px-1 py-0.5 rounded ${badgeConfig.bg} ${badgeConfig.text}`}>
+                  {badgeTier}
+                </span>
+              )}
+
+              {/* Rating - Small */}
+              {offer.rating && offer.rating.total_ratings > 0 && (
+                <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground">
+                  <Star className="h-2 w-2 fill-yellow-500 text-yellow-500" />
+                  {offer.rating.average_rating.toFixed(1)}
+                </span>
+              )}
+
+              {/* Followers - Small */}
+              {followersCount > 0 && (
+                <span className="flex items-center gap-0.5 text-[8px] text-muted-foreground">
+                  <Users className="h-2 w-2" />
+                  {followersCount}
+                </span>
+              )}
+
+              {/* Status Badges */}
+              {isBestPrice && !isAccepted && (
+                <Badge className="text-[7px] px-1 py-0 h-3 bg-amber-500/20 text-amber-400 border-0 mr-auto">
+                  الأفضل
+                </Badge>
+              )}
+              {isAccepted && (
+                <Badge className="text-[7px] px-1 py-0 h-3 bg-green-500 text-white border-0 gap-0.5 mr-auto">
+                  <CheckCircle className="h-2 w-2" />
+                  مقبول
+                </Badge>
+              )}
+            </div>
+
+            {/* Bottom Row: Main Stats */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {/* Price - Primary */}
+              <div className="flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/15 border border-primary/30">
+                <span className="font-bold text-xs text-primary">
+                  {offer.price_iqd.toLocaleString("ar-IQ")}
+                </span>
+                <span className="text-[8px] text-primary/70">د.ع</span>
+              </div>
+
+              {/* Duration */}
+              <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                <Clock className="h-2.5 w-2.5" />
+                <span>{offer.duration_days}ي</span>
+              </div>
+
+              {/* Grams if available */}
+              {offer.grams && (
+                <div className="flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                  <Scale className="h-2.5 w-2.5" />
+                  <span>{offer.grams}g</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Actions Section */}
+          <div className="shrink-0 flex items-center gap-1 px-2 border-r border-white/5">
+            {/* Notes Tooltip */}
+            {offer.notes && (
+              <TooltipProvider delayDuration={200}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-amber-400 hover:bg-amber-500/10 transition-colors">
+                      <Eye className="h-3 w-3" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent 
+                    side="top" 
+                    className="max-w-[180px] text-[10px] bg-card border-border p-2"
+                  >
+                    <p className="text-muted-foreground">{offer.notes}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
+            {/* Message Button */}
+            <button
+              className="h-6 w-6 flex items-center justify-center rounded text-primary/70 hover:text-primary hover:bg-primary/10 transition-colors"
+              onClick={handleMessage}
+              title="مراسلة"
             >
-              {merchantName}
-            </span>
-            
-            {isVerified && (
-              <ShieldCheck className="h-3 w-3 text-primary shrink-0" />
+              <Send className="h-3 w-3" />
+            </button>
+
+            {/* Visit Store Button */}
+            <button
+              className="h-6 w-6 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors"
+              onClick={handleVisitStore}
+              title="زيارة المتجر"
+            >
+              <ExternalLink className="h-3 w-3" />
+            </button>
+
+            {/* Customer: Accept Button */}
+            {isCustomer && !isAccepted && (
+              <Button
+                size="sm"
+                className="h-6 px-2 text-[9px] font-bold bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => setShowAcceptDialog(true)}
+              >
+                قبول
+              </Button>
             )}
-            
-            {badgeTier && BADGE_COLORS[badgeTier] && (
-              <Badge className={`text-[8px] px-1 py-0 h-4 ${BADGE_COLORS[badgeTier]} text-white border-0`}>
-                {badgeTier}
-              </Badge>
-            )}
-            
-            {isBestPrice && !isAccepted && (
-              <Badge className="text-[8px] px-1.5 py-0 h-4 bg-primary/20 text-primary border-0">
-                الأفضل
-              </Badge>
-            )}
-            
-            {isAccepted && (
-              <Badge className="text-[8px] px-1.5 py-0 h-4 bg-green-500 text-white border-0 gap-0.5">
-                <CheckCircle className="h-2.5 w-2.5" />
-                مقبول
-              </Badge>
+
+            {/* Merchant: Edit/Lock Button - 3 States */}
+            {isMerchantOwner && !isAccepted && (
+              canEdit ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-1.5 text-[9px] gap-0.5 border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                  onClick={() => setShowEditDialog(true)}
+                >
+                  <Edit3 className="h-2.5 w-2.5" />
+                  تعديل
+                </Button>
+              ) : hasEdited ? (
+                <div className="flex items-center gap-0.5 px-1.5 py-1 rounded bg-muted/30 text-[8px] text-muted-foreground">
+                  <Lock className="h-2 w-2" />
+                  تم التسعير
+                </div>
+              ) : null
             )}
           </div>
-          
-          {/* Rating */}
-          {offer.rating && offer.rating.total_ratings > 0 && (
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-0.5">
-              <Star className="h-2.5 w-2.5 fill-yellow-500 text-yellow-500" />
-              <span>{offer.rating.average_rating.toFixed(1)}</span>
-              <span className="opacity-60">({offer.rating.total_ratings})</span>
-            </div>
-          )}
-        </div>
-
-        {/* Duration */}
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground shrink-0">
-          <Clock className="h-3 w-3" />
-          <span>{offer.duration_days} يوم</span>
-        </div>
-
-        {/* Price - Full format */}
-        <div className="shrink-0 px-2.5 py-1.5 rounded-lg bg-primary/15 border border-primary/30">
-          <span className="font-bold text-sm text-primary">
-            {offer.price_iqd.toLocaleString("ar-IQ")}
-          </span>
-          <span className="text-[10px] text-primary/70 mr-1">د.ع</span>
-        </div>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1 shrink-0">
-          {/* Chat Button */}
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-primary/70 hover:text-primary hover:bg-primary/10"
-            onClick={handleMessage}
-            title="مراسلة التاجر"
-          >
-            <Send className="h-3.5 w-3.5" />
-          </Button>
-
-          {/* Store Button */}
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-white/5"
-            onClick={handleVisitStore}
-            title="زيارة المتجر"
-          >
-            <ExternalLink className="h-3.5 w-3.5" />
-          </Button>
-
-          {/* Edit Button - Merchant Owner Only (once) */}
-          {canEdit && (
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-7 w-7 text-amber-500/70 hover:text-amber-500 hover:bg-amber-500/10"
-              onClick={() => setShowEditDialog(true)}
-              title="تعديل العرض (مرة واحدة)"
-            >
-              <Edit3 className="h-3.5 w-3.5" />
-            </Button>
-          )}
-
-          {/* Accept Button - Customer Only */}
-          {isCustomer && !isAccepted && (
-            <Button
-              size="sm"
-              className="h-7 px-3 text-[10px] font-bold bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => setShowAcceptDialog(true)}
-            >
-              قبول
-            </Button>
-          )}
         </div>
       </div>
 
@@ -275,7 +332,6 @@ export default function MerchantOfferStrip({
           onSuccess={() => {
             setShowEditDialog(false);
             onRefetch?.();
-            qc.invalidateQueries({ queryKey: ["request-offers", requestId] });
           }}
         />
       )}
