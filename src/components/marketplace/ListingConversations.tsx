@@ -59,6 +59,14 @@ import MerchantOrderDialog from '@/components/chat/MerchantOrderDialog';
 import { useChatCommerce, type ChatOrder } from '@/hooks/useChatCommerce';
 import { parseEmojisInText } from '@/components/chat/emojiData';
 
+interface EntryContextData {
+  type: 'product' | 'request';
+  title: string;
+  imageUrl?: string | null;
+  price?: number | null;
+  requestId?: string | null;
+}
+
 interface ListingConversationsProps {
   children?: React.ReactNode;
   listingId?: string;
@@ -67,6 +75,7 @@ interface ListingConversationsProps {
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
   autoOpenConversationId?: string | null;
+  entryContext?: EntryContextData | null;
 }
 
 const formatMessageDate = (date: Date) => {
@@ -75,7 +84,7 @@ const formatMessageDate = (date: Date) => {
   return format(date, 'dd MMM yyyy', { locale: ar });
 };
 
-export const ListingConversations = ({ children, listingId, onClose, isAdmin: propIsAdmin, externalOpen, onExternalOpenChange, autoOpenConversationId }: ListingConversationsProps) => {
+export const ListingConversations = ({ children, listingId, onClose, isAdmin: propIsAdmin, externalOpen, onExternalOpenChange, autoOpenConversationId, entryContext: propsEntryContext }: ListingConversationsProps) => {
   const { user, isAdmin: authIsAdmin } = useAuth();
   const isAdmin = propIsAdmin || authIsAdmin;
   const queryClient = useQueryClient();
@@ -111,6 +120,16 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // Entry context state - shows product/request bar above input
+  const [entryContext, setEntryContext] = useState<EntryContextData | null>(propsEntryContext || null);
+  
+  // Sync entry context from props
+  useEffect(() => {
+    if (propsEntryContext) {
+      setEntryContext(propsEntryContext);
+    }
+  }, [propsEntryContext]);
 
   // Auto open if listingId is provided
   useEffect(() => {
@@ -128,7 +147,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       // NOTE: سوق المستعمل تم إزالته. نُبقي المحادثات فقط بدون ربطها بجدول الإعلانات.
       let query = supabase
         .from('listing_conversations')
-        .select('id, buyer_id, seller_id, listing_id, status, conversation_code, admin_joined, created_at, updated_at')
+        .select('id, buyer_id, seller_id, listing_id, status, conversation_code, admin_joined, created_at, updated_at, entry_context')
         .order('updated_at', { ascending: false });
       
       if (listingId) {
@@ -745,6 +764,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     const lastMsg = lastMessages?.[conv.id];
                     const isActive = selectedConversation === conv.id;
                     
+                    const convEntryContext = (conv as any).entry_context;
+                    
                     return (
                       <button
                         key={conv.id}
@@ -768,35 +789,42 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           )}
                         </div>
 
-                        {/* Content */}
+                        {/* Content - Three Sections */}
                         <div className="flex-1 min-w-0 text-right">
+                          {/* Section 1: Name with badges and conversation code */}
                           <div className="flex items-center justify-between gap-2 mb-0.5">
-                          <div className="flex items-center gap-1">
-                            <p className="font-medium text-sm truncate">
-                              {convOtherUser?.full_name || convOtherUser?.username || 'محادثة'}
-                            </p>
-                            {(conv as any).conversation_code && (
-                              <Badge variant="outline" className="text-[8px] px-1 py-0 font-mono">
-                                {(conv as any).conversation_code}
-                              </Badge>
-                            )}
-                          </div>
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <p className="font-semibold text-sm truncate max-w-[120px]">
+                                {convOtherUser?.display_name || convOtherUser?.full_name || convOtherUser?.username || 'محادثة'}
+                              </p>
+                              {/* Badges */}
+                              {conv.admin_joined && (
+                                <ShieldCheck className="w-3 h-3 text-primary shrink-0" />
+                              )}
+                              {(conv as any).conversation_code && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText((conv as any).conversation_code);
+                                    toast.success('تم نسخ رمز المحادثة');
+                                  }}
+                                  className="text-[8px] px-1 py-0 font-mono text-muted-foreground hover:text-primary transition-colors"
+                                  title="انقر للنسخ"
+                                >
+                                  #{(conv as any).conversation_code}
+                                </button>
+                              )}
+                            </div>
                             {lastMsg && (
                               <span className="text-[10px] text-muted-foreground flex-shrink-0">
                                 {format(new Date(lastMsg.created_at), 'HH:mm')}
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {convOtherUser?.full_name || convOtherUser?.username || 'مستخدم'}
-                            {!isAdmin && (
-                              <span className="text-primary mr-1">
-                                • {conv.buyer_id === user?.id ? 'مشتري' : 'بائع'}
-                              </span>
-                            )}
-                          </p>
+                          
+                          {/* Section 2: Last message */}
                           {lastMsg && (
-                            <p className="text-xs text-muted-foreground truncate mt-1 flex items-center gap-1">
+                            <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
                               {lastMsg.sender_id === user?.id && (
                                 <CheckCheck
                                   className={cn(
@@ -805,17 +833,25 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                   )}
                                 />
                               )}
-                              {lastMsg.image_url ? '📷 صورة' : lastMsg.content}
+                              {lastMsg.image_url ? '📷 صورة' : lastMsg.content?.slice(0, 40)}
                             </p>
                           )}
                         </div>
 
-                        {/* Badges */}
-                        {(conv.status === 'disputed' || conv.admin_joined) && (
-                          <div className="flex flex-col gap-1">
-                            {conv.admin_joined && (
-                              <ShieldCheck className="w-4 h-4 text-primary" />
-                            )}
+                        {/* Section 3: Entry context (last product/request entered through) */}
+                        {convEntryContext?.title && (
+                          <div className="shrink-0 flex items-center gap-1.5 max-w-[80px]">
+                            <div className="h-8 w-8 rounded-lg overflow-hidden border border-border/50 bg-muted/50 flex items-center justify-center">
+                              {convEntryContext.imageUrl ? (
+                                <img 
+                                  src={convEntryContext.imageUrl} 
+                                  alt="" 
+                                  className="h-full w-full object-cover" 
+                                />
+                              ) : (
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </div>
                           </div>
                         )}
                       </button>
@@ -1117,6 +1153,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     if (content) {
                       setMessageInput('');
                       sendMessageMutation.mutate({ content });
+                      // Auto-close context bar after sending
+                      setEntryContext(null);
                     }
                   }}
                   onSendMedia={async (file: File) => {
@@ -1138,6 +1176,26 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   isLoading={sendMessageMutation.isPending}
                   isUploadingMedia={uploadingMedia}
                   isSeller={canSendProducts}
+                  contextBar={entryContext}
+                  onSendContext={async () => {
+                    if (!entryContext) return;
+                    
+                    let content: string;
+                    if (entryContext.type === 'request' && entryContext.requestId) {
+                      // Send request details
+                      content = `📦 أريد التواصل بخصوص طلب الطباعة:\n${entryContext.title}`;
+                    } else {
+                      // Send product details
+                      content = `🛒 أنا مهتم بالمنتج:\n${entryContext.title}${entryContext.price ? `\n💰 ${entryContext.price.toLocaleString('ar-IQ')} د.ع` : ''}`;
+                    }
+                    
+                    await sendMessageMutation.mutateAsync({ 
+                      content, 
+                      mediaUrl: entryContext.imageUrl || undefined 
+                    });
+                    setEntryContext(null);
+                  }}
+                  onCloseContext={() => setEntryContext(null)}
                 />
                 
                 {/* Product Selector Dialog */}

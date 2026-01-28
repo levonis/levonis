@@ -24,15 +24,23 @@ export default function CommunityMessages() {
   const productUrl = searchParams.get('product_url');
   const requestId = searchParams.get('request_id');
 
+  // Context for product/request that user entered through
+  const [entryContext, setEntryContext] = useState<{
+    type: 'product' | 'request';
+    title: string;
+    imageUrl?: string | null;
+    price?: number | null;
+  } | null>(null);
+
   // Create or find existing conversation with merchant
   const createConversationMutation = useMutation({
     mutationFn: async () => {
       if (!user || !merchantId) throw new Error('Missing data');
 
-      // First, get the merchant's user_id from merchant_applications
+      // First, get the merchant's user_id and auto-response settings from merchant_applications
       const { data: merchantApp, error: merchantError } = await supabase
         .from('merchant_applications')
-        .select('user_id, display_name')
+        .select('user_id, display_name, inquiry_template, welcome_message, away_message, is_away')
         .eq('id', merchantId)
         .maybeSingle();
 
@@ -43,14 +51,31 @@ export default function CommunityMessages() {
       const sellerId = merchantApp.user_id;
 
       // If request_id is provided, fetch request details
-      let requestDetails: { title: string; description: string; size: string; colors: string } | null = null;
+      let requestDetails: { title: string; description: string; size: string; colors: string; image_url?: string | null } | null = null;
       if (requestId) {
         const { data: reqData } = await supabase
           .from('community_print_requests')
-          .select('title, description, size, colors')
+          .select('title, description, size, colors, image_url')
           .eq('id', requestId)
           .maybeSingle();
         requestDetails = reqData;
+        
+        // Set entry context for the product bar
+        if (reqData) {
+          setEntryContext({
+            type: 'request',
+            title: reqData.title,
+            imageUrl: reqData.image_url,
+            price: null,
+          });
+        }
+      } else if (productTitle) {
+        setEntryContext({
+          type: 'product',
+          title: productTitle,
+          imageUrl: null,
+          price: null,
+        });
       }
 
       // Check if conversation already exists between buyer and seller
@@ -61,63 +86,64 @@ export default function CommunityMessages() {
         .eq('seller_id', sellerId)
         .maybeSingle();
 
+      let conversationId: string;
+      let isNewConversation = false;
+
       if (existingConv) {
-        // Conversation exists - send initial message if product or request info provided
-        if (requestDetails) {
-          await supabase.from('listing_messages').insert({
-            conversation_id: existingConv.id,
-            sender_id: user.id,
-            content: `📦 أهلاً، أريد التواصل بخصوص طلب الطباعة:\n\n📝 العنوان: ${requestDetails.title}\n📐 الحجم: ${requestDetails.size}\n🎨 الألوان: ${requestDetails.colors}\n\n${requestDetails.description}`,
-          });
-          
-          await supabase.from('listing_conversations')
-            .update({ updated_at: new Date().toISOString() })
-            .eq('id', existingConv.id);
-        } else if (productTitle && productUrl) {
-          await supabase.from('listing_messages').insert({
-            conversation_id: existingConv.id,
-            sender_id: user.id,
-            content: `🛒 أهلاً، أنا مهتم بالمنتج:\n${productTitle}\n\n🔗 ${productUrl}`,
-          });
-          
-          await supabase.from('listing_conversations')
-            .update({ updated_at: new Date().toISOString() })
-            .eq('id', existingConv.id);
-        }
-        return existingConv.id;
-      }
-
-      // Create new conversation
-      const convCode = `CONV-${Date.now().toString(36).toUpperCase()}`;
-      const { data: newConv, error: convError } = await supabase
-        .from('listing_conversations')
-        .insert({
-          buyer_id: user.id,
-          seller_id: sellerId,
-          listing_id: merchantId, // Use merchantId as listing reference
-          conversation_code: convCode,
-          status: 'open',
-        })
-        .select('id')
-        .single();
-
-      if (convError) throw convError;
-
-      // Send initial message with request or product info
-      let initialMessage: string;
-      if (requestDetails) {
-        initialMessage = `📦 أهلاً، أريد التواصل بخصوص طلب الطباعة:\n\n📝 العنوان: ${requestDetails.title}\n📐 الحجم: ${requestDetails.size}\n🎨 الألوان: ${requestDetails.colors}\n\n${requestDetails.description}`;
-      } else if (productTitle && productUrl) {
-        initialMessage = `🛒 أهلاً، أنا مهتم بالمنتج:\n${productTitle}\n\n🔗 ${productUrl}`;
+        conversationId = existingConv.id;
+        // Update conversation context
+        await supabase.from('listing_conversations')
+          .update({ 
+            updated_at: new Date().toISOString(),
+            entry_context: requestDetails || productTitle ? {
+              type: requestDetails ? 'request' : 'product',
+              title: requestDetails?.title || productTitle,
+              requestId: requestId,
+            } : null
+          })
+          .eq('id', existingConv.id);
       } else {
-        initialMessage = `أهلاً، أريد التواصل معكم بخصوص منتجاتكم.`;
+        isNewConversation = true;
+        // Create new conversation
+        const convCode = `CONV-${Date.now().toString(36).toUpperCase()}`;
+        const { data: newConv, error: convError } = await supabase
+          .from('listing_conversations')
+          .insert({
+            buyer_id: user.id,
+            seller_id: sellerId,
+            listing_id: merchantId,
+            conversation_code: convCode,
+            status: 'open',
+            entry_context: requestDetails || productTitle ? {
+              type: requestDetails ? 'request' : 'product',
+              title: requestDetails?.title || productTitle,
+              requestId: requestId,
+            } : null
+          })
+          .select('id')
+          .single();
+
+        if (convError) throw convError;
+        conversationId = newConv.id;
+
+        // Send welcome message if merchant has one configured
+        if (merchantApp.welcome_message && isNewConversation) {
+          await supabase.from('listing_messages').insert({
+            conversation_id: conversationId,
+            sender_id: sellerId,
+            content: `🤖 ${merchantApp.welcome_message}`,
+          });
+        }
       }
 
-      await supabase.from('listing_messages').insert({
-        conversation_id: newConv.id,
-        sender_id: user.id,
-        content: initialMessage,
-      });
+      // Send away message if merchant is away
+      if (merchantApp.is_away && merchantApp.away_message) {
+        await supabase.from('listing_messages').insert({
+          conversation_id: conversationId,
+          sender_id: sellerId,
+          content: `⏰ ${merchantApp.away_message}`,
+        });
+      }
 
       // Send Telegram notification to merchant
       const { data: userProfile } = await supabase
@@ -134,12 +160,12 @@ export default function CommunityMessages() {
           event_type: 'new_message',
           listing_title: merchantApp.display_name,
           sender_name: senderName,
-          message_content: initialMessage,
-          conversation_id: newConv.id,
+          message_content: 'محادثة جديدة',
+          conversation_id: conversationId,
         },
       });
 
-      return newConv.id;
+      return conversationId;
     },
     onSuccess: (conversationId) => {
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });

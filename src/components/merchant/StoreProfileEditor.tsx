@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image, Printer } from "lucide-react";
+import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image, Printer, MessageSquare, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import AvatarWithFrame from "./AvatarWithFrame";
 import PrinterModelsEditor from "./PrinterModelsEditor";
@@ -34,6 +35,10 @@ interface StoreProfileEditorProps {
     social_links: { facebook?: string; instagram?: string } | null;
     selected_frame_id: string | null;
     specialty?: SpecialtyType | null;
+    welcome_message?: string | null;
+    away_message?: string | null;
+    inquiry_template?: string | null;
+    is_away?: boolean;
   };
 }
 
@@ -51,6 +56,12 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
   const [specialty, setSpecialty] = useState<SpecialtyType>(merchantApp.specialty || "both");
   const [frameDialogOpen, setFrameDialogOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  
+  // Auto-response settings
+  const [welcomeMessage, setWelcomeMessage] = useState(merchantApp.welcome_message || "");
+  const [awayMessage, setAwayMessage] = useState(merchantApp.away_message || "");
+  const [inquiryTemplate, setInquiryTemplate] = useState(merchantApp.inquiry_template || "لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟");
+  const [isAway, setIsAway] = useState(merchantApp.is_away || false);
 
   // Fetch available frames
   const { data: frames = [] } = useQuery({
@@ -109,6 +120,10 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
           social_links: { facebook: facebook.trim() || null, instagram: instagram.trim() || null },
           selected_frame_id: selectedFrameId,
           specialty: specialty,
+          welcome_message: welcomeMessage.trim() || null,
+          away_message: awayMessage.trim() || null,
+          inquiry_template: inquiryTemplate.trim() || "لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟",
+          is_away: isAway,
         })
         .eq("id", merchantApp.id);
       if (error) throw error;
@@ -350,6 +365,73 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
             {/* Printer Models Editor */}
             <div className="pt-2 border-t border-border/50">
               <PrinterModelsEditor merchantId={merchantApp.id} />
+            </div>
+
+            {/* Auto-Response Settings */}
+            <div className="pt-4 border-t border-border/50 space-y-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <MessageSquare className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold">الرسائل التلقائية</h3>
+                  <p className="text-[10px] text-muted-foreground">ردود آلية للعملاء</p>
+                </div>
+              </div>
+
+              {/* Away Mode Toggle */}
+              <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/30">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">وضع الغياب</p>
+                    <p className="text-[10px] text-muted-foreground">سيتم إرسال رسالة الغياب تلقائياً</p>
+                  </div>
+                </div>
+                <Switch
+                  checked={isAway}
+                  onCheckedChange={setIsAway}
+                />
+              </div>
+
+              {/* Inquiry Template */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">رسالة الاستفسار (عند الدخول من طلب)</Label>
+                <Textarea
+                  value={inquiryTemplate}
+                  onChange={(e) => setInquiryTemplate(e.target.value)}
+                  placeholder="لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟"
+                  rows={2}
+                  maxLength={200}
+                  className="text-sm"
+                />
+              </div>
+
+              {/* Welcome Message */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">رسالة الترحيب (عند أول تواصل)</Label>
+                <Textarea
+                  value={welcomeMessage}
+                  onChange={(e) => setWelcomeMessage(e.target.value)}
+                  placeholder="أهلاً وسهلاً! كيف يمكنني مساعدتك؟"
+                  rows={2}
+                  maxLength={200}
+                  className="text-sm"
+                />
+              </div>
+
+              {/* Away Message */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground">رسالة الغياب</Label>
+                <Textarea
+                  value={awayMessage}
+                  onChange={(e) => setAwayMessage(e.target.value)}
+                  placeholder="شكراً لتواصلك! أنا غير متاح حالياً، سأرد عليك في أقرب وقت."
+                  rows={2}
+                  maxLength={200}
+                  className="text-sm"
+                />
+              </div>
             </div>
           </div>
 
