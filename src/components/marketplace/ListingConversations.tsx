@@ -708,7 +708,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           )}
         </DialogTrigger>
       )}
-      <DialogContent hideClose className="max-w-6xl h-[100dvh] sm:h-[90vh] w-full sm:w-[95vw] lg:w-[80vw] xl:w-[70vw] p-0 flex flex-col overflow-hidden border-0">
+      <DialogContent hideClose className="max-w-6xl h-[100dvh] sm:h-[85vh] lg:h-[80vh] w-full sm:w-[95vw] lg:w-[85vw] xl:w-[75vw] 2xl:w-[65vw] p-0 flex flex-col overflow-hidden border-0">
         {/* Close Button - always visible on desktop, only when no conversation on mobile */}
         <button
           onClick={handleClose}
@@ -758,8 +758,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 </div>
               ) : (
                 <div>
-                  {/* Support conversation pinned at top */}
+                  {/* Support conversation pinned at top - HIDDEN for support account itself */}
                   {(() => {
+                    // Check if current user IS the support account (admin view)
+                    const isCurrentUserSupport = user?.id === SUPPORT_USER_ID;
+                    
                     // Find support conversation
                     const supportConv = conversations?.find(c => 
                       c.buyer_id === SUPPORT_USER_ID || c.seller_id === SUPPORT_USER_ID
@@ -774,9 +777,20 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       return true;
                     });
                     
-                    // Sort by last message time  
+                    // For admin (support account): show all users who contacted support
+                    // For regular users: filter out support conversations from regular list
                     const sortedConvs = uniqueConversations
-                      .filter(c => c.buyer_id !== SUPPORT_USER_ID && c.seller_id !== SUPPORT_USER_ID)
+                      .filter(c => {
+                        if (isCurrentUserSupport) {
+                          // Admin view: show conversations where they (support) are seller or buyer
+                          // But filter out conversations with themselves
+                          const otherUserId = c.buyer_id === user?.id ? c.seller_id : c.buyer_id;
+                          return otherUserId !== SUPPORT_USER_ID;
+                        } else {
+                          // Regular user view: hide support conversations (shown separately above)
+                          return c.buyer_id !== SUPPORT_USER_ID && c.seller_id !== SUPPORT_USER_ID;
+                        }
+                      })
                       .sort((a, b) => {
                         const lastMsgA = lastMessages?.[a.id];
                         const lastMsgB = lastMessages?.[b.id];
@@ -787,76 +801,78 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     
                     return (
                       <>
-                        {/* Pinned Support Conversation */}
-                        <button
-                          onClick={async () => {
-                            if (supportConv) {
-                              setSelectedConversation(supportConv.id);
-                            } else {
-                              // Create support conversation
-                              const convCode = `SUPPORT-${Date.now().toString(36).toUpperCase()}`;
-                              const { data: newConv, error } = await supabase
-                                .from('listing_conversations')
-                                .insert({
-                                  buyer_id: user?.id,
-                                  seller_id: SUPPORT_USER_ID,
-                                  listing_id: SUPPORT_USER_ID,
-                                  conversation_code: convCode,
-                                  status: 'open',
-                                })
-                                .select('id')
-                                .single();
+                        {/* Pinned Support Conversation - ONLY show for regular users, NOT for admin/support account */}
+                        {!isCurrentUserSupport && (
+                          <button
+                            onClick={async () => {
+                              if (supportConv) {
+                                setSelectedConversation(supportConv.id);
+                              } else {
+                                // Create support conversation
+                                const convCode = `SUPPORT-${Date.now().toString(36).toUpperCase()}`;
+                                const { data: newConv, error } = await supabase
+                                  .from('listing_conversations')
+                                  .insert({
+                                    buyer_id: user?.id,
+                                    seller_id: SUPPORT_USER_ID,
+                                    listing_id: SUPPORT_USER_ID,
+                                    conversation_code: convCode,
+                                    status: 'open',
+                                  })
+                                  .select('id')
+                                  .single();
 
-                              if (!error && newConv) {
-                                // Send welcome message
-                                await supabase.from('listing_messages').insert({
-                                  conversation_id: newConv.id,
-                                  sender_id: SUPPORT_USER_ID,
-                                  content: '👋 مرحباً بك! كيف يمكنني مساعدتك اليوم؟',
-                                });
-                                queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
-                                setSelectedConversation(newConv.id);
+                                if (!error && newConv) {
+                                  // Send welcome message
+                                  await supabase.from('listing_messages').insert({
+                                    conversation_id: newConv.id,
+                                    sender_id: SUPPORT_USER_ID,
+                                    content: '👋 مرحباً بك! كيف يمكنني مساعدتك اليوم؟',
+                                  });
+                                  queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+                                  setSelectedConversation(newConv.id);
+                                }
                               }
-                            }
-                          }}
-                          className={cn(
-                            "w-full p-3 flex gap-3 hover:bg-primary/10 transition-colors border-b-2 border-primary/20 bg-gradient-to-l from-primary/5 to-transparent",
-                            selectedConversation && (
-                              (supportConv && selectedConversation === supportConv.id)
-                            ) && "bg-primary/10"
-                          )}
-                        >
-                          {/* Support Avatar */}
-                          <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center shrink-0">
-                            <Headphones className="h-6 w-6 text-primary-foreground" />
-                          </div>
-                          
-                          {/* Support Info */}
-                          <div className="flex-1 min-w-0 text-right">
-                            <div className="flex items-center justify-between gap-2 mb-0.5">
-                              <p className="font-bold text-sm">خدمة العملاء</p>
-                              {supportConv && lastMessages?.[supportConv.id] && (
-                                <span className="text-[10px] text-muted-foreground">
-                                  {format(new Date(lastMessages[supportConv.id].created_at), 'HH:mm')}
-                                </span>
-                              )}
+                            }}
+                            className={cn(
+                              "w-full p-3 flex gap-3 hover:bg-primary/10 transition-colors border-b-2 border-primary/20 bg-gradient-to-l from-primary/5 to-transparent",
+                              selectedConversation && (
+                                (supportConv && selectedConversation === supportConv.id)
+                              ) && "bg-primary/10"
+                            )}
+                          >
+                            {/* Support Avatar */}
+                            <div className="h-12 w-12 rounded-full bg-primary flex items-center justify-center shrink-0">
+                              <Headphones className="h-6 w-6 text-primary-foreground" />
                             </div>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {supportConv && lastMessages?.[supportConv.id] 
-                                ? lastMessages[supportConv.id].content?.slice(0, 40)
-                                : 'تحدث مع فريق الدعم'}
-                            </p>
-                          </div>
-                          
-                          {/* Unread indicator */}
-                          {supportConv && lastMessages?.[supportConv.id] && 
-                           !lastMessages[supportConv.id].is_read && 
-                           lastMessages[supportConv.id].sender_id !== user?.id && (
-                            <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center shrink-0">
-                              <span className="text-[9px] font-bold text-primary-foreground">!</span>
+                            
+                            {/* Support Info */}
+                            <div className="flex-1 min-w-0 text-right">
+                              <div className="flex items-center justify-between gap-2 mb-0.5">
+                                <p className="font-bold text-sm">خدمة العملاء</p>
+                                {supportConv && lastMessages?.[supportConv.id] && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {format(new Date(lastMessages[supportConv.id].created_at), 'HH:mm')}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {supportConv && lastMessages?.[supportConv.id] 
+                                  ? lastMessages[supportConv.id].content?.slice(0, 40)
+                                  : 'تحدث مع فريق الدعم'}
+                              </p>
                             </div>
-                          )}
-                        </button>
+                            
+                            {/* Unread indicator */}
+                            {supportConv && lastMessages?.[supportConv.id] && 
+                             !lastMessages[supportConv.id].is_read && 
+                             lastMessages[supportConv.id].sender_id !== user?.id && (
+                              <div className="h-5 w-5 rounded-full bg-primary flex items-center justify-center shrink-0">
+                                <span className="text-[9px] font-bold text-primary-foreground">!</span>
+                              </div>
+                            )}
+                          </button>
+                        )}
                         
                         {/* Other conversations */}
                         {sortedConvs.map(conv => {
