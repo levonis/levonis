@@ -1,23 +1,28 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
-import { Store, Filter, RefreshCw, CheckCircle2, XCircle, Image as ImageIcon, ExternalLink, Calculator, Trash2 } from "lucide-react";
+import { Store, CheckCircle2, XCircle, Image as ImageIcon, Trash2, ChevronRight, ChevronLeft, Search, Ban, Eye } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
-import AdminLayout, { AdminSection } from "@/components/admin/AdminLayout";
+import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
 import { useToast } from "@/hooks/use-toast";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MerchantBadgesEditor from "@/components/admin/MerchantBadgesEditor";
 import { MerchantBadgesDisplay, BadgeTier } from "@/components/community/MerchantBadges";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { ar } from "date-fns/locale";
+
+const PAGE_SIZE = 50;
 
 const rowSchema = z.object({
   id: z.string().uuid(),
@@ -42,7 +47,7 @@ interface Props {
   embedded?: boolean;
 }
 
-export default function AdminCommunityMerchants({ embedded }: Props) {
+function MerchantsContent() {
   const qc = useQueryClient();
   const { toast } = useToast();
 
@@ -54,24 +59,25 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
   const [isVerified, setIsVerified] = useState(false);
   const [badgeTier, setBadgeTier] = useState<BadgeTier>("none");
   const [badgeOverride, setBadgeOverride] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [rejectionReason, setRejectionReason] = useState("");
 
-  const { data, isLoading, refetch } = useQuery({
-    queryKey: ["admin-merchant-applications", status, q],
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-merchant-applications", status, q, currentPage],
     queryFn: async () => {
       let query = supabase
         .from("merchant_applications")
         .select(
-          "id, user_id, display_name, phone_number, city, bio, store_image_url, social_links, status, admin_notes, created_at, is_verified, badge_tier, badge_override"
+          "id, user_id, display_name, phone_number, city, bio, store_image_url, social_links, status, admin_notes, created_at, is_verified, badge_tier, badge_override",
+          { count: "exact" }
         )
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
-      // IMPORTANT: Filter out empty drafts (no display_name)
-      // Only show drafts that have meaningful data
+      // Filter out empty drafts
       if (status === "all") {
-        // Exclude empty drafts when showing all
         query = query.or('status.neq.draft,display_name.neq.null');
       } else if (status === "draft") {
-        // When explicitly filtering drafts, only show non-empty ones
         query = query.eq("status", "draft").not("display_name", "is", null);
       } else {
         query = query.eq("status", status);
@@ -79,12 +85,16 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
       
       if (q.trim()) query = query.ilike("display_name", `%${q.trim()}%`);
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) throw error;
-      return z.array(rowSchema).parse(data ?? []);
+      return { rows: z.array(rowSchema).parse(data ?? []), totalCount: count || 0 };
     },
     staleTime: 10_000,
   });
+
+  const rows = data?.rows ?? [];
+  const totalCount = data?.totalCount ?? 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   const { data: privateInfo, isLoading: privateLoading } = useQuery({
     queryKey: ["admin-merchant-private", active?.id],
@@ -97,20 +107,9 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
         .eq("application_id", active!.id)
         .maybeSingle();
       if (error) throw error;
-      return (data ?? null) as
-        | {
-            legal_full_name: string | null;
-            nickname: string | null;
-            phone_number: string | null;
-            address: string | null;
-            birth_date: string | null;
-            gender: string | null;
-          }
-        | null;
+      return data;
     },
   });
-
-  const rows = data ?? [];
 
   const counts = useMemo(() => {
     const c = { pending: 0, approved: 0, rejected: 0 };
@@ -122,7 +121,7 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
     return c;
   }, [rows]);
 
-  // Mutation to APPROVE merchant - deduct wallet and update status
+  // Approve mutation
   const approveMutation = useMutation({
     mutationFn: async (payload: { 
       id: string; 
@@ -132,7 +131,6 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
       badge_tier?: string;
       badge_override?: boolean;
     }) => {
-      // 1. Get registration fee from settings
       const { data: feeSettings } = await supabase
         .from("community_settings")
         .select("value")
@@ -141,7 +139,6 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
       
       const MERCHANT_FEE = (feeSettings?.value as any)?.amount || 25000;
 
-      // 2. Check wallet balance
       const { data: wallet, error: walletError } = await supabase
         .from("user_wallets")
         .select("balance")
@@ -156,7 +153,6 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
         throw new Error(`رصيد المحفظة غير كافي. المطلوب: ${MERCHANT_FEE.toLocaleString()} IQD، المتوفر: ${currentBalance.toLocaleString()} IQD`);
       }
 
-      // 3. Deduct from wallet using secure admin function
       const { error: deductError } = await supabase.rpc('admin_adjust_wallet', {
         p_user_id: payload.user_id,
         p_amount: -MERCHANT_FEE,
@@ -166,7 +162,6 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
 
       if (deductError) throw new Error(deductError.message || 'فشل خصم رسوم التسجيل');
 
-      // 4. Update merchant application status
       const { error: updateError } = await supabase
         .from("merchant_applications")
         .update({ 
@@ -180,7 +175,6 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
       
       if (updateError) throw updateError;
 
-      // 5. Update public profile
       await supabase
         .from("merchant_public_profiles")
         .update({
@@ -189,7 +183,6 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
         })
         .eq("id", payload.user_id);
 
-      // 6. Send notification
       await supabase.from("notifications").insert({
         user_id: payload.user_id,
         title: "تم قبول طلبك كتاجر! 🎉",
@@ -210,7 +203,7 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
     },
   });
 
-  // Mutation to REJECT merchant - mark as rejected (auto-delete after X days)
+  // Reject mutation
   const rejectMutation = useMutation({
     mutationFn: async (payload: { 
       id: string; 
@@ -221,7 +214,6 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
         throw new Error("يجب تحديد سبب الرفض");
       }
 
-      // 1. Mark application as rejected (will be auto-deleted after configured days)
       const { error: updateError } = await supabase
         .from("merchant_applications")
         .update({ 
@@ -233,11 +225,10 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
 
       if (updateError) throw updateError;
 
-      // 2. Send notification with rejection reason
       await supabase.from("notifications").insert({
         user_id: payload.user_id,
         title: "تم رفض طلب التاجر",
-        message: `للأسف، تم رفض طلبك للانضمام كتاجر. السبب: ${payload.rejection_reason}. يمكنك تقديم طلب جديد بعد معالجة الملاحظات.`,
+        message: `للأسف، تم رفض طلبك للانضمام كتاجر. السبب: ${payload.rejection_reason}`,
         type: "error",
       });
 
@@ -245,86 +236,24 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
-      toast({ title: "تم رفض الطلب", description: "سيتم حذفه تلقائياً بعد أسبوع" });
+      toast({ title: "تم رفض الطلب" });
       setOpen(false);
       setActive(null);
+      setRejectionReason("");
     },
     onError: (err: any) => {
       toast({ title: "تعذر الرفض", description: err?.message ?? "حدث خطأ", variant: "destructive" });
     },
   });
 
-  // Keep old update mutation for updating notes/badges only
-  const updateMutation = useMutation({
-    mutationFn: async (payload: { 
-      id: string; 
-      admin_notes?: string | null;
-      is_verified?: boolean;
-      badge_tier?: string;
-      badge_override?: boolean;
-    }) => {
-      const { error } = await supabase
-        .from("merchant_applications")
-        .update({ 
-          admin_notes: payload.admin_notes ?? null,
-          is_verified: payload.is_verified ?? false,
-          badge_tier: payload.badge_tier ?? "none",
-          badge_override: payload.badge_override ?? false,
-        })
-        .eq("id", payload.id);
-      if (error) throw error;
-
-      // Also update the public profile
-      if (active?.user_id) {
-        await supabase
-          .from("merchant_public_profiles")
-          .update({
-            is_verified: payload.is_verified ?? false,
-            badge_tier: payload.badge_tier ?? "none",
-          })
-          .eq("id", active.user_id);
-      }
-      return true;
-    },
-    onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
-      toast({ title: "تم تحديث البيانات" });
-      setOpen(false);
-    },
-    onError: (err: any) => {
-      toast({ title: "تعذر التحديث", description: err?.message ?? "حدث خطأ", variant: "destructive" });
-    },
-  });
-
-  // Mutation to recalculate all badges
-  const recalculateBadgesMutation = useMutation({
-    mutationFn: async () => {
-      const { data, error } = await supabase.functions.invoke("calculate-merchant-badges");
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: async (data) => {
-      await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
-      toast({ 
-        title: "تم حساب الشارات", 
-        description: `تم تحديث ${data?.updated || 0} تاجر من ${data?.processed || 0}` 
-      });
-    },
-    onError: (err: any) => {
-      toast({ title: "فشل حساب الشارات", description: err?.message ?? "حدث خطأ", variant: "destructive" });
-    },
-  });
-
-  // Mutation to DELETE application (admin can delete rejected/draft applications)
+  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (appId: string) => {
-      // First delete private info
       await supabase
         .from("merchant_application_private")
         .delete()
         .eq("application_id", appId);
       
-      // Then delete the application
       const { error } = await supabase
         .from("merchant_applications")
         .delete()
@@ -344,417 +273,378 @@ export default function AdminCommunityMerchants({ embedded }: Props) {
     },
   });
 
-  // Mutation to cleanup empty drafts
-  const cleanupDraftsMutation = useMutation({
-    mutationFn: async () => {
-      // Delete drafts with no display_name (empty)
-      const { data, error } = await supabase
-        .from("merchant_applications")
-        .delete()
-        .eq("status", "draft")
-        .is("display_name", null)
-        .select("id");
-      
-      if (error) throw error;
-      return data?.length || 0;
-    },
-    onSuccess: async (count) => {
-      await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
-      toast({ title: "تم التنظيف", description: `تم حذف ${count} سجل فارغ` });
-    },
-    onError: (err: any) => {
-      toast({ title: "فشل التنظيف", description: err?.message ?? "حدث خطأ", variant: "destructive" });
-    },
-  });
+  const openDialog = (r: Row) => {
+    setActive(r);
+    setAdminNotes(r.admin_notes ?? "");
+    setIsVerified(r.is_verified);
+    setBadgeTier((r.badge_tier || "none") as BadgeTier);
+    setBadgeOverride(r.badge_override);
+    setRejectionReason("");
+    setOpen(true);
+  };
 
-  const actionButtons = (
-    <div className="flex items-center gap-2 flex-wrap">
-      <Button 
-        variant="outline" 
-        onClick={() => cleanupDraftsMutation.mutate()} 
-        disabled={cleanupDraftsMutation.isPending}
-        className="gap-2"
-        size="sm"
-      >
-        <Trash2 className="h-4 w-4" />
-        {cleanupDraftsMutation.isPending ? "جارٍ التنظيف..." : "تنظيف الفارغة"}
-      </Button>
-      <Button 
-        variant="outline" 
-        onClick={() => recalculateBadgesMutation.mutate()} 
-        disabled={recalculateBadgesMutation.isPending}
-        className="gap-2"
-        size="sm"
-      >
-        <Calculator className="h-4 w-4" />
-        {recalculateBadgesMutation.isPending ? "جارٍ الحساب..." : "حساب الشارات"}
-      </Button>
-      <Button variant="outline" onClick={() => refetch()} className="gap-2" size="sm">
-        <RefreshCw className="h-4 w-4" />
-        تحديث
-      </Button>
-    </div>
-  );
+  const getStatusBadge = (s: string) => {
+    switch (s) {
+      case "approved": return <Badge className="bg-emerald-500/20 text-emerald-500 text-[10px]">مقبول</Badge>;
+      case "pending": return <Badge className="bg-amber-500/20 text-amber-500 text-[10px]">قيد المراجعة</Badge>;
+      case "rejected": return <Badge className="bg-red-500/20 text-red-500 text-[10px]">مرفوض</Badge>;
+      default: return <Badge variant="outline" className="text-[10px]">مسودة</Badge>;
+    }
+  };
 
-  const content = (
-    <>
-      <AdminSection
-        title="التصفية"
-        actions={
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-44">
-                <SelectValue placeholder="الحالة" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">الكل</SelectItem>
-                <SelectItem value="pending">قيد المراجعة</SelectItem>
-                <SelectItem value="approved">مقبول</SelectItem>
-                <SelectItem value="rejected">مرفوض</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        }
-      >
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="بحث بالاسم" />
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span>Pending: {counts.pending}</span>
-            <span>Approved: {counts.approved}</span>
-            <span>Rejected: {counts.rejected}</span>
-          </div>
-        </div>
-      </AdminSection>
-
-      <div className="mt-4 space-y-3">
-        {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-20 rounded-xl" />
-            ))}
-          </div>
-        ) : rows.length === 0 ? (
-          <Card className="p-6 text-sm text-muted-foreground">لا توجد طلبات حالياً.</Card>
-        ) : (
-          rows.map((r) => (
-            <Card key={r.id} className="p-4" dir="rtl">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="h-12 w-12 shrink-0 rounded-xl border border-border bg-muted/20 overflow-hidden flex items-center justify-center">
-                    {r.store_image_url ? (
-                      // Intentionally simple img to avoid layout shifts in admin lists
-                      <img
-                        src={r.store_image_url}
-                        alt="صورة المتجر"
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <ImageIcon className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-bold truncate">{r.display_name ?? "(بدون اسم)"}</p>
-                      <MerchantBadgesDisplay 
-                        isVerified={r.is_verified} 
-                        badgeTier={(r.badge_tier || "none") as BadgeTier} 
-                        size="sm"
-                      />
-                      <Badge variant="outline" className="text-xs">
-                        {r.status}
-                      </Badge>
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground truncate">
-                      {r.phone_number ?? "—"} • {r.city ?? "—"}
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground line-clamp-2">{r.bio ?? "—"}</p>
-
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {(r.social_links as any)?.instagram ? (
-                        <a
-                          className="text-xs text-primary underline underline-offset-4"
-                          href={(r.social_links as any).instagram}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Instagram
-                        </a>
-                      ) : null}
-                      {(r.social_links as any)?.facebook ? (
-                        <a
-                          className="text-xs text-primary underline underline-offset-4"
-                          href={(r.social_links as any).facebook}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Facebook
-                        </a>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setActive(r);
-                    setAdminNotes(r.admin_notes ?? "");
-                    setIsVerified(r.is_verified ?? false);
-                    setBadgeTier((r.badge_tier || "none") as BadgeTier);
-                    setBadgeOverride(r.badge_override ?? false);
-                    setOpen(true);
-                  }}
-                  className="shrink-0"
-                >
-                  مراجعة
-                </Button>
-              </div>
-            </Card>
-          ))
-        )}
+  return (
+    <div className="space-y-4">
+      {/* Stats */}
+      <div className="flex items-center gap-3 flex-wrap text-sm">
+        <Badge variant="outline" className="px-3 py-1.5 gap-2">
+          <Store className="h-3.5 w-3.5" />
+          {totalCount} تاجر
+        </Badge>
+        <Badge variant="outline" className="px-3 py-1.5 gap-2 border-amber-500/30 text-amber-500">
+          {counts.pending} قيد المراجعة
+        </Badge>
+        <Badge variant="outline" className="px-3 py-1.5 gap-2 border-emerald-500/30 text-emerald-500">
+          {counts.approved} مقبول
+        </Badge>
+        <Badge variant="outline" className="px-3 py-1.5 gap-2 border-red-500/30 text-red-500">
+          {counts.rejected} مرفوض
+        </Badge>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-3xl" dir="rtl">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="البحث بالاسم..."
+            className="pr-10 h-9"
+          />
+        </div>
+        <div className="flex rounded-lg border border-border overflow-hidden h-9">
+          {(["all", "pending", "approved", "rejected"] as const).map((f) => (
+            <button
+              key={f}
+              className={cn(
+                "px-3 text-xs font-medium transition-colors",
+                status === f 
+                  ? "bg-primary text-primary-foreground" 
+                  : "bg-background hover:bg-muted"
+              )}
+              onClick={() => { setStatus(f); setCurrentPage(0); }}
+            >
+              {f === "all" ? "الكل" : f === "pending" ? "قيد المراجعة" : f === "approved" ? "مقبول" : "مرفوض"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Merchants Grid */}
+      {isLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-28 rounded-xl" />
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="p-8 text-center">
+            <Store className="h-10 w-10 mx-auto text-muted-foreground/30 mb-3" />
+            <h3 className="font-semibold">لا يوجد تجار</h3>
+            <p className="text-sm text-muted-foreground">لم يتقدم أي تاجر بعد</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {rows.map((r) => (
+              <Card 
+                key={r.id} 
+                className={cn(
+                  "hover:border-primary/30 transition-colors cursor-pointer",
+                  r.status === "rejected" && "border-red-500/30 bg-red-500/5"
+                )}
+                onClick={() => openDialog(r)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-14 w-14 rounded-xl border-2 border-border">
+                      {r.store_image_url ? (
+                        <AvatarImage src={r.store_image_url} className="object-cover" />
+                      ) : (
+                        <AvatarFallback className="rounded-xl bg-primary/10">
+                          <Store className="h-6 w-6 text-primary" />
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold text-sm truncate">{r.display_name || "(بدون اسم)"}</h3>
+                        <MerchantBadgesDisplay 
+                          isVerified={r.is_verified} 
+                          badgeTier={(r.badge_tier || "none") as BadgeTier} 
+                          size="sm"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        {getStatusBadge(r.status)}
+                        {r.city && (
+                          <span className="text-[10px] text-muted-foreground">{r.city}</span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        {format(new Date(r.created_at), "dd/MM/yyyy", { locale: ar })}
+                      </p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                className="gap-1"
+              >
+                <ChevronRight className="h-4 w-4" />
+                السابق
+              </Button>
+              <span className="text-sm text-muted-foreground px-3">
+                {currentPage + 1} من {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={currentPage >= totalPages - 1}
+                className="gap-1"
+              >
+                التالي
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Merchant Detail Dialog */}
+      <Dialog open={open} onOpenChange={(v) => { if (!v) { setOpen(false); setActive(null); } }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>مراجعة الطلب</DialogTitle>
-            <DialogDescription>يمكنك الموافقة/الرفض وإضافة ملاحظات.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2">
+              <Store className="h-4 w-4 text-primary" />
+              تفاصيل التاجر
+            </DialogTitle>
           </DialogHeader>
 
           {active && (
             <div className="space-y-4">
-              {/* Top summary */}
-              <div className="rounded-xl border border-border bg-muted/20 p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold truncate">{active.display_name ?? "(بدون اسم)"}</p>
-                    <p className="mt-1 text-xs text-muted-foreground truncate">User ID: {active.user_id}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">الحالة الحالية: {active.status}</p>
-                  </div>
-
+              {/* Merchant Header */}
+              <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                <Avatar className="h-14 w-14 rounded-xl">
                   {active.store_image_url ? (
-                    <a
-                      href={active.store_image_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 text-xs text-primary underline underline-offset-4 shrink-0"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                      فتح صورة المتجر
-                    </a>
-                  ) : null}
+                    <AvatarImage src={active.store_image_url} className="object-cover" />
+                  ) : (
+                    <AvatarFallback className="rounded-xl">
+                      <Store className="h-6 w-6" />
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="flex-1">
+                  <h3 className="font-semibold">{active.display_name || "(بدون اسم)"}</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    {getStatusBadge(active.status)}
+                    <MerchantBadgesDisplay 
+                      isVerified={active.is_verified} 
+                      badgeTier={(active.badge_tier || "none") as BadgeTier} 
+                      size="sm"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                {/* Public info */}
-                <div className="rounded-xl border border-border bg-card p-3">
-                  <div className="text-sm font-semibold text-foreground">معلومات المتجر (المرحلة الأولى)</div>
-                  <div className="mt-2 space-y-2 text-sm">
-                    <KV label="المدينة" value={active.city ?? "—"} />
-                    <KV label="رقم الهاتف (المتجر)" value={active.phone_number ?? "—"} />
-                    <KV label="نبذة" value={active.bio ?? "—"} multiline />
+              {/* Public Info */}
+              <div className="space-y-2">
+                {active.city && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">المدينة:</span>
+                    <span>{active.city}</span>
+                  </div>
+                )}
+                {active.phone_number && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">الهاتف:</span>
+                    <span dir="ltr">{active.phone_number}</span>
+                  </div>
+                )}
+                {active.bio && (
+                  <div className="text-sm">
+                    <span className="text-muted-foreground block mb-1">النبذة:</span>
+                    <p className="bg-muted/20 rounded p-2 text-xs">{active.bio}</p>
+                  </div>
+                )}
+              </div>
 
-                    <div className="pt-2">
-                      <div className="text-xs text-muted-foreground">الروابط الاجتماعية</div>
-                      <div className="mt-1 flex flex-wrap gap-2">
-                        {(active.social_links as any)?.instagram ? (
-                          <a
-                            className="text-xs text-primary underline underline-offset-4"
-                            href={(active.social_links as any).instagram}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Instagram
-                          </a>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Instagram: —</span>
-                        )}
-                        {(active.social_links as any)?.facebook ? (
-                          <a
-                            className="text-xs text-primary underline underline-offset-4"
-                            href={(active.social_links as any).facebook}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            Facebook
-                          </a>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Facebook: —</span>
-                        )}
-                      </div>
+              {/* Private Info */}
+              {privateLoading ? (
+                <Skeleton className="h-20 w-full" />
+              ) : privateInfo && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg space-y-2">
+                  <h4 className="text-sm font-medium text-amber-600">معلومات خاصة (للأدمن فقط)</h4>
+                  {privateInfo.legal_full_name && (
+                    <div className="flex justify-between text-xs">
+                      <span>الاسم القانوني:</span>
+                      <span>{privateInfo.legal_full_name}</span>
                     </div>
-                  </div>
+                  )}
+                  {privateInfo.address && (
+                    <div className="flex justify-between text-xs">
+                      <span>العنوان:</span>
+                      <span>{privateInfo.address}</span>
+                    </div>
+                  )}
+                  {privateInfo.birth_date && (
+                    <div className="flex justify-between text-xs">
+                      <span>تاريخ الميلاد:</span>
+                      <span>{privateInfo.birth_date}</span>
+                    </div>
+                  )}
+                  {privateInfo.gender && (
+                    <div className="flex justify-between text-xs">
+                      <span>الجنس:</span>
+                      <span>{privateInfo.gender === "male" ? "ذكر" : "أنثى"}</span>
+                    </div>
+                  )}
                 </div>
-
-                {/* Private info */}
-                <div className="rounded-xl border border-border bg-card p-3">
-                  <div className="text-sm font-semibold text-foreground">معلومات خاصة (المرحلة الثانية)</div>
-                  <div className="mt-2 space-y-2 text-sm">
-                    {privateLoading ? (
-                      <div className="text-sm text-muted-foreground">جارٍ تحميل المعلومات الخاصة…</div>
-                    ) : (
-                      <>
-                        <KV label="الاسم الكامل" value={privateInfo?.legal_full_name ?? "—"} />
-                        <KV label="اللقب" value={privateInfo?.nickname ?? "—"} />
-                        <KV label="هاتف شخصي" value={privateInfo?.phone_number ?? "—"} />
-                        <KV label="العنوان" value={privateInfo?.address ?? "—"} multiline />
-                        <KV label="تاريخ الميلاد" value={privateInfo?.birth_date ?? "—"} />
-                        <KV label="الجنس" value={privateInfo?.gender ?? "—"} />
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
+              )}
 
               {/* Badges Editor */}
-              <div className="rounded-xl border border-border bg-card p-3">
-                <div className="text-sm font-semibold text-foreground mb-3">شارات التاجر</div>
-                <MerchantBadgesEditor
-                  isVerified={isVerified}
-                  badgeTier={badgeTier}
-                  badgeOverride={badgeOverride}
-                  onVerifiedChange={setIsVerified}
-                  onBadgeTierChange={setBadgeTier}
-                  onBadgeOverrideChange={setBadgeOverride}
-                  disabled={updateMutation.isPending}
-                />
-              </div>
+              <MerchantBadgesEditor
+                isVerified={isVerified}
+                badgeTier={badgeTier}
+                badgeOverride={badgeOverride}
+                onVerifiedChange={setIsVerified}
+                onBadgeTierChange={setBadgeTier}
+                onBadgeOverrideChange={setBadgeOverride}
+              />
 
-              <div className="rounded-xl border border-border bg-card p-3">
-                <div className="text-sm font-semibold text-foreground">ملاحظات الإدارة</div>
+              {/* Admin Notes */}
+              <div>
+                <label className="text-sm font-medium block mb-1">ملاحظات الأدمن</label>
                 <Textarea
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
-                  className="mt-2 min-h-24"
-                  placeholder="أضف ملاحظات (اختياري)"
+                  placeholder="أضف ملاحظاتك..."
+                  className="h-20"
                 />
               </div>
+
+              {/* Rejection Reason (for pending) */}
+              {active.status === "pending" && (
+                <div>
+                  <label className="text-sm font-medium block mb-1">سبب الرفض (مطلوب للرفض)</label>
+                  <Textarea
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="اكتب سبب الرفض..."
+                    className="h-16"
+                  />
+                </div>
+              )}
+
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                {/* Delete Button */}
+                {(active.status === "rejected" || active.status === "draft") && (
+                  <Button
+                    variant="outline"
+                    onClick={() => deleteMutation.mutate(active.id)}
+                    disabled={deleteMutation.isPending}
+                    className="gap-2 text-destructive border-destructive/30"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    {deleteMutation.isPending ? "جارٍ الحذف..." : "حذف نهائياً"}
+                  </Button>
+                )}
+
+                {/* Pending Actions */}
+                {active.status === "pending" && (
+                  <>
+                    <Button
+                      variant="destructive"
+                      onClick={() => rejectMutation.mutate({
+                        id: active.id,
+                        user_id: active.user_id,
+                        rejection_reason: rejectionReason
+                      })}
+                      disabled={!rejectionReason.trim() || rejectMutation.isPending}
+                      className="gap-2"
+                    >
+                      <XCircle className="h-4 w-4" />
+                      {rejectMutation.isPending ? "جارٍ الرفض..." : "رفض"}
+                    </Button>
+                    <Button
+                      onClick={() => approveMutation.mutate({
+                        id: active.id,
+                        user_id: active.user_id,
+                        admin_notes: adminNotes,
+                        is_verified: isVerified,
+                        badge_tier: badgeTier,
+                        badge_override: badgeOverride
+                      })}
+                      disabled={approveMutation.isPending}
+                      className="gap-2 bg-emerald-600 hover:bg-emerald-700"
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      {approveMutation.isPending ? "جارٍ القبول..." : "قبول + خصم الرسوم"}
+                    </Button>
+                  </>
+                )}
+
+                {/* Approved - can suspend/delete from public profile if needed */}
+                {active.status === "approved" && (
+                  <Button
+                    variant="outline"
+                    onClick={() => deleteMutation.mutate(active.id)}
+                    disabled={deleteMutation.isPending}
+                    className="gap-2 text-destructive border-destructive/30"
+                  >
+                    <Ban className="h-4 w-4" />
+                    {deleteMutation.isPending ? "جارٍ الإيقاف..." : "إيقاف التاجر"}
+                  </Button>
+                )}
+              </DialogFooter>
             </div>
           )}
-
-          <DialogFooter className="flex-col sm:flex-row gap-2">
-            {/* Delete button for rejected/draft applications */}
-            {(active?.status === "rejected" || active?.status === "draft") && (
-              <Button
-                variant="destructive"
-                onClick={() => active && deleteMutation.mutate(active.id)}
-                disabled={!active || deleteMutation.isPending}
-                className="gap-2"
-              >
-                <Trash2 className="h-4 w-4" />
-                {deleteMutation.isPending ? "جارٍ الحذف..." : "حذف نهائياً"}
-              </Button>
-            )}
-            
-            {active?.status === "pending" && (
-              <>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (!adminNotes.trim()) {
-                      toast({ title: "يجب تحديد سبب الرفض", variant: "destructive" });
-                      return;
-                    }
-                    active && rejectMutation.mutate({ 
-                      id: active.id, 
-                      user_id: active.user_id,
-                      rejection_reason: adminNotes,
-                    });
-                  }}
-                  disabled={!active || rejectMutation.isPending || !adminNotes.trim()}
-                >
-                  <XCircle className="h-4 w-4" />
-                  {rejectMutation.isPending ? "جارٍ الرفض..." : "رفض الطلب"}
-                </Button>
-                <Button
-                  onClick={() => active && approveMutation.mutate({ 
-                    id: active.id, 
-                    user_id: active.user_id,
-                    admin_notes: adminNotes || null,
-                    is_verified: isVerified,
-                    badge_tier: badgeTier,
-                    badge_override: badgeOverride,
-                  })}
-                  disabled={!active || approveMutation.isPending}
-                  className="gap-2 bg-green-600 hover:bg-green-700"
-                >
-                  <CheckCircle2 className="h-4 w-4" />
-                  {approveMutation.isPending ? "جارٍ القبول..." : "قبول وخصم 25,000 IQD"}
-                </Button>
-              </>
-            )}
-            {active?.status === "approved" && (
-              <Button
-                onClick={() => active && updateMutation.mutate({ 
-                  id: active.id, 
-                  admin_notes: adminNotes || null,
-                  is_verified: isVerified,
-                  badge_tier: badgeTier,
-                  badge_override: badgeOverride,
-                })}
-                disabled={!active || updateMutation.isPending}
-                className="gap-2"
-              >
-                <CheckCircle2 className="h-4 w-4" />
-                {updateMutation.isPending ? "جارٍ الحفظ..." : "حفظ التغييرات"}
-              </Button>
-            )}
-          </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
+}
 
+export default function AdminCommunityMerchants({ embedded }: Props) {
   if (embedded) {
-    return (
-      <div className="space-y-4">
-        <div className="flex items-center justify-between gap-4">
-          {actionButtons}
-        </div>
-        {content}
-      </div>
-    );
+    return <MerchantsContent />;
   }
 
   return (
     <AdminLayout
       title="إدارة التجار"
-      description="مراجعة طلبات التسجيل كتاجر (موافقة/رفض/ملاحظات)"
+      description="مراجعة وإدارة طلبات التجار"
       icon={<Store className="h-5 w-5" />}
       backTo={ADMIN_ROUTES.levoCommunity}
       maxWidth="6xl"
-      actions={actionButtons}
     >
-      {content}
+      <MerchantsContent />
     </AdminLayout>
-  );
-}
-
-function KV({
-  label,
-  value,
-  multiline,
-}: {
-  label: string;
-  value: string;
-  multiline?: boolean;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="text-xs text-muted-foreground shrink-0">{label}</div>
-      <div
-        className={
-          multiline
-            ? "text-sm text-foreground text-right leading-relaxed whitespace-pre-wrap"
-            : "text-sm text-foreground text-right"
-        }
-      >
-        {value}
-      </div>
-    </div>
   );
 }
