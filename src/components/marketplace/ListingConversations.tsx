@@ -708,7 +708,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           )}
         </DialogTrigger>
       )}
-      <DialogContent hideClose className="max-w-6xl h-[100dvh] sm:h-[85vh] lg:h-[80vh] w-full sm:w-[95vw] lg:w-[85vw] xl:w-[75vw] 2xl:w-[65vw] p-0 flex flex-col overflow-hidden border-0">
+      <DialogContent hideClose className="max-w-7xl h-[100dvh] sm:h-[85vh] lg:h-[80vh] w-full sm:w-[95vw] lg:w-[90vw] xl:w-[85vw] 2xl:w-[80vw] p-0 flex flex-col overflow-hidden border-0">
         {/* Close Button - always visible on desktop, only when no conversation on mobile */}
         <button
           onClick={handleClose}
@@ -721,11 +721,13 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           <X className="w-4 h-4" />
         </button>
 
-        <div className="flex flex-1 min-h-0 h-full w-full">
+        <div className="flex flex-1 min-h-0 h-full w-full overflow-hidden">
           {/* Conversations List - Fixed width sidebar */}
           <div className={cn(
-            "flex flex-col md:w-72 lg:w-80 xl:w-96 md:border-l bg-card h-full min-h-0 flex-shrink-0",
-            selectedConversation ? 'hidden md:flex w-0 md:w-72 lg:w-80 xl:w-96' : 'flex w-full'
+            "flex flex-col md:border-l bg-card h-full min-h-0",
+            selectedConversation 
+              ? 'hidden md:flex md:w-72 lg:w-80 xl:w-96 flex-shrink-0' 
+              : 'flex w-full'
           )}>
             {/* Header */}
             <div className="p-3 border-b bg-muted/30 flex items-center justify-between flex-shrink-0">
@@ -982,10 +984,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
             </div>
           </div>
 
-          {/* Messages Area - Expands to fill remaining space */}
+          {/* Messages Area - Expands to fill ALL remaining space */}
           <div className={cn(
-            "flex flex-col min-h-0 bg-background h-full overflow-hidden",
-            selectedConversation ? 'flex-1 w-full' : 'hidden md:flex flex-1',
+            "flex flex-col min-h-0 bg-background h-full overflow-hidden min-w-0",
+            selectedConversation ? 'flex-1' : 'hidden md:flex md:flex-1',
           )}
             style={{
               backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
