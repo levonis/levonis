@@ -119,10 +119,12 @@ export default function AdminChats() {
     queryKey: ['admin-support-conversations'],
     queryFn: async (): Promise<SupportConversation[]> => {
       // Get conversations where seller_id is SUPPORT_USER_ID (users messaging support)
+      // Exclude conversations where buyer is also support (self-conversations)
       const { data: convs, error } = await supabase
         .from('listing_conversations')
         .select('id, buyer_id, created_at, updated_at')
         .eq('seller_id', SUPPORT_USER_ID)
+        .neq('buyer_id', SUPPORT_USER_ID)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
