@@ -217,18 +217,37 @@ export default function CommunityCustomerProfileModal({
         }
       }
 
-      const payload = {
+      const avatarToSave = avatarUrl || DEFAULT_AVATAR_URL;
+
+      const profilePayload = {
         full_name: values.fullName,
         phone_number: values.phoneNumber,
         username: values.username,
         birth_date: values.birthDate,
         gender: values.gender,
         bio: values.bio?.trim() ? values.bio.trim() : null,
-        avatar_url: avatarUrl || DEFAULT_AVATAR_URL,
+        avatar_url: avatarToSave,
       };
 
-      const { error } = await supabase.from("profiles").update(payload).eq("id", user.id);
+      // Update profiles table
+      const { error } = await supabase.from("profiles").update(profilePayload).eq("id", user.id);
       if (error) throw error;
+
+      // Upsert community_customer_profiles for admin visibility
+      const { error: communityError } = await supabase
+        .from("community_customer_profiles")
+        .upsert({
+          user_id: user.id,
+          display_name: values.fullName,
+          avatar_url: avatarToSave,
+          bio: values.bio?.trim() || null,
+        }, { onConflict: "user_id" });
+
+      if (communityError) {
+        console.error("Community profile upsert error:", communityError);
+        // Don't throw - main profile saved successfully
+      }
+
       return true;
     },
     onSuccess: async () => {
@@ -236,6 +255,7 @@ export default function CommunityCustomerProfileModal({
         qc.invalidateQueries({ queryKey: ["community-profile", user?.id] }),
         qc.invalidateQueries({ queryKey: ["community-profile-full", user?.id] }),
         qc.invalidateQueries({ queryKey: ["community-profile-status", user?.id] }),
+        qc.invalidateQueries({ queryKey: ["admin-community-customers"] }),
       ]);
       toast({ title: "تم حفظ الملف الشخصي بنجاح ✓" });
       onDone?.();

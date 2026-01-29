@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Users, Search, Ban, CheckCircle, Eye, Star, FileText, 
   MessageCircle, Download, Loader2, Trash2, AlertTriangle,
-  User, MapPin, Calendar, RefreshCw, Package
+  User, MapPin, Calendar, Package, ChevronRight, ChevronLeft
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -22,6 +22,8 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+const PAGE_SIZE = 50;
 
 interface CustomerProfile {
   id: string;
@@ -63,10 +65,11 @@ function CustomersContent() {
   const [activeDetailTab, setActiveDetailTab] = useState("info");
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
 
-  // Fetch customers from community_customer_profiles
-  const { data: customers = [], isLoading, refetch } = useQuery({
-    queryKey: ["admin-community-customers", filterSuspended],
+  // Fetch customers with pagination
+  const { data: customersData, isLoading } = useQuery({
+    queryKey: ["admin-community-customers", filterSuspended, currentPage],
     queryFn: async () => {
       let query = supabase
         .from("community_customer_profiles")
@@ -74,8 +77,9 @@ function CustomersContent() {
           id, user_id, display_name, bio, avatar_url,
           total_requests_made, reputation_score, is_verified,
           is_suspended, suspension_reason, suspended_at, created_at
-        `)
-        .order("created_at", { ascending: false });
+        `, { count: "exact" })
+        .order("created_at", { ascending: false })
+        .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
       if (filterSuspended === "active") {
         query = query.eq("is_suspended", false);
@@ -83,11 +87,15 @@ function CustomersContent() {
         query = query.eq("is_suspended", true);
       }
 
-      const { data, error } = await query;
+      const { data, error, count } = await query;
       if (error) throw error;
-      return (data || []) as CustomerProfile[];
+      return { customers: (data || []) as CustomerProfile[], totalCount: count || 0 };
     },
   });
+
+  const customers = customersData?.customers || [];
+  const totalCount = customersData?.totalCount || 0;
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
 
   // Fetch customer requests when selected
   const { data: customerRequests = [], isLoading: requestsLoading } = useQuery({
@@ -150,7 +158,6 @@ function CustomersContent() {
 
       if (error) throw error;
 
-      // Send notification
       await supabase.from("notifications").insert({
         user_id: userId,
         title: suspend ? "تم إيقاف حسابك مؤقتاً" : "تم إلغاء إيقاف حسابك",
@@ -171,10 +178,8 @@ function CustomersContent() {
     },
   });
 
-  // Delete customer mutation
   const deleteCustomer = useMutation({
     mutationFn: async (userId: string) => {
-      // Delete community profile
       const { error } = await supabase
         .from("community_customer_profiles")
         .delete()
@@ -215,10 +220,9 @@ function CustomersContent() {
   };
 
   const stats = {
-    total: customers.length,
+    total: totalCount,
     active: customers.filter(c => !c.is_suspended).length,
     suspended: customers.filter(c => c.is_suspended).length,
-    verified: customers.filter(c => c.is_verified).length,
   };
 
   const canDelete = selectedCustomer && 
@@ -226,7 +230,7 @@ function CustomersContent() {
 
   return (
     <div className="space-y-4">
-      {/* Compact Stats */}
+      {/* Stats */}
       <div className="flex items-center gap-3 flex-wrap text-sm">
         <Badge variant="outline" className="px-3 py-1.5 gap-2">
           <Users className="h-3.5 w-3.5" />
@@ -263,22 +267,19 @@ function CustomersContent() {
                   ? "bg-primary text-primary-foreground" 
                   : "bg-background hover:bg-muted"
               )}
-              onClick={() => setFilterSuspended(f)}
+              onClick={() => { setFilterSuspended(f); setCurrentPage(0); }}
             >
               {f === "all" ? "الكل" : f === "active" ? "نشط" : "موقوف"}
             </button>
           ))}
         </div>
-        <Button variant="outline" onClick={() => refetch()} size="sm" className="h-9">
-          <RefreshCw className="h-4 w-4" />
-        </Button>
       </div>
 
-      {/* Customers List */}
+      {/* Customers Grid */}
       {isLoading ? (
-        <div className="space-y-2">
-          {[...Array(5)].map((_, i) => (
-            <Skeleton key={i} className="h-16 w-full rounded-lg" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[...Array(6)].map((_, i) => (
+            <Skeleton key={i} className="h-24 w-full rounded-xl" />
           ))}
         </div>
       ) : filteredCustomers.length === 0 ? (
@@ -290,62 +291,90 @@ function CustomersContent() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-2">
-          {filteredCustomers.map((customer) => (
-            <Card 
-              key={customer.id} 
-              className={cn(
-                "hover:border-primary/30 transition-colors cursor-pointer",
-                customer.is_suspended && "border-red-500/30 bg-red-500/5"
-              )}
-              onClick={() => {
-                setSelectedCustomer(customer);
-                setActiveDetailTab("info");
-              }}
-            >
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between gap-3">
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filteredCustomers.map((customer) => (
+              <Card 
+                key={customer.id} 
+                className={cn(
+                  "hover:border-primary/30 transition-colors cursor-pointer",
+                  customer.is_suspended && "border-red-500/30 bg-red-500/5"
+                )}
+                onClick={() => {
+                  setSelectedCustomer(customer);
+                  setActiveDetailTab("info");
+                }}
+              >
+                <CardContent className="p-4">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
+                    <Avatar className="h-12 w-12 border-2 border-border">
                       <AvatarImage src={customer.avatar_url || undefined} />
-                      <AvatarFallback className="text-sm">
+                      <AvatarFallback className="text-sm bg-primary/10">
                         {customer.display_name?.charAt(0) || "؟"}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-medium text-sm">{customer.display_name || "بدون اسم"}</h3>
+                        <h3 className="font-semibold text-sm truncate">{customer.display_name || "بدون اسم"}</h3>
                         {customer.is_verified && (
-                          <CheckCircle className="h-3.5 w-3.5 text-blue-500" />
+                          <CheckCircle className="h-3.5 w-3.5 text-blue-500 shrink-0" />
                         )}
                         {customer.is_suspended && (
-                          <Badge variant="destructive" className="text-[10px] h-4">موقوف</Badge>
+                          <Badge variant="destructive" className="text-[10px] h-4 shrink-0">موقوف</Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                         <span className="flex items-center gap-1">
-                          <FileText className="h-3 w-3" />
-                          {customer.total_requests_made || 0}
+                          <Package className="h-3 w-3" />
+                          {customer.total_requests_made || 0} طلب
                         </span>
                         <span className="flex items-center gap-1">
                           <Star className="h-3 w-3" />
                           {(customer.reputation_score || 0).toFixed(1)}
                         </span>
-                        <span>
-                          {format(new Date(customer.created_at), "dd/MM/yy", { locale: ar })}
-                        </span>
                       </div>
+                      <p className="text-[10px] text-muted-foreground mt-1">
+                        انضم: {format(new Date(customer.created_at), "dd/MM/yyyy", { locale: ar })}
+                      </p>
                     </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+                      <Eye className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" className="gap-1.5 h-8 text-xs">
-                    <Eye className="h-3.5 w-3.5" />
-                    عرض
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(0, p - 1))}
+                disabled={currentPage === 0}
+                className="gap-1"
+              >
+                <ChevronRight className="h-4 w-4" />
+                السابق
+              </Button>
+              <span className="text-sm text-muted-foreground px-3">
+                {currentPage + 1} من {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages - 1, p + 1))}
+                disabled={currentPage >= totalPages - 1}
+                className="gap-1"
+              >
+                التالي
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </>
       )}
 
       {/* Customer Detail Dialog */}
@@ -476,10 +505,7 @@ function CustomersContent() {
                     ) : (
                       <div className="space-y-2">
                         {customerRequests.map(request => (
-                          <div 
-                            key={request.id} 
-                            className="p-3 bg-muted/20 rounded-lg"
-                          >
+                          <div key={request.id} className="p-3 bg-muted/20 rounded-lg">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-sm">{request.title}</p>
@@ -496,9 +522,6 @@ function CustomersContent() {
                                       {request.customer_governorate}
                                     </span>
                                   )}
-                                  {request.quantity && <span>الكمية: {request.quantity}</span>}
-                                  {request.size && <span>الحجم: {request.size}</span>}
-                                  {request.colors && <span>اللون: {request.colors}</span>}
                                 </div>
                               </div>
                               <Badge variant={
@@ -532,10 +555,7 @@ function CustomersContent() {
                     ) : (
                       <div className="space-y-2">
                         {customerConversations.map(conv => (
-                          <div 
-                            key={conv.id} 
-                            className="p-3 bg-muted/20 rounded-lg flex items-center justify-between"
-                          >
+                          <div key={conv.id} className="p-3 bg-muted/20 rounded-lg flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <MessageCircle className="h-4 w-4 text-muted-foreground" />
                               <span className="text-sm">محادثة #{conv.id.slice(0, 8)}</span>
