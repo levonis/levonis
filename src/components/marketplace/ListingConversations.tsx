@@ -708,7 +708,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           )}
         </DialogTrigger>
       )}
-      <DialogContent hideClose className="max-w-7xl h-[100dvh] sm:h-[85vh] lg:h-[80vh] w-full sm:w-[95vw] lg:w-[90vw] xl:w-[85vw] 2xl:w-[80vw] p-0 flex flex-col overflow-hidden border-0">
+      <DialogContent hideClose className="!max-w-none !w-full sm:!w-[95vw] lg:!w-[90vw] xl:!w-[85vw] 2xl:!w-[80vw] !max-h-none h-[100dvh] sm:h-[85vh] lg:h-[80vh] !p-0 !gap-0 overflow-hidden border-0">
         {/* Close Button - always visible on desktop, only when no conversation on mobile */}
         <button
           onClick={handleClose}

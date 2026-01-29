@@ -50,7 +50,7 @@ const DialogContent = React.forwardRef<
       className={cn(
         // Base layout
         "fixed left-[50%] top-[50%] z-50 flex flex-col translate-x-[-50%] translate-y-[-50%]",
-        // Size constraints - compact rectangular shape
+        // Default size constraints - can be overridden via className
         "w-[calc(100%-1.5rem)] max-w-md sm:max-w-lg",
         "max-h-[85vh] overflow-y-auto overscroll-contain",
         // Professional styling matching site theme
@@ -59,7 +59,7 @@ const DialogContent = React.forwardRef<
         "rounded-xl sm:rounded-2xl",
         // Premium shadows
         "shadow-[0_8px_32px_hsl(160_50%_8%/0.5),0_1px_2px_hsl(0_0%_0%/0.1),inset_0_1px_0_hsl(var(--primary)/0.1)]",
-        // Padding
+        // Default padding - can be overridden
         "p-5 sm:p-6 gap-4",
         // Animations
         "duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out",
