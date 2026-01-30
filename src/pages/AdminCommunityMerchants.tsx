@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import MerchantBadgesEditor from "@/components/admin/MerchantBadgesEditor";
@@ -61,7 +62,10 @@ function MerchantsContent() {
   const [badgeOverride, setBadgeOverride] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [rejectionReason, setRejectionReason] = useState("");
-
+  
+  // Delete confirmation state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const { data, isLoading } = useQuery({
     queryKey: ["admin-merchant-applications", status, q, currentPage],
     queryFn: async () => {
@@ -246,14 +250,22 @@ function MerchantsContent() {
     },
   });
 
-  // Delete mutation
+  // Delete mutation - full cleanup from all tables
   const deleteMutation = useMutation({
-    mutationFn: async (appId: string) => {
+    mutationFn: async ({ appId, userId }: { appId: string; userId: string }) => {
+      // Delete from merchant_application_private
       await supabase
         .from("merchant_application_private")
         .delete()
         .eq("application_id", appId);
       
+      // Delete from merchant_public_profiles
+      await supabase
+        .from("merchant_public_profiles")
+        .delete()
+        .eq("id", userId);
+      
+      // Delete merchant application
       const { error } = await supabase
         .from("merchant_applications")
         .delete()
@@ -264,9 +276,11 @@ function MerchantsContent() {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
-      toast({ title: "تم حذف الطلب نهائياً" });
+      toast({ title: "تم حذف التاجر نهائياً", description: "تم حذف جميع بيانات التاجر من المجتمع" });
       setOpen(false);
       setActive(null);
+      setDeleteDialogOpen(false);
+      setDeleteConfirmName("");
     },
     onError: (err: any) => {
       toast({ title: "تعذر الحذف", description: err?.message ?? "حدث خطأ", variant: "destructive" });
@@ -563,16 +577,19 @@ function MerchantsContent() {
               )}
 
               <DialogFooter className="flex-col sm:flex-row gap-2">
-                {/* Delete Button */}
+                {/* Delete Button - opens confirmation dialog */}
                 {(active.status === "rejected" || active.status === "draft") && (
                   <Button
                     variant="outline"
-                    onClick={() => deleteMutation.mutate(active.id)}
+                    onClick={() => {
+                      setDeleteConfirmName("");
+                      setDeleteDialogOpen(true);
+                    }}
                     disabled={deleteMutation.isPending}
                     className="gap-2 text-destructive border-destructive/30"
                   >
                     <Trash2 className="h-4 w-4" />
-                    {deleteMutation.isPending ? "جارٍ الحذف..." : "حذف نهائياً"}
+                    حذف نهائياً
                   </Button>
                 )}
 
@@ -610,16 +627,19 @@ function MerchantsContent() {
                   </>
                 )}
 
-                {/* Approved - can suspend/delete from public profile if needed */}
+                {/* Approved - delete with confirmation */}
                 {active.status === "approved" && (
                   <Button
                     variant="outline"
-                    onClick={() => deleteMutation.mutate(active.id)}
+                    onClick={() => {
+                      setDeleteConfirmName("");
+                      setDeleteDialogOpen(true);
+                    }}
                     disabled={deleteMutation.isPending}
                     className="gap-2 text-destructive border-destructive/30"
                   >
                     <Ban className="h-4 w-4" />
-                    {deleteMutation.isPending ? "جارٍ الإيقاف..." : "إيقاف التاجر"}
+                    حذف التاجر من المجتمع
                   </Button>
                 )}
               </DialogFooter>
@@ -627,6 +647,51 @@ function MerchantsContent() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              تأكيد حذف التاجر نهائياً
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                سيتم حذف التاجر <strong className="text-foreground">{active?.display_name || "(بدون اسم)"}</strong> من مجتمع ليفو بشكل نهائي.
+              </p>
+              <p className="text-destructive font-medium">
+                هذا الإجراء لا يمكن التراجع عنه!
+              </p>
+              <div className="pt-2">
+                <label className="text-sm font-medium block mb-2">
+                  للتأكيد، اكتب اسم التاجر: <strong>{active?.display_name || "(بدون اسم)"}</strong>
+                </label>
+                <Input
+                  value={deleteConfirmName}
+                  onChange={(e) => setDeleteConfirmName(e.target.value)}
+                  placeholder="اكتب الاسم للتأكيد..."
+                  className="border-destructive/50"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeleteConfirmName("")}>إلغاء</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (active) {
+                  deleteMutation.mutate({ appId: active.id, userId: active.user_id });
+                }
+              }}
+              disabled={deleteConfirmName !== (active?.display_name || "(بدون اسم)") || deleteMutation.isPending}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {deleteMutation.isPending ? "جارٍ الحذف..." : "حذف نهائياً"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
