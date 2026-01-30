@@ -458,8 +458,7 @@ export default function CommunityCustomerProfileModal({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,image/jpeg,image/png,image/webp,image/gif"
-              capture="environment"
+              accept="image/*"
               className="sr-only"
               aria-hidden="true"
               tabIndex={-1}
