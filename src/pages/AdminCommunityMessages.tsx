@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MessageCircle, Search, Send, Loader2, Crown, Award, Star, Image as ImageIcon, X, Package } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { MessageCircle, Search, Send, Loader2, Crown, Award, Star, Image as ImageIcon, X, Package, ArrowRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
@@ -15,7 +16,7 @@ import { ar } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils";
-
+import AdminChatTopBar from "@/components/chat/AdminChatTopBar";
 // Support user ID - the admin support account
 const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
 
@@ -74,6 +75,7 @@ interface Product {
 
 function SupportMessagesContent() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [message, setMessage] = useState('');
@@ -86,6 +88,159 @@ function SupportMessagesContent() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [chatProducts, setChatProducts] = useState<Product[]>([]);
+
+  // Fetch user suspension status
+  const { data: userProfile } = useQuery({
+    queryKey: ['admin-user-profile', selectedUserId],
+    queryFn: async () => {
+      if (!selectedUserId) return null;
+      const { data } = await supabase
+        .from('community_customer_profiles')
+        .select('is_suspended, suspension_reason')
+        .eq('user_id', selectedUserId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!selectedUserId,
+  });
+
+  // Ban user mutation
+  const banUserMutation = useMutation({
+    mutationFn: async (reason: string) => {
+      if (!selectedUserId) throw new Error('No user selected');
+      
+      const { error } = await supabase
+        .from('community_customer_profiles')
+        .update({
+          is_suspended: true,
+          suspension_reason: reason,
+          suspended_at: new Date().toISOString(),
+          suspended_by: SUPPORT_USER_ID,
+        })
+        .eq('user_id', selectedUserId);
+      
+      if (error) throw error;
+
+      // Send system message
+      if (selectedConversation) {
+        await supabase.from('listing_messages').insert({
+          conversation_id: selectedConversation,
+          sender_id: SUPPORT_USER_ID,
+          content: `🚫 تم حظر المستخدم - السبب: ${reason}`,
+        });
+      }
+
+      // Create notification for user
+      await supabase.from('notifications').insert({
+        user_id: selectedUserId,
+        title: 'تم حظر حسابك',
+        message: `تم حظر حسابك من المنصة. السبب: ${reason}`,
+        type: 'error',
+      });
+    },
+    onSuccess: () => {
+      toast.success('تم حظر المستخدم بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['admin-user-profile', selectedUserId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-support-messages', selectedConversation] });
+    },
+    onError: () => toast.error('فشل في حظر المستخدم'),
+  });
+
+  // Unban user mutation
+  const unbanUserMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedUserId) throw new Error('No user selected');
+      
+      const { error } = await supabase
+        .from('community_customer_profiles')
+        .update({
+          is_suspended: false,
+          suspension_reason: null,
+          suspended_at: null,
+          suspended_by: null,
+        })
+        .eq('user_id', selectedUserId);
+      
+      if (error) throw error;
+
+      // Send system message
+      if (selectedConversation) {
+        await supabase.from('listing_messages').insert({
+          conversation_id: selectedConversation,
+          sender_id: SUPPORT_USER_ID,
+          content: `✅ تم رفع الحظر عن المستخدم`,
+        });
+      }
+
+      // Create notification for user
+      await supabase.from('notifications').insert({
+        user_id: selectedUserId,
+        title: 'تم رفع الحظر',
+        message: 'تم رفع الحظر عن حسابك ويمكنك الآن استخدام المنصة',
+        type: 'success',
+      });
+    },
+    onSuccess: () => {
+      toast.success('تم رفع الحظر بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['admin-user-profile', selectedUserId] });
+      queryClient.invalidateQueries({ queryKey: ['admin-support-messages', selectedConversation] });
+    },
+    onError: () => toast.error('فشل في رفع الحظر'),
+  });
+
+  // Warn user mutation
+  const warnUserMutation = useMutation({
+    mutationFn: async (reason: string) => {
+      if (!selectedUserId || !selectedConversation) throw new Error('No user selected');
+      
+      // Send warning message
+      await supabase.from('listing_messages').insert({
+        conversation_id: selectedConversation,
+        sender_id: SUPPORT_USER_ID,
+        content: `⚠️ تحذير رسمي: ${reason}`,
+      });
+
+      // Create notification for user
+      await supabase.from('notifications').insert({
+        user_id: selectedUserId,
+        title: 'تحذير من الإدارة',
+        message: reason,
+        type: 'warning',
+      });
+    },
+    onSuccess: () => {
+      toast.success('تم إرسال التحذير');
+      queryClient.invalidateQueries({ queryKey: ['admin-support-messages', selectedConversation] });
+    },
+    onError: () => toast.error('فشل في إرسال التحذير'),
+  });
+
+  // Temporary restriction mutation
+  const tempRestrictMutation = useMutation({
+    mutationFn: async ({ hours, reason }: { hours: number; reason: string }) => {
+      if (!selectedUserId || !selectedConversation) throw new Error('No user selected');
+      
+      // Send restriction message
+      await supabase.from('listing_messages').insert({
+        conversation_id: selectedConversation,
+        sender_id: SUPPORT_USER_ID,
+        content: `🔒 تم تقييد المستخدم لمدة ${hours} ساعة - السبب: ${reason}`,
+      });
+
+      // Create notification for user
+      await supabase.from('notifications').insert({
+        user_id: selectedUserId,
+        title: 'تقييد مؤقت',
+        message: `تم تقييدك مؤقتاً لمدة ${hours} ساعة. السبب: ${reason}`,
+        type: 'warning',
+      });
+    },
+    onSuccess: () => {
+      toast.success('تم تطبيق التقييد المؤقت');
+      queryClient.invalidateQueries({ queryKey: ['admin-support-messages', selectedConversation] });
+    },
+    onError: () => toast.error('فشل في تطبيق التقييد'),
+  });
 
   useEffect(() => {
     if (!showProductSearch) return;
@@ -484,25 +639,21 @@ function SupportMessagesContent() {
           </div>
         ) : (
           <>
-            {/* Chat Header */}
+            {/* Admin Chat Header */}
             {selectedConv && (
-              <div className="p-3 border-b border-border/50 flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={selectedConv.user_avatar || undefined} />
-                  <AvatarFallback>{selectedConv.user_name.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-sm">{selectedConv.user_name}</h3>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px] h-4">
-                      {selectedConv.level}
-                    </Badge>
-                    <span className="text-[10px] text-muted-foreground">
-                      {selectedConv.total_points.toLocaleString()} نقطة
-                    </span>
-                  </div>
-                </div>
-              </div>
+              <AdminChatTopBar
+                userName={selectedConv.user_name}
+                usersId={selectedConv.user_id}
+                userImage={selectedConv.user_avatar}
+                isSuspended={userProfile?.is_suspended || false}
+                onBack={() => setSelectedConversation(null)}
+                onBanUser={(reason) => banUserMutation.mutate(reason)}
+                onUnbanUser={() => unbanUserMutation.mutate()}
+                onTempRestrict={(hours, reason) => tempRestrictMutation.mutate({ hours, reason })}
+                onWarnUser={(reason) => warnUserMutation.mutate(reason)}
+                onViewProfile={() => navigate(`/community/customer/${selectedConv.user_id}`)}
+                onViewComplaints={() => navigate(`${ADMIN_ROUTES.communityComplaints}?user=${selectedConv.user_id}`)}
+              />
             )}
 
             {/* Messages */}
