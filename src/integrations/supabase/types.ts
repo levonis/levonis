@@ -2172,32 +2172,38 @@ export type Database = {
       }
       listing_messages: {
         Row: {
+          address_data: Json | null
           content: string
           conversation_id: string
           created_at: string
           id: string
           image_url: string | null
           is_read: boolean | null
+          location_data: Json | null
           message_type: string | null
           sender_id: string
         }
         Insert: {
+          address_data?: Json | null
           content: string
           conversation_id: string
           created_at?: string
           id?: string
           image_url?: string | null
           is_read?: boolean | null
+          location_data?: Json | null
           message_type?: string | null
           sender_id: string
         }
         Update: {
+          address_data?: Json | null
           content?: string
           conversation_id?: string
           created_at?: string
           id?: string
           image_url?: string | null
           is_read?: boolean | null
+          location_data?: Json | null
           message_type?: string | null
           sender_id?: string
         }
