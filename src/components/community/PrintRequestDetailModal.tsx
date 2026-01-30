@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Package,
@@ -86,10 +86,22 @@ export default function PrintRequestDetailModal({
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentMediaIndex, setCurrentMediaIndex] = useState(0);
   const [showAddOffer, setShowAddOffer] = useState(false);
 
-  // Fetch customer profile
+  // Build media array with video first
+  const mediaItems = useMemo(() => {
+    if (!request) return [];
+    const items: { type: 'video' | 'image'; url: string }[] = [];
+    // Video first
+    if (request.video_url) {
+      items.push({ type: 'video', url: request.video_url });
+    }
+    // Then images
+    const requestImages = request.images?.length ? request.images : request.image_url ? [request.image_url] : [];
+    requestImages.forEach((url) => items.push({ type: 'image', url }));
+    return items;
+  }, [request?.video_url, request?.images, request?.image_url]);
   const { data: customerProfile } = useQuery({
     queryKey: ["customer-profile", request?.user_id],
     enabled: !!request?.user_id,
@@ -160,17 +172,18 @@ export default function PrintRequestDetailModal({
 
   if (!request) return null;
 
-  const images = request.images?.length ? request.images : request.image_url ? [request.image_url] : [];
   const isOwner = user?.id === request.user_id;
   const isAccepted = !!request.accepted_offer_id;
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
+  const nextMedia = () => {
+    setCurrentMediaIndex((prev) => (prev + 1) % mediaItems.length);
   };
 
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
+  const prevMedia = () => {
+    setCurrentMediaIndex((prev) => (prev - 1 + mediaItems.length) % mediaItems.length);
   };
+
+  const activeMedia = mediaItems[currentMediaIndex] || null;
 
   // Sort offers: my offer first, then accepted, then others
   const sortedOffers = [...offers].sort((a, b) => {
@@ -195,22 +208,31 @@ export default function PrintRequestDetailModal({
 
           <ScrollArea className="flex-1 min-h-0">
             <div className="p-4 space-y-4">
-              {/* Image Gallery */}
-              {images.length > 0 && (
+              {/* Media Gallery - Video first */}
+              {mediaItems.length > 0 && (
                 <div className="relative rounded-xl overflow-hidden bg-muted aspect-video">
-                  <img
-                    src={images[currentImageIndex]}
-                    alt={request.title}
-                    className="w-full h-full object-contain"
-                  />
+                  {activeMedia?.type === 'video' ? (
+                    <video
+                      src={activeMedia.url}
+                      controls
+                      className="w-full h-full object-contain bg-black"
+                      preload="metadata"
+                    />
+                  ) : activeMedia?.type === 'image' ? (
+                    <img
+                      src={activeMedia.url}
+                      alt={request.title}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : null}
                   
-                  {images.length > 1 && (
+                  {mediaItems.length > 1 && (
                     <>
                       <Button
                         size="icon"
                         variant="secondary"
                         className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full"
-                        onClick={prevImage}
+                        onClick={prevMedia}
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
@@ -218,38 +240,31 @@ export default function PrintRequestDetailModal({
                         size="icon"
                         variant="secondary"
                         className="absolute left-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-full"
-                        onClick={nextImage}
+                        onClick={nextMedia}
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
                       
                       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                        {images.map((_, i) => (
+                        {mediaItems.map((media, i) => (
                           <button
                             key={i}
                             className={`h-1.5 rounded-full transition-all ${
-                              i === currentImageIndex ? "w-4 bg-primary" : "w-1.5 bg-white/60"
+                              i === currentMediaIndex ? "w-4 bg-primary" : "w-1.5 bg-white/60"
                             }`}
-                            onClick={() => setCurrentImageIndex(i)}
+                            onClick={() => setCurrentMediaIndex(i)}
                           />
                         ))}
                       </div>
                     </>
                   )}
 
-                  {/* Video Badge */}
-                  {request.video_url && (
-                    <a
-                      href={request.video_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="absolute top-2 left-2"
-                    >
-                      <Badge className="bg-red-500 hover:bg-red-600 gap-1">
-                        <Video className="h-3 w-3" />
-                        فيديو
-                      </Badge>
-                    </a>
+                  {/* Video indicator */}
+                  {activeMedia?.type === 'video' && (
+                    <Badge className="absolute top-2 left-2 bg-red-500 gap-1">
+                      <Video className="h-3 w-3" />
+                      فيديو
+                    </Badge>
                   )}
 
                   {/* Status Badge */}
