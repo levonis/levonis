@@ -1,7 +1,5 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { 
+import {
   Sheet, 
   SheetContent, 
   SheetHeader, 
@@ -24,35 +22,15 @@ const TermsAndConditionsSheet = ({
   onAccept,
   isLoading = false,
 }: TermsAndConditionsSheetProps) => {
-  const [accepted, setAccepted] = useState(false);
-  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
-
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLDivElement;
-    const isAtBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 50;
-    if (isAtBottom) {
-      setHasScrolledToBottom(true);
-    }
-  };
 
   const handleAccept = () => {
-    if (accepted) {
-      onAccept();
-      onOpenChange(false);
-    }
-  };
-
-  const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      setAccepted(false);
-      setHasScrolledToBottom(false);
-    }
-    onOpenChange(newOpen);
+    onAccept();
+    onOpenChange(false);
   };
 
   return (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent side="bottom" className="h-[90vh] sm:h-[85vh] p-0">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="h-[85vh] sm:h-[80vh] p-0">
         <SheetHeader className="p-4 sm:p-6 border-b bg-card">
           <SheetTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
@@ -64,8 +42,7 @@ const TermsAndConditionsSheet = ({
         </SheetHeader>
 
         <div 
-          className="h-[calc(90vh-200px)] sm:h-[calc(85vh-220px)] px-4 sm:px-6 overflow-y-auto"
-          onScroll={handleScroll}
+          className="flex-1 px-4 sm:px-6 overflow-y-auto"
         >
           <div className="py-4 space-y-6 text-sm leading-relaxed text-foreground" dir="rtl">
             
@@ -311,6 +288,101 @@ const TermsAndConditionsSheet = ({
               </p>
             </div>
 
+            {/* Separator */}
+            <div className="border-t border-border/50 my-6 pt-6">
+              <h2 className="text-lg font-bold text-primary mb-4 text-center">
+                ثانياً: شروط استخدام الموقع والشراء
+              </h2>
+            </div>
+
+            {/* Section 21 */}
+            <div className="space-y-2">
+              <h3 className="font-bold text-primary flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">21</span>
+                التسجيل وحساب المستخدم
+              </h3>
+              <p className="pr-8 text-muted-foreground">
+                يتعهد المستخدم بتقديم معلومات صحيحة ودقيقة عند التسجيل، ويتحمل مسؤولية الحفاظ على سرية بيانات حسابه وكلمة المرور. المنصة غير مسؤولة عن أي استخدام غير مصرح به ناتج عن إفشاء بيانات الدخول.
+              </p>
+            </div>
+
+            {/* Section 22 */}
+            <div className="space-y-2">
+              <h3 className="font-bold text-primary flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">22</span>
+                استخدام المحفظة الإلكترونية
+              </h3>
+              <p className="pr-8 text-muted-foreground">
+                يقرّ المستخدم بأن رصيد المحفظة غير قابل للاسترداد نقداً ويُستخدم حصرياً للشراء من المنصة. لا تتحمل المنصة أي فوائد أو عوائد على الأرصدة المودعة.
+              </p>
+            </div>
+
+            {/* Section 23 */}
+            <div className="space-y-2">
+              <h3 className="font-bold text-primary flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">23</span>
+                سياسة الأسعار
+              </h3>
+              <p className="pr-8 text-muted-foreground">
+                الأسعار المعروضة قابلة للتغيير دون إشعار مسبق. السعر المعتمد هو السعر المثبت وقت تأكيد الطلب. قد تختلف الأسعار بناءً على العروض الترويجية أو تقلبات أسعار الصرف.
+              </p>
+            </div>
+
+            {/* Section 24 */}
+            <div className="space-y-2">
+              <h3 className="font-bold text-primary flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">24</span>
+                الخصوصية وحماية البيانات
+              </h3>
+              <p className="pr-8 text-muted-foreground">
+                تلتزم المنصة بحماية بيانات المستخدمين وعدم مشاركتها مع أطراف ثالثة إلا لأغراض تنفيذ الطلب أو بموجب متطلبات قانونية. قد تُستخدم البيانات لتحسين الخدمات وإرسال إشعارات ترويجية.
+              </p>
+            </div>
+
+            {/* Section 25 */}
+            <div className="space-y-2">
+              <h3 className="font-bold text-primary flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">25</span>
+                الملكية الفكرية
+              </h3>
+              <p className="pr-8 text-muted-foreground">
+                جميع المحتويات المعروضة على الموقع (صور، نصوص، شعارات، تصاميم) محمية بموجب حقوق الملكية الفكرية، ولا يحق للمستخدم نسخها أو استخدامها لأغراض تجارية دون إذن كتابي مسبق.
+              </p>
+            </div>
+
+            {/* Section 26 */}
+            <div className="space-y-2">
+              <h3 className="font-bold text-primary flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">26</span>
+                التواصل والإشعارات
+              </h3>
+              <p className="pr-8 text-muted-foreground">
+                يوافق المستخدم على استلام الإشعارات والتحديثات عبر البريد الإلكتروني، الرسائل النصية، أو إشعارات التطبيق. يمكنه إلغاء الاشتراك في الإشعارات الترويجية في أي وقت.
+              </p>
+            </div>
+
+            {/* Section 27 */}
+            <div className="space-y-2">
+              <h3 className="font-bold text-primary flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">27</span>
+                تعديل الشروط
+              </h3>
+              <p className="pr-8 text-muted-foreground">
+                تحتفظ المنصة بحق تعديل هذه الشروط والأحكام في أي وقت. يُعتبر استمرار استخدام الموقع بعد نشر التعديلات موافقة ضمنية عليها.
+              </p>
+            </div>
+
+            {/* Section 28 */}
+            <div className="space-y-2">
+              <h3 className="font-bold text-primary flex items-center gap-2">
+                <span className="bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center text-xs">28</span>
+                القانون الواجب التطبيق
+              </h3>
+              <p className="pr-8 text-muted-foreground">
+                تخضع هذه الشروط والأحكام للقوانين المحلية المعمول بها، وتختص المحاكم المحلية بالفصل في أي نزاع ينشأ عنها.
+              </p>
+            </div>
+
             {/* Warning Box */}
             <div className="mt-6 p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
               <div className="flex items-start gap-3">
@@ -321,54 +393,28 @@ const TermsAndConditionsSheet = ({
               </div>
             </div>
 
-            {/* Spacer for scroll detection */}
+            {/* Spacer */}
             <div className="h-4" />
           </div>
         </div>
 
         <SheetFooter className="p-4 sm:p-6 border-t bg-card">
-          <div className="w-full space-y-4">
-            {!hasScrolledToBottom && (
-              <p className="text-xs text-muted-foreground text-center">
-                يرجى التمرير لأسفل لقراءة جميع الشروط والأحكام
-              </p>
-            )}
-            
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-              <Checkbox
-                id="accept-terms"
-                checked={accepted}
-                onCheckedChange={(checked) => setAccepted(checked === true)}
-                disabled={!hasScrolledToBottom}
-                className="mt-0.5"
-              />
-              <label
-                htmlFor="accept-terms"
-                className={`text-sm cursor-pointer select-none ${
-                  hasScrolledToBottom ? 'text-foreground' : 'text-muted-foreground'
-                }`}
-              >
-                أقر بأنني قرأت وفهمت ووافقت على جميع الشروط والأحكام المذكورة أعلاه
-              </label>
-            </div>
-
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => handleOpenChange(false)}
-              >
-                إلغاء
-              </Button>
-              <Button
-                className="flex-1 gap-2"
-                onClick={handleAccept}
-                disabled={!accepted || isLoading}
-              >
-                <CheckCircle className="h-4 w-4" />
-                الموافقة وإتمام الشراء
-              </Button>
-            </div>
+          <div className="w-full flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => onOpenChange(false)}
+            >
+              إغلاق
+            </Button>
+            <Button
+              className="flex-1 gap-2"
+              onClick={handleAccept}
+              disabled={isLoading}
+            >
+              <CheckCircle className="h-4 w-4" />
+              موافق
+            </Button>
           </div>
         </SheetFooter>
       </SheetContent>
