@@ -171,7 +171,12 @@ export default function CommunityCustomerProfileModal({
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    console.log("[AvatarUpload] File selected:", file?.name, file?.type, file?.size);
+    
+    if (!file) {
+      console.log("[AvatarUpload] No file selected");
+      return;
+    }
 
     // Reset input so same file can be selected again
     e.target.value = "";
@@ -198,17 +203,23 @@ export default function CommunityCustomerProfileModal({
 
     // Create object URL for cropper
     const objectUrl = URL.createObjectURL(file);
+    console.log("[AvatarUpload] Opening cropper with:", objectUrl.substring(0, 50));
     setRawImageSrc(objectUrl);
     setCropperOpen(true);
   };
 
   // Handle cropped image upload
   const handleCroppedImage = async (blob: Blob) => {
+    console.log("[AvatarUpload] Cropped blob size:", blob.size);
     setUploadingAvatar(true);
     try {
       // Convert blob to File
       const file = new File([blob], `avatar-${Date.now()}.jpg`, { type: "image/jpeg" });
+      console.log("[AvatarUpload] Uploading file:", file.name);
       await uploadAvatarMutation.mutateAsync(file);
+      console.log("[AvatarUpload] Upload complete");
+    } catch (error) {
+      console.error("[AvatarUpload] Upload failed:", error);
     } finally {
       setUploadingAvatar(false);
       // Clean up object URL
@@ -390,12 +401,15 @@ export default function CommunityCustomerProfileModal({
               </div>
             </div>
             
-            {/* Upload overlay */}
+            {/* Upload button - always visible */}
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => {
+                console.log("[AvatarUpload] Click - opening file picker");
+                fileInputRef.current?.click();
+              }}
               disabled={uploadingAvatar}
-              className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+              className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-2xl transition-colors cursor-pointer"
             >
               {uploadingAvatar ? (
                 <Loader2 className="h-5 w-5 text-white animate-spin" />
