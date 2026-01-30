@@ -251,13 +251,22 @@ export default function CommunityCustomerProfileModal({
       return true;
     },
     onSuccess: async () => {
+      // Invalidate and refetch ALL profile-related queries first
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["community-profile", user?.id] }),
         qc.invalidateQueries({ queryKey: ["community-profile-full", user?.id] }),
         qc.invalidateQueries({ queryKey: ["community-profile-status", user?.id] }),
         qc.invalidateQueries({ queryKey: ["admin-community-customers"] }),
       ]);
+      
+      // Wait for refetch to complete
+      await qc.refetchQueries({ queryKey: ["community-profile-status", user?.id] });
+      
       toast({ title: "تم حفظ الملف الشخصي بنجاح ✓" });
+      
+      // Small delay to ensure state propagates before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       onDone?.();
     },
     onError: (err: any) => {

@@ -61,7 +61,8 @@ export function useCommunityProfileCheck() {
       return { isComplete, profile, hasBasicFields, hasAllFields };
     },
     enabled: !!user?.id && !authLoading,
-    staleTime: 30_000, // Cache for 30 seconds
+    staleTime: 5_000, // Cache for 5 seconds to respond faster after profile updates
+    refetchOnMount: true,
   });
 
   return {
