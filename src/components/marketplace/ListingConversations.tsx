@@ -54,6 +54,8 @@ import TextMessage from '@/components/chat/messages/TextMessage';
 import ProductCard from '@/components/chat/messages/ProductCard';
 import OrderCard from '@/components/chat/messages/OrderCard';
 import ConfirmationCard from '@/components/chat/messages/ConfirmationCard';
+import LocationMessage from '@/components/chat/messages/LocationMessage';
+import AddressMessage from '@/components/chat/messages/AddressMessage';
 import ProductSelector from '@/components/chat/ProductSelector';
 import PriceChangeDialog from '@/components/chat/PriceChangeDialog';
 import CreateOrderDialog from '@/components/chat/CreateOrderDialog';
@@ -309,12 +311,22 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   }, [selectedConversation, user?.id, queryClient]);
 
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ content, mediaUrl }: { content: string; mediaUrl?: string }) => {
-      if (!user || !selectedConversation || (!content.trim() && !mediaUrl)) {
+    mutationFn: async ({ content, mediaUrl, locationData, addressData }: { 
+      content: string; 
+      mediaUrl?: string; 
+      locationData?: { latitude: number; longitude: number; address_name?: string };
+      addressData?: any;
+    }) => {
+      if (!user || !selectedConversation || (!content.trim() && !mediaUrl && !locationData && !addressData)) {
         throw new Error('لا يمكن إرسال رسالة فارغة');
       }
       
-      const messageContent = content.trim() || (mediaUrl ? '📷 وسائط' : '');
+      let messageContent = content.trim();
+      if (!messageContent) {
+        if (mediaUrl) messageContent = '📷 وسائط';
+        else if (locationData) messageContent = '📍 موقع جغرافي';
+        else if (addressData) messageContent = '🏠 عنوان توصيل';
+      }
       
       // Send message - this is the only blocking operation
       const { error } = await supabase.from('listing_messages').insert({
@@ -322,6 +334,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         sender_id: user.id,
         content: messageContent,
         image_url: mediaUrl || null,
+        location_data: locationData || null,
+        address_data: addressData || null,
       });
       if (error) throw error;
       
@@ -1071,6 +1085,34 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 }
                               } catch {}
                               
+                              // Check if message has location or address data
+                              const hasLocationData = msg.location_data && typeof msg.location_data === 'object';
+                              const hasAddressData = msg.address_data && typeof msg.address_data === 'object';
+                              
+                              // Render Location Message
+                              if (hasLocationData) {
+                                return (
+                                  <LocationMessage
+                                    key={msg.id}
+                                    location={msg.location_data}
+                                    isMe={isMe}
+                                    timestamp={timestamp}
+                                  />
+                                );
+                              }
+                              
+                              // Render Address Message
+                              if (hasAddressData) {
+                                return (
+                                  <AddressMessage
+                                    key={msg.id}
+                                    address={msg.address_data}
+                                    isMe={isMe}
+                                    timestamp={timestamp}
+                                  />
+                                );
+                              }
+                              
                               // Render system message
                               if (isSystemMessage) {
                                 return (
@@ -1307,6 +1349,18 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     } finally {
                       setUploadingMedia(false);
                     }
+                  }}
+                  onSendLocation={async (location) => {
+                    await sendMessageMutation.mutateAsync({ 
+                      content: '', 
+                      locationData: location 
+                    });
+                  }}
+                  onSendAddress={async (address) => {
+                    await sendMessageMutation.mutateAsync({ 
+                      content: '', 
+                      addressData: address 
+                    });
                   }}
                   onOpenProducts={() => setProductSelectorOpen(true)}
                   isLoading={sendMessageMutation.isPending}

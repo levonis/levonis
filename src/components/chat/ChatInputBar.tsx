@@ -12,6 +12,8 @@ import {
   Camera,
   Image as ImageIcon,
   Square,
+  Home,
+  Navigation,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -20,7 +22,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useQuery } from '@tanstack/react-query';
 import EmojiPicker from './EmojiPicker';
 import RichTextInput from './RichTextInput';
 
@@ -31,11 +42,31 @@ interface ContextBarData {
   price?: number | null;
 }
 
+interface LocationData {
+  latitude: number;
+  longitude: number;
+  address_name?: string;
+}
+
+interface AddressData {
+  id: string;
+  full_name: string;
+  phone_number: string;
+  governorate: string;
+  area: string;
+  neighborhood?: string;
+  nearest_landmark?: string;
+  additional_notes?: string;
+  is_default: boolean;
+}
+
 interface ChatInputBarProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
   onSendMedia: (file: File) => Promise<void>;
+  onSendLocation?: (location: LocationData) => Promise<void>;
+  onSendAddress?: (address: AddressData) => Promise<void>;
   onOpenProducts: () => void;
   isLoading?: boolean;
   isUploadingMedia?: boolean;
@@ -51,6 +82,8 @@ export default function ChatInputBar({
   onChange,
   onSend,
   onSendMedia,
+  onSendLocation,
+  onSendAddress,
   onOpenProducts,
   isLoading = false,
   isUploadingMedia = false,
@@ -60,16 +93,34 @@ export default function ChatInputBar({
   onSendContext,
   onCloseContext,
 }: ChatInputBarProps) {
+  const { user } = useAuth();
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [addressDialogOpen, setAddressDialogOpen] = useState(false);
+  const [gettingLocation, setGettingLocation] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const richTextRef = useRef<HTMLDivElement>(null);
+
+  // Fetch user addresses
+  const { data: userAddresses = [] } = useQuery({
+    queryKey: ['user-addresses', user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_addresses')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('is_default', { ascending: false });
+      if (error) throw error;
+      return data as AddressData[];
+    },
+  });
 
   // Cleanup on unmount
   useEffect(() => {
@@ -164,11 +215,78 @@ export default function ChatInputBar({
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Handle location sharing
+  const handleShareLocation = async () => {
+    if (!onSendLocation) {
+      toast.info('خدمة الموقع غير متاحة');
+      return;
+    }
+    
+    if (!navigator.geolocation) {
+      toast.error('المتصفح لا يدعم خدمة الموقع');
+      return;
+    }
+
+    setGettingLocation(true);
+    setAttachMenuOpen(false);
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const locationData: LocationData = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          
+          // Try to get address name from reverse geocoding (optional)
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&format=json&accept-language=ar`
+            );
+            const data = await response.json();
+            if (data.display_name) {
+              locationData.address_name = data.display_name;
+            }
+          } catch {
+            // Ignore geocoding errors
+          }
+          
+          await onSendLocation(locationData);
+          toast.success('تم إرسال الموقع');
+        } catch (error) {
+          toast.error('فشل إرسال الموقع');
+        } finally {
+          setGettingLocation(false);
+        }
+      },
+      (error) => {
+        setGettingLocation(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          toast.error('يرجى السماح بالوصول إلى الموقع');
+        } else {
+          toast.error('تعذر الحصول على الموقع');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  // Handle address sharing
+  const handleShareAddress = (address: AddressData) => {
+    if (onSendAddress) {
+      onSendAddress(address);
+      setAddressDialogOpen(false);
+      setAttachMenuOpen(false);
+      toast.success('تم إرسال العنوان');
+    }
+  };
+
   const attachOptions = [
     { icon: Camera, label: 'كاميرا', onClick: () => cameraInputRef.current?.click() },
     { icon: ImageIcon, label: 'صور', onClick: () => fileInputRef.current?.click() },
     { icon: FileText, label: 'ملفات', onClick: () => fileInputRef.current?.click() },
-    { icon: MapPin, label: 'موقع', onClick: () => toast.info('خدمة الموقع قريباً') },
+    { icon: Navigation, label: 'موقعي', onClick: handleShareLocation, loading: gettingLocation },
+    { icon: Home, label: 'عنواني', onClick: () => { setAddressDialogOpen(true); setAttachMenuOpen(false); } },
   ];
 
   return (
@@ -269,10 +387,15 @@ export default function ChatInputBar({
                     key={opt.label}
                     type="button"
                     onClick={opt.onClick}
-                    className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors"
+                    disabled={'loading' in opt && opt.loading}
+                    className="flex flex-col items-center gap-1 p-2 rounded-xl hover:bg-muted transition-colors disabled:opacity-50"
                   >
                     <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                      <opt.icon className="h-5 w-5 text-primary" />
+                      {'loading' in opt && opt.loading ? (
+                        <Loader2 className="h-5 w-5 text-primary animate-spin" />
+                      ) : (
+                        <opt.icon className="h-5 w-5 text-primary" />
+                      )}
                     </div>
                     <span className="text-[10px] text-muted-foreground">{opt.label}</span>
                   </button>
@@ -382,6 +505,62 @@ export default function ChatInputBar({
         )}
       </form>
       </div>
+
+      {/* Address Selection Dialog */}
+      <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Home className="h-5 w-5 text-primary" />
+              اختر عنوان للإرسال
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {userAddresses.length === 0 ? (
+              <div className="text-center py-6 text-muted-foreground">
+                <Home className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">لا توجد عناوين محفوظة</p>
+                <p className="text-xs mt-1">أضف عنوانك من صفحة الملف الشخصي</p>
+              </div>
+            ) : (
+              userAddresses.map((addr) => (
+                <button
+                  key={addr.id}
+                  type="button"
+                  onClick={() => handleShareAddress(addr)}
+                  className="w-full text-right p-3 rounded-xl border border-border hover:border-primary hover:bg-primary/5 transition-all group"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                      <MapPin className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm">{addr.full_name}</p>
+                        {addr.is_default && (
+                          <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">افتراضي</span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{addr.phone_number}</p>
+                      <p className="text-xs text-foreground/80 mt-1">
+                        {addr.governorate} - {addr.area}
+                        {addr.neighborhood && ` - ${addr.neighborhood}`}
+                      </p>
+                      {addr.nearest_landmark && (
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          قرب: {addr.nearest_landmark}
+                        </p>
+                      )}
+                    </div>
+                    <Send className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0 mt-1" />
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
