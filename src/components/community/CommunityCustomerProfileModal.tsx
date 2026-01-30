@@ -169,17 +169,17 @@ export default function CommunityCustomerProfileModal({
     },
   });
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    console.log("[AvatarUpload] File selected:", file?.name, file?.type, file?.size);
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    console.log("[AvatarUpload] onChange triggered, files:", files?.length);
     
-    if (!file) {
-      console.log("[AvatarUpload] No file selected");
+    if (!files || files.length === 0) {
+      console.log("[AvatarUpload] No files in input");
       return;
     }
-
-    // Reset input so same file can be selected again
-    e.target.value = "";
+    
+    const file = files[0];
+    console.log("[AvatarUpload] File selected:", file.name, file.type, file.size);
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
@@ -188,34 +188,62 @@ export default function CommunityCustomerProfileModal({
         description: "الحد الأقصى لحجم الصورة هو 5 ميغابايت",
         variant: "destructive",
       });
+      e.target.value = "";
       return;
     }
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
+    // Validate file type - accept common image types
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
+    const isValidType = file.type.startsWith('image/') || validTypes.some(t => file.type.includes(t.split('/')[1]));
+    
+    if (!isValidType) {
       toast({
         title: "نوع الملف غير مدعوم",
-        description: "الرجاء اختيار صورة",
+        description: "الرجاء اختيار صورة (JPEG, PNG, WebP)",
         variant: "destructive",
       });
+      e.target.value = "";
       return;
     }
 
     // Create object URL for cropper
-    const objectUrl = URL.createObjectURL(file);
-    console.log("[AvatarUpload] Opening cropper with:", objectUrl.substring(0, 50));
-    setRawImageSrc(objectUrl);
-    setCropperOpen(true);
+    try {
+      const objectUrl = URL.createObjectURL(file);
+      console.log("[AvatarUpload] Created object URL, opening cropper");
+      setRawImageSrc(objectUrl);
+      setCropperOpen(true);
+    } catch (err) {
+      console.error("[AvatarUpload] Failed to create object URL:", err);
+      toast({
+        title: "تعذر قراءة الصورة",
+        description: "الرجاء المحاولة مرة أخرى",
+        variant: "destructive",
+      });
+    }
+    
+    // Reset input so same file can be selected again
+    e.target.value = "";
   };
 
   // Handle cropped image upload
   const handleCroppedImage = async (blob: Blob) => {
-    console.log("[AvatarUpload] Cropped blob size:", blob.size);
+    console.log("[AvatarUpload] handleCroppedImage called, blob size:", blob.size);
+    
+    if (!blob || blob.size === 0) {
+      console.error("[AvatarUpload] Invalid blob received");
+      toast({
+        title: "فشل قص الصورة",
+        description: "الرجاء المحاولة مرة أخرى",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setUploadingAvatar(true);
     try {
       // Convert blob to File
       const file = new File([blob], `avatar-${Date.now()}.jpg`, { type: "image/jpeg" });
-      console.log("[AvatarUpload] Uploading file:", file.name);
+      console.log("[AvatarUpload] Uploading cropped file:", file.name, file.size);
       await uploadAvatarMutation.mutateAsync(file);
       console.log("[AvatarUpload] Upload complete");
     } catch (error) {
@@ -430,9 +458,15 @@ export default function CommunityCustomerProfileModal({
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileSelect}
+              accept="image/*,image/jpeg,image/png,image/webp,image/gif"
+              capture="environment"
+              className="sr-only"
+              aria-hidden="true"
+              tabIndex={-1}
+              onChange={(e) => {
+                console.log("[AvatarUpload] Input onChange fired");
+                handleFileSelect(e);
+              }}
             />
           </div>
           
