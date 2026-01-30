@@ -30,8 +30,8 @@ const TermsAndConditionsSheet = ({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] sm:h-[80vh] p-0">
-        <SheetHeader className="p-4 sm:p-6 border-b bg-card">
+      <SheetContent side="bottom" className="h-[85vh] sm:h-[80vh] p-0 flex flex-col">
+        <SheetHeader className="p-4 sm:p-6 border-b bg-card flex-shrink-0">
           <SheetTitle className="flex items-center gap-2 text-lg sm:text-xl">
             <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
             الشروط والأحكام
@@ -42,7 +42,7 @@ const TermsAndConditionsSheet = ({
         </SheetHeader>
 
         <div 
-          className="flex-1 px-4 sm:px-6 overflow-y-auto"
+          className="flex-1 min-h-0 px-4 sm:px-6 overflow-y-auto"
         >
           <div className="py-4 space-y-6 text-sm leading-relaxed text-foreground" dir="rtl">
             
@@ -398,7 +398,7 @@ const TermsAndConditionsSheet = ({
           </div>
         </div>
 
-        <SheetFooter className="p-4 sm:p-6 border-t bg-card">
+        <SheetFooter className="p-4 sm:p-6 border-t bg-card flex-shrink-0">
           <div className="w-full flex gap-3">
             <Button
               variant="outline"
