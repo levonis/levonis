@@ -199,6 +199,16 @@ export default function CommunityCustomerProfileModal({
     mutationFn: async (values: FormValues) => {
       if (!user?.id) throw new Error("Not authenticated");
 
+      // Validate avatar is uploaded (required for community access)
+      const isValidAvatar = avatarUrl && 
+        avatarUrl !== DEFAULT_AVATAR_URL && 
+        !avatarUrl.includes("dicebear.com") && 
+        !avatarUrl.includes("api.dicebear");
+      
+      if (!isValidAvatar) {
+        throw new Error("يجب رفع صورة شخصية للوصول لمجتمع ليفو");
+      }
+
       // Content filtering
       const usernameCheck = validateUsername(values.username);
       if (!usernameCheck.isClean) {
@@ -217,8 +227,6 @@ export default function CommunityCustomerProfileModal({
         }
       }
 
-      const avatarToSave = avatarUrl || DEFAULT_AVATAR_URL;
-
       const profilePayload = {
         full_name: values.fullName,
         phone_number: values.phoneNumber,
@@ -226,7 +234,7 @@ export default function CommunityCustomerProfileModal({
         birth_date: values.birthDate,
         gender: values.gender,
         bio: values.bio?.trim() ? values.bio.trim() : null,
-        avatar_url: avatarToSave,
+        avatar_url: avatarUrl,
       };
 
       // Update profiles table
@@ -239,7 +247,7 @@ export default function CommunityCustomerProfileModal({
         .upsert({
           user_id: user.id,
           display_name: values.fullName,
-          avatar_url: avatarToSave,
+          avatar_url: avatarUrl,
           bio: values.bio?.trim() || null,
         }, { onConflict: "user_id" });
 
@@ -598,6 +606,14 @@ export default function CommunityCustomerProfileModal({
 
       {/* Premium Footer */}
       <footer className="sticky bottom-0 z-10 border-t border-primary/20 bg-gradient-to-t from-card via-card to-card/95 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur">
+        {/* Avatar warning */}
+        {(!avatarUrl || avatarUrl === DEFAULT_AVATAR_URL || avatarUrl.includes("dicebear")) && (
+          <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2 text-center flex items-center justify-center gap-1">
+            <Camera className="h-3 w-3" />
+            يجب رفع صورة شخصية لإكمال الملف
+          </p>
+        )}
+        
         <div className="flex items-center gap-3">
           <Button
             type="button"
@@ -611,8 +627,15 @@ export default function CommunityCustomerProfileModal({
 
           <Button
             type="submit"
-            disabled={saveMutation.isPending || !form.formState.isValid || uploadingAvatar}
-            className="flex-[2] h-11 bg-gradient-to-b from-primary to-accent text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:opacity-90"
+            disabled={
+              saveMutation.isPending || 
+              !form.formState.isValid || 
+              uploadingAvatar ||
+              !avatarUrl ||
+              avatarUrl === DEFAULT_AVATAR_URL ||
+              avatarUrl.includes("dicebear")
+            }
+            className="flex-[2] h-11 bg-gradient-to-b from-primary to-accent text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:opacity-90 disabled:opacity-50"
           >
             {saveMutation.isPending ? (
               <>
