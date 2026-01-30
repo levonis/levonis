@@ -59,6 +59,21 @@ export default function CommunityProductDetailModal({
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [includeProductLink, setIncludeProductLink] = useState(true);
   const [fullscreenImage, setFullscreenImage] = useState(false);
+  const [fullscreenVideo, setFullscreenVideo] = useState(false);
+
+  // Build media array with video first if exists
+  const mediaItems = useMemo(() => {
+    const items: { type: 'video' | 'image'; url: string }[] = [];
+    // Video first
+    if (product?.video_url) {
+      items.push({ type: 'video', url: product.video_url });
+    }
+    // Then images
+    if (product?.image_urls) {
+      product.image_urls.forEach((url) => items.push({ type: 'image', url }));
+    }
+    return items;
+  }, [product?.video_url, product?.image_urls]);
 
   // Fetch merchant info
   const { data: merchantApp } = useQuery({
@@ -217,8 +232,8 @@ export default function CommunityProductDetailModal({
   };
 
   const navigateMedia = (direction: "prev" | "next") => {
-    if (!product?.image_urls) return;
-    const len = product.image_urls.length;
+    if (mediaItems.length === 0) return;
+    const len = mediaItems.length;
     if (direction === "prev") {
       setActiveMediaIndex((i) => (i - 1 + len) % len);
     } else {
@@ -234,7 +249,7 @@ export default function CommunityProductDetailModal({
 
   if (!product) return null;
 
-  const activeUrl = product.image_urls?.[Math.min(activeMediaIndex, (product.image_urls?.length || 1) - 1)];
+  const activeMedia = mediaItems[Math.min(activeMediaIndex, mediaItems.length - 1)] || null;
 
   return (
     <>
@@ -245,19 +260,28 @@ export default function CommunityProductDetailModal({
           hideClose
         >
           <div className="flex flex-col max-h-[90vh] overflow-y-auto">
-            {/* Hero Image - Scrolls with content */}
+            {/* Hero Media - Video or Image */}
             <div className="relative aspect-[5/3] bg-muted/20 overflow-hidden shrink-0">
-              {activeUrl ? (
+              {activeMedia ? (
                 <>
-                  <img
-                    src={activeUrl}
-                    alt={product.title}
-                    className="w-full h-full object-contain bg-muted/10 cursor-zoom-in"
-                    onClick={() => setFullscreenImage(true)}
-                  />
+                  {activeMedia.type === 'video' ? (
+                    <video
+                      src={activeMedia.url}
+                      controls
+                      className="w-full h-full object-contain bg-black"
+                      preload="metadata"
+                    />
+                  ) : (
+                    <img
+                      src={activeMedia.url}
+                      alt={product.title}
+                      className="w-full h-full object-contain bg-muted/10 cursor-zoom-in"
+                      onClick={() => setFullscreenImage(true)}
+                    />
+                  )}
                   
                   {/* Navigation */}
-                  {product.image_urls && product.image_urls.length > 1 && (
+                  {mediaItems.length > 1 && (
                     <>
                       <button
                         onClick={() => navigateMedia("next")}
@@ -274,13 +298,15 @@ export default function CommunityProductDetailModal({
                     </>
                   )}
 
-                  {/* Fullscreen */}
-                  <button
-                    onClick={() => setFullscreenImage(true)}
-                    className="absolute top-2 left-2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
-                  >
-                    <Maximize2 className="h-3.5 w-3.5" />
-                  </button>
+                  {/* Fullscreen (only for images) */}
+                  {activeMedia.type === 'image' && (
+                    <button
+                      onClick={() => setFullscreenImage(true)}
+                      className="absolute top-2 left-2 h-7 w-7 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors"
+                    >
+                      <Maximize2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -304,8 +330,8 @@ export default function CommunityProductDetailModal({
                 </Badge>
               )}
 
-              {/* Video Badge */}
-              {product.video_url && (
+              {/* Video indicator if current is video */}
+              {activeMedia?.type === 'video' && (
                 <Badge variant="secondary" className="absolute bottom-2 left-2 text-[10px] gap-1">
                   <Play className="h-3 w-3" />
                   فيديو
@@ -313,27 +339,36 @@ export default function CommunityProductDetailModal({
               )}
 
               {/* Counter */}
-              {product.image_urls && product.image_urls.length > 1 && (
+              {mediaItems.length > 1 && (
                 <Badge variant="secondary" className="absolute bottom-2 right-2 text-[10px] tabular-nums">
-                  {activeMediaIndex + 1}/{product.image_urls.length}
+                  {activeMediaIndex + 1}/{mediaItems.length}
                 </Badge>
               )}
             </div>
 
-            {/* Thumbnails */}
-            {product.image_urls && product.image_urls.length > 1 && (
+            {/* Thumbnails with video first */}
+            {mediaItems.length > 1 && (
               <div className="flex gap-1 p-2 border-b border-border/50 overflow-x-auto shrink-0">
-                {product.image_urls.slice(0, 8).map((url, idx) => (
+                {mediaItems.slice(0, 8).map((media, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveMediaIndex(idx)}
-                    className={`shrink-0 h-10 w-10 rounded-md overflow-hidden border transition-all ${
+                    className={`relative shrink-0 h-10 w-10 rounded-md overflow-hidden border transition-all ${
                       idx === activeMediaIndex 
                         ? "border-primary ring-1 ring-primary/30" 
                         : "border-border/50 hover:border-primary/50"
                     }`}
                   >
-                    <img src={url} alt="" className="w-full h-full object-cover" />
+                    {media.type === 'video' ? (
+                      <>
+                        <video src={media.url} className="w-full h-full object-cover" muted />
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+                          <Play className="h-3 w-3 text-white fill-white" />
+                        </div>
+                      </>
+                    ) : (
+                      <img src={media.url} alt="" className="w-full h-full object-cover" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -429,14 +464,7 @@ export default function CommunityProductDetailModal({
                   </div>
                 )}
 
-                {/* Video */}
-                {product.video_url && (
-                  <div className="rounded-lg border border-border/50 overflow-hidden">
-                    <video controls className="w-full max-h-40" preload="metadata">
-                      <source src={product.video_url} />
-                    </video>
-                  </div>
-                )}
+                {/* Video removed from here - now shown in main gallery */}
 
                 {/* Similar Products - Same Merchant */}
                 {similarProducts?.sameMerchant && similarProducts.sameMerchant.length > 0 && (
@@ -545,7 +573,7 @@ export default function CommunityProductDetailModal({
         </DialogContent>
       </Dialog>
 
-      {/* Fullscreen */}
+      {/* Fullscreen Image */}
       <Dialog open={fullscreenImage} onOpenChange={setFullscreenImage}>
         <DialogContent className="max-w-[90vw] max-h-[90vh] p-0 rounded-3xl border-0 bg-black/95">
           <button
@@ -554,9 +582,9 @@ export default function CommunityProductDetailModal({
           >
             <X className="h-3.5 w-3.5 text-white" />
           </button>
-          {product.image_urls && (
+          {activeMedia?.type === 'image' && (
             <img
-              src={product.image_urls[activeMediaIndex]}
+              src={activeMedia.url}
               alt={product.title}
               className="w-full h-full object-contain"
             />
