@@ -1271,14 +1271,14 @@ const Cart = () => {
                 </div>
 
                 {/* Terms and Conditions Checkbox */}
-                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border/40 mb-4">
+                <div className="flex items-center gap-2 mb-3">
                   <Checkbox
                     id="terms-checkbox"
                     checked={termsAccepted}
                     onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                    className="mt-0.5"
+                    className="h-3.5 w-3.5"
                   />
-                  <label htmlFor="terms-checkbox" className="text-sm text-foreground cursor-pointer leading-relaxed">
+                  <label htmlFor="terms-checkbox" className="text-xs text-muted-foreground cursor-pointer">
                     أوافق على{' '}
                     <button
                       type="button"
@@ -1286,7 +1286,7 @@ const Cart = () => {
                         e.preventDefault();
                         setShowTermsSheet(true);
                       }}
-                      className="text-primary hover:underline font-medium"
+                      className="text-primary hover:underline"
                     >
                       الشروط والأحكام
                     </button>
@@ -1294,7 +1294,7 @@ const Cart = () => {
                 </div>
 
                 <Button 
-                  className={`w-full mb-3 ${hasEnoughBalance && termsAccepted ? 'bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                  className="w-full mb-3 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 disabled:from-primary/40 disabled:to-accent/40 disabled:text-primary-foreground/60"
                   size="lg"
                   onClick={handleCheckoutClick}
                   disabled={isCheckingOut || !hasEnoughBalance || !termsAccepted}
