@@ -15,14 +15,12 @@ function isValidAvatar(url: string | null | undefined): boolean {
 
 /**
  * Hook to check if user has completed their community profile
- * Required fields: full_name, phone_number, username
- * For NEW users joining community: also requires birth_date, gender, avatar_url
- * For existing users: we check if they have the minimum required fields
+ * Required fields: full_name, phone_number, username, birth_date, gender, avatar_url
  */
 export function useCommunityProfileCheck() {
   const { user, loading: authLoading } = useAuth();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["community-profile-status", user?.id],
     queryFn: async () => {
       if (!user?.id) return { isComplete: false };
@@ -36,33 +34,44 @@ export function useCommunityProfileCheck() {
       if (error) throw error;
       if (!profile) return { isComplete: false };
       
-      // Check minimum required fields for ALL users
+      // Check all required fields for community access
       const hasBasicFields = Boolean(
         profile.full_name?.trim() &&
         profile.phone_number?.trim() &&
         profile.username?.trim()
       );
 
-      // For profile completion, we need all fields including avatar, birth_date, gender
-      const hasAllFields = hasBasicFields && Boolean(
+      const hasExtendedFields = Boolean(
         profile.birth_date &&
-        profile.gender?.trim() &&
-        isValidAvatar(profile.avatar_url)
+        profile.gender?.trim()
       );
 
-      // Legacy users (created before community feature) might not have all fields
-      // Check if user was created more than 30 days ago
-      const createdAt = profile.created_at ? new Date(profile.created_at) : new Date();
-      const isLegacyUser = (Date.now() - createdAt.getTime()) > 30 * 24 * 60 * 60 * 1000;
+      const hasValidAvatar = isValidAvatar(profile.avatar_url);
 
-      // Legacy users only need basic fields, new users need all
-      const isComplete = isLegacyUser ? hasBasicFields : hasAllFields;
+      // Profile is complete when ALL fields are filled
+      const isComplete = hasBasicFields && hasExtendedFields && hasValidAvatar;
       
-      return { isComplete, profile, hasBasicFields, hasAllFields };
+      console.log("[CommunityProfileCheck]", {
+        userId: user.id,
+        hasBasicFields,
+        hasExtendedFields,
+        hasValidAvatar,
+        isComplete,
+        avatar_url: profile.avatar_url?.substring(0, 50),
+      });
+      
+      return { 
+        isComplete, 
+        profile, 
+        hasBasicFields, 
+        hasExtendedFields,
+        hasValidAvatar,
+      };
     },
     enabled: !!user?.id && !authLoading,
     staleTime: 5_000, // Cache for 5 seconds to respond faster after profile updates
     refetchOnMount: true,
+    gcTime: 10_000, // Garbage collect after 10 seconds
   });
 
   return {
@@ -70,5 +79,6 @@ export function useCommunityProfileCheck() {
     profile: data?.profile ?? null,
     isLoading: authLoading || isLoading,
     user,
+    refetch,
   };
 }
