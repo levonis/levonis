@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 
 import WalletDialog from '@/components/WalletDialog';
 import CartRequestDialog from '@/components/CartRequestDialog';
+import TermsAndConditionsSheet from '@/components/cart/TermsAndConditionsSheet';
 
 const Cart = () => {
   const { items, loading, total, updateQuantity, removeFromCart, clearCart, itemCount, pendingCartRequest, deleteCartRequest, refreshCart } = useCart();
@@ -35,6 +36,7 @@ const Cart = () => {
   const [showWalletDialog, setShowWalletDialog] = useState(false);
   const [showCartRequestDialog, setShowCartRequestDialog] = useState(false);
   const [showCartChangeWarning, setShowCartChangeWarning] = useState(false);
+  const [showTermsSheet, setShowTermsSheet] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
 
   // Refresh cart data on mount to get latest pendingCartRequest
@@ -353,6 +355,12 @@ const Cart = () => {
       return;
     }
 
+    // فتح صفحة الشروط والأحكام أولاً
+    setShowTermsSheet(true);
+  };
+
+  const handleTermsAccepted = () => {
+    // بعد الموافقة على الشروط، افتح dialog التأكيد
     setShowConfirmDialog(true);
   };
 
@@ -1370,6 +1378,14 @@ const Cart = () => {
         onOpenChange={setShowCartRequestDialog}
         cartItems={items}
         total={total}
+      />
+
+      {/* Terms and Conditions Sheet */}
+      <TermsAndConditionsSheet
+        open={showTermsSheet}
+        onOpenChange={setShowTermsSheet}
+        onAccept={handleTermsAccepted}
+        isLoading={isCheckingOut}
       />
     </div>
   );
