@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import AvatarCropper from "./AvatarCropper";
 import { 
   Loader2, 
   UserCircle2, 
@@ -30,7 +31,8 @@ import {
   Store,
   Camera,
   Upload,
-  ImagePlus
+  ImagePlus,
+  Crop
 } from "lucide-react";
 
 const DEFAULT_AVATAR_URL = "/placeholder.svg";
@@ -83,6 +85,10 @@ export default function CommunityCustomerProfileModal({
   const [avatarUrl, setAvatarUrl] = useState<string>("");
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Cropper state
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [rawImageSrc, setRawImageSrc] = useState<string>("");
 
   useEffect(() => {
     const t = window.setTimeout(() => setLoadingUi(false), 200);
@@ -167,6 +173,9 @@ export default function CommunityCustomerProfileModal({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Reset input so same file can be selected again
+    e.target.value = "";
+
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
@@ -187,11 +196,26 @@ export default function CommunityCustomerProfileModal({
       return;
     }
 
+    // Create object URL for cropper
+    const objectUrl = URL.createObjectURL(file);
+    setRawImageSrc(objectUrl);
+    setCropperOpen(true);
+  };
+
+  // Handle cropped image upload
+  const handleCroppedImage = async (blob: Blob) => {
     setUploadingAvatar(true);
     try {
+      // Convert blob to File
+      const file = new File([blob], `avatar-${Date.now()}.jpg`, { type: "image/jpeg" });
       await uploadAvatarMutation.mutateAsync(file);
     } finally {
       setUploadingAvatar(false);
+      // Clean up object URL
+      if (rawImageSrc) {
+        URL.revokeObjectURL(rawImageSrc);
+        setRawImageSrc("");
+      }
     }
   };
 
@@ -651,6 +675,20 @@ export default function CommunityCustomerProfileModal({
           </Button>
         </div>
       </footer>
+
+      {/* Avatar Cropper Dialog */}
+      <AvatarCropper
+        open={cropperOpen}
+        onOpenChange={(open) => {
+          setCropperOpen(open);
+          if (!open && rawImageSrc) {
+            URL.revokeObjectURL(rawImageSrc);
+            setRawImageSrc("");
+          }
+        }}
+        imageSrc={rawImageSrc}
+        onCropComplete={handleCroppedImage}
+      />
     </form>
   );
 }
