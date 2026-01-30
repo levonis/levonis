@@ -16,8 +16,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AvatarCropper from "./AvatarCropper";
+import CommunityTermsSheet from "./CommunityTermsSheet";
 import { 
   Loader2, 
   UserCircle2, 
@@ -32,7 +34,8 @@ import {
   Camera,
   Upload,
   ImagePlus,
-  Crop
+  Crop,
+  ScrollText
 } from "lucide-react";
 
 const DEFAULT_AVATAR_URL = "/placeholder.svg";
@@ -89,6 +92,10 @@ export default function CommunityCustomerProfileModal({
   // Cropper state
   const [cropperOpen, setCropperOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState<string>("");
+  
+  // Terms state
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showTermsSheet, setShowTermsSheet] = useState(false);
 
   useEffect(() => {
     const t = window.setTimeout(() => setLoadingUi(false), 200);
@@ -684,6 +691,29 @@ export default function CommunityCustomerProfileModal({
             يجب رفع صورة شخصية لإكمال الملف
           </p>
         )}
+
+        {/* Terms and Conditions Checkbox */}
+        <div className="flex items-center gap-2 mb-3">
+          <Checkbox
+            id="community-terms-checkbox"
+            checked={termsAccepted}
+            onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+            className="h-3.5 w-3.5"
+          />
+          <label htmlFor="community-terms-checkbox" className="text-xs text-muted-foreground cursor-pointer">
+            أوافق على{' '}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowTermsSheet(true);
+              }}
+              className="text-primary hover:underline"
+            >
+              شروط وأحكام مجتمع ليفو
+            </button>
+          </label>
+        </div>
         
         <div className="flex items-center gap-3">
           <Button
@@ -704,14 +734,20 @@ export default function CommunityCustomerProfileModal({
               uploadingAvatar ||
               !avatarUrl ||
               avatarUrl === DEFAULT_AVATAR_URL ||
-              avatarUrl.includes("dicebear")
+              avatarUrl.includes("dicebear") ||
+              !termsAccepted
             }
-            className="flex-[2] h-11 bg-gradient-to-b from-primary to-accent text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:opacity-90 disabled:opacity-50"
+            className="flex-[2] h-11 bg-gradient-to-b from-primary to-accent text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:opacity-90 disabled:from-primary/40 disabled:to-accent/40 disabled:text-primary-foreground/60"
           >
             {saveMutation.isPending ? (
               <>
                 <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                 جارٍ الحفظ...
+              </>
+            ) : !termsAccepted ? (
+              <>
+                <ScrollText className="ml-2 h-4 w-4" />
+                وافق على الشروط أولاً
               </>
             ) : (
               <>
@@ -735,6 +771,13 @@ export default function CommunityCustomerProfileModal({
         }}
         imageSrc={rawImageSrc}
         onCropComplete={handleCroppedImage}
+      />
+
+      {/* Community Terms Sheet */}
+      <CommunityTermsSheet
+        open={showTermsSheet}
+        onOpenChange={setShowTermsSheet}
+        onAccept={() => setTermsAccepted(true)}
       />
     </form>
   );
