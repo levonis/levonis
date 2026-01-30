@@ -3,8 +3,7 @@ import ReactCrop, { Crop, PixelCrop, centerCrop, makeAspectCrop } from "react-im
 import "react-image-crop/dist/ReactCrop.css";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Check, X, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
+import { Loader2, Check, X } from "lucide-react";
 
 interface AvatarCropperProps {
   open: boolean;
@@ -22,7 +21,7 @@ function centerAspectCrop(
     makeAspectCrop(
       {
         unit: "%",
-        width: 90,
+        width: 80,
       },
       aspect,
       mediaWidth,
@@ -35,9 +34,7 @@ function centerAspectCrop(
 
 async function getCroppedImg(
   image: HTMLImageElement,
-  crop: PixelCrop,
-  scale: number = 1,
-  rotate: number = 0
+  crop: PixelCrop
 ): Promise<Blob> {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -46,10 +43,13 @@ async function getCroppedImg(
     throw new Error("No 2d context");
   }
 
+  // Get the actual rendered size vs natural size ratio
   const scaleX = image.naturalWidth / image.width;
   const scaleY = image.naturalHeight / image.height;
   
-  // Calculate the size of the cropped area
+  // Calculate the actual crop coordinates in the original image
+  const cropX = crop.x * scaleX;
+  const cropY = crop.y * scaleY;
   const cropWidth = crop.width * scaleX;
   const cropHeight = crop.height * scaleY;
 
@@ -58,19 +58,10 @@ async function getCroppedImg(
   canvas.width = outputSize;
   canvas.height = outputSize;
 
+  ctx.imageSmoothingEnabled = true;
   ctx.imageSmoothingQuality = "high";
 
-  // Apply rotation
-  const cropX = crop.x * scaleX;
-  const cropY = crop.y * scaleY;
-
-  // Draw the cropped image
-  ctx.save();
-  ctx.translate(outputSize / 2, outputSize / 2);
-  ctx.rotate((rotate * Math.PI) / 180);
-  ctx.scale(scale, scale);
-  ctx.translate(-outputSize / 2, -outputSize / 2);
-  
+  // Draw the cropped portion of the image
   ctx.drawImage(
     image,
     cropX,
@@ -82,15 +73,16 @@ async function getCroppedImg(
     outputSize,
     outputSize
   );
-  ctx.restore();
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {
         if (!blob) {
+          console.error("[AvatarCropper] Canvas toBlob returned null");
           reject(new Error("Canvas is empty"));
           return;
         }
+        console.log("[AvatarCropper] Cropped blob created, size:", blob.size);
         resolve(blob);
       },
       "image/jpeg",
@@ -107,115 +99,70 @@ export default function AvatarCropper({
 }: AvatarCropperProps) {
   const [crop, setCrop] = useState<Crop>();
   const [completedCrop, setCompletedCrop] = useState<PixelCrop>();
-  const [scale, setScale] = useState(1);
-  const [rotate, setRotate] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const imgRef = useRef<HTMLImageElement>(null);
 
   const onImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
     const { width, height } = e.currentTarget;
-    setCrop(centerAspectCrop(width, height, 1));
+    console.log("[AvatarCropper] Image loaded:", width, "x", height);
+    const newCrop = centerAspectCrop(width, height, 1);
+    setCrop(newCrop);
   }, []);
 
   const handleConfirm = async () => {
-    if (!completedCrop || !imgRef.current) return;
+    console.log("[AvatarCropper] Confirm clicked, completedCrop:", completedCrop);
+    if (!completedCrop || !imgRef.current) {
+      console.error("[AvatarCropper] Missing crop or image ref");
+      return;
+    }
 
     setIsProcessing(true);
     try {
-      const croppedBlob = await getCroppedImg(
-        imgRef.current,
-        completedCrop,
-        scale,
-        rotate
-      );
+      const croppedBlob = await getCroppedImg(imgRef.current, completedCrop);
       onCropComplete(croppedBlob);
       onOpenChange(false);
     } catch (error) {
-      console.error("Failed to crop image:", error);
+      console.error("[AvatarCropper] Failed to crop image:", error);
     } finally {
       setIsProcessing(false);
-    }
-  };
-
-  const handleReset = () => {
-    setScale(1);
-    setRotate(0);
-    if (imgRef.current) {
-      const { width, height } = imgRef.current;
-      setCrop(centerAspectCrop(width, height, 1));
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
-        <DialogHeader className="p-4 pb-0">
-          <DialogTitle className="text-center">قص الصورة الشخصية</DialogTitle>
+        <DialogHeader className="p-4 pb-2">
+          <DialogTitle className="text-center text-base">قص الصورة الشخصية</DialogTitle>
+          <p className="text-xs text-muted-foreground text-center">اسحب لتحديد منطقة القص</p>
         </DialogHeader>
 
-        <div className="p-4 space-y-4">
+        <div className="p-4 pt-2">
           {/* Cropper Area */}
-          <div className="relative bg-muted/50 rounded-xl overflow-hidden flex items-center justify-center min-h-[280px] max-h-[50vh]">
-            <ReactCrop
-              crop={crop}
-              onChange={(_, percentCrop) => setCrop(percentCrop)}
-              onComplete={(c) => setCompletedCrop(c)}
-              aspect={1}
-              circularCrop
-              className="max-h-[50vh]"
-            >
-              <img
-                ref={imgRef}
-                src={imageSrc}
-                alt="صورة للقص"
-                style={{
-                  transform: `scale(${scale}) rotate(${rotate}deg)`,
-                  maxHeight: "50vh",
-                  maxWidth: "100%",
+          <div className="relative bg-muted/30 rounded-xl overflow-hidden flex items-center justify-center" style={{ minHeight: 250 }}>
+            {imageSrc ? (
+              <ReactCrop
+                crop={crop}
+                onChange={(_, percentCrop) => setCrop(percentCrop)}
+                onComplete={(c) => {
+                  console.log("[AvatarCropper] Crop complete:", c);
+                  setCompletedCrop(c);
                 }}
-                onLoad={onImageLoad}
-                className="object-contain"
-              />
-            </ReactCrop>
-          </div>
-
-          {/* Controls */}
-          <div className="space-y-3">
-            {/* Zoom Control */}
-            <div className="flex items-center gap-3">
-              <ZoomOut className="h-4 w-4 text-muted-foreground shrink-0" />
-              <Slider
-                value={[scale]}
-                onValueChange={([v]) => setScale(v)}
-                min={0.5}
-                max={3}
-                step={0.1}
-                className="flex-1"
-              />
-              <ZoomIn className="h-4 w-4 text-muted-foreground shrink-0" />
-            </div>
-
-            {/* Rotate Control */}
-            <div className="flex items-center justify-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setRotate((r) => r - 90)}
-                className="gap-1"
+                aspect={1}
+                circularCrop
+                className="max-w-full"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
-                تدوير
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleReset}
-              >
-                إعادة تعيين
-              </Button>
-            </div>
+                <img
+                  ref={imgRef}
+                  src={imageSrc}
+                  alt="صورة للقص"
+                  onLoad={onImageLoad}
+                  style={{ maxHeight: "50vh", maxWidth: "100%" }}
+                  crossOrigin="anonymous"
+                />
+              </ReactCrop>
+            ) : (
+              <div className="text-muted-foreground text-sm">لا توجد صورة</div>
+            )}
           </div>
         </div>
 
