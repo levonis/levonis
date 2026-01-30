@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash } from 'lucide-react';
+import { Loader2, Minus, Plus, Trash2, ShoppingBag, ArrowRight, Ticket, X, Wallet, CreditCard, Package, MessageCircle, Hash, FileText } from 'lucide-react';
 import GroupedCartItem from '@/components/GroupedCartItem';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +37,7 @@ const Cart = () => {
   const [showCartRequestDialog, setShowCartRequestDialog] = useState(false);
   const [showCartChangeWarning, setShowCartChangeWarning] = useState(false);
   const [showTermsSheet, setShowTermsSheet] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [pendingAction, setPendingAction] = useState<(() => Promise<void>) | null>(null);
 
   // Refresh cart data on mount to get latest pendingCartRequest
@@ -355,13 +356,22 @@ const Cart = () => {
       return;
     }
 
-    // فتح صفحة الشروط والأحكام أولاً
-    setShowTermsSheet(true);
+    if (!termsAccepted) {
+      toast({
+        title: "الشروط والأحكام",
+        description: "يجب الموافقة على الشروط والأحكام لإتمام الطلب",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // فتح dialog التأكيد مباشرة
+    setShowConfirmDialog(true);
   };
 
   const handleTermsAccepted = () => {
-    // بعد الموافقة على الشروط، افتح dialog التأكيد
-    setShowConfirmDialog(true);
+    setTermsAccepted(true);
+    setShowTermsSheet(false);
   };
 
   const handleCheckout = async () => {
@@ -1260,11 +1270,34 @@ const Cart = () => {
                   </div>
                 </div>
 
+                {/* Terms and Conditions Checkbox */}
+                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border/40 mb-4">
+                  <Checkbox
+                    id="terms-checkbox"
+                    checked={termsAccepted}
+                    onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="terms-checkbox" className="text-sm text-foreground cursor-pointer leading-relaxed">
+                    أوافق على{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setShowTermsSheet(true);
+                      }}
+                      className="text-primary hover:underline font-medium"
+                    >
+                      الشروط والأحكام
+                    </button>
+                  </label>
+                </div>
+
                 <Button 
-                  className={`w-full mb-3 ${hasEnoughBalance ? 'bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+                  className={`w-full mb-3 ${hasEnoughBalance && termsAccepted ? 'bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
                   size="lg"
                   onClick={handleCheckoutClick}
-                  disabled={isCheckingOut || !hasEnoughBalance}
+                  disabled={isCheckingOut || !hasEnoughBalance || !termsAccepted}
                 >
                   {isCheckingOut ? (
                     <>
@@ -1275,6 +1308,11 @@ const Cart = () => {
                     <>
                       <Wallet className="ml-2 h-4 w-4" />
                       رصيد غير كافٍ
+                    </>
+                  ) : !termsAccepted ? (
+                    <>
+                      <FileText className="ml-2 h-4 w-4" />
+                      وافق على الشروط أولاً
                     </>
                   ) : (
                     'إتمام الطلب'
