@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Sheet, 
   SheetContent, 
@@ -64,9 +63,9 @@ const TermsAndConditionsSheet = ({
           </SheetDescription>
         </SheetHeader>
 
-        <ScrollArea 
-          className="h-[calc(90vh-200px)] sm:h-[calc(85vh-220px)] px-4 sm:px-6"
-          onScrollCapture={handleScroll}
+        <div 
+          className="h-[calc(90vh-200px)] sm:h-[calc(85vh-220px)] px-4 sm:px-6 overflow-y-auto"
+          onScroll={handleScroll}
         >
           <div className="py-4 space-y-6 text-sm leading-relaxed text-foreground" dir="rtl">
             
@@ -325,7 +324,7 @@ const TermsAndConditionsSheet = ({
             {/* Spacer for scroll detection */}
             <div className="h-4" />
           </div>
-        </ScrollArea>
+        </div>
 
         <SheetFooter className="p-4 sm:p-6 border-t bg-card">
           <div className="w-full space-y-4">
