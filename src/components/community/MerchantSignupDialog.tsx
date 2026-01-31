@@ -331,7 +331,10 @@ export default function MerchantSignupDialog({
       if (!user?.id) throw new Error("Not authenticated");
       const url = await uploadStoreImage({ userId: user.id, file });
       setStoreImageUrl(url);
-      await saveDraftMutation.mutateAsync({ store_image_url: url });
+      // Only save to draft if app already exists, otherwise just store locally
+      if (app?.id) {
+        await saveDraftMutation.mutateAsync({ store_image_url: url });
+      }
       return url;
     },
     onError: (err: any) => {
