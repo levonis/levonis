@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 
 interface EditOfferDialogProps {
   open: boolean;
@@ -47,7 +48,7 @@ export default function EditOfferDialog({
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const [price, setPrice] = useState(currentPrice.toString());
+  const [priceNum, setPriceNum] = useState(currentPrice);
   const [duration, setDuration] = useState(currentDuration.toString());
   const [grams, setGrams] = useState(currentGrams?.toString() || "");
   const [notes, setNotes] = useState(currentNotes || "");
@@ -55,7 +56,7 @@ export default function EditOfferDialog({
   // Reset form when dialog opens
   useEffect(() => {
     if (open) {
-      setPrice(currentPrice.toString());
+      setPriceNum(currentPrice);
       setDuration(currentDuration.toString());
       setGrams(currentGrams?.toString() || "");
       setNotes(currentNotes || "");
@@ -76,7 +77,6 @@ export default function EditOfferDialog({
   });
 
   const commissionRate = commissionSetting?.rate || 0.007;
-  const priceNum = parseInt(price, 10) || 0;
   const platformFee = Math.floor(priceNum * commissionRate);
   const merchantPayout = priceNum - platformFee;
 
@@ -99,7 +99,6 @@ export default function EditOfferDialog({
         throw new Error("لقد تم تعديل هذا العرض مسبقاً. لا يمكنك التعديل أكثر من مرة واحدة.");
       }
 
-      const priceNum = parseInt(price, 10);
       const durationNum = parseInt(duration, 10);
       const gramsNum = grams ? parseInt(grams, 10) : null;
 
@@ -139,9 +138,9 @@ export default function EditOfferDialog({
     },
   });
 
-  const isValid = price && parseInt(price, 10) > 0 && duration && parseInt(duration, 10) > 0;
+  const isValid = priceNum > 0 && duration && parseInt(duration, 10) > 0;
   const hasChanges = 
-    parseInt(price, 10) !== currentPrice ||
+    priceNum !== currentPrice ||
     parseInt(duration, 10) !== currentDuration ||
     (grams ? parseInt(grams, 10) : null) !== currentGrams ||
     (notes.trim() || null) !== currentNotes;
@@ -185,13 +184,11 @@ export default function EditOfferDialog({
                 <DollarSign className="h-4 w-4 text-primary" />
                 السعر للزبون (دينار عراقي) <span className="text-destructive">*</span>
               </Label>
-              <Input
-                type="number"
-                placeholder="مثال: 25000"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
+              <FormattedNumberInput
+                placeholder="مثال: 25,000"
+                value={priceNum}
+                onChange={setPriceNum}
                 className="text-lg font-bold"
-                min={1}
               />
               {priceNum > 0 && (
                 <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/30 border border-border">

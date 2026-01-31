@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import {
   Popover,
   PopoverContent,
@@ -51,7 +52,7 @@ export default function AddOfferDialog({
   const { toast } = useToast();
   const qc = useQueryClient();
 
-  const [price, setPrice] = useState("");
+  const [priceNum, setPriceNum] = useState(0);
   const [duration, setDuration] = useState("");
   const [grams, setGrams] = useState("");
   const [notes, setNotes] = useState("");
@@ -75,7 +76,6 @@ export default function AddOfferDialog({
   });
 
   const commissionRate = commissionSetting?.rate || 0.007;
-  const priceNum = parseInt(price, 10) || 0;
   const platformFee = Math.floor(priceNum * commissionRate);
   const merchantPayout = priceNum - platformFee;
 
@@ -97,7 +97,6 @@ export default function AddOfferDialog({
     mutationFn: async () => {
       if (!user?.id) throw new Error("يجب تسجيل الدخول");
       
-      const priceNum = parseInt(price, 10);
       const durationNum = parseInt(duration, 10);
       const gramsNum = grams ? parseInt(grams, 10) : null;
 
@@ -151,7 +150,7 @@ export default function AddOfferDialog({
       qc.invalidateQueries({ queryKey: ["offers-count", requestId] });
       toast({ title: "تم إضافة التسعير بنجاح" });
       // Reset form
-      setPrice("");
+      setPriceNum(0);
       setDuration("");
       setGrams("");
       setNotes("");
@@ -168,7 +167,7 @@ export default function AddOfferDialog({
     },
   });
 
-  const isValid = price && parseInt(price, 10) > 0 && duration && parseInt(duration, 10) > 0;
+  const isValid = priceNum > 0 && duration && parseInt(duration, 10) > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -196,13 +195,11 @@ export default function AddOfferDialog({
               <DollarSign className="h-4 w-4 text-primary" />
               السعر للزبون (دينار عراقي) <span className="text-destructive">*</span>
             </Label>
-            <Input
-              type="number"
-              placeholder="مثال: 25000"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
+            <FormattedNumberInput
+              placeholder="مثال: 25,000"
+              value={priceNum}
+              onChange={setPriceNum}
               className="text-lg font-bold"
-              min={1}
             />
             {priceNum > 0 && (
               <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/30 border border-border">

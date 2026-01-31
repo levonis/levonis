@@ -379,7 +379,7 @@ function CustomersContent() {
 
       {/* Customer Detail Dialog */}
       <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <Users className="h-4 w-4 text-primary" />
