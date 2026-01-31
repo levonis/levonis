@@ -17,7 +17,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import AvatarCropper from "./AvatarCropper";
 import CommunityTermsSheet from "./CommunityTermsSheet";
 import { 
@@ -32,10 +31,11 @@ import {
   CheckCircle2,
   Store,
   Camera,
-  Upload,
-  ImagePlus,
-  Crop,
-  ScrollText
+  ScrollText,
+  Shield,
+  Zap,
+  Crown,
+  BadgeCheck,
 } from "lucide-react";
 
 const DEFAULT_AVATAR_URL = "/placeholder.svg";
@@ -148,7 +148,6 @@ export default function CommunityCustomerProfileModal({
       
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
-      // Path format: avatars/{user_id}/{filename} to match storage policy
       const filePath = `avatars/${user.id}/${fileName}`;
       
       const { error: uploadError } = await supabase.storage
@@ -178,17 +177,9 @@ export default function CommunityCustomerProfileModal({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    console.log("[AvatarUpload] onChange triggered, files:", files?.length);
-    
-    if (!files || files.length === 0) {
-      console.log("[AvatarUpload] No files in input");
-      return;
-    }
+    if (!files || files.length === 0) return;
     
     const file = files[0];
-    console.log("[AvatarUpload] File selected:", file.name, file.type, file.size);
-
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast({
         title: "الملف كبير جداً",
@@ -199,7 +190,6 @@ export default function CommunityCustomerProfileModal({
       return;
     }
 
-    // Validate file type - accept common image types
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
     const isValidType = file.type.startsWith('image/') || validTypes.some(t => file.type.includes(t.split('/')[1]));
     
@@ -213,14 +203,11 @@ export default function CommunityCustomerProfileModal({
       return;
     }
 
-    // Create object URL for cropper
     try {
       const objectUrl = URL.createObjectURL(file);
-      console.log("[AvatarUpload] Created object URL, opening cropper");
       setRawImageSrc(objectUrl);
       setCropperOpen(true);
     } catch (err) {
-      console.error("[AvatarUpload] Failed to create object URL:", err);
       toast({
         title: "تعذر قراءة الصورة",
         description: "الرجاء المحاولة مرة أخرى",
@@ -228,16 +215,11 @@ export default function CommunityCustomerProfileModal({
       });
     }
     
-    // Reset input so same file can be selected again
     e.target.value = "";
   };
 
-  // Handle cropped image upload
   const handleCroppedImage = async (blob: Blob) => {
-    console.log("[AvatarUpload] handleCroppedImage called, blob size:", blob.size);
-    
     if (!blob || blob.size === 0) {
-      console.error("[AvatarUpload] Invalid blob received");
       toast({
         title: "فشل قص الصورة",
         description: "الرجاء المحاولة مرة أخرى",
@@ -248,16 +230,12 @@ export default function CommunityCustomerProfileModal({
     
     setUploadingAvatar(true);
     try {
-      // Convert blob to File
       const file = new File([blob], `avatar-${Date.now()}.jpg`, { type: "image/jpeg" });
-      console.log("[AvatarUpload] Uploading cropped file:", file.name, file.size);
       await uploadAvatarMutation.mutateAsync(file);
-      console.log("[AvatarUpload] Upload complete");
     } catch (error) {
       console.error("[AvatarUpload] Upload failed:", error);
     } finally {
       setUploadingAvatar(false);
-      // Clean up object URL
       if (rawImageSrc) {
         URL.revokeObjectURL(rawImageSrc);
         setRawImageSrc("");
@@ -269,7 +247,6 @@ export default function CommunityCustomerProfileModal({
     mutationFn: async (values: FormValues) => {
       if (!user?.id) throw new Error("Not authenticated");
 
-      // Validate avatar is uploaded (required for community access)
       const isValidAvatar = avatarUrl && 
         avatarUrl !== DEFAULT_AVATAR_URL && 
         !avatarUrl.includes("dicebear.com") && 
@@ -279,7 +256,6 @@ export default function CommunityCustomerProfileModal({
         throw new Error("يجب رفع صورة شخصية للوصول لمجتمع ليفو");
       }
 
-      // Content filtering
       const usernameCheck = validateUsername(values.username);
       if (!usernameCheck.isClean) {
         throw new Error("اسم المستخدم يحتوي على كلمات غير مناسبة");
@@ -307,11 +283,9 @@ export default function CommunityCustomerProfileModal({
         avatar_url: avatarUrl,
       };
 
-      // Update profiles table
       const { error } = await supabase.from("profiles").update(profilePayload).eq("id", user.id);
       if (error) throw error;
 
-      // Upsert community_customer_profiles for admin visibility
       const { error: communityError } = await supabase
         .from("community_customer_profiles")
         .upsert({
@@ -323,13 +297,11 @@ export default function CommunityCustomerProfileModal({
 
       if (communityError) {
         console.error("Community profile upsert error:", communityError);
-        // Don't throw - main profile saved successfully
       }
 
       return true;
     },
     onSuccess: async () => {
-      // Invalidate and refetch ALL profile-related queries first
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["community-profile", user?.id] }),
         qc.invalidateQueries({ queryKey: ["community-profile-full", user?.id] }),
@@ -337,12 +309,10 @@ export default function CommunityCustomerProfileModal({
         qc.invalidateQueries({ queryKey: ["admin-community-customers"] }),
       ]);
       
-      // Wait for refetch to complete
       await qc.refetchQueries({ queryKey: ["community-profile-status", user?.id] });
       
       toast({ title: "تم حفظ الملف الشخصي بنجاح ✓" });
       
-      // Small delay to ensure state propagates before navigation
       await new Promise(resolve => setTimeout(resolve, 100));
       
       onDone?.();
@@ -364,7 +334,6 @@ export default function CommunityCustomerProfileModal({
     },
   });
 
-  // Calculate completion progress (now includes avatar)
   const completedFields = useMemo(() => {
     const values = form.watch();
     let count = 0;
@@ -377,8 +346,9 @@ export default function CommunityCustomerProfileModal({
     return count;
   }, [form.watch(), avatarUrl]);
 
-  const totalRequiredFields = 6; // Added avatar
+  const totalRequiredFields = 6;
   const progressPercent = (completedFields / totalRequiredFields) * 100;
+  const isComplete = completedFields === totalRequiredFields;
 
   const fields: FieldConfig[] = [
     {
@@ -406,112 +376,139 @@ export default function CommunityCustomerProfileModal({
     },
   ];
 
+  const hasValidAvatar = avatarUrl && avatarUrl !== DEFAULT_AVATAR_URL && !avatarUrl.includes("dicebear");
+
   return (
     <form
       onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))}
-      className="flex min-h-0 flex-1 flex-col"
+      className="flex min-h-0 flex-1 flex-col bg-gradient-to-b from-background to-muted/20"
     >
-      {/* Premium Header with Avatar Upload */}
-      <header className="relative overflow-hidden border-b border-primary/20 bg-gradient-to-br from-primary/15 via-accent/10 to-transparent px-5 py-5">
-        {/* Decorative elements */}
-        <div className="absolute top-0 left-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-        <div className="absolute bottom-0 right-0 w-24 h-24 bg-accent/10 rounded-full blur-2xl translate-x-1/2 translate-y-1/2" />
+      {/* Premium Hero Header */}
+      <header className="relative overflow-hidden px-5 py-6">
+        {/* Background Effects */}
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
+        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/15 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-accent/15 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
         
-        <div className="relative flex items-center gap-4">
-          {/* Avatar Upload Section */}
-          <div className="relative group">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary to-accent p-[2px] shadow-lg shadow-primary/25">
-              <div className="h-full w-full rounded-2xl bg-card overflow-hidden">
-                {avatarUrl ? (
-                  <img 
-                    src={avatarUrl} 
-                    alt="الصورة الشخصية" 
-                    className="h-full w-full object-cover"
-                  />
+        <div className="relative">
+          {/* Avatar Section - Centered */}
+          <div className="flex flex-col items-center mb-5">
+            <div className="relative group">
+              {/* Glowing Ring */}
+              <div className={`absolute -inset-1 rounded-full blur-md transition-all duration-500 ${
+                hasValidAvatar 
+                  ? 'bg-gradient-to-r from-primary via-accent to-primary opacity-75' 
+                  : 'bg-muted/50 opacity-50'
+              }`} />
+              
+              {/* Avatar Container */}
+              <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-primary to-accent p-[3px] shadow-2xl">
+                <div className="h-full w-full rounded-full bg-card overflow-hidden">
+                  {avatarUrl && avatarUrl !== DEFAULT_AVATAR_URL ? (
+                    <img 
+                      src={avatarUrl} 
+                      alt="الصورة الشخصية" 
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+                      <UserCircle2 className="h-10 w-10 text-muted-foreground/50" />
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Upload Button Overlay */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 hover:bg-black/40 transition-all duration-300 cursor-pointer group"
+              >
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-black/80 rounded-full p-2 shadow-lg">
+                  {uploadingAvatar ? (
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  ) : (
+                    <Camera className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+              </button>
+              
+              {/* Status Badge */}
+              <div className={`absolute -bottom-1 -right-1 h-7 w-7 rounded-full flex items-center justify-center shadow-lg transition-all ${
+                hasValidAvatar 
+                  ? 'bg-gradient-to-br from-emerald-500 to-green-600' 
+                  : 'bg-gradient-to-br from-amber-500 to-orange-600'
+              }`}>
+                {hasValidAvatar ? (
+                  <CheckCircle2 className="h-4 w-4 text-white" />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center bg-muted/50">
-                    <UserCircle2 className="h-8 w-8 text-muted-foreground" />
-                  </div>
+                  <Camera className="h-4 w-4 text-white" />
                 )}
               </div>
+              
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={handleFileSelect}
+              />
             </div>
             
-            {/* Upload button - always visible */}
-            <button
-              type="button"
-              onClick={() => {
-                console.log("[AvatarUpload] Click - opening file picker");
-                fileInputRef.current?.click();
-              }}
-              disabled={uploadingAvatar}
-              className="absolute inset-0 flex items-center justify-center bg-black/40 hover:bg-black/60 rounded-2xl transition-colors cursor-pointer"
-            >
-              {uploadingAvatar ? (
-                <Loader2 className="h-5 w-5 text-white animate-spin" />
-              ) : (
-                <Camera className="h-5 w-5 text-white" />
-              )}
-            </button>
-            
-            {/* Badge indicator */}
-            <div className="absolute -bottom-1 -right-1 h-5 w-5 rounded-full bg-accent flex items-center justify-center shadow-md">
-              {avatarUrl && avatarUrl !== DEFAULT_AVATAR_URL ? (
-                <CheckCircle2 className="h-3 w-3 text-accent-foreground" />
-              ) : (
-                <ImagePlus className="h-3 w-3 text-accent-foreground" />
-              )}
-            </div>
-            
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              aria-hidden="true"
-              tabIndex={-1}
-              onChange={(e) => {
-                console.log("[AvatarUpload] Input onChange fired");
-                handleFileSelect(e);
-              }}
-            />
+            {/* Upload Hint */}
+            {!hasValidAvatar && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-3 flex items-center gap-1.5 animate-pulse">
+                <Camera className="h-3.5 w-3.5" />
+                اضغط لرفع صورتك الشخصية
+              </p>
+            )}
           </div>
           
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-foreground mb-1">أكمل ملفك الشخصي</h2>
-            <p className="text-xs text-muted-foreground">للوصول الكامل لمجتمع ليفو</p>
+          {/* Title & Progress */}
+          <div className="text-center">
+            <h2 className="text-xl font-bold bg-gradient-to-r from-primary via-foreground to-accent bg-clip-text text-transparent mb-1">
+              أكمل ملفك الشخصي
+            </h2>
+            <p className="text-xs text-muted-foreground mb-4">للوصول الكامل لمجتمع ليفو</p>
             
-            {/* Progress bar */}
-            <div className="mt-2 h-1.5 w-full bg-muted/50 rounded-full overflow-hidden">
+            {/* Elegant Progress Bar */}
+            <div className="relative h-2 bg-muted/50 rounded-full overflow-hidden shadow-inner">
               <div 
-                className="h-full bg-gradient-to-r from-primary to-accent rounded-full transition-all duration-500 ease-out"
+                className="absolute inset-y-0 right-0 bg-gradient-to-l from-primary via-accent to-primary rounded-full transition-all duration-700 ease-out"
+                style={{ width: `${progressPercent}%` }}
+              />
+              <div 
+                className="absolute inset-y-0 right-0 bg-gradient-to-l from-white/30 to-transparent rounded-full transition-all duration-700 ease-out"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">
-              {completedFields} من {totalRequiredFields} حقول مكتملة
-            </p>
+            
+            <div className="flex items-center justify-between mt-2 px-1">
+              <span className="text-[10px] text-muted-foreground">
+                {completedFields} من {totalRequiredFields}
+              </span>
+              {isComplete && (
+                <span className="text-[10px] text-emerald-500 flex items-center gap-1">
+                  <Sparkles className="h-3 w-3" />
+                  جاهز للحفظ
+                </span>
+              )}
+            </div>
           </div>
         </div>
-
-        {/* Avatar upload hint */}
-        {(!avatarUrl || avatarUrl === DEFAULT_AVATAR_URL) && (
-          <p className="text-[10px] text-primary/80 mt-3 flex items-center gap-1">
-            <Upload className="h-3 w-3" />
-            اضغط على الصورة لرفع صورتك الشخصية
-          </p>
-        )}
       </header>
 
-      {/* Scrollable body */}
-      <div className="scrollbar-stable flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-5 py-5">
+      {/* Scrollable Form Body */}
+      <div className="scrollbar-stable flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-5 py-4">
         {isLoading || loadingUi ? (
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-16 rounded-xl" />
+              <Skeleton key={i} className="h-16 rounded-2xl" />
             ))}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Text Fields */}
             {fields.map((field) => {
               const hasValue = !!form.watch(field.id)?.toString().trim();
@@ -520,25 +517,29 @@ export default function CommunityCustomerProfileModal({
               return (
                 <div 
                   key={field.id} 
-                  className={`relative rounded-xl border-2 transition-all duration-200 ${
+                  className={`group relative rounded-2xl transition-all duration-300 ${
                     hasError 
-                      ? 'border-destructive/50 bg-destructive/5' 
+                      ? 'bg-destructive/5 ring-2 ring-destructive/30' 
                       : hasValue 
-                        ? 'border-primary/30 bg-primary/5' 
-                        : 'border-border/50 bg-muted/30'
+                        ? 'bg-primary/5 ring-2 ring-primary/20 shadow-sm shadow-primary/10' 
+                        : 'bg-muted/40 ring-1 ring-border/50 hover:ring-border'
                   }`}
                 >
-                  <div className="flex items-center gap-3 px-4 py-3">
-                    <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${
-                      hasValue ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                  <div className="flex items-center gap-3 p-3">
+                    {/* Icon */}
+                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
+                      hasValue 
+                        ? 'bg-gradient-to-br from-primary to-accent text-white shadow-md shadow-primary/25' 
+                        : 'bg-muted text-muted-foreground'
                     }`}>
-                      {hasValue ? <CheckCircle2 className="h-4 w-4" /> : field.icon}
+                      {hasValue ? <CheckCircle2 className="h-5 w-5" /> : field.icon}
                     </div>
                     
+                    {/* Input Area */}
                     <div className="flex-1 min-w-0">
                       <Label 
                         htmlFor={field.id} 
-                        className={`text-[11px] font-medium mb-0.5 block ${
+                        className={`text-[11px] font-semibold mb-0.5 block transition-colors ${
                           hasValue ? 'text-primary' : 'text-muted-foreground'
                         }`}
                       >
@@ -551,16 +552,16 @@ export default function CommunityCustomerProfileModal({
                         {...form.register(field.id)}
                         maxLength={field.maxLength}
                         inputMode={field.type === "tel" ? "tel" : undefined}
-                        className="h-8 border-0 bg-transparent p-0 text-sm font-medium placeholder:text-muted-foreground/50 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="h-7 border-0 bg-transparent p-0 text-sm font-medium placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                     </div>
                   </div>
                   
                   {field.hint && !hasError && (
-                    <p className="text-[10px] text-muted-foreground px-4 pb-2 -mt-1">{field.hint}</p>
+                    <p className="text-[10px] text-muted-foreground/70 px-3 pb-2 -mt-0.5 pr-16">{field.hint}</p>
                   )}
                   {hasError && (
-                    <p className="text-[10px] text-destructive px-4 pb-2 -mt-1">
+                    <p className="text-[10px] text-destructive px-3 pb-2 -mt-0.5 pr-16">
                       {form.formState.errors[field.id]?.message}
                     </p>
                   )}
@@ -569,23 +570,25 @@ export default function CommunityCustomerProfileModal({
             })}
 
             {/* Date and Gender Row */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {/* Birth Date */}
               <div 
-                className={`relative rounded-xl border-2 transition-all duration-200 ${
+                className={`rounded-2xl transition-all duration-300 ${
                   form.watch("birthDate") 
-                    ? 'border-primary/30 bg-primary/5' 
-                    : 'border-border/50 bg-muted/30'
+                    ? 'bg-primary/5 ring-2 ring-primary/20 shadow-sm' 
+                    : 'bg-muted/40 ring-1 ring-border/50'
                 }`}
               >
-                <div className="px-4 py-3">
+                <div className="p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${
-                      form.watch("birthDate") ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
+                      form.watch("birthDate") 
+                        ? 'bg-gradient-to-br from-primary to-accent text-white shadow-sm' 
+                        : 'bg-muted text-muted-foreground'
                     }`}>
-                      {form.watch("birthDate") ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Calendar className="h-3.5 w-3.5" />}
+                      {form.watch("birthDate") ? <CheckCircle2 className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
                     </div>
-                    <Label htmlFor="birthDate" className="text-[11px] font-medium text-muted-foreground">
+                    <Label htmlFor="birthDate" className="text-[11px] font-semibold text-muted-foreground">
                       تاريخ الميلاد
                     </Label>
                   </div>
@@ -593,11 +596,11 @@ export default function CommunityCustomerProfileModal({
                     id="birthDate" 
                     type="date" 
                     {...form.register("birthDate")}
-                    className="h-8 border-0 bg-transparent px-0 text-sm font-medium focus-visible:ring-0"
+                    className="h-7 border-0 bg-transparent px-0 text-sm font-medium focus-visible:ring-0"
                   />
                 </div>
                 {form.formState.errors.birthDate && (
-                  <p className="text-[10px] text-destructive px-4 pb-2 -mt-1">
+                  <p className="text-[10px] text-destructive px-3 pb-2 -mt-1">
                     {form.formState.errors.birthDate.message}
                   </p>
                 )}
@@ -605,25 +608,27 @@ export default function CommunityCustomerProfileModal({
 
               {/* Gender */}
               <div 
-                className={`relative rounded-xl border-2 transition-all duration-200 ${
+                className={`rounded-2xl transition-all duration-300 ${
                   form.watch("gender") 
-                    ? 'border-primary/30 bg-primary/5' 
-                    : 'border-border/50 bg-muted/30'
+                    ? 'bg-primary/5 ring-2 ring-primary/20 shadow-sm' 
+                    : 'bg-muted/40 ring-1 ring-border/50'
                 }`}
               >
-                <div className="px-4 py-3">
+                <div className="p-3">
                   <div className="flex items-center gap-2 mb-2">
-                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${
-                      form.watch("gender") ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
+                      form.watch("gender") 
+                        ? 'bg-gradient-to-br from-primary to-accent text-white shadow-sm' 
+                        : 'bg-muted text-muted-foreground'
                     }`}>
-                      {form.watch("gender") ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
+                      {form.watch("gender") ? <CheckCircle2 className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                     </div>
-                    <Label className="text-[11px] font-medium text-muted-foreground">الجنس</Label>
+                    <Label className="text-[11px] font-semibold text-muted-foreground">الجنس</Label>
                   </div>
                   <RadioGroup
                     value={form.watch("gender")}
                     onValueChange={(v) => form.setValue("gender", v as "male" | "female", { shouldValidate: true })}
-                    className="flex items-center gap-4"
+                    className="flex items-center gap-3"
                   >
                     <div className="flex items-center gap-1.5">
                       <RadioGroupItem value="male" id="gender-male" className="h-4 w-4" />
@@ -639,14 +644,14 @@ export default function CommunityCustomerProfileModal({
             </div>
 
             {/* Bio - Optional */}
-            <div className="rounded-xl border-2 border-border/50 bg-muted/30">
-              <div className="px-4 py-3">
+            <div className="rounded-2xl bg-muted/40 ring-1 ring-border/50">
+              <div className="p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="h-7 w-7 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
-                    <FileText className="h-3.5 w-3.5" />
+                  <div className="h-8 w-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+                    <FileText className="h-4 w-4" />
                   </div>
-                  <Label htmlFor="bio" className="text-[11px] font-medium text-muted-foreground">
-                    نبذة عنك <span className="opacity-60">(اختياري)</span>
+                  <Label htmlFor="bio" className="text-[11px] font-semibold text-muted-foreground">
+                    نبذة عنك <span className="opacity-50 font-normal">(اختياري)</span>
                   </Label>
                 </div>
                 <Textarea
@@ -654,8 +659,29 @@ export default function CommunityCustomerProfileModal({
                   placeholder="اكتب نبذة قصيرة عنك..."
                   {...form.register("bio")}
                   maxLength={500}
-                  className="min-h-[60px] border-0 bg-transparent px-0 text-sm resize-none focus-visible:ring-0"
+                  className="min-h-[50px] border-0 bg-transparent px-0 text-sm resize-none focus-visible:ring-0"
                 />
+              </div>
+            </div>
+
+            {/* Benefits Preview */}
+            <div className="rounded-2xl bg-gradient-to-br from-accent/10 via-primary/5 to-transparent ring-1 ring-accent/20 p-4">
+              <p className="text-[11px] font-bold text-accent mb-3 flex items-center gap-1.5">
+                <Crown className="h-3.5 w-3.5" />
+                مميزات إكمال الملف الشخصي
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { icon: Shield, text: "حماية حسابك" },
+                  { icon: Zap, text: "تفاعل أسرع" },
+                  { icon: BadgeCheck, text: "شارة موثق" },
+                  { icon: Store, text: "انضمام كتاجر" },
+                ].map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+                    <item.icon className="h-3 w-3 text-accent" />
+                    {item.text}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -667,10 +693,10 @@ export default function CommunityCustomerProfileModal({
                   if (onOpenMerchantSignup) return onOpenMerchantSignup();
                   navigate("/community/merchant/signup");
                 }}
-                className="w-full rounded-xl border-2 border-dashed border-accent/40 bg-accent/5 p-4 text-center transition-all hover:border-accent/60 hover:bg-accent/10"
+                className="w-full rounded-2xl bg-gradient-to-br from-accent/5 to-accent/10 ring-1 ring-accent/30 p-4 text-center transition-all hover:ring-accent/50 hover:from-accent/10 hover:to-accent/15 group"
               >
                 <div className="flex items-center justify-center gap-2 mb-1">
-                  <Store className="h-4 w-4 text-accent" />
+                  <Store className="h-4 w-4 text-accent group-hover:scale-110 transition-transform" />
                   <span className="text-sm font-bold text-accent">هل أنت تاجر؟</span>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
@@ -683,22 +709,22 @@ export default function CommunityCustomerProfileModal({
       </div>
 
       {/* Premium Footer */}
-      <footer className="sticky bottom-0 z-10 border-t border-primary/20 bg-gradient-to-t from-card via-card to-card/95 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur">
+      <footer className="sticky bottom-0 z-10 border-t border-border/50 bg-gradient-to-t from-background via-background to-background/90 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm">
         {/* Avatar warning */}
-        {(!avatarUrl || avatarUrl === DEFAULT_AVATAR_URL || avatarUrl.includes("dicebear")) && (
-          <p className="text-[11px] text-amber-600 dark:text-amber-400 mb-2 text-center flex items-center justify-center gap-1">
-            <Camera className="h-3 w-3" />
+        {!hasValidAvatar && (
+          <div className="flex items-center justify-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 mb-3 py-2 px-3 rounded-xl bg-amber-500/10 ring-1 ring-amber-500/20">
+            <Camera className="h-3.5 w-3.5" />
             يجب رفع صورة شخصية لإكمال الملف
-          </p>
+          </div>
         )}
 
-        {/* Terms and Conditions Checkbox */}
-        <div className="flex items-center gap-2 mb-3">
+        {/* Terms Checkbox */}
+        <div className="flex items-center gap-2.5 mb-4 p-2.5 rounded-xl bg-muted/30">
           <Checkbox
             id="community-terms-checkbox"
             checked={termsAccepted}
             onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-            className="h-3.5 w-3.5"
+            className="h-4 w-4"
           />
           <label htmlFor="community-terms-checkbox" className="text-xs text-muted-foreground cursor-pointer">
             أوافق على{' '}
@@ -708,18 +734,19 @@ export default function CommunityCustomerProfileModal({
                 e.preventDefault();
                 setShowTermsSheet(true);
               }}
-              className="text-primary hover:underline"
+              className="text-primary hover:underline font-medium"
             >
               شروط وأحكام مجتمع ليفو
             </button>
           </label>
         </div>
         
+        {/* Action Buttons */}
         <div className="flex items-center gap-3">
           <Button
             type="button"
             variant="ghost"
-            className="flex-1 h-11 text-muted-foreground hover:text-foreground"
+            className="flex-1 h-12 text-muted-foreground hover:text-foreground rounded-xl"
             disabled={saveMutation.isPending}
             onClick={() => (onLater ? onLater() : onDone?.())}
           >
@@ -732,12 +759,10 @@ export default function CommunityCustomerProfileModal({
               saveMutation.isPending || 
               !form.formState.isValid || 
               uploadingAvatar ||
-              !avatarUrl ||
-              avatarUrl === DEFAULT_AVATAR_URL ||
-              avatarUrl.includes("dicebear") ||
+              !hasValidAvatar ||
               !termsAccepted
             }
-            className="flex-[2] h-11 bg-gradient-to-b from-primary to-accent text-primary-foreground font-bold shadow-lg shadow-primary/25 hover:opacity-90 disabled:from-primary/40 disabled:to-accent/40 disabled:text-primary-foreground/60"
+            className="flex-[2] h-12 rounded-xl bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] hover:bg-[position:100%_0] text-primary-foreground font-bold shadow-lg shadow-primary/30 transition-all duration-500 disabled:opacity-50 disabled:shadow-none"
           >
             {saveMutation.isPending ? (
               <>
@@ -747,7 +772,7 @@ export default function CommunityCustomerProfileModal({
             ) : !termsAccepted ? (
               <>
                 <ScrollText className="ml-2 h-4 w-4" />
-                وافق على الشروط أولاً
+                وافق على الشروط
               </>
             ) : (
               <>
