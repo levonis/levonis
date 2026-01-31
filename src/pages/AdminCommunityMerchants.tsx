@@ -78,10 +78,13 @@ function MerchantsContent() {
         .order("created_at", { ascending: false })
         .range(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE - 1);
 
-      // Filter out empty drafts
+      // Filter out incomplete drafts - only show drafts that have completed step 3 (submitted as pending)
+      // or those with meaningful data (display_name filled)
       if (status === "all") {
-        query = query.or('status.neq.draft,display_name.neq.null');
+        // Hide drafts that have no store name OR are still incomplete
+        query = query.or('status.eq.pending,status.eq.approved,status.eq.rejected');
       } else if (status === "draft") {
+        // Drafts tab should be hidden or empty - users must complete all steps to submit
         query = query.eq("status", "draft").not("display_name", "is", null);
       } else {
         query = query.eq("status", status);

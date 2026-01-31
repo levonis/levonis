@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { FormattedNumberInput } from "@/components/ui/formatted-number-input";
 import {
   Dialog,
   DialogContent,
@@ -86,8 +87,8 @@ export default function AddProductDialog({
   const [step, setStep] = useState<1 | 2>(1);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priceStr, setPriceStr] = useState("");
-  const [originalPriceStr, setOriginalPriceStr] = useState("");
+  const [priceNum, setPriceNum] = useState(0);
+  const [originalPriceNum, setOriginalPriceNum] = useState(0);
   const [estimatedDaysStr, setEstimatedDaysStr] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
   const [materialType, setMaterialType] = useState<string | null>(null);
@@ -102,8 +103,8 @@ export default function AddProductDialog({
       if (editProduct) {
         setTitle(editProduct.title);
         setDescription(editProduct.description || "");
-        setPriceStr(editProduct.price_iqd?.toString() || "");
-        setOriginalPriceStr(editProduct.original_price_iqd?.toString() || "");
+        setPriceNum(editProduct.price_iqd || 0);
+        setOriginalPriceNum(editProduct.original_price_iqd || 0);
         setEstimatedDaysStr(editProduct.estimated_days?.toString() || "");
         setIsFeatured(editProduct.is_featured || false);
         setMaterialType(editProduct.material_type);
@@ -116,8 +117,8 @@ export default function AddProductDialog({
       } else {
         setTitle("");
         setDescription("");
-        setPriceStr("");
-        setOriginalPriceStr("");
+        setPriceNum(0);
+        setOriginalPriceNum(0);
         setEstimatedDaysStr("");
         setIsFeatured(false);
         setMaterialType(null);
@@ -213,8 +214,8 @@ export default function AddProductDialog({
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      const priceNum = priceStr ? parseInt(priceStr, 10) : null;
-      const originalPriceNum = originalPriceStr ? parseInt(originalPriceStr, 10) : null;
+      const price = priceNum || null;
+      const originalPrice = originalPriceNum || null;
       const daysNum = estimatedDaysStr ? parseInt(estimatedDaysStr, 10) : null;
 
       const imageUrls = mediaItems.filter((m) => m.type === "image").map((m) => m.url);
@@ -224,8 +225,8 @@ export default function AddProductDialog({
         merchant_id: merchantId,
         title: title.trim(),
         description: description.trim() || null,
-        price_iqd: priceNum,
-        original_price_iqd: originalPriceNum,
+        price_iqd: price,
+        original_price_iqd: originalPrice,
         estimated_days: daysNum,
         is_featured: isFeatured,
         material_type: materialType,
@@ -398,21 +399,19 @@ export default function AddProductDialog({
                     <DollarSign className="h-3.5 w-3.5" />
                     السعر (د.ع)
                   </Label>
-                  <Input
-                    type="number"
-                    value={priceStr}
-                    onChange={(e) => setPriceStr(e.target.value)}
-                    placeholder="25000"
+                  <FormattedNumberInput
+                    value={priceNum}
+                    onChange={setPriceNum}
+                    placeholder="25,000"
                     className="h-9"
                   />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs font-medium text-muted-foreground">السعر الأصلي</Label>
-                  <Input
-                    type="number"
-                    value={originalPriceStr}
-                    onChange={(e) => setOriginalPriceStr(e.target.value)}
-                    placeholder="30000"
+                  <FormattedNumberInput
+                    value={originalPriceNum}
+                    onChange={setOriginalPriceNum}
+                    placeholder="30,000"
                     className="h-9"
                   />
                 </div>
@@ -480,7 +479,7 @@ export default function AddProductDialog({
                   <div className="text-muted-foreground">العنوان:</div>
                   <div className="font-medium truncate">{title || "-"}</div>
                   <div className="text-muted-foreground">السعر:</div>
-                  <div className="font-medium">{priceStr ? `${parseInt(priceStr).toLocaleString()} د.ع` : "-"}</div>
+                  <div className="font-medium">{priceNum ? `${priceNum.toLocaleString()} د.ع` : "-"}</div>
                   <div className="text-muted-foreground">الصور:</div>
                   <div className="font-medium">{imageCount} صور</div>
                 </div>

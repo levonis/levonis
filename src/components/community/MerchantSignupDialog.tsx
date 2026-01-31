@@ -162,6 +162,21 @@ export default function MerchantSignupDialog({
     },
   });
 
+  // Fetch registration fee from community_settings
+  const { data: feeSettings } = useQuery({
+    queryKey: ["merchant-registration-fee"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("community_settings")
+        .select("value")
+        .eq("key", "merchant_registration_fee")
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
   const initialStep1 = useMemo<Step1>(
     () => ({
       display_name: (app?.display_name as string | null) ?? "",
@@ -363,7 +378,8 @@ export default function MerchantSignupDialog({
   });
 
   const busy = appLoading || saveDraftMutation.isPending;
-  const fee = Number((app?.registration_fee as any) ?? 25000);
+  // Use fee from community_settings (not app.registration_fee which may be outdated)
+  const fee = Number((feeSettings?.value as any)?.amount ?? 0);
   const canEdit = app?.status !== "approved";
 
   const step1Ok = useMemo(() => {
