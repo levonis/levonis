@@ -15,6 +15,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
+
+import AvatarCropper from "./AvatarCropper";
+import CommunityMerchantTermsSheet from "./CommunityMerchantTermsSheet";
 
 import { 
   CheckCircle2, 
@@ -38,7 +42,8 @@ import {
   Shield,
   Wallet,
   Loader2,
-  Users
+  Users,
+  ScrollText
 } from "lucide-react";
 
 const step1Schema = z.object({
@@ -182,6 +187,11 @@ export default function MerchantSignupDialog({
   const [step1, setStep1] = useState<Step1>(initialStep1);
   const [step2, setStep2] = useState<Step2>(initialStep2);
   const [storeImageUrl, setStoreImageUrl] = useState<string>((app?.store_image_url as string | null) ?? "");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsSheetOpen, setTermsSheetOpen] = useState(false);
+  const [cropperOpen, setCropperOpen] = useState(false);
+  const [pendingImageSrc, setPendingImageSrc] = useState<string>("");
+  
   useEffect(() => setStep1(initialStep1), [initialStep1]);
   useEffect(() => setStep2(initialStep2), [initialStep2]);
   useEffect(() => setStoreImageUrl((app?.store_image_url as string | null) ?? ""), [app?.store_image_url]);
@@ -335,8 +345,10 @@ export default function MerchantSignupDialog({
   });
 
   const uploadMutation = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async (blob: Blob) => {
       if (!user?.id) throw new Error("Not authenticated");
+      // Create a file from the cropped blob
+      const file = new File([blob], "store.jpg", { type: "image/jpeg" });
       const url = await uploadStoreImage({ userId: user.id, file });
       setStoreImageUrl(url);
       // Only save to draft if app already exists, otherwise just store locally
@@ -534,7 +546,17 @@ export default function MerchantSignupDialog({
                         className="hidden"
                         onChange={(e) => {
                           const f = e.target.files?.[0];
-                          if (f) uploadMutation.mutate(f);
+                          if (f) {
+                            // Read file and open cropper
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              setPendingImageSrc(reader.result as string);
+                              setCropperOpen(true);
+                            };
+                            reader.readAsDataURL(f);
+                          }
+                          // Reset input
+                          e.target.value = "";
                         }}
                       />
                     </div>
@@ -757,22 +779,64 @@ export default function MerchantSignupDialog({
                       </div>
                     </div>
 
-                    {/* Fee Card */}
-                    <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
-                      <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                          <Wallet className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    {/* Fee Card - only show if fee > 0 */}
+                    {fee > 0 && (
+                      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                            <Wallet className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-bold">رسوم التسجيل</h3>
+                            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                              {fee.toLocaleString()} د.ع
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <h3 className="font-bold">رسوم التسجيل</h3>
-                          <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
-                            {fee.toLocaleString()} د.ع
-                          </p>
+                        <p className="text-xs text-muted-foreground mt-3">
+                          سيتم خصم الرسوم تلقائياً من المحفظة عند موافقة الإدارة
+                        </p>
+                      </div>
+                    )}
+
+                    {fee === 0 && (
+                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+                        <div className="flex items-center gap-3">
+                          <div className="h-12 w-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                            <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-bold text-emerald-600 dark:text-emerald-400">تسجيل مجاني</h3>
+                            <p className="text-sm text-muted-foreground">لا توجد رسوم للتسجيل حالياً</p>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-3">
-                        سيتم خصم الرسوم تلقائياً من المحفظة عند موافقة الإدارة
-                      </p>
+                    )}
+
+                    {/* Terms and Conditions Checkbox */}
+                    <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/50">
+                      <Checkbox
+                        id="merchant-terms"
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                        className="mt-0.5 h-4 w-4"
+                      />
+                      <div className="flex-1">
+                        <label
+                          htmlFor="merchant-terms"
+                          className="text-sm cursor-pointer leading-relaxed"
+                        >
+                          أوافق على{" "}
+                          <button
+                            type="button"
+                            onClick={() => setTermsSheetOpen(true)}
+                            className="text-primary underline underline-offset-2 hover:text-primary/80 font-medium"
+                          >
+                            شروط وأحكام التجار
+                          </button>
+                          {" "}في مجتمع ليفو
+                        </label>
+                      </div>
                     </div>
 
                     {app?.status === "pending" && (
@@ -844,14 +908,29 @@ export default function MerchantSignupDialog({
           ) : (
             <Button
               type="button"
-              disabled={!canEdit || submitMutation.isPending}
-              onClick={() => submitMutation.mutate()}
-              className="gap-2 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/25"
+              disabled={!canEdit || !termsAccepted || submitMutation.isPending}
+              onClick={() => {
+                if (!termsAccepted) {
+                  toast({
+                    title: "الموافقة على الشروط مطلوبة",
+                    description: "يرجى الموافقة على شروط وأحكام التجار قبل الإرسال",
+                    variant: "destructive",
+                  });
+                  return;
+                }
+                submitMutation.mutate();
+              }}
+              className="gap-2 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/25 disabled:from-primary/40 disabled:to-accent/40 disabled:text-primary-foreground/60"
             >
               {submitMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
                   جارٍ الإرسال...
+                </>
+              ) : !termsAccepted ? (
+                <>
+                  <ScrollText className="h-4 w-4" />
+                  وافق على الشروط أولاً
                 </>
               ) : (
                 <>
@@ -862,6 +941,26 @@ export default function MerchantSignupDialog({
             </Button>
           )}
         </div>
+
+        {/* Image Cropper */}
+        <AvatarCropper
+          open={cropperOpen}
+          onOpenChange={(open) => {
+            setCropperOpen(open);
+            if (!open) setPendingImageSrc("");
+          }}
+          imageSrc={pendingImageSrc}
+          onCropComplete={(blob) => {
+            uploadMutation.mutate(blob);
+          }}
+        />
+
+        {/* Merchant Terms Sheet */}
+        <CommunityMerchantTermsSheet
+          open={termsSheetOpen}
+          onOpenChange={setTermsSheetOpen}
+          onAccept={() => setTermsAccepted(true)}
+        />
       </DialogContent>
     </Dialog>
   );
