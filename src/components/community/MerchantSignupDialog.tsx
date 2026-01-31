@@ -806,14 +806,28 @@ export default function MerchantSignupDialog({
           {step < 3 ? (
             <Button
               type="button"
-              disabled={!canEdit || (step === 1 && !step1Ok) || saveDraftMutation.isPending}
+              disabled={!canEdit || (step === 1 && !step1Ok) || (step === 2 && !step2Ok) || saveDraftMutation.isPending}
               onClick={async () => {
-                if (step === 1) {
-                  await saveDraftMutation.mutateAsync({ step1, store_image_url: storeImageUrl || null });
-                  guardGoToStep(2);
-                } else {
-                  await saveDraftMutation.mutateAsync({ step2 });
-                  guardGoToStep(3);
+                try {
+                  if (step === 1) {
+                    await saveDraftMutation.mutateAsync({ step1, store_image_url: storeImageUrl || null });
+                    setStep(2);
+                  } else {
+                    // Validate step2 before proceeding
+                    const validation = step2Schema.safeParse(step2);
+                    if (!validation.success) {
+                      toast({
+                        title: "أكمل البيانات المطلوبة",
+                        description: "يرجى ملء جميع الحقول المطلوبة في هذه الخطوة",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    await saveDraftMutation.mutateAsync({ step2 });
+                    setStep(3);
+                  }
+                } catch (error) {
+                  // Error already handled by mutation
                 }
               }}
               className="gap-2 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
