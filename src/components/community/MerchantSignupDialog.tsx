@@ -262,21 +262,29 @@ export default function MerchantSignupDialog({
       }
 
       if (payload.step2) {
-        const s2 = step2Schema.parse(payload.step2);
-        const row = {
-          application_id: appId,
-          legal_full_name: s2.legal_full_name,
-          nickname: s2.nickname?.trim() ? s2.nickname.trim() : null,
-          address: s2.address,
-          phone_number: s2.phone_number,
-          gender: s2.gender,
-          birth_date: s2.birth_date,
-        };
+        // Only validate and save step2 if it has meaningful data
+        const hasStep2Data = payload.step2.legal_full_name?.trim() && 
+                             payload.step2.address?.trim() && 
+                             payload.step2.phone_number?.trim() &&
+                             payload.step2.birth_date?.trim();
+        
+        if (hasStep2Data) {
+          const s2 = step2Schema.parse(payload.step2);
+          const row = {
+            application_id: appId,
+            legal_full_name: s2.legal_full_name,
+            nickname: s2.nickname?.trim() ? s2.nickname.trim() : null,
+            address: s2.address,
+            phone_number: s2.phone_number,
+            gender: s2.gender,
+            birth_date: s2.birth_date,
+          };
 
-        const { error } = await supabase
-          .from("merchant_application_private")
-          .upsert(row, { onConflict: "application_id" });
-        if (error) throw error;
+          const { error } = await supabase
+            .from("merchant_application_private")
+            .upsert(row, { onConflict: "application_id" });
+          if (error) throw error;
+        }
       }
 
       return true;
