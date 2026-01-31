@@ -510,9 +510,23 @@ export default function ChatInputBar({
       <Dialog open={addressDialogOpen} onOpenChange={setAddressDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Home className="h-5 w-5 text-primary" />
-              اختر عنوان للإرسال
+            <DialogTitle className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Home className="h-5 w-5 text-primary" />
+                اختر عنوان للإرسال
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 gap-1.5 text-xs"
+                onClick={() => {
+                  setAddressDialogOpen(false);
+                  window.location.href = '/addresses';
+                }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                إضافة عنوان
+              </Button>
             </DialogTitle>
           </DialogHeader>
           
@@ -521,7 +535,18 @@ export default function ChatInputBar({
               <div className="text-center py-6 text-muted-foreground">
                 <Home className="h-10 w-10 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">لا توجد عناوين محفوظة</p>
-                <p className="text-xs mt-1">أضف عنوانك من صفحة الملف الشخصي</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 gap-1.5"
+                  onClick={() => {
+                    setAddressDialogOpen(false);
+                    window.location.href = '/addresses';
+                  }}
+                >
+                  <Plus className="h-4 w-4" />
+                  أضف عنوان جديد
+                </Button>
               </div>
             ) : (
               userAddresses.map((addr) => (
