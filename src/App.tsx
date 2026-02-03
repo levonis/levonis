@@ -98,6 +98,7 @@ const AdminOfferPurchases = lazy(() => import("./pages/AdminOfferPurchases"));
 const AdminRedeemableProducts = lazy(() => import("./pages/AdminRedeemableProducts"));
 const AdminCartRequests = lazy(() => import("./pages/AdminCartRequests"));
 const CommunityHome = lazy(() => import("./pages/CommunityHome"));
+const OffersStoragePage = lazy(() => import("./pages/OffersStoragePage"));
 const WalletSuccess = lazy(() => import("./pages/WalletSuccess"));
 const ChatOrderCheckout = lazy(() => import("./pages/ChatOrderCheckout"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -205,6 +206,7 @@ function AppContent() {
             <Route path="/my-products" element={<MyPurchasedProducts />} />
             <Route path="/my-offer-purchases" element={<MyOfferPurchases />} />
             <Route path="/product-offers" element={<ProductOffersPage />} />
+            <Route path="/offers-storage" element={<OffersStoragePage />} />
             <Route path="/wallet-success" element={<RequireAuth><WalletSuccess /></RequireAuth>} />
             <Route path="/community/checkout/:orderId" element={<RequireAuth><ChatOrderCheckout /></RequireAuth>} />
             
