@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Wallet, Check, X, PlusCircle, MinusCircle, Search, User, Settings, Trash2, History } from 'lucide-react';
+import { Wallet, Check, X, PlusCircle, MinusCircle, Search, User, Settings, Trash2, History, Image as ImageIcon, ExternalLink } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import AdminLayout, { AdminSection, AdminStatsGrid, AdminStatCard, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
@@ -357,7 +357,9 @@ export default function AdminWallet() {
                     <TableRow>
                       <TableHead className="text-right">المستخدم</TableHead>
                       <TableHead className="text-right">النوع</TableHead>
+                      <TableHead className="text-right">طريقة الدفع</TableHead>
                       <TableHead className="text-right">المبلغ</TableHead>
+                      <TableHead className="text-right">الإثبات</TableHead>
                       <TableHead className="text-right">الحالة</TableHead>
                       <TableHead className="text-right">الإجراءات</TableHead>
                     </TableRow>
@@ -376,7 +378,28 @@ export default function AdminWallet() {
                             {transaction.type === 'deposit' ? 'تعبئة' : 'سحب'}
                           </Badge>
                         </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-muted-foreground">
+                            {transaction.payment_method || '-'}
+                          </span>
+                        </TableCell>
                         <TableCell className="font-medium">{formatPrice(transaction.amount)}</TableCell>
+                        <TableCell>
+                          {transaction.payment_proof_url ? (
+                            <a
+                              href={transaction.payment_proof_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <ImageIcon className="h-4 w-4" />
+                              <span className="text-xs">عرض</span>
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="bg-yellow-500/10 text-yellow-600">
                             معلقة
