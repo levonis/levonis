@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -6,13 +6,33 @@ import { AlertTriangle, Mail, X, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import EmailVerificationDialog from './EmailVerificationDialog';
 
-export default function EmailVerificationBanner() {
+interface EmailVerificationBannerProps {
+  onHeightChange?: (height: number) => void;
+}
+
+export default function EmailVerificationBanner({ onHeightChange }: EmailVerificationBannerProps) {
   const { user } = useAuth();
   const [showBanner, setShowBanner] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const bannerRef = useRef<HTMLDivElement>(null);
+
+  // Report height changes
+  useEffect(() => {
+    if (!onHeightChange) return;
+    
+    const updateHeight = () => {
+      const isVisible = showBanner && !emailVerified && !dismissed;
+      const height = isVisible && bannerRef.current ? bannerRef.current.offsetHeight : 0;
+      onHeightChange(height);
+    };
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, [showBanner, emailVerified, dismissed, onHeightChange]);
 
   useEffect(() => {
     if (user) {
@@ -77,46 +97,40 @@ export default function EmailVerificationBanner() {
 
   return (
     <>
-      <div className="bg-amber-500/10 border-b border-amber-500/30 py-3 px-4">
-        <div className="container mx-auto flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3 text-amber-200">
-            <AlertTriangle className="h-5 w-5 text-amber-400 shrink-0" />
-            <div>
-              <p className="text-sm font-medium">
-                بريدك الإلكتروني غير مؤكد
-              </p>
-              <p className="text-xs text-amber-300/80">
-                يرجى تأكيد بريدك للوصول الكامل للموقع
-              </p>
-            </div>
+      <div ref={bannerRef} className="fixed left-0 right-0 z-[46] bg-amber-500 text-white py-2.5 px-4 shadow-md" style={{ top: 0 }}>
+        <div className="container mx-auto flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 text-white">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <p className="text-sm font-medium">
+              بريدك الإلكتروني غير مؤكد - يرجى تأكيده للوصول الكامل
+            </p>
           </div>
           <div className="flex items-center gap-2">
             <Button
               size="sm"
               onClick={handleSendVerificationCode}
               disabled={loading}
-              className="bg-amber-500 hover:bg-amber-600 text-black"
+              className="bg-white hover:bg-white/90 text-amber-600 font-medium h-7 px-3"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  جاري الإرسال...
+                  <Loader2 className="h-3.5 w-3.5 animate-spin ml-1.5" />
+                  جاري الإرسال
                 </>
               ) : (
                 <>
-                  <Mail className="h-4 w-4 ml-2" />
-                  تأكيد البريد
+                  <Mail className="h-3.5 w-3.5 ml-1.5" />
+                  تأكيد الآن
                 </>
               )}
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
+            <button
               onClick={() => setDismissed(true)}
-              className="text-amber-300 hover:text-amber-100 hover:bg-amber-500/20"
+              className="hover:bg-white/20 rounded-full p-1 transition-colors"
+              aria-label="إغلاق"
             >
               <X className="h-4 w-4" />
-            </Button>
+            </button>
           </div>
         </div>
       </div>
