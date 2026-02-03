@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Loader2, Send, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { sendAllNotifications } from '@/lib/notifications';
 
 interface AdminMessageDialogProps {
   open: boolean;
@@ -34,34 +34,19 @@ const AdminMessageDialog = ({
     mutationFn: async () => {
       if (!message.trim()) throw new Error('الرسالة مطلوبة');
 
-      // 1. Create notification for the user
-      const { error: notifError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: userId,
-          title: title,
-          message: message,
-          type: 'admin_message',
-          related_id: orderId,
-          is_general: false
-        });
-
-      if (notifError) throw notifError;
-
-      // 2. Send Telegram notification to the user
-      try {
-        await supabase.functions.invoke('send-user-telegram-notification', {
-          body: {
-            user_id: userId,
-            title: title,
-            message: message,
-            notification_type: 'info'
-          }
-        });
-      } catch (telegramError) {
-        console.error('Telegram notification error:', telegramError);
-        // Don't fail if Telegram fails
-      }
+      // Send all notifications (in-app, Telegram, Email)
+      await sendAllNotifications({
+        userId,
+        title,
+        message,
+        type: 'info',
+        relatedId: orderId,
+        notificationType: 'admin_message',
+        metadata: {
+          orderNumber,
+          senderName: 'إدارة ليفونيس',
+        }
+      });
 
       return { success: true };
     },

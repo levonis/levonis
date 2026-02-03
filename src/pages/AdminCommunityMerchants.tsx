@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
 import { useToast } from "@/hooks/use-toast";
+import { sendAllNotifications } from "@/lib/notifications";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -190,11 +191,13 @@ function MerchantsContent() {
         })
         .eq("id", payload.user_id);
 
-      await supabase.from("notifications").insert({
-        user_id: payload.user_id,
+      // Send all notifications (in-app, Telegram, Email)
+      await sendAllNotifications({
+        userId: payload.user_id,
         title: "تم قبول طلبك كتاجر! 🎉",
         message: `تهانينا! تم قبول طلبك للانضمام كتاجر في مجتمع ليفو. تم خصم ${MERCHANT_FEE.toLocaleString()} IQD من محفظتك كرسوم تسجيل.`,
-        type: "success",
+        type: 'success',
+        notificationType: 'merchant_update',
       });
 
       return true;
@@ -232,11 +235,13 @@ function MerchantsContent() {
 
       if (updateError) throw updateError;
 
-      await supabase.from("notifications").insert({
-        user_id: payload.user_id,
+      // Send all notifications (in-app, Telegram, Email)
+      await sendAllNotifications({
+        userId: payload.user_id,
         title: "تم رفض طلب التاجر",
         message: `للأسف، تم رفض طلبك للانضمام كتاجر. السبب: ${payload.rejection_reason}`,
-        type: "error",
+        type: 'error',
+        notificationType: 'merchant_update',
       });
 
       return true;

@@ -25,6 +25,7 @@ import AdminPagination from '@/components/admin/AdminPagination';
 import { usePagination } from '@/hooks/usePagination';
 import OfferPurchasesTab from '@/components/admin/OfferPurchasesTab';
 import AdminOrderChatDialog from '@/components/admin/AdminOrderChatDialog';
+import { sendAllNotifications } from '@/lib/notifications';
 
 const statusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
@@ -221,7 +222,7 @@ const AdminOrders = () => {
   };
 
   const updateOrderMutation = useMutation({
-    mutationFn: async ({ id, values, previousStatus }: { id: string; values: any; previousStatus?: string }) => {
+    mutationFn: async ({ id, values, previousStatus, order }: { id: string; values: any; previousStatus?: string; order?: any }) => {
       const { error } = await supabase
         .from('orders')
         .update(values)
@@ -232,6 +233,36 @@ const AdminOrders = () => {
       // Auto-create invoice when order is confirmed
       if (values.status === 'confirmed' && previousStatus !== 'confirmed') {
         await createAutoInvoice(id);
+      }
+
+      // Send notification when status changes
+      if (values.status && values.status !== previousStatus && order) {
+        const statusLabels: Record<string, string> = {
+          pending: 'قيد الانتظار',
+          confirmed: 'تم التأكيد',
+          processing: 'قيد المعالجة',
+          purchased: 'تم الشراء',
+          shipped: 'تم الشحن',
+          arrived_warehouse: 'وصل المخزن',
+          arrived_iraq: 'وصل العراق',
+          on_the_way: 'في الطريق إليك',
+          delivered: 'تم التوصيل',
+          cancelled: 'ملغي',
+        };
+        const statusLabel = statusLabels[values.status] || values.status;
+        
+        await sendAllNotifications({
+          userId: order.user_id,
+          title: 'تحديث حالة طلبك 📦',
+          message: `تم تحديث حالة طلبك رقم ${order.order_number} إلى: ${statusLabel}`,
+          type: values.status === 'delivered' ? 'success' : 'info',
+          relatedId: id,
+          notificationType: 'order_status',
+          metadata: {
+            orderNumber: order.order_number,
+            status: statusLabel,
+          }
+        });
       }
     },
     onSuccess: () => {
@@ -351,15 +382,19 @@ const AdminOrders = () => {
 
         if (transactionError) throw transactionError;
 
-        await supabase
-          .from('notifications')
-          .insert({
-            user_id: order.user_id,
-            title: 'تم إلغاء طلبك واسترجاع المبلغ',
-            message: `تم إلغاء الطلب رقم ${order.order_number} واسترجاع مبلغ ${paidAmount.toLocaleString()} دينار عراقي إلى محفظتك`,
-            type: 'info',
-            related_id: order.id
-          });
+        // Send all notifications (in-app, Telegram, Email)
+        await sendAllNotifications({
+          userId: order.user_id,
+          title: 'تم إلغاء طلبك واسترجاع المبلغ',
+          message: `تم إلغاء الطلب رقم ${order.order_number} واسترجاع مبلغ ${paidAmount.toLocaleString()} دينار عراقي إلى محفظتك`,
+          type: 'info',
+          relatedId: order.id,
+          notificationType: 'wallet_update',
+          metadata: {
+            orderNumber: order.order_number,
+            amount: paidAmount,
+          }
+        });
       }
 
       return { paidAmount };
@@ -538,10 +573,10 @@ const AdminOrders = () => {
       updateData.cancelled_at = now;
     }
 
-    updateOrderMutation.mutate({ id: editingOrder.id, values: updateData, previousStatus: editingOrder.status });
+    updateOrderMutation.mutate({ id: editingOrder.id, values: updateData, previousStatus: editingOrder.status, order: editingOrder });
   };
 
-  const handleQuickStatusChange = (orderId: string, newStatus: string, currentStatus?: string) => {
+  const handleQuickStatusChange = (orderId: string, newStatus: string, currentStatus?: string, order?: any) => {
     const now = new Date().toISOString();
     const updateData: any = {
       status: newStatus,
@@ -577,7 +612,7 @@ const AdminOrders = () => {
       updateData.cancelled_at = now;
     }
 
-    updateOrderMutation.mutate({ id: orderId, values: updateData, previousStatus: currentStatus });
+    updateOrderMutation.mutate({ id: orderId, values: updateData, previousStatus: currentStatus, order });
   };
 
   const getStatusBadge = (status: string) => {
@@ -864,7 +899,7 @@ const AdminOrders = () => {
                           <TableCell>
                             <Select
                               value={order.status}
-                              onValueChange={(value) => handleQuickStatusChange(order.id, value, order.status)}
+                              onValueChange={(value) => handleQuickStatusChange(order.id, value, order.status, order)}
                             >
                               <SelectTrigger className="w-[140px] h-8 text-xs">
                                 <SelectValue />

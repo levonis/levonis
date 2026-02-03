@@ -30,6 +30,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { formatPrice } from '@/lib/utils';
 import AdminLayout, { AdminCard, AdminCardContent, AdminLoading, AdminEmptyState } from '@/components/admin/AdminLayout';
+import { sendAllNotifications } from '@/lib/notifications';
 
 interface CartRequest {
   id: string;
@@ -110,32 +111,21 @@ export default function AdminCartRequests() {
 
       if (error) throw error;
 
-      // إرسال إشعار للمستخدم
+      // Send all notifications (in-app, Telegram, Email)
       const request = cartRequests.find(r => r.id === requestId);
       if (request) {
-        await supabase.from('notifications').insert({
-          user_id: request.user_id,
+        await sendAllNotifications({
+          userId: request.user_id,
           title: 'تم تعديل سعر السلة',
-          message: `تم تعديل سعر السلة (${request.cart_code}) من ${formatPrice(request.original_total)} إلى ${formatPrice(adjustedTotal)} د.ع`,
-          type: 'cart_update',
-          related_id: requestId,
+          message: `تم تعديل سعر السلة (${request.cart_code}) من ${formatPrice(request.original_total)} إلى ${formatPrice(adjustedTotal)} د.ع${adminNotes ? `\n📝 ملاحظات: ${adminNotes}` : ''}`,
+          type: 'info',
+          relatedId: requestId,
+          notificationType: 'order_status',
+          metadata: {
+            orderNumber: request.cart_code,
+            amount: adjustedTotal,
+          }
         });
-
-        // إرسال إشعار تيليجرام للمستخدم
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('telegram_chat_id')
-          .eq('id', request.user_id)
-          .single();
-
-        if (profile?.telegram_chat_id) {
-          await supabase.functions.invoke('send-user-telegram-notification', {
-            body: {
-              chat_id: profile.telegram_chat_id,
-              message: `✅ تم تعديل سعر السلة\n\n📋 رقم السلة: ${request.cart_code}\n💰 السعر الأصلي: ${formatPrice(request.original_total)} د.ع\n✨ السعر الجديد: ${formatPrice(adjustedTotal)} د.ع\n\n${adminNotes ? `📝 ملاحظات:\n${adminNotes}` : ''}`,
-            },
-          });
-        }
       }
     },
     onSuccess: () => {
