@@ -17,7 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Package, Truck, X, Ticket, MapPin, Loader2, CheckCircle, Clock, Ship, Trophy, Gift, Box } from "lucide-react";
+import { Package, Truck, X, Ticket, MapPin, Loader2, CheckCircle, Clock, Ship, Trophy, Gift, Box, ChevronLeft } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -26,8 +26,8 @@ import { useState, useMemo } from "react";
 
 const statusConfig: Record<string, { label: string; color: string; bgColor: string; icon: any; step: number }> = {
   pending: { label: 'في المخزن', color: 'text-blue-600', bgColor: 'bg-blue-500/10', icon: Package, step: 1 },
-  shipping_requested: { label: 'طلب شحن', color: 'text-amber-600', bgColor: 'bg-amber-500/10', icon: Clock, step: 2 },
-  shipped: { label: 'قيد التوصيل', color: 'text-orange-600', bgColor: 'bg-orange-500/10', icon: Ship, step: 3 },
+  shipping_requested: { label: 'طلب الشحن', color: 'text-amber-600', bgColor: 'bg-amber-500/10', icon: Clock, step: 2 },
+  shipped: { label: 'تم الشحن', color: 'text-orange-600', bgColor: 'bg-orange-500/10', icon: Ship, step: 3 },
   delivered: { label: 'تم التسليم', color: 'text-green-600', bgColor: 'bg-green-500/10', icon: CheckCircle, step: 4 },
 };
 
@@ -46,6 +46,16 @@ interface StorageItem {
   unit_price?: number;
   total_price?: number;
   gift_tickets_awarded?: number;
+}
+
+interface GroupedItem {
+  key: string;
+  title: string;
+  image_url: string | null;
+  items: StorageItem[];
+  totalQuantity: number;
+  status: string;
+  source: 'offer' | 'competition';
 }
 
 export default function AllStoragePanel() {
@@ -121,7 +131,7 @@ export default function AllStoragePanel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storage-offer-purchases'] });
       queryClient.invalidateQueries({ queryKey: ['user-storage-count-page'] });
-      toast.success('تم تقديم طلب الشحن!');
+      toast.success('تم تقديم طلب الشحن بنجاح!');
       setShippingDialogOpen(false);
       setBulkShippingDialogOpen(false);
       setSelectedItem(null);
@@ -144,7 +154,7 @@ export default function AllStoragePanel() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['storage-competition-prizes'] });
       queryClient.invalidateQueries({ queryKey: ['user-storage-count-page'] });
-      toast.success('تم تقديم طلب الشحن!');
+      toast.success('تم تقديم طلب الشحن بنجاح!');
       setShippingDialogOpen(false);
       setBulkShippingDialogOpen(false);
       setSelectedItem(null);
@@ -153,7 +163,7 @@ export default function AllStoragePanel() {
     onError: (error: any) => toast.error(error.message || 'حدث خطأ'),
   });
 
-  const allItems = useMemo((): StorageItem[] => {
+  const transformToStorageItems = (): StorageItem[] => {
     const items: StorageItem[] = [];
     
     offerPurchases?.forEach((purchase: any) => {
@@ -192,6 +202,31 @@ export default function AllStoragePanel() {
     
     items.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     return items;
+  };
+
+  // Group similar items by title and status
+  const groupedItems = useMemo(() => {
+    const items = transformToStorageItems();
+    const groups: Record<string, GroupedItem> = {};
+    
+    items.forEach(item => {
+      const key = `${item.title}-${item.status}-${item.source}`;
+      if (!groups[key]) {
+        groups[key] = {
+          key,
+          title: item.title,
+          image_url: item.image_url,
+          items: [],
+          totalQuantity: 0,
+          status: item.status,
+          source: item.source,
+        };
+      }
+      groups[key].items.push(item);
+      groups[key].totalQuantity += item.quantity;
+    });
+    
+    return Object.values(groups);
   }, [offerPurchases, competitionPrizes]);
 
   const handleRequestShipping = (item: StorageItem) => {
@@ -203,7 +238,7 @@ export default function AllStoragePanel() {
   };
 
   const handleBulkShipping = () => {
-    const selectedItems = allItems.filter(item => selectedIds.has(item.id));
+    const selectedItems = transformToStorageItems().filter(item => selectedIds.has(item.id));
     const offerIds = selectedItems.filter(i => i.source === 'offer').map(i => i.id);
     const prizeIds = selectedItems.filter(i => i.source === 'competition').map(i => i.id);
     
@@ -211,148 +246,180 @@ export default function AllStoragePanel() {
     if (prizeIds.length > 0) requestPrizeShippingMutation.mutate(prizeIds);
   };
 
-  const toggleSelectAll = () => {
-    const pendingItems = allItems.filter(i => i.status === 'pending');
+  const toggleSelection = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
+  };
+
+  const toggleSelectAll = (items: StorageItem[]) => {
+    const pendingItems = items.filter(i => i.status === 'pending');
     const allSelected = pendingItems.every(item => selectedIds.has(item.id));
     
     if (allSelected) {
-      setSelectedIds(new Set());
+      const newSet = new Set(selectedIds);
+      pendingItems.forEach(item => newSet.delete(item.id));
+      setSelectedIds(newSet);
     } else {
-      setSelectedIds(new Set(pendingItems.map(i => i.id)));
+      const newSet = new Set(selectedIds);
+      pendingItems.forEach(item => newSet.add(item.id));
+      setSelectedIds(newSet);
     }
   };
 
   const isLoading = isLoadingOffers || isLoadingPrizes;
-  const pendingItems = allItems.filter(p => p.status === 'pending');
-  const processingItems = allItems.filter(p => ['shipping_requested', 'shipped'].includes(p.status));
-  const deliveredItems = allItems.filter(p => p.status === 'delivered');
-  const allPendingSelected = pendingItems.length > 0 && pendingItems.every(item => selectedIds.has(item.id));
 
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <Package className="h-10 w-10 text-muted-foreground/50 mb-3" />
-        <p className="text-muted-foreground text-sm">سجّل الدخول لعرض مخزنك</p>
+        <div className="w-20 h-20 rounded-3xl bg-muted/50 flex items-center justify-center mb-4">
+          <Package className="h-10 w-10 text-muted-foreground/50" />
+        </div>
+        <p className="text-muted-foreground font-medium">سجّل الدخول لعرض مخزنك</p>
       </div>
     );
   }
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         {[1, 2, 3].map(i => (
-          <Skeleton key={i} className="h-16 w-full rounded-xl" />
+          <Skeleton key={i} className="h-20 w-full rounded-2xl" />
         ))}
       </div>
     );
   }
 
+  const allItems = transformToStorageItems();
+
   if (allItems.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
-        <Box className="h-12 w-12 text-muted-foreground/40 mb-3" />
-        <p className="font-semibold">مخزنك فارغ</p>
-        <p className="text-xs text-muted-foreground mt-1">منتجاتك وجوائزك ستظهر هنا</p>
+        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-muted/50 to-muted/30 flex items-center justify-center mb-4">
+          <Box className="h-12 w-12 text-muted-foreground/40" />
+        </div>
+        <p className="font-semibold text-lg">مخزنك فارغ</p>
+        <p className="text-sm text-muted-foreground mt-1 text-center max-w-xs">
+          جوائز المسابقات والمنتجات المشتراة ستظهر هنا
+        </p>
       </div>
     );
   }
 
-  const renderItemCard = (item: StorageItem) => {
-    const config = statusConfig[item.status] || statusConfig.pending;
+  const pendingItems = allItems.filter(p => p.status === 'pending');
+  const processingItems = allItems.filter(p => ['shipping_requested', 'shipped'].includes(p.status));
+  const deliveredItems = allItems.filter(p => p.status === 'delivered');
+  
+  const pendingGroups = groupedItems.filter(g => g.status === 'pending');
+  const processingGroups = groupedItems.filter(g => ['shipping_requested', 'shipped'].includes(g.status));
+  const deliveredGroups = groupedItems.filter(g => g.status === 'delivered');
+
+  const renderGroupCard = (group: GroupedItem) => {
+    const config = statusConfig[group.status] || statusConfig.pending;
     const StatusIcon = config.icon;
-    const canSelect = item.status === 'pending';
-    const isSelected = selectedIds.has(item.id);
+    const canSelect = group.status === 'pending';
+    const allGroupSelected = group.items.every(item => selectedIds.has(item.id));
+    const someSelected = group.items.some(item => selectedIds.has(item.id));
     
     return (
       <Card 
-        key={item.id} 
-        className={`overflow-hidden transition-all duration-200 border rounded-xl ${
-          isSelected ? 'border-primary ring-1 ring-primary/30' : 'border-border/50'
+        key={group.key} 
+        className={`overflow-hidden transition-all duration-300 border-0 shadow-sm hover:shadow-lg rounded-2xl ${
+          someSelected ? 'ring-2 ring-primary/50' : ''
         }`}
       >
-        <CardContent className="p-2">
-          <div className="flex gap-2">
-            {/* Checkbox */}
+        <CardContent className="p-0">
+          <div className="flex gap-3 p-3">
+            {/* Selection Checkbox */}
             {canSelect && (
-              <div className="flex items-center shrink-0">
+              <div className="flex items-center justify-center shrink-0">
                 <Checkbox 
-                  checked={isSelected}
+                  checked={allGroupSelected}
                   onCheckedChange={() => {
                     const newSet = new Set(selectedIds);
-                    if (isSelected) newSet.delete(item.id);
-                    else newSet.add(item.id);
+                    if (allGroupSelected) {
+                      group.items.forEach(item => newSet.delete(item.id));
+                    } else {
+                      group.items.forEach(item => newSet.add(item.id));
+                    }
                     setSelectedIds(newSet);
                   }}
-                  className="h-4 w-4"
+                  className="h-5 w-5 rounded-md border-2"
                 />
               </div>
             )}
             
             {/* Image */}
             <div 
-              className="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-muted cursor-pointer"
-              onClick={() => setSelectedItem(item)}
+              className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-muted/50 cursor-pointer"
+              onClick={() => setSelectedItem(group.items[0])}
             >
               <OptimizedImage
-                src={item.image_url || '/placeholder.svg'}
-                alt={item.title}
+                src={group.image_url || '/placeholder.svg'}
+                alt={group.title}
                 className="w-full h-full object-cover"
               />
             </div>
             
-            {/* Info */}
-            <div className="flex-1 min-w-0" onClick={() => setSelectedItem(item)}>
-              <p className="font-semibold text-xs line-clamp-1 mb-1">{item.title}</p>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <Badge variant="outline" className={`gap-0.5 text-[9px] px-1.5 py-0 h-4 ${config.color} ${config.bgColor} border-0`}>
-                  <StatusIcon className="h-2.5 w-2.5" />
+            {/* Content */}
+            <div className="flex-1 min-w-0" onClick={() => setSelectedItem(group.items[0])}>
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <p className="font-bold text-sm line-clamp-1">{group.title}</p>
+                <ChevronLeft className="h-4 w-4 text-muted-foreground shrink-0" />
+              </div>
+              
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Status Badge */}
+                <Badge variant="outline" className={`gap-1 text-[10px] px-2 py-0.5 ${config.color} ${config.bgColor} border-0`}>
+                  <StatusIcon className="h-3 w-3" />
                   {config.label}
                 </Badge>
-                {item.source === 'competition' ? (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 bg-amber-500/10 text-amber-700 border-0 px-1.5 py-0 h-4">
-                    <Trophy className="h-2 w-2" />
+                
+                {/* Source Badge */}
+                {group.source === 'competition' ? (
+                  <Badge variant="secondary" className="text-[10px] gap-0.5 bg-amber-500/10 text-amber-700 border-0 px-2 py-0.5">
+                    <Trophy className="h-2.5 w-2.5" />
                     جائزة
                   </Badge>
                 ) : (
-                  <Badge variant="secondary" className="text-[9px] gap-0.5 bg-primary/10 text-primary border-0 px-1.5 py-0 h-4">
-                    <Gift className="h-2 w-2" />
+                  <Badge variant="secondary" className="text-[10px] gap-0.5 bg-primary/10 text-primary border-0 px-2 py-0.5">
+                    <Gift className="h-2.5 w-2.5" />
                     عرض
                   </Badge>
                 )}
-                {item.quantity > 1 && (
-                  <span className="text-[9px] text-muted-foreground">×{item.quantity}</span>
+                
+                {/* Quantity */}
+                {group.totalQuantity > 1 && (
+                  <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                    ×{group.totalQuantity}
+                  </Badge>
                 )}
               </div>
             </div>
-            
-            {/* Action */}
-            {item.status === 'pending' && (
-              <Button 
-                size="sm" 
-                variant="outline"
-                className="h-8 px-2 text-[10px] rounded-lg shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedItem(item);
-                  setShippingDialogOpen(true);
-                }}
-              >
-                <Truck className="h-3 w-3 ml-1" />
-                شحن
-              </Button>
-            )}
           </div>
           
-          {/* Progress for processing items */}
-          {['shipping_requested', 'shipped'].includes(item.status) && (
-            <div className="mt-2 pt-2 border-t border-border/50">
-              <div className="flex items-center gap-1">
+          {/* Progress Bar for Processing Items */}
+          {['shipping_requested', 'shipped'].includes(group.status) && (
+            <div className="px-3 pb-3">
+              <div className="flex items-center gap-2">
                 {[1, 2, 3, 4].map((step) => (
                   <div 
                     key={step}
-                    className={`h-1 flex-1 rounded-full ${step <= config.step ? 'bg-primary' : 'bg-muted'}`}
+                    className={`h-1 flex-1 rounded-full transition-colors ${
+                      step <= config.step ? 'bg-primary' : 'bg-muted'
+                    }`}
                   />
                 ))}
+              </div>
+              <div className="flex justify-between mt-1 text-[9px] text-muted-foreground">
+                <span>مخزن</span>
+                <span>طلب</span>
+                <span>شحن</span>
+                <span>تسليم</span>
               </div>
             </div>
           )}
@@ -361,22 +428,37 @@ export default function AllStoragePanel() {
     );
   };
 
-  const renderSection = (title: string, items: StorageItem[], Icon: any, iconBg: string) => {
-    if (items.length === 0) return null;
+  const renderSection = (title: string, groups: GroupedItem[], items: StorageItem[], Icon: any, iconBg: string) => {
+    if (groups.length === 0) return null;
+    const canSelectAll = items.some(i => i.status === 'pending');
+    const allSelected = items.filter(i => i.status === 'pending').every(item => selectedIds.has(item.id));
     
     return (
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <div className={`w-6 h-6 rounded-lg ${iconBg} flex items-center justify-center`}>
-            <Icon className="h-3 w-3 text-white" />
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 rounded-xl ${iconBg} flex items-center justify-center`}>
+              <Icon className="h-4 w-4 text-white" />
+            </div>
+            <h3 className="text-sm font-bold">{title}</h3>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+              {items.length}
+            </span>
           </div>
-          <h3 className="text-xs font-bold">{title}</h3>
-          <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-            {items.length}
-          </span>
+          
+          {canSelectAll && items.filter(i => i.status === 'pending').length > 1 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs h-7"
+              onClick={() => toggleSelectAll(items)}
+            >
+              {allSelected ? 'إلغاء الكل' : 'تحديد الكل'}
+            </Button>
+          )}
         </div>
-        <div className="space-y-1.5">
-          {items.map(renderItemCard)}
+        <div className="space-y-2">
+          {groups.map(renderGroupCard)}
         </div>
       </div>
     );
@@ -384,40 +466,38 @@ export default function AllStoragePanel() {
 
   return (
     <>
-      {/* Select All Header */}
-      {pendingItems.length > 1 && (
-        <div className="flex items-center justify-between mb-3 p-2 bg-muted/30 rounded-xl">
-          <div className="flex items-center gap-2">
-            <Checkbox 
-              checked={allPendingSelected}
-              onCheckedChange={toggleSelectAll}
-              className="h-4 w-4"
-            />
-            <span className="text-xs">تحديد الكل ({pendingItems.length})</span>
-          </div>
-          {selectedIds.size > 0 && (
-            <Button 
-              size="sm" 
-              className="h-7 text-xs rounded-lg"
-              onClick={() => setBulkShippingDialogOpen(true)}
-            >
-              <Truck className="h-3 w-3 ml-1" />
-              شحن ({selectedIds.size})
-            </Button>
-          )}
+      {/* Bulk Action Bar - Fixed */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-20 left-4 right-4 z-50">
+          <Card className="bg-primary text-primary-foreground shadow-2xl border-0 rounded-2xl">
+            <CardContent className="p-3 flex items-center justify-between">
+              <span className="font-bold text-sm">
+                تم تحديد {selectedIds.size} عنصر
+              </span>
+              <Button 
+                variant="secondary" 
+                size="sm"
+                className="rounded-xl font-bold"
+                onClick={() => setBulkShippingDialogOpen(true)}
+              >
+                <Truck className="h-4 w-4 ml-2" />
+                طلب الشحن
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       )}
 
-      <div className="space-y-4">
-        {renderSection('في المخزن', pendingItems, Package, 'bg-blue-500')}
-        {renderSection('قيد المعالجة', processingItems, Truck, 'bg-amber-500')}
-        {renderSection('تم التسليم', deliveredItems, CheckCircle, 'bg-green-500')}
+      <div className="space-y-6 pb-24">
+        {renderSection('في المخزن', pendingGroups, pendingItems, Package, 'bg-blue-500')}
+        {renderSection('قيد المعالجة', processingGroups, processingItems, Truck, 'bg-amber-500')}
+        {renderSection('تم التسليم', deliveredGroups, deliveredItems, CheckCircle, 'bg-green-500')}
       </div>
 
       {/* Item Detail Sheet */}
       <Sheet open={!!selectedItem && !shippingDialogOpen} onOpenChange={(open) => !open && setSelectedItem(null)}>
-        <SheetContent side="bottom" className="h-[80vh] rounded-t-3xl p-0 border-t-0 bg-background overflow-hidden">
-          <div className="absolute top-2 left-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-muted-foreground/30 z-10" />
+        <SheetContent side="bottom" className="h-[85vh] rounded-t-[2rem] px-0 pb-0 border-t-0 bg-background">
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1 rounded-full bg-muted-foreground/30" />
           
           <SheetHeader className="sr-only">
             <SheetTitle>تفاصيل العنصر</SheetTitle>
@@ -427,113 +507,171 @@ export default function AllStoragePanel() {
             <div className="h-full flex flex-col">
               {/* Image */}
               <div className="relative aspect-video bg-muted shrink-0">
-                <img
+                <OptimizedImage
                   src={selectedItem.image_url || '/placeholder.svg'}
                   alt={selectedItem.title}
-                  className="w-full h-full object-contain bg-muted"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder.svg';
-                  }}
+                  className="w-full h-full object-cover"
                 />
                 <SheetClose asChild>
                   <Button 
                     variant="secondary" 
                     size="icon" 
-                    className="absolute top-3 right-3 h-9 w-9 rounded-xl bg-background/80 backdrop-blur-sm border-0"
+                    className="absolute top-4 right-4 h-11 w-11 rounded-2xl bg-white/90 backdrop-blur-sm shadow-xl border-0"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-5 w-5" />
                   </Button>
                 </SheetClose>
                 
-                {/* Status Badge */}
-                {(() => {
-                  const config = statusConfig[selectedItem.status] || statusConfig.pending;
-                  const StatusIcon = config.icon;
-                  return (
-                    <Badge className={`absolute top-3 left-3 gap-1 ${config.bgColor} ${config.color} border-0`}>
-                      <StatusIcon className="h-3 w-3" />
-                      {config.label}
-                    </Badge>
-                  );
-                })()}
+                {/* Status Overlay */}
+                <div className="absolute bottom-4 left-4 right-4">
+                  {(() => {
+                    const config = statusConfig[selectedItem.status] || statusConfig.pending;
+                    return (
+                      <div className={`${config.bgColor} backdrop-blur-sm rounded-2xl p-3`}>
+                        <div className="flex items-center gap-3">
+                          {[1, 2, 3, 4].map((step) => (
+                            <div 
+                              key={step}
+                              className={`h-1.5 flex-1 rounded-full transition-colors ${
+                                step <= config.step ? 'bg-primary' : 'bg-muted'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex justify-between mt-2 text-[10px] text-muted-foreground">
+                          <span className={config.step >= 1 ? 'text-primary font-medium' : ''}>مخزن</span>
+                          <span className={config.step >= 2 ? 'text-primary font-medium' : ''}>طلب</span>
+                          <span className={config.step >= 3 ? 'text-primary font-medium' : ''}>شحن</span>
+                          <span className={config.step >= 4 ? 'text-primary font-medium' : ''}>تسليم</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto px-4 py-4">
-                <h2 className="text-lg font-bold mb-3">{selectedItem.title}</h2>
+              <div className="flex-1 overflow-y-auto px-5 py-5">
+                <h2 className="text-xl font-black mb-3">{selectedItem.title}</h2>
                 
-                <div className="flex items-center gap-2 mb-4 flex-wrap">
+                <div className="flex items-center gap-2 mb-5 flex-wrap">
+                  {(() => {
+                    const config = statusConfig[selectedItem.status] || statusConfig.pending;
+                    const StatusIcon = config.icon;
+                    return (
+                      <Badge variant="outline" className={`gap-1 ${config.color} ${config.bgColor} border-0 px-3 py-1`}>
+                        <StatusIcon className="h-4 w-4" />
+                        {config.label}
+                      </Badge>
+                    );
+                  })()}
                   {selectedItem.source === 'competition' ? (
-                    <Badge variant="secondary" className="gap-1 bg-amber-500/10 text-amber-700 border-0">
-                      <Trophy className="h-3 w-3" />
+                    <Badge variant="secondary" className="gap-1 bg-amber-500/10 text-amber-700 border-0 px-3 py-1">
+                      <Trophy className="h-4 w-4" />
                       جائزة مسابقة
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary border-0">
-                      <Gift className="h-3 w-3" />
+                    <Badge variant="secondary" className="gap-1 bg-primary/10 text-primary border-0 px-3 py-1">
+                      <Gift className="h-4 w-4" />
                       عرض
                     </Badge>
                   )}
-                  <Badge variant="outline">الكمية: {selectedItem.quantity}</Badge>
                 </div>
 
-                {/* Order Progress */}
-                <Card className="mb-4 bg-muted/30 border-0 rounded-xl">
-                  <CardContent className="p-3">
-                    <h4 className="font-bold text-sm mb-3">حالة الطلب</h4>
-                    <div className="flex items-center gap-1 mb-2">
-                      {[1, 2, 3, 4].map((step) => {
-                        const config = statusConfig[selectedItem.status] || statusConfig.pending;
-                        return (
-                          <div 
-                            key={step}
-                            className={`h-2 flex-1 rounded-full transition-colors ${step <= config.step ? 'bg-primary' : 'bg-muted'}`}
-                          />
-                        );
-                      })}
+                {/* Details Card */}
+                <Card className="mb-4 bg-muted/30 border-0 rounded-2xl">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">الكمية</span>
+                      <span className="font-bold">{selectedItem.quantity}</span>
                     </div>
-                    <div className="flex justify-between text-[10px] text-muted-foreground">
-                      <span>مخزن</span>
-                      <span>طلب</span>
-                      <span>شحن</span>
-                      <span>تسليم</span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Details */}
-                <Card className="mb-4 bg-muted/30 border-0 rounded-xl">
-                  <CardContent className="p-3 space-y-2">
                     {selectedItem.total_price !== undefined && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">السعر</span>
-                        <span className="font-bold text-primary">{selectedItem.total_price?.toLocaleString()} د.ع</span>
+                      <div className="flex justify-between text-sm pt-2 border-t">
+                        <span className="text-muted-foreground">المجموع</span>
+                        <span className="font-black text-primary">{selectedItem.total_price?.toLocaleString()} د.ع</span>
                       </div>
                     )}
                     {selectedItem.gift_tickets_awarded && selectedItem.gift_tickets_awarded > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">التذاكر</span>
-                        <span className="flex items-center gap-1 font-bold text-primary">
-                          <Ticket className="h-3 w-3" />
+                      <div className="flex justify-between text-sm text-primary">
+                        <span>التذاكر المكتسبة</span>
+                        <span className="flex items-center gap-1 font-bold">
+                          <Ticket className="h-4 w-4" />
                           {selectedItem.gift_tickets_awarded}
                         </span>
                       </div>
                     )}
-                    <div className="flex justify-between text-sm pt-2 border-t">
-                      <span className="text-muted-foreground">التاريخ</span>
-                      <span className="text-xs">
-                        {format(new Date(selectedItem.created_at), 'dd MMM yyyy', { locale: ar })}
-                      </span>
+                  </CardContent>
+                </Card>
+
+                {/* Timeline */}
+                <Card className="mb-4 bg-muted/30 border-0 rounded-2xl">
+                  <CardContent className="p-4">
+                    <h4 className="font-bold mb-4">سجل العنصر</h4>
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                          <CheckCircle className="h-5 w-5 text-green-500" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm">{selectedItem.source === 'competition' ? 'تم الفوز' : 'تم الشراء'}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(new Date(selectedItem.created_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {selectedItem.shipping_requested_at && (
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                            <Clock className="h-5 w-5 text-amber-500" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm">طلب الشحن</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(selectedItem.shipping_requested_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {selectedItem.shipped_at && (
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center shrink-0">
+                            <Truck className="h-5 w-5 text-orange-500" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm">تم الشحن</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(selectedItem.shipped_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {selectedItem.delivered_at && (
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                            <CheckCircle className="h-5 w-5 text-green-500" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm">تم التسليم</p>
+                            <p className="text-xs text-muted-foreground">
+                              {format(new Date(selectedItem.delivered_at), 'dd MMM yyyy - HH:mm', { locale: ar })}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
 
                 {selectedItem.status === 'pending' && (
                   <Button 
-                    className="w-full h-11 rounded-xl font-bold"
+                    className="w-full h-14 rounded-2xl text-base font-black shadow-xl shadow-primary/30"
+                    size="lg"
                     onClick={() => setShippingDialogOpen(true)}
                   >
-                    <Truck className="h-4 w-4 ml-2" />
+                    <Truck className="h-5 w-5 ml-2" />
                     طلب الشحن
                   </Button>
                 )}
@@ -543,31 +681,35 @@ export default function AllStoragePanel() {
         </SheetContent>
       </Sheet>
 
-      {/* Shipping Dialog */}
+      {/* Single Shipping Dialog */}
       <AlertDialog open={shippingDialogOpen} onOpenChange={setShippingDialogOpen}>
-        <AlertDialogContent className="rounded-2xl max-w-xs">
+        <AlertDialogContent className="rounded-3xl max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-center">تأكيد الشحن</AlertDialogTitle>
+            <AlertDialogTitle className="text-center">تأكيد طلب الشحن</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-3">
-                <p className="text-center text-sm">شحن <strong className="text-foreground">{selectedItem?.title}</strong></p>
+              <div className="space-y-4">
+                <p className="text-center">هل تريد طلب شحن <strong className="text-foreground">{selectedItem?.title}</strong>؟</p>
                 
                 {userAddresses && userAddresses.length > 0 ? (
-                  <Card className="bg-muted/30 border-0 rounded-xl">
-                    <CardContent className="p-3 flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <Card className="bg-muted/30 border-0 rounded-2xl">
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <MapPin className="h-5 w-5 text-primary" />
+                      </div>
                       <div>
-                        <p className="text-xs font-medium">العنوان</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {userAddresses[0].area}, {userAddresses[0].governorate}
+                        <p className="font-bold text-sm">عنوان الشحن</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {userAddresses[0].area}, {userAddresses[0].neighborhood}, {userAddresses[0].governorate}
                         </p>
                       </div>
                     </CardContent>
                   </Card>
                 ) : (
-                  <Card className="border-amber-500/30 bg-amber-500/10 rounded-xl">
-                    <CardContent className="p-3 text-center">
-                      <p className="text-xs text-amber-700">أضف عنوان شحن أولاً</p>
+                  <Card className="border-amber-500/30 bg-amber-500/10 rounded-2xl">
+                    <CardContent className="p-4 text-center">
+                      <p className="text-sm text-amber-700 font-medium">
+                        يرجى إضافة عنوان للشحن من إعدادات الحساب
+                      </p>
                     </CardContent>
                   </Card>
                 )}
@@ -575,14 +717,14 @@ export default function AllStoragePanel() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="rounded-lg flex-1">إلغاء</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl flex-1">إلغاء</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-lg flex-1"
+              className="rounded-xl flex-1"
               onClick={() => selectedItem && handleRequestShipping(selectedItem)}
-              disabled={(requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending) || !userAddresses?.length}
+              disabled={(requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending) || !userAddresses || userAddresses.length === 0}
             >
               {(requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending) && (
-                <Loader2 className="h-3 w-3 animate-spin ml-1" />
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
               )}
               تأكيد
             </AlertDialogAction>
@@ -592,31 +734,35 @@ export default function AllStoragePanel() {
 
       {/* Bulk Shipping Dialog */}
       <AlertDialog open={bulkShippingDialogOpen} onOpenChange={setBulkShippingDialogOpen}>
-        <AlertDialogContent className="rounded-2xl max-w-xs">
+        <AlertDialogContent className="rounded-3xl max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-center">شحن مجمع</AlertDialogTitle>
+            <AlertDialogTitle className="text-center">طلب شحن مجمع</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-3">
-                <p className="text-center text-sm">
-                  شحن <strong className="text-foreground">{selectedIds.size} عنصر</strong> معاً
+              <div className="space-y-4">
+                <p className="text-center">
+                  هل تريد طلب شحن <strong className="text-foreground">{selectedIds.size} عنصر</strong> معاً؟
                 </p>
                 
                 {userAddresses && userAddresses.length > 0 ? (
-                  <Card className="bg-muted/30 border-0 rounded-xl">
-                    <CardContent className="p-3 flex items-start gap-2">
-                      <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <Card className="bg-muted/30 border-0 rounded-2xl">
+                    <CardContent className="p-4 flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <MapPin className="h-5 w-5 text-primary" />
+                      </div>
                       <div>
-                        <p className="text-xs font-medium">العنوان</p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {userAddresses[0].area}, {userAddresses[0].governorate}
+                        <p className="font-bold text-sm">عنوان الشحن</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {userAddresses[0].area}, {userAddresses[0].neighborhood}, {userAddresses[0].governorate}
                         </p>
                       </div>
                     </CardContent>
                   </Card>
                 ) : (
-                  <Card className="border-amber-500/30 bg-amber-500/10 rounded-xl">
-                    <CardContent className="p-3 text-center">
-                      <p className="text-xs text-amber-700">أضف عنوان شحن أولاً</p>
+                  <Card className="border-amber-500/30 bg-amber-500/10 rounded-2xl">
+                    <CardContent className="p-4 text-center">
+                      <p className="text-sm text-amber-700 font-medium">
+                        يرجى إضافة عنوان للشحن من إعدادات الحساب
+                      </p>
                     </CardContent>
                   </Card>
                 )}
@@ -624,16 +770,16 @@ export default function AllStoragePanel() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="rounded-lg flex-1">إلغاء</AlertDialogCancel>
+            <AlertDialogCancel className="rounded-xl flex-1">إلغاء</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-lg flex-1"
+              className="rounded-xl flex-1"
               onClick={handleBulkShipping}
-              disabled={(requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending) || !userAddresses?.length}
+              disabled={(requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending) || !userAddresses || userAddresses.length === 0}
             >
               {(requestOfferShippingMutation.isPending || requestPrizeShippingMutation.isPending) && (
-                <Loader2 className="h-3 w-3 animate-spin ml-1" />
+                <Loader2 className="h-4 w-4 animate-spin ml-2" />
               )}
-              تأكيد
+              تأكيد الشحن
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
