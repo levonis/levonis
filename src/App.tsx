@@ -206,7 +206,7 @@ function AppContent() {
             <Route path="/my-products" element={<MyPurchasedProducts />} />
             <Route path="/my-offer-purchases" element={<MyOfferPurchases />} />
             <Route path="/product-offers" element={<ProductOffersPage />} />
-            <Route path="/offers-storage" element={<OffersStoragePage />} />
+            <Route path="/offers" element={<OffersStoragePage />} />
             <Route path="/wallet-success" element={<RequireAuth><WalletSuccess /></RequireAuth>} />
             <Route path="/community/checkout/:orderId" element={<RequireAuth><ChatOrderCheckout /></RequireAuth>} />
             
