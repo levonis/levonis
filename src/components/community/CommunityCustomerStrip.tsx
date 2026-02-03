@@ -24,6 +24,16 @@ const profileSchema = z.object({
 
 type Profile = z.infer<typeof profileSchema>;
 
+const DEFAULT_AVATAR_URL = "/placeholder.svg";
+
+function isValidAvatar(url: string | null | undefined): boolean {
+  if (!url) return false;
+  if (url === DEFAULT_AVATAR_URL) return false;
+  if (url.includes("dicebear.com")) return false;
+  if (url.includes("api.dicebear")) return false;
+  return true;
+}
+
 function isProfileComplete(p: Profile | null | undefined) {
   if (!p) return false;
   const fullNameOk = !!p.full_name?.trim();
@@ -31,7 +41,8 @@ function isProfileComplete(p: Profile | null | undefined) {
   const usernameOk = !!p.username?.trim();
   const birthDateOk = !!p.birth_date;
   const genderOk = p.gender === "male" || p.gender === "female";
-  return fullNameOk && phoneOk && usernameOk && birthDateOk && genderOk;
+  const avatarOk = isValidAvatar(p.avatar_url);
+  return fullNameOk && phoneOk && usernameOk && birthDateOk && genderOk && avatarOk;
 }
 
 export default function CommunityCustomerStrip({ className }: { className?: string }) {
