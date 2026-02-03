@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Gift, Package, Loader2 } from "lucide-react";
+import { ArrowLeft, Gift, Package, Loader2, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 
@@ -44,58 +44,61 @@ export default function OffersStoragePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      {/* Fixed Sticky Header with Tabs */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border/30 shadow-sm">
+      {/* Premium Sticky Header with Tabs - Always Visible */}
+      <div className="sticky top-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border/30">
         {/* Top Navigation Bar */}
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-              <Gift className="h-5 w-5 text-primary-foreground" />
+        <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-accent flex items-center justify-center shadow-xl shadow-primary/25">
+                <Gift className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <Sparkles className="h-4 w-4 text-amber-500 absolute -top-1 -right-1" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-foreground">العروض والمخزن</h1>
-              <p className="text-[10px] text-muted-foreground">منتجات وهدايا حصرية</p>
+              <h1 className="text-lg font-black text-foreground tracking-tight">العروض والمخزن</h1>
+              <p className="text-xs text-muted-foreground">منتجات حصرية وهدايا مميزة</p>
             </div>
           </div>
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-10 w-10 rounded-xl hover:bg-muted/80"
+            className="h-11 w-11 rounded-2xl hover:bg-muted/80 border border-border/50"
             onClick={() => navigate(-1)}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </div>
 
-        {/* Tab Switcher - Integrated in Header */}
-        <div className="px-4 pb-3">
-          <div className="flex gap-2 p-1 bg-muted/40 rounded-2xl">
+        {/* Premium Tab Switcher */}
+        <div className="px-4 pb-4">
+          <div className="flex gap-3 p-1.5 bg-muted/50 rounded-2xl border border-border/30">
             <button
               onClick={() => setActiveTab('offers')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 ${
+              className={`flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all duration-300 ${
                 activeTab === 'offers'
-                  ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md shadow-primary/20'
+                  ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/25'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
-              <Gift className="h-4 w-4" />
+              <Gift className="h-5 w-5" />
               العروض
             </button>
             <button
               onClick={() => setActiveTab('storage')}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 relative ${
+              className={`flex-1 flex items-center justify-center gap-2.5 py-3.5 rounded-xl font-bold text-sm transition-all duration-300 relative ${
                 activeTab === 'storage'
-                  ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md shadow-primary/20'
+                  ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-lg shadow-primary/25'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
-              <Package className="h-4 w-4" />
+              <Package className="h-5 w-5" />
               مخزني
               {user && storageCount !== undefined && storageCount > 0 && (
-                <span className={`absolute -top-1 -left-1 min-w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold px-1.5 shadow-sm ${
+                <span className={`absolute -top-1.5 -left-1.5 min-w-6 h-6 flex items-center justify-center rounded-full text-xs font-black px-2 shadow-md ${
                   activeTab === 'storage' 
                     ? 'bg-primary-foreground text-primary' 
-                    : 'bg-primary text-primary-foreground'
+                    : 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground'
                 }`}>
                   {storageCount}
                 </span>
@@ -106,13 +109,13 @@ export default function OffersStoragePage() {
       </div>
 
       {/* Content */}
-      <main className="flex-1 px-4 py-4">
+      <main className="flex-1 px-4 py-5">
         <Suspense fallback={
-          <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-            <p className="text-sm text-muted-foreground">جاري التحميل...</p>
+            <p className="text-sm text-muted-foreground font-medium">جاري التحميل...</p>
           </div>
         }>
           {activeTab === 'offers' && <AllOffersPanel />}
