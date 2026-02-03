@@ -3,9 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trophy, Users, Ticket, Calendar, Eye, Settings, Package } from "lucide-react";
-import AdminProductOffersTab from "@/components/AdminProductOffersTab";
+import { Plus, Trophy, Users, Ticket, Calendar, Eye, Settings } from "lucide-react";
 import CompetitionFormDialog from "@/components/CompetitionFormDialog";
 import { format, addHours } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -142,28 +140,22 @@ export default function AdminCompetitions() {
   }
 
   return (
-    <AdminLayout title="إدارة المسابقات والعروض" icon={<Trophy className="h-5 w-5" />} description="إنشاء وإدارة المسابقات وعروض المنتجات">
+    <AdminLayout title="إدارة المسابقات" icon={<Trophy className="h-5 w-5" />} description="إنشاء وإدارة جميع أنواع المسابقات">
       {showCelebration && winnerInfo && (
         <CelebrationEffect winnerName={winnerInfo.name} ticketNumber={winnerInfo.ticket} isActive={showCelebration} onComplete={() => setShowCelebration(false)} />
       )}
 
-      <Tabs defaultValue="competitions" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-6">
-          <TabsTrigger value="competitions" className="gap-2"><Trophy className="h-4 w-4" />المسابقات</TabsTrigger>
-          <TabsTrigger value="product-offers" className="gap-2"><Package className="h-4 w-4" />عروض المنتجات</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="competitions" className="space-y-6">
-          <div className="flex justify-end mb-4 gap-2">
-            <Button variant="outline" onClick={() => setTicketsManagerOpen(true)} className="gap-2">
-              <Ticket className="h-4 w-4" />
-              <span className="hidden sm:inline">إدارة التذاكر</span>
-            </Button>
-            <Button onClick={handleOpenCreateDialog} className="admin-btn-primary gap-2">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">مسابقة جديدة</span>
-            </Button>
-          </div>
+      <div className="space-y-6">
+        <div className="flex justify-end mb-4 gap-2">
+          <Button variant="outline" onClick={() => setTicketsManagerOpen(true)} className="gap-2">
+            <Ticket className="h-4 w-4" />
+            <span className="hidden sm:inline">إدارة التذاكر</span>
+          </Button>
+          <Button onClick={handleOpenCreateDialog} className="admin-btn-primary gap-2">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">مسابقة جديدة</span>
+          </Button>
+        </div>
 
           <AdminStatsGrid>
             <AdminStatCard icon={<Trophy className="h-5 w-5" />} value={activeCompetitions} label="مسابقات نشطة" colorClass="text-green-600" bgClass="bg-green-500/10" />
@@ -210,13 +202,7 @@ export default function AdminCompetitions() {
               </div>
             )}
           </AdminSection>
-        </TabsContent>
-
-        <TabsContent value="product-offers">
-          <AdminProductOffersTab />
-        </TabsContent>
-      </Tabs>
-
+        </div>
       {/* Competition Form Dialog */}
       <CompetitionFormDialog
         open={isDialogOpen}
