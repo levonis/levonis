@@ -124,10 +124,11 @@ function CommunitySettings() {
 
   // Sync with fetched settings
   if (communitySettings && platformCommission && !settingsInitialized) {
-    setMerchantFee(communitySettings.merchant_registration_fee?.amount || 25000);
-    setAutoDeleteDays(communitySettings.rejected_application_auto_delete_days?.days || 7);
-    setMaxRequestsPerDay(communitySettings.max_customer_requests_per_day?.limit || 5);
-    setCommissionRate((platformCommission?.rate || 0.007) * 100);
+    // Use ?? instead of || to allow 0 values
+    setMerchantFee(communitySettings.merchant_registration_fee?.amount ?? 25000);
+    setAutoDeleteDays(communitySettings.rejected_application_auto_delete_days?.days ?? 7);
+    setMaxRequestsPerDay(communitySettings.max_customer_requests_per_day?.limit ?? 5);
+    setCommissionRate((platformCommission?.rate ?? 0.007) * 100);
     setSettingsInitialized(true);
   }
 
