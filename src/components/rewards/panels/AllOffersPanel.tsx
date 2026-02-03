@@ -240,9 +240,9 @@ export default function AllOffersPanel() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
-        {[1, 2, 3, 4].map(i => (
-          <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
+        {[1, 2, 3, 4, 5, 6].map(i => (
+          <Skeleton key={i} className="aspect-square rounded-xl" />
         ))}
       </div>
     );
@@ -250,98 +250,80 @@ export default function AllOffersPanel() {
 
   if (offers.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-4">
-          <Gift className="h-10 w-10 text-primary/50" />
+      <div className="flex flex-col items-center justify-center py-12">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+          <Gift className="h-7 w-7 text-primary/50" />
         </div>
-        <p className="text-muted-foreground font-medium">لا توجد عروض متاحة</p>
-        <p className="text-xs text-muted-foreground/70 mt-1">ترقب العروض القادمة</p>
+        <p className="text-muted-foreground text-sm font-medium">لا توجد عروض</p>
       </div>
     );
   }
 
-  // Parallax image transform
-  const imageTransform = Math.min(scrollY * 0.3, 100);
-
   return (
     <>
-      {/* Products Grid - Responsive min 2 columns */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
-        {offers.map((offer, index) => (
+      {/* Compact Square Grid - Min 3 columns */}
+      <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-1.5">
+        {offers.map((offer) => (
           <div 
             key={offer.id} 
             className="group cursor-pointer"
             onClick={() => handleOfferClick(offer)}
           >
-            {/* Compact Professional Card */}
-            <div className="relative rounded-xl overflow-hidden bg-card border border-border/50 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300">
-              {/* Image Container - 3:4 ratio */}
-              <div className="relative aspect-[3/4] overflow-hidden">
-                <OptimizedImage
-                  src={offer.image_url || '/placeholder.svg'}
-                  alt={offer.title_ar}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
+            {/* Minimal Square Card */}
+            <div className="relative aspect-square rounded-lg overflow-hidden bg-card border border-border/40 hover:border-primary/40 hover:shadow-md transition-all duration-200">
+              <OptimizedImage
+                src={offer.image_url || '/placeholder.svg'}
+                alt={offer.title_ar}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+              
+              {/* Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
+              
+              {/* Top Badges Row */}
+              <div className="absolute top-1 left-1 right-1 flex justify-between items-start">
+                {/* Stock Warning */}
+                {offer.stock_quantity !== null && offer.stock_quantity <= 5 && offer.stock_quantity > 0 ? (
+                  <div className="bg-destructive/90 text-destructive-foreground px-1 py-0.5 rounded text-[7px] font-bold flex items-center gap-0.5">
+                    <Flame className="h-2 w-2" />
+                    {offer.stock_quantity}
+                  </div>
+                ) : <div />}
                 
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                
-                {/* Rewards Badges - Compact */}
-                <div className="absolute top-2 right-2 flex flex-col gap-1">
+                {/* Rewards */}
+                <div className="flex gap-0.5">
                   {offer.gift_tickets > 0 && (
-                    <div className="bg-primary/90 text-primary-foreground px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md text-[10px] font-bold">
-                      <Ticket className="h-2.5 w-2.5" />
-                      +{offer.gift_tickets}
+                    <div className="bg-primary/90 text-primary-foreground px-1 py-0.5 rounded text-[7px] font-bold flex items-center gap-0.5">
+                      <Ticket className="h-2 w-2" />
+                      {offer.gift_tickets}
                     </div>
                   )}
                   {offer.points_reward > 0 && (
-                    <div className="bg-amber-500/90 text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md text-[10px] font-bold">
-                      <Coins className="h-2.5 w-2.5" />
-                      +{offer.points_reward}
+                    <div className="bg-amber-500/90 text-white px-1 py-0.5 rounded text-[7px] font-bold flex items-center gap-0.5">
+                      <Coins className="h-2 w-2" />
+                      {offer.points_reward}
                     </div>
                   )}
                 </div>
-                
-                {/* Stock Warning */}
-                {offer.stock_quantity !== null && offer.stock_quantity <= 5 && offer.stock_quantity > 0 && (
-                  <div className="absolute top-2 left-2">
-                    <div className="bg-destructive/90 text-destructive-foreground px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow text-[9px] font-bold">
-                      <Flame className="h-2.5 w-2.5" />
-                      {offer.stock_quantity}
-                    </div>
-                  </div>
-                )}
-                
-                {/* Out of Stock */}
-                {offer.stock_quantity !== null && offer.stock_quantity <= 0 && (
-                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
-                    <span className="text-foreground font-bold text-xs bg-muted px-3 py-1 rounded-full">نفذت</span>
-                  </div>
-                )}
-                
-                {/* Bottom Content Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-2.5">
-                  <h3 className="font-semibold text-white text-xs line-clamp-2 mb-1.5 drop-shadow">
-                    {offer.title_ar}
-                  </h3>
-                  <div className="flex items-center justify-between gap-1.5">
-                    <div className="bg-white/95 backdrop-blur rounded-lg px-2 py-1 shadow">
-                      <span className="font-bold text-primary text-xs">
-                        {offer.price?.toLocaleString()}
-                      </span>
-                      <span className="text-[8px] text-muted-foreground mr-0.5">{offer.currency || 'د.ع'}</span>
-                    </div>
-                    <Button 
-                      size="icon" 
-                      className="h-7 w-7 rounded-lg shadow bg-primary hover:bg-primary/90"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOfferClick(offer);
-                      }}
-                    >
-                      <ShoppingCart className="h-3 w-3" />
-                    </Button>
-                  </div>
+              </div>
+              
+              {/* Out of Stock Overlay */}
+              {offer.stock_quantity !== null && offer.stock_quantity <= 0 && (
+                <div className="absolute inset-0 bg-background/85 flex items-center justify-center">
+                  <span className="text-foreground font-bold text-[9px] bg-muted px-2 py-0.5 rounded">نفذت</span>
+                </div>
+              )}
+              
+              {/* Bottom Content */}
+              <div className="absolute bottom-0 left-0 right-0 p-1.5">
+                <h3 className="font-medium text-white text-[9px] line-clamp-1 mb-1 drop-shadow">
+                  {offer.title_ar}
+                </h3>
+                <div className="bg-white/95 rounded px-1.5 py-0.5 inline-block shadow">
+                  <span className="font-bold text-primary text-[10px]">
+                    {offer.price?.toLocaleString()}
+                  </span>
+                  <span className="text-[7px] text-muted-foreground mr-0.5">{offer.currency || 'د.ع'}</span>
                 </div>
               </div>
             </div>
@@ -349,21 +331,20 @@ export default function AllOffersPanel() {
         ))}
       </div>
       
-      {/* Load more trigger */}
-      <div ref={loadMoreRef} className="py-6 flex justify-center">
+      {/* Load more */}
+      <div ref={loadMoreRef} className="py-4 flex justify-center">
         {isFetchingNextPage && (
-          <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-xl">
-            <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            <span className="text-xs text-muted-foreground">جاري التحميل...</span>
-          </div>
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
         )}
       </div>
 
-      {/* Professional Product Detail Drawer with Swipe */}
+      {/* Redesigned Product Detail Drawer */}
       <Drawer open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
-        <DrawerContent className="max-h-[92vh] rounded-t-3xl focus:outline-none">
-          {/* Drag Handle */}
-          <div className="mx-auto w-10 h-1 bg-muted-foreground/30 rounded-full mt-3 mb-2" />
+        <DrawerContent className="max-h-[85vh] rounded-t-2xl focus:outline-none" hideHandle>
+          {/* Custom Drag Handle */}
+          <div className="flex justify-center pt-2 pb-1">
+            <div className="w-8 h-1 bg-muted-foreground/25 rounded-full" />
+          </div>
           
           <DrawerHeader className="sr-only">
             <DrawerTitle>تفاصيل المنتج</DrawerTitle>
@@ -373,18 +354,12 @@ export default function AllOffersPanel() {
             <div 
               ref={scrollRef}
               onScroll={handleScroll}
-              className="overflow-y-auto max-h-[calc(92vh-20px)] px-4 pb-28"
+              className="overflow-y-auto max-h-[calc(85vh-30px)] pb-24"
             >
-              {/* Square Image with Border Frame */}
-              <div 
-                className="relative mx-auto max-w-sm mb-4"
-                style={{
-                  transform: `translateY(-${imageTransform * 0.5}px)`,
-                  transition: 'transform 0.1s ease-out'
-                }}
-              >
-                <div className="rounded-2xl border-2 border-primary/20 p-1.5 bg-gradient-to-br from-primary/5 to-accent/5">
-                  <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+              {/* Hero Section with Image */}
+              <div className="px-3 mb-3">
+                <div className="relative rounded-xl overflow-hidden border border-primary/15 bg-gradient-to-br from-primary/5 to-accent/5 p-0.5">
+                  <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted">
                     {offerImages.length > 1 ? (
                       <Carousel
                         setApi={setCarouselApi}
@@ -411,45 +386,45 @@ export default function AllOffersPanel() {
                       />
                     )}
                     
-                    {/* Image Indicators */}
+                    {/* Image Dots */}
                     {offerImages.length > 1 && (
-                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/40 backdrop-blur px-3 py-1.5 rounded-full">
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
                         {offerImages.map((_: any, idx: number) => (
                           <button
                             key={idx}
                             onClick={() => carouselApi?.scrollTo(idx)}
-                            className={`transition-all duration-200 rounded-full ${
+                            className={`rounded-full transition-all ${
                               idx === currentImageIndex 
-                                ? 'bg-white w-5 h-1.5' 
-                                : 'bg-white/40 w-1.5 h-1.5'
+                                ? 'bg-white w-4 h-1' 
+                                : 'bg-white/40 w-1 h-1'
                             }`}
                           />
                         ))}
                       </div>
                     )}
                     
-                    {/* Close Button */}
+                    {/* Close */}
                     <DrawerClose asChild>
                       <Button 
-                        variant="secondary" 
+                        variant="ghost" 
                         size="icon" 
-                        className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 shadow-lg"
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/30 hover:bg-black/50 text-white"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-3.5 w-3.5" />
                       </Button>
                     </DrawerClose>
                     
-                    {/* Rewards on Image */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                    {/* Reward Badges */}
+                    <div className="absolute top-2 left-2 flex gap-1">
                       {selectedOffer.gift_tickets > 0 && (
-                        <div className="bg-primary/90 text-primary-foreground px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-lg text-xs font-bold">
-                          <Ticket className="h-3 w-3" />
+                        <div className="bg-primary/90 text-primary-foreground px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow">
+                          <Ticket className="h-2.5 w-2.5" />
                           +{selectedOffer.gift_tickets}
                         </div>
                       )}
                       {selectedOffer.points_reward > 0 && (
-                        <div className="bg-amber-500/90 text-white px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-lg text-xs font-bold">
-                          <Coins className="h-3 w-3" />
+                        <div className="bg-amber-500/90 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow">
+                          <Coins className="h-2.5 w-2.5" />
                           +{selectedOffer.points_reward}
                         </div>
                       )}
@@ -458,100 +433,102 @@ export default function AllOffersPanel() {
                 </div>
               </div>
 
-              {/* Product Info */}
-              <div className="space-y-4">
-                {/* Title & Price */}
-                <div>
-                  <h2 className="text-lg font-bold mb-2 leading-snug">{selectedOffer.title_ar}</h2>
-                  <div className="flex items-center gap-2">
-                    <div className="bg-primary/10 rounded-xl px-3 py-1.5">
-                      <span className="text-xl font-black text-primary">{selectedOffer.price?.toLocaleString()}</span>
-                      <span className="text-xs text-muted-foreground mr-1">{selectedOffer.currency || 'د.ع'}</span>
-                    </div>
+              {/* Product Details */}
+              <div className="px-3 space-y-3">
+                {/* Title & Price Row */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-sm font-bold leading-tight line-clamp-2">{selectedOffer.title_ar}</h2>
                     {selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity > 0 && (
-                      <Badge variant="outline" className={`text-xs ${
-                        selectedOffer.stock_quantity <= 5 ? 'border-destructive/50 text-destructive' : 'border-primary/50 text-primary'
-                      }`}>
+                      <p className={`text-[10px] mt-0.5 ${selectedOffer.stock_quantity <= 5 ? 'text-destructive' : 'text-muted-foreground'}`}>
                         متوفر: {selectedOffer.stock_quantity}
-                      </Badge>
+                      </p>
                     )}
+                  </div>
+                  <div className="bg-primary/10 rounded-lg px-2.5 py-1.5 shrink-0">
+                    <span className="text-base font-black text-primary">{selectedOffer.price?.toLocaleString()}</span>
+                    <span className="text-[9px] text-muted-foreground mr-0.5">{selectedOffer.currency || 'د.ع'}</span>
                   </div>
                 </div>
 
                 {/* Description */}
                 {selectedOffer.description_ar && (
-                  <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-xl">
+                  <p className="text-xs text-muted-foreground leading-relaxed bg-muted/20 p-2 rounded-lg">
                     {selectedOffer.description_ar}
                   </p>
                 )}
 
-                {/* Rewards Cards */}
+                {/* Rewards Summary */}
                 {(selectedOffer.gift_tickets > 0 || selectedOffer.points_reward > 0) && (
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex gap-2">
                     {selectedOffer.gift_tickets > 0 && (
-                      <div className="bg-primary/10 rounded-xl p-3 text-center">
-                        <Ticket className="h-5 w-5 text-primary mx-auto mb-1" />
-                        <p className="text-lg font-bold text-primary">+{selectedOffer.gift_tickets * quantity}</p>
-                        <p className="text-[10px] text-muted-foreground">تذكرة</p>
+                      <div className="flex-1 bg-primary/10 rounded-lg p-2 text-center">
+                        <div className="flex items-center justify-center gap-1 mb-0.5">
+                          <Ticket className="h-3.5 w-3.5 text-primary" />
+                          <span className="text-sm font-bold text-primary">+{selectedOffer.gift_tickets * quantity}</span>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground">تذكرة</p>
                       </div>
                     )}
                     {selectedOffer.points_reward > 0 && (
-                      <div className="bg-amber-500/10 rounded-xl p-3 text-center">
-                        <Coins className="h-5 w-5 text-amber-600 mx-auto mb-1" />
-                        <p className="text-lg font-bold text-amber-600">+{selectedOffer.points_reward * quantity}</p>
-                        <p className="text-[10px] text-muted-foreground">نقطة</p>
+                      <div className="flex-1 bg-amber-500/10 rounded-lg p-2 text-center">
+                        <div className="flex items-center justify-center gap-1 mb-0.5">
+                          <Coins className="h-3.5 w-3.5 text-amber-600" />
+                          <span className="text-sm font-bold text-amber-600">+{selectedOffer.points_reward * quantity}</span>
+                        </div>
+                        <p className="text-[9px] text-muted-foreground">نقطة</p>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Quantity Selector */}
-                <div className="bg-muted/30 rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-medium text-sm">الكمية</span>
-                    <div className="flex items-center gap-1 bg-background rounded-lg p-1">
+                {/* Quantity & Total */}
+                <div className="bg-muted/20 rounded-lg p-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">الكمية</span>
+                    <div className="flex items-center gap-0.5 bg-background rounded-md p-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-md"
+                        className="h-7 w-7 rounded"
                         onClick={() => setQuantity(q => Math.max(1, q - 1))}
                         disabled={quantity <= 1}
                       >
-                        <Minus className="h-3.5 w-3.5" />
+                        <Minus className="h-3 w-3" />
                       </Button>
-                      <span className="font-bold text-lg w-10 text-center">{quantity}</span>
+                      <span className="font-bold text-sm w-8 text-center">{quantity}</span>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 rounded-md"
+                        className="h-7 w-7 rounded"
                         onClick={() => setQuantity(q => q + 1)}
                         disabled={selectedOffer.stock_quantity !== null && quantity >= selectedOffer.stock_quantity}
                       >
-                        <Plus className="h-3.5 w-3.5" />
+                        <Plus className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
-                  <div className="flex justify-between items-center pt-3 border-t border-border/50">
-                    <span className="text-muted-foreground text-sm">المجموع</span>
-                    <span className="font-bold text-primary text-lg">
+                  <div className="flex justify-between items-center pt-2 mt-2 border-t border-border/30">
+                    <span className="text-xs text-muted-foreground">المجموع</span>
+                    <span className="font-bold text-primary text-sm">
                       {(selectedOffer.price * quantity).toLocaleString()} {selectedOffer.currency || 'د.ع'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Fixed Bottom CTA */}
-              <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-xl border-t shadow-lg z-20">
+              {/* Fixed CTA */}
+              <div className="fixed bottom-0 left-0 right-0 p-3 bg-background/95 backdrop-blur-lg border-t shadow-lg z-20">
                 <Button 
-                  className="w-full h-12 rounded-xl text-sm font-bold shadow-lg"
+                  className="w-full h-10 rounded-lg text-xs font-bold"
                   onClick={handlePurchase}
                   disabled={!user || (selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity < quantity)}
                 >
-                  <ShoppingCart className="h-4 w-4 ml-2" />
+                  <ShoppingCart className="h-3.5 w-3.5 ml-1.5" />
                   شراء - {(selectedOffer.price * quantity).toLocaleString()} {selectedOffer.currency || 'د.ع'}
                 </Button>
                 {!user && (
-                  <p className="text-[10px] text-center text-muted-foreground mt-2">سجّل الدخول للشراء</p>
+                  <p className="text-[9px] text-center text-muted-foreground mt-1">سجّل الدخول للشراء</p>
                 )}
               </div>
             </div>
@@ -559,15 +536,15 @@ export default function AllOffersPanel() {
         </DrawerContent>
       </Drawer>
 
-      {/* Purchase Confirmation Dialog */}
+      {/* Compact Confirmation Dialog */}
       <AlertDialog open={purchaseDialogOpen} onOpenChange={setPurchaseDialogOpen}>
-        <AlertDialogContent className="rounded-2xl max-w-xs mx-4">
+        <AlertDialogContent className="rounded-xl max-w-[280px] mx-4 p-4">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-center text-base font-bold">تأكيد الشراء</AlertDialogTitle>
+            <AlertDialogTitle className="text-center text-sm font-bold">تأكيد الشراء</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-xl">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+                  <div className="w-10 h-10 rounded-md overflow-hidden shrink-0">
                     <OptimizedImage
                       src={selectedOffer?.image_url || '/placeholder.svg'}
                       alt={selectedOffer?.title_ar || ''}
@@ -575,29 +552,29 @@ export default function AllOffersPanel() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-xs text-foreground line-clamp-2">{selectedOffer?.title_ar}</p>
-                    <p className="text-[10px] text-muted-foreground">الكمية: {quantity}</p>
+                    <p className="font-medium text-[10px] text-foreground line-clamp-2">{selectedOffer?.title_ar}</p>
+                    <p className="text-[9px] text-muted-foreground">×{quantity}</p>
                   </div>
                 </div>
                 
-                <div className="bg-muted/30 rounded-xl p-3 space-y-2">
-                  <div className="flex justify-between text-sm">
+                <div className="bg-muted/30 rounded-lg p-2 space-y-1.5">
+                  <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">المبلغ</span>
                     <span className="font-bold text-primary">{((selectedOffer?.price || 0) * quantity).toLocaleString()} د.ع</span>
                   </div>
                   {selectedOffer?.gift_tickets > 0 && (
-                    <div className="flex justify-between text-xs pt-2 border-t">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Ticket className="h-3 w-3 text-primary" />
+                    <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
+                      <span className="text-muted-foreground flex items-center gap-0.5">
+                        <Ticket className="h-2.5 w-2.5 text-primary" />
                         تذاكر
                       </span>
                       <span className="font-bold text-primary">{selectedOffer.gift_tickets * quantity}</span>
                     </div>
                   )}
                   {selectedOffer?.points_reward > 0 && (
-                    <div className="flex justify-between text-xs pt-2 border-t">
-                      <span className="text-muted-foreground flex items-center gap-1">
-                        <Coins className="h-3 w-3 text-amber-500" />
+                    <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
+                      <span className="text-muted-foreground flex items-center gap-0.5">
+                        <Coins className="h-2.5 w-2.5 text-amber-500" />
                         نقاط
                       </span>
                       <span className="font-bold text-amber-600">{selectedOffer.points_reward * quantity}</span>
@@ -607,10 +584,10 @@ export default function AllOffersPanel() {
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2 mt-2">
-            <AlertDialogCancel className="rounded-xl flex-1 h-10 text-sm">إلغاء</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 mt-3">
+            <AlertDialogCancel className="rounded-lg flex-1 h-9 text-xs">إلغاء</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-xl flex-1 h-10 text-sm font-bold"
+              className="rounded-lg flex-1 h-9 text-xs font-bold"
               onClick={() => selectedOffer && purchaseMutation.mutate({ offer: selectedOffer, qty: quantity })}
               disabled={purchaseMutation.isPending}
             >
