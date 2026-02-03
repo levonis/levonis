@@ -508,48 +508,37 @@ const Cart = () => {
       }
 
       // إذا تم استخدام المحفظة، خصم المبلغ وتسجيل المعاملة
-      // الدفع إجباري من المحفظة
+      // الدفع إجباري من المحفظة باستخدام RPC آمن
       if (wallet) {
         const amountToDeduct = requiredPaymentNow;
         
-        // خصم المبلغ من المحفظة
-        const { error: walletUpdateError } = await supabase
-          .from('user_wallets')
-          .update({
-            balance: wallet.balance - amountToDeduct,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
+        // استخدام دالة RPC آمنة لخصم المبلغ وتسجيل المعاملة وتحديث الطلب
+        const { error: paymentError } = await supabase.rpc('pay_order_from_wallet', {
+          p_user_id: user.id,
+          p_order_id: order.id,
+          p_order_number: order.order_number,
+          p_amount: amountToDeduct,
+        });
 
-        if (walletUpdateError) {
-          console.error('Error updating wallet:', walletUpdateError);
+        if (paymentError) {
+          console.error('Error paying from wallet:', paymentError);
           toast({
             title: "خطأ",
-            description: "حدث خطأ في خصم المبلغ من المحفظة",
+            description: paymentError.message || "حدث خطأ في خصم المبلغ من المحفظة",
             variant: "destructive",
           });
           return;
         }
         
-        // تسجيل معاملة المحفظة
-        await supabase
-          .from('wallet_transactions')
-          .insert({
-            user_id: user.id,
-            type: 'order_payment',
-            amount: -amountToDeduct,
-            status: 'completed',
-            admin_notes: `دفع طلب رقم ${order.order_number}`,
-          });
-        
-        // تحديث الطلب بالمبلغ المدفوع من المحفظة
-        await supabase
-          .from('orders')
-          .update({
-            customer_paid_amount: amountToDeduct,
-            payment_status: isPreOrderWithPartialPayment ? 'partial' : 'paid',
-          })
-          .eq('id', order.id);
+        // للطلبات المسبقة بالدفع الجزئي، تحديث حالة الدفع
+        if (isPreOrderWithPartialPayment) {
+          await supabase
+            .from('orders')
+            .update({
+              payment_status: 'partial',
+            })
+            .eq('id', order.id);
+        }
       }
 
       // Fetch custom request data directly if needed
