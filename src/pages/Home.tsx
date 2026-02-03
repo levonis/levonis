@@ -10,6 +10,7 @@ import AnimatedDivider from '@/components/ui/animated-divider';
 
 // Lazy load non-critical components
 const CommunitySection = lazy(() => import('@/components/community/CommunitySection'));
+const OffersStorageSection = lazy(() => import('@/components/OffersStorageSection'));
 
 // Memoized category card for performance
 const MemoizedCategoryCard = memo(CategoryCard);
@@ -166,7 +167,12 @@ const Home = () => {
           )}
         </section>
 
-        {/* Animated divider between store sections and community */}
+        {/* Offers & Storage Section - New section above community */}
+        <Suspense fallback={<div className="h-32 flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>}>
+          <OffersStorageSection />
+        </Suspense>
+
+        {/* Animated divider between offers and community */}
         <div className="container mx-auto px-4">
           <AnimatedDivider className="my-4 md:my-6 opacity-90" />
         </div>

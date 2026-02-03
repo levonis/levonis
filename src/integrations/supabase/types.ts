@@ -2287,6 +2287,7 @@ export type Database = {
           frame_url: string | null
           free_shipping: boolean | null
           free_shipping_min_order: number | null
+          free_tickets_monthly: number | null
           icon: string | null
           id: string
           is_purchasable: boolean | null
@@ -2317,6 +2318,7 @@ export type Database = {
           frame_url?: string | null
           free_shipping?: boolean | null
           free_shipping_min_order?: number | null
+          free_tickets_monthly?: number | null
           icon?: string | null
           id?: string
           is_purchasable?: boolean | null
@@ -2347,6 +2349,7 @@ export type Database = {
           frame_url?: string | null
           free_shipping?: boolean | null
           free_shipping_min_order?: number | null
+          free_tickets_monthly?: number | null
           icon?: string | null
           id?: string
           is_purchasable?: boolean | null
@@ -4055,6 +4058,7 @@ export type Database = {
           taobao_sync_status: string | null
           taobao_url: string | null
           taobao_variant_mapping: Json | null
+          ticket_reward: number | null
           updated_at: string | null
         }
         Insert: {
@@ -4089,6 +4093,7 @@ export type Database = {
           taobao_sync_status?: string | null
           taobao_url?: string | null
           taobao_variant_mapping?: Json | null
+          ticket_reward?: number | null
           updated_at?: string | null
         }
         Update: {
@@ -4123,6 +4128,7 @@ export type Database = {
           taobao_sync_status?: string | null
           taobao_url?: string | null
           taobao_variant_mapping?: Json | null
+          ticket_reward?: number | null
           updated_at?: string | null
         }
         Relationships: [

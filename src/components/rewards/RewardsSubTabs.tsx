@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { MainTabId } from "./RewardsMainTabs";
 
 export type PointsSubTab = 'summary' | 'daily-tasks' | 'redeem' | 'store';
-export type CompetitionsSubTab = 'competitions' | 'get-tickets' | 'storage';
+export type CompetitionsSubTab = 'competitions';
 export type CardsSubTab = 'benefits' | 'upgrade' | 'exclusive-offers';
 export type InsuranceSubTab = 'status' | 'plans' | 'maintenance';
 
@@ -22,8 +22,6 @@ const subTabsConfig: Record<MainTabId, SubTabConfig[]> = {
   ],
   competitions: [
     { id: 'competitions', label: 'المسابقات' },
-    { id: 'get-tickets', label: 'التذاكر' },
-    { id: 'storage', label: 'مخزني' },
   ],
   cards: [
     { id: 'benefits', label: 'بطاقتي' },

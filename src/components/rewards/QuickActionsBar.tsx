@@ -1,4 +1,4 @@
-import { ListChecks, Ticket, Package, Crown, Gift, Trophy } from "lucide-react";
+import { ListChecks, Crown, Gift, Trophy } from "lucide-react";
 import { MainTabId } from "./RewardsMainTabs";
 import { SubTabId } from "./RewardsSubTabs";
 
@@ -26,26 +26,6 @@ const quickActions = [
     bgColor: 'bg-purple-500/15',
     iconColor: 'text-purple-600',
     borderColor: 'border-purple-500/30'
-  },
-  { 
-    id: 'get-tickets', 
-    label: 'احصل على تذاكر', 
-    icon: Ticket, 
-    mainTab: 'competitions' as MainTabId, 
-    subTab: 'get-tickets' as SubTabId,
-    bgColor: 'bg-rose-500/15',
-    iconColor: 'text-rose-600',
-    borderColor: 'border-rose-500/30'
-  },
-  { 
-    id: 'storage', 
-    label: 'مخزني', 
-    icon: Package, 
-    mainTab: 'competitions' as MainTabId, 
-    subTab: 'storage' as SubTabId,
-    bgColor: 'bg-green-500/15',
-    iconColor: 'text-green-600',
-    borderColor: 'border-green-500/30'
   },
   { 
     id: 'redeem', 
