@@ -24,7 +24,7 @@ import AdminLayout, { AdminSection, AdminCard, AdminCardHeader, AdminCardContent
 import AdminPagination from '@/components/admin/AdminPagination';
 import { usePagination } from '@/hooks/usePagination';
 import OfferPurchasesTab from '@/components/admin/OfferPurchasesTab';
-import AdminMessageDialog from '@/components/admin/AdminMessageDialog';
+import AdminOrderChatDialog from '@/components/admin/AdminOrderChatDialog';
 
 const statusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
@@ -1264,9 +1264,9 @@ const AdminOrders = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Admin Message Dialog */}
+      {/* Chat Dialog - Opens real conversation */}
       {selectedOrderForMessage && (
-        <AdminMessageDialog
+        <AdminOrderChatDialog
           open={messageDialogOpen}
           onOpenChange={(open) => {
             setMessageDialogOpen(open);
