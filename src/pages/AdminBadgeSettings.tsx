@@ -25,13 +25,14 @@ const thresholdsSchema = z.object({
   gold_max: z.number().min(1),
   diamond_1_min: z.number().min(1),
   diamond_2_min: z.number().min(1),
-  diamond_2_months: z.number().min(1),
   diamond_3_min: z.number().min(1),
-  diamond_3_months: z.number().min(1),
   diamond_4_min: z.number().min(1),
-  diamond_4_months: z.number().min(1),
   emerald_min: z.number().min(1),
-  emerald_months: z.number().min(1),
+  // Legacy fields - kept for backward compatibility but no longer used in UI
+  diamond_2_months: z.number().min(1).optional(),
+  diamond_3_months: z.number().min(1).optional(),
+  diamond_4_months: z.number().min(1).optional(),
+  emerald_months: z.number().min(1).optional(),
 });
 
 type Thresholds = z.infer<typeof thresholdsSchema>;
@@ -42,14 +43,10 @@ const defaultThresholds: Thresholds = {
   gold_min: 51,
   gold_max: 100,
   diamond_1_min: 101,
-  diamond_2_min: 500,
-  diamond_2_months: 2,
-  diamond_3_min: 1000,
-  diamond_3_months: 2,
-  diamond_4_min: 2000,
-  diamond_4_months: 2,
-  emerald_min: 3000,
-  emerald_months: 2,
+  diamond_2_min: 200,
+  diamond_3_min: 500,
+  diamond_4_min: 1000,
+  emerald_min: 2000,
 };
 
 const tierIcons: Record<string, { icon: React.ReactNode; color: string; bgColor: string }> = {
@@ -147,9 +144,10 @@ export default function AdminBadgeSettings({ embedded }: Props) {
               <div className="text-sm text-foreground/80">
                 <p className="font-medium mb-1">كيف تعمل الشارات؟</p>
                 <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-                  <li>الشارات الأساسية (فضي، ذهبي، ماسي 1) تُحسب بناءً على إجمالي الطلبات المكتملة</li>
-                  <li>الشارات المتقدمة (ماسي 2-4، زمردة) تتطلب استمرارية الأداء لعدة أشهر متتالية</li>
-                  <li>يتم حساب الشارات تلقائياً كل يوم في منتصف الليل</li>
+                  <li>تُحسب الشارات بناءً على <strong>إجمالي الطلبات المكتملة في آخر 3 أشهر</strong></li>
+                  <li>الشارات الأساسية (فضي، ذهبي، ماسي 1) تعتمد على عدد الطلبات فقط</li>
+                  <li>الشارات المتقدمة (ماسي 2-4، زمردة) تتطلب حد أدنى أعلى من الطلبات</li>
+                  <li>يتم تحديث الشارات تلقائياً كل يوم في منتصف الليل</li>
                   <li>يمكن للأدمن تجاوز الحساب التلقائي لأي تاجر</li>
                 </ul>
               </div>
@@ -272,28 +270,17 @@ export default function AdminBadgeSettings({ embedded }: Props) {
                   شارة ماسية 2
                   <Badge variant="outline" className="mr-auto">Diamond 2</Badge>
                 </CardTitle>
-                <CardDescription>تتطلب استمرارية الأداء لعدة أشهر</CardDescription>
+                <CardDescription>إجمالي الطلبات في آخر 3 أشهر</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>الحد الأدنى للطلبات الشهرية</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={thresholds.diamond_2_min}
-                      onChange={(e) => handleChange("diamond_2_min", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>عدد الأشهر المتتالية المطلوبة</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={thresholds.diamond_2_months}
-                      onChange={(e) => handleChange("diamond_2_months", e.target.value)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>الحد الأدنى للطلبات (آخر 3 أشهر)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={thresholds.diamond_2_min}
+                    onChange={(e) => handleChange("diamond_2_min", e.target.value)}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -308,28 +295,17 @@ export default function AdminBadgeSettings({ embedded }: Props) {
                   شارة ماسية 3
                   <Badge variant="outline" className="mr-auto">Diamond 3</Badge>
                 </CardTitle>
-                <CardDescription>تتطلب استمرارية الأداء لعدة أشهر</CardDescription>
+                <CardDescription>إجمالي الطلبات في آخر 3 أشهر</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>الحد الأدنى للطلبات الشهرية</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={thresholds.diamond_3_min}
-                      onChange={(e) => handleChange("diamond_3_min", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>عدد الأشهر المتتالية المطلوبة</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={thresholds.diamond_3_months}
-                      onChange={(e) => handleChange("diamond_3_months", e.target.value)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>الحد الأدنى للطلبات (آخر 3 أشهر)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={thresholds.diamond_3_min}
+                    onChange={(e) => handleChange("diamond_3_min", e.target.value)}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -344,28 +320,17 @@ export default function AdminBadgeSettings({ embedded }: Props) {
                   شارة ماسية 4
                   <Badge variant="outline" className="mr-auto">Diamond 4</Badge>
                 </CardTitle>
-                <CardDescription>تتطلب استمرارية الأداء لعدة أشهر</CardDescription>
+                <CardDescription>إجمالي الطلبات في آخر 3 أشهر</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>الحد الأدنى للطلبات الشهرية</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={thresholds.diamond_4_min}
-                      onChange={(e) => handleChange("diamond_4_min", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>عدد الأشهر المتتالية المطلوبة</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={thresholds.diamond_4_months}
-                      onChange={(e) => handleChange("diamond_4_months", e.target.value)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>الحد الأدنى للطلبات (آخر 3 أشهر)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={thresholds.diamond_4_min}
+                    onChange={(e) => handleChange("diamond_4_min", e.target.value)}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -381,28 +346,17 @@ export default function AdminBadgeSettings({ embedded }: Props) {
                   شارة زمردة
                   <Badge variant="outline" className="mr-auto border-emerald-300 text-emerald-600">Emerald</Badge>
                 </CardTitle>
-                <CardDescription>أعلى مستوى - تتطلب أداء استثنائي مستمر</CardDescription>
+                <CardDescription>أعلى مستوى - إجمالي الطلبات في آخر 3 أشهر</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>الحد الأدنى للطلبات الشهرية</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={thresholds.emerald_min}
-                      onChange={(e) => handleChange("emerald_min", e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>عدد الأشهر المتتالية المطلوبة</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={thresholds.emerald_months}
-                      onChange={(e) => handleChange("emerald_months", e.target.value)}
-                    />
-                  </div>
+                <div className="space-y-2">
+                  <Label>الحد الأدنى للطلبات (آخر 3 أشهر)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    value={thresholds.emerald_min}
+                    onChange={(e) => handleChange("emerald_min", e.target.value)}
+                  />
                 </div>
               </CardContent>
             </Card>
