@@ -19,7 +19,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 overflow-hidden",
+      "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -52,7 +52,10 @@ const DialogContent = React.forwardRef<
         "fixed left-[50%] top-[50%] z-50 flex flex-col translate-x-[-50%] translate-y-[-50%]",
         // Default size constraints - can be overridden via className
         "w-[calc(100%-1.5rem)] max-w-md sm:max-w-lg",
+        // Scrolling - CRITICAL: use overflow-y-auto with touch support
         "max-h-[85vh] overflow-y-auto overscroll-contain",
+        // Touch scrolling for iOS
+        "[&]:touch-action-pan-y [-webkit-overflow-scrolling:touch]",
         // Professional styling matching site theme
         "bg-gradient-to-b from-[hsl(160_52%_18%)] via-[hsl(160_52%_16%)] to-[hsl(160_48%_14%)]",
         "border border-[hsl(var(--border))]",
