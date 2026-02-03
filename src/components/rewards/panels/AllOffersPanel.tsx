@@ -34,10 +34,9 @@ import { X, Ticket, Gift, Loader2, ShoppingCart, Minus, Plus, Flame, Coins, Pale
 
 const PAGE_SIZE = 10;
 
-// Format price with Arabic styling
-const formatPrice = (price: number, currency: string = 'د.ع') => {
-  const formatted = price.toLocaleString('ar-IQ');
-  return { formatted, currency };
+// Format price with English numbers
+const formatPrice = (price: number) => {
+  return price.toLocaleString('en-US');
 };
 
 // Types for colors and options
@@ -359,14 +358,14 @@ export default function AllOffersPanel() {
               
               {/* Bottom Content */}
               <div className="absolute bottom-0 left-0 right-0 p-1.5">
-                <h3 className="font-medium text-white text-[9px] line-clamp-1 mb-1 drop-shadow">
+                <p className="text-white/90 text-[8px] line-clamp-1 mb-0.5 font-normal tracking-tight">
                   {offer.title_ar}
-                </h3>
-                <div className="bg-white/95 rounded px-1.5 py-0.5 inline-flex items-baseline gap-0.5 shadow">
-                  <span className="font-black text-primary text-[11px]">
-                    {formatPrice(offer.price).formatted}
+                </p>
+                <div className="bg-gradient-to-r from-primary/95 to-primary/80 rounded px-1.5 py-0.5 inline-flex items-baseline gap-0.5 shadow-lg">
+                  <span className="font-black text-primary-foreground text-[10px] tracking-tight">
+                    {formatPrice(offer.price)}
                   </span>
-                  <span className="text-[7px] text-muted-foreground">{offer.currency || 'د.ع'}</span>
+                  <span className="text-[6px] text-primary-foreground/80 font-medium">{offer.currency || 'د.ع'}</span>
                 </div>
               </div>
             </div>
@@ -489,7 +488,7 @@ export default function AllOffersPanel() {
                     )}
                   </div>
                   <div className="bg-primary/10 rounded-lg px-2 py-1.5 shrink-0">
-                    <span className="text-base font-black text-primary">{formatPrice(basePrice).formatted}</span>
+                    <span className="text-base font-black text-primary">{formatPrice(basePrice)}</span>
                     <span className="text-[8px] text-muted-foreground mr-0.5">{selectedOffer.currency || 'د.ع'}</span>
                   </div>
                 </div>
@@ -541,7 +540,7 @@ export default function AllOffersPanel() {
                           {opt.name_ar}
                           {opt.price_adjustment !== 0 && (
                             <span className="mr-0.5 opacity-70">
-                              ({opt.price_adjustment > 0 ? '+' : ''}{formatPrice(opt.price_adjustment).formatted})
+                              ({opt.price_adjustment > 0 ? '+' : ''}{formatPrice(opt.price_adjustment)})
                             </span>
                           )}
                         </Button>
@@ -610,7 +609,7 @@ export default function AllOffersPanel() {
                   <div className="flex justify-between items-center pt-2 mt-2 border-t border-border/30">
                     <span className="text-[11px] text-muted-foreground">المجموع</span>
                     <span className="font-black text-primary text-sm">
-                      {formatPrice(totalPrice).formatted} {selectedOffer.currency || 'د.ع'}
+                      {formatPrice(totalPrice)} {selectedOffer.currency || 'د.ع'}
                     </span>
                   </div>
                 </div>
@@ -624,7 +623,7 @@ export default function AllOffersPanel() {
                   disabled={!user || (selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity < quantity)}
                 >
                   <ShoppingCart className="h-3.5 w-3.5 ml-1.5" />
-                  شراء - {formatPrice(totalPrice).formatted} {selectedOffer.currency || 'د.ع'}
+                  شراء - {formatPrice(totalPrice)} {selectedOffer.currency || 'د.ع'}
                 </Button>
                 {!user && (
                   <p className="text-[9px] text-center text-muted-foreground mt-1">سجّل الدخول للشراء</p>
@@ -659,7 +658,7 @@ export default function AllOffersPanel() {
                 <div className="bg-muted/30 rounded-lg p-2 space-y-1.5">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">المبلغ</span>
-                    <span className="font-bold text-primary">{formatPrice(totalPrice).formatted} د.ع</span>
+                    <span className="font-bold text-primary">{formatPrice(totalPrice)} د.ع</span>
                   </div>
                   {selectedColor && (
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
