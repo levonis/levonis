@@ -158,20 +158,59 @@ export default function AdminWallet() {
     return customerWallets?.reduce((sum: number, w: any) => sum + (w.balance || 0), 0) || 0;
   }, [customerWallets]);
 
-  const updateTransactionStatus = useMutation({
-    mutationFn: async ({ id, status, admin_notes }: { id: string; status: string; admin_notes?: string }) => {
+  const approveTransaction = useMutation({
+    mutationFn: async ({ transaction }: { transaction: any }) => {
+      // For deposits, add balance to user wallet using admin function
+      if (transaction.type === 'deposit') {
+        const { error } = await supabase.rpc('admin_adjust_wallet', {
+          p_user_id: transaction.user_id,
+          p_amount: transaction.amount,
+          p_type: 'deposit',
+          p_description: 'تم الموافقة على طلب التعبئة'
+        });
+        if (error) throw error;
+        
+        // Mark original pending transaction as completed
+        const { error: updateError } = await supabase
+          .from('wallet_transactions')
+          .update({ status: 'completed', admin_notes: 'تمت الموافقة', updated_at: new Date().toISOString() })
+          .eq('id', transaction.id);
+        if (updateError) throw updateError;
+        
+        // Send notification
+        await supabase.from('notifications').insert({
+          user_id: transaction.user_id,
+          title: 'تم الموافقة على طلب التعبئة',
+          message: `تم إضافة ${transaction.amount.toLocaleString()} دينار عراقي إلى محفظتك`,
+          type: 'success',
+          is_general: false,
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-wallet-transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-customer-wallets'] });
+      toast.success('تم الموافقة وإضافة الرصيد بنجاح');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'حدث خطأ في الموافقة على المعاملة');
+    },
+  });
+
+  const rejectTransaction = useMutation({
+    mutationFn: async ({ id, admin_notes }: { id: string; admin_notes?: string }) => {
       const { error } = await supabase
         .from('wallet_transactions')
-        .update({ status, admin_notes, updated_at: new Date().toISOString() })
+        .update({ status: 'rejected', admin_notes, updated_at: new Date().toISOString() })
         .eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-wallet-transactions'] });
-      toast.success('تم تحديث حالة المعاملة بنجاح');
+      toast.success('تم رفض المعاملة');
     },
     onError: (error) => {
-      toast.error('حدث خطأ في تحديث المعاملة');
+      toast.error('حدث خطأ في رفض المعاملة');
     },
   });
 
@@ -246,16 +285,15 @@ export default function AdminWallet() {
   });
 
   const handleApprove = async (transaction: any) => {
-    if (!confirm('هل أنت متأكد من الموافقة على هذه المعاملة؟')) return;
-    updateTransactionStatus.mutate({ id: transaction.id, status: 'approved' });
+    if (!confirm('هل أنت متأكد من الموافقة على هذه المعاملة وإضافة الرصيد للمستخدم؟')) return;
+    approveTransaction.mutate({ transaction });
   };
 
   const handleReject = (transactionId: string) => {
     const notes = prompt('الرجاء إدخال سبب الرفض (اختياري):');
     if (notes !== null) {
-      updateTransactionStatus.mutate({
+      rejectTransaction.mutate({
         id: transactionId,
-        status: 'rejected',
         admin_notes: notes || 'تم الرفض من قبل الإدارة',
       });
     }

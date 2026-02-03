@@ -342,6 +342,12 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
   const getTransactionColor = (type: string, status: string) => {
     if (status === 'pending') return 'text-yellow-500 bg-yellow-500/10';
     if (status === 'rejected') return 'text-destructive bg-destructive/10';
+    // For approved status (old transactions) and completed status, show as green for deposits
+    if (status === 'approved' || status === 'completed') {
+      if (type === 'deposit' || type === 'admin_addition' || type === 'points_conversion') {
+        return 'text-green-500 bg-green-500/10';
+      }
+    }
     if (type === 'deposit' || type === 'admin_addition' || type === 'points_conversion') {
       return 'text-green-500 bg-green-500/10';
     }
