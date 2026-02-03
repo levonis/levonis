@@ -30,9 +30,31 @@ import {
 } from "@/components/ui/carousel";
 import OptimizedImage from "@/components/OptimizedImage";
 import { toast } from "sonner";
-import { X, Ticket, Gift, Loader2, ShoppingCart, Minus, Plus, Flame, Coins, ChevronDown } from "lucide-react";
+import { X, Ticket, Gift, Loader2, ShoppingCart, Minus, Plus, Flame, Coins, Palette, Settings2 } from "lucide-react";
 
 const PAGE_SIZE = 10;
+
+// Format price with Arabic styling
+const formatPrice = (price: number, currency: string = 'د.ع') => {
+  const formatted = price.toLocaleString('ar-IQ');
+  return { formatted, currency };
+};
+
+// Types for colors and options
+interface ProductColor {
+  name_ar: string;
+  hex_code: string;
+  image_url: string | null;
+  in_stock: boolean;
+  stock_quantity: number | null;
+}
+
+interface ProductOption {
+  name_ar: string;
+  price_adjustment: number;
+  in_stock: boolean;
+  stock_quantity: number | null;
+}
 
 export default function AllOffersPanel() {
   const { user } = useAuth();
@@ -43,6 +65,8 @@ export default function AllOffersPanel() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [carouselApi, setCarouselApi] = useState<any>(null);
   const [scrollY, setScrollY] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<ProductColor | null>(null);
+  const [selectedOption, setSelectedOption] = useState<ProductOption | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const autoSlideRef = useRef<NodeJS.Timeout | null>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -222,6 +246,8 @@ export default function AllOffersPanel() {
     setCurrentImageIndex(0);
     setQuantity(1);
     setScrollY(0);
+    setSelectedColor(null);
+    setSelectedOption(null);
   };
 
   const handlePurchase = () => {
@@ -232,11 +258,28 @@ export default function AllOffersPanel() {
     setPurchaseDialogOpen(true);
   };
 
+  // Parse colors and options from selectedOffer
+  const colors: ProductColor[] = selectedOffer?.colors 
+    ? (Array.isArray(selectedOffer.colors) ? selectedOffer.colors : [])
+    : [];
+  const options: ProductOption[] = selectedOffer?.options 
+    ? (Array.isArray(selectedOffer.options) ? selectedOffer.options : [])
+    : [];
+  const availableColors = colors.filter(c => c.in_stock && (c.stock_quantity === null || c.stock_quantity > 0));
+  const availableOptions = options.filter(o => o.in_stock && (o.stock_quantity === null || o.stock_quantity > 0));
+
+  // Calculate price with option adjustment
+  const basePrice = (selectedOffer?.price || 0) + (selectedOption?.price_adjustment || 0);
+  const totalPrice = basePrice * quantity;
+
   const offerImages = selectedOffer?.images?.length 
     ? selectedOffer.images 
     : selectedOffer?.image_url 
       ? [selectedOffer.image_url] 
       : [];
+  
+  // Get display image (selected color image or default)
+  const displayImage = selectedColor?.image_url || (offerImages.length > 0 ? offerImages[currentImageIndex] : null);
 
   if (isLoading) {
     return (
@@ -319,11 +362,11 @@ export default function AllOffersPanel() {
                 <h3 className="font-medium text-white text-[9px] line-clamp-1 mb-1 drop-shadow">
                   {offer.title_ar}
                 </h3>
-                <div className="bg-white/95 rounded px-1.5 py-0.5 inline-block shadow">
-                  <span className="font-bold text-primary text-[10px]">
-                    {offer.price?.toLocaleString()}
+                <div className="bg-white/95 rounded px-1.5 py-0.5 inline-flex items-baseline gap-0.5 shadow">
+                  <span className="font-black text-primary text-[11px]">
+                    {formatPrice(offer.price).formatted}
                   </span>
-                  <span className="text-[7px] text-muted-foreground mr-0.5">{offer.currency || 'د.ع'}</span>
+                  <span className="text-[7px] text-muted-foreground">{offer.currency || 'د.ع'}</span>
                 </div>
               </div>
             </div>
@@ -338,12 +381,12 @@ export default function AllOffersPanel() {
         )}
       </div>
 
-      {/* Redesigned Product Detail Drawer */}
+      {/* Redesigned Product Detail Drawer - Swipe from anywhere */}
       <Drawer open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
-        <DrawerContent className="max-h-[85vh] rounded-t-2xl focus:outline-none" hideHandle>
-          {/* Custom Drag Handle */}
-          <div className="flex justify-center pt-2 pb-1">
-            <div className="w-8 h-1 bg-muted-foreground/25 rounded-full" />
+        <DrawerContent className="max-h-[88vh] rounded-t-2xl focus:outline-none" hideHandle>
+          {/* Drag Handle - Wider touch area */}
+          <div className="flex justify-center py-2 cursor-grab active:cursor-grabbing">
+            <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
           </div>
           
           <DrawerHeader className="sr-only">
@@ -354,13 +397,13 @@ export default function AllOffersPanel() {
             <div 
               ref={scrollRef}
               onScroll={handleScroll}
-              className="overflow-y-auto max-h-[calc(85vh-30px)] pb-24"
+              className="overflow-y-auto max-h-[calc(88vh-24px)] pb-24 overscroll-contain"
             >
-              {/* Hero Section with Image */}
+              {/* Square Image */}
               <div className="px-3 mb-3">
-                <div className="relative rounded-xl overflow-hidden border border-primary/15 bg-gradient-to-br from-primary/5 to-accent/5 p-0.5">
-                  <div className="relative aspect-[4/3] rounded-lg overflow-hidden bg-muted">
-                    {offerImages.length > 1 ? (
+                <div className="relative rounded-xl overflow-hidden border border-primary/20 bg-muted">
+                  <div className="relative aspect-square">
+                    {offerImages.length > 1 && !selectedColor?.image_url ? (
                       <Carousel
                         setApi={setCarouselApi}
                         opts={{ loop: true, direction: 'rtl' }}
@@ -372,7 +415,7 @@ export default function AllOffersPanel() {
                               <OptimizedImage
                                 src={img}
                                 alt={`${selectedOffer.title_ar} - ${idx + 1}`}
-                                className="w-full h-full object-cover"
+                                className="w-full h-full object-cover aspect-square"
                               />
                             </CarouselItem>
                           ))}
@@ -380,14 +423,14 @@ export default function AllOffersPanel() {
                       </Carousel>
                     ) : (
                       <OptimizedImage
-                        src={offerImages[0] || '/placeholder.svg'}
+                        src={displayImage || '/placeholder.svg'}
                         alt={selectedOffer.title_ar}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover aspect-square"
                       />
                     )}
                     
                     {/* Image Dots */}
-                    {offerImages.length > 1 && (
+                    {offerImages.length > 1 && !selectedColor?.image_url && (
                       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 bg-black/30 backdrop-blur-sm px-2 py-1 rounded-full">
                         {offerImages.map((_: any, idx: number) => (
                           <button
@@ -408,7 +451,7 @@ export default function AllOffersPanel() {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/30 hover:bg-black/50 text-white"
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-black/40 hover:bg-black/60 text-white"
                       >
                         <X className="h-3.5 w-3.5" />
                       </Button>
@@ -417,13 +460,13 @@ export default function AllOffersPanel() {
                     {/* Reward Badges */}
                     <div className="absolute top-2 left-2 flex gap-1">
                       {selectedOffer.gift_tickets > 0 && (
-                        <div className="bg-primary/90 text-primary-foreground px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow">
+                        <div className="bg-primary/90 text-primary-foreground px-1.5 py-0.5 rounded text-[9px] font-bold flex items-center gap-0.5 shadow">
                           <Ticket className="h-2.5 w-2.5" />
                           +{selectedOffer.gift_tickets}
                         </div>
                       )}
                       {selectedOffer.points_reward > 0 && (
-                        <div className="bg-amber-500/90 text-white px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow">
+                        <div className="bg-amber-500/90 text-white px-1.5 py-0.5 rounded text-[9px] font-bold flex items-center gap-0.5 shadow">
                           <Coins className="h-2.5 w-2.5" />
                           +{selectedOffer.points_reward}
                         </div>
@@ -434,8 +477,8 @@ export default function AllOffersPanel() {
               </div>
 
               {/* Product Details */}
-              <div className="px-3 space-y-3">
-                {/* Title & Price Row */}
+              <div className="px-3 space-y-2.5">
+                {/* Title & Price */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <h2 className="text-sm font-bold leading-tight line-clamp-2">{selectedOffer.title_ar}</h2>
@@ -445,15 +488,71 @@ export default function AllOffersPanel() {
                       </p>
                     )}
                   </div>
-                  <div className="bg-primary/10 rounded-lg px-2.5 py-1.5 shrink-0">
-                    <span className="text-base font-black text-primary">{selectedOffer.price?.toLocaleString()}</span>
-                    <span className="text-[9px] text-muted-foreground mr-0.5">{selectedOffer.currency || 'د.ع'}</span>
+                  <div className="bg-primary/10 rounded-lg px-2 py-1.5 shrink-0">
+                    <span className="text-base font-black text-primary">{formatPrice(basePrice).formatted}</span>
+                    <span className="text-[8px] text-muted-foreground mr-0.5">{selectedOffer.currency || 'د.ع'}</span>
                   </div>
                 </div>
 
+                {/* Colors Selection */}
+                {availableColors.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-medium flex items-center gap-1 text-muted-foreground">
+                      <Palette className="h-3 w-3" />
+                      اختر اللون
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {availableColors.map((color, idx) => (
+                        <button
+                          key={idx}
+                          className={`relative w-7 h-7 rounded-full border-2 transition-all ${
+                            selectedColor?.hex_code === color.hex_code 
+                              ? 'border-primary ring-2 ring-primary/30 scale-110' 
+                              : 'border-border hover:scale-105'
+                          }`}
+                          style={{ backgroundColor: color.hex_code }}
+                          onClick={() => setSelectedColor(selectedColor?.hex_code === color.hex_code ? null : color)}
+                          title={color.name_ar}
+                        />
+                      ))}
+                    </div>
+                    {selectedColor && (
+                      <p className="text-[9px] text-muted-foreground">{selectedColor.name_ar}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Options Selection */}
+                {availableOptions.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-[10px] font-medium flex items-center gap-1 text-muted-foreground">
+                      <Settings2 className="h-3 w-3" />
+                      اختر الخيار
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {availableOptions.map((opt, idx) => (
+                        <Button
+                          key={idx}
+                          variant={selectedOption?.name_ar === opt.name_ar ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setSelectedOption(selectedOption?.name_ar === opt.name_ar ? null : opt)}
+                          className="h-6 text-[9px] px-2 rounded"
+                        >
+                          {opt.name_ar}
+                          {opt.price_adjustment !== 0 && (
+                            <span className="mr-0.5 opacity-70">
+                              ({opt.price_adjustment > 0 ? '+' : ''}{formatPrice(opt.price_adjustment).formatted})
+                            </span>
+                          )}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Description */}
                 {selectedOffer.description_ar && (
-                  <p className="text-xs text-muted-foreground leading-relaxed bg-muted/20 p-2 rounded-lg">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed bg-muted/20 p-2 rounded-lg">
                     {selectedOffer.description_ar}
                   </p>
                 )}
@@ -463,44 +562,44 @@ export default function AllOffersPanel() {
                   <div className="flex gap-2">
                     {selectedOffer.gift_tickets > 0 && (
                       <div className="flex-1 bg-primary/10 rounded-lg p-2 text-center">
-                        <div className="flex items-center justify-center gap-1 mb-0.5">
-                          <Ticket className="h-3.5 w-3.5 text-primary" />
+                        <div className="flex items-center justify-center gap-1">
+                          <Ticket className="h-3 w-3 text-primary" />
                           <span className="text-sm font-bold text-primary">+{selectedOffer.gift_tickets * quantity}</span>
                         </div>
-                        <p className="text-[9px] text-muted-foreground">تذكرة</p>
+                        <p className="text-[8px] text-muted-foreground">تذكرة</p>
                       </div>
                     )}
                     {selectedOffer.points_reward > 0 && (
                       <div className="flex-1 bg-amber-500/10 rounded-lg p-2 text-center">
-                        <div className="flex items-center justify-center gap-1 mb-0.5">
-                          <Coins className="h-3.5 w-3.5 text-amber-600" />
+                        <div className="flex items-center justify-center gap-1">
+                          <Coins className="h-3 w-3 text-amber-600" />
                           <span className="text-sm font-bold text-amber-600">+{selectedOffer.points_reward * quantity}</span>
                         </div>
-                        <p className="text-[9px] text-muted-foreground">نقطة</p>
+                        <p className="text-[8px] text-muted-foreground">نقطة</p>
                       </div>
                     )}
                   </div>
                 )}
 
                 {/* Quantity & Total */}
-                <div className="bg-muted/20 rounded-lg p-2.5">
+                <div className="bg-muted/20 rounded-lg p-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium">الكمية</span>
-                    <div className="flex items-center gap-0.5 bg-background rounded-md p-0.5">
+                    <span className="text-[11px] font-medium">الكمية</span>
+                    <div className="flex items-center gap-0.5 bg-background rounded p-0.5">
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 rounded"
+                        className="h-6 w-6 rounded"
                         onClick={() => setQuantity(q => Math.max(1, q - 1))}
                         disabled={quantity <= 1}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
-                      <span className="font-bold text-sm w-8 text-center">{quantity}</span>
+                      <span className="font-bold text-sm w-7 text-center">{quantity}</span>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 rounded"
+                        className="h-6 w-6 rounded"
                         onClick={() => setQuantity(q => q + 1)}
                         disabled={selectedOffer.stock_quantity !== null && quantity >= selectedOffer.stock_quantity}
                       >
@@ -509,9 +608,9 @@ export default function AllOffersPanel() {
                     </div>
                   </div>
                   <div className="flex justify-between items-center pt-2 mt-2 border-t border-border/30">
-                    <span className="text-xs text-muted-foreground">المجموع</span>
-                    <span className="font-bold text-primary text-sm">
-                      {(selectedOffer.price * quantity).toLocaleString()} {selectedOffer.currency || 'د.ع'}
+                    <span className="text-[11px] text-muted-foreground">المجموع</span>
+                    <span className="font-black text-primary text-sm">
+                      {formatPrice(totalPrice).formatted} {selectedOffer.currency || 'د.ع'}
                     </span>
                   </div>
                 </div>
@@ -525,7 +624,7 @@ export default function AllOffersPanel() {
                   disabled={!user || (selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity < quantity)}
                 >
                   <ShoppingCart className="h-3.5 w-3.5 ml-1.5" />
-                  شراء - {(selectedOffer.price * quantity).toLocaleString()} {selectedOffer.currency || 'د.ع'}
+                  شراء - {formatPrice(totalPrice).formatted} {selectedOffer.currency || 'د.ع'}
                 </Button>
                 {!user && (
                   <p className="text-[9px] text-center text-muted-foreground mt-1">سجّل الدخول للشراء</p>
@@ -560,8 +659,23 @@ export default function AllOffersPanel() {
                 <div className="bg-muted/30 rounded-lg p-2 space-y-1.5">
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">المبلغ</span>
-                    <span className="font-bold text-primary">{((selectedOffer?.price || 0) * quantity).toLocaleString()} د.ع</span>
+                    <span className="font-bold text-primary">{formatPrice(totalPrice).formatted} د.ع</span>
                   </div>
+                  {selectedColor && (
+                    <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
+                      <span className="text-muted-foreground">اللون</span>
+                      <span className="flex items-center gap-1">
+                        <span className="w-3 h-3 rounded-full border" style={{ backgroundColor: selectedColor.hex_code }} />
+                        <span className="font-medium">{selectedColor.name_ar}</span>
+                      </span>
+                    </div>
+                  )}
+                  {selectedOption && (
+                    <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
+                      <span className="text-muted-foreground">الخيار</span>
+                      <span className="font-medium">{selectedOption.name_ar}</span>
+                    </div>
+                  )}
                   {selectedOffer?.gift_tickets > 0 && (
                     <div className="flex justify-between text-[10px] pt-1.5 border-t border-border/30">
                       <span className="text-muted-foreground flex items-center gap-0.5">
