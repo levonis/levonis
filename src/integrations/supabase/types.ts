@@ -3919,6 +3919,7 @@ export type Database = {
           image_url: string | null
           images: string[] | null
           options: Json | null
+          points_reward: number | null
           price: number
           status: string
           stock_quantity: number | null
@@ -3939,6 +3940,7 @@ export type Database = {
           image_url?: string | null
           images?: string[] | null
           options?: Json | null
+          points_reward?: number | null
           price?: number
           status?: string
           stock_quantity?: number | null
@@ -3959,6 +3961,7 @@ export type Database = {
           image_url?: string | null
           images?: string[] | null
           options?: Json | null
+          points_reward?: number | null
           price?: number
           status?: string
           stock_quantity?: number | null
