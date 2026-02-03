@@ -381,29 +381,30 @@ export default function CommunityCustomerProfileModal({
   return (
     <form
       onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))}
-      className="flex min-h-0 flex-1 flex-col bg-gradient-to-b from-background to-muted/20"
+      className="flex min-h-0 flex-1 flex-col bg-card"
     >
       {/* Premium Hero Header */}
-      <header className="relative overflow-hidden px-5 py-6">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/10" />
-        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/15 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-32 h-32 bg-accent/15 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
+      <header className="relative overflow-hidden px-5 py-6 bg-gradient-to-b from-background via-card to-card border-b border-border/30">
+        {/* Subtle Background Pattern */}
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-accent/15 rounded-full blur-2xl" />
+        </div>
         
         <div className="relative">
           {/* Avatar Section - Centered */}
           <div className="flex flex-col items-center mb-5">
             <div className="relative group">
               {/* Glowing Ring */}
-              <div className={`absolute -inset-1 rounded-full blur-md transition-all duration-500 ${
+              <div className={`absolute -inset-1.5 rounded-full transition-all duration-500 ${
                 hasValidAvatar 
-                  ? 'bg-gradient-to-r from-primary via-accent to-primary opacity-75' 
-                  : 'bg-muted/50 opacity-50'
+                  ? 'bg-gradient-to-r from-primary via-accent to-primary opacity-60 blur-sm' 
+                  : 'bg-border/40 opacity-40 blur-sm'
               }`} />
               
               {/* Avatar Container */}
-              <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-primary to-accent p-[3px] shadow-2xl">
-                <div className="h-full w-full rounded-full bg-card overflow-hidden">
+              <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-primary/80 to-accent p-[2px] shadow-xl">
+                <div className="h-full w-full rounded-full bg-card overflow-hidden border-2 border-card">
                   {avatarUrl && avatarUrl !== DEFAULT_AVATAR_URL ? (
                     <img 
                       src={avatarUrl} 
@@ -411,8 +412,8 @@ export default function CommunityCustomerProfileModal({
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
-                      <UserCircle2 className="h-10 w-10 text-muted-foreground/50" />
+                    <div className="h-full w-full flex items-center justify-center bg-background">
+                      <UserCircle2 className="h-10 w-10 text-muted-foreground/40" />
                     </div>
                   )}
                 </div>
@@ -423,9 +424,9 @@ export default function CommunityCustomerProfileModal({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploadingAvatar}
-                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 hover:bg-black/40 transition-all duration-300 cursor-pointer group"
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 hover:bg-black/50 transition-all duration-300 cursor-pointer group"
               >
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 dark:bg-black/80 rounded-full p-2 shadow-lg">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-card/95 rounded-full p-2.5 shadow-lg border border-border">
                   {uploadingAvatar ? (
                     <Loader2 className="h-5 w-5 animate-spin text-primary" />
                   ) : (
@@ -435,10 +436,10 @@ export default function CommunityCustomerProfileModal({
               </button>
               
               {/* Status Badge */}
-              <div className={`absolute -bottom-1 -right-1 h-7 w-7 rounded-full flex items-center justify-center shadow-lg transition-all ${
+              <div className={`absolute -bottom-1 -right-1 h-7 w-7 rounded-full flex items-center justify-center shadow-lg border-2 border-card transition-all ${
                 hasValidAvatar 
-                  ? 'bg-gradient-to-br from-emerald-500 to-green-600' 
-                  : 'bg-gradient-to-br from-amber-500 to-orange-600'
+                  ? 'bg-emerald-600' 
+                  : 'bg-amber-600'
               }`}>
                 {hasValidAvatar ? (
                   <CheckCircle2 className="h-4 w-4 text-white" />
@@ -458,7 +459,7 @@ export default function CommunityCustomerProfileModal({
             
             {/* Upload Hint */}
             {!hasValidAvatar && (
-              <p className="text-xs text-amber-600 dark:text-amber-400 mt-3 flex items-center gap-1.5 animate-pulse">
+              <p className="text-xs text-amber-500 mt-3 flex items-center gap-1.5">
                 <Camera className="h-3.5 w-3.5" />
                 اضغط لرفع صورتك الشخصية
               </p>
@@ -467,25 +468,21 @@ export default function CommunityCustomerProfileModal({
           
           {/* Title & Progress */}
           <div className="text-center">
-            <h2 className="text-xl font-bold bg-gradient-to-r from-primary via-foreground to-accent bg-clip-text text-transparent mb-1">
+            <h2 className="text-lg font-bold text-foreground mb-1">
               أكمل ملفك الشخصي
             </h2>
-            <p className="text-xs text-muted-foreground mb-4">للوصول الكامل لمجتمع ليفو</p>
+            <p className="text-xs text-muted-foreground/70 mb-4">للوصول الكامل لمجتمع ليفو</p>
             
-            {/* Elegant Progress Bar */}
-            <div className="relative h-2 bg-muted/50 rounded-full overflow-hidden shadow-inner">
+            {/* Progress Bar */}
+            <div className="relative h-2 bg-background rounded-full overflow-hidden border border-border/50">
               <div 
-                className="absolute inset-y-0 right-0 bg-gradient-to-l from-primary via-accent to-primary rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
-              <div 
-                className="absolute inset-y-0 right-0 bg-gradient-to-l from-white/30 to-transparent rounded-full transition-all duration-700 ease-out"
+                className="absolute inset-y-0 right-0 bg-gradient-to-l from-primary to-accent rounded-full transition-all duration-700 ease-out"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
             
             <div className="flex items-center justify-between mt-2 px-1">
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[10px] text-muted-foreground/60">
                 {completedFields} من {totalRequiredFields}
               </span>
               {isComplete && (
@@ -500,11 +497,11 @@ export default function CommunityCustomerProfileModal({
       </header>
 
       {/* Scrollable Form Body */}
-      <div className="scrollbar-stable flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-5 py-4">
+      <div className="scrollbar-stable flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-5 py-4 bg-card">
         {isLoading || loadingUi ? (
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-16 rounded-2xl" />
+              <Skeleton key={i} className="h-16 rounded-2xl bg-background/50" />
             ))}
           </div>
         ) : (
@@ -517,20 +514,20 @@ export default function CommunityCustomerProfileModal({
               return (
                 <div 
                   key={field.id} 
-                  className={`group relative rounded-2xl transition-all duration-300 ${
+                  className={`group relative rounded-xl transition-all duration-300 ${
                     hasError 
-                      ? 'bg-destructive/5 ring-2 ring-destructive/30' 
+                      ? 'bg-destructive/10 ring-1 ring-destructive/40' 
                       : hasValue 
-                        ? 'bg-primary/5 ring-2 ring-primary/20 shadow-sm shadow-primary/10' 
-                        : 'bg-muted/40 ring-1 ring-border/50 hover:ring-border'
+                        ? 'bg-background ring-1 ring-primary/40' 
+                        : 'bg-background ring-1 ring-border/60 hover:ring-border'
                   }`}
                 >
                   <div className="flex items-center gap-3 p-3">
                     {/* Icon */}
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 transition-all duration-300 ${
+                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
                       hasValue 
-                        ? 'bg-gradient-to-br from-primary to-accent text-white shadow-md shadow-primary/25' 
-                        : 'bg-muted text-muted-foreground'
+                        ? 'bg-gradient-to-br from-primary/90 to-accent text-primary-foreground' 
+                        : 'bg-card border border-border/50 text-muted-foreground/60'
                     }`}>
                       {hasValue ? <CheckCircle2 className="h-5 w-5" /> : field.icon}
                     </div>
@@ -540,7 +537,7 @@ export default function CommunityCustomerProfileModal({
                       <Label 
                         htmlFor={field.id} 
                         className={`text-[11px] font-semibold mb-0.5 block transition-colors ${
-                          hasValue ? 'text-primary' : 'text-muted-foreground'
+                          hasValue ? 'text-primary' : 'text-muted-foreground/70'
                         }`}
                       >
                         {field.label}
@@ -552,13 +549,13 @@ export default function CommunityCustomerProfileModal({
                         {...form.register(field.id)}
                         maxLength={field.maxLength}
                         inputMode={field.type === "tel" ? "tel" : undefined}
-                        className="h-7 border-0 bg-transparent p-0 text-sm font-medium placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="h-7 border-0 bg-transparent p-0 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                     </div>
                   </div>
                   
                   {field.hint && !hasError && (
-                    <p className="text-[10px] text-muted-foreground/70 px-3 pb-2 -mt-0.5 pr-16">{field.hint}</p>
+                    <p className="text-[10px] text-muted-foreground/60 px-3 pb-2 -mt-0.5 pr-16">{field.hint}</p>
                   )}
                   {hasError && (
                     <p className="text-[10px] text-destructive px-3 pb-2 -mt-0.5 pr-16">
@@ -573,22 +570,22 @@ export default function CommunityCustomerProfileModal({
             <div className="grid grid-cols-2 gap-2">
               {/* Birth Date */}
               <div 
-                className={`rounded-2xl transition-all duration-300 ${
+                className={`rounded-xl transition-all duration-300 ${
                   form.watch("birthDate") 
-                    ? 'bg-primary/5 ring-2 ring-primary/20 shadow-sm' 
-                    : 'bg-muted/40 ring-1 ring-border/50'
+                    ? 'bg-background ring-1 ring-primary/40' 
+                    : 'bg-background ring-1 ring-border/60'
                 }`}
               >
                 <div className="p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
                       form.watch("birthDate") 
-                        ? 'bg-gradient-to-br from-primary to-accent text-white shadow-sm' 
-                        : 'bg-muted text-muted-foreground'
+                        ? 'bg-gradient-to-br from-primary/90 to-accent text-primary-foreground' 
+                        : 'bg-card border border-border/50 text-muted-foreground/60'
                     }`}>
                       {form.watch("birthDate") ? <CheckCircle2 className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
                     </div>
-                    <Label htmlFor="birthDate" className="text-[11px] font-semibold text-muted-foreground">
+                    <Label htmlFor="birthDate" className="text-[11px] font-semibold text-muted-foreground/70">
                       تاريخ الميلاد
                     </Label>
                   </div>
@@ -596,7 +593,7 @@ export default function CommunityCustomerProfileModal({
                     id="birthDate" 
                     type="date" 
                     {...form.register("birthDate")}
-                    className="h-7 border-0 bg-transparent px-0 text-sm font-medium focus-visible:ring-0"
+                    className="h-7 border-0 bg-transparent px-0 text-sm font-medium text-foreground focus-visible:ring-0"
                   />
                 </div>
                 {form.formState.errors.birthDate && (
@@ -608,22 +605,22 @@ export default function CommunityCustomerProfileModal({
 
               {/* Gender */}
               <div 
-                className={`rounded-2xl transition-all duration-300 ${
+                className={`rounded-xl transition-all duration-300 ${
                   form.watch("gender") 
-                    ? 'bg-primary/5 ring-2 ring-primary/20 shadow-sm' 
-                    : 'bg-muted/40 ring-1 ring-border/50'
+                    ? 'bg-background ring-1 ring-primary/40' 
+                    : 'bg-background ring-1 ring-border/60'
                 }`}
               >
                 <div className="p-3">
                   <div className="flex items-center gap-2 mb-2">
                     <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
                       form.watch("gender") 
-                        ? 'bg-gradient-to-br from-primary to-accent text-white shadow-sm' 
-                        : 'bg-muted text-muted-foreground'
+                        ? 'bg-gradient-to-br from-primary/90 to-accent text-primary-foreground' 
+                        : 'bg-card border border-border/50 text-muted-foreground/60'
                     }`}>
                       {form.watch("gender") ? <CheckCircle2 className="h-4 w-4" /> : <Users className="h-4 w-4" />}
                     </div>
-                    <Label className="text-[11px] font-semibold text-muted-foreground">الجنس</Label>
+                    <Label className="text-[11px] font-semibold text-muted-foreground/70">الجنس</Label>
                   </div>
                   <RadioGroup
                     value={form.watch("gender")}
@@ -632,11 +629,11 @@ export default function CommunityCustomerProfileModal({
                   >
                     <div className="flex items-center gap-1.5">
                       <RadioGroupItem value="male" id="gender-male" className="h-4 w-4" />
-                      <Label htmlFor="gender-male" className="text-xs font-medium cursor-pointer">ذكر</Label>
+                      <Label htmlFor="gender-male" className="text-xs font-medium text-foreground/80 cursor-pointer">ذكر</Label>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <RadioGroupItem value="female" id="gender-female" className="h-4 w-4" />
-                      <Label htmlFor="gender-female" className="text-xs font-medium cursor-pointer">أنثى</Label>
+                      <Label htmlFor="gender-female" className="text-xs font-medium text-foreground/80 cursor-pointer">أنثى</Label>
                     </div>
                   </RadioGroup>
                 </div>
@@ -644,14 +641,14 @@ export default function CommunityCustomerProfileModal({
             </div>
 
             {/* Bio - Optional */}
-            <div className="rounded-2xl bg-muted/40 ring-1 ring-border/50">
+            <div className="rounded-xl bg-background ring-1 ring-border/60">
               <div className="p-3">
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="h-8 w-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-lg bg-card border border-border/50 text-muted-foreground/60 flex items-center justify-center">
                     <FileText className="h-4 w-4" />
                   </div>
-                  <Label htmlFor="bio" className="text-[11px] font-semibold text-muted-foreground">
-                    نبذة عنك <span className="opacity-50 font-normal">(اختياري)</span>
+                  <Label htmlFor="bio" className="text-[11px] font-semibold text-muted-foreground/70">
+                    نبذة عنك <span className="opacity-60 font-normal">(اختياري)</span>
                   </Label>
                 </div>
                 <Textarea
@@ -659,14 +656,14 @@ export default function CommunityCustomerProfileModal({
                   placeholder="اكتب نبذة قصيرة عنك..."
                   {...form.register("bio")}
                   maxLength={500}
-                  className="min-h-[50px] border-0 bg-transparent px-0 text-sm resize-none focus-visible:ring-0"
+                  className="min-h-[50px] border-0 bg-transparent px-0 text-sm text-foreground resize-none focus-visible:ring-0 placeholder:text-muted-foreground/40"
                 />
               </div>
             </div>
 
             {/* Benefits Preview */}
-            <div className="rounded-2xl bg-gradient-to-br from-accent/10 via-primary/5 to-transparent ring-1 ring-accent/20 p-4">
-              <p className="text-[11px] font-bold text-accent mb-3 flex items-center gap-1.5">
+            <div className="rounded-xl bg-background/80 ring-1 ring-primary/20 p-4 mt-2">
+              <p className="text-[11px] font-bold text-primary mb-3 flex items-center gap-1.5">
                 <Crown className="h-3.5 w-3.5" />
                 مميزات إكمال الملف الشخصي
               </p>
@@ -677,8 +674,8 @@ export default function CommunityCustomerProfileModal({
                   { icon: BadgeCheck, text: "شارة موثق" },
                   { icon: Store, text: "انضمام كتاجر" },
                 ].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-                    <item.icon className="h-3 w-3 text-accent" />
+                  <div key={idx} className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
+                    <item.icon className="h-3 w-3 text-primary/70" />
                     {item.text}
                   </div>
                 ))}
@@ -693,13 +690,13 @@ export default function CommunityCustomerProfileModal({
                   if (onOpenMerchantSignup) return onOpenMerchantSignup();
                   navigate("/community/merchant/signup");
                 }}
-                className="w-full rounded-2xl bg-gradient-to-br from-accent/5 to-accent/10 ring-1 ring-accent/30 p-4 text-center transition-all hover:ring-accent/50 hover:from-accent/10 hover:to-accent/15 group"
+                className="w-full rounded-xl bg-background ring-1 ring-accent/40 p-4 text-center transition-all hover:ring-accent hover:bg-background/80 group"
               >
                 <div className="flex items-center justify-center gap-2 mb-1">
                   <Store className="h-4 w-4 text-accent group-hover:scale-110 transition-transform" />
                   <span className="text-sm font-bold text-accent">هل أنت تاجر؟</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-[11px] text-muted-foreground/60">
                   انضم كتاجر واعرض منتجاتك في مجتمع ليفو
                 </p>
               </button>
@@ -709,24 +706,24 @@ export default function CommunityCustomerProfileModal({
       </div>
 
       {/* Premium Footer */}
-      <footer className="sticky bottom-0 z-10 border-t border-border/50 bg-gradient-to-t from-background via-background to-background/90 px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] backdrop-blur-sm">
+      <footer className="sticky bottom-0 z-10 border-t border-border/40 bg-card px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
         {/* Avatar warning */}
         {!hasValidAvatar && (
-          <div className="flex items-center justify-center gap-1.5 text-xs text-amber-600 dark:text-amber-400 mb-3 py-2 px-3 rounded-xl bg-amber-500/10 ring-1 ring-amber-500/20">
+          <div className="flex items-center justify-center gap-1.5 text-xs text-amber-500 mb-3 py-2.5 px-3 rounded-lg bg-amber-500/10 ring-1 ring-amber-500/30">
             <Camera className="h-3.5 w-3.5" />
             يجب رفع صورة شخصية لإكمال الملف
           </div>
         )}
 
         {/* Terms Checkbox */}
-        <div className="flex items-center gap-2.5 mb-4 p-2.5 rounded-xl bg-muted/30">
+        <div className="flex items-center gap-2.5 mb-4 p-3 rounded-lg bg-background ring-1 ring-border/50">
           <Checkbox
             id="community-terms-checkbox"
             checked={termsAccepted}
             onCheckedChange={(checked) => setTermsAccepted(checked === true)}
             className="h-4 w-4"
           />
-          <label htmlFor="community-terms-checkbox" className="text-xs text-muted-foreground cursor-pointer">
+          <label htmlFor="community-terms-checkbox" className="text-xs text-muted-foreground/80 cursor-pointer">
             أوافق على{' '}
             <button
               type="button"
@@ -746,7 +743,7 @@ export default function CommunityCustomerProfileModal({
           <Button
             type="button"
             variant="ghost"
-            className="flex-1 h-12 text-muted-foreground hover:text-foreground rounded-xl"
+            className="flex-1 h-12 text-muted-foreground hover:text-foreground hover:bg-background rounded-xl"
             disabled={saveMutation.isPending}
             onClick={() => (onLater ? onLater() : onDone?.())}
           >
@@ -762,7 +759,7 @@ export default function CommunityCustomerProfileModal({
               !hasValidAvatar ||
               !termsAccepted
             }
-            className="flex-[2] h-12 rounded-xl bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%] hover:bg-[position:100%_0] text-primary-foreground font-bold shadow-lg shadow-primary/30 transition-all duration-500 disabled:opacity-50 disabled:shadow-none"
+            className="flex-[2] h-12 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:shadow-none hover:opacity-90"
           >
             {saveMutation.isPending ? (
               <>
