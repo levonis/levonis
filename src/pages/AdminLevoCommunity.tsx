@@ -1,10 +1,10 @@
 import { useState, Suspense, lazy, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  Store, Users, MessageCircle, AlertTriangle, Award, ImageIcon, 
+  Store, Users, Award, ImageIcon, 
   Loader2, Settings, FileText, 
   Wallet, Trash2, Save, RefreshCw, ShieldCheck, Percent,
-  TrendingUp, Clock, ChevronLeft
+  TrendingUp, Clock
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
@@ -19,8 +19,6 @@ import { toast } from "sonner";
 // Lazy load the tab content components
 const AdminCommunityMerchants = lazy(() => import("@/pages/AdminCommunityMerchants"));
 const AdminCommunityCustomers = lazy(() => import("@/pages/AdminCommunityCustomers"));
-const AdminCommunityComplaints = lazy(() => import("@/pages/AdminCommunityComplaints"));
-const AdminCommunityMessages = lazy(() => import("@/pages/AdminCommunityMessages"));
 const AdminBadgeSettings = lazy(() => import("@/pages/AdminBadgeSettings"));
 const AdminAvatarFrames = lazy(() => import("@/pages/AdminAvatarFrames"));
 const AdminCommunityRequests = lazy(() => import("@/components/admin/AdminCommunityRequests"));
@@ -35,8 +33,6 @@ const tabs: TabConfig[] = [
   { value: "merchants", icon: Store, label: "التجار" },
   { value: "customers", icon: Users, label: "العملاء" },
   { value: "requests", icon: FileText, label: "الطلبات" },
-  { value: "complaints", icon: AlertTriangle, label: "الشكاوى" },
-  { value: "messages", icon: MessageCircle, label: "المحادثات" },
   { value: "badges", icon: Award, label: "الشارات" },
   { value: "frames", icon: ImageIcon, label: "الإطارات" },
   { value: "settings", icon: Settings, label: "الإعدادات" },
@@ -447,15 +443,13 @@ export default function AdminLevoCommunity() {
         pendingMerchantsRes, 
         profilesRes, 
         requestsRes,
-        pendingRequestsRes,
-        complaintsRes
+        pendingRequestsRes
       ] = await Promise.all([
         supabase.from("merchant_applications").select("id", { count: "exact", head: true }).eq("status", "approved"),
         supabase.from("merchant_applications").select("id", { count: "exact", head: true }).eq("status", "pending"),
         supabase.from("community_customer_profiles").select("id", { count: "exact", head: true }),
         supabase.from("community_print_requests").select("id", { count: "exact", head: true }),
         supabase.from("community_print_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
-        supabase.from("community_complaints").select("id", { count: "exact", head: true }).eq("status", "pending"),
       ]);
 
       return {
@@ -464,7 +458,6 @@ export default function AdminLevoCommunity() {
         totalCustomers: profilesRes.count ?? 0,
         totalRequests: requestsRes.count ?? 0,
         pendingRequests: pendingRequestsRes.count ?? 0,
-        pendingComplaints: complaintsRes.count ?? 0,
       };
     },
     staleTime: 30_000,
@@ -473,7 +466,6 @@ export default function AdminLevoCommunity() {
   const pendingCounts = useMemo(() => ({
     merchants: stats?.pendingMerchants ?? 0,
     requests: stats?.pendingRequests ?? 0,
-    complaints: stats?.pendingComplaints ?? 0,
   }), [stats]);
 
   const activeTabConfig = tabs.find(t => t.value === activeTab);
@@ -488,7 +480,7 @@ export default function AdminLevoCommunity() {
     >
       <div className="space-y-4">
         {/* Stats Grid - Compact Professional */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           <StatCard
             icon={Store}
             label="التجار المعتمدين"
@@ -519,13 +511,6 @@ export default function AdminLevoCommunity() {
             label="طلبات معلقة"
             value={stats?.pendingRequests ?? 0}
             iconColor="bg-cyan-500/15 text-cyan-500"
-          />
-          <StatCard
-            icon={AlertTriangle}
-            label="شكاوى معلقة"
-            value={stats?.pendingComplaints ?? 0}
-            iconColor="bg-red-500/15 text-red-500"
-            highlight={!!stats?.pendingComplaints}
           />
         </div>
 
@@ -574,8 +559,6 @@ export default function AdminLevoCommunity() {
                 {activeTab === "merchants" && "إدارة طلبات التجار والموافقات"}
                 {activeTab === "customers" && "عرض وإدارة ملفات العملاء"}
                 {activeTab === "requests" && "مراجعة طلبات الطباعة"}
-                {activeTab === "complaints" && "معالجة الشكاوى والبلاغات"}
-                {activeTab === "messages" && "مراقبة المحادثات"}
                 {activeTab === "badges" && "إعدادات شارات الأداء"}
                 {activeTab === "frames" && "إدارة إطارات الصور"}
                 {activeTab === "settings" && "إعدادات المنصة"}
@@ -590,8 +573,6 @@ export default function AdminLevoCommunity() {
             {activeTab === "merchants" && <AdminCommunityMerchants embedded />}
             {activeTab === "customers" && <AdminCommunityCustomers embedded />}
             {activeTab === "requests" && <AdminCommunityRequests />}
-            {activeTab === "complaints" && <AdminCommunityComplaints embedded />}
-            {activeTab === "messages" && <AdminCommunityMessages embedded />}
             {activeTab === "badges" && <AdminBadgeSettings embedded />}
             {activeTab === "frames" && <AdminAvatarFrames embedded />}
             {activeTab === "settings" && <CommunitySettings />}
