@@ -75,8 +75,6 @@ interface ManualOrderForm {
   customer_paid_amount: number;
   admin_paid_amount: number;
   admin_product_cost: number;
-  admin_shipping_cost: number;
-  admin_other_costs: number;
   tax_amount: number;
   financial_notes: string;
 }
@@ -101,8 +99,6 @@ const AdminFinancials = () => {
     customer_paid_amount: 0,
     admin_paid_amount: 0,
     admin_product_cost: 0,
-    admin_shipping_cost: 0,
-    admin_other_costs: 0,
     tax_amount: 0,
     financial_notes: '',
   });
@@ -226,8 +222,8 @@ const AdminFinancials = () => {
           customer_paid_amount: form.customer_paid_amount,
           admin_paid_amount: form.admin_paid_amount,
           admin_product_cost: form.admin_product_cost,
-          admin_shipping_cost: form.admin_shipping_cost,
-          admin_other_costs: form.admin_other_costs,
+          admin_shipping_cost: 0,
+          admin_other_costs: 0,
           tax_amount: form.tax_amount,
           financial_notes: `اسم العميل: ${form.customer_name}\n${form.financial_notes}`,
           remaining_amount: form.total_amount - form.customer_paid_amount,
@@ -272,8 +268,6 @@ const AdminFinancials = () => {
         customer_paid_amount: 0,
         admin_paid_amount: 0,
         admin_product_cost: 0,
-        admin_shipping_cost: 0,
-        admin_other_costs: 0,
         tax_amount: 0,
         financial_notes: '',
       });
@@ -394,7 +388,7 @@ const AdminFinancials = () => {
 
   // Calculate totals from filtered orders
   const totals = filteredOrders.reduce((acc, order) => {
-    const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0);
+    const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0);
     
     return {
       totalRevenue: acc.totalRevenue + (order.total_amount || 0),
@@ -402,8 +396,6 @@ const AdminFinancials = () => {
       totalAdminPaid: acc.totalAdminPaid + (order.admin_paid_amount || 0),
       totalRemaining: acc.totalRemaining + (order.remaining_amount || 0),
       totalProductCost: acc.totalProductCost + (order.admin_product_cost || 0),
-      totalShippingCost: acc.totalShippingCost + (order.admin_shipping_cost || 0),
-      totalOtherCosts: acc.totalOtherCosts + (order.admin_other_costs || 0),
       totalTax: acc.totalTax + (order.tax_amount || 0),
       totalProfit: acc.totalProfit + netProfit,
       orderCount: acc.orderCount + 1,
@@ -415,16 +407,13 @@ const AdminFinancials = () => {
     totalAdminPaid: 0,
     totalRemaining: 0,
     totalProductCost: 0,
-    totalShippingCost: 0,
-    totalOtherCosts: 0,
     totalTax: 0,
     totalProfit: 0,
     orderCount: 0,
     deliveredCount: 0,
   });
 
-  const totalCosts = totals.totalProductCost + totals.totalShippingCost + totals.totalOtherCosts;
-  const calculatedProfit = totals.totalRevenue - totalCosts;
+  const calculatedProfit = totals.totalRevenue - totals.totalProductCost;
 
   return (
     <AdminLayout
@@ -510,8 +499,8 @@ const AdminFinancials = () => {
         />
         <AdminStatCard
           icon={<Package className="h-5 w-5" />}
-          value={formatPrice(totalCosts)}
-          label="إجمالي التكاليف"
+          value={formatPrice(totals.totalProductCost)}
+          label="إجمالي تكلفة المنتجات"
           colorClass="text-red-600"
           bgClass="bg-red-500/10"
         />
@@ -657,8 +646,6 @@ const AdminFinancials = () => {
                   <TableHead className="text-right">المنتجات</TableHead>
                   <TableHead className="text-right">المبلغ الإجمالي</TableHead>
                   <TableHead className="text-right">تكلفة المنتجات</TableHead>
-                  <TableHead className="text-right">تكلفة الشحن</TableHead>
-                  <TableHead className="text-right">تكاليف أخرى</TableHead>
                   <TableHead className="text-right">صافي الربح</TableHead>
                   <TableHead className="text-right">الحالة</TableHead>
                   <TableHead className="text-center">التاريخ</TableHead>
@@ -667,7 +654,7 @@ const AdminFinancials = () => {
               </TableHeader>
               <TableBody>
                 {filteredOrders.map((order) => {
-                  const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0) - (order.admin_shipping_cost || 0) - (order.admin_other_costs || 0);
+                  const netProfit = (order.total_amount || 0) - (order.admin_product_cost || 0);
                   const deliveredDate = order.status === 'delivered' && (order as any).delivered_at 
                     ? format(new Date((order as any).delivered_at), 'dd/MM/yyyy', { locale: ar })
                     : null;
@@ -688,12 +675,6 @@ const AdminFinancials = () => {
                       </TableCell>
                       <TableCell>
                         {renderEditableCell(order.id, 'admin_product_cost', order.admin_product_cost || 0, 'text-red-500')}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(order.id, 'admin_shipping_cost', order.admin_shipping_cost || 0, 'text-orange-500')}
-                      </TableCell>
-                      <TableCell>
-                        {renderEditableCell(order.id, 'admin_other_costs', order.admin_other_costs || 0, 'text-amber-500')}
                       </TableCell>
                       <TableCell className={netProfit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
                         {formatPrice(netProfit)}
@@ -804,8 +785,8 @@ const AdminFinancials = () => {
                 </div>
                 <div>
                   <Label className="text-muted-foreground">صافي الربح</Label>
-                  <p className={`font-bold ${((selectedOrder.total_amount || 0) - (selectedOrder.admin_product_cost || 0) - (selectedOrder.admin_shipping_cost || 0) - (selectedOrder.admin_other_costs || 0)) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                    {formatPrice((selectedOrder.total_amount || 0) - (selectedOrder.admin_product_cost || 0) - (selectedOrder.admin_shipping_cost || 0) - (selectedOrder.admin_other_costs || 0))}
+                  <p className={`font-bold ${((selectedOrder.total_amount || 0) - (selectedOrder.admin_product_cost || 0)) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {formatPrice((selectedOrder.total_amount || 0) - (selectedOrder.admin_product_cost || 0))}
                   </p>
                 </div>
               </div>

@@ -864,13 +864,20 @@ export default function AdminCommunityMessages({ embedded }: Props) {
 
   return (
     <AdminLayout
-      title="المحادثات والشكاوى"
-      description="إدارة رسائل الدعم الفني والشكاوى"
+      title="AdminsMessageLevoAll"
+      description="واجهة المحادثات المشتركة لجميع المشرفين - الرد على استفسارات العملاء"
       icon={<MessageCircle className="h-5 w-5" />}
       backTo={ADMIN_ROUTES.dashboard}
       maxWidth="7xl"
     >
       <div className="space-y-4">
+        {/* Header Info */}
+        <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
+          <p className="text-sm text-muted-foreground">
+            <span className="font-semibold text-foreground">ملاحظة:</span> هذه الواجهة مشتركة بين جميع المشرفين. جميع الردود تُرسل باسم حساب الدعم الرسمي.
+          </p>
+        </div>
+
         {/* Tabs Navigation */}
         <div className="flex items-center gap-2 border-b border-border/50 pb-2">
           {tabs.map((tab) => {
