@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { MessageCircle, Search, Send, Loader2, Crown, Award, Star, Image as ImageIcon, X, Package, ArrowRight } from "lucide-react";
+import { MessageCircle, Search, Send, Loader2, Crown, Award, Star, Image as ImageIcon, X, Package, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
@@ -16,7 +16,13 @@ import { ar } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { formatPrice } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import AdminChatTopBar from "@/components/chat/AdminChatTopBar";
+
+// Lazy load complaints component
+const AdminCommunityComplaints = lazy(() => import("@/pages/AdminCommunityComplaints"));
+
+// Support user ID - the admin support account
 // Support user ID - the admin support account
 const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
 
@@ -818,20 +824,89 @@ function SupportMessagesContent() {
   );
 }
 
+function TabLoader() {
+  return (
+    <div className="flex items-center justify-center py-16">
+      <div className="text-center space-y-3">
+        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </div>
+        <p className="text-xs text-muted-foreground">جارٍ التحميل...</p>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminCommunityMessages({ embedded }: Props) {
+  const [activeTab, setActiveTab] = useState<"messages" | "complaints">("messages");
+
+  // Fetch pending complaints count
+  const { data: pendingComplaintsCount = 0 } = useQuery({
+    queryKey: ["pending-complaints-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("community_complaints")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count ?? 0;
+    },
+    staleTime: 30_000,
+  });
+
+  const tabs = [
+    { value: "messages" as const, icon: MessageCircle, label: "المحادثات" },
+    { value: "complaints" as const, icon: AlertTriangle, label: "الشكاوى", badge: pendingComplaintsCount },
+  ];
+
   if (embedded) {
     return <SupportMessagesContent />;
   }
 
   return (
     <AdminLayout
-      title="رسائل الدعم الفني"
-      description="الرد على رسائل المستخدمين الذين يطلبون المساعدة"
+      title="المحادثات والشكاوى"
+      description="إدارة رسائل الدعم الفني والشكاوى"
       icon={<MessageCircle className="h-5 w-5" />}
-      backTo={ADMIN_ROUTES.levoCommunity}
+      backTo={ADMIN_ROUTES.dashboard}
       maxWidth="7xl"
     >
-      <SupportMessagesContent />
+      <div className="space-y-4">
+        {/* Tabs Navigation */}
+        <div className="flex items-center gap-2 border-b border-border/50 pb-2">
+          {tabs.map((tab) => {
+            const isActive = activeTab === tab.value;
+            return (
+              <button
+                key={tab.value}
+                onClick={() => setActiveTab(tab.value)}
+                className={cn(
+                  "relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                )}
+              >
+                <tab.icon className="h-4 w-4" />
+                <span>{tab.label}</span>
+                {tab.badge && tab.badge > 0 && !isActive && (
+                  <span className="h-5 min-w-5 px-1.5 rounded-full bg-destructive text-destructive-foreground text-xs font-bold flex items-center justify-center">
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Tab Content */}
+        {activeTab === "messages" ? (
+          <SupportMessagesContent />
+        ) : (
+          <Suspense fallback={<TabLoader />}>
+            <AdminCommunityComplaints embedded />
+          </Suspense>
+        )}
+      </div>
     </AdminLayout>
   );
 }
