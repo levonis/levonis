@@ -5,11 +5,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, MessageCircle, Image as ImageIcon, X } from 'lucide-react';
+import { Loader2, Send, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { sendAllNotifications } from '@/lib/notifications';
 
 // Support user ID - the admin support account
 const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
@@ -149,13 +149,18 @@ export default function AdminOrderChatDialog({
         .update({ updated_at: new Date().toISOString() })
         .eq('id', convId);
 
-      // Send notification to user
-      await supabase.from('notifications').insert({
-        user_id: userId,
+      // Send all notifications (in-app, Telegram, Email)
+      await sendAllNotifications({
+        userId,
         title: 'رسالة جديدة من الدعم',
         message: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
-        type: 'admin_message',
-        related_id: orderId,
+        type: 'info',
+        relatedId: orderId,
+        notificationType: 'new_message',
+        metadata: {
+          orderNumber,
+          senderName: 'دعم ليفونيس',
+        }
       });
     },
     onSuccess: () => {
