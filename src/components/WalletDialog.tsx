@@ -81,7 +81,7 @@ export default function WalletDialog({ open, onOpenChange }: WalletDialogProps) 
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // UI states
-  const [depositMethod, setDepositMethod] = useState<"stripe" | "transfer">("stripe");
+  const [depositMethod, setDepositMethod] = useState<"stripe" | "transfer">("transfer");
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [showDepositConfirm, setShowDepositConfirm] = useState(false);
   const [showWithdrawConfirm, setShowWithdrawConfirm] = useState(false);
