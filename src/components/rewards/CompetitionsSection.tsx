@@ -9,14 +9,10 @@ import { SubTabId } from "./RewardsSubTabs";
 import OptimizedImage from "@/components/OptimizedImage";
 import { 
   TicketBalanceSkeleton, 
-  CompetitionsGridSkeleton, 
-  OffersListSkeleton, 
-  StorageListSkeleton 
+  CompetitionsGridSkeleton
 } from "./SkeletonLoaders";
 import TicketProductBadges from "./TicketProductBadges";
 import AllCompetitionsPanel from "./panels/AllCompetitionsPanel";
-import AllOffersPanel from "./panels/AllOffersPanel";
-import AllStoragePanel from "./panels/AllStoragePanel";
 
 interface CompetitionsSectionProps {
   activeSubTab: SubTabId;
@@ -67,30 +63,6 @@ export default function CompetitionsSection({ activeSubTab }: CompetitionsSectio
 
         {/* All Competitions Inline */}
         <AllCompetitionsPanel />
-      </div>
-    );
-  }
-
-  // Get Tickets sub-tab
-  if (activeSubTab === 'get-tickets') {
-    return (
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          اشترِ باقات التذاكر واحصل على تذاكر مجانية للمسابقات
-        </p>
-        <AllOffersPanel />
-      </div>
-    );
-  }
-
-  // Storage sub-tab
-  if (activeSubTab === 'storage') {
-    return (
-      <div className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          منتجاتك المخزنة في انتظار طلب الشحن
-        </p>
-        <AllStoragePanel />
       </div>
     );
   }
