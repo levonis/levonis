@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { z } from 'zod';
+import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 
 const IRAQI_GOVERNORATES = [
   'بغداد',
@@ -61,6 +62,12 @@ const Auth = () => {
   const [resendTimer, setResendTimer] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [showVerificationDialog, setShowVerificationDialog] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [verificationType, setVerificationType] = useState<'signup' | 'password_reset'>('signup');
+  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showNewPasswordForm, setShowNewPasswordForm] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
@@ -195,8 +202,33 @@ const Auth = () => {
         }
       }
 
-      toast.success('تم إنشاء الحساب بنجاح!');
-      navigate('/');
+      // Send verification code
+      if (data.user) {
+        setPendingUserId(data.user.id);
+        setVerificationEmail(validatedData.email);
+        setVerificationType('signup');
+        
+        // Send verification code via our edge function
+        const { data: codeData, error: codeError } = await supabase.functions.invoke('send-verification-code', {
+          body: { 
+            email: validatedData.email, 
+            type: 'signup',
+            user_id: data.user.id 
+          }
+        });
+
+        if (codeError) {
+          console.error('Error sending verification code:', codeError);
+          toast.success('تم إنشاء الحساب! يرجى تأكيد بريدك الإلكتروني.');
+          navigate('/');
+        } else {
+          setShowVerificationDialog(true);
+          toast.info('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+        }
+      } else {
+        toast.success('تم إنشاء الحساب بنجاح!');
+        navigate('/');
+      }
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
@@ -214,21 +246,83 @@ const Auth = () => {
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(resetEmail)) {
+      toast.error('بريد إلكتروني غير صحيح');
+      return;
+    }
+
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/auth`,
+      // Send verification code via our edge function
+      const { data, error } = await supabase.functions.invoke('send-verification-code', {
+        body: { 
+          email: resetEmail, 
+          type: 'password_reset'
+        }
       });
 
-      if (error) {
-        toast.error('حدث خطأ في إرسال رابط إعادة تعيين كلمة المرور');
-        return;
-      }
+      if (error) throw error;
 
-      toast.success('تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني');
-      setResendTimer(120);
+      if (data.success) {
+        setVerificationEmail(resetEmail);
+        setVerificationType('password_reset');
+        setShowVerificationDialog(true);
+        setResendTimer(60);
+        toast.info('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+      } else {
+        toast.error(data.error || 'فشل في إرسال رمز التحقق');
+      }
     } catch (error) {
       toast.error('حدث خطأ غير متوقع');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerificationComplete = async () => {
+    if (verificationType === 'signup') {
+      toast.success('تم تأكيد بريدك الإلكتروني! مرحباً بك في ليفونيس 🎉');
+      navigate('/');
+    } else if (verificationType === 'password_reset') {
+      // After verification, show new password form
+      setShowNewPasswordForm(true);
+      setShowVerificationDialog(false);
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (newPassword.length < 6) {
+      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Use Supabase admin to update password (requires edge function)
+      const { data, error } = await supabase.functions.invoke('reset-password-with-code', {
+        body: { 
+          email: verificationEmail, 
+          new_password: newPassword
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast.success('تم تغيير كلمة المرور بنجاح! يمكنك تسجيل الدخول الآن.');
+        setShowNewPasswordForm(false);
+        setShowResetPassword(false);
+        setResetEmail('');
+        setNewPassword('');
+      } else {
+        toast.error(data.error || 'فشل في تغيير كلمة المرور');
+      }
+    } catch (error) {
+      toast.error('حدث خطأ أثناء تغيير كلمة المرور');
     } finally {
       setLoading(false);
     }
@@ -477,6 +571,72 @@ const Auth = () => {
           )}
         </div>
       </div>
+
+      {/* Email Verification Dialog */}
+      <EmailVerificationDialog
+        open={showVerificationDialog}
+        onOpenChange={setShowVerificationDialog}
+        email={verificationEmail}
+        type={verificationType}
+        userId={pendingUserId || undefined}
+        onVerified={handleVerificationComplete}
+      />
+
+      {/* New Password Form Modal for password reset */}
+      {showNewPasswordForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background rounded-2xl p-6 w-full max-w-md border border-border shadow-2xl">
+            <h2 className="text-xl font-bold text-center mb-4">تعيين كلمة مرور جديدة</h2>
+            <p className="text-sm text-muted-foreground text-center mb-6">
+              تم التحقق من بريدك الإلكتروني. الآن أدخل كلمة المرور الجديدة.
+            </p>
+            <form onSubmit={handleUpdatePassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  minLength={6}
+                />
+                <p className="text-xs text-muted-foreground">يجب أن تكون 6 أحرف على الأقل</p>
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                    جاري التحديث...
+                  </>
+                ) : (
+                  'تحديث كلمة المرور'
+                )}
+              </Button>
+              <Button 
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setShowNewPasswordForm(false);
+                  setShowResetPassword(false);
+                  setResetEmail('');
+                  setNewPassword('');
+                }}
+                disabled={loading}
+              >
+                إلغاء
+              </Button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

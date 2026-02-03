@@ -17,6 +17,7 @@ import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import { Loader2 } from "lucide-react";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
+import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 
 // Lazy load unified chat button (global floating button)
 const UnifiedChatButton = lazy(() => import("@/components/UnifiedChatButton"));
@@ -120,6 +121,7 @@ function AppContent() {
     <>
       <DecorativeFrame />
       <AnnouncementBar onHeightChange={setAnnouncementHeight} />
+      <EmailVerificationBanner />
       {isCommunityShell ? <CommunityTopBar /> : <Header announcementHeight={announcementHeight} />}
       <main style={{ paddingTop: isCommunityShell ? "56px" : `${68 + announcementHeight}px` }}>
         <Suspense fallback={<PageLoader />}>
