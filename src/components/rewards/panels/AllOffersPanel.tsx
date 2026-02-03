@@ -1,12 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerClose,
+} from "@/components/ui/drawer";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +30,7 @@ import {
 } from "@/components/ui/carousel";
 import OptimizedImage from "@/components/OptimizedImage";
 import { toast } from "sonner";
-import { X, Ticket, Gift, Loader2, ShoppingCart, Minus, Plus, Flame, Star, Sparkles, Coins, TrendingUp } from "lucide-react";
+import { X, Ticket, Gift, Loader2, ShoppingCart, Minus, Plus, Flame, Coins, ChevronDown } from "lucide-react";
 
 const PAGE_SIZE = 10;
 
@@ -234,9 +240,9 @@ export default function AllOffersPanel() {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
         {[1, 2, 3, 4].map(i => (
-          <Skeleton key={i} className="aspect-[3/4] rounded-3xl" />
+          <Skeleton key={i} className="aspect-[3/4] rounded-2xl" />
         ))}
       </div>
     );
@@ -259,110 +265,82 @@ export default function AllOffersPanel() {
 
   return (
     <>
-      {/* Products Grid - Premium Luxury Cards */}
-      <div className="grid grid-cols-2 gap-4">
+      {/* Products Grid - Responsive min 2 columns */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
         {offers.map((offer, index) => (
           <div 
             key={offer.id} 
             className="group cursor-pointer"
             onClick={() => handleOfferClick(offer)}
-            style={{ animationDelay: `${index * 50}ms` }}
           >
-            {/* Card with Gold Border Effect */}
-            <div className="relative rounded-[1.25rem] overflow-hidden bg-gradient-to-b from-primary/30 via-primary/10 to-transparent p-[1px] shadow-lg hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500">
-              <div className="relative rounded-[1.2rem] overflow-hidden bg-card">
-                {/* Image Container */}
-                <div className="relative aspect-[4/5] overflow-hidden">
-                  <OptimizedImage
-                    src={offer.image_url || '/placeholder.svg'}
-                    alt={offer.title_ar}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
-                  
-                  {/* Premium Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent opacity-95" />
-                  
-                  {/* Decorative Corner Accent */}
-                  <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/20 to-transparent" />
-                  
-                  {/* Rewards Badges - Floating Top Right */}
-                  <div className="absolute top-3 right-3 flex flex-col gap-2">
-                    {offer.gift_tickets > 0 && (
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-primary/40 blur-lg rounded-full" />
-                        <div className="relative bg-gradient-to-r from-primary via-primary to-accent text-primary-foreground px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xl border border-primary/30">
-                          <Ticket className="h-3.5 w-3.5" />
-                          <span className="text-[11px] font-black">+{offer.gift_tickets}</span>
-                        </div>
-                      </div>
-                    )}
-                    {offer.points_reward > 0 && (
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-accent/40 blur-lg rounded-full" />
-                        <div className="relative bg-gradient-to-r from-accent to-primary text-primary-foreground px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xl border border-accent/30">
-                          <Coins className="h-3.5 w-3.5" />
-                          <span className="text-[11px] font-black">+{offer.points_reward}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Stock Warning - Premium Style */}
-                  {offer.stock_quantity !== null && offer.stock_quantity <= 5 && offer.stock_quantity > 0 && (
-                    <div className="absolute top-3 left-3">
-                      <div className="bg-destructive/90 text-destructive-foreground px-2.5 py-1 rounded-full flex items-center gap-1 shadow-lg backdrop-blur-sm border border-destructive/30">
-                        <Flame className="h-3 w-3 animate-pulse" />
-                        <span className="text-[10px] font-bold">آخر {offer.stock_quantity}</span>
-                      </div>
+            {/* Compact Professional Card */}
+            <div className="relative rounded-xl overflow-hidden bg-card border border-border/50 shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300">
+              {/* Image Container - 3:4 ratio */}
+              <div className="relative aspect-[3/4] overflow-hidden">
+                <OptimizedImage
+                  src={offer.image_url || '/placeholder.svg'}
+                  alt={offer.title_ar}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                />
+                
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                
+                {/* Rewards Badges - Compact */}
+                <div className="absolute top-2 right-2 flex flex-col gap-1">
+                  {offer.gift_tickets > 0 && (
+                    <div className="bg-primary/90 text-primary-foreground px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md text-[10px] font-bold">
+                      <Ticket className="h-2.5 w-2.5" />
+                      +{offer.gift_tickets}
                     </div>
                   )}
-                  
-                  {/* Out of Stock Overlay */}
-                  {offer.stock_quantity !== null && offer.stock_quantity <= 0 && (
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
-                      <div className="bg-muted/80 px-4 py-2 rounded-full">
-                        <span className="text-foreground font-bold text-sm">نفذت الكمية</span>
-                      </div>
+                  {offer.points_reward > 0 && (
+                    <div className="bg-amber-500/90 text-white px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md text-[10px] font-bold">
+                      <Coins className="h-2.5 w-2.5" />
+                      +{offer.points_reward}
                     </div>
                   )}
                 </div>
                 
-                {/* Content Section - Below Image */}
-                <div className="relative p-3 pt-0 -mt-12 z-10">
-                  {/* Title */}
-                  <h3 className="font-bold text-foreground text-sm line-clamp-2 mb-3 leading-relaxed drop-shadow-sm">
+                {/* Stock Warning */}
+                {offer.stock_quantity !== null && offer.stock_quantity <= 5 && offer.stock_quantity > 0 && (
+                  <div className="absolute top-2 left-2">
+                    <div className="bg-destructive/90 text-destructive-foreground px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shadow text-[9px] font-bold">
+                      <Flame className="h-2.5 w-2.5" />
+                      {offer.stock_quantity}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Out of Stock */}
+                {offer.stock_quantity !== null && offer.stock_quantity <= 0 && (
+                  <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
+                    <span className="text-foreground font-bold text-xs bg-muted px-3 py-1 rounded-full">نفذت</span>
+                  </div>
+                )}
+                
+                {/* Bottom Content Overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-2.5">
+                  <h3 className="font-semibold text-white text-xs line-clamp-2 mb-1.5 drop-shadow">
                     {offer.title_ar}
                   </h3>
-                  
-                  {/* Price & Action Row */}
-                  <div className="flex items-center justify-between gap-2">
-                    {/* Premium Price Tag */}
-                    <div className="relative flex-1">
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 blur-lg rounded-xl" />
-                      <div className="relative bg-gradient-to-r from-card to-card/95 border border-primary/30 rounded-xl px-3 py-2 shadow-lg">
-                        <div className="flex items-baseline gap-1">
-                          <span className="font-black text-primary text-base leading-none">
-                            {offer.price?.toLocaleString()}
-                          </span>
-                          <span className="text-[9px] text-muted-foreground font-medium">{offer.currency || 'د.ع'}</span>
-                        </div>
-                      </div>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <div className="bg-white/95 backdrop-blur rounded-lg px-2 py-1 shadow">
+                      <span className="font-bold text-primary text-xs">
+                        {offer.price?.toLocaleString()}
+                      </span>
+                      <span className="text-[8px] text-muted-foreground mr-0.5">{offer.currency || 'د.ع'}</span>
                     </div>
-                    
-                    {/* Shop Button */}
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-primary/40 blur-lg rounded-xl" />
-                      <Button 
-                        size="icon" 
-                        className="relative h-10 w-10 rounded-xl shadow-xl bg-gradient-to-br from-primary to-accent hover:from-primary/90 hover:to-accent/90 border border-primary/30"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOfferClick(offer);
-                        }}
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <Button 
+                      size="icon" 
+                      className="h-7 w-7 rounded-lg shadow bg-primary hover:bg-primary/90"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOfferClick(offer);
+                      }}
+                    >
+                      <ShoppingCart className="h-3 w-3" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -372,144 +350,128 @@ export default function AllOffersPanel() {
       </div>
       
       {/* Load more trigger */}
-      <div ref={loadMoreRef} className="py-8 flex justify-center">
+      <div ref={loadMoreRef} className="py-6 flex justify-center">
         {isFetchingNextPage && (
-          <div className="flex items-center gap-3 bg-muted/50 px-6 py-3 rounded-2xl">
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-            <span className="text-sm text-muted-foreground">جاري التحميل...</span>
+          <div className="flex items-center gap-2 bg-muted/50 px-4 py-2 rounded-xl">
+            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            <span className="text-xs text-muted-foreground">جاري التحميل...</span>
           </div>
         )}
       </div>
 
-      {/* Premium Product Detail Sheet */}
-      <Sheet open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
-        <SheetContent side="bottom" className="h-[95vh] rounded-t-[2.5rem] px-0 pb-0 border-t-0 bg-background overflow-hidden">
-          {/* Sheet Handle */}
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-muted-foreground/30 z-10" />
+      {/* Professional Product Detail Drawer with Swipe */}
+      <Drawer open={!!selectedOffer} onOpenChange={(open) => !open && setSelectedOffer(null)}>
+        <DrawerContent className="max-h-[92vh] rounded-t-3xl focus:outline-none">
+          {/* Drag Handle */}
+          <div className="mx-auto w-10 h-1 bg-muted-foreground/30 rounded-full mt-3 mb-2" />
           
-          <SheetHeader className="sr-only">
-            <SheetTitle>تفاصيل المنتج</SheetTitle>
-          </SheetHeader>
+          <DrawerHeader className="sr-only">
+            <DrawerTitle>تفاصيل المنتج</DrawerTitle>
+          </DrawerHeader>
           
           {selectedOffer && (
             <div 
               ref={scrollRef}
               onScroll={handleScroll}
-              className="h-full overflow-y-auto"
+              className="overflow-y-auto max-h-[calc(92vh-20px)] px-4 pb-28"
             >
-              {/* Hero Image Gallery with Parallax */}
+              {/* Square Image with Border Frame */}
               <div 
-                className="relative w-full aspect-square overflow-hidden"
+                className="relative mx-auto max-w-sm mb-4"
                 style={{
-                  transform: `translateY(-${imageTransform}px)`,
+                  transform: `translateY(-${imageTransform * 0.5}px)`,
                   transition: 'transform 0.1s ease-out'
                 }}
               >
-                {offerImages.length > 1 ? (
-                  <Carousel
-                    setApi={setCarouselApi}
-                    opts={{ loop: true, direction: 'rtl' }}
-                    className="w-full h-full"
-                  >
-                    <CarouselContent className="-ml-0">
-                      {offerImages.map((img: string, idx: number) => (
-                        <CarouselItem key={idx} className="pl-0">
-                          <div className="relative aspect-square">
-                            <OptimizedImage
-                              src={img}
-                              alt={`${selectedOffer.title_ar} - ${idx + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                  </Carousel>
-                ) : (
-                  <OptimizedImage
-                    src={offerImages[0] || '/placeholder.svg'}
-                    alt={selectedOffer.title_ar}
-                    className="w-full h-full object-cover"
-                  />
-                )}
-                
-                {/* Close Button */}
-                <SheetClose asChild>
-                  <Button 
-                    variant="secondary" 
-                    size="icon" 
-                    className="absolute top-5 right-5 h-12 w-12 rounded-2xl bg-white/90 backdrop-blur-md shadow-2xl border-0 z-10"
-                  >
-                    <X className="h-5 w-5" />
-                  </Button>
-                </SheetClose>
-                
-                {/* Image Indicators - Premium Style */}
-                {offerImages.length > 1 && (
-                  <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 bg-black/40 backdrop-blur-md px-4 py-2.5 rounded-2xl z-10">
-                    {offerImages.map((_: any, idx: number) => (
-                      <button
-                        key={idx}
-                        onClick={() => carouselApi?.scrollTo(idx)}
-                        className={`transition-all duration-300 rounded-full ${
-                          idx === currentImageIndex 
-                            ? 'bg-white w-8 h-2' 
-                            : 'bg-white/40 w-2 h-2 hover:bg-white/60'
-                        }`}
+                <div className="rounded-2xl border-2 border-primary/20 p-1.5 bg-gradient-to-br from-primary/5 to-accent/5">
+                  <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+                    {offerImages.length > 1 ? (
+                      <Carousel
+                        setApi={setCarouselApi}
+                        opts={{ loop: true, direction: 'rtl' }}
+                        className="w-full h-full"
+                      >
+                        <CarouselContent className="-ml-0">
+                          {offerImages.map((img: string, idx: number) => (
+                            <CarouselItem key={idx} className="pl-0">
+                              <OptimizedImage
+                                src={img}
+                                alt={`${selectedOffer.title_ar} - ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            </CarouselItem>
+                          ))}
+                        </CarouselContent>
+                      </Carousel>
+                    ) : (
+                      <OptimizedImage
+                        src={offerImages[0] || '/placeholder.svg'}
+                        alt={selectedOffer.title_ar}
+                        className="w-full h-full object-cover"
                       />
-                    ))}
+                    )}
+                    
+                    {/* Image Indicators */}
+                    {offerImages.length > 1 && (
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/40 backdrop-blur px-3 py-1.5 rounded-full">
+                        {offerImages.map((_: any, idx: number) => (
+                          <button
+                            key={idx}
+                            onClick={() => carouselApi?.scrollTo(idx)}
+                            className={`transition-all duration-200 rounded-full ${
+                              idx === currentImageIndex 
+                                ? 'bg-white w-5 h-1.5' 
+                                : 'bg-white/40 w-1.5 h-1.5'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    )}
+                    
+                    {/* Close Button */}
+                    <DrawerClose asChild>
+                      <Button 
+                        variant="secondary" 
+                        size="icon" 
+                        className="absolute top-3 right-3 h-8 w-8 rounded-full bg-white/90 shadow-lg"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </DrawerClose>
+                    
+                    {/* Rewards on Image */}
+                    <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                      {selectedOffer.gift_tickets > 0 && (
+                        <div className="bg-primary/90 text-primary-foreground px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-lg text-xs font-bold">
+                          <Ticket className="h-3 w-3" />
+                          +{selectedOffer.gift_tickets}
+                        </div>
+                      )}
+                      {selectedOffer.points_reward > 0 && (
+                        <div className="bg-amber-500/90 text-white px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-lg text-xs font-bold">
+                          <Coins className="h-3 w-3" />
+                          +{selectedOffer.points_reward}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                )}
-                
-                {/* Rewards Badges on Image */}
-                <div className="absolute top-5 left-5 flex flex-col gap-2 z-10">
-                  {selectedOffer.gift_tickets > 0 && (
-                    <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-4 py-2 rounded-2xl flex items-center gap-2 shadow-2xl backdrop-blur-sm">
-                      <Ticket className="h-4 w-4" />
-                      <span className="font-bold text-sm">+{selectedOffer.gift_tickets} تذكرة</span>
-                    </div>
-                  )}
-                  {selectedOffer.points_reward > 0 && (
-                    <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-2xl flex items-center gap-2 shadow-2xl backdrop-blur-sm">
-                      <Coins className="h-4 w-4" />
-                      <span className="font-bold text-sm">+{selectedOffer.points_reward} نقطة</span>
-                    </div>
-                  )}
                 </div>
               </div>
 
-              {/* Content Container */}
-              <div 
-                className="relative bg-background rounded-t-[2rem] -mt-8 px-5 pt-6 pb-32"
-                style={{
-                  transform: `translateY(-${Math.min(imageTransform * 0.5, 50)}px)`,
-                }}
-              >
-                {/* Title & Price Section */}
-                <div className="mb-5">
-                  <h2 className="text-2xl font-black mb-4 leading-relaxed">{selectedOffer.title_ar}</h2>
-                  
-                  <div className="flex items-center gap-3">
-                    <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl px-5 py-3">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl font-black text-primary">
-                          {selectedOffer.price?.toLocaleString()}
-                        </span>
-                        <span className="text-sm text-muted-foreground font-medium">{selectedOffer.currency || 'د.ع'}</span>
-                      </div>
+              {/* Product Info */}
+              <div className="space-y-4">
+                {/* Title & Price */}
+                <div>
+                  <h2 className="text-lg font-bold mb-2 leading-snug">{selectedOffer.title_ar}</h2>
+                  <div className="flex items-center gap-2">
+                    <div className="bg-primary/10 rounded-xl px-3 py-1.5">
+                      <span className="text-xl font-black text-primary">{selectedOffer.price?.toLocaleString()}</span>
+                      <span className="text-xs text-muted-foreground mr-1">{selectedOffer.currency || 'د.ع'}</span>
                     </div>
-                    
-                    {/* Stock Status */}
                     {selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity > 0 && (
-                      <Badge 
-                        variant="outline" 
-                        className={`px-4 py-2 text-sm font-semibold border-0 ${
-                          selectedOffer.stock_quantity <= 5 
-                            ? 'bg-red-500/10 text-red-600' 
-                            : 'bg-green-500/10 text-green-600'
-                        }`}
-                      >
-                        {selectedOffer.stock_quantity <= 5 && <Flame className="h-4 w-4 ml-1" />}
+                      <Badge variant="outline" className={`text-xs ${
+                        selectedOffer.stock_quantity <= 5 ? 'border-destructive/50 text-destructive' : 'border-primary/50 text-primary'
+                      }`}>
                         متوفر: {selectedOffer.stock_quantity}
                       </Badge>
                     )}
@@ -518,119 +480,94 @@ export default function AllOffersPanel() {
 
                 {/* Description */}
                 {selectedOffer.description_ar && (
-                  <div className="mb-6 p-5 bg-muted/30 rounded-3xl">
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {selectedOffer.description_ar}
-                    </p>
-                  </div>
+                  <p className="text-sm text-muted-foreground leading-relaxed bg-muted/30 p-3 rounded-xl">
+                    {selectedOffer.description_ar}
+                  </p>
                 )}
 
-                {/* Rewards Info Cards */}
+                {/* Rewards Cards */}
                 {(selectedOffer.gift_tickets > 0 || selectedOffer.points_reward > 0) && (
-                  <div className="grid grid-cols-2 gap-3 mb-6">
+                  <div className="grid grid-cols-2 gap-2">
                     {selectedOffer.gift_tickets > 0 && (
-                      <Card className="border-0 bg-gradient-to-br from-primary/10 to-primary/5 rounded-3xl overflow-hidden">
-                        <CardContent className="p-4 text-center">
-                          <div className="w-12 h-12 mx-auto rounded-2xl bg-primary/20 flex items-center justify-center mb-3">
-                            <Ticket className="h-6 w-6 text-primary" />
-                          </div>
-                          <p className="text-2xl font-black text-primary">+{selectedOffer.gift_tickets * quantity}</p>
-                          <p className="text-xs text-muted-foreground mt-1">تذكرة مجانية</p>
-                        </CardContent>
-                      </Card>
+                      <div className="bg-primary/10 rounded-xl p-3 text-center">
+                        <Ticket className="h-5 w-5 text-primary mx-auto mb-1" />
+                        <p className="text-lg font-bold text-primary">+{selectedOffer.gift_tickets * quantity}</p>
+                        <p className="text-[10px] text-muted-foreground">تذكرة</p>
+                      </div>
                     )}
-                    
                     {selectedOffer.points_reward > 0 && (
-                      <Card className="border-0 bg-gradient-to-br from-amber-500/10 to-orange-500/5 rounded-3xl overflow-hidden">
-                        <CardContent className="p-4 text-center">
-                          <div className="w-12 h-12 mx-auto rounded-2xl bg-amber-500/20 flex items-center justify-center mb-3">
-                            <Coins className="h-6 w-6 text-amber-600" />
-                          </div>
-                          <p className="text-2xl font-black text-amber-600">+{selectedOffer.points_reward * quantity}</p>
-                          <p className="text-xs text-muted-foreground mt-1">نقطة مكافأة</p>
-                        </CardContent>
-                      </Card>
+                      <div className="bg-amber-500/10 rounded-xl p-3 text-center">
+                        <Coins className="h-5 w-5 text-amber-600 mx-auto mb-1" />
+                        <p className="text-lg font-bold text-amber-600">+{selectedOffer.points_reward * quantity}</p>
+                        <p className="text-[10px] text-muted-foreground">نقطة</p>
+                      </div>
                     )}
                   </div>
                 )}
 
-                {/* Quantity Selector - Premium Design */}
-                <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-transparent to-accent/5 rounded-3xl overflow-hidden mb-6">
-                  <CardContent className="p-5">
-                    <div className="flex items-center justify-between mb-5">
-                      <span className="font-bold text-lg">اختر الكمية</span>
-                      <div className="flex items-center gap-1 bg-muted/50 rounded-2xl p-1.5">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-11 w-11 rounded-xl hover:bg-background"
-                          onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                          disabled={quantity <= 1}
-                        >
-                          <Minus className="h-5 w-5" />
-                        </Button>
-                        <span className="font-black text-2xl w-14 text-center">{quantity}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-11 w-11 rounded-xl hover:bg-background"
-                          onClick={() => setQuantity(q => q + 1)}
-                          disabled={selectedOffer.stock_quantity !== null && quantity >= selectedOffer.stock_quantity}
-                        >
-                          <Plus className="h-5 w-5" />
-                        </Button>
-                      </div>
+                {/* Quantity Selector */}
+                <div className="bg-muted/30 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="font-medium text-sm">الكمية</span>
+                    <div className="flex items-center gap-1 bg-background rounded-lg p-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-md"
+                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                        disabled={quantity <= 1}
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </Button>
+                      <span className="font-bold text-lg w-10 text-center">{quantity}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 rounded-md"
+                        onClick={() => setQuantity(q => q + 1)}
+                        disabled={selectedOffer.stock_quantity !== null && quantity >= selectedOffer.stock_quantity}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                    
-                    {/* Total Summary */}
-                    <div className="space-y-4 pt-5 border-t border-primary/10">
-                      <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground text-lg">المجموع</span>
-                        <span className="font-black text-primary text-2xl">
-                          {(selectedOffer.price * quantity).toLocaleString()} {selectedOffer.currency || 'د.ع'}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                  <div className="flex justify-between items-center pt-3 border-t border-border/50">
+                    <span className="text-muted-foreground text-sm">المجموع</span>
+                    <span className="font-bold text-primary text-lg">
+                      {(selectedOffer.price * quantity).toLocaleString()} {selectedOffer.currency || 'د.ع'}
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Fixed Bottom CTA */}
-              <div className="fixed bottom-0 left-0 right-0 p-5 pt-4 border-t bg-background/95 backdrop-blur-xl z-20 shadow-2xl shadow-black/10">
+              <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-xl border-t shadow-lg z-20">
                 <Button 
-                  className="w-full h-16 rounded-3xl text-lg font-black shadow-xl shadow-primary/30 bg-gradient-to-r from-primary via-primary to-primary/90"
-                  size="lg"
+                  className="w-full h-12 rounded-xl text-sm font-bold shadow-lg"
                   onClick={handlePurchase}
-                  disabled={
-                    !user || 
-                    (selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity < quantity)
-                  }
+                  disabled={!user || (selectedOffer.stock_quantity !== null && selectedOffer.stock_quantity < quantity)}
                 >
-                  <ShoppingCart className="h-6 w-6 ml-3" />
-                  شراء الآن - {(selectedOffer.price * quantity).toLocaleString()} {selectedOffer.currency || 'د.ع'}
+                  <ShoppingCart className="h-4 w-4 ml-2" />
+                  شراء - {(selectedOffer.price * quantity).toLocaleString()} {selectedOffer.currency || 'د.ع'}
                 </Button>
-
                 {!user && (
-                  <p className="text-xs text-center text-muted-foreground mt-3">
-                    سجّل الدخول للشراء
-                  </p>
+                  <p className="text-[10px] text-center text-muted-foreground mt-2">سجّل الدخول للشراء</p>
                 )}
               </div>
             </div>
           )}
-        </SheetContent>
-      </Sheet>
+        </DrawerContent>
+      </Drawer>
 
       {/* Purchase Confirmation Dialog */}
       <AlertDialog open={purchaseDialogOpen} onOpenChange={setPurchaseDialogOpen}>
-        <AlertDialogContent className="rounded-3xl max-w-sm mx-4">
+        <AlertDialogContent className="rounded-2xl max-w-xs mx-4">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-center text-xl font-black">تأكيد الشراء</AlertDialogTitle>
+            <AlertDialogTitle className="text-center text-base font-bold">تأكيد الشراء</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-4">
-                {/* Product Preview */}
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-2xl">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-xl">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
                     <OptimizedImage
                       src={selectedOffer?.image_url || '/placeholder.svg'}
                       alt={selectedOffer?.title_ar || ''}
@@ -638,52 +575,47 @@ export default function AllOffersPanel() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-bold text-sm text-foreground line-clamp-2">{selectedOffer?.title_ar}</p>
-                    <p className="text-xs text-muted-foreground mt-1">الكمية: {quantity}</p>
+                    <p className="font-semibold text-xs text-foreground line-clamp-2">{selectedOffer?.title_ar}</p>
+                    <p className="text-[10px] text-muted-foreground">الكمية: {quantity}</p>
                   </div>
                 </div>
                 
-                {/* Summary Card */}
-                <Card className="bg-gradient-to-br from-muted/50 to-muted/30 border-0 rounded-2xl">
-                  <CardContent className="p-4 space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">المبلغ الإجمالي</span>
-                      <span className="font-black text-primary text-xl">{((selectedOffer?.price || 0) * quantity).toLocaleString()} د.ع</span>
+                <div className="bg-muted/30 rounded-xl p-3 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">المبلغ</span>
+                    <span className="font-bold text-primary">{((selectedOffer?.price || 0) * quantity).toLocaleString()} د.ع</span>
+                  </div>
+                  {selectedOffer?.gift_tickets > 0 && (
+                    <div className="flex justify-between text-xs pt-2 border-t">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Ticket className="h-3 w-3 text-primary" />
+                        تذاكر
+                      </span>
+                      <span className="font-bold text-primary">{selectedOffer.gift_tickets * quantity}</span>
                     </div>
-                    
-                    {selectedOffer?.gift_tickets > 0 && (
-                      <div className="flex justify-between text-sm pt-3 border-t">
-                        <span className="text-muted-foreground flex items-center gap-2">
-                          <Ticket className="h-4 w-4 text-primary" />
-                          تذاكر مجانية
-                        </span>
-                        <span className="font-bold text-primary">{selectedOffer.gift_tickets * quantity}</span>
-                      </div>
-                    )}
-                    
-                    {selectedOffer?.points_reward > 0 && (
-                      <div className="flex justify-between text-sm pt-3 border-t">
-                        <span className="text-muted-foreground flex items-center gap-2">
-                          <Coins className="h-4 w-4 text-amber-500" />
-                          نقاط مكافأة
-                        </span>
-                        <span className="font-bold text-amber-600">{selectedOffer.points_reward * quantity}</span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
+                  )}
+                  {selectedOffer?.points_reward > 0 && (
+                    <div className="flex justify-between text-xs pt-2 border-t">
+                      <span className="text-muted-foreground flex items-center gap-1">
+                        <Coins className="h-3 w-3 text-amber-500" />
+                        نقاط
+                      </span>
+                      <span className="font-bold text-amber-600">{selectedOffer.points_reward * quantity}</span>
+                    </div>
+                  )}
+                </div>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="gap-3 mt-2">
-            <AlertDialogCancel className="rounded-2xl flex-1 h-12">إلغاء</AlertDialogCancel>
+          <AlertDialogFooter className="gap-2 mt-2">
+            <AlertDialogCancel className="rounded-xl flex-1 h-10 text-sm">إلغاء</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-2xl flex-1 h-12 font-bold"
+              className="rounded-xl flex-1 h-10 text-sm font-bold"
               onClick={() => selectedOffer && purchaseMutation.mutate({ offer: selectedOffer, qty: quantity })}
               disabled={purchaseMutation.isPending}
             >
-              {purchaseMutation.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
-              تأكيد الشراء
+              {purchaseMutation.isPending && <Loader2 className="h-3 w-3 animate-spin ml-1" />}
+              تأكيد
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
