@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import {
   FileText, Search, Eye, Trash2, CheckCircle, XCircle,
   Image as ImageIcon, Video, MapPin, Clock, User, Package,
-  AlertTriangle, ExternalLink, RefreshCw, Filter
+  AlertTriangle, ExternalLink, RefreshCw, Filter, MessageCircle, Edit
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +20,9 @@ import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+
+// Support user ID
+const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
 
 interface PrintRequest {
   id: string;
@@ -53,12 +57,93 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 
 export default function AdminCommunityRequests() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedRequest, setSelectedRequest] = useState<PrintRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
   const [rejectReason, setRejectReason] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showStatusUpdate, setShowStatusUpdate] = useState(false);
+  const [newStatus, setNewStatus] = useState("");
+
+  // Function to start chat with user
+  const startChatWithUser = async (userId: string, requestTitle: string) => {
+    try {
+      // Check if conversation exists
+      const { data: existingConv } = await supabase
+        .from("listing_conversations")
+        .select("id")
+        .or(`and(buyer_id.eq.${userId},seller_id.eq.${SUPPORT_USER_ID}),and(buyer_id.eq.${SUPPORT_USER_ID},seller_id.eq.${userId})`)
+        .maybeSingle();
+
+      let conversationId = existingConv?.id;
+
+      // Create conversation if doesn't exist
+      if (!conversationId) {
+        const { data: newConv, error } = await supabase
+          .from("listing_conversations")
+          .insert({
+            buyer_id: userId,
+            seller_id: SUPPORT_USER_ID,
+            listing_id: "support-request", // System placeholder for support conversations
+          })
+          .select("id")
+          .single();
+
+        if (error) throw error;
+        conversationId = newConv.id;
+      }
+
+      // Send initial message about the request
+      await supabase.from("listing_messages").insert({
+        conversation_id: conversationId,
+        sender_id: SUPPORT_USER_ID,
+        content: `📋 بخصوص طلبك: "${requestTitle}"`,
+      });
+
+      // Update conversation timestamp
+      await supabase
+        .from("listing_conversations")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", conversationId);
+
+      toast.success("تم فتح المحادثة");
+      navigate(`/levo-admin-x7k9/levo-community/messages`);
+    } catch (error) {
+      toast.error("فشل فتح المحادثة");
+    }
+  };
+
+  // Update request status mutation
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ requestId, status }: { requestId: string; status: string }) => {
+      const { error } = await supabase
+        .from("community_print_requests")
+        .update({ status })
+        .eq("id", requestId);
+      if (error) throw error;
+
+      // Send notification
+      const request = requests.find(r => r.id === requestId);
+      if (request) {
+        const statusLabel = STATUS_CONFIG[status]?.label || status;
+        await supabase.from("notifications").insert({
+          user_id: request.user_id,
+          title: "تحديث حالة الطلب",
+          message: `تم تحديث حالة طلبك "${request.title}" إلى: ${statusLabel}`,
+          type: "info",
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-community-requests"] });
+      toast.success("تم تحديث الحالة");
+      setShowStatusUpdate(false);
+      setSelectedRequest(null);
+    },
+    onError: () => toast.error("فشل تحديث الحالة"),
+  });
 
   const { data: requests = [], isLoading, refetch } = useQuery({
     queryKey: ["admin-community-requests", statusFilter],
@@ -504,6 +589,32 @@ export default function AdminCommunityRequests() {
                 </div>
               )}
 
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2 pt-4 border-t">
+                {/* Chat Button */}
+                <Button
+                  variant="outline"
+                  onClick={() => startChatWithUser(selectedRequest.user_id, selectedRequest.title)}
+                  className="gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  مراسلة العميل
+                </Button>
+
+                {/* Status Update Button */}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setNewStatus(selectedRequest.status);
+                    setShowStatusUpdate(true);
+                  }}
+                  className="gap-2"
+                >
+                  <Edit className="h-4 w-4" />
+                  تحديث الحالة
+                </Button>
+              </div>
+
               <DialogFooter className="flex-col sm:flex-row gap-2 pt-4">
                 {selectedRequest.status === "pending" && (
                   <>
@@ -583,6 +694,48 @@ export default function AdminCommunityRequests() {
               disabled={deleteRequestMutation.isPending}
             >
               {deleteRequestMutation.isPending ? "جارٍ الحذف..." : "تأكيد الحذف"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Update Dialog */}
+      <Dialog open={showStatusUpdate} onOpenChange={setShowStatusUpdate}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5 text-primary" />
+              تحديث حالة الطلب
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">اختر الحالة الجديدة</label>
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر الحالة" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">قيد المراجعة</SelectItem>
+                  <SelectItem value="approved">منشور</SelectItem>
+                  <SelectItem value="completed">مكتمل</SelectItem>
+                  <SelectItem value="rejected">مرفوض</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowStatusUpdate(false)}>
+              إلغاء
+            </Button>
+            <Button
+              onClick={() => selectedRequest && updateStatusMutation.mutate({ 
+                requestId: selectedRequest.id, 
+                status: newStatus 
+              })}
+              disabled={updateStatusMutation.isPending || !newStatus}
+            >
+              {updateStatusMutation.isPending ? "جارٍ التحديث..." : "تحديث الحالة"}
             </Button>
           </DialogFooter>
         </DialogContent>

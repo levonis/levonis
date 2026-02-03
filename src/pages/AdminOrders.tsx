@@ -73,8 +73,6 @@ const AdminOrders = () => {
   // Financial fields state for live calculation
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [adminProductCost, setAdminProductCost] = useState<number>(0);
-  const [adminShippingCost, setAdminShippingCost] = useState<number>(0);
-  const [adminOtherCosts, setAdminOtherCosts] = useState<number>(0);
   const [taxAmount, setTaxAmount] = useState<number>(0);
   const [subtotalAmount, setSubtotalAmount] = useState<number>(0);
   const [taxPercentage, setTaxPercentage] = useState<number>(0);
@@ -87,10 +85,9 @@ const AdminOrders = () => {
     }
   }, [taxPercentage, subtotalAmount]);
   
-  // Calculate profit dynamically - exclude local delivery costs (5000 or 6000)
-  // Profit = total_amount - admin_product_cost - admin_shipping_cost - admin_other_costs
-  // Note: delivery cost is NOT deducted from profit as per user request
-  const calculatedProfit = totalAmount - adminProductCost - adminShippingCost - adminOtherCosts;
+  // Calculate profit dynamically
+  // Profit = total_amount - admin_product_cost
+  const calculatedProfit = totalAmount - adminProductCost;
   
   useEffect(() => {
     const status = searchParams.get('status');
@@ -396,8 +393,6 @@ const AdminOrders = () => {
     setEditEstimatedDeliveryDate('');
     setTotalAmount(0);
     setAdminProductCost(0);
-    setAdminShippingCost(0);
-    setAdminOtherCosts(0);
     setTaxAmount(0);
     setSubtotalAmount(0);
     setTaxPercentage(0);
@@ -412,8 +407,6 @@ const AdminOrders = () => {
     setEditEstimatedDeliveryDate(order.estimated_delivery_date ? order.estimated_delivery_date.split('T')[0] : '');
     setTotalAmount(order.total_amount || 0);
     setAdminProductCost(order.admin_product_cost || 0);
-    setAdminShippingCost(order.admin_shipping_cost || 0);
-    setAdminOtherCosts(order.admin_other_costs || 0);
     setTaxAmount(order.tax_amount || 0);
     setSubtotalAmount(order.subtotal || 0);
     setTaxPercentage(order.tax_percentage || 0);
@@ -504,8 +497,8 @@ const AdminOrders = () => {
       estimated_delivery_date: editEstimatedDeliveryDate ? new Date(editEstimatedDeliveryDate).toISOString() : null,
       total_amount: totalAmount,
       admin_product_cost: adminProductCost,
-      admin_shipping_cost: adminShippingCost,
-      admin_other_costs: adminOtherCosts,
+      admin_shipping_cost: 0,
+      admin_other_costs: 0,
       tax_amount: taxAmount,
       tax_percentage: taxPercentage,
       profit_amount: calculatedProfit,
@@ -1074,22 +1067,6 @@ const AdminOrders = () => {
                     type="number"
                     value={adminProductCost}
                     onChange={(e) => setAdminProductCost(Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>تكلفة الشحن</Label>
-                  <Input
-                    type="number"
-                    value={adminShippingCost}
-                    onChange={(e) => setAdminShippingCost(Number(e.target.value))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>تكاليف أخرى</Label>
-                  <Input
-                    type="number"
-                    value={adminOtherCosts}
-                    onChange={(e) => setAdminOtherCosts(Number(e.target.value))}
                   />
                 </div>
                 <div className="space-y-2">
