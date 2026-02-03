@@ -259,115 +259,90 @@ export default function AllOffersPanel() {
 
   return (
     <>
-      {/* Products Grid - Premium Luxury Cards */}
+      {/* Products Grid - Premium Professional Cards */}
       <div className="grid grid-cols-2 gap-4">
         {offers.map((offer, index) => (
-          <div 
+          <Card 
             key={offer.id} 
-            className="group cursor-pointer"
+            className="overflow-hidden cursor-pointer group border-0 shadow-lg hover:shadow-2xl transition-all duration-500 bg-card rounded-3xl relative"
             onClick={() => handleOfferClick(offer)}
             style={{ animationDelay: `${index * 50}ms` }}
           >
-            {/* Card with Gold Border Effect */}
-            <div className="relative rounded-[1.25rem] overflow-hidden bg-gradient-to-b from-primary/30 via-primary/10 to-transparent p-[1px] shadow-lg hover:shadow-2xl hover:shadow-primary/20 transition-all duration-500">
-              <div className="relative rounded-[1.2rem] overflow-hidden bg-card">
-                {/* Image Container */}
-                <div className="relative aspect-[4/5] overflow-hidden">
-                  <OptimizedImage
-                    src={offer.image_url || '/placeholder.svg'}
-                    alt={offer.title_ar}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                  />
-                  
-                  {/* Premium Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent opacity-95" />
-                  
-                  {/* Decorative Corner Accent */}
-                  <div className="absolute top-0 left-0 w-16 h-16 bg-gradient-to-br from-primary/20 to-transparent" />
-                  
-                  {/* Rewards Badges - Floating Top Right */}
-                  <div className="absolute top-3 right-3 flex flex-col gap-2">
-                    {offer.gift_tickets > 0 && (
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-primary/40 blur-lg rounded-full" />
-                        <div className="relative bg-gradient-to-r from-primary via-primary to-accent text-primary-foreground px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xl border border-primary/30">
-                          <Ticket className="h-3.5 w-3.5" />
-                          <span className="text-[11px] font-black">+{offer.gift_tickets}</span>
-                        </div>
-                      </div>
-                    )}
-                    {offer.points_reward > 0 && (
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-accent/40 blur-lg rounded-full" />
-                        <div className="relative bg-gradient-to-r from-accent to-primary text-primary-foreground px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-xl border border-accent/30">
-                          <Coins className="h-3.5 w-3.5" />
-                          <span className="text-[11px] font-black">+{offer.points_reward}</span>
-                        </div>
-                      </div>
-                    )}
+            {/* Image Container */}
+            <div className="relative aspect-square overflow-hidden">
+              <OptimizedImage
+                src={offer.image_url || '/placeholder.svg'}
+                alt={offer.title_ar}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+              />
+              
+              {/* Premium Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-90" />
+              
+              {/* Rewards Badges - Top Right */}
+              <div className="absolute top-2 right-2 flex flex-col gap-1.5">
+                {offer.gift_tickets > 0 && (
+                  <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-lg backdrop-blur-sm">
+                    <Ticket className="h-3.5 w-3.5" />
+                    <span className="text-[11px] font-bold">+{offer.gift_tickets}</span>
                   </div>
-                  
-                  {/* Stock Warning - Premium Style */}
-                  {offer.stock_quantity !== null && offer.stock_quantity <= 5 && offer.stock_quantity > 0 && (
-                    <div className="absolute top-3 left-3">
-                      <div className="bg-destructive/90 text-destructive-foreground px-2.5 py-1 rounded-full flex items-center gap-1 shadow-lg backdrop-blur-sm border border-destructive/30">
-                        <Flame className="h-3 w-3 animate-pulse" />
-                        <span className="text-[10px] font-bold">آخر {offer.stock_quantity}</span>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Out of Stock Overlay */}
-                  {offer.stock_quantity !== null && offer.stock_quantity <= 0 && (
-                    <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center">
-                      <div className="bg-muted/80 px-4 py-2 rounded-full">
-                        <span className="text-foreground font-bold text-sm">نفذت الكمية</span>
-                      </div>
-                    </div>
-                  )}
+                )}
+                {offer.points_reward > 0 && (
+                  <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-lg backdrop-blur-sm">
+                    <Coins className="h-3.5 w-3.5" />
+                    <span className="text-[11px] font-bold">+{offer.points_reward}</span>
+                  </div>
+                )}
+              </div>
+              
+              {/* Stock Warning - Top Left */}
+              {offer.stock_quantity !== null && offer.stock_quantity <= 5 && offer.stock_quantity > 0 && (
+                <div className="absolute top-2 left-2">
+                  <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-2.5 py-1 rounded-xl flex items-center gap-1.5 shadow-lg">
+                    <Flame className="h-3.5 w-3.5 animate-pulse" />
+                    <span className="text-[11px] font-bold">آخر {offer.stock_quantity}</span>
+                  </div>
                 </div>
+              )}
+              
+              {/* Out of Stock Overlay */}
+              {offer.stock_quantity !== null && offer.stock_quantity <= 0 && (
+                <div className="absolute inset-0 bg-black/60 flex items-center justify-center backdrop-blur-sm">
+                  <span className="text-white font-bold text-sm">نفذت الكمية</span>
+                </div>
+              )}
+              
+              {/* Bottom Content - Inside Image */}
+              <div className="absolute bottom-0 left-0 right-0 p-3">
+                <h3 className="font-bold text-white text-sm line-clamp-2 mb-2 drop-shadow-lg leading-relaxed">
+                  {offer.title_ar}
+                </h3>
                 
-                {/* Content Section - Below Image */}
-                <div className="relative p-3 pt-0 -mt-12 z-10">
-                  {/* Title */}
-                  <h3 className="font-bold text-foreground text-sm line-clamp-2 mb-3 leading-relaxed drop-shadow-sm">
-                    {offer.title_ar}
-                  </h3>
-                  
-                  {/* Price & Action Row */}
-                  <div className="flex items-center justify-between gap-2">
-                    {/* Premium Price Tag */}
-                    <div className="relative flex-1">
-                      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 blur-lg rounded-xl" />
-                      <div className="relative bg-gradient-to-r from-card to-card/95 border border-primary/30 rounded-xl px-3 py-2 shadow-lg">
-                        <div className="flex items-baseline gap-1">
-                          <span className="font-black text-primary text-base leading-none">
-                            {offer.price?.toLocaleString()}
-                          </span>
-                          <span className="text-[9px] text-muted-foreground font-medium">{offer.currency || 'د.ع'}</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Shop Button */}
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-primary/40 blur-lg rounded-xl" />
-                      <Button 
-                        size="icon" 
-                        className="relative h-10 w-10 rounded-xl shadow-xl bg-gradient-to-br from-primary to-accent hover:from-primary/90 hover:to-accent/90 border border-primary/30"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOfferClick(offer);
-                        }}
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                      </Button>
+                {/* Price Tag */}
+                <div className="flex items-center justify-between">
+                  <div className="bg-white/95 backdrop-blur-md rounded-2xl px-4 py-2 shadow-xl border border-white/20">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="font-black text-primary text-lg leading-none">
+                        {offer.price?.toLocaleString()}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-medium">{offer.currency || 'د.ع'}</span>
                     </div>
                   </div>
+                  
+                  <Button 
+                    size="icon" 
+                    className="h-10 w-10 rounded-2xl shadow-xl bg-primary/90 hover:bg-primary backdrop-blur-sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOfferClick(offer);
+                    }}
+                  >
+                    <ShoppingCart className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
       
