@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Gift, Package, ChevronLeft, Ticket, ArrowLeft } from "lucide-react";
+import { Gift, Package, ChevronLeft, Ticket, Sparkles } from "lucide-react";
 import OptimizedImage from "@/components/OptimizedImage";
 
 export default function OffersStorageSection() {
@@ -19,7 +19,7 @@ export default function OffersStorageSection() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('product_offers')
-        .select('id, title_ar, description_ar, image_url, price, currency, gift_tickets, stock_quantity')
+        .select('id, title_ar, image_url, price, currency, gift_tickets, stock_quantity')
         .eq('status', 'active')
         .order('created_at', { ascending: false })
         .limit(6);
@@ -59,30 +59,27 @@ export default function OffersStorageSection() {
   const hasOffers = offers && offers.length > 0;
 
   return (
-    <section className="container mx-auto px-4 py-8 md:py-12">
-      {/* Section Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-1.5 h-8 bg-gradient-to-b from-primary via-accent to-primary/50 rounded-full" />
+    <section className="container mx-auto px-4 py-6">
+      {/* Compact Header */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md shadow-primary/20">
+            <Sparkles className="h-4 w-4 text-primary-foreground" />
+          </div>
           <div>
-            <h2 className="text-lg md:text-xl font-black text-foreground flex items-center gap-2">
-              <Gift className="h-5 w-5 text-primary" />
-              عروض حصرية
-            </h2>
-            <p className="text-xs text-muted-foreground">منتجات مميزة مع تذاكر هدية</p>
+            <h2 className="text-sm md:text-base font-bold text-foreground">عروض حصرية</h2>
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
-          {/* Storage Quick Access */}
+        <div className="flex items-center gap-1.5">
           {user && storageCount !== undefined && storageCount > 0 && (
             <Button 
               variant="outline" 
               size="sm" 
-              className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+              className="h-8 gap-1 text-xs border-primary/30 text-primary hover:bg-primary/10 rounded-lg px-2"
               onClick={() => navigate('/offers')}
             >
-              <Package className="h-4 w-4" />
+              <Package className="h-3.5 w-3.5" />
               <span className="font-bold">{storageCount}</span>
             </Button>
           )}
@@ -90,89 +87,86 @@ export default function OffersStorageSection() {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="gap-1 text-primary hover:text-primary/80 hover:bg-primary/10"
+            className="h-8 gap-0.5 text-xs text-primary hover:text-primary/80 hover:bg-primary/10 px-2"
             onClick={() => navigate('/offers')}
           >
-            عرض الكل
-            <ChevronLeft className="h-4 w-4" />
+            الكل
+            <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
 
-      {/* Products Horizontal Strip */}
+      {/* Compact Product Strip */}
       {offersLoading ? (
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-          {[1, 2, 3, 4].map(i => (
-            <div key={i} className="shrink-0 w-[140px] md:w-[160px]">
-              <Skeleton className="aspect-square rounded-xl mb-2" />
-              <Skeleton className="h-4 w-full mb-1" />
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="shrink-0 w-[100px]">
+              <Skeleton className="aspect-square rounded-xl mb-1.5" />
+              <Skeleton className="h-3 w-full mb-1" />
               <Skeleton className="h-3 w-2/3" />
             </div>
           ))}
         </div>
       ) : !hasOffers ? (
-        <Card className="bg-card/50 border-dashed border-primary/20">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <Gift className="h-8 w-8 text-primary/60" />
-            </div>
-            <p className="text-muted-foreground font-medium">لا توجد عروض حالياً</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">ترقب العروض القادمة</p>
+        <Card className="bg-muted/30 border-dashed border-muted-foreground/20">
+          <CardContent className="p-6 text-center">
+            <Gift className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+            <p className="text-xs text-muted-foreground">لا توجد عروض حالياً</p>
           </CardContent>
         </Card>
       ) : (
-        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4">
           {offers.map((offer) => (
             <Card 
               key={offer.id}
-              className="shrink-0 w-[140px] md:w-[160px] overflow-hidden group cursor-pointer hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 border-border/50 hover:border-primary/30 bg-card"
+              className="shrink-0 w-[100px] overflow-hidden group cursor-pointer hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 border-border/50 hover:border-primary/20 bg-card"
               onClick={() => navigate('/offers')}
             >
-              <div className="relative aspect-square bg-muted/30">
+              <div className="relative aspect-square bg-muted/20">
                 <OptimizedImage
                   src={offer.image_url || '/placeholder.svg'}
                   alt={offer.title_ar}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                
                 {/* Gift Badge */}
                 {offer.gift_tickets && offer.gift_tickets > 0 && (
-                  <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground gap-1 text-[10px] px-1.5 py-0.5 shadow-lg">
-                    <Ticket className="h-3 w-3" />
+                  <Badge className="absolute top-1 right-1 bg-primary/90 text-primary-foreground gap-0.5 text-[8px] px-1 py-0 h-4">
+                    <Ticket className="h-2.5 w-2.5" />
                     +{offer.gift_tickets}
                   </Badge>
                 )}
                 
                 {/* Low Stock */}
-                {offer.stock_quantity !== null && offer.stock_quantity <= 5 && offer.stock_quantity > 0 && (
-                  <Badge className="absolute bottom-2 left-2 bg-destructive/90 text-destructive-foreground text-[9px] px-1.5 py-0.5">
-                    متبقي {offer.stock_quantity}
-                  </Badge>
+                {offer.stock_quantity !== null && offer.stock_quantity <= 3 && offer.stock_quantity > 0 && (
+                  <div className="absolute bottom-1 left-1 right-1">
+                    <div className="bg-destructive/90 text-destructive-foreground text-[7px] px-1 py-0.5 rounded text-center font-medium">
+                      متبقي {offer.stock_quantity}
+                    </div>
+                  </div>
                 )}
               </div>
               
-              <CardContent className="p-2.5">
-                <h3 className="font-semibold text-xs line-clamp-2 mb-1.5 text-foreground/90">{offer.title_ar}</h3>
-                <p className="font-bold text-primary text-sm">
-                  {offer.price?.toLocaleString()} <span className="text-[10px] text-muted-foreground font-normal">{offer.currency || 'د.ع'}</span>
+              <CardContent className="p-1.5">
+                <h3 className="font-medium text-[10px] line-clamp-1 mb-0.5 text-foreground/90">{offer.title_ar}</h3>
+                <p className="font-bold text-primary text-[11px]">
+                  {offer.price?.toLocaleString()}
+                  <span className="text-[8px] text-muted-foreground font-normal mr-0.5">{offer.currency || 'د.ع'}</span>
                 </p>
               </CardContent>
             </Card>
           ))}
           
-          {/* View All Card */}
+          {/* View All Mini Card */}
           <Card 
-            className="shrink-0 w-[100px] md:w-[120px] overflow-hidden cursor-pointer hover:shadow-xl hover:shadow-primary/10 transition-all duration-300 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 hover:border-primary/40 flex items-center justify-center min-h-[180px]"
+            className="shrink-0 w-[70px] overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-primary/5 to-accent/10 border-primary/10 hover:border-primary/30 flex items-center justify-center"
             onClick={() => navigate('/offers')}
           >
-            <CardContent className="p-3 text-center">
-              <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-                <ArrowLeft className="h-5 w-5 text-primary" />
+            <CardContent className="p-2 text-center">
+              <div className="w-8 h-8 mx-auto mb-1 rounded-full bg-primary/10 flex items-center justify-center">
+                <ChevronLeft className="h-4 w-4 text-primary" />
               </div>
-              <p className="text-xs font-bold text-primary">عرض الكل</p>
+              <p className="text-[9px] font-semibold text-primary">المزيد</p>
             </CardContent>
           </Card>
         </div>
