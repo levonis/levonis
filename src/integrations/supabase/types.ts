@@ -4153,6 +4153,7 @@ export type Database = {
           birth_date: string | null
           created_at: string | null
           email: string | null
+          email_notifications_enabled: boolean | null
           full_name: string | null
           gender: string | null
           governorate: string | null
@@ -4175,6 +4176,7 @@ export type Database = {
           birth_date?: string | null
           created_at?: string | null
           email?: string | null
+          email_notifications_enabled?: boolean | null
           full_name?: string | null
           gender?: string | null
           governorate?: string | null
@@ -4197,6 +4199,7 @@ export type Database = {
           birth_date?: string | null
           created_at?: string | null
           email?: string | null
+          email_notifications_enabled?: boolean | null
           full_name?: string | null
           gender?: string | null
           governorate?: string | null
