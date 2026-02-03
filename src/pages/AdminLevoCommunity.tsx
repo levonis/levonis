@@ -346,7 +346,7 @@ function CommunitySettings() {
       <SettingCard
         icon={FileText}
         title="الحد الأقصى للطلبات"
-        description="عدد طلبات الطباعة يومياً"
+        description="عدد طلبات الطباعة يومياً لكل عميل"
         iconColor="bg-blue-500/15 text-blue-500"
       >
         <div className="flex items-center gap-2">
