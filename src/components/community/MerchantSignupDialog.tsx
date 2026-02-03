@@ -67,15 +67,15 @@ type Step2 = z.infer<typeof step2Schema>;
 
 function StatusBadge({ status }: { status?: string | null }) {
   const config = {
-    approved: { label: "مقبول", Icon: CheckCircle2, color: "text-emerald-500 bg-emerald-500/10" },
-    rejected: { label: "مرفوض", Icon: XCircle, color: "text-destructive bg-destructive/10" },
-    pending: { label: "قيد المراجعة", Icon: Clock, color: "text-amber-500 bg-amber-500/10" },
-    draft: { label: "مسودة", Icon: FileText, color: "text-muted-foreground bg-muted" },
+    approved: { label: "مقبول", Icon: CheckCircle2, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/30" },
+    rejected: { label: "مرفوض", Icon: XCircle, color: "text-destructive bg-destructive/10 border-destructive/30" },
+    pending: { label: "قيد المراجعة", Icon: Clock, color: "text-amber-500 bg-amber-500/10 border-amber-500/30" },
+    draft: { label: "مسودة", Icon: FileText, color: "text-sky-400 bg-sky-500/15 border-sky-500/30" },
   };
   const s = config[status as keyof typeof config] || config.draft;
   
   return (
-    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${s.color}`}>
+    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${s.color}`}>
       <s.Icon className="h-3.5 w-3.5" />
       {s.label}
     </div>
