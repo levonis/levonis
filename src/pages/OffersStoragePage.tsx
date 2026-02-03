@@ -19,37 +19,31 @@ export default function OffersStoragePage() {
   const tabs = [
     { 
       id: 'offers' as const, 
-      label: 'عروض مع هدايا', 
-      icon: Gift, 
-      color: 'from-rose-500 to-pink-600',
-      activeColor: 'bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/30',
-      inactiveColor: 'bg-rose-500/10 text-rose-600 border-rose-500/30'
+      label: 'العروض', 
+      icon: Gift
     },
     { 
       id: 'storage' as const, 
       label: 'مخزني', 
-      icon: Package, 
-      color: 'from-blue-500 to-cyan-600',
-      activeColor: 'bg-gradient-to-r from-blue-500 to-cyan-600 text-white shadow-lg shadow-blue-500/30',
-      inactiveColor: 'bg-blue-500/10 text-blue-600 border-blue-500/30'
+      icon: Package
     },
   ];
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-card border-b shadow-sm">
+      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-md border-b border-border/50">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600">
-              <Gift className="h-5 w-5 text-white" />
+            <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/20">
+              <Gift className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-foreground">عروض حصرية ومخزني</h1>
-              <p className="text-[10px] text-muted-foreground">منتجات مع تذاكر مجانية</p>
+              <h1 className="text-base font-bold text-foreground">عروض حصرية</h1>
+              <p className="text-[10px] text-muted-foreground">منتجات مميزة مع تذاكر هدية</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-9 w-9 p-0" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 hover:bg-muted" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
         </div>
@@ -64,8 +58,10 @@ export default function OffersStoragePage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border font-semibold text-sm transition-all ${
-                  isActive ? tab.activeColor : tab.inactiveColor
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ${
+                  isActive 
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                 }`}
               >
                 <Icon className="h-4 w-4" />
