@@ -115,60 +115,74 @@ export default function OffersStorageSection() {
           </CardContent>
         </Card>
       ) : (
-        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-4 px-4">
+        <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2 -mx-4 px-4">
           {offers.map((offer) => (
-            <Card 
+            <div 
               key={offer.id}
-              className="shrink-0 w-[100px] overflow-hidden group cursor-pointer hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 border-border/50 hover:border-primary/20 bg-card"
+              className="shrink-0 w-[110px] group cursor-pointer"
               onClick={() => navigate('/offers')}
             >
-              <div className="relative aspect-square bg-muted/20">
-                <OptimizedImage
-                  src={offer.image_url || '/placeholder.svg'}
-                  alt={offer.title_ar}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                
-                {/* Gift Badge */}
-                {offer.gift_tickets && offer.gift_tickets > 0 && (
-                  <Badge className="absolute top-1 right-1 bg-primary/90 text-primary-foreground gap-0.5 text-[8px] px-1 py-0 h-4">
-                    <Ticket className="h-2.5 w-2.5" />
-                    +{offer.gift_tickets}
-                  </Badge>
-                )}
-                
-                {/* Low Stock */}
-                {offer.stock_quantity !== null && offer.stock_quantity <= 3 && offer.stock_quantity > 0 && (
-                  <div className="absolute bottom-1 left-1 right-1">
-                    <div className="bg-destructive/90 text-destructive-foreground text-[7px] px-1 py-0.5 rounded text-center font-medium">
-                      متبقي {offer.stock_quantity}
+              {/* Card with Gold Border Effect */}
+              <div className="rounded-2xl overflow-hidden bg-gradient-to-b from-primary/25 via-primary/10 to-transparent p-[1px] shadow-md hover:shadow-xl hover:shadow-primary/15 transition-all duration-300">
+                <div className="rounded-[15px] overflow-hidden bg-card">
+                  <div className="relative aspect-square">
+                    <OptimizedImage
+                      src={offer.image_url || '/placeholder.svg'}
+                      alt={offer.title_ar}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    
+                    {/* Gradient Overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
+                    
+                    {/* Gift Badge */}
+                    {offer.gift_tickets && offer.gift_tickets > 0 && (
+                      <div className="absolute top-1.5 right-1.5">
+                        <div className="bg-gradient-to-r from-primary to-accent text-primary-foreground px-2 py-0.5 rounded-full flex items-center gap-1 shadow-lg text-[8px] font-bold">
+                          <Ticket className="h-2.5 w-2.5" />
+                          +{offer.gift_tickets}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Low Stock */}
+                    {offer.stock_quantity !== null && offer.stock_quantity <= 3 && offer.stock_quantity > 0 && (
+                      <div className="absolute top-1.5 left-1.5">
+                        <div className="bg-destructive/90 text-destructive-foreground text-[7px] px-1.5 py-0.5 rounded-full font-medium">
+                          آخر {offer.stock_quantity}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="p-2 pt-0 -mt-6 relative z-10">
+                    <h3 className="font-semibold text-[10px] line-clamp-1 mb-1 text-foreground">{offer.title_ar}</h3>
+                    <div className="bg-gradient-to-r from-card/95 to-card/90 border border-primary/20 rounded-lg px-2 py-1 inline-block">
+                      <span className="font-black text-primary text-[11px]">
+                        {offer.price?.toLocaleString()}
+                      </span>
+                      <span className="text-[8px] text-muted-foreground font-normal mr-0.5">{offer.currency || 'د.ع'}</span>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
-              
-              <CardContent className="p-1.5">
-                <h3 className="font-medium text-[10px] line-clamp-1 mb-0.5 text-foreground/90">{offer.title_ar}</h3>
-                <p className="font-bold text-primary text-[11px]">
-                  {offer.price?.toLocaleString()}
-                  <span className="text-[8px] text-muted-foreground font-normal mr-0.5">{offer.currency || 'د.ع'}</span>
-                </p>
-              </CardContent>
-            </Card>
+            </div>
           ))}
           
-          {/* View All Mini Card */}
-          <Card 
-            className="shrink-0 w-[70px] overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-primary/5 to-accent/10 border-primary/10 hover:border-primary/30 flex items-center justify-center"
+          {/* View All Card */}
+          <div 
+            className="shrink-0 w-[75px] cursor-pointer group"
             onClick={() => navigate('/offers')}
           >
-            <CardContent className="p-2 text-center">
-              <div className="w-8 h-8 mx-auto mb-1 rounded-full bg-primary/10 flex items-center justify-center">
-                <ChevronLeft className="h-4 w-4 text-primary" />
+            <div className="h-full rounded-2xl overflow-hidden bg-gradient-to-b from-primary/25 via-primary/10 to-transparent p-[1px] shadow-md hover:shadow-xl hover:shadow-primary/15 transition-all duration-300">
+              <div className="h-full rounded-[15px] bg-gradient-to-br from-primary/10 to-accent/10 flex flex-col items-center justify-center py-6">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                  <ChevronLeft className="h-5 w-5 text-primary" />
+                </div>
+                <p className="text-[10px] font-bold text-primary">عرض الكل</p>
               </div>
-              <p className="text-[9px] font-semibold text-primary">المزيد</p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
     </section>
