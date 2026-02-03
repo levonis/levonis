@@ -3,7 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Gift, Package, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Gift, Package, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 
@@ -44,22 +44,17 @@ export default function OffersStoragePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      {/* Premium Header */}
-      <div className="sticky top-0 z-50 bg-gradient-to-b from-card to-card/95 backdrop-blur-xl border-b border-border/30 shadow-sm">
-        {/* Top Bar */}
+      {/* Fixed Sticky Header with Tabs */}
+      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border/30 shadow-sm">
+        {/* Top Navigation Bar */}
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary via-accent to-primary flex items-center justify-center shadow-lg shadow-primary/25">
-                <Gift className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent flex items-center justify-center">
-                <Sparkles className="h-2.5 w-2.5 text-accent-foreground" />
-              </div>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-primary via-primary/80 to-accent flex items-center justify-center shadow-lg shadow-primary/20">
+              <Gift className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-foreground">عروض حصرية</h1>
-              <p className="text-[10px] text-muted-foreground">منتجات مميزة مع هدايا</p>
+              <h1 className="text-base font-bold text-foreground">العروض والمخزن</h1>
+              <p className="text-[10px] text-muted-foreground">منتجات وهدايا حصرية</p>
             </div>
           </div>
           <Button 
@@ -72,15 +67,15 @@ export default function OffersStoragePage() {
           </Button>
         </div>
 
-        {/* Premium Tab Switcher */}
-        <div className="px-4 pb-4">
-          <div className="flex p-1 bg-muted/50 rounded-2xl">
+        {/* Tab Switcher - Integrated in Header */}
+        <div className="px-4 pb-3">
+          <div className="flex gap-2 p-1 bg-muted/40 rounded-2xl">
             <button
               onClick={() => setActiveTab('offers')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-300 ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 ${
                 activeTab === 'offers'
-                  ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md shadow-primary/20'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
               <Gift className="h-4 w-4" />
@@ -88,16 +83,16 @@ export default function OffersStoragePage() {
             </button>
             <button
               onClick={() => setActiveTab('storage')}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm transition-all duration-300 relative ${
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold text-sm transition-all duration-300 relative ${
                 activeTab === 'storage'
-                  ? 'bg-gradient-to-r from-primary to-accent text-primary-foreground shadow-lg shadow-primary/20'
-                  : 'text-muted-foreground hover:text-foreground'
+                  ? 'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground shadow-md shadow-primary/20'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               }`}
             >
               <Package className="h-4 w-4" />
               مخزني
               {user && storageCount !== undefined && storageCount > 0 && (
-                <span className={`absolute -top-1 -left-1 min-w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold px-1.5 ${
+                <span className={`absolute -top-1 -left-1 min-w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold px-1.5 shadow-sm ${
                   activeTab === 'storage' 
                     ? 'bg-primary-foreground text-primary' 
                     : 'bg-primary text-primary-foreground'
@@ -111,7 +106,7 @@ export default function OffersStoragePage() {
       </div>
 
       {/* Content */}
-      <main className="flex-1 px-4 py-5">
+      <main className="flex-1 px-4 py-4">
         <Suspense fallback={
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
