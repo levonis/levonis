@@ -1711,6 +1711,7 @@ export type Database = {
       }
       email_verification_codes: {
         Row: {
+          attempts: number | null
           code: string
           created_at: string
           email: string
@@ -1721,6 +1722,7 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
+          attempts?: number | null
           code: string
           created_at?: string
           email: string
@@ -1731,6 +1733,7 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
+          attempts?: number | null
           code?: string
           created_at?: string
           email?: string
@@ -4187,6 +4190,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           email_notifications_enabled: boolean | null
+          email_verified: boolean | null
           full_name: string | null
           gender: string | null
           governorate: string | null
@@ -4210,6 +4214,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           email_notifications_enabled?: boolean | null
+          email_verified?: boolean | null
           full_name?: string | null
           gender?: string | null
           governorate?: string | null
@@ -4233,6 +4238,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           email_notifications_enabled?: boolean | null
+          email_verified?: boolean | null
           full_name?: string | null
           gender?: string | null
           governorate?: string | null
