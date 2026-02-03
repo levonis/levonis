@@ -1002,14 +1002,37 @@ html, body {
   overscroll-behavior: contain;
 }
 
-/* Dialog content scrolling */
+/* Dialog content scrolling - CRITICAL for mobile touch scrolling */
 [data-radix-dialog-content] {
-  -webkit-overflow-scrolling: touch;
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+  overscroll-behavior: contain;
 }
 
 /* Allow scrolling inside ScrollArea within dialogs */
 [data-radix-scroll-area-viewport] {
   touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch;
+  -webkit-overflow-scrolling: touch !important;
   overscroll-behavior: contain;
+}
+
+/* Fix for frozen dialogs - ensure content is scrollable */
+.overflow-y-auto,
+.overflow-auto {
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+}
+
+/* Fix Sheet/Drawer scrolling */
+[data-vaul-drawer] [data-vaul-drawer-content] {
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
+}
+
+/* Ensure nested scroll containers work */
+[data-radix-dialog-content] > div,
+[data-radix-dialog-content] .overflow-y-auto,
+[data-radix-dialog-content] .overflow-auto {
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: pan-y !important;
 }
