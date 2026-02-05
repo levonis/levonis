@@ -260,7 +260,7 @@ export default function EmailVerificationDialog({
             {/* Code Input */}
             <div className="flex justify-center gap-2" dir="ltr">
               {code.map((digit, index) => (
-                <Input
+                <input
                   key={index}
                   ref={(el) => (inputRefs.current[index] = el)}
                   type="text"
@@ -271,7 +271,8 @@ export default function EmailVerificationDialog({
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={handlePaste}
                   disabled={loading}
-                  className="w-12 h-14 text-center text-2xl font-bold"
+                  autoComplete="off"
+                  className="w-12 h-14 text-center text-2xl font-bold border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
                 />
               ))}
             </div>
