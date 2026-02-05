@@ -22,7 +22,7 @@ import { ADMIN_ROUTES } from "@/config/adminConfig";
  * - عند التمرير يظهر حقل البحث داخل الشريط العلوي.
  * - البحث يُخزن في ?q= ... حتى تتشاركه المكونات بدون تمرير props.
  */
-const CommunityTopBar = memo(({ topOffset = 0 }: { topOffset?: number }) => {
+const CommunityTopBar = memo(() => {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -77,7 +77,7 @@ const CommunityTopBar = memo(({ topOffset = 0 }: { topOffset?: number }) => {
   return (
     <header
       className="fixed left-0 right-0 z-50 border-b bg-background/95 backdrop-blur-xl border-border/40 shadow-md"
-      style={{ top: topOffset }}
+      style={{ top: 0 }}
     >
       <div className="container mx-auto px-4">
         <div className="h-14 flex items-center justify-between gap-3">
