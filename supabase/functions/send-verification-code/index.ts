@@ -214,7 +214,7 @@ const handler = async (req: Request): Promise<Response> => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "LEVONIS <noreply@levonis.iq>",
+        from: "LEVONIS <onboarding@resend.dev>",
         to: [email],
         subject: `رمز التحقق: ${code} - LEVONIS`,
         html: emailHTML,
