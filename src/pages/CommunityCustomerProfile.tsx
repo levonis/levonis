@@ -35,9 +35,9 @@ export default function CommunityCustomerProfile() {
       <div className="absolute inset-0 bg-background/60 backdrop-blur-sm" />
 
       {/* Centered modern card */}
-      <div className="relative flex h-full w-full items-center justify-center p-4">
+      <div className="relative flex h-full w-full items-center justify-center p-4 overflow-y-auto">
         <section
-          className="w-[min(92vw,480px)] max-h-[90dvh] rounded-2xl border bg-card shadow-lg overflow-hidden flex flex-col"
+          className="w-[min(92vw,480px)] max-h-[85dvh] rounded-2xl border bg-card shadow-lg flex flex-col my-auto"
           aria-label="إكمال الملف الشخصي"
         >
           <CommunityCustomerProfileModal
