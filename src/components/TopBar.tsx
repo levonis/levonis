@@ -21,9 +21,10 @@ import {
 
 interface TopBarProps {
   announcementHeight?: number;
+  verificationBannerHeight?: number;
 }
 
-const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
+const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: TopBarProps) => {
   const { user, isAdmin, signOut } = useAuth();
   const { itemCount } = useCart();
   const navigate = useNavigate();
@@ -140,11 +141,12 @@ const TopBar = memo(({ announcementHeight = 0 }: TopBarProps) => {
   }, []);
 
   // Calculate top position:
-  // On homepage: when scrolling, move from below announcement to top (pushing announcement up)
-  // On other pages: always at top (0)
+  // Verification banner is always at very top (z-60)
+  // On homepage: when scrolling, move from below announcement to just below verification banner
+  // On other pages: always just below verification banner
   const topPosition = isHomePage 
-    ? (isScrolled ? 0 : announcementHeight)
-    : 0;
+    ? (isScrolled ? verificationBannerHeight : verificationBannerHeight + announcementHeight)
+    : verificationBannerHeight;
 
   return (
     <header 

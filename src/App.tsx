@@ -114,16 +114,26 @@ const PageLoader = () => (
 function AppContent() {
   useDailyLogin();
   const [announcementHeight, setAnnouncementHeight] = useState(0);
+  const [verificationBannerHeight, setVerificationBannerHeight] = useState(0);
   const location = useLocation();
   const isCommunityShell = location.pathname === "/community" || location.pathname.startsWith("/community/");
+  
+  // Total top offset = verification banner (highest z-index) + announcement bar + header
+  const totalTopPadding = isCommunityShell 
+    ? 56 + verificationBannerHeight 
+    : 68 + announcementHeight + verificationBannerHeight;
   
   return (
     <>
       <DecorativeFrame />
-      <AnnouncementBar onHeightChange={setAnnouncementHeight} />
-      <EmailVerificationBanner />
-      {isCommunityShell ? <CommunityTopBar /> : <Header announcementHeight={announcementHeight} />}
-      <main style={{ paddingTop: isCommunityShell ? "56px" : `${68 + announcementHeight}px` }}>
+      <EmailVerificationBanner onHeightChange={setVerificationBannerHeight} />
+      <AnnouncementBar onHeightChange={setAnnouncementHeight} verificationBannerHeight={verificationBannerHeight} />
+      {isCommunityShell ? (
+        <CommunityTopBar verificationBannerHeight={verificationBannerHeight} />
+      ) : (
+        <Header announcementHeight={announcementHeight} verificationBannerHeight={verificationBannerHeight} />
+      )}
+      <main style={{ paddingTop: `${totalTopPadding}px` }}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
