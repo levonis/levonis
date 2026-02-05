@@ -84,15 +84,21 @@ export default function EmailVerificationDialog({
     
     const sendCode = async () => {
       try {
+        console.log('[EmailVerification] Sending code to:', email);
         const { data, error } = await supabase.functions.invoke('send-verification-code', {
           body: { email, type, user_id: userId }
         });
 
+        console.log('[EmailVerification] Response:', { data, error });
+
         if (error) {
-          console.error('Failed to send verification code:', error);
+          console.error('[EmailVerification] Edge function error:', error);
+          // Don't show error for network issues, just log
           sentCodes[timerKey] = false;
         } else if (data?.success) {
-          toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+          if (!data?.alreadySent) {
+            toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+          }
           // Set timer in global store
           resendTimers[timerKey] = Date.now() + 60000;
           setResendTimer(60);
@@ -101,7 +107,7 @@ export default function EmailVerificationDialog({
           sentCodes[timerKey] = false;
         }
       } catch (error) {
-        console.error('Error sending verification code:', error);
+        console.error('[EmailVerification] Catch error:', error);
         sentCodes[timerKey] = false;
       } finally {
         sendingRef.current = false;
