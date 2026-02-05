@@ -229,16 +229,18 @@ export default function EmailVerificationDialog({
               <InputOTP
                 maxLength={6}
                 value={code}
-                onChange={setCode}
+                onChange={(val) => setCode(val.replace(/[^0-9]/g, ''))}
                 disabled={loading}
+                inputMode="numeric"
+                pattern="[0-9]*"
               >
                 <InputOTPGroup className="gap-2">
-                  <InputOTPSlot index={0} className="w-12 h-14 text-2xl font-bold" />
-                  <InputOTPSlot index={1} className="w-12 h-14 text-2xl font-bold" />
-                  <InputOTPSlot index={2} className="w-12 h-14 text-2xl font-bold" />
-                  <InputOTPSlot index={3} className="w-12 h-14 text-2xl font-bold" />
-                  <InputOTPSlot index={4} className="w-12 h-14 text-2xl font-bold" />
-                  <InputOTPSlot index={5} className="w-12 h-14 text-2xl font-bold" />
+                  <InputOTPSlot index={0} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
+                  <InputOTPSlot index={1} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
+                  <InputOTPSlot index={2} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
+                  <InputOTPSlot index={3} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
+                  <InputOTPSlot index={4} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
+                  <InputOTPSlot index={5} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
                 </InputOTPGroup>
               </InputOTP>
             </div>
