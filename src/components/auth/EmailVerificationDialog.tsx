@@ -18,6 +18,8 @@ interface EmailVerificationDialogProps {
 
 // Store resend timers globally to persist across dialog open/close
 const resendTimers: Record<string, number> = {};
+// Track which email+type combinations have already sent codes in this session
+const sentCodes: Record<string, boolean> = {};
 
 export default function EmailVerificationDialog({
   open,
@@ -32,8 +34,10 @@ export default function EmailVerificationDialog({
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const hasSentCodeRef = useRef(false);
-  const timerKey = `${email}-${type}`;
+  const sendingRef = useRef(false); // Prevent concurrent sends
+  
+  // Use email + type + userId for unique key
+  const timerKey = `${email}-${type}-${userId || 'no-user'}`;
   
   // Get remaining time from global store
   const getStoredTimer = useCallback(() => {
@@ -56,24 +60,27 @@ export default function EmailVerificationDialog({
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, 100);
-    } else {
-      // Reset the sent flag when dialog closes
-      hasSentCodeRef.current = false;
     }
   }, [open, getStoredTimer]);
 
-  // Send verification code when dialog opens (only once per open)
+  // Send verification code when dialog opens (only once per session)
   useEffect(() => {
-    if (!open || !email || hasSentCodeRef.current) return;
+    if (!open || !email || sendingRef.current) return;
+    
+    // Check if we already sent a code for this combination in this session
+    if (sentCodes[timerKey]) {
+      return;
+    }
     
     // Check if there's an active timer (code was recently sent)
     const existingTimer = getStoredTimer();
     if (existingTimer > 0) {
-      hasSentCodeRef.current = true;
+      sentCodes[timerKey] = true;
       return;
     }
     
-    hasSentCodeRef.current = true;
+    sendingRef.current = true;
+    sentCodes[timerKey] = true;
     
     const sendCode = async () => {
       try {
@@ -83,7 +90,7 @@ export default function EmailVerificationDialog({
 
         if (error) {
           console.error('Failed to send verification code:', error);
-          hasSentCodeRef.current = false;
+          sentCodes[timerKey] = false;
         } else if (data?.success) {
           toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
           // Set timer in global store
@@ -91,17 +98,20 @@ export default function EmailVerificationDialog({
           setResendTimer(60);
         } else if (data?.error) {
           toast.error(data.error);
-          hasSentCodeRef.current = false;
+          sentCodes[timerKey] = false;
         }
       } catch (error) {
         console.error('Error sending verification code:', error);
-        hasSentCodeRef.current = false;
+        sentCodes[timerKey] = false;
+      } finally {
+        sendingRef.current = false;
       }
     };
 
     sendCode();
   }, [open, email, type, userId, timerKey, getStoredTimer]);
 
+  // Timer countdown
   useEffect(() => {
     if (resendTimer > 0 && open) {
       const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
@@ -161,6 +171,8 @@ export default function EmailVerificationDialog({
       if (data.success) {
         setVerified(true);
         toast.success('تم التحقق بنجاح! ✓');
+        // Clear the sent code tracker so re-verification works if needed
+        delete sentCodes[timerKey];
         setTimeout(() => {
           onVerified();
           onOpenChange(false);
@@ -181,8 +193,9 @@ export default function EmailVerificationDialog({
   };
 
   const handleResend = async () => {
-    if (resendTimer > 0 || loading) return;
+    if (resendTimer > 0 || loading || sendingRef.current) return;
 
+    sendingRef.current = true;
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('send-verification-code', {
@@ -207,6 +220,7 @@ export default function EmailVerificationDialog({
       toast.error(error.message || 'حدث خطأ');
     } finally {
       setLoading(false);
+      sendingRef.current = false;
     }
   };
 
