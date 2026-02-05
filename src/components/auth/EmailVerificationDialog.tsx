@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,9 @@ interface EmailVerificationDialogProps {
   onResendCode?: () => void;
 }
 
+// Store resend timers globally to persist across dialog open/close
+const resendTimers: Record<string, number> = {};
+
 export default function EmailVerificationDialog({
   open,
   onOpenChange,
@@ -27,56 +30,77 @@ export default function EmailVerificationDialog({
 }: EmailVerificationDialogProps) {
   const [code, setCode] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
-  const [resendTimer, setResendTimer] = useState(60);
   const [verified, setVerified] = useState(false);
-  const [initialCodeSent, setInitialCodeSent] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const hasSentCodeRef = useRef(false);
+  const timerKey = `${email}-${type}`;
+  
+  // Get remaining time from global store
+  const getStoredTimer = useCallback(() => {
+    const storedTime = resendTimers[timerKey];
+    if (storedTime) {
+      const remaining = Math.max(0, Math.ceil((storedTime - Date.now()) / 1000));
+      return remaining > 0 ? remaining : 0;
+    }
+    return 0;
+  }, [timerKey]);
+  
+  const [resendTimer, setResendTimer] = useState(() => getStoredTimer());
 
+  // Reset code inputs when dialog opens
   useEffect(() => {
     if (open) {
       setCode(['', '', '', '', '', '']);
       setVerified(false);
-      // Focus first input
+      setResendTimer(getStoredTimer());
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, 100);
     } else {
-      // Reset when dialog closes
-      setInitialCodeSent(false);
-      setResendTimer(60);
+      // Reset the sent flag when dialog closes
+      hasSentCodeRef.current = false;
     }
-  }, [open]);
+  }, [open, getStoredTimer]);
 
-  // Send verification code when dialog opens (only once)
+  // Send verification code when dialog opens (only once per open)
   useEffect(() => {
-    const sendInitialCode = async () => {
-      if (!open || !email || initialCodeSent) return;
-      
-      setInitialCodeSent(true);
-      
+    if (!open || !email || hasSentCodeRef.current) return;
+    
+    // Check if there's an active timer (code was recently sent)
+    const existingTimer = getStoredTimer();
+    if (existingTimer > 0) {
+      hasSentCodeRef.current = true;
+      return;
+    }
+    
+    hasSentCodeRef.current = true;
+    
+    const sendCode = async () => {
       try {
         const { data, error } = await supabase.functions.invoke('send-verification-code', {
           body: { email, type, user_id: userId }
         });
 
         if (error) {
-          console.error('Failed to send initial verification code:', error);
-          setInitialCodeSent(false);
+          console.error('Failed to send verification code:', error);
+          hasSentCodeRef.current = false;
         } else if (data?.success) {
           toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+          // Set timer in global store
+          resendTimers[timerKey] = Date.now() + 60000;
           setResendTimer(60);
         } else if (data?.error) {
           toast.error(data.error);
-          setInitialCodeSent(false);
+          hasSentCodeRef.current = false;
         }
       } catch (error) {
         console.error('Error sending verification code:', error);
-        setInitialCodeSent(false);
+        hasSentCodeRef.current = false;
       }
     };
 
-    sendInitialCode();
-  }, [open, email, type, userId, initialCodeSent]);
+    sendCode();
+  }, [open, email, type, userId, timerKey, getStoredTimer]);
 
   useEffect(() => {
     if (resendTimer > 0 && open) {
@@ -157,7 +181,7 @@ export default function EmailVerificationDialog({
   };
 
   const handleResend = async () => {
-    if (resendTimer > 0) return;
+    if (resendTimer > 0 || loading) return;
 
     setLoading(true);
     try {
@@ -169,6 +193,8 @@ export default function EmailVerificationDialog({
 
       if (data.success) {
         toast.success('تم إرسال رمز جديد');
+        // Set timer in global store
+        resendTimers[timerKey] = Date.now() + 60000;
         setResendTimer(60);
         setCode(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
@@ -193,7 +219,7 @@ export default function EmailVerificationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" dir="rtl">
+      <DialogContent className="sm:max-w-md z-[9999]" dir="rtl">
         <DialogHeader className="text-center">
           <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
             {verified ? (
