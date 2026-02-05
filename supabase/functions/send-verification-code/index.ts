@@ -204,16 +204,36 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // Check if a valid code was sent recently (within 30 seconds) to prevent duplicate sends
+    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
+    const { data: recentCode } = await supabase
+      .from('email_verification_codes')
+      .select('id, created_at')
+      .eq('email', email)
+      .eq('type', type)
+      .gte('created_at', thirtySecondsAgo)
+      .maybeSingle();
+
+    if (recentCode) {
+      // Code was recently sent, return success without sending again
+      console.log("Recent code exists, skipping duplicate send for:", email);
+      return new Response(
+        JSON.stringify({ success: true, message: "Verification code already sent", alreadySent: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Generate verification code
     const code = generateCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
 
-    // Delete old codes for this email and type
+    // Delete old codes for this email and type (older than 30 seconds)
     await supabase
       .from('email_verification_codes')
       .delete()
       .eq('email', email)
-      .eq('type', type);
+      .eq('type', type)
+      .lt('created_at', thirtySecondsAgo);
 
     // Insert new code
     const { error: insertError } = await supabase
@@ -228,6 +248,14 @@ const handler = async (req: Request): Promise<Response> => {
       });
 
     if (insertError) {
+      // Check if it's a duplicate - another request beat us to it
+      if (insertError.code === '23505') {
+        console.log("Duplicate insert detected, skipping for:", email);
+        return new Response(
+          JSON.stringify({ success: true, message: "Verification code already sent", alreadySent: true }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       console.error("Error inserting code:", insertError);
       return new Response(
         JSON.stringify({ success: false, error: "Failed to create verification code" }),
