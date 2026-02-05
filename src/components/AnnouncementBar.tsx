@@ -7,10 +7,9 @@ import { useLocation } from 'react-router-dom';
 
 interface AnnouncementBarProps {
   onHeightChange?: (height: number) => void;
-  topOffset?: number;
 }
 
-const AnnouncementBar = memo(({ onHeightChange, topOffset = 0 }: AnnouncementBarProps) => {
+const AnnouncementBar = memo(({ onHeightChange }: AnnouncementBarProps) => {
   const [dismissed, setDismissed] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -120,11 +119,12 @@ const AnnouncementBar = memo(({ onHeightChange, topOffset = 0 }: AnnouncementBar
     setCurrentIndex((prev) => (prev + 1) % announcements.length);
   };
 
+  // Position: below TopBar (68px)
   return (
     <div 
       ref={barRef}
-      className="fixed left-0 right-0 z-[45] text-white py-2 px-3 overflow-hidden text-sm"
-      style={{ backgroundColor: bgColor, top: topOffset }}
+      className="fixed left-0 right-0 z-[49] text-white py-2 px-3 overflow-hidden text-sm"
+      style={{ backgroundColor: bgColor, top: 68 }}
     >
       <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
         {/* Previous button */}
