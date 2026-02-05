@@ -124,9 +124,9 @@ function AppContent() {
   return (
     <>
       <DecorativeFrame />
+      {isCommunityShell ? <CommunityTopBar topOffset={0} /> : <Header announcementHeight={0} />}
       <EmailVerificationBanner onHeightChange={setVerificationBannerHeight} />
       <AnnouncementBar onHeightChange={setAnnouncementHeight} topOffset={verificationBannerHeight} />
-      {isCommunityShell ? <CommunityTopBar topOffset={totalTopOffset} /> : <Header announcementHeight={totalTopOffset} />}
       <main style={{ paddingTop: isCommunityShell ? `${56 + totalTopOffset}px` : `${68 + totalTopOffset}px` }}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
