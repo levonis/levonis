@@ -411,53 +411,43 @@ export default function CommunityCustomerProfileModal({
       className="flex min-h-0 flex-1 flex-col bg-card"
     >
       {/* Compact Header */}
-      <header className="relative overflow-hidden px-4 py-4 bg-gradient-to-b from-background via-card to-card border-b border-border/30">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-3xl" />
-        </div>
-        
+      <header className="relative overflow-hidden px-4 py-2.5 bg-gradient-to-b from-background via-card to-card border-b border-border/30">
         <div className="relative">
           {/* Step Indicator */}
-          <div className="flex items-center justify-center gap-3 mb-3">
+          <div className="flex items-center justify-center gap-2 mb-2">
             <button
               type="button"
               onClick={() => setStep(1)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all ${
                 step === 1 
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-muted/50 text-muted-foreground'
               }`}
             >
-              <UserCircle2 className="h-3.5 w-3.5" />
+              <UserCircle2 className="h-3 w-3" />
               البيانات
             </button>
-            <div className="h-px w-6 bg-border" />
+            <div className="h-px w-4 bg-border" />
             <button
               type="button"
               onClick={() => isStep1Complete && hasValidAvatar && setStep(2)}
               disabled={!isStep1Complete || !hasValidAvatar}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all disabled:opacity-50 ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-medium transition-all disabled:opacity-50 ${
                 step === 2 
                   ? 'bg-primary text-primary-foreground' 
                   : 'bg-muted/50 text-muted-foreground'
               }`}
             >
-              <Mail className="h-3.5 w-3.5" />
+              <Mail className="h-3 w-3" />
               التحقق
             </button>
           </div>
 
-          {/* Avatar Section - Compact */}
+          {/* Avatar Section - Very Compact */}
           {step === 1 && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <div className="relative group shrink-0">
-                <div className={`absolute -inset-1 rounded-full transition-all duration-500 ${
-                  hasValidAvatar 
-                    ? 'bg-gradient-to-r from-primary via-accent to-primary opacity-50 blur-sm' 
-                    : 'bg-border/40 opacity-30 blur-sm'
-                }`} />
-                
-                <div className="relative h-16 w-16 rounded-full bg-gradient-to-br from-primary/80 to-accent p-[2px] shadow-lg">
+                <div className="relative h-12 w-12 rounded-full bg-gradient-to-br from-primary/80 to-accent p-[2px] shadow-md">
                   <div className="h-full w-full rounded-full bg-card overflow-hidden border-2 border-card">
                     {avatarUrl && avatarUrl !== DEFAULT_AVATAR_URL ? (
                       <img 
@@ -467,7 +457,7 @@ export default function CommunityCustomerProfileModal({
                       />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center bg-background">
-                        <UserCircle2 className="h-7 w-7 text-muted-foreground/40" />
+                        <UserCircle2 className="h-5 w-5 text-muted-foreground/40" />
                       </div>
                     )}
                   </div>
@@ -479,22 +469,22 @@ export default function CommunityCustomerProfileModal({
                   disabled={uploadingAvatar}
                   className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 hover:bg-black/50 transition-all duration-300 cursor-pointer group"
                 >
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-card/95 rounded-full p-1.5 shadow-lg border border-border">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-card/95 rounded-full p-1 shadow-lg border border-border">
                     {uploadingAvatar ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <Loader2 className="h-3 w-3 animate-spin text-primary" />
                     ) : (
-                      <Camera className="h-4 w-4 text-primary" />
+                      <Camera className="h-3 w-3 text-primary" />
                     )}
                   </div>
                 </button>
                 
-                <div className={`absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full flex items-center justify-center shadow-md border-2 border-card transition-all ${
+                <div className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full flex items-center justify-center shadow-sm border border-card transition-all ${
                   hasValidAvatar ? 'bg-emerald-600' : 'bg-amber-600'
                 }`}>
                   {hasValidAvatar ? (
-                    <CheckCircle2 className="h-3 w-3 text-white" />
+                    <CheckCircle2 className="h-2.5 w-2.5 text-white" />
                   ) : (
-                    <Camera className="h-3 w-3 text-white" />
+                    <Camera className="h-2.5 w-2.5 text-white" />
                   )}
                 </div>
                 
@@ -508,14 +498,14 @@ export default function CommunityCustomerProfileModal({
               </div>
               
               <div className="flex-1 min-w-0">
-                <h2 className="text-base font-bold text-foreground">
+                <h2 className="text-sm font-bold text-foreground">
                   أكمل ملفك الشخصي
                 </h2>
-                <p className="text-[11px] text-muted-foreground/70">
+                <p className="text-[10px] text-muted-foreground/70">
                   {completedFields} من {totalRequiredFields} حقول مكتملة
                 </p>
                 
-                <div className="relative h-1.5 bg-background rounded-full overflow-hidden border border-border/50 mt-1.5">
+                <div className="relative h-1 bg-background rounded-full overflow-hidden border border-border/50 mt-1">
                   <div 
                     className="absolute inset-y-0 right-0 bg-gradient-to-l from-primary to-accent rounded-full transition-all duration-700 ease-out"
                     style={{ width: `${(completedFields / totalRequiredFields) * 100}%` }}
@@ -527,13 +517,13 @@ export default function CommunityCustomerProfileModal({
 
           {step === 2 && (
             <div className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Mail className="h-5 w-5 text-primary" />
-                <h2 className="text-base font-bold text-foreground">
+              <div className="flex items-center justify-center gap-1.5">
+                <Mail className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-bold text-foreground">
                   التحقق والموافقة
                 </h2>
               </div>
-              <p className="text-[11px] text-muted-foreground/70">
+              <p className="text-[10px] text-muted-foreground/70">
                 أكد بريدك الإلكتروني ووافق على الشروط
               </p>
             </div>
