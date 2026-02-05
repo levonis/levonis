@@ -1,4 +1,4 @@
-// App component - main application entry point - v8 (global floating chat button)
+// App component - main application entry point - v9 (cache fix)
 import { Suspense, lazy, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
