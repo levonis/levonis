@@ -43,6 +43,29 @@ export default function EmailVerificationDialog({
     }
   }, [open]);
 
+  // Send verification code when dialog opens (if not already sent)
+  useEffect(() => {
+    const sendInitialCode = async () => {
+      if (!open || !email) return;
+      
+      try {
+        const { data, error } = await supabase.functions.invoke('send-verification-code', {
+          body: { email, type, user_id: userId }
+        });
+
+        if (error) {
+          console.error('Failed to send initial verification code:', error);
+        } else if (data?.success) {
+          toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+        }
+      } catch (error) {
+        console.error('Error sending verification code:', error);
+      }
+    };
+
+    sendInitialCode();
+  }, [open, email, type, userId]);
+
   useEffect(() => {
     if (resendTimer > 0 && open) {
       const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
