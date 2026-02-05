@@ -47,6 +47,7 @@ export const ADMIN_ROUTES = {
   communityMessages: `${ADMIN_BASE_PATH}/levo-community/messages`,
   badgeSettings: `${ADMIN_BASE_PATH}/levo-community/badge-settings`,
   avatarFrames: `${ADMIN_BASE_PATH}/levo-community/avatar-frames`,
+  users: `${ADMIN_BASE_PATH}/users`,
 } as const;
 
 // Helper to check if a path is an admin path

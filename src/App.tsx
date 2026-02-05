@@ -98,6 +98,7 @@ const MyOfferPurchases = lazy(() => import("./pages/MyOfferPurchases"));
 const AdminOfferPurchases = lazy(() => import("./pages/AdminOfferPurchases"));
 const AdminRedeemableProducts = lazy(() => import("./pages/AdminRedeemableProducts"));
 const AdminCartRequests = lazy(() => import("./pages/AdminCartRequests"));
+const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const CommunityHome = lazy(() => import("./pages/CommunityHome"));
 const OffersStoragePage = lazy(() => import("./pages/OffersStoragePage"));
 const WalletSuccess = lazy(() => import("./pages/WalletSuccess"));
@@ -185,7 +186,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/levo-community/messages`} element={<AdminRoute><AdminCommunityMessages /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/levo-community/badge-settings`} element={<AdminRoute><AdminBadgeSettings /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/levo-community/avatar-frames`} element={<AdminRoute><AdminAvatarFrames /></AdminRoute>} />
-            
+            <Route path={`${ADMIN_BASE_PATH}/users`} element={<AdminRoute><AdminUsers /></AdminRoute>} />
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />
