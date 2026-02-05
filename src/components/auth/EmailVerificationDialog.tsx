@@ -264,21 +264,44 @@ export default function EmailVerificationDialog({
         ) : (
           <div className="space-y-6 py-4">
             {/* Code Input */}
-            <div className="flex justify-center gap-2" dir="ltr">
+            <div className="flex justify-center gap-3" dir="ltr">
               {code.map((digit, index) => (
                 <input
                   key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
                   type="text"
                   inputMode="numeric"
+                  pattern="[0-9]*"
                   maxLength={1}
                   value={digit}
                   onChange={(e) => handleInputChange(index, e.target.value)}
                   onKeyDown={(e) => handleKeyDown(index, e)}
                   onPaste={handlePaste}
                   disabled={loading}
-                  autoComplete="off"
-                  className="w-12 h-14 text-center text-2xl font-bold border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+                  autoComplete="one-time-code"
+                  autoFocus={index === 0}
+                  style={{
+                    width: '48px',
+                    height: '56px',
+                    textAlign: 'center',
+                    fontSize: '24px',
+                    fontWeight: 'bold',
+                    border: '2px solid hsl(var(--input))',
+                    borderRadius: '8px',
+                    backgroundColor: 'hsl(var(--background))',
+                    color: 'hsl(var(--foreground))',
+                    outline: 'none',
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = 'hsl(var(--primary))';
+                    e.target.style.boxShadow = '0 0 0 2px hsl(var(--primary) / 0.2)';
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = 'hsl(var(--input))';
+                    e.target.style.boxShadow = 'none';
+                  }}
                 />
               ))}
             </div>
