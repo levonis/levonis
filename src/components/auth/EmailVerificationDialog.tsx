@@ -29,24 +29,30 @@ export default function EmailVerificationDialog({
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(60);
   const [verified, setVerified] = useState(false);
+  const [initialCodeSent, setInitialCodeSent] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     if (open) {
       setCode(['', '', '', '', '', '']);
       setVerified(false);
-      setResendTimer(60);
       // Focus first input
       setTimeout(() => {
         inputRefs.current[0]?.focus();
       }, 100);
+    } else {
+      // Reset when dialog closes
+      setInitialCodeSent(false);
+      setResendTimer(60);
     }
   }, [open]);
 
-  // Send verification code when dialog opens (if not already sent)
+  // Send verification code when dialog opens (only once)
   useEffect(() => {
     const sendInitialCode = async () => {
-      if (!open || !email) return;
+      if (!open || !email || initialCodeSent) return;
+      
+      setInitialCodeSent(true);
       
       try {
         const { data, error } = await supabase.functions.invoke('send-verification-code', {
@@ -55,16 +61,22 @@ export default function EmailVerificationDialog({
 
         if (error) {
           console.error('Failed to send initial verification code:', error);
+          setInitialCodeSent(false);
         } else if (data?.success) {
           toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+          setResendTimer(60);
+        } else if (data?.error) {
+          toast.error(data.error);
+          setInitialCodeSent(false);
         }
       } catch (error) {
         console.error('Error sending verification code:', error);
+        setInitialCodeSent(false);
       }
     };
 
     sendInitialCode();
-  }, [open, email, type, userId]);
+  }, [open, email, type, userId, initialCodeSent]);
 
   useEffect(() => {
     if (resendTimer > 0 && open) {

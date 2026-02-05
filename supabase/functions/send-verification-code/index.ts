@@ -16,26 +16,22 @@ const generateCode = (): string => {
 };
 
 const generateEmailHTML = (code: string, type: string) => {
-  const typeLabels: Record<string, { title: string; message: string; icon: string }> = {
+  const typeLabels: Record<string, { title: string; message: string }> = {
     signup: {
-      title: 'مرحباً بك في LEVONIS',
-      message: 'شكراً لانضمامك إلى عائلة ليفونيس! استخدم الرمز أدناه لتفعيل حسابك والبدء في تجربة تسوق استثنائية.',
-      icon: '✨',
+      title: 'مرحباً بك في عائلة ليفو',
+      message: 'شكراً لانضمامك إلى عائلة ليفو! استخدم الرمز أدناه لتفعيل حسابك والبدء في تجربة تسوق استثنائية.',
     },
     password_reset: {
       title: 'إعادة تعيين كلمة المرور',
       message: 'تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك. استخدم الرمز أدناه للمتابعة.',
-      icon: '🔑',
     },
     password_change: {
       title: 'تأكيد تغيير كلمة المرور',
       message: 'لإتمام عملية تغيير كلمة المرور، يرجى إدخال رمز التحقق أدناه.',
-      icon: '🛡️',
     },
     email_change: {
       title: 'تأكيد البريد الإلكتروني الجديد',
       message: 'لتأكيد تغيير بريدك الإلكتروني، يرجى إدخال رمز التحقق أدناه.',
-      icon: '📧',
     },
   };
 
@@ -69,14 +65,8 @@ const generateEmailHTML = (code: string, type: string) => {
           <!-- Header with Logo -->
           <tr>
             <td style="padding: 45px 40px 30px; text-align: center;">
-              <!-- Logo Mark -->
-              <div style="width: 70px; height: 70px; margin: 0 auto 20px; background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(178, 143, 55, 0.08) 100%); border-radius: 20px; border: 1px solid rgba(212, 175, 55, 0.25); display: flex; align-items: center; justify-content: center;">
-                <table role="presentation" width="70" height="70" cellpadding="0" cellspacing="0">
-                  <tr>
-                    <td align="center" valign="middle" style="font-size: 32px;">${config.icon}</td>
-                  </tr>
-                </table>
-              </div>
+              <!-- Logo Image -->
+              <img src="https://sajlfpygebpqwzpotrsg.supabase.co/storage/v1/object/public/site-assets/logo.png" alt="LEVONIS Logo" width="80" height="80" style="display: block; margin: 0 auto 20px; border-radius: 16px;" />
               <!-- Brand Name -->
               <h1 style="margin: 0; font-size: 32px; font-weight: 800; letter-spacing: 6px; background: linear-gradient(135deg, #d4af37 0%, #f5d984 50%, #d4af37 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">LEVONIS</h1>
               <p style="margin: 8px 0 0; font-size: 11px; color: #7a9990; letter-spacing: 3px; text-transform: uppercase;">Premium Electronics</p>
@@ -110,9 +100,11 @@ const generateEmailHTML = (code: string, type: string) => {
                   <tr>
                     ${codeDigits.map(digit => `
                     <td style="padding: 0 4px;">
-                      <div style="width: 48px; height: 60px; background: linear-gradient(180deg, #1a3d34 0%, #153029 100%); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 10px; line-height: 60px; text-align: center;">
-                        <span style="font-size: 28px; font-weight: 700; color: #d4af37; font-family: 'Courier New', monospace;">${digit}</span>
-                      </div>
+                      <table role="presentation" cellpadding="0" cellspacing="0" style="width: 48px; height: 60px; background: linear-gradient(180deg, #1a3d34 0%, #153029 100%); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 10px;">
+                        <tr>
+                          <td align="center" valign="middle" style="font-size: 28px; font-weight: 700; color: #d4af37; font-family: 'Courier New', monospace;">${digit}</td>
+                        </tr>
+                      </table>
                     </td>
                     `).join('')}
                   </tr>
@@ -121,15 +113,15 @@ const generateEmailHTML = (code: string, type: string) => {
               
               <!-- Timer Notice -->
               <div style="text-align: center; margin-bottom: 25px;">
-                <span style="display: inline-block; background: rgba(212, 175, 55, 0.1); border: 1px solid rgba(212, 175, 55, 0.2); border-radius: 20px; padding: 8px 20px; font-size: 13px; color: #d4af37;">
-                  ⏱️ صالح لمدة <strong>10 دقائق</strong> فقط
+                <span style="display: inline-block; background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.08) 100%); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: 20px; padding: 10px 24px; font-size: 13px; color: #d4af37;">
+                  ⏱️ صالح لمدة <strong style="color: #f5d984;">10 دقائق</strong> فقط
                 </span>
               </div>
               
               <!-- Security Warning -->
-              <div style="background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 16px 20px; text-align: center;">
-                <p style="margin: 0; font-size: 12px; color: #f87171; line-height: 1.6;">
-                  ⚠️ لا تشارك هذا الرمز مع أي شخص. فريق LEVONIS لن يطلب منك هذا الرمز أبداً.
+              <div style="background: linear-gradient(135deg, rgba(178, 143, 55, 0.1) 0%, rgba(178, 143, 55, 0.05) 100%); border: 1px solid rgba(178, 143, 55, 0.2); border-radius: 12px; padding: 16px 20px; text-align: center;">
+                <p style="margin: 0; font-size: 12px; color: #c9a84a; line-height: 1.6;">
+                  🔒 لا تشارك هذا الرمز مع أي شخص. فريق LEVONIS لن يطلب منك هذا الرمز أبداً.
                 </p>
               </div>
             </td>
@@ -142,7 +134,7 @@ const generateEmailHTML = (code: string, type: string) => {
                 إذا لم تطلب هذا الرمز، يمكنك تجاهل هذا البريد بأمان.
               </p>
               <p style="margin: 0; font-size: 11px; color: #3d5a52;">
-                © 2024 LEVONIS. جميع الحقوق محفوظة.
+                © 2026 LEVONIS. جميع الحقوق محفوظة.
               </p>
             </td>
           </tr>
