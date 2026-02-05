@@ -8,9 +8,10 @@ import EmailVerificationDialog from './EmailVerificationDialog';
 
 interface EmailVerificationBannerProps {
   onHeightChange?: (height: number) => void;
+  announcementHeight?: number;
 }
 
-export default function EmailVerificationBanner({ onHeightChange }: EmailVerificationBannerProps) {
+export default function EmailVerificationBanner({ onHeightChange, announcementHeight = 0 }: EmailVerificationBannerProps) {
   const { user } = useAuth();
   const [showBanner, setShowBanner] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
@@ -95,9 +96,12 @@ export default function EmailVerificationBanner({ onHeightChange }: EmailVerific
 
   if (!showBanner || emailVerified || dismissed) return null;
 
+  // Calculate position: below TopBar (68px height) + announcement bar offset
+  const topPosition = 68 + announcementHeight;
+
   return (
     <>
-      <div ref={bannerRef} className="fixed left-0 right-0 z-[46] bg-amber-500 text-white py-2.5 px-4 shadow-md" style={{ top: 0 }}>
+      <div ref={bannerRef} className="fixed left-0 right-0 z-[48] bg-amber-500 text-white py-2.5 px-4 shadow-md" style={{ top: `${topPosition}px` }}>
         <div className="container mx-auto flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 text-white">
             <AlertTriangle className="h-4 w-4 shrink-0" />

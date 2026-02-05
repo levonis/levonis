@@ -118,14 +118,14 @@ function AppContent() {
   const location = useLocation();
   const isCommunityShell = location.pathname === "/community" || location.pathname.startsWith("/community/");
   
-  // Total top offset = verification banner + announcement bar
-  const totalTopOffset = verificationBannerHeight + announcementHeight;
+  // Total top offset = announcement bar + verification banner (both below the header)
+  const totalTopOffset = announcementHeight + verificationBannerHeight;
   
   return (
     <>
       <DecorativeFrame />
-      <EmailVerificationBanner onHeightChange={setVerificationBannerHeight} />
-      <AnnouncementBar onHeightChange={setAnnouncementHeight} topOffset={verificationBannerHeight} />
+      <AnnouncementBar onHeightChange={setAnnouncementHeight} />
+      <EmailVerificationBanner onHeightChange={setVerificationBannerHeight} announcementHeight={announcementHeight} />
       {isCommunityShell ? <CommunityTopBar topOffset={totalTopOffset} /> : <Header announcementHeight={totalTopOffset} />}
       <main style={{ paddingTop: isCommunityShell ? `${56 + totalTopOffset}px` : `${68 + totalTopOffset}px` }}>
         <Suspense fallback={<PageLoader />}>
