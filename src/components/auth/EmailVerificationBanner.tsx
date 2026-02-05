@@ -97,7 +97,7 @@ export default function EmailVerificationBanner({ onHeightChange }: EmailVerific
 
   return (
     <>
-      <div ref={bannerRef} className="bg-amber-500 text-white py-2.5 px-4 shadow-md">
+      <div ref={bannerRef} className="fixed left-0 right-0 z-[46] bg-amber-500 text-white py-2.5 px-4 shadow-md" style={{ top: 0 }}>
         <div className="container mx-auto flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 text-white">
             <AlertTriangle className="h-4 w-4 shrink-0" />
