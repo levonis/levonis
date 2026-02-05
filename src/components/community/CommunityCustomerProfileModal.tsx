@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Checkbox } from "@/components/ui/checkbox";
 import AvatarCropper from "./AvatarCropper";
 import CommunityTermsSheet from "./CommunityTermsSheet";
+import EmailVerificationDialog from "@/components/auth/EmailVerificationDialog";
 import { 
   Loader2, 
   UserCircle2, 
@@ -36,6 +37,9 @@ import {
   Zap,
   Crown,
   BadgeCheck,
+  ArrowLeft,
+  ArrowRight,
+  Mail,
 } from "lucide-react";
 
 const DEFAULT_AVATAR_URL = "/placeholder.svg";
@@ -89,6 +93,9 @@ export default function CommunityCustomerProfileModal({
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Step state
+  const [step, setStep] = useState<1 | 2>(1);
+  
   // Cropper state
   const [cropperOpen, setCropperOpen] = useState(false);
   const [rawImageSrc, setRawImageSrc] = useState<string>("");
@@ -96,6 +103,10 @@ export default function CommunityCustomerProfileModal({
   // Terms state
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [showTermsSheet, setShowTermsSheet] = useState(false);
+  
+  // Email verification state
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
 
   useEffect(() => {
     const t = window.setTimeout(() => setLoadingUi(false), 200);
@@ -108,7 +119,7 @@ export default function CommunityCustomerProfileModal({
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from("profiles")
-        .select("full_name, phone_number, username, birth_date, gender, bio, avatar_url")
+        .select("full_name, phone_number, username, birth_date, gender, bio, avatar_url, email_verified")
         .eq("id", user.id)
         .maybeSingle();
       if (error) throw error;
@@ -121,7 +132,10 @@ export default function CommunityCustomerProfileModal({
     if (profile?.avatar_url) {
       setAvatarUrl(profile.avatar_url as string);
     }
-  }, [profile?.avatar_url]);
+    if (profile?.email_verified) {
+      setEmailVerified(true);
+    }
+  }, [profile?.avatar_url, profile?.email_verified]);
 
   const defaults = useMemo<FormValues>(
     () => ({
@@ -281,6 +295,7 @@ export default function CommunityCustomerProfileModal({
         gender: values.gender,
         bio: values.bio?.trim() ? values.bio.trim() : null,
         avatar_url: avatarUrl,
+        email_verified: emailVerified,
       };
 
       const { error } = await supabase.from("profiles").update(profilePayload).eq("id", user.id);
@@ -347,8 +362,8 @@ export default function CommunityCustomerProfileModal({
   }, [form.watch(), avatarUrl]);
 
   const totalRequiredFields = 6;
-  const progressPercent = (completedFields / totalRequiredFields) * 100;
-  const isComplete = completedFields === totalRequiredFields;
+  const progressPercent = step === 1 ? (completedFields / totalRequiredFields) * 50 : 50 + (emailVerified ? 25 : 0) + (termsAccepted ? 25 : 0);
+  const isStep1Complete = completedFields === totalRequiredFields;
 
   const fields: FieldConfig[] = [
     {
@@ -378,134 +393,164 @@ export default function CommunityCustomerProfileModal({
 
   const hasValidAvatar = avatarUrl && avatarUrl !== DEFAULT_AVATAR_URL && !avatarUrl.includes("dicebear");
 
+  const handleNextStep = () => {
+    if (!isStep1Complete || !hasValidAvatar) {
+      toast({
+        title: "أكمل البيانات المطلوبة",
+        description: "يرجى ملء جميع الحقول المطلوبة ورفع صورة شخصية",
+        variant: "destructive",
+      });
+      return;
+    }
+    setStep(2);
+  };
+
   return (
     <form
       onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))}
       className="flex min-h-0 flex-1 flex-col bg-card"
     >
-      {/* Premium Hero Header */}
-      <header className="relative overflow-hidden px-5 py-6 bg-gradient-to-b from-background via-card to-card border-b border-border/30">
-        {/* Subtle Background Pattern */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-24 h-24 bg-accent/15 rounded-full blur-2xl" />
+      {/* Compact Header */}
+      <header className="relative overflow-hidden px-4 py-4 bg-gradient-to-b from-background via-card to-card border-b border-border/30">
+        <div className="absolute inset-0 opacity-20">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-primary/20 rounded-full blur-3xl" />
         </div>
         
         <div className="relative">
-          {/* Avatar Section - Centered */}
-          <div className="flex flex-col items-center mb-5">
-            <div className="relative group">
-              {/* Glowing Ring */}
-              <div className={`absolute -inset-1.5 rounded-full transition-all duration-500 ${
-                hasValidAvatar 
-                  ? 'bg-gradient-to-r from-primary via-accent to-primary opacity-60 blur-sm' 
-                  : 'bg-border/40 opacity-40 blur-sm'
-              }`} />
-              
-              {/* Avatar Container */}
-              <div className="relative h-24 w-24 rounded-full bg-gradient-to-br from-primary/80 to-accent p-[2px] shadow-xl">
-                <div className="h-full w-full rounded-full bg-card overflow-hidden border-2 border-card">
-                  {avatarUrl && avatarUrl !== DEFAULT_AVATAR_URL ? (
-                    <img 
-                      src={avatarUrl} 
-                      alt="الصورة الشخصية" 
-                      className="h-full w-full object-cover"
-                    />
+          {/* Step Indicator */}
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                step === 1 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-muted/50 text-muted-foreground'
+              }`}
+            >
+              <UserCircle2 className="h-3.5 w-3.5" />
+              البيانات
+            </button>
+            <div className="h-px w-6 bg-border" />
+            <button
+              type="button"
+              onClick={() => isStep1Complete && hasValidAvatar && setStep(2)}
+              disabled={!isStep1Complete || !hasValidAvatar}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all disabled:opacity-50 ${
+                step === 2 
+                  ? 'bg-primary text-primary-foreground' 
+                  : 'bg-muted/50 text-muted-foreground'
+              }`}
+            >
+              <Mail className="h-3.5 w-3.5" />
+              التحقق
+            </button>
+          </div>
+
+          {/* Avatar Section - Compact */}
+          {step === 1 && (
+            <div className="flex items-center gap-3">
+              <div className="relative group shrink-0">
+                <div className={`absolute -inset-1 rounded-full transition-all duration-500 ${
+                  hasValidAvatar 
+                    ? 'bg-gradient-to-r from-primary via-accent to-primary opacity-50 blur-sm' 
+                    : 'bg-border/40 opacity-30 blur-sm'
+                }`} />
+                
+                <div className="relative h-16 w-16 rounded-full bg-gradient-to-br from-primary/80 to-accent p-[2px] shadow-lg">
+                  <div className="h-full w-full rounded-full bg-card overflow-hidden border-2 border-card">
+                    {avatarUrl && avatarUrl !== DEFAULT_AVATAR_URL ? (
+                      <img 
+                        src={avatarUrl} 
+                        alt="الصورة الشخصية" 
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-background">
+                        <UserCircle2 className="h-7 w-7 text-muted-foreground/40" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 hover:bg-black/50 transition-all duration-300 cursor-pointer group"
+                >
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-card/95 rounded-full p-1.5 shadow-lg border border-border">
+                    {uploadingAvatar ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    ) : (
+                      <Camera className="h-4 w-4 text-primary" />
+                    )}
+                  </div>
+                </button>
+                
+                <div className={`absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full flex items-center justify-center shadow-md border-2 border-card transition-all ${
+                  hasValidAvatar ? 'bg-emerald-600' : 'bg-amber-600'
+                }`}>
+                  {hasValidAvatar ? (
+                    <CheckCircle2 className="h-3 w-3 text-white" />
                   ) : (
-                    <div className="h-full w-full flex items-center justify-center bg-background">
-                      <UserCircle2 className="h-10 w-10 text-muted-foreground/40" />
-                    </div>
+                    <Camera className="h-3 w-3 text-white" />
                   )}
                 </div>
+                
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={handleFileSelect}
+                />
               </div>
               
-              {/* Upload Button Overlay */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingAvatar}
-                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/0 hover:bg-black/50 transition-all duration-300 cursor-pointer group"
-              >
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-card/95 rounded-full p-2.5 shadow-lg border border-border">
-                  {uploadingAvatar ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                  ) : (
-                    <Camera className="h-5 w-5 text-primary" />
-                  )}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-bold text-foreground">
+                  أكمل ملفك الشخصي
+                </h2>
+                <p className="text-[11px] text-muted-foreground/70">
+                  {completedFields} من {totalRequiredFields} حقول مكتملة
+                </p>
+                
+                <div className="relative h-1.5 bg-background rounded-full overflow-hidden border border-border/50 mt-1.5">
+                  <div 
+                    className="absolute inset-y-0 right-0 bg-gradient-to-l from-primary to-accent rounded-full transition-all duration-700 ease-out"
+                    style={{ width: `${(completedFields / totalRequiredFields) * 100}%` }}
+                  />
                 </div>
-              </button>
-              
-              {/* Status Badge */}
-              <div className={`absolute -bottom-1 -right-1 h-7 w-7 rounded-full flex items-center justify-center shadow-lg border-2 border-card transition-all ${
-                hasValidAvatar 
-                  ? 'bg-emerald-600' 
-                  : 'bg-amber-600'
-              }`}>
-                {hasValidAvatar ? (
-                  <CheckCircle2 className="h-4 w-4 text-white" />
-                ) : (
-                  <Camera className="h-4 w-4 text-white" />
-                )}
               </div>
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="sr-only"
-                onChange={handleFileSelect}
-              />
             </div>
-            
-            {/* Upload Hint */}
-            {!hasValidAvatar && (
-              <p className="text-xs text-amber-500 mt-3 flex items-center gap-1.5">
-                <Camera className="h-3.5 w-3.5" />
-                اضغط لرفع صورتك الشخصية
+          )}
+
+          {step === 2 && (
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-1">
+                <Mail className="h-5 w-5 text-primary" />
+                <h2 className="text-base font-bold text-foreground">
+                  التحقق والموافقة
+                </h2>
+              </div>
+              <p className="text-[11px] text-muted-foreground/70">
+                أكد بريدك الإلكتروني ووافق على الشروط
               </p>
-            )}
-          </div>
-          
-          {/* Title & Progress */}
-          <div className="text-center">
-            <h2 className="text-lg font-bold text-foreground mb-1">
-              أكمل ملفك الشخصي
-            </h2>
-            <p className="text-xs text-muted-foreground/70 mb-4">للوصول الكامل لمجتمع ليفو</p>
-            
-            {/* Progress Bar */}
-            <div className="relative h-2 bg-background rounded-full overflow-hidden border border-border/50">
-              <div 
-                className="absolute inset-y-0 right-0 bg-gradient-to-l from-primary to-accent rounded-full transition-all duration-700 ease-out"
-                style={{ width: `${progressPercent}%` }}
-              />
             </div>
-            
-            <div className="flex items-center justify-between mt-2 px-1">
-              <span className="text-[10px] text-muted-foreground/60">
-                {completedFields} من {totalRequiredFields}
-              </span>
-              {isComplete && (
-                <span className="text-[10px] text-emerald-500 flex items-center gap-1">
-                  <Sparkles className="h-3 w-3" />
-                  جاهز للحفظ
-                </span>
-              )}
-            </div>
-          </div>
+          )}
         </div>
       </header>
 
       {/* Scrollable Form Body */}
-      <div className="scrollbar-stable flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-5 py-4 bg-card">
+      <div className="scrollbar-stable flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-3 bg-card">
         {isLoading || loadingUi ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-16 rounded-2xl bg-background/50" />
+              <Skeleton key={i} className="h-14 rounded-xl bg-background/50" />
             ))}
           </div>
-        ) : (
-          <div className="space-y-3">
+        ) : step === 1 ? (
+          <div className="space-y-2.5">
             {/* Text Fields */}
             {fields.map((field) => {
               const hasValue = !!form.watch(field.id)?.toString().trim();
@@ -522,21 +567,19 @@ export default function CommunityCustomerProfileModal({
                         : 'bg-background ring-1 ring-border/60 hover:ring-border'
                   }`}
                 >
-                  <div className="flex items-center gap-3 p-3">
-                    {/* Icon */}
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
+                  <div className="flex items-center gap-2.5 p-2.5">
+                    <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
                       hasValue 
                         ? 'bg-gradient-to-br from-primary/90 to-accent text-primary-foreground' 
                         : 'bg-card border border-border/50 text-muted-foreground/60'
                     }`}>
-                      {hasValue ? <CheckCircle2 className="h-5 w-5" /> : field.icon}
+                      {hasValue ? <CheckCircle2 className="h-4 w-4" /> : field.icon}
                     </div>
                     
-                    {/* Input Area */}
                     <div className="flex-1 min-w-0">
                       <Label 
                         htmlFor={field.id} 
-                        className={`text-[11px] font-semibold mb-0.5 block transition-colors ${
+                        className={`text-[10px] font-semibold mb-0 block transition-colors ${
                           hasValue ? 'text-primary' : 'text-muted-foreground/70'
                         }`}
                       >
@@ -549,16 +592,13 @@ export default function CommunityCustomerProfileModal({
                         {...form.register(field.id)}
                         maxLength={field.maxLength}
                         inputMode={field.type === "tel" ? "tel" : undefined}
-                        className="h-7 border-0 bg-transparent p-0 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        className="h-6 border-0 bg-transparent p-0 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                     </div>
                   </div>
                   
-                  {field.hint && !hasError && (
-                    <p className="text-[10px] text-muted-foreground/60 px-3 pb-2 -mt-0.5 pr-16">{field.hint}</p>
-                  )}
                   {hasError && (
-                    <p className="text-[10px] text-destructive px-3 pb-2 -mt-0.5 pr-16">
+                    <p className="text-[10px] text-destructive px-2.5 pb-2 -mt-0.5 pr-14">
                       {form.formState.errors[field.id]?.message}
                     </p>
                   )}
@@ -576,16 +616,16 @@ export default function CommunityCustomerProfileModal({
                     : 'bg-background ring-1 ring-border/60'
                 }`}
               >
-                <div className="p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
+                <div className="p-2.5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center transition-all ${
                       form.watch("birthDate") 
                         ? 'bg-gradient-to-br from-primary/90 to-accent text-primary-foreground' 
                         : 'bg-card border border-border/50 text-muted-foreground/60'
                     }`}>
-                      {form.watch("birthDate") ? <CheckCircle2 className="h-4 w-4" /> : <Calendar className="h-4 w-4" />}
+                      {form.watch("birthDate") ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Calendar className="h-3.5 w-3.5" />}
                     </div>
-                    <Label htmlFor="birthDate" className="text-[11px] font-semibold text-muted-foreground/70">
+                    <Label htmlFor="birthDate" className="text-[10px] font-semibold text-muted-foreground/70">
                       تاريخ الميلاد
                     </Label>
                   </div>
@@ -593,14 +633,9 @@ export default function CommunityCustomerProfileModal({
                     id="birthDate" 
                     type="date" 
                     {...form.register("birthDate")}
-                    className="h-7 border-0 bg-transparent px-0 text-sm font-medium text-foreground focus-visible:ring-0"
+                    className="h-6 border-0 bg-transparent px-0 text-sm font-medium text-foreground focus-visible:ring-0"
                   />
                 </div>
-                {form.formState.errors.birthDate && (
-                  <p className="text-[10px] text-destructive px-3 pb-2 -mt-1">
-                    {form.formState.errors.birthDate.message}
-                  </p>
-                )}
               </div>
 
               {/* Gender */}
@@ -611,28 +646,28 @@ export default function CommunityCustomerProfileModal({
                     : 'bg-background ring-1 ring-border/60'
                 }`}
               >
-                <div className="p-3">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
+                <div className="p-2.5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center transition-all ${
                       form.watch("gender") 
                         ? 'bg-gradient-to-br from-primary/90 to-accent text-primary-foreground' 
                         : 'bg-card border border-border/50 text-muted-foreground/60'
                     }`}>
-                      {form.watch("gender") ? <CheckCircle2 className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                      {form.watch("gender") ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Users className="h-3.5 w-3.5" />}
                     </div>
-                    <Label className="text-[11px] font-semibold text-muted-foreground/70">الجنس</Label>
+                    <Label className="text-[10px] font-semibold text-muted-foreground/70">الجنس</Label>
                   </div>
                   <RadioGroup
                     value={form.watch("gender")}
                     onValueChange={(v) => form.setValue("gender", v as "male" | "female", { shouldValidate: true })}
-                    className="flex items-center gap-3"
+                    className="flex items-center gap-2.5"
                   >
-                    <div className="flex items-center gap-1.5">
-                      <RadioGroupItem value="male" id="gender-male" className="h-4 w-4" />
+                    <div className="flex items-center gap-1">
+                      <RadioGroupItem value="male" id="gender-male" className="h-3.5 w-3.5" />
                       <Label htmlFor="gender-male" className="text-xs font-medium text-foreground/80 cursor-pointer">ذكر</Label>
                     </div>
-                    <div className="flex items-center gap-1.5">
-                      <RadioGroupItem value="female" id="gender-female" className="h-4 w-4" />
+                    <div className="flex items-center gap-1">
+                      <RadioGroupItem value="female" id="gender-female" className="h-3.5 w-3.5" />
                       <Label htmlFor="gender-female" className="text-xs font-medium text-foreground/80 cursor-pointer">أنثى</Label>
                     </div>
                   </RadioGroup>
@@ -642,12 +677,12 @@ export default function CommunityCustomerProfileModal({
 
             {/* Bio - Optional */}
             <div className="rounded-xl bg-background ring-1 ring-border/60">
-              <div className="p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="h-8 w-8 rounded-lg bg-card border border-border/50 text-muted-foreground/60 flex items-center justify-center">
-                    <FileText className="h-4 w-4" />
+              <div className="p-2.5">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <div className="h-7 w-7 rounded-lg bg-card border border-border/50 text-muted-foreground/60 flex items-center justify-center">
+                    <FileText className="h-3.5 w-3.5" />
                   </div>
-                  <Label htmlFor="bio" className="text-[11px] font-semibold text-muted-foreground/70">
+                  <Label htmlFor="bio" className="text-[10px] font-semibold text-muted-foreground/70">
                     نبذة عنك <span className="opacity-60 font-normal">(اختياري)</span>
                   </Label>
                 </div>
@@ -656,25 +691,25 @@ export default function CommunityCustomerProfileModal({
                   placeholder="اكتب نبذة قصيرة عنك..."
                   {...form.register("bio")}
                   maxLength={500}
-                  className="min-h-[50px] border-0 bg-transparent px-0 text-sm text-foreground resize-none focus-visible:ring-0 placeholder:text-muted-foreground/40"
+                  className="min-h-[40px] border-0 bg-transparent px-0 text-sm text-foreground resize-none focus-visible:ring-0 placeholder:text-muted-foreground/40"
                 />
               </div>
             </div>
 
-            {/* Benefits Preview */}
-            <div className="rounded-xl bg-background/80 ring-1 ring-primary/20 p-4 mt-2">
-              <p className="text-[11px] font-bold text-primary mb-3 flex items-center gap-1.5">
-                <Crown className="h-3.5 w-3.5" />
-                مميزات إكمال الملف الشخصي
+            {/* Benefits Preview - Compact */}
+            <div className="rounded-xl bg-background/80 ring-1 ring-primary/20 p-3">
+              <p className="text-[10px] font-bold text-primary mb-2 flex items-center gap-1">
+                <Crown className="h-3 w-3" />
+                مميزات إكمال الملف
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {[
-                  { icon: Shield, text: "حماية حسابك" },
-                  { icon: Zap, text: "تفاعل أسرع" },
-                  { icon: BadgeCheck, text: "شارة موثق" },
-                  { icon: Store, text: "انضمام كتاجر" },
+                  { icon: Shield, text: "حماية" },
+                  { icon: Zap, text: "سرعة" },
+                  { icon: BadgeCheck, text: "توثيق" },
+                  { icon: Store, text: "تجارة" },
                 ].map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-1.5 text-[10px] text-muted-foreground/70">
+                  <div key={idx} className="flex flex-col items-center gap-0.5 text-[9px] text-muted-foreground/70">
                     <item.icon className="h-3 w-3 text-primary/70" />
                     {item.text}
                   </div>
@@ -682,7 +717,7 @@ export default function CommunityCustomerProfileModal({
               </div>
             </div>
 
-            {/* Merchant CTA */}
+            {/* Merchant CTA - Compact */}
             {showMerchantCta && (
               <button
                 type="button"
@@ -690,95 +725,195 @@ export default function CommunityCustomerProfileModal({
                   if (onOpenMerchantSignup) return onOpenMerchantSignup();
                   navigate("/community/merchant/signup");
                 }}
-                className="w-full rounded-xl bg-background ring-1 ring-accent/40 p-4 text-center transition-all hover:ring-accent hover:bg-background/80 group"
+                className="w-full rounded-xl bg-background ring-1 ring-accent/40 p-3 text-center transition-all hover:ring-accent hover:bg-background/80 group"
               >
-                <div className="flex items-center justify-center gap-2 mb-1">
-                  <Store className="h-4 w-4 text-accent group-hover:scale-110 transition-transform" />
+                <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                  <Store className="h-3.5 w-3.5 text-accent group-hover:scale-110 transition-transform" />
                   <span className="text-sm font-bold text-accent">هل أنت تاجر؟</span>
                 </div>
-                <p className="text-[11px] text-muted-foreground/60">
-                  انضم كتاجر واعرض منتجاتك في مجتمع ليفو
+                <p className="text-[10px] text-muted-foreground/60">
+                  انضم لمجتمع تجار ليفو
                 </p>
               </button>
             )}
           </div>
+        ) : (
+          // Step 2: Verification
+          <div className="space-y-3">
+            {/* Email Verification Card */}
+            <div className={`rounded-xl p-4 transition-all ${
+              emailVerified 
+                ? 'bg-emerald-500/10 ring-1 ring-emerald-500/30' 
+                : 'bg-background ring-1 ring-border/60'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className={`h-12 w-12 rounded-xl flex items-center justify-center shrink-0 ${
+                  emailVerified 
+                    ? 'bg-emerald-500/20' 
+                    : 'bg-primary/10'
+                }`}>
+                  {emailVerified ? (
+                    <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                  ) : (
+                    <Mail className="h-6 w-6 text-primary" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-foreground">
+                    {emailVerified ? 'تم التحقق من البريد الإلكتروني' : 'التحقق من البريد الإلكتروني'}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {user?.email}
+                  </p>
+                </div>
+                {!emailVerified && (
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setShowEmailVerification(true)}
+                    className="shrink-0"
+                  >
+                    تحقق
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Terms Checkbox Card */}
+            <div className={`rounded-xl p-4 transition-all ${
+              termsAccepted 
+                ? 'bg-emerald-500/10 ring-1 ring-emerald-500/30' 
+                : 'bg-background ring-1 ring-border/60'
+            }`}>
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="community-terms-checkbox"
+                  checked={termsAccepted}
+                  onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                  className="h-5 w-5 mt-0.5"
+                />
+                <div className="flex-1">
+                  <label htmlFor="community-terms-checkbox" className="text-sm font-medium text-foreground cursor-pointer">
+                    أوافق على شروط وأحكام مجتمع ليفو
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowTermsSheet(true)}
+                    className="text-xs text-primary hover:underline block mt-1"
+                  >
+                    قراءة الشروط والأحكام
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Summary */}
+            <div className="rounded-xl bg-background/80 ring-1 ring-border/50 p-4">
+              <p className="text-xs font-bold text-foreground mb-2">ملخص البيانات</p>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-muted-foreground">الاسم:</span>
+                  <p className="font-medium truncate">{form.watch("fullName") || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">اليوزرنيم:</span>
+                  <p className="font-medium">@{form.watch("username") || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">الهاتف:</span>
+                  <p className="font-medium">{form.watch("phoneNumber") || "—"}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">الجنس:</span>
+                  <p className="font-medium">{form.watch("gender") === "male" ? "ذكر" : "أنثى"}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Premium Footer */}
-      <footer className="sticky bottom-0 z-10 border-t border-border/40 bg-card px-5 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        {/* Avatar warning */}
-        {!hasValidAvatar && (
-          <div className="flex items-center justify-center gap-1.5 text-xs text-amber-500 mb-3 py-2.5 px-3 rounded-lg bg-amber-500/10 ring-1 ring-amber-500/30">
-            <Camera className="h-3.5 w-3.5" />
-            يجب رفع صورة شخصية لإكمال الملف
+      {/* Compact Footer */}
+      <footer className="sticky bottom-0 z-10 border-t border-border/40 bg-card px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        {step === 1 ? (
+          <>
+            {!hasValidAvatar && (
+              <div className="flex items-center justify-center gap-1.5 text-xs text-amber-500 mb-2 py-2 px-3 rounded-lg bg-amber-500/10 ring-1 ring-amber-500/30">
+                <Camera className="h-3 w-3" />
+                يجب رفع صورة شخصية
+              </div>
+            )}
+            
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                className="flex-1 h-10 text-muted-foreground hover:text-foreground hover:bg-background rounded-xl text-sm"
+                disabled={saveMutation.isPending}
+                onClick={() => (onLater ? onLater() : onDone?.())}
+              >
+                لاحقًا
+              </Button>
+
+              <Button
+                type="button"
+                disabled={!isStep1Complete || !hasValidAvatar || uploadingAvatar}
+                onClick={handleNextStep}
+                className="flex-[2] h-10 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold shadow-md transition-all duration-300 disabled:opacity-50 disabled:shadow-none hover:opacity-90 text-sm gap-1.5"
+              >
+                التالي
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setStep(1)}
+              className="h-10 rounded-xl text-sm gap-1.5"
+            >
+              <ArrowRight className="h-4 w-4" />
+              رجوع
+            </Button>
+
+            <Button
+              type="submit"
+              disabled={
+                saveMutation.isPending || 
+                !form.formState.isValid || 
+                uploadingAvatar ||
+                !hasValidAvatar ||
+                !emailVerified ||
+                !termsAccepted
+              }
+              className="flex-1 h-10 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold shadow-md transition-all duration-300 disabled:opacity-50 disabled:shadow-none hover:opacity-90 text-sm"
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 className="ml-1.5 h-4 w-4 animate-spin" />
+                  جارٍ الحفظ...
+                </>
+              ) : !emailVerified ? (
+                <>
+                  <Mail className="ml-1.5 h-4 w-4" />
+                  تحقق من البريد أولاً
+                </>
+              ) : !termsAccepted ? (
+                <>
+                  <ScrollText className="ml-1.5 h-4 w-4" />
+                  وافق على الشروط
+                </>
+              ) : (
+                <>
+                  <Sparkles className="ml-1.5 h-4 w-4" />
+                  حفظ الملف الشخصي
+                </>
+              )}
+            </Button>
           </div>
         )}
-
-        {/* Terms Checkbox */}
-        <div className="flex items-center gap-2.5 mb-4 p-3 rounded-lg bg-background ring-1 ring-border/50">
-          <Checkbox
-            id="community-terms-checkbox"
-            checked={termsAccepted}
-            onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-            className="h-4 w-4"
-          />
-          <label htmlFor="community-terms-checkbox" className="text-xs text-muted-foreground/80 cursor-pointer">
-            أوافق على{' '}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                setShowTermsSheet(true);
-              }}
-              className="text-primary hover:underline font-medium"
-            >
-              شروط وأحكام مجتمع ليفو
-            </button>
-          </label>
-        </div>
-        
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3">
-          <Button
-            type="button"
-            variant="ghost"
-            className="flex-1 h-12 text-muted-foreground hover:text-foreground hover:bg-background rounded-xl"
-            disabled={saveMutation.isPending}
-            onClick={() => (onLater ? onLater() : onDone?.())}
-          >
-            لاحقًا
-          </Button>
-
-          <Button
-            type="submit"
-            disabled={
-              saveMutation.isPending || 
-              !form.formState.isValid || 
-              uploadingAvatar ||
-              !hasValidAvatar ||
-              !termsAccepted
-            }
-            className="flex-[2] h-12 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold shadow-lg transition-all duration-300 disabled:opacity-50 disabled:shadow-none hover:opacity-90"
-          >
-            {saveMutation.isPending ? (
-              <>
-                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                جارٍ الحفظ...
-              </>
-            ) : !termsAccepted ? (
-              <>
-                <ScrollText className="ml-2 h-4 w-4" />
-                وافق على الشروط
-              </>
-            ) : (
-              <>
-                <Sparkles className="ml-2 h-4 w-4" />
-                حفظ الملف الشخصي
-              </>
-            )}
-          </Button>
-        </div>
       </footer>
 
       {/* Avatar Cropper Dialog */}
@@ -800,6 +935,19 @@ export default function CommunityCustomerProfileModal({
         open={showTermsSheet}
         onOpenChange={setShowTermsSheet}
         onAccept={() => setTermsAccepted(true)}
+      />
+
+      {/* Email Verification Dialog */}
+      <EmailVerificationDialog
+        open={showEmailVerification}
+        onOpenChange={setShowEmailVerification}
+        email={user?.email || ""}
+        type="signup"
+        userId={user?.id}
+        onVerified={() => {
+          setEmailVerified(true);
+          setShowEmailVerification(false);
+        }}
       />
     </form>
   );

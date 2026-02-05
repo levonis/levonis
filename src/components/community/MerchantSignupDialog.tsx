@@ -13,12 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import AvatarCropper from "./AvatarCropper";
 import CommunityMerchantTermsSheet from "./CommunityMerchantTermsSheet";
+import EmailVerificationDialog from "@/components/auth/EmailVerificationDialog";
 
 import { 
   CheckCircle2, 
@@ -43,7 +43,8 @@ import {
   Wallet,
   Loader2,
   Users,
-  ScrollText
+  ScrollText,
+  Mail,
 } from "lucide-react";
 
 const step1Schema = z.object({
@@ -113,8 +114,12 @@ export default function MerchantSignupDialog({
   const dialogOpen = isControlled ? (open as boolean) : internalOpen;
   const setDialogOpen = (v: boolean) => (isControlled ? onOpenChange!(v) : setInternalOpen(v));
 
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  
+  // Email verification state
+  const [emailVerified, setEmailVerified] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
 
   const { data: profileMini } = useQuery({
     queryKey: ["community-profile-mini", user?.id],
@@ -390,8 +395,9 @@ export default function MerchantSignupDialog({
 
   const canNavigateTo2 = !canEdit || step1Ok || step > 1;
   const canNavigateTo3 = !canEdit || (step1Ok && step2Ok) || step > 2;
+  const canNavigateTo4 = !canEdit || (step1Ok && step2Ok && emailVerified) || step > 3;
 
-  const guardGoToStep = (target: 1 | 2 | 3) => {
+  const guardGoToStep = (target: 1 | 2 | 3 | 4) => {
     if (target === 1) return setStep(1);
     if (target === 2) {
       if (!canNavigateTo2) {
@@ -404,45 +410,55 @@ export default function MerchantSignupDialog({
       }
       return setStep(2);
     }
+    if (target === 3) {
+      if (!canNavigateTo3) {
+        toast({
+          title: "أكمل البيانات قبل المتابعة",
+          description: "يرجى إكمال المرحلة الأولى والثانية",
+          variant: "destructive",
+        });
+        return;
+      }
+      return setStep(3);
+    }
 
-    if (!canNavigateTo3) {
+    if (!canNavigateTo4) {
       toast({
-        title: "أكمل البيانات قبل المتابعة",
-        description: "يرجى إكمال المرحلة الأولى والثانية ثم اضغط التالي",
+        title: "التحقق من البريد مطلوب",
+        description: "يرجى التحقق من بريدك الإلكتروني أولاً",
         variant: "destructive",
       });
       return;
     }
-    return setStep(3);
+    return setStep(4);
   };
 
-  const progressPercent = step === 1 ? 33 : step === 2 ? 66 : 100;
+  const progressPercent = step === 1 ? 25 : step === 2 ? 50 : step === 3 ? 75 : 100;
 
   const stepInfo = [
-    { num: 1, label: "معلومات المتجر", icon: Store },
-    { num: 2, label: "بيانات التحقق", icon: Shield },
-    { num: 3, label: "المراجعة والإرسال", icon: Send },
+    { num: 1, label: "المتجر", icon: Store },
+    { num: 2, label: "التحقق", icon: Shield },
+    { num: 3, label: "البريد", icon: Mail },
+    { num: 4, label: "الإرسال", icon: Send },
   ];
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
       <DialogContent className="sm:max-w-2xl p-0 gap-0 border-primary/20 flex flex-col max-h-[90vh] overflow-hidden">
-        {/* Premium Header */}
-        <div className="relative bg-gradient-to-br from-primary/20 via-accent/10 to-transparent border-b border-primary/20 p-6">
-          {/* Decorative elements */}
-          <div className="absolute top-0 left-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-32 h-32 bg-accent/10 rounded-full blur-2xl translate-x-1/2 translate-y-1/2" />
+        {/* Compact Header */}
+        <div className="relative bg-gradient-to-br from-primary/20 via-accent/10 to-transparent border-b border-primary/20 p-4">
+          <div className="absolute top-0 left-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
           
-          <div className="relative flex items-start justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary to-accent p-[2px] shadow-lg shadow-primary/25">
-                <div className="h-full w-full rounded-2xl bg-card flex items-center justify-center">
-                  <Store className="h-6 w-6 text-primary" />
+          <div className="relative flex items-center justify-between gap-3 mb-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-accent p-[2px] shadow-lg shadow-primary/25">
+                <div className="h-full w-full rounded-xl bg-card flex items-center justify-center">
+                  <Store className="h-5 w-5 text-primary" />
                 </div>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">التسجيل كتاجر</h2>
-                <p className="text-sm text-muted-foreground mt-0.5">
+                <h2 className="text-base font-bold text-foreground">التسجيل كتاجر</h2>
+                <p className="text-xs text-muted-foreground">
                   {profileMini?.username ? `@${profileMini.username}` : "انضم لمجتمع تجار ليفو"}
                 </p>
               </div>
@@ -450,35 +466,39 @@ export default function MerchantSignupDialog({
             <StatusBadge status={app?.status} />
           </div>
 
-          {/* Progress Steps */}
-          <div className="relative mt-6">
-            <Progress value={progressPercent} className="h-1.5 bg-muted/30" />
-            <div className="flex justify-between mt-4">
+          {/* Progress Steps - Compact */}
+          <div className="relative">
+            <Progress value={progressPercent} className="h-1 bg-muted/30" />
+            <div className="flex justify-between mt-3">
               {stepInfo.map((s) => {
                 const isActive = step === s.num;
                 const isCompleted = step > s.num;
                 const Icon = s.icon;
+                const canNavigate = s.num === 1 || 
+                  (s.num === 2 && canNavigateTo2) || 
+                  (s.num === 3 && canNavigateTo3) || 
+                  (s.num === 4 && canNavigateTo4);
                 
                 return (
                   <button
                     key={s.num}
                     type="button"
-                    onClick={() => guardGoToStep(s.num as 1 | 2 | 3)}
-                    disabled={s.num === 2 && !canNavigateTo2 || s.num === 3 && !canNavigateTo3}
-                    className={`flex flex-col items-center gap-2 transition-all ${
+                    onClick={() => guardGoToStep(s.num as 1 | 2 | 3 | 4)}
+                    disabled={!canNavigate}
+                    className={`flex flex-col items-center gap-1 transition-all ${
                       isActive ? 'scale-105' : ''
                     } disabled:opacity-50`}
                   >
-                    <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all ${
+                    <div className={`h-8 w-8 rounded-lg flex items-center justify-center transition-all ${
                       isCompleted 
-                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/30' 
+                        ? 'bg-primary text-primary-foreground shadow-md shadow-primary/30' 
                         : isActive 
-                          ? 'bg-primary/20 text-primary border-2 border-primary' 
+                          ? 'bg-primary/20 text-primary border border-primary' 
                           : 'bg-muted/50 text-muted-foreground'
                     }`}>
-                      {isCompleted ? <CheckCircle2 className="h-5 w-5" /> : <Icon className="h-5 w-5" />}
+                      {isCompleted ? <CheckCircle2 className="h-4 w-4" /> : <Icon className="h-4 w-4" />}
                     </div>
-                    <span className={`text-[11px] font-medium ${
+                    <span className={`text-[10px] font-medium ${
                       isActive ? 'text-primary' : 'text-muted-foreground'
                     }`}>
                       {s.label}
@@ -760,77 +780,145 @@ export default function MerchantSignupDialog({
                   </div>
                 )}
 
-                {/* Step 3: Summary & Submit */}
+                {/* Step 3: Email Verification */}
                 {step === 3 && (
-                  <div className="space-y-6">
-                    {/* Summary Card */}
-                    <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-5">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center">
-                          <BadgeCheck className="h-6 w-6 text-primary" />
-                        </div>
+                  <div className="space-y-5">
+                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50 mb-4">
+                      <div className="flex items-start gap-3">
+                        <Mail className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                         <div>
-                          <h3 className="font-bold text-lg">ملخص الطلب</h3>
-                          <p className="text-sm text-muted-foreground">تحقق من المعلومات قبل الإرسال</p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="space-y-1">
-                          <span className="text-muted-foreground">اسم المتجر:</span>
-                          <p className="font-medium">{step1.display_name || "—"}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-muted-foreground">يوزرنيم:</span>
-                          <p className="font-medium">{profileMini?.username ? `@${profileMini.username}` : "—"}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-muted-foreground">إنستغرام:</span>
-                          <p className="font-medium truncate">{step1.instagram?.trim() || "—"}</p>
-                        </div>
-                        <div className="space-y-1">
-                          <span className="text-muted-foreground">فيسبوك:</span>
-                          <p className="font-medium truncate">{step1.facebook?.trim() || "—"}</p>
+                          <p className="text-sm font-medium">التحقق من البريد الإلكتروني</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            للتأكد من هويتك، يرجى التحقق من بريدك الإلكتروني
+                          </p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Fee Card - only show if fee > 0 */}
-                    {fee > 0 && (
-                      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5">
+                    {/* Email Verification Card */}
+                    <div className={`rounded-xl p-5 transition-all ${
+                      emailVerified 
+                        ? 'bg-emerald-500/10 ring-1 ring-emerald-500/30' 
+                        : 'bg-background ring-1 ring-border/60'
+                    }`}>
+                      <div className="flex items-center gap-4">
+                        <div className={`h-14 w-14 rounded-xl flex items-center justify-center shrink-0 ${
+                          emailVerified 
+                            ? 'bg-emerald-500/20' 
+                            : 'bg-primary/10'
+                        }`}>
+                          {emailVerified ? (
+                            <CheckCircle2 className="h-7 w-7 text-emerald-500" />
+                          ) : (
+                            <Mail className="h-7 w-7 text-primary" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-base font-bold text-foreground">
+                            {emailVerified ? 'تم التحقق بنجاح!' : 'البريد الإلكتروني'}
+                          </p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {user?.email}
+                          </p>
+                        </div>
+                        {!emailVerified && (
+                          <Button
+                            type="button"
+                            onClick={() => setShowEmailVerification(true)}
+                            className="shrink-0"
+                          >
+                            تحقق الآن
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {emailVerified && (
+                      <div className="rounded-xl bg-emerald-500/10 p-4 text-center">
+                        <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto mb-2" />
+                        <p className="text-sm font-medium text-emerald-600">
+                          تم التحقق من بريدك الإلكتروني بنجاح
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          يمكنك الآن المتابعة للخطوة التالية
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Step 4: Summary & Submit */}
+                {step === 4 && (
+                  <div className="space-y-5">
+                    {/* Summary Card */}
+                    <div className="rounded-xl border border-primary/20 bg-gradient-to-br from-primary/5 to-transparent p-4">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                          <BadgeCheck className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold">ملخص الطلب</h3>
+                          <p className="text-xs text-muted-foreground">تحقق من المعلومات</p>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-muted-foreground text-xs">اسم المتجر:</span>
+                          <p className="font-medium">{step1.display_name || "—"}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground text-xs">يوزرنيم:</span>
+                          <p className="font-medium">{profileMini?.username ? `@${profileMini.username}` : "—"}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground text-xs">البريد:</span>
+                          <p className="font-medium flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                            موثق
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground text-xs">الهاتف:</span>
+                          <p className="font-medium">{step2.phone_number || "—"}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Fee Card */}
+                    {fee > 0 ? (
+                      <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-xl bg-amber-500/20 flex items-center justify-center">
-                            <Wallet className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                          <div className="h-10 w-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                            <Wallet className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-bold">رسوم التسجيل</h3>
-                            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                            <h3 className="font-medium text-sm">رسوم التسجيل</h3>
+                            <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
                               {fee.toLocaleString()} د.ع
                             </p>
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-3">
-                          سيتم خصم الرسوم تلقائياً من المحفظة عند موافقة الإدارة
+                        <p className="text-[10px] text-muted-foreground mt-2">
+                          سيتم خصم الرسوم من المحفظة عند موافقة الإدارة
                         </p>
                       </div>
-                    )}
-
-                    {fee === 0 && (
-                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+                    ) : (
+                      <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                            <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                          <div className="h-10 w-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                           </div>
                           <div className="flex-1">
-                            <h3 className="font-bold text-emerald-600 dark:text-emerald-400">تسجيل مجاني</h3>
-                            <p className="text-sm text-muted-foreground">لا توجد رسوم للتسجيل حالياً</p>
+                            <h3 className="font-medium text-emerald-600 dark:text-emerald-400">تسجيل مجاني</h3>
+                            <p className="text-xs text-muted-foreground">لا توجد رسوم</p>
                           </div>
                         </div>
                       </div>
                     )}
 
-                    {/* Terms and Conditions Checkbox */}
-                    <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/30 border border-border/50">
+                    {/* Terms Checkbox */}
+                    <div className="flex items-start gap-3 p-3 rounded-xl bg-muted/30 border border-border/50">
                       <Checkbox
                         id="merchant-terms"
                         checked={termsAccepted}
@@ -838,26 +926,22 @@ export default function MerchantSignupDialog({
                         className="mt-0.5 h-4 w-4"
                       />
                       <div className="flex-1">
-                        <label
-                          htmlFor="merchant-terms"
-                          className="text-sm cursor-pointer leading-relaxed"
-                        >
+                        <label htmlFor="merchant-terms" className="text-sm cursor-pointer">
                           أوافق على{" "}
                           <button
                             type="button"
                             onClick={() => setTermsSheetOpen(true)}
-                            className="text-primary underline underline-offset-2 hover:text-primary/80 font-medium"
+                            className="text-primary underline font-medium"
                           >
-                            شروط وأحكام التجار
+                            شروط التجار
                           </button>
-                          {" "}في مجتمع ليفو
                         </label>
                       </div>
                     </div>
 
                     {app?.status === "pending" && (
-                      <p className="text-sm text-muted-foreground text-center p-4 bg-muted/30 rounded-xl">
-                        ✓ طلبك قيد المراجعة - سنتواصل معك قريباً
+                      <p className="text-sm text-muted-foreground text-center p-3 bg-muted/30 rounded-lg">
+                        ✓ طلبك قيد المراجعة
                       </p>
                     )}
                   </div>
@@ -867,14 +951,15 @@ export default function MerchantSignupDialog({
           </div>
         </div>
 
-        {/* Footer Navigation */}
-        <div className="border-t border-border/50 bg-muted/30 p-4 flex items-center justify-between gap-3">
+        {/* Compact Footer */}
+        <div className="border-t border-border/50 bg-muted/30 p-3 flex items-center justify-between gap-2">
           {step > 1 ? (
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setStep((step - 1) as 1 | 2)}
-              className="gap-2"
+              size="sm"
+              onClick={() => setStep((step - 1) as 1 | 2 | 3)}
+              className="gap-1.5"
             >
               <ArrowRight className="h-4 w-4" />
               رجوع
@@ -883,37 +968,58 @@ export default function MerchantSignupDialog({
             <div />
           )}
 
-          {step < 3 ? (
+          {step < 4 ? (
             <Button
               type="button"
-              disabled={!canEdit || (step === 1 && !step1Ok) || (step === 2 && !step2Ok) || saveDraftMutation.isPending}
+              size="sm"
+              disabled={
+                !canEdit || 
+                (step === 1 && !step1Ok) || 
+                (step === 2 && !step2Ok) || 
+                (step === 3 && !emailVerified) ||
+                saveDraftMutation.isPending
+              }
               onClick={async () => {
                 try {
                   if (step === 1) {
                     await saveDraftMutation.mutateAsync({ step1, store_image_url: storeImageUrl || null });
                     setStep(2);
-                  } else {
-                    // Validate step2 before proceeding
+                  } else if (step === 2) {
                     const validation = step2Schema.safeParse(step2);
                     if (!validation.success) {
                       toast({
                         title: "أكمل البيانات المطلوبة",
-                        description: "يرجى ملء جميع الحقول المطلوبة في هذه الخطوة",
+                        description: "يرجى ملء جميع الحقول",
                         variant: "destructive",
                       });
                       return;
                     }
                     await saveDraftMutation.mutateAsync({ step2 });
                     setStep(3);
+                  } else if (step === 3) {
+                    if (!emailVerified) {
+                      toast({
+                        title: "التحقق مطلوب",
+                        description: "يرجى التحقق من بريدك الإلكتروني",
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    setStep(4);
                   }
                 } catch (error) {
-                  // Error already handled by mutation
+                  // Error handled by mutation
                 }
               }}
-              className="gap-2 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+              className="gap-1.5 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
             >
               {saveDraftMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : step === 3 && !emailVerified ? (
+                <>
+                  <Mail className="h-4 w-4" />
+                  تحقق أولاً
+                </>
               ) : (
                 <>
                   التالي
@@ -924,19 +1030,20 @@ export default function MerchantSignupDialog({
           ) : (
             <Button
               type="button"
+              size="sm"
               disabled={!canEdit || !termsAccepted || submitMutation.isPending}
               onClick={() => {
                 if (!termsAccepted) {
                   toast({
-                    title: "الموافقة على الشروط مطلوبة",
-                    description: "يرجى الموافقة على شروط وأحكام التجار قبل الإرسال",
+                    title: "الموافقة مطلوبة",
+                    description: "يرجى الموافقة على الشروط",
                     variant: "destructive",
                   });
                   return;
                 }
                 submitMutation.mutate();
               }}
-              className="gap-2 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/25 disabled:from-primary/40 disabled:to-accent/40 disabled:text-primary-foreground/60"
+              className="gap-1.5 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/25"
             >
               {submitMutation.isPending ? (
                 <>
@@ -946,7 +1053,7 @@ export default function MerchantSignupDialog({
               ) : !termsAccepted ? (
                 <>
                   <ScrollText className="h-4 w-4" />
-                  وافق على الشروط أولاً
+                  وافق على الشروط
                 </>
               ) : (
                 <>
@@ -976,6 +1083,19 @@ export default function MerchantSignupDialog({
           open={termsSheetOpen}
           onOpenChange={setTermsSheetOpen}
           onAccept={() => setTermsAccepted(true)}
+        />
+
+        {/* Email Verification Dialog */}
+        <EmailVerificationDialog
+          open={showEmailVerification}
+          onOpenChange={setShowEmailVerification}
+          email={user?.email || ""}
+          type="signup"
+          userId={user?.id}
+          onVerified={() => {
+            setEmailVerified(true);
+            setShowEmailVerification(false);
+          }}
         />
       </DialogContent>
     </Dialog>
