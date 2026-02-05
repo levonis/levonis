@@ -204,14 +204,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Check if a valid code was sent recently (within 30 seconds) to prevent duplicate sends
-    const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
+    // Check if a valid code was sent recently (within 55 seconds) to prevent duplicate sends
+    // Using 55 seconds to leave a small buffer before the 60-second cooldown expires
+    const fiftyFiveSecondsAgo = new Date(Date.now() - 55 * 1000).toISOString();
     const { data: recentCode } = await supabase
       .from('email_verification_codes')
       .select('id, created_at')
       .eq('email', email)
       .eq('type', type)
-      .gte('created_at', thirtySecondsAgo)
+      .gte('created_at', fiftyFiveSecondsAgo)
       .maybeSingle();
 
     if (recentCode) {
@@ -227,13 +228,12 @@ const handler = async (req: Request): Promise<Response> => {
     const code = generateCode();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString(); // 10 minutes
 
-    // Delete old codes for this email and type (older than 30 seconds)
+    // Delete ALL old codes for this email and type (invalidate previous codes)
     await supabase
       .from('email_verification_codes')
       .delete()
       .eq('email', email)
-      .eq('type', type)
-      .lt('created_at', thirtySecondsAgo);
+      .eq('type', type);
 
     // Insert new code
     const { error: insertError } = await supabase
