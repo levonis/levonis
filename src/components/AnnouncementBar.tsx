@@ -7,9 +7,10 @@ import { useLocation } from 'react-router-dom';
 
 interface AnnouncementBarProps {
   onHeightChange?: (height: number) => void;
+  verificationBannerHeight?: number;
 }
 
-const AnnouncementBar = memo(({ onHeightChange }: AnnouncementBarProps) => {
+const AnnouncementBar = memo(({ onHeightChange, verificationBannerHeight = 0 }: AnnouncementBarProps) => {
   const [dismissed, setDismissed] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -122,8 +123,8 @@ const AnnouncementBar = memo(({ onHeightChange }: AnnouncementBarProps) => {
   return (
     <div 
       ref={barRef}
-      className="fixed top-0 left-0 right-0 z-[45] text-white py-2 px-3 overflow-hidden text-sm"
-      style={{ backgroundColor: bgColor }}
+      className="fixed left-0 right-0 z-[45] text-white py-2 px-3 overflow-hidden text-sm"
+      style={{ backgroundColor: bgColor, top: `${verificationBannerHeight}px` }}
     >
       <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
         {/* Previous button */}
