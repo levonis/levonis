@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 import { Loader2, Mail, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -30,11 +30,10 @@ export default function EmailVerificationDialog({
   onVerified,
   onResendCode,
 }: EmailVerificationDialogProps) {
-  const [code, setCode] = useState(['', '', '', '', '', '']);
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [verified, setVerified] = useState(false);
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const sendingRef = useRef(false); // Prevent concurrent sends
+  const sendingRef = useRef(false);
   
   // Use email + type + userId for unique key
   const timerKey = `${email}-${type}-${userId || 'no-user'}`;
@@ -54,12 +53,9 @@ export default function EmailVerificationDialog({
   // Reset code inputs when dialog opens
   useEffect(() => {
     if (open) {
-      setCode(['', '', '', '', '', '']);
+      setCode('');
       setVerified(false);
       setResendTimer(getStoredTimer());
-      setTimeout(() => {
-        inputRefs.current[0]?.focus();
-      }, 100);
     }
   }, [open, getStoredTimer]);
 
@@ -93,13 +89,11 @@ export default function EmailVerificationDialog({
 
         if (error) {
           console.error('[EmailVerification] Edge function error:', error);
-          // Don't show error for network issues, just log
           sentCodes[timerKey] = false;
         } else if (data?.success) {
           if (!data?.alreadySent) {
             toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
           }
-          // Set timer in global store
           resendTimers[timerKey] = Date.now() + 60000;
           setResendTimer(60);
         } else if (data?.error) {
@@ -125,40 +119,12 @@ export default function EmailVerificationDialog({
     }
   }, [resendTimer, open]);
 
-  const handleInputChange = (index: number, value: string) => {
-    // Only allow numbers
-    if (!/^\d*$/.test(value)) return;
-
-    const newCode = [...code];
-    newCode[index] = value.slice(-1); // Only take last character
-    setCode(newCode);
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+  // Auto-submit when code is complete
+  useEffect(() => {
+    if (code.length === 6 && !loading && !verified) {
+      handleVerify(code);
     }
-
-    // Auto-submit when all filled
-    if (newCode.every(c => c) && newCode.join('').length === 6) {
-      handleVerify(newCode.join(''));
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !code[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
-    if (pastedData.length === 6) {
-      const newCode = pastedData.split('');
-      setCode(newCode);
-      handleVerify(pastedData);
-    }
-  };
+  }, [code]);
 
   const handleVerify = async (codeStr: string) => {
     if (codeStr.length !== 6) {
@@ -177,7 +143,6 @@ export default function EmailVerificationDialog({
       if (data.success) {
         setVerified(true);
         toast.success('تم التحقق بنجاح! ✓');
-        // Clear the sent code tracker so re-verification works if needed
         delete sentCodes[timerKey];
         setTimeout(() => {
           onVerified();
@@ -185,14 +150,12 @@ export default function EmailVerificationDialog({
         }, 1500);
       } else {
         toast.error(data.error || 'رمز غير صحيح');
-        setCode(['', '', '', '', '', '']);
-        inputRefs.current[0]?.focus();
+        setCode('');
       }
     } catch (error: any) {
       console.error('Verification error:', error);
       toast.error(error.message || 'حدث خطأ أثناء التحقق');
-      setCode(['', '', '', '', '', '']);
-      inputRefs.current[0]?.focus();
+      setCode('');
     } finally {
       setLoading(false);
     }
@@ -212,11 +175,9 @@ export default function EmailVerificationDialog({
 
       if (data.success) {
         toast.success('تم إرسال رمز جديد');
-        // Set timer in global store
         resendTimers[timerKey] = Date.now() + 60000;
         setResendTimer(60);
-        setCode(['', '', '', '', '', '']);
-        inputRefs.current[0]?.focus();
+        setCode('');
         onResendCode?.();
       } else {
         toast.error(data.error || 'فشل في إرسال الرمز');
@@ -263,30 +224,29 @@ export default function EmailVerificationDialog({
           </div>
         ) : (
           <div className="space-y-6 py-4">
-            {/* Code Input */}
-            <div className="flex justify-center gap-2" dir="ltr">
-              {code.map((digit, index) => (
-                <input
-                  key={index}
-                  ref={(el) => (inputRefs.current[index] = el)}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleInputChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  onPaste={handlePaste}
-                  disabled={loading}
-                  autoComplete="off"
-                  className="w-12 h-14 text-center text-2xl font-bold border border-input rounded-md bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                />
-              ))}
+            {/* Code Input using InputOTP */}
+            <div className="flex justify-center" dir="ltr">
+              <InputOTP
+                maxLength={6}
+                value={code}
+                onChange={setCode}
+                disabled={loading}
+              >
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} className="w-12 h-14 text-2xl font-bold" />
+                  <InputOTPSlot index={1} className="w-12 h-14 text-2xl font-bold" />
+                  <InputOTPSlot index={2} className="w-12 h-14 text-2xl font-bold" />
+                  <InputOTPSlot index={3} className="w-12 h-14 text-2xl font-bold" />
+                  <InputOTPSlot index={4} className="w-12 h-14 text-2xl font-bold" />
+                  <InputOTPSlot index={5} className="w-12 h-14 text-2xl font-bold" />
+                </InputOTPGroup>
+              </InputOTP>
             </div>
 
             {/* Verify Button */}
             <Button
-              onClick={() => handleVerify(code.join(''))}
-              disabled={loading || code.some(c => !c)}
+              onClick={() => handleVerify(code)}
+              disabled={loading || code.length !== 6}
               className="w-full"
             >
               {loading ? (
