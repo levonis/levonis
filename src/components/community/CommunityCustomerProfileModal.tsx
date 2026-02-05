@@ -408,10 +408,10 @@ export default function CommunityCustomerProfileModal({
   return (
     <form
       onSubmit={form.handleSubmit((v) => saveMutation.mutate(v))}
-      className="flex min-h-0 flex-1 flex-col bg-card"
+      className="flex min-h-0 flex-1 flex-col bg-card overflow-hidden rounded-2xl"
     >
       {/* Compact Header */}
-      <header className="relative overflow-hidden px-4 py-2.5 bg-gradient-to-b from-background via-card to-card border-b border-border/30">
+      <header className="relative shrink-0 px-4 py-2.5 bg-gradient-to-b from-background via-card to-card border-b border-border/30">
         <div className="relative">
           {/* Step Indicator */}
           <div className="flex items-center justify-center gap-2 mb-2">
