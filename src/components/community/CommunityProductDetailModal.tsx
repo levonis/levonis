@@ -7,7 +7,6 @@ import {
   Clock, 
   BadgePercent, 
   Play, 
-  Link as LinkIcon, 
   ExternalLink, 
   ChevronLeft,
   ChevronRight,
@@ -22,8 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 import SocialActions from "@/components/community/SocialActions";
 import CommentsSection from "@/components/community/CommentsSection";
@@ -56,8 +54,6 @@ export default function CommunityProductDetailModal({
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
-  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
-  const [includeProductLink, setIncludeProductLink] = useState(true);
   const [fullscreenImage, setFullscreenImage] = useState(false);
   const [fullscreenVideo, setFullscreenVideo] = useState(false);
 
@@ -160,68 +156,25 @@ export default function CommunityProductDetailModal({
     },
   });
 
-  const handleContactMerchant = () => {
+  const handleContactMerchant = async () => {
     if (!user) {
       navigate("/auth");
       return;
     }
-    setMessageDialogOpen(true);
-  };
+    
+    if (!product) return;
 
-  const handleStartConversation = async () => {
-    if (!user || !product) return;
-
-    const { data: existingConv } = await supabase
-      .from("listing_conversations")
-      .select("id")
-      .eq("buyer_id", user.id)
-      .eq("seller_id", product.merchant_id)
-      .maybeSingle();
-
-    let conversationId = existingConv?.id;
-
-    if (!conversationId) {
-      const convCode = `P${Date.now().toString(36).toUpperCase()}`;
-      const { data: newConv, error } = await supabase
-        .from("listing_conversations")
-        .insert({
-          buyer_id: user.id,
-          seller_id: product.merchant_id,
-          listing_id: product.id,
-          conversation_code: convCode,
-        })
-        .select("id")
-        .single();
-      
-      if (error) {
-        console.error("Error creating conversation:", error);
-        return;
-      }
-      conversationId = newConv.id;
-    }
-
-    if (includeProductLink && conversationId) {
-      // Rich product message without URL (cleaner display)
-      const systemMessage = `📦 ${product.title}
-💰 ${product.price_iqd ? `${product.price_iqd.toLocaleString()} د.ع` : "السعر عند التواصل"}`;
-
-      await supabase.from("listing_messages").insert({
-        conversation_id: conversationId,
-        sender_id: user.id,
-        content: systemMessage,
-        // Store product image for rich display
-        image_url: product.image_urls?.[0] || null,
-      });
-
-      await supabase
-        .from("listing_conversations")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", conversationId);
-    }
-
+    // Navigate directly to messages with product context - Taobao style
+    // The product context bar will show above the input in the chat
+    const params = new URLSearchParams({
+      merchant_id: product.merchant_id,
+      product_title: product.title,
+      product_price: product.price_iqd?.toString() || '',
+      product_image: product.image_urls?.[0] || '',
+    });
+    
     onOpenChange(false);
-    setMessageDialogOpen(false);
-    navigate(`/community/messages?auto_open=${conversationId}`);
+    navigate(`/community/messages?${params.toString()}`);
   };
 
   const handleVisitStore = () => {
@@ -254,7 +207,7 @@ export default function CommunityProductDetailModal({
   return (
     <>
       {/* Main Product Detail Modal */}
-      <Dialog open={open && !messageDialogOpen} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent 
           className="sm:max-w-md p-0 gap-0 overflow-hidden rounded-3xl border border-border/30 bg-background shadow-2xl"
           hideClose
@@ -592,68 +545,7 @@ export default function CommunityProductDetailModal({
         </DialogContent>
       </Dialog>
 
-      {/* Message Dialog - Compact */}
-      <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
-        <DialogContent className="sm:max-w-xs rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-1.5 text-xs">
-              <MessageCircle className="h-3.5 w-3.5 text-primary" />
-              مراسلة التاجر
-            </DialogTitle>
-            <DialogDescription className="text-[11px]">
-              {merchantApp?.display_name || "التاجر"}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-2">
-            {/* Product Preview */}
-            <div className="flex items-center gap-2 p-1.5 rounded-lg bg-muted/30 border border-border/50">
-              <div className="h-8 w-8 rounded-md overflow-hidden bg-muted/50 shrink-0">
-                {product.image_urls?.[0] ? (
-                  <img src={product.image_urls[0]} alt="" className="h-full w-full object-cover" />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <Package className="h-3 w-3 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium line-clamp-1">{product.title}</p>
-                {product.price_iqd && (
-                  <p className="text-[11px] text-primary font-bold">{product.price_iqd.toLocaleString()} د.ع</p>
-                )}
-              </div>
-            </div>
-
-            {/* Auto-send Option */}
-            <div className="flex items-start gap-1.5 p-1.5 rounded-lg bg-primary/5 border border-primary/20">
-              <Checkbox
-                id="include-link"
-                checked={includeProductLink}
-                onCheckedChange={(c) => setIncludeProductLink(!!c)}
-                className="mt-0.5 h-3.5 w-3.5"
-              />
-              <label htmlFor="include-link" className="text-[11px] cursor-pointer flex-1">
-                <span className="font-medium flex items-center gap-1">
-                  <LinkIcon className="h-2.5 w-2.5" />
-                  إرسال تفاصيل المنتج
-                </span>
-              </label>
-            </div>
-
-            {/* Buttons */}
-            <div className="flex gap-1.5">
-              <Button variant="outline" size="sm" className="flex-1 h-7 text-[11px] rounded-xl" onClick={() => setMessageDialogOpen(false)}>
-                إلغاء
-              </Button>
-              <Button size="sm" className="flex-1 gap-1 h-7 text-[11px] rounded-xl" onClick={handleStartConversation}>
-                <MessageCircle className="h-2.5 w-2.5" />
-                بدء المحادثة
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Message Dialog removed - now navigates directly to chat with product context bar */}
     </>
   );
 }

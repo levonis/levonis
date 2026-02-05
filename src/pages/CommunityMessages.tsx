@@ -24,7 +24,8 @@ export default function CommunityMessages() {
   const autoOpenConversationId = searchParams.get('auto_open');
   const merchantId = searchParams.get('merchant_id');
   const productTitle = searchParams.get('product_title');
-  const productUrl = searchParams.get('product_url');
+  const productPrice = searchParams.get('product_price');
+  const productImage = searchParams.get('product_image');
   const requestId = searchParams.get('request_id');
 
   // Context for product/request that user entered through
@@ -33,7 +34,18 @@ export default function CommunityMessages() {
     title: string;
     imageUrl?: string | null;
     price?: number | null;
-  } | null>(null);
+  } | null>(() => {
+    // Initialize context from URL params if present
+    if (productTitle) {
+      return {
+        type: 'product',
+        title: productTitle,
+        imageUrl: productImage || null,
+        price: productPrice ? parseInt(productPrice, 10) : null,
+      };
+    }
+    return null;
+  });
 
   // Create or find existing conversation with merchant
   const createConversationMutation = useMutation({
@@ -63,7 +75,7 @@ export default function CommunityMessages() {
           .maybeSingle();
         requestDetails = reqData;
         
-        // Set entry context for the product bar
+        // Set entry context for the request bar
         if (reqData) {
           setEntryContext({
             type: 'request',
@@ -72,12 +84,14 @@ export default function CommunityMessages() {
             price: null,
           });
         }
-      } else if (productTitle || productUrl) {
+      } else if (productTitle) {
+        // Product context is already set from URL params in initial state
+        // Just update if needed
         setEntryContext({
           type: 'product',
-          title: productTitle || 'منتج',
-          imageUrl: productUrl || null,
-          price: null,
+          title: productTitle,
+          imageUrl: productImage || null,
+          price: productPrice ? parseInt(productPrice, 10) : null,
         });
       }
 

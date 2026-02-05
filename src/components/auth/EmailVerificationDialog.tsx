@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
-import { Loader2, Mail, CheckCircle2 } from 'lucide-react';
+import { Loader2, Mail, CheckCircle2, Shield, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -200,77 +200,113 @@ export default function EmailVerificationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md z-[9999]" dir="rtl">
-        <DialogHeader className="text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-            {verified ? (
-              <CheckCircle2 className="h-8 w-8 text-green-500" />
-            ) : (
-              <Mail className="h-8 w-8 text-primary" />
-            )}
+      <DialogContent 
+        className="sm:max-w-md z-[9999] p-0 gap-0 overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-b from-card to-background" 
+        dir="rtl"
+      >
+        {/* Hero Header */}
+        <div className="relative px-6 pt-8 pb-6 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent">
+          {/* Decorative elements */}
+          <div className="absolute top-4 left-4 h-16 w-16 rounded-full bg-primary/5 blur-2xl" />
+          <div className="absolute top-8 right-8 h-12 w-12 rounded-full bg-accent/10 blur-xl" />
+          
+          <div className="relative flex flex-col items-center">
+            {/* Icon */}
+            <div className="relative mb-4">
+              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-primary/30 shadow-lg">
+                {verified ? (
+                  <CheckCircle2 className="h-10 w-10 text-green-500" />
+                ) : (
+                  <Mail className="h-10 w-10 text-primary" />
+                )}
+              </div>
+              {/* Sparkle decoration */}
+              <Sparkles className="absolute -top-1 -right-1 h-5 w-5 text-primary/60" />
+            </div>
+            
+            <DialogHeader className="text-center space-y-2">
+              <DialogTitle className="text-xl font-bold text-foreground">
+                {typeLabels[type]}
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                أرسلنا رمز تحقق مكون من 6 أرقام إلى
+                <br />
+                <span className="font-semibold text-foreground" dir="ltr">{email}</span>
+              </DialogDescription>
+            </DialogHeader>
           </div>
-          <DialogTitle className="text-xl">{typeLabels[type]}</DialogTitle>
-          <DialogDescription className="text-center">
-            أرسلنا رمز تحقق مكون من 6 أرقام إلى
-            <br />
-            <span className="font-medium text-foreground" dir="ltr">{email}</span>
-          </DialogDescription>
-        </DialogHeader>
+        </div>
 
         {verified ? (
-          <div className="text-center py-8">
-            <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto mb-4" />
-            <p className="text-lg font-medium text-green-600">تم التحقق بنجاح!</p>
+          <div className="px-6 py-12 flex flex-col items-center">
+            <div className="h-24 w-24 rounded-full bg-green-500/10 flex items-center justify-center mb-4 border border-green-500/30">
+              <CheckCircle2 className="h-12 w-12 text-green-500" />
+            </div>
+            <p className="text-lg font-bold text-green-500">تم التحقق بنجاح!</p>
+            <p className="text-sm text-muted-foreground mt-2">جاري الانتقال...</p>
           </div>
         ) : (
-          <div className="space-y-6 py-4">
-            {/* Code Input using InputOTP */}
-            <div className="flex justify-center" dir="ltr">
-              <InputOTP
-                maxLength={6}
-                value={code}
-                onChange={(val) => setCode(val.replace(/[^0-9]/g, ''))}
-                disabled={loading}
-                inputMode="numeric"
-                pattern="[0-9]*"
-              >
-                <InputOTPGroup className="gap-2">
-                  <InputOTPSlot index={0} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
-                  <InputOTPSlot index={1} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
-                  <InputOTPSlot index={2} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
-                  <InputOTPSlot index={3} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
-                  <InputOTPSlot index={4} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
-                  <InputOTPSlot index={5} className="w-12 h-14 text-2xl font-bold rounded-md border-2" />
-                </InputOTPGroup>
-              </InputOTP>
+          <div className="px-6 pb-6 space-y-6">
+            {/* Code Input */}
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex justify-center" dir="ltr">
+                <InputOTP
+                  maxLength={6}
+                  value={code}
+                  onChange={(val) => setCode(val.replace(/[^0-9]/g, ''))}
+                  disabled={loading}
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="one-time-code"
+                >
+                  <InputOTPGroup className="gap-2 rtl:flex-row-reverse">
+                    {[0, 1, 2, 3, 4, 5].map((index) => (
+                      <InputOTPSlot 
+                        key={index}
+                        index={index} 
+                        className="w-12 h-14 text-2xl font-bold rounded-xl border-2 border-border/60 bg-background/50 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all" 
+                      />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
+              
+              {/* Security note */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Shield className="h-3.5 w-3.5" />
+                <span>الرمز صالح لمدة 10 دقائق</span>
+              </div>
             </div>
 
             {/* Verify Button */}
             <Button
               onClick={() => handleVerify(code)}
               disabled={loading || code.length !== 6}
-              className="w-full"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground font-bold text-base shadow-md hover:opacity-90 transition-all disabled:opacity-50"
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  <Loader2 className="h-5 w-5 animate-spin ml-2" />
                   جاري التحقق...
                 </>
               ) : (
-                'تأكيد الرمز'
+                <>
+                  <CheckCircle2 className="h-5 w-5 ml-2" />
+                  تأكيد الرمز
+                </>
               )}
             </Button>
 
             {/* Resend */}
-            <div className="text-center">
+            <div className="text-center border-t border-border/30 pt-4">
               <p className="text-sm text-muted-foreground mb-2">
                 لم تستلم الرمز؟
               </p>
               <Button
-                variant="link"
+                variant="ghost"
                 onClick={handleResend}
                 disabled={resendTimer > 0 || loading}
-                className="text-primary"
+                className="text-primary hover:text-primary/80 hover:bg-primary/10 font-semibold"
               >
                 {resendTimer > 0
                   ? `إعادة الإرسال بعد ${resendTimer} ثانية`
