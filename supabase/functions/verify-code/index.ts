@@ -1,18 +1,12 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-interface VerifyRequest {
-  email: string;
-  code: string;
-  type: 'signup' | 'password_reset' | 'password_change' | 'email_change';
-}
-
-const handler = async (req: Request): Promise<Response> => {
+serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -22,7 +16,7 @@ const handler = async (req: Request): Promise<Response> => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { email, code, type }: VerifyRequest = await req.json();
+    const { email, code, type } = await req.json();
 
     if (!email || !code || !type) {
       return new Response(
@@ -75,7 +69,6 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Check code
     if (verificationData.code !== code) {
-      // Increment attempts
       await supabase
         .from('email_verification_codes')
         .update({ attempts: verificationData.attempts + 1 })
@@ -105,7 +98,6 @@ const handler = async (req: Request): Promise<Response> => {
         .eq('id', verificationData.user_id);
     }
 
-    // Return success with user_id if available
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -123,6 +115,4 @@ const handler = async (req: Request): Promise<Response> => {
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
-};
-
-serve(handler);
+});
