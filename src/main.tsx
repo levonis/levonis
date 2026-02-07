@@ -1,4 +1,4 @@
-// Main entry point - v4 (cache clear)
+// Main entry point - v5 (force rebuild)
 import { StrictMode } from 'react';
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
