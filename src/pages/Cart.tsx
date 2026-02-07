@@ -435,12 +435,6 @@ const Cart = () => {
 
       const deliveryFee = getDeliveryFee(selectedAddress.governorate);
 
-      // Generate order number
-      const { data: orderNumberData } = await supabase
-        .rpc('generate_order_number');
-      
-      const orderNumber = orderNumberData || `ORD-${Date.now()}`;
-
       // Create order in database with full address details
       const shippingAddressText = `${selectedAddress.governorate} - ${selectedAddress.area}${selectedAddress.neighborhood ? ` - ${selectedAddress.neighborhood}` : ''} - ${selectedAddress.nearest_landmark}${selectedAddress.additional_notes ? ` - ${selectedAddress.additional_notes}` : ''}`;
       
@@ -450,29 +444,45 @@ const Cart = () => {
       const paidNow = isPreOrderWithPartialPayment ? Math.ceil(orderSubtotal * 0.25) : orderSubtotal;
       const orderRemaining = isPreOrderWithPartialPayment ? orderSubtotal - paidNow : 0;
       
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert([{
-          user_id: user.id,
-          order_number: orderNumber,
-          total_amount: orderSubtotal + deliveryFee,
-          subtotal: orderSubtotal,
-          paid_amount: paidNow + deliveryFee - walletDeduction,
-          remaining_amount: orderRemaining,
-          payment_status: isPreOrderWithPartialPayment ? 'partial' : 'pending',
-          status: 'pending',
-          currency: 'دينار عراقي',
-          shipping_address: shippingAddressText,
-          phone_number: selectedAddress.phone_number,
-          governorate: selectedAddress.governorate,
-        }])
-        .select()
-        .single();
+      // استخدام الدالة الذرية الجديدة التي تنشئ الطلب وتخصم المبلغ في عملية واحدة
+      const orderData = {
+        total_amount: orderSubtotal + deliveryFee,
+        subtotal: orderSubtotal,
+        paid_amount: paidNow + deliveryFee,
+        remaining_amount: orderRemaining,
+        shipping_address: shippingAddressText,
+        phone_number: selectedAddress.phone_number,
+        governorate: selectedAddress.governorate,
+      };
 
-      if (orderError || !order) {
+      const { data: orderId, error: orderError } = await supabase.rpc('create_order_with_wallet_payment', {
+        p_user_id: user.id,
+        p_order_data: orderData,
+        p_payment_amount: requiredPaymentNow,
+      });
+
+      if (orderError || !orderId) {
+        console.error('Error creating order with payment:', orderError);
         toast({
           title: "خطأ",
-          description: "حدث خطأ أثناء إنشاء الطلب",
+          description: orderError?.message || "حدث خطأ أثناء إنشاء الطلب",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Fetch the created order to get order_number
+      const { data: order, error: fetchOrderError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+      if (fetchOrderError || !order) {
+        console.error('Error fetching order:', fetchOrderError);
+        toast({
+          title: "خطأ",
+          description: "تم إنشاء الطلب لكن حدث خطأ في جلب التفاصيل",
           variant: "destructive",
         });
         return;
@@ -480,15 +490,14 @@ const Cart = () => {
 
       // إرسال إشعار للتيليجرام عند إنشاء طلب جديد
       try {
-        const isPreOrderWithPartialPayment = hasPreOrderItems && preOrderPaymentOption === 'quarter';
-        const paymentStatusText = isPreOrderWithPartialPayment ? 'دفع جزئي (ربع المبلغ)' : 'مطلوب الدفع الكامل';
+        const paymentStatusText = isPreOrderWithPartialPayment ? 'دفع جزئي (ربع المبلغ)' : 'مدفوع بالكامل';
         const orderTotalAmount = (total - discount) + deliveryFee;
         const paidAmountNow = grandTotal;
         const remainingToPay = isPreOrderWithPartialPayment ? remainingAmount : 0;
         
         await supabase.functions.invoke('send-telegram-notification', {
           body: {
-            message: `🛒 <b>طلب جديد</b>\n\n` +
+            message: `🛒 <b>طلب جديد - مدفوع</b>\n\n` +
               `👤 العميل: ${profile?.full_name || 'غير محدد'}\n` +
               `📱 اليوزر: @${profile?.username || 'غير محدد'}\n` +
               `📞 الهاتف: ${selectedAddress.phone_number}\n\n` +
@@ -499,46 +508,21 @@ const Cart = () => {
               `• المبلغ الإجمالي: ${orderTotalAmount.toLocaleString()} د.ع\n` +
               `• المدفوع الآن: ${paidAmountNow.toLocaleString()} د.ع\n` +
               (remainingToPay > 0 ? `• المتبقي عند الاستلام: ${remainingToPay.toLocaleString()} د.ع\n` : '') +
-              `• حالة الدفع: ${paymentStatusText}` +
-              (useWalletBalance && walletDeduction > 0 ? `\n• خصم المحفظة: ${walletDeduction.toLocaleString()} د.ع` : ''),
+              `• حالة الدفع: ${paymentStatusText}`,
           },
         });
       } catch (telegramError) {
         console.error('خطأ في إرسال إشعار التيليجرام:', telegramError);
       }
 
-      // إذا تم استخدام المحفظة، خصم المبلغ وتسجيل المعاملة
-      // الدفع إجباري من المحفظة باستخدام RPC آمن
-      if (wallet) {
-        const amountToDeduct = requiredPaymentNow;
-        
-        // استخدام دالة RPC آمنة لخصم المبلغ وتسجيل المعاملة وتحديث الطلب
-        const { error: paymentError } = await supabase.rpc('pay_order_from_wallet', {
-          p_user_id: user.id,
-          p_order_id: order.id,
-          p_order_number: order.order_number,
-          p_amount: amountToDeduct,
-        });
-
-        if (paymentError) {
-          console.error('Error paying from wallet:', paymentError);
-          toast({
-            title: "خطأ",
-            description: paymentError.message || "حدث خطأ في خصم المبلغ من المحفظة",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // للطلبات المسبقة بالدفع الجزئي، تحديث حالة الدفع
-        if (isPreOrderWithPartialPayment) {
-          await supabase
-            .from('orders')
-            .update({
-              payment_status: 'partial',
-            })
-            .eq('id', order.id);
-        }
+      // للطلبات المسبقة بالدفع الجزئي، تحديث حالة الدفع
+      if (isPreOrderWithPartialPayment) {
+        await supabase
+          .from('orders')
+          .update({
+            payment_status: 'partial',
+          })
+          .eq('id', order.id);
       }
 
       // Fetch custom request data directly if needed
