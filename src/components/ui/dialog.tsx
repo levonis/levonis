@@ -56,10 +56,10 @@ const DialogContent = React.forwardRef<
           "fixed left-[50%] top-[50%] z-50 flex flex-col translate-x-[-50%] translate-y-[-50%]",
           // Default size constraints - can be overridden via className
           "w-[calc(100%-1.5rem)] max-w-md sm:max-w-lg",
-          // Scrolling - CRITICAL: use overflow-y-auto with touch support
+          // Scrolling - CRITICAL: use overflow-y-auto with touch support for mobile
           "max-h-[85vh] overflow-y-auto overscroll-contain",
-          // Touch scrolling for iOS
-          "[&]:touch-action-pan-y [-webkit-overflow-scrolling:touch]",
+          // Touch scrolling for iOS - using inline style for webkit
+          "touch-pan-y",
           // Professional styling matching site theme
           "bg-gradient-to-b from-[hsl(160_52%_18%)] via-[hsl(160_52%_16%)] to-[hsl(160_48%_14%)]",
           "border border-[hsl(var(--border))]",
@@ -76,6 +76,7 @@ const DialogContent = React.forwardRef<
           "data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
           className,
         )}
+        style={{ WebkitOverflowScrolling: 'touch' }}
         {...props}
       >
         {children}
