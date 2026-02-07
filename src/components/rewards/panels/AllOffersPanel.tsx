@@ -161,35 +161,18 @@ export default function AllOffersPanel() {
     mutationFn: async ({ offer, qty }: { offer: any; qty: number }) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
       
-      const totalPrice = offer.price * qty;
+      // استخدام RPC الآمن الذي يتحقق من الرصيد ويخصم المبلغ ذرياً
+      const { data: result, error } = await supabase.rpc('purchase_product_offer', {
+        p_offer_id: offer.id,
+        p_quantity: qty
+      });
       
-      if (offer.stock_quantity !== null && offer.stock_quantity < qty) {
-        throw new Error('الكمية المطلوبة غير متوفرة');
-      }
-
-      const { error: purchaseError } = await supabase
-        .from('product_offer_purchases')
-        .insert({
-          user_id: user.id,
-          offer_id: offer.id,
-          quantity: qty,
-          unit_price: offer.price,
-          total_price: totalPrice,
-          gift_tickets_awarded: (offer.gift_tickets || 0) * qty,
-        });
-      if (purchaseError) throw purchaseError;
-
-      // Award tickets
-      if (offer.gift_tickets && offer.gift_tickets > 0) {
-        const totalTickets = offer.gift_tickets * qty;
-        await supabase.rpc('add_user_tickets', {
-          p_user_id: user.id,
-          p_amount: totalTickets,
-          p_source: 'offer_purchase'
-        });
-      }
-
-      // Award points
+      if (error) throw new Error(error.message);
+      
+      const resultData = result as { success: boolean; error?: string; total_cost?: number; gift_tickets?: number };
+      if (!resultData?.success) throw new Error(resultData?.error || 'فشل الشراء');
+      
+      // منح النقاط إذا كان العرض يتضمن مكافأة نقاط
       if (offer.points_reward && offer.points_reward > 0) {
         const totalPoints = offer.points_reward * qty;
         await supabase.from('points_transactions').insert({
@@ -200,23 +183,19 @@ export default function AllOffersPanel() {
           description: `نقاط من شراء ${offer.title_ar}`,
         });
       }
-
-      if (offer.stock_quantity !== null) {
-        await supabase
-          .from('product_offers')
-          .update({ 
-            stock_quantity: offer.stock_quantity - qty,
-            total_sold: (offer.total_sold || 0) + qty 
-          })
-          .eq('id', offer.id);
-      }
-
-      return { totalPrice, tickets: (offer.gift_tickets || 0) * qty, points: (offer.points_reward || 0) * qty };
+      
+      return { 
+        totalPrice: resultData.total_cost || 0, 
+        tickets: resultData.gift_tickets || 0, 
+        points: (offer.points_reward || 0) * qty 
+      };
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['user-tickets'] });
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
+      queryClient.invalidateQueries({ queryKey: ['user-wallet'] });
       queryClient.invalidateQueries({ queryKey: ['all-storage-panel'] });
+      queryClient.invalidateQueries({ queryKey: ['storage-offer-purchases'] });
       queryClient.invalidateQueries({ queryKey: ['all-product-offers-panel-infinite'] });
       
       let message = 'تم الشراء بنجاح!';
