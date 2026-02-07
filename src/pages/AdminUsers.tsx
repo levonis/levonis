@@ -14,7 +14,8 @@ import {
   ExternalLink,
   Filter,
   TrendingUp,
-  Eye
+  Eye,
+  Info
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import AdminUserDetailsDialog from '@/components/admin/AdminUserDetailsDialog';
 
 interface UserData {
   id: string;
@@ -76,6 +78,9 @@ export default function AdminUsers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'customer' | 'merchant'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'wallet' | 'points' | 'orders'>('newest');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   // Fetch all users with profiles
   const { data: users, isLoading: usersLoading } = useQuery({
@@ -453,8 +458,21 @@ export default function AdminUsers() {
                       )}
                     </div>
 
-                    {/* Quick Action */}
-                    <div className="lg:mr-auto">
+                    {/* Quick Actions */}
+                    <div className="lg:mr-auto flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => {
+                          setSelectedUserId(user.id);
+                          setSelectedUserName(user.full_name || user.username);
+                          setDetailsOpen(true);
+                        }}
+                        className="gap-2"
+                      >
+                        <Info className="h-4 w-4" />
+                        التفاصيل
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -462,7 +480,7 @@ export default function AdminUsers() {
                         className="gap-2"
                       >
                         <Eye className="h-4 w-4" />
-                        عرض الملف
+                        الملف
                         <ExternalLink className="h-3 w-3" />
                       </Button>
                     </div>
@@ -507,6 +525,14 @@ export default function AdminUsers() {
           عرض {filteredUsers.length} من {stats.total} مستخدم
         </p>
       )}
+
+      {/* User Details Dialog */}
+      <AdminUserDetailsDialog
+        userId={selectedUserId}
+        userName={selectedUserName}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
+      />
     </AdminLayout>
   );
 }
