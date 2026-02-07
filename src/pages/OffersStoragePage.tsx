@@ -1,9 +1,9 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, lazy, Suspense, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Gift, Package, Loader2, Sparkles } from "lucide-react";
+import { ArrowLeft, Gift, Package, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Footer from "@/components/Footer";
 
@@ -17,6 +17,40 @@ export default function OffersStoragePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabId>('offers');
+  const [headerOffset, setHeaderOffset] = useState(0);
+
+  // Calculate the main site header height to position sticky bar below it
+  useEffect(() => {
+    const calculateOffset = () => {
+      // Get the main header and any banners above it
+      const header = document.querySelector('header');
+      const verificationBanner = document.querySelector('[data-verification-banner]');
+      const announcementBar = document.querySelector('[data-announcement-bar]');
+      
+      let offset = 0;
+      if (header) offset += header.offsetHeight;
+      if (verificationBanner) offset += (verificationBanner as HTMLElement).offsetHeight;
+      if (announcementBar) offset += (announcementBar as HTMLElement).offsetHeight;
+      
+      // Fallback to CSS variable or default
+      if (offset === 0) {
+        offset = 64; // Default header height
+      }
+      
+      setHeaderOffset(offset);
+    };
+
+    calculateOffset();
+    window.addEventListener('resize', calculateOffset);
+    
+    // Recalculate after a short delay to ensure headers are rendered
+    const timeout = setTimeout(calculateOffset, 100);
+    
+    return () => {
+      window.removeEventListener('resize', calculateOffset);
+      clearTimeout(timeout);
+    };
+  }, []);
 
   // Fetch storage count for badge
   const { data: storageCount } = useQuery({
@@ -44,8 +78,11 @@ export default function OffersStoragePage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      {/* Premium Sticky Header with Tabs - Always Visible */}
-      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur-xl border-b border-border/40 shadow-sm">
+      {/* Sticky Navigation Bar - Fixed below main header */}
+      <div 
+        className="fixed left-0 right-0 z-40 bg-background/95 backdrop-blur-xl border-b border-border/40 shadow-sm"
+        style={{ top: `${headerOffset}px` }}
+      >
         {/* Compact Navigation Bar */}
         <div className="flex items-center justify-between px-3 py-2.5">
           <div className="flex items-center gap-2.5">
@@ -107,8 +144,8 @@ export default function OffersStoragePage() {
         </div>
       </div>
 
-      {/* Content */}
-      <main className="flex-1 px-4 py-5">
+      {/* Content - with padding for fixed header */}
+      <main className="flex-1 px-4 py-5" style={{ marginTop: `${headerOffset + 100}px` }}>
         <Suspense fallback={
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
