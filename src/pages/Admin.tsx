@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -1645,6 +1645,7 @@ const Admin = () => {
                 { icon: Shield, title: 'حماية الطابعات', desc: 'إدارة اشتراكات الحماية', path: ADMIN_ROUTES.printerProtection },
                 { icon: Truck, title: 'إعدادات الشحن', desc: 'أسعار وحساب تكلفة الشحن', path: ADMIN_ROUTES.shippingSettings },
                 { icon: Sparkles, title: 'مجتمع ليفو', desc: 'إدارة التجار والعملاء والمحادثات', path: ADMIN_ROUTES.levoCommunity },
+                { icon: Users, title: 'إدارة المستخدمين', desc: 'عرض جميع المستخدمين والتجار', path: ADMIN_ROUTES.users },
               ].map((item, idx) => (
                 <button
                   key={idx}
