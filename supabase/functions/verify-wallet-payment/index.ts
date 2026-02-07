@@ -60,80 +60,34 @@ serve(async (req) => {
       throw new Error("Session does not belong to this user");
     }
 
-    // Check if this payment was already processed
-    const { data: existingTx } = await supabaseClient
-      .from("wallet_transactions")
-      .select("id")
-      .eq("stripe_session_id", session_id)
-      .maybeSingle();
-
-    if (existingTx) {
-      return new Response(JSON.stringify({ 
-        success: true, 
-        message: "Payment already processed",
-        already_processed: true 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
-
     const amountIQD = parseInt(session.metadata?.amount_iqd || amount?.toString() || "0");
     
     if (amountIQD <= 0) {
       throw new Error("Invalid amount");
     }
 
-    // Create wallet transaction
-    const { error: txError } = await supabaseClient
-      .from("wallet_transactions")
-      .insert({
-        user_id: user.id,
-        type: "deposit",
-        amount: amountIQD,
-        status: "completed",
-        payment_method: "stripe",
-        stripe_session_id: session_id,
-      });
+    // استخدام RPC ذري لمعالجة الدفع بشكل آمن
+    const { data: result, error: rpcError } = await supabaseClient.rpc(
+      'process_stripe_wallet_deposit',
+      {
+        p_user_id: user.id,
+        p_amount: amountIQD,
+        p_stripe_session_id: session_id
+      }
+    );
 
-    if (txError) {
-      console.error("Error creating transaction:", txError);
-      throw new Error("Failed to create transaction");
+    if (rpcError) {
+      console.error("RPC Error:", rpcError);
+      throw new Error("Failed to process payment: " + rpcError.message);
     }
 
-    // Update user wallet balance
-    const { data: wallet } = await supabaseClient
-      .from("user_wallets")
-      .select("balance")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (wallet) {
-      // Update existing wallet
-      const { error: updateError } = await supabaseClient
-        .from("user_wallets")
-        .update({ balance: wallet.balance + amountIQD })
-        .eq("user_id", user.id);
-
-      if (updateError) throw updateError;
-    } else {
-      // Create new wallet
-      const { error: createError } = await supabaseClient
-        .from("user_wallets")
-        .insert({
-          user_id: user.id,
-          balance: amountIQD,
-          currency: "IQD",
-        });
-
-      if (createError) throw createError;
+    if (!result?.success) {
+      throw new Error(result?.error || "Failed to process payment");
     }
 
-    return new Response(JSON.stringify({ 
-      success: true, 
-      message: "Wallet topped up successfully",
-      amount: amountIQD 
-    }), {
+    console.log("Payment processed successfully:", result);
+
+    return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

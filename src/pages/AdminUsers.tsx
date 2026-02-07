@@ -15,7 +15,9 @@ import {
   Filter,
   TrendingUp,
   Eye,
-  Info
+  Info,
+  Ticket,
+  CreditCard
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -93,6 +95,50 @@ export default function AdminUsers() {
       
       if (error) throw error;
       return data as UserData[];
+    }
+  });
+
+  // Fetch tickets count per user
+  const { data: ticketCounts } = useQuery({
+    queryKey: ['admin-tickets-count'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('competition_tickets')
+        .select('user_id');
+      
+      if (error) throw error;
+      
+      // Count tickets per user
+      const counts: Record<string, number> = {};
+      data?.forEach((t: any) => {
+        counts[t.user_id] = (counts[t.user_id] || 0) + 1;
+      });
+      return counts;
+    }
+  });
+
+  // Fetch active cards per user
+  const { data: userCards } = useQuery({
+    queryKey: ['admin-user-cards'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_cards')
+        .select('user_id, loyalty_levels(name_ar, color)')
+        .eq('is_active', true);
+      
+      if (error) throw error;
+      
+      // Map user_id to card info
+      const cardsMap: Record<string, { name_ar: string; color: string }> = {};
+      data?.forEach((c: any) => {
+        if (c.loyalty_levels) {
+          cardsMap[c.user_id] = {
+            name_ar: c.loyalty_levels.name_ar,
+            color: c.loyalty_levels.color
+          };
+        }
+      });
+      return cardsMap;
     }
   });
 
@@ -434,15 +480,40 @@ export default function AdminUsers() {
                         </span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Star className="h-4 w-4 text-amber-600" />
-                        <span className="font-bold text-amber-600">
+                        <Star className="h-4 w-4 text-amber-500" />
+                        <span className="font-bold text-amber-500">
                           {userPoints.toLocaleString()}
                         </span>
                       </div>
                     </div>
 
-                    {/* Orders/Activity */}
+                    {/* Tickets & Membership */}
                     <div className="flex items-center gap-4 lg:w-[200px]">
+                      <div className="flex items-center gap-1.5">
+                        <Ticket className="h-4 w-4 text-purple-500" />
+                        <span className="font-bold text-purple-500">
+                          {(ticketCounts?.[user.id] || 0).toLocaleString()}
+                        </span>
+                        <span className="text-xs text-muted-foreground">تذكرة</span>
+                      </div>
+                      {userCards?.[user.id] && (
+                        <Badge 
+                          variant="outline" 
+                          className="gap-1 shrink-0"
+                          style={{ 
+                            backgroundColor: `${userCards[user.id].color}20`,
+                            borderColor: `${userCards[user.id].color}50`,
+                            color: userCards[user.id].color 
+                          }}
+                        >
+                          <CreditCard className="h-3 w-3" />
+                          {userCards[user.id].name_ar}
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Orders/Activity */}
+                    <div className="flex items-center gap-3 lg:w-[150px]">
                       <div className="flex items-center gap-1.5">
                         <ShoppingBag className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
@@ -450,12 +521,6 @@ export default function AdminUsers() {
                           <span className="text-muted-foreground"> طلب</span>
                         </span>
                       </div>
-                      {customerData && (
-                        <div className="text-sm">
-                          <span className="text-muted-foreground">طلبات المجتمع: </span>
-                          <span className="font-bold">{customerData.total_requests_made || 0}</span>
-                        </div>
-                      )}
                     </div>
 
                     {/* Quick Actions */}

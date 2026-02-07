@@ -6046,6 +6046,14 @@ export type Database = {
         }
         Returns: string
       }
+      process_stripe_wallet_deposit: {
+        Args: {
+          p_amount: number
+          p_stripe_session_id: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       purchase_competition_ticket:
         | { Args: { comp_id: string }; Returns: Json }
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }
