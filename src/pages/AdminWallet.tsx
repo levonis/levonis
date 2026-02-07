@@ -160,57 +160,28 @@ export default function AdminWallet() {
 
   const approveTransaction = useMutation({
     mutationFn: async ({ transaction }: { transaction: any }) => {
-      if (transaction.type === 'deposit') {
-        // For deposits, add balance to user wallet using admin function
-        const { error } = await supabase.rpc('admin_adjust_wallet', {
-          p_user_id: transaction.user_id,
-          p_amount: transaction.amount,
-          p_type: 'deposit',
-          p_description: 'تم الموافقة على طلب التعبئة'
-        });
-        if (error) throw error;
+      // Use atomic RPC function to approve transaction
+      const { error } = await supabase.rpc('admin_approve_transaction', {
+        p_transaction_id: transaction.id
+      });
+      
+      if (error) throw error;
+      
+      // Send notification
+      const notificationTitle = transaction.type === 'deposit' 
+        ? 'تم الموافقة على طلب التعبئة'
+        : 'تم الموافقة على طلب السحب';
+      const notificationMessage = transaction.type === 'deposit'
+        ? `تم إضافة ${transaction.amount.toLocaleString()} دينار عراقي إلى محفظتك`
+        : `تم سحب ${transaction.amount.toLocaleString()} دينار عراقي من محفظتك`;
         
-        // Mark original pending transaction as completed
-        const { error: updateError } = await supabase
-          .from('wallet_transactions')
-          .update({ status: 'completed', admin_notes: 'تمت الموافقة', updated_at: new Date().toISOString() })
-          .eq('id', transaction.id);
-        if (updateError) throw updateError;
-        
-        // Send notification
-        await supabase.from('notifications').insert({
-          user_id: transaction.user_id,
-          title: 'تم الموافقة على طلب التعبئة',
-          message: `تم إضافة ${transaction.amount.toLocaleString()} دينار عراقي إلى محفظتك`,
-          type: 'success',
-          is_general: false,
-        });
-      } else if (transaction.type === 'withdrawal') {
-        // For withdrawals, deduct balance from user wallet
-        const { error } = await supabase.rpc('admin_adjust_wallet', {
-          p_user_id: transaction.user_id,
-          p_amount: -transaction.amount, // Negative to deduct
-          p_type: 'withdrawal',
-          p_description: 'تم الموافقة على طلب السحب'
-        });
-        if (error) throw error;
-        
-        // Mark original pending transaction as completed
-        const { error: updateError } = await supabase
-          .from('wallet_transactions')
-          .update({ status: 'completed', admin_notes: 'تمت الموافقة على السحب', updated_at: new Date().toISOString() })
-          .eq('id', transaction.id);
-        if (updateError) throw updateError;
-        
-        // Send notification
-        await supabase.from('notifications').insert({
-          user_id: transaction.user_id,
-          title: 'تم الموافقة على طلب السحب',
-          message: `تم سحب ${transaction.amount.toLocaleString()} دينار عراقي من محفظتك`,
-          type: 'success',
-          is_general: false,
-        });
-      }
+      await supabase.from('notifications').insert({
+        user_id: transaction.user_id,
+        title: notificationTitle,
+        message: notificationMessage,
+        type: 'success',
+        is_general: false,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-wallet-transactions'] });

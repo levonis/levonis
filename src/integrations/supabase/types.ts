@@ -5851,6 +5851,10 @@ export type Database = {
         }
         Returns: string
       }
+      admin_approve_transaction: {
+        Args: { p_transaction_id: string }
+        Returns: boolean
+      }
       auto_confirm_delivery: { Args: never; Returns: undefined }
       calculate_merchant_badge_tier:
         | { Args: { p_merchant_id: string }; Returns: string }
@@ -5905,6 +5909,14 @@ export type Database = {
           p_user_id: string
         }
         Returns: undefined
+      }
+      create_order_with_wallet_payment: {
+        Args: {
+          p_order_data: Json
+          p_payment_amount: number
+          p_user_id: string
+        }
+        Returns: string
       }
       deduct_user_points: {
         Args: {
