@@ -21,8 +21,13 @@
 
     <!-- Preload critical resources -->
     <link rel="modulepreload" href="/src/main.tsx">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900;1000&family=Tajawal:wght@400;700;900&family=Almarai:wght@400;700;800&family=Amiri:wght@400;700&family=Scheherazade+New:wght@400;700&display=optional" rel="stylesheet" media="print" onload="this.media='all'">
-    <noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900;1000&family=Tajawal:wght@400;700;900&family=Almarai:wght@400;700;800&family=Amiri:wght@400;700&family=Scheherazade+New:wght@400;700&display=optional" rel="stylesheet"></noscript>
+    
+    <!-- Preload LCP banner image - dynamically added, but we can hint -->
+    <link rel="preconnect" href="https://sajlfpygebpqwzpotrsg.supabase.co/storage" crossorigin>
+    
+    <!-- Defer font loading to after LCP - use font-display: swap -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet"></noscript>
     
     
     <meta property="og:type" content="website" />

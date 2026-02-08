@@ -7,6 +7,10 @@ interface OptimizedImageProps {
   priority?: boolean;
   onLoad?: () => void;
   onError?: () => void;
+  // New props for better sizing hints
+  width?: number;
+  height?: number;
+  sizes?: string;
 }
 
 const OptimizedImage = memo(({ 
@@ -15,17 +19,23 @@ const OptimizedImage = memo(({
   className = "", 
   priority = false,
   onLoad,
-  onError 
+  onError,
+  width,
+  height,
+  sizes = "(max-width: 768px) 100vw, 50vw"
 }: OptimizedImageProps) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(priority);
   const [hasError, setHasError] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const imgRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
     if (priority || isInView) return;
 
+    // Use larger rootMargin on mobile for earlier loading
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    
     observerRef.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -36,7 +46,7 @@ const OptimizedImage = memo(({
         });
       },
       {
-        rootMargin: "100px",
+        rootMargin: isMobile ? "200px" : "100px",
         threshold: 0.01,
       }
     );
@@ -61,10 +71,13 @@ const OptimizedImage = memo(({
   };
 
   return (
-    <div ref={imgRef} className={`relative ${className}`}>
-      {/* Placeholder skeleton */}
+    <div ref={imgRef} className={`relative overflow-hidden ${className}`}>
+      {/* Placeholder skeleton - uses CSS aspect-ratio if dimensions provided */}
       {!isLoaded && !hasError && (
-        <div className="absolute inset-0 bg-muted animate-pulse" />
+        <div 
+          className="absolute inset-0 bg-muted animate-pulse"
+          style={width && height ? { aspectRatio: `${width}/${height}` } : undefined}
+        />
       )}
       
       {/* Error state */}
@@ -81,9 +94,13 @@ const OptimizedImage = memo(({
           alt={alt}
           loading={priority ? "eager" : "lazy"}
           decoding="async"
+          fetchPriority={priority ? "high" : "auto"}
           onLoad={handleLoad}
           onError={handleError}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${
+          width={width}
+          height={height}
+          sizes={sizes}
+          className={`w-full h-full object-cover transition-opacity duration-200 ${
             isLoaded ? "opacity-100" : "opacity-0"
           }`}
         />

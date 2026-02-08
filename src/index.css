@@ -129,37 +129,59 @@
     }
   }
 
-  /* Mobile performance optimizations */
+  /* Mobile performance optimizations - CRITICAL for LCP */
   @media (max-width: 768px) {
-    /* Disable expensive animations on mobile */
+    /* Disable ALL expensive animations on mobile */
     .animate-float,
     .animate-float-decoration,
     .animate-glow,
     .animate-pulse-glow,
-    .animate-shimmer {
+    .animate-shimmer,
+    .animate-pulse-slow,
+    .animate-avatar-frame-glow,
+    .animate-avatar-frame-pulse,
+    .animate-avatar-frame-shimmer,
+    .animate-avatar-frame-rainbow {
       animation: none !important;
     }
     
-    /* Reduce blur effects which are expensive on mobile */
+    /* Completely disable blur effects - very expensive on mobile GPU */
     .backdrop-blur-lg,
     .backdrop-blur-sm,
-    .backdrop-blur {
+    .backdrop-blur,
+    .backdrop-blur-xl,
+    [class*="backdrop-blur"] {
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
     
-    /* Simplify shadows on mobile */
+    /* Simplify ALL shadows on mobile to improve paint performance */
     .shadow-lg,
     .shadow-xl,
-    .shadow-2xl {
-      box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+    .shadow-2xl,
+    .shadow-md,
+    [class*="shadow-gold"],
+    [class*="shadow-deep"],
+    [class*="shadow-hover"] {
+      box-shadow: 0 2px 4px rgb(0 0 0 / 0.1) !important;
     }
     
-    /* Disable decorative blur elements */
+    /* Disable decorative blur elements entirely */
     .blur-3xl,
-    .blur-2xl {
-      filter: none !important;
-      opacity: 0 !important;
+    .blur-2xl,
+    .blur-xl {
+      display: none !important;
+    }
+    
+    /* Reduce transition durations on mobile */
+    *:not(.transition-none) {
+      transition-duration: 0.15s !important;
+    }
+    
+    /* Disable complex gradients in non-critical areas */
+    .levo-section-frame::before,
+    .levo-card-frame::before {
+      display: none !important;
     }
   }
 
