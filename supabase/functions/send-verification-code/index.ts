@@ -15,6 +15,28 @@ const generateCode = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
+// Email validation and sanitization
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 320; // RFC 5321
+
+const validateAndSanitizeEmail = (email: string): { valid: boolean; sanitized: string } => {
+  if (!email || typeof email !== 'string') {
+    return { valid: false, sanitized: '' };
+  }
+  
+  const sanitized = email.trim().toLowerCase();
+  
+  if (sanitized.length > MAX_EMAIL_LENGTH) {
+    return { valid: false, sanitized: '' };
+  }
+  
+  if (!EMAIL_REGEX.test(sanitized)) {
+    return { valid: false, sanitized: '' };
+  }
+  
+  return { valid: true, sanitized };
+};
+
 const generateEmailHTML = (code: string, type: string) => {
   const typeLabels: Record<string, { title: string; message: string }> = {
     signup: {
@@ -180,9 +202,21 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { email, type, user_id }: VerificationRequest = await req.json();
+    const { email: rawEmail, type, user_id }: VerificationRequest = await req.json();
 
-    if (!email || !type) {
+    // Validate and sanitize email
+    const emailValidation = validateAndSanitizeEmail(rawEmail);
+    if (!emailValidation.valid) {
+      return new Response(
+        JSON.stringify({ success: false, error: "بيانات غير صحيحة" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const email = emailValidation.sanitized;
+
+    // Validate type
+    const VALID_TYPES = ['signup', 'password_reset', 'password_change', 'email_change'];
+    if (!type || !VALID_TYPES.includes(type)) {
       return new Response(
         JSON.stringify({ success: false, error: "بيانات غير صحيحة" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

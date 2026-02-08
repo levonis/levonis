@@ -11,6 +11,35 @@ interface ResetPasswordRequest {
   new_password: string;
 }
 
+// Email validation and sanitization
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 320;
+
+const validateAndSanitizeEmail = (email: string): { valid: boolean; sanitized: string } => {
+  if (!email || typeof email !== 'string') {
+    return { valid: false, sanitized: '' };
+  }
+  const sanitized = email.trim().toLowerCase();
+  if (sanitized.length > MAX_EMAIL_LENGTH || !EMAIL_REGEX.test(sanitized)) {
+    return { valid: false, sanitized: '' };
+  }
+  return { valid: true, sanitized };
+};
+
+// Password validation
+const validatePassword = (password: string): { valid: boolean; error?: string } => {
+  if (!password || typeof password !== 'string') {
+    return { valid: false, error: "كلمة المرور مطلوبة" };
+  }
+  if (password.length < 6) {
+    return { valid: false, error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" };
+  }
+  if (password.length > 128) {
+    return { valid: false, error: "كلمة المرور طويلة جداً" };
+  }
+  return { valid: true };
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -21,18 +50,23 @@ const handler = async (req: Request): Promise<Response> => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { email, new_password }: ResetPasswordRequest = await req.json();
+    const { email: rawEmail, new_password }: ResetPasswordRequest = await req.json();
 
-    if (!email || !new_password) {
+    // Validate and sanitize email
+    const emailValidation = validateAndSanitizeEmail(rawEmail);
+    if (!emailValidation.valid) {
       return new Response(
         JSON.stringify({ success: false, error: "بيانات غير صحيحة" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+    const email = emailValidation.sanitized;
 
-    if (new_password.length < 6) {
+    // Validate password
+    const passwordValidation = validatePassword(new_password);
+    if (!passwordValidation.valid) {
       return new Response(
-        JSON.stringify({ success: false, error: "كلمة المرور يجب أن تكون 6 أحرف على الأقل" }),
+        JSON.stringify({ success: false, error: passwordValidation.error }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
