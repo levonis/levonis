@@ -67,6 +67,7 @@ const Auth = () => {
   const [verificationType, setVerificationType] = useState<'signup' | 'password_reset'>('signup');
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
   const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showNewPasswordForm, setShowNewPasswordForm] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -300,6 +301,11 @@ const Auth = () => {
       return;
     }
 
+    if (newPassword !== confirmNewPassword) {
+      toast.error('كلمة المرور غير متطابقة');
+      return;
+    }
+
     setLoading(true);
     try {
       // Use Supabase admin to update password (requires edge function)
@@ -318,6 +324,7 @@ const Auth = () => {
         setShowResetPassword(false);
         setResetEmail('');
         setNewPassword('');
+        setConfirmNewPassword('');
       } else {
         toast.error(data.error || 'فشل في تغيير كلمة المرور');
       }
@@ -605,6 +612,19 @@ const Auth = () => {
                 />
                 <p className="text-xs text-muted-foreground">يجب أن تكون 6 أحرف على الأقل</p>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-new-password">تأكيد كلمة المرور</Label>
+                <Input
+                  id="confirm-new-password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={confirmNewPassword}
+                  onChange={(e) => setConfirmNewPassword(e.target.value)}
+                  required
+                  disabled={loading}
+                  minLength={6}
+                />
+              </div>
               <Button 
                 type="submit" 
                 className="w-full"
@@ -628,6 +648,7 @@ const Auth = () => {
                   setShowResetPassword(false);
                   setResetEmail('');
                   setNewPassword('');
+                  setConfirmNewPassword('');
                 }}
                 disabled={loading}
               >
