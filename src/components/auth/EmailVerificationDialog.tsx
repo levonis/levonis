@@ -14,6 +14,7 @@ interface EmailVerificationDialogProps {
   userId?: string;
   onVerified: () => void;
   onResendCode?: () => void;
+  autoSendOnOpen?: boolean; // New prop to control auto-send behavior
 }
 
 // Store resend timers globally to persist across dialog open/close
@@ -29,6 +30,7 @@ export default function EmailVerificationDialog({
   userId,
   onVerified,
   onResendCode,
+  autoSendOnOpen = true, // Default to true for backward compatibility
 }: EmailVerificationDialogProps) {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,9 +61,9 @@ export default function EmailVerificationDialog({
     }
   }, [open, getStoredTimer]);
 
-  // Send verification code when dialog opens (only once per session)
+  // Send verification code when dialog opens (only if autoSendOnOpen is true)
   useEffect(() => {
-    if (!open || !email || isSending) return;
+    if (!open || !email || isSending || !autoSendOnOpen) return;
     
     // Check if we already sent a code for this combination in this session
     if (sentCodes[timerKey]) {
@@ -109,7 +111,7 @@ export default function EmailVerificationDialog({
     };
 
     sendCode();
-  }, [open, email, type, userId, timerKey, getStoredTimer, isSending]);
+  }, [open, email, type, userId, timerKey, getStoredTimer, isSending, autoSendOnOpen]);
 
   // Timer countdown
   useEffect(() => {
