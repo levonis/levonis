@@ -174,7 +174,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!RESEND_API_KEY) {
       console.error("RESEND_API_KEY not configured");
       return new Response(
-        JSON.stringify({ success: false, error: "Email service not configured" }),
+        JSON.stringify({ success: false, error: "حدث خطأ. يرجى المحاولة لاحقاً." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -184,7 +184,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (!email || !type) {
       return new Response(
-        JSON.stringify({ success: false, error: "Email and type are required" }),
+        JSON.stringify({ success: false, error: "بيانات غير صحيحة" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -258,7 +258,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
       console.error("Error inserting code:", insertError);
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to create verification code" }),
+        JSON.stringify({ success: false, error: "حدث خطأ. يرجى المحاولة لاحقاً." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -284,7 +284,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!emailResponse.ok) {
       console.error("Resend API error:", emailResult);
       return new Response(
-        JSON.stringify({ success: false, error: "Failed to send email" }),
+        JSON.stringify({ success: false, error: "فشل في إرسال البريد" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -297,10 +297,9 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Error sending verification code:", error);
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
+      JSON.stringify({ success: false, error: "حدث خطأ. يرجى المحاولة لاحقاً." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
