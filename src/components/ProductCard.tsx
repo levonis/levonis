@@ -4,7 +4,7 @@ import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Heart } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
-import { resizeSupabaseImage } from '@/lib/imageUtils';
+import { resizeSupabaseImage, IMAGE_QUALITY, IMAGE_SIZES } from '@/lib/imageUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -40,12 +40,13 @@ const ProductCard = ({
   inStock = true
 }: ProductCardProps) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   const hasSale = originalPrice && originalPrice > price;
   const savings = hasSale ? originalPrice - price : 0;
   
   const displayImage = (images && images.length > 0) ? images[0] : imageUrl;
-  // Resize image to 400px for card display
-  const optimizedImage = resizeSupabaseImage(displayImage, 400);
+  // Compress image to 300px width with medium quality for cards
+  const optimizedImage = resizeSupabaseImage(displayImage, IMAGE_SIZES.card, IMAGE_QUALITY.medium);
 
   const handleAddToFavorites = useCallback(async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -114,18 +115,24 @@ const ProductCard = ({
 
       <div className="relative mb-1.5">
         <div className="relative overflow-hidden rounded-md aspect-square bg-muted/20">
+          {/* Loading skeleton */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 bg-muted/30 animate-skeleton-shimmer skeleton-gradient" />
+          )}
           <img 
             src={optimizedImage || '/placeholder.svg'} 
             alt={nameAr}
-            className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-200"
+            className={`w-full h-full object-cover group-hover:scale-103 transition-all duration-200 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             loading={priority ? "eager" : "lazy"}
             fetchPriority={priority ? "high" : "auto"}
             decoding="async"
             width="300"
             height="300"
+            onLoad={() => setImageLoaded(true)}
             onError={(e) => {
               const target = e.currentTarget as HTMLImageElement;
               target.src = '/placeholder.svg';
+              setImageLoaded(true);
             }}
           />
         </div>

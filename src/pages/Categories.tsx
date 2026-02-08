@@ -19,16 +19,8 @@ const Categories = () => {
 
   return (
     <div className="min-h-screen bg-transparent relative">
-      {/* Decorative frame - Full screen */}
-      <div 
-        className="fixed inset-0 pointer-events-none z-0 opacity-20"
-        style={{
-          backgroundImage: 'url(/images/decorative-frame-new.webp)',
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat'
-        }}
-      />
+      {/* Subtle gradient background */}
+      <div className="fixed inset-0 pointer-events-none z-0 bg-gradient-to-b from-primary/5 via-transparent to-accent/5" />
       <main className="container mx-auto px-4 py-8 pt-28 relative z-10">
         <div className="mb-8">
           <h1 className="text-4xl font-black text-primary mb-2">جميع الأقسام</h1>
