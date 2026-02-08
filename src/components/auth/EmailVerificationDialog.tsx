@@ -249,7 +249,7 @@ export default function EmailVerificationDialog({
           <div className="px-6 pb-6 space-y-6">
             {/* Code Input */}
             <div className="flex flex-col items-center gap-4">
-              <div className="flex justify-center" dir="ltr">
+              <div className="flex justify-center">
                 <InputOTP
                   maxLength={6}
                   value={code}
@@ -258,8 +258,9 @@ export default function EmailVerificationDialog({
                   inputMode="numeric"
                   pattern="[0-9]*"
                   autoComplete="one-time-code"
+                  dir="ltr"
                 >
-                  <InputOTPGroup className="gap-2 rtl:flex-row-reverse">
+                  <InputOTPGroup className="gap-2 flex-row-reverse">
                     {[0, 1, 2, 3, 4, 5].map((index) => (
                       <InputOTPSlot 
                         key={index}
