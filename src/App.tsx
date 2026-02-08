@@ -1,4 +1,4 @@
-// App component - main application entry point - v9 (cache fix)
+// App component - main application entry point - v10 (premium loading)
 import { Suspense, lazy, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -11,13 +11,12 @@ import { useDailyLogin } from "@/hooks/useDailyLogin";
 import Header from "@/components/Header";
 import CommunityTopBar from "@/components/community/CommunityTopBar";
 import AnnouncementBar from "@/components/AnnouncementBar";
-import DecorativeFrame from "@/components/DecorativeFrame";
 import AdminRoute from "@/components/AdminRoute";
 import { ADMIN_BASE_PATH } from "@/config/adminConfig";
-import { Loader2 } from "lucide-react";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
+import PageLoader from "@/components/ui/PageLoader";
 
 // Lazy load unified chat button (global floating button)
 const UnifiedChatButton = lazy(() => import("@/components/UnifiedChatButton"));
@@ -104,12 +103,8 @@ const OffersStoragePage = lazy(() => import("./pages/OffersStoragePage"));
 const ChatOrderCheckout = lazy(() => import("./pages/ChatOrderCheckout"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Loading component
-const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-  </div>
-);
+// Premium loading component - shown during lazy load
+const SuspenseLoader = () => <PageLoader />;
 
 function AppContent() {
   useDailyLogin();
@@ -125,7 +120,6 @@ function AppContent() {
   
   return (
     <>
-      <DecorativeFrame />
       <EmailVerificationBanner onHeightChange={setVerificationBannerHeight} />
       <AnnouncementBar onHeightChange={setAnnouncementHeight} verificationBannerHeight={verificationBannerHeight} />
       {isCommunityShell ? (
@@ -134,7 +128,7 @@ function AppContent() {
         <Header announcementHeight={announcementHeight} verificationBannerHeight={verificationBannerHeight} />
       )}
       <main style={{ paddingTop: `${totalTopPadding}px` }}>
-        <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={<SuspenseLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Products />} />
