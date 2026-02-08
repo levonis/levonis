@@ -34,18 +34,13 @@ const AdminMessageDialog = ({
     mutationFn: async () => {
       if (!message.trim()) throw new Error('الرسالة مطلوبة');
 
-      // Send all notifications (in-app, Telegram, Email)
+      // Send all notifications (in-app and Telegram only)
       await sendAllNotifications({
         userId,
         title,
         message,
         type: 'info',
         relatedId: orderId,
-        notificationType: 'admin_message',
-        metadata: {
-          orderNumber,
-          senderName: 'إدارة ليفونيس',
-        }
       });
 
       return { success: true };

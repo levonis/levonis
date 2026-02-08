@@ -149,18 +149,13 @@ export default function AdminOrderChatDialog({
         .update({ updated_at: new Date().toISOString() })
         .eq('id', convId);
 
-      // Send all notifications (in-app, Telegram, Email)
+      // Send all notifications (in-app and Telegram only)
       await sendAllNotifications({
         userId,
         title: 'رسالة جديدة من الدعم',
         message: content.substring(0, 100) + (content.length > 100 ? '...' : ''),
         type: 'info',
         relatedId: orderId,
-        notificationType: 'new_message',
-        metadata: {
-          orderNumber,
-          senderName: 'دعم ليفونيس',
-        }
       });
     },
     onSuccess: () => {

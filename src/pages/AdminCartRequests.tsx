@@ -120,11 +120,6 @@ export default function AdminCartRequests() {
           message: `تم تعديل سعر السلة (${request.cart_code}) من ${formatPrice(request.original_total)} إلى ${formatPrice(adjustedTotal)} د.ع${adminNotes ? `\n📝 ملاحظات: ${adminNotes}` : ''}`,
           type: 'info',
           relatedId: requestId,
-          notificationType: 'order_status',
-          metadata: {
-            orderNumber: request.cart_code,
-            amount: adjustedTotal,
-          }
         });
       }
     },

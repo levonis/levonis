@@ -191,13 +191,12 @@ function MerchantsContent() {
         })
         .eq("id", payload.user_id);
 
-      // Send all notifications (in-app, Telegram, Email)
+      // Send all notifications (in-app and Telegram only)
       await sendAllNotifications({
         userId: payload.user_id,
         title: "تم قبول طلبك كتاجر! 🎉",
         message: `تهانينا! تم قبول طلبك للانضمام كتاجر في مجتمع ليفو. تم خصم ${MERCHANT_FEE.toLocaleString()} IQD من محفظتك كرسوم تسجيل.`,
         type: 'success',
-        notificationType: 'merchant_update',
       });
 
       return true;
@@ -235,13 +234,12 @@ function MerchantsContent() {
 
       if (updateError) throw updateError;
 
-      // Send all notifications (in-app, Telegram, Email)
+      // Send all notifications (in-app and Telegram only)
       await sendAllNotifications({
         userId: payload.user_id,
         title: "تم رفض طلب التاجر",
         message: `للأسف، تم رفض طلبك للانضمام كتاجر. السبب: ${payload.rejection_reason}`,
         type: 'error',
-        notificationType: 'merchant_update',
       });
 
       return true;

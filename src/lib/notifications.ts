@@ -71,7 +71,8 @@ export async function sendEmailNotification({
 }
 
 /**
- * Send all notifications (in-app, Telegram, and Email)
+ * Send all notifications (in-app and Telegram only)
+ * Email is reserved ONLY for verification codes
  * Use this function instead of directly inserting into notifications table
  */
 export async function sendAllNotifications({
@@ -80,16 +81,12 @@ export async function sendAllNotifications({
   message,
   type = 'info',
   relatedId,
-  notificationType = 'general',
-  metadata,
 }: {
   userId: string;
   title: string;
   message: string;
   type?: 'info' | 'success' | 'warning' | 'error';
   relatedId?: string;
-  notificationType?: NotificationType;
-  metadata?: EmailNotificationParams['metadata'];
 }): Promise<void> {
   // 1. Create in-app notification
   await supabase.from('notifications').insert({
@@ -102,6 +99,7 @@ export async function sendAllNotifications({
   });
 
   // 2. Send Telegram notification (fire and forget)
+  // Email is NOT sent here - reserved only for verification codes
   supabase.functions.invoke('send-user-telegram-notification', {
     body: {
       user_id: userId,
@@ -110,13 +108,4 @@ export async function sendAllNotifications({
       notification_type: type,
     },
   }).catch(err => console.error('Telegram notification failed:', err));
-
-  // 3. Send Email notification (fire and forget)
-  sendEmailNotification({
-    userId,
-    notificationType,
-    title,
-    message,
-    metadata,
-  }).catch(err => console.error('Email notification failed:', err));
 }
