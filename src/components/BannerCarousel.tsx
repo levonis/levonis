@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Copy, Check, ExternalLink } from 'lucide-react';
@@ -30,7 +30,56 @@ interface Banner {
   crop_settings: Json | null;
 }
 
-const BannerCarousel = () => {
+// LCP-optimized image component with proper loading attributes
+const BannerImage = memo(({ 
+  src, 
+  alt, 
+  isFirst, 
+  isActive 
+}: { 
+  src: string; 
+  alt: string; 
+  isFirst: boolean; 
+  isActive: boolean;
+}) => {
+  const [loaded, setLoaded] = useState(false);
+
+  // Preload first image immediately via link tag
+  useEffect(() => {
+    if (isFirst && typeof window !== 'undefined') {
+      const existingPreload = document.querySelector(`link[href="${src}"]`);
+      if (!existingPreload) {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'image';
+        link.href = src;
+        link.fetchPriority = 'high';
+        document.head.appendChild(link);
+      }
+    }
+  }, [src, isFirst]);
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={cn(
+        "w-full h-full object-cover object-center transition-opacity duration-300",
+        loaded ? "opacity-100" : "opacity-0"
+      )}
+      loading={isFirst ? 'eager' : 'lazy'}
+      decoding={isFirst ? 'sync' : 'async'}
+      fetchPriority={isFirst ? 'high' : 'auto'}
+      onLoad={() => setLoaded(true)}
+      // Add intrinsic size hints to prevent layout shift
+      width={1200}
+      height={400}
+    />
+  );
+});
+BannerImage.displayName = 'BannerImage';
+
+const BannerCarousel = memo(() => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [copiedCoupon, setCopiedCoupon] = useState<string | null>(null);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
@@ -54,8 +103,8 @@ const BannerCarousel = () => {
       if (error) throw error;
       return data as Banner[];
     },
-    staleTime: 60000,
-    gcTime: 300000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes - match other queries
   });
 
   // Auto-play with progress bar
@@ -221,19 +270,19 @@ const BannerCarousel = () => {
           <div
             key={banner.id}
             className={cn(
-              "absolute inset-0 transition-all duration-700 ease-out",
+              "absolute inset-0 transition-opacity duration-500 ease-out",
               index === currentIndex 
-                ? "opacity-100 translate-x-0 scale-100" 
-                : index < currentIndex 
-                  ? "opacity-0 -translate-x-full scale-95" 
-                  : "opacity-0 translate-x-full scale-95"
+                ? "opacity-100 z-10" 
+                : "opacity-0 z-0"
             )}
+            // Use CSS containment for better performance
+            style={{ contain: 'layout paint' }}
           >
-            <img
+            <BannerImage
               src={banner.image_url}
               alt={banner.title_ar || banner.title}
-              className="w-full h-full object-cover object-center"
-              loading={index === 0 ? 'eager' : 'lazy'}
+              isFirst={index === 0}
+              isActive={index === currentIndex}
             />
             
             {/* Overlay Gradient - subtle */}
@@ -289,6 +338,8 @@ const BannerCarousel = () => {
       )}
     </div>
   );
-};
+});
+
+BannerCarousel.displayName = 'BannerCarousel';
 
 export default BannerCarousel;
