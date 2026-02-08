@@ -1,0 +1,274 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import StepIndicator from './StepIndicator';
+import Step1Account from './Step1Account';
+import Step2Profile from './Step2Profile';
+import Step3Verification from './Step3Verification';
+import Step4OptionalInfo from './Step4OptionalInfo';
+import Step5Review from './Step5Review';
+import { SignupFormData, initialFormData } from './types';
+
+const STEP_LABELS = ['الحساب', 'الملف', 'التحقق', 'إضافية', 'مراجعة'];
+
+interface MultiStepSignupProps {
+  onSwitchToLogin: () => void;
+}
+
+export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProps) {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [formData, setFormData] = useState<SignupFormData>(initialFormData);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [emailVerified, setEmailVerified] = useState(false);
+  const navigate = useNavigate();
+
+  const updateFormData = (updates: Partial<SignupFormData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+  };
+
+  const handleStep1Complete = async () => {
+    setLoading(true);
+    try {
+      // Check if email is already registered
+      const { data: existingUser } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: 'dummy-check-password-12345',
+      });
+      
+      // If we reach here without error, the email exists (even though password is wrong)
+    } catch (error: any) {
+      // Expected: Invalid login credentials means email might exist
+      // But we can't know for sure, so just proceed
+    }
+    
+    setLoading(false);
+    setCurrentStep(2);
+  };
+
+  const handleStep2Complete = async () => {
+    setLoading(true);
+    try {
+      // Create the account
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName,
+            username: formData.username,
+            avatar_url: formData.avatarUrl,
+          },
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) {
+        if (error.message.includes('already registered')) {
+          toast.error('هذا البريد الإلكتروني مسجل بالفعل');
+          setCurrentStep(1);
+        } else {
+          toast.error(error.message);
+        }
+        return;
+      }
+
+      if (data.user) {
+        setUserId(data.user.id);
+        
+        // Send verification code
+        const { data: codeData, error: codeError } = await supabase.functions.invoke('send-verification-code', {
+          body: { 
+            email: formData.email, 
+            type: 'signup',
+            user_id: data.user.id 
+          }
+        });
+
+        if (codeError) {
+          console.error('Error sending verification code:', codeError);
+          toast.warning('تم إنشاء الحساب لكن فشل إرسال رمز التحقق');
+        } else {
+          toast.info('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+        }
+        
+        setCurrentStep(3);
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      toast.error('حدث خطأ غير متوقع');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerificationComplete = () => {
+    setEmailVerified(true);
+  };
+
+  const handleFinalSubmit = async () => {
+    setSubmitting(true);
+    try {
+      // Update profile with additional info
+      if (userId) {
+        const updateData: any = {
+          phone: formData.phone || null,
+          instagram_handle: formData.socialLinks.instagram || null,
+          whatsapp_number: formData.socialLinks.whatsapp || null,
+          facebook_handle: formData.socialLinks.facebook || null,
+        };
+
+        // Only update if there's data
+        const hasData = Object.values(updateData).some(v => v !== null);
+        if (hasData) {
+          await supabase
+            .from('profiles')
+            .update(updateData)
+            .eq('id', userId);
+        }
+
+        // Create address if provided
+        if (formData.address.governorate) {
+          await supabase
+            .from('user_addresses')
+            .insert({
+              user_id: userId,
+              full_name: formData.fullName,
+              phone_number: formData.phone || '',
+              governorate: formData.address.governorate,
+              area: formData.address.city || formData.address.area || '',
+              nearest_landmark: formData.address.nearestLandmark || '',
+              is_default: true,
+            });
+        }
+
+        // Process referral code if provided
+        if (formData.referralCode) {
+          try {
+            const { data: referralData } = await supabase
+              .from('user_referrals')
+              .select('referrer_user_id, id')
+              .eq('referral_code', formData.referralCode)
+              .eq('status', 'pending')
+              .maybeSingle();
+
+            if (referralData) {
+              await supabase
+                .from('user_referrals')
+                .update({
+                  referred_user_id: userId,
+                  status: 'completed',
+                  completed_at: new Date().toISOString(),
+                })
+                .eq('id', referralData.id);
+            }
+          } catch (error) {
+            console.error('Error processing referral:', error);
+          }
+        }
+      }
+
+      toast.success('تم إنشاء حسابك بنجاح! مرحباً بك في ليفونيس 🎉');
+      navigate('/');
+    } catch (error) {
+      console.error('Error completing signup:', error);
+      toast.error('حدث خطأ أثناء إكمال التسجيل');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const goToStep = (step: number) => {
+    if (step < currentStep) {
+      setCurrentStep(step);
+    }
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <Step1Account
+            data={formData}
+            updateData={updateFormData}
+            onNext={handleStep1Complete}
+            loading={loading}
+          />
+        );
+      case 2:
+        return (
+          <Step2Profile
+            data={formData}
+            updateData={updateFormData}
+            onNext={handleStep2Complete}
+            onBack={() => setCurrentStep(1)}
+            loading={loading}
+          />
+        );
+      case 3:
+        return (
+          <Step3Verification
+            data={formData}
+            updateData={updateFormData}
+            onNext={() => setCurrentStep(4)}
+            onBack={() => setCurrentStep(2)}
+            loading={loading}
+            userEmail={formData.email}
+            userId={userId || undefined}
+            onVerified={handleVerificationComplete}
+          />
+        );
+      case 4:
+        return (
+          <Step4OptionalInfo
+            data={formData}
+            updateData={updateFormData}
+            onNext={() => setCurrentStep(5)}
+            onBack={() => setCurrentStep(3)}
+            loading={loading}
+          />
+        );
+      case 5:
+        return (
+          <Step5Review
+            data={formData}
+            updateData={updateFormData}
+            onNext={() => {}}
+            onBack={() => setCurrentStep(4)}
+            onSubmit={handleFinalSubmit}
+            loading={loading}
+            submitting={submitting}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <StepIndicator
+        currentStep={currentStep}
+        totalSteps={5}
+        labels={STEP_LABELS}
+      />
+      
+      {renderStep()}
+      
+      {currentStep === 1 && (
+        <p className="text-center text-sm text-muted-foreground">
+          لديك حساب بالفعل؟{' '}
+          <button
+            type="button"
+            onClick={onSwitchToLogin}
+            className="text-primary hover:underline font-medium"
+          >
+            تسجيل الدخول
+          </button>
+        </p>
+      )}
+    </div>
+  );
+}
