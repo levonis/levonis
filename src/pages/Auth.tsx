@@ -344,12 +344,95 @@ const Auth = () => {
         </div>
 
         <div className="glass-effect rounded-2xl p-6 border border-border/50 shadow-2xl">
-          {showResetPassword ? (
+          {showNewPasswordForm ? (
+            <div>
+              <div className="mb-6">
+                <h2 className="text-2xl font-black text-gradient-gold mb-2">تعيين كلمة مرور جديدة</h2>
+                <p className="text-sm text-muted-foreground">
+                  أدخل كلمة المرور الجديدة
+                </p>
+              </div>
+              
+              <form onSubmit={handleUpdatePassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">كلمة المرور الجديدة</Label>
+                  <div className="relative">
+                    <Input
+                      id="new-password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="pl-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-new-password">تأكيد كلمة المرور</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirm-new-password"
+                      type={showSignUpPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      className="pl-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      tabIndex={-1}
+                    >
+                      {showSignUpPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <Button 
+                  type="submit"
+                  className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
+                  disabled={loading}
+                >
+                  {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
+                  تغيير كلمة المرور
+                </Button>
+                
+                <Button 
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => {
+                    setShowNewPasswordForm(false);
+                    setShowResetPassword(false);
+                    setNewPassword('');
+                    setConfirmNewPassword('');
+                  }}
+                  disabled={loading}
+                >
+                  إلغاء
+                </Button>
+              </form>
+            </div>
+          ) : showResetPassword ? (
             <div>
               <div className="mb-6">
                 <h2 className="text-2xl font-black text-gradient-gold mb-2">إعادة تعيين كلمة المرور</h2>
                 <p className="text-sm text-muted-foreground">
-                  أدخل بريدك الإلكتروني لإرسال رابط إعادة التعيين
+                  أدخل بريدك الإلكتروني لإرسال رمز التحقق
                 </p>
               </div>
               
@@ -374,7 +457,7 @@ const Auth = () => {
                   disabled={loading || resendTimer > 0}
                 >
                   {loading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                  {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer}ث` : 'إرسال رابط إعادة التعيين'}
+                  {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer}ث` : 'إرسال رمز التحقق'}
                 </Button>
                 
                 <Button 
