@@ -6,6 +6,32 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Email validation and sanitization
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_EMAIL_LENGTH = 320;
+
+const validateAndSanitizeEmail = (email: string): { valid: boolean; sanitized: string } => {
+  if (!email || typeof email !== 'string') {
+    return { valid: false, sanitized: '' };
+  }
+  const sanitized = email.trim().toLowerCase();
+  if (sanitized.length > MAX_EMAIL_LENGTH || !EMAIL_REGEX.test(sanitized)) {
+    return { valid: false, sanitized: '' };
+  }
+  return { valid: true, sanitized };
+};
+
+// Validation for code input
+const validateCode = (code: string): boolean => {
+  return typeof code === 'string' && /^\d{6}$/.test(code);
+};
+
+// Validation for type input
+const VALID_TYPES = ['signup', 'password_reset', 'password_change', 'email_change'];
+const validateType = (type: string): boolean => {
+  return typeof type === 'string' && VALID_TYPES.includes(type);
+};
+
 serve(async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -16,9 +42,28 @@ serve(async (req: Request): Promise<Response> => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const { email, code, type } = await req.json();
+    const { email: rawEmail, code, type } = await req.json();
 
-    if (!email || !code || !type) {
+    // Validate and sanitize email
+    const emailValidation = validateAndSanitizeEmail(rawEmail);
+    if (!emailValidation.valid) {
+      return new Response(
+        JSON.stringify({ success: false, error: "بيانات غير صحيحة" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const email = emailValidation.sanitized;
+
+    // Validate code format
+    if (!validateCode(code)) {
+      return new Response(
+        JSON.stringify({ success: false, error: "بيانات غير صحيحة" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Validate type
+    if (!validateType(type)) {
       return new Response(
         JSON.stringify({ success: false, error: "بيانات غير صحيحة" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
