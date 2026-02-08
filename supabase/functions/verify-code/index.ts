@@ -20,7 +20,7 @@ serve(async (req: Request): Promise<Response> => {
 
     if (!email || !code || !type) {
       return new Response(
-        JSON.stringify({ success: false, error: "Email, code, and type are required" }),
+        JSON.stringify({ success: false, error: "بيانات غير صحيحة" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -108,10 +108,9 @@ serve(async (req: Request): Promise<Response> => {
     );
 
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Error verifying code:", error);
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
+      JSON.stringify({ success: false, error: "حدث خطأ. يرجى المحاولة لاحقاً." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

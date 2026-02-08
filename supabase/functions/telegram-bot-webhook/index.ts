@@ -6,6 +6,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Sanitize text input - strip HTML/script tags and limit length
+const sanitizeText = (text: string | undefined): string => {
+  if (!text) return '';
+  // Limit to 4096 characters (Telegram max)
+  let sanitized = text.substring(0, 4096);
+  // Strip HTML tags
+  sanitized = sanitized.replace(/<[^>]*>/g, '');
+  // Escape HTML entities
+  sanitized = sanitized
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+  return sanitized.trim();
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,14 +36,13 @@ serve(async (req) => {
     if (!TELEGRAM_BOT_TOKEN) {
       console.error("Missing Telegram bot token");
       return new Response(
-        JSON.stringify({ success: false, error: "Missing Telegram bot token" }),
+        JSON.stringify({ success: false }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
       );
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     const update = await req.json();
-    console.log("Received update:", update);
 
     // Extract message data
     const message = update.message;
@@ -38,7 +54,8 @@ serve(async (req) => {
     }
 
     const chatId = message.chat.id.toString();
-    const text = message.text;
+    // Sanitize text input
+    const text = sanitizeText(message.text);
 
     // Check if it's a /start command
     if (text === "/start") {
@@ -221,10 +238,9 @@ serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error("Error in telegram-bot-webhook:", error);
     return new Response(
-      JSON.stringify({ success: false, error: errorMessage }),
+      JSON.stringify({ success: false }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
