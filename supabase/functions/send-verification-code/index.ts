@@ -189,6 +189,28 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    // For password_reset, check if user exists first
+    if (type === 'password_reset') {
+      const { data: users, error: userError } = await supabase.auth.admin.listUsers();
+      
+      if (userError) {
+        console.error("Error checking user:", userError);
+        return new Response(
+          JSON.stringify({ success: false, error: "حدث خطأ. يرجى المحاولة لاحقاً." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      const userExists = users.users.some(u => u.email?.toLowerCase() === email.toLowerCase());
+      
+      if (!userExists) {
+        return new Response(
+          JSON.stringify({ success: false, error: "البريد الإلكتروني غير مسجل في النظام" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     // Check rate limiting - max 3 codes per email per hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count } = await supabase
