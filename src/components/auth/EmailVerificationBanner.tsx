@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Mail, X, Loader2 } from 'lucide-react';
+import { AlertTriangle, Mail, X } from 'lucide-react';
 import { toast } from 'sonner';
 import EmailVerificationDialog from './EmailVerificationDialog';
 
@@ -15,7 +15,6 @@ export default function EmailVerificationBanner({ onHeightChange }: EmailVerific
   const [showBanner, setShowBanner] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
   const [showVerificationDialog, setShowVerificationDialog] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const bannerRef = useRef<HTMLDivElement>(null);
 
@@ -64,33 +63,10 @@ export default function EmailVerificationBanner({ onHeightChange }: EmailVerific
     }
   };
 
-  const handleSendVerificationCode = async () => {
+  const handleOpenVerificationDialog = () => {
     if (!user?.email) return;
-
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('send-verification-code', {
-        body: { 
-          email: user.email, 
-          type: 'signup',
-          user_id: user.id 
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.success) {
-        setShowVerificationDialog(true);
-        toast.success('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
-      } else {
-        toast.error(data.error || 'فشل في إرسال الرمز');
-      }
-    } catch (error: any) {
-      console.error('Send code error:', error);
-      toast.error(error.message || 'حدث خطأ');
-    } finally {
-      setLoading(false);
-    }
+    // Just open the dialog - the dialog itself handles sending the code
+    setShowVerificationDialog(true);
   };
 
   const handleVerified = () => {
@@ -123,22 +99,12 @@ export default function EmailVerificationBanner({ onHeightChange }: EmailVerific
           <div className="flex items-center gap-2">
             <Button
               size="sm"
-              onClick={handleSendVerificationCode}
-              disabled={loading}
+              onClick={handleOpenVerificationDialog}
               className="text-amber-950 hover:opacity-80"
               style={{ backgroundColor: '#000', color: '#f59e0b' }}
             >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  جاري الإرسال...
-                </>
-              ) : (
-                <>
-                  <Mail className="h-4 w-4 ml-2" />
-                  تأكيد البريد
-                </>
-              )}
+              <Mail className="h-4 w-4 ml-2" />
+              تأكيد البريد
             </Button>
             <Button
               size="sm"
