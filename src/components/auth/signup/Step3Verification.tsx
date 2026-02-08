@@ -21,7 +21,6 @@ export default function Step3Verification({
   onBack, 
   loading,
   userEmail,
-  userId,
   onVerified
 }: Step3VerificationProps) {
   const [code, setCode] = useState('');
@@ -60,8 +59,7 @@ export default function Step3Verification({
 
       if (result.success) {
         setVerified(true);
-        toast.success('تم التحقق بنجاح! جاري إنشاء حسابك...');
-        // onVerified will handle account creation and navigation
+        // Just mark as verified, don't create account here
         await onVerified();
       } else {
         toast.error(result.error || 'رمز غير صحيح');
@@ -82,7 +80,7 @@ export default function Step3Verification({
     setSending(true);
     try {
       const { data: result, error } = await supabase.functions.invoke('send-verification-code', {
-        body: { email: userEmail, type: 'signup', user_id: userId }
+        body: { email: userEmail, type: 'signup' }
       });
 
       if (error) throw error;

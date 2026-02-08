@@ -21,7 +21,6 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
   const [formData, setFormData] = useState<SignupFormData>(initialFormData);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [userId, setUserId] = useState<string | null>(null);
   const [emailVerified, setEmailVerified] = useState(false);
   const navigate = useNavigate();
 
@@ -32,16 +31,16 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
   const handleStep1Complete = async () => {
     setLoading(true);
     try {
-      // Check if email is already registered
-      const { data: existingUser } = await supabase.auth.signInWithPassword({
+      // Check if email is already registered by attempting sign in
+      const { error } = await supabase.auth.signInWithPassword({
         email: formData.email,
         password: 'dummy-check-password-12345',
       });
       
-      // If we reach here without error, the email exists (even though password is wrong)
+      // If error contains "Invalid" it means email exists or doesn't
+      // We proceed either way since we'll catch it later
     } catch (error: any) {
-      // Expected: Invalid login credentials means email might exist
-      // But we can't know for sure, so just proceed
+      // Expected behavior
     }
     
     setLoading(false);
@@ -51,7 +50,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
   const handleStep2Complete = async () => {
     setLoading(true);
     try {
-      // Just send verification code WITHOUT creating account yet
+      // Send verification code WITHOUT creating account
       const { data: codeData, error: codeError } = await supabase.functions.invoke('send-verification-code', {
         body: { 
           email: formData.email, 
@@ -75,13 +74,24 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
     }
   };
 
-  // Create account AFTER email verification
+  // After email verification, just mark as verified and proceed
   const handleVerificationComplete = async () => {
     setEmailVerified(true);
-    setLoading(true);
-    
+    toast.success('تم التحقق من بريدك بنجاح!');
+    setCurrentStep(4);
+  };
+
+  // Create account ONLY at final step (Step 5)
+  const handleFinalSubmit = async () => {
+    if (!emailVerified) {
+      toast.error('يجب تأكيد البريد الإلكتروني أولاً');
+      setCurrentStep(3);
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      // NOW create the account after email is verified
+      // NOW create the account at the final step
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -106,87 +116,72 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
         return;
       }
 
-      if (data.user) {
-        setUserId(data.user.id);
-        
-        // Mark email as verified in profile
+      if (!data.user) {
+        toast.error('فشل إنشاء الحساب');
+        return;
+      }
+
+      const userId = data.user.id;
+
+      // Update profile with email verified status
+      await supabase
+        .from('profiles')
+        .update({ email_verified: true })
+        .eq('id', userId);
+
+      // Update profile with additional info
+      const updateData: any = {
+        phone: formData.phone || null,
+        instagram_handle: formData.socialLinks.instagram || null,
+        whatsapp_number: formData.socialLinks.whatsapp || null,
+        facebook_handle: formData.socialLinks.facebook || null,
+      };
+
+      const hasData = Object.values(updateData).some(v => v !== null);
+      if (hasData) {
         await supabase
           .from('profiles')
-          .update({ email_verified: true })
-          .eq('id', data.user.id);
-        
-        toast.success('تم التحقق من بريدك بنجاح!');
-        setCurrentStep(4);
+          .update(updateData)
+          .eq('id', userId);
       }
-    } catch (error) {
-      console.error('Account creation error:', error);
-      toast.error('حدث خطأ أثناء إنشاء الحساب');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  // Old handleVerificationComplete moved to line 79
+      // Create address if provided
+      if (formData.address.governorate) {
+        await supabase
+          .from('user_addresses')
+          .insert({
+            user_id: userId,
+            full_name: formData.fullName,
+            phone_number: formData.phone || '',
+            governorate: formData.address.governorate,
+            area: formData.address.city || formData.address.area || '',
+            nearest_landmark: formData.address.nearestLandmark || '',
+            is_default: true,
+          });
+      }
 
-  const handleFinalSubmit = async () => {
-    setSubmitting(true);
-    try {
-      // Update profile with additional info
-      if (userId) {
-        const updateData: any = {
-          phone: formData.phone || null,
-          instagram_handle: formData.socialLinks.instagram || null,
-          whatsapp_number: formData.socialLinks.whatsapp || null,
-          facebook_handle: formData.socialLinks.facebook || null,
-        };
+      // Process referral code if provided
+      if (formData.referralCode) {
+        try {
+          const { data: referralData } = await supabase
+            .from('user_referrals')
+            .select('referrer_user_id, id')
+            .eq('referral_code', formData.referralCode)
+            .eq('status', 'pending')
+            .maybeSingle();
 
-        // Only update if there's data
-        const hasData = Object.values(updateData).some(v => v !== null);
-        if (hasData) {
-          await supabase
-            .from('profiles')
-            .update(updateData)
-            .eq('id', userId);
-        }
-
-        // Create address if provided
-        if (formData.address.governorate) {
-          await supabase
-            .from('user_addresses')
-            .insert({
-              user_id: userId,
-              full_name: formData.fullName,
-              phone_number: formData.phone || '',
-              governorate: formData.address.governorate,
-              area: formData.address.city || formData.address.area || '',
-              nearest_landmark: formData.address.nearestLandmark || '',
-              is_default: true,
-            });
-        }
-
-        // Process referral code if provided
-        if (formData.referralCode) {
-          try {
-            const { data: referralData } = await supabase
+          if (referralData) {
+            await supabase
               .from('user_referrals')
-              .select('referrer_user_id, id')
-              .eq('referral_code', formData.referralCode)
-              .eq('status', 'pending')
-              .maybeSingle();
-
-            if (referralData) {
-              await supabase
-                .from('user_referrals')
-                .update({
-                  referred_user_id: userId,
-                  status: 'completed',
-                  completed_at: new Date().toISOString(),
-                })
-                .eq('id', referralData.id);
-            }
-          } catch (error) {
-            console.error('Error processing referral:', error);
+              .update({
+                referred_user_id: userId,
+                status: 'completed',
+                completed_at: new Date().toISOString(),
+              })
+              .eq('id', referralData.id);
           }
+        } catch (error) {
+          console.error('Error processing referral:', error);
         }
       }
 
@@ -232,11 +227,10 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
           <Step3Verification
             data={formData}
             updateData={updateFormData}
-            onNext={() => {}} // Not used - handleVerificationComplete handles navigation
+            onNext={() => setCurrentStep(4)}
             onBack={() => setCurrentStep(2)}
             loading={loading}
             userEmail={formData.email}
-            userId={userId || undefined}
             onVerified={handleVerificationComplete}
           />
         );
