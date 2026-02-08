@@ -257,11 +257,6 @@ const AdminOrders = () => {
           message: `تم تحديث حالة طلبك رقم ${order.order_number} إلى: ${statusLabel}`,
           type: values.status === 'delivered' ? 'success' : 'info',
           relatedId: id,
-          notificationType: 'order_status',
-          metadata: {
-            orderNumber: order.order_number,
-            status: statusLabel,
-          }
         });
       }
     },
@@ -382,18 +377,13 @@ const AdminOrders = () => {
 
         if (transactionError) throw transactionError;
 
-        // Send all notifications (in-app, Telegram, Email)
+        // Send all notifications (in-app and Telegram only)
         await sendAllNotifications({
           userId: order.user_id,
           title: 'تم إلغاء طلبك واسترجاع المبلغ',
           message: `تم إلغاء الطلب رقم ${order.order_number} واسترجاع مبلغ ${paidAmount.toLocaleString()} دينار عراقي إلى محفظتك`,
           type: 'info',
           relatedId: order.id,
-          notificationType: 'wallet_update',
-          metadata: {
-            orderNumber: order.order_number,
-            amount: paidAmount,
-          }
         });
       }
 
