@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 interface Step3VerificationProps extends SignupStepProps {
   userEmail: string;
   userId?: string;
-  onVerified: () => void;
+  onVerified: () => Promise<void> | void;
 }
 
 export default function Step3Verification({ 
@@ -60,8 +60,9 @@ export default function Step3Verification({
 
       if (result.success) {
         setVerified(true);
-        toast.success('تم التحقق بنجاح! ✓');
-        onVerified();
+        toast.success('تم التحقق بنجاح! جاري إنشاء حسابك...');
+        // onVerified will handle account creation and navigation
+        await onVerified();
       } else {
         toast.error(result.error || 'رمز غير صحيح');
         setCode('');

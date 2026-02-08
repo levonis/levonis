@@ -51,7 +51,37 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
   const handleStep2Complete = async () => {
     setLoading(true);
     try {
-      // Create the account
+      // Just send verification code WITHOUT creating account yet
+      const { data: codeData, error: codeError } = await supabase.functions.invoke('send-verification-code', {
+        body: { 
+          email: formData.email, 
+          type: 'signup'
+        }
+      });
+
+      if (codeError) {
+        console.error('Error sending verification code:', codeError);
+        toast.error('فشل إرسال رمز التحقق. حاول مرة أخرى');
+        return;
+      }
+
+      toast.info('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+      setCurrentStep(3);
+    } catch (error) {
+      console.error('Verification code error:', error);
+      toast.error('حدث خطأ غير متوقع');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create account AFTER email verification
+  const handleVerificationComplete = async () => {
+    setEmailVerified(true);
+    setLoading(true);
+    
+    try {
+      // NOW create the account after email is verified
       const { data, error } = await supabase.auth.signUp({
         email: formData.email,
         password: formData.password,
@@ -60,6 +90,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
             full_name: formData.fullName,
             username: formData.username,
             avatar_url: formData.avatarUrl,
+            email_verified: true,
           },
           emailRedirectTo: `${window.location.origin}/`
         }
@@ -78,35 +109,24 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
       if (data.user) {
         setUserId(data.user.id);
         
-        // Send verification code
-        const { data: codeData, error: codeError } = await supabase.functions.invoke('send-verification-code', {
-          body: { 
-            email: formData.email, 
-            type: 'signup',
-            user_id: data.user.id 
-          }
-        });
-
-        if (codeError) {
-          console.error('Error sending verification code:', codeError);
-          toast.warning('تم إنشاء الحساب لكن فشل إرسال رمز التحقق');
-        } else {
-          toast.info('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
-        }
+        // Mark email as verified in profile
+        await supabase
+          .from('profiles')
+          .update({ email_verified: true })
+          .eq('id', data.user.id);
         
-        setCurrentStep(3);
+        toast.success('تم التحقق من بريدك بنجاح!');
+        setCurrentStep(4);
       }
     } catch (error) {
-      console.error('Signup error:', error);
-      toast.error('حدث خطأ غير متوقع');
+      console.error('Account creation error:', error);
+      toast.error('حدث خطأ أثناء إنشاء الحساب');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerificationComplete = () => {
-    setEmailVerified(true);
-  };
+  // Old handleVerificationComplete moved to line 79
 
   const handleFinalSubmit = async () => {
     setSubmitting(true);
@@ -212,7 +232,7 @@ export default function MultiStepSignup({ onSwitchToLogin }: MultiStepSignupProp
           <Step3Verification
             data={formData}
             updateData={updateFormData}
-            onNext={() => setCurrentStep(4)}
+            onNext={() => {}} // Not used - handleVerificationComplete handles navigation
             onBack={() => setCurrentStep(2)}
             loading={loading}
             userEmail={formData.email}
