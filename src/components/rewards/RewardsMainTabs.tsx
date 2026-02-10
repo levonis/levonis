@@ -9,25 +9,11 @@ interface RewardsMainTabsProps {
 }
 
 const mainTabs = [
-  { id: 'points' as const, label: 'النقاط', icon: Coins, color: 'amber' },
-  { id: 'competitions' as const, label: 'المسابقات', icon: Trophy, color: 'purple' },
-  { id: 'cards' as const, label: 'العضوية', icon: Crown, color: 'blue' },
-  { id: 'insurance' as const, label: 'الحماية', icon: ShieldCheck, color: 'emerald' },
+  { id: 'points' as const, label: 'النقاط', icon: Coins },
+  { id: 'competitions' as const, label: 'المسابقات', icon: Trophy },
+  { id: 'cards' as const, label: 'العضوية', icon: Crown },
+  { id: 'insurance' as const, label: 'الحماية', icon: ShieldCheck },
 ];
-
-const colorClasses = {
-  amber: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
-  purple: 'bg-purple-500/15 text-purple-600 border-purple-500/30',
-  blue: 'bg-blue-500/15 text-blue-600 border-blue-500/30',
-  emerald: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
-};
-
-const activeColorClasses = {
-  amber: 'bg-gradient-to-br from-amber-500 to-amber-600 text-white border-amber-500 shadow-lg shadow-amber-500/30',
-  purple: 'bg-gradient-to-br from-purple-500 to-purple-600 text-white border-purple-500 shadow-lg shadow-purple-500/30',
-  blue: 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-500 shadow-lg shadow-blue-500/30',
-  emerald: 'bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-emerald-500 shadow-lg shadow-emerald-500/30',
-};
 
 export default function RewardsMainTabs({ activeTab, onTabChange }: RewardsMainTabsProps) {
   return (
@@ -43,8 +29,8 @@ export default function RewardsMainTabs({ activeTab, onTabChange }: RewardsMainT
             className={cn(
               "flex flex-col items-center gap-1 py-2.5 px-1.5 rounded-xl border transition-all duration-200",
               isActive 
-                ? activeColorClasses[tab.color as keyof typeof activeColorClasses]
-                : colorClasses[tab.color as keyof typeof colorClasses] + " hover:opacity-90"
+                ? "bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-primary shadow-lg shadow-primary/30"
+                : "bg-primary/10 text-primary border-primary/20 hover:opacity-90"
             )}
           >
             <Icon className={cn("h-5 w-5", !isActive && "opacity-80")} strokeWidth={isActive ? 2.5 : 2} />

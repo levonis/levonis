@@ -6114,6 +6114,7 @@ export type Database = {
         Args: { _message: string; _title: string; _type?: string }
         Returns: undefined
       }
+      set_wallet_pin: { Args: { pin_code: string }; Returns: undefined }
       trigger_badge_calculation: { Args: never; Returns: undefined }
       validate_coupon: { Args: { coupon_code: string }; Returns: Json }
       validate_coupon_with_rate_limit: {
@@ -6129,6 +6130,7 @@ export type Database = {
           model_name_ar: string
         }[]
       }
+      verify_wallet_pin: { Args: { pin_code: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "user" | "manager" | "worker"

@@ -301,17 +301,28 @@ export default function CommunityCustomerProfileModal({
       const { error } = await supabase.from("profiles").update(profilePayload).eq("id", user.id);
       if (error) throw error;
 
-      const { error: communityError } = await supabase
-        .from("community_customer_profiles")
-        .upsert({
-          user_id: user.id,
-          display_name: values.fullName,
-          avatar_url: avatarUrl,
-          bio: values.bio?.trim() || null,
-        }, { onConflict: "user_id" });
+      // Check if user is an approved merchant - if so, skip customer profile creation
+      const { data: merchantApp } = await supabase
+        .from("merchant_applications")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "approved")
+        .maybeSingle();
 
-      if (communityError) {
-        console.error("Community profile upsert error:", communityError);
+      if (!merchantApp) {
+        // Only create customer profile if user is NOT a merchant
+        const { error: communityError } = await supabase
+          .from("community_customer_profiles")
+          .upsert({
+            user_id: user.id,
+            display_name: values.fullName,
+            avatar_url: avatarUrl,
+            bio: values.bio?.trim() || null,
+          }, { onConflict: "user_id" });
+
+        if (communityError) {
+          console.error("Community profile upsert error:", communityError);
+        }
       }
 
       return true;

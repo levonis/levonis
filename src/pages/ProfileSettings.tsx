@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
+import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ImageCropper from "@/components/marketplace/ImageCropper";
+import WalletPinDialog from "@/components/wallet/WalletPinDialog";
 
 function daysUntilAllowed(last: string | null) {
   if (!last) return 0;
@@ -51,6 +52,7 @@ export default function ProfileSettings() {
   const [cropOpen, setCropOpen] = useState(false);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const cropObjectUrlRef = useRef<string | null>(null);
+  const [showPinDialog, setShowPinDialog] = useState(false);
 
   const { data: profile, isLoading: loadingProfile } = useQuery({
     queryKey: ["profile-settings-profile", user?.id],
@@ -355,6 +357,28 @@ export default function ProfileSettings() {
           </Card>
         </div>
 
+        {/* حماية المحفظة */}
+        <div className="pb-2">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Lock className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">رمز PIN للمحفظة</p>
+                    <p className="text-xs text-muted-foreground">حماية المحفظة برمز PIN مكون من 4 أرقام</p>
+                  </div>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => setShowPinDialog(true)}>
+                  تعيين / تغيير
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Sticky save bar */}
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
           <div className="container mx-auto px-4 py-3 max-w-4xl">
@@ -382,6 +406,13 @@ export default function ProfileSettings() {
           isUploading={false}
         />
       )}
+
+      <WalletPinDialog
+        open={showPinDialog}
+        onOpenChange={setShowPinDialog}
+        onVerified={() => toast({ title: "تم تعيين رمز PIN بنجاح ✓" })}
+        mode="set"
+      />
     </div>
   );
 }
