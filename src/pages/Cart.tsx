@@ -111,64 +111,7 @@ const Cart = () => {
     refetchOnMount: 'always',
   });
 
-  // جلب إعدادات الضريبة - الضريبة الافتراضية (تُستخدم كـ fallback إذا لم يكن للفئة ضريبة خاصة)
-  interface TaxSettingsData {
-    tax_percentage: number;
-  }
-
-  const { data: taxSettings } = useQuery({
-    queryKey: ['tax-settings'],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from('default_settings')
-        .select('setting_value')
-        .eq('setting_key', 'tax_settings')
-        .maybeSingle();
-      return data?.setting_value as unknown as TaxSettingsData | null;
-    },
-    staleTime: 0,
-    refetchOnMount: 'always',
-  });
-
-  const defaultTaxPercentage = taxSettings?.tax_percentage ?? 30;
-
-  // حساب الضريبة لكل منتج حسب فئته
-  const calculateCategoryTax = (cartItems: CartItem[], subtotal: number) => {
-    let totalTax = 0;
-    let hasCustomTax = false;
-    
-    for (const item of cartItems) {
-      const categoryTaxRate = item.products?.categories?.tax_rate;
-      const itemTaxRate = (categoryTaxRate != null && categoryTaxRate > 0) ? categoryTaxRate : defaultTaxPercentage;
-      
-      if (categoryTaxRate != null && categoryTaxRate > 0) hasCustomTax = true;
-      
-      let itemPrice = 0;
-      if (item.products) {
-        itemPrice = Number(item.products.price);
-        const selColor = (item as any).selected_color;
-        const colorData = selColor && item.products?.colors
-          ? (item.products.colors as any[]).find((c: any) => c.name === selColor || c.name_ar === selColor || c.hex_code === selColor)
-          : null;
-        if (colorData?.price != null) itemPrice = Number(colorData.price);
-        const itemOption = (item as any).product_options;
-        if (itemOption?.price_adjustment) itemPrice += Number(itemOption.price_adjustment);
-        const shippingIndex = (item as any).shipping_option_index;
-        const shippingOptions = item.products?.pre_order_shipping_options;
-        if (shippingIndex != null && Array.isArray(shippingOptions) && shippingOptions[shippingIndex]) {
-          itemPrice += Number((shippingOptions[shippingIndex] as any).price_adjustment || 0);
-        }
-      } else if (item.custom_product_requests) {
-        itemPrice = Number(item.custom_product_requests.suggested_price);
-      }
-      
-      totalTax += Math.ceil((itemPrice * item.quantity) * (itemTaxRate / 100));
-    }
-    
-    return { totalTax, hasCustomTax };
-  };
-
-  const taxPercentage = defaultTaxPercentage;
+  // الضريبة مدمجة مع سعر المنتج - لا تُعرض بشكل منفصل
 
   const getDeliveryFee = (governorate: string | null) => {
     if (!governorate) return 6000;
@@ -195,11 +138,8 @@ const Cart = () => {
   // حساب المبلغ الفرعي بناءً على خيار الدفع للطلب المسبق
   const subtotalAfterDiscount = total - discount;
   
-  // حساب الضريبة حسب فئة كل منتج
-  const { totalTax: taxAmount } = calculateCategoryTax(items, subtotalAfterDiscount);
-  
-  // المبلغ بعد إضافة الضريبة
-  const subtotalWithTax = subtotalAfterDiscount + taxAmount;
+  // الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل
+  const subtotalWithTax = subtotalAfterDiscount;
   
   // حساب رسوم الدفع الجزئي بناءً على الشرائح (تُضاف للمبلغ المتبقي وليس للدفعة الأولى)
   const calculatePartialPaymentFee = () => {
@@ -1161,13 +1101,7 @@ const Cart = () => {
                     </div>
                   )}
                   
-                  {/* الضريبة */}
-                  {taxAmount > 0 && (
-                    <div className="flex justify-between text-foreground">
-                      <span>الضريبة</span>
-                      <span className="font-bold">{formatPrice(taxAmount)} دينار عراقي</span>
-                    </div>
-                  )}
+                  {/* الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل */}
                   
                   <div className="flex justify-between text-foreground">
                     <span>التوصيل</span>
