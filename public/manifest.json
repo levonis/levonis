@@ -1,0 +1,28 @@
+{
+  "name": "LEVONIS — iq",
+  "short_name": "LEVONIS",
+  "description": "تسوق أحدث الإلكترونيات والأجهزة الذكية | LEVONIS متجرك الموثوق للتقنية",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#16a34a",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["shopping", "electronics"],
+  "icons": [
+    {
+      "src": "https://storage.googleapis.com/gpt-engineer-file-uploads/AGsIIpGr0dbEC0mR8GE0kRYH8t22/uploads/1762130375778-IMG_5012.PNG",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://storage.googleapis.com/gpt-engineer-file-uploads/AGsIIpGr0dbEC0mR8GE0kRYH8t22/uploads/1762130375778-IMG_5012.PNG",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -430,6 +430,7 @@ export type Database = {
           name: string
           name_ar: string
           slug: string
+          tax_rate: number | null
         }
         Insert: {
           created_at?: string | null
@@ -441,6 +442,7 @@ export type Database = {
           name: string
           name_ar: string
           slug: string
+          tax_rate?: number | null
         }
         Update: {
           created_at?: string | null
@@ -452,6 +454,7 @@ export type Database = {
           name?: string
           name_ar?: string
           slug?: string
+          tax_rate?: number | null
         }
         Relationships: [
           {
@@ -4202,7 +4205,9 @@ export type Database = {
           phone_verified: boolean
           selected_frame_id: string | null
           telegram_chat_id: string | null
+          telegram_notifications: Json | null
           username: string
+          wallet_pin: string | null
           warnings_count: number | null
         }
         Insert: {
@@ -4226,7 +4231,9 @@ export type Database = {
           phone_verified?: boolean
           selected_frame_id?: string | null
           telegram_chat_id?: string | null
+          telegram_notifications?: Json | null
           username: string
+          wallet_pin?: string | null
           warnings_count?: number | null
         }
         Update: {
@@ -4250,7 +4257,9 @@ export type Database = {
           phone_verified?: boolean
           selected_frame_id?: string | null
           telegram_chat_id?: string | null
+          telegram_notifications?: Json | null
           username?: string
+          wallet_pin?: string | null
           warnings_count?: number | null
         }
         Relationships: [
