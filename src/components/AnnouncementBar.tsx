@@ -123,8 +123,7 @@ const AnnouncementBar = memo(({ onHeightChange, verificationBannerHeight = 0 }: 
   return (
     <div 
       ref={barRef}
-      data-announcement-bar
-      className="fixed left-0 right-0 z-[55] text-white py-2 px-3 overflow-hidden text-sm"
+      className="fixed left-0 right-0 z-[45] text-white py-2 px-3 overflow-hidden text-sm"
       style={{ backgroundColor: bgColor, top: `${verificationBannerHeight}px` }}
     >
       <div className="flex items-center justify-between gap-4 max-w-7xl mx-auto">
