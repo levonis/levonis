@@ -84,25 +84,63 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     staleTime: 5 * 60 * 1000,
   });
 
-  // Subscribe mutation
+  // Fetch wallet balance for subscription payment
+  const { data: walletBalance } = useQuery({
+    queryKey: ['wallet-balance-insurance', user?.id],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { data, error } = await supabase
+        .from('user_wallets')
+        .select('balance')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data?.balance || 0;
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  // Subscribe mutation - with wallet deduction
   const subscribeMutation = useMutation({
     mutationFn: async ({ printerId, planId, price, isUpgrade, currentSubId }: any) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
 
+      // Check wallet balance
+      if ((walletBalance || 0) < price) {
+        throw new Error('رصيد المحفظة غير كافٍ. تحتاج ' + price.toLocaleString() + ' د.ع');
+      }
+
+      // Deduct from wallet
+      const { error: walletError } = await supabase
+        .from('user_wallets')
+        .update({ balance: (walletBalance || 0) - price })
+        .eq('user_id', user.id);
+      if (walletError) throw walletError;
+
+      // Record wallet transaction
+      const { error: transError } = await supabase
+        .from('wallet_transactions')
+        .insert({
+          user_id: user.id,
+          amount: -price,
+          type: 'purchase',
+          status: 'completed',
+          admin_notes: isUpgrade ? 'ترقية اشتراك حماية الطابعة' : 'اشتراك حماية الطابعة',
+        });
+      if (transError) throw transError;
+
       if (isUpgrade && currentSubId) {
-        // Cancel old subscription
         await supabase
           .from('printer_subscriptions')
           .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
           .eq('id', currentSubId);
       }
 
-      // Calculate dates
       const startDate = new Date();
       const endDate = new Date();
       endDate.setMonth(endDate.getMonth() + 1);
 
-      // Create new subscription
       const { error: subError } = await supabase
         .from('printer_subscriptions')
         .insert({
@@ -120,6 +158,9 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['my-printers-with-subs'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balance-insurance'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet'] });
+      queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
       toast.success(data.isUpgrade ? 'تم ترقية الاشتراك بنجاح!' : 'تم الاشتراك بنجاح!');
       setUpgradeDialogOpen(false);
       setSubscribeDialogOpen(false);

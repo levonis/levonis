@@ -102,13 +102,10 @@ export default function DailyTasksPanel() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Complete daily login task
-  const completeLoginTask = useMutation({
-    mutationFn: async () => {
+  // Complete any task
+  const completeTaskMutation = useMutation({
+    mutationFn: async (task: any) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
-      
-      const loginTask = tasks?.find(t => t.task_key === 'Daily_login');
-      if (!loginTask) throw new Error('مهمة غير موجودة');
 
       // Check if already completed today
       const today = new Date().toISOString().split('T')[0];
@@ -116,7 +113,7 @@ export default function DailyTasksPanel() {
         .from('user_task_completions')
         .select('id')
         .eq('user_id', user.id)
-        .eq('task_key', 'Daily_login')
+        .eq('task_key', task.task_key)
         .gte('completed_at', today)
         .maybeSingle();
 
@@ -127,8 +124,8 @@ export default function DailyTasksPanel() {
         .from('user_task_completions')
         .insert({
           user_id: user.id,
-          task_key: 'Daily_login',
-          points_earned: loginTask.points_reward,
+          task_key: task.task_key,
+          points_earned: task.points_reward,
         });
       if (taskError) throw taskError;
 
@@ -137,10 +134,10 @@ export default function DailyTasksPanel() {
         .from('points_transactions')
         .insert({
           user_id: user.id,
-          points: loginTask.points_reward,
+          points: task.points_reward,
           type: 'earned',
           source: 'daily_task',
-          description: `مهمة: ${loginTask.title_ar}`,
+          description: `مهمة: ${task.title_ar}`,
         });
       if (pointsError) throw pointsError;
 
@@ -155,8 +152,8 @@ export default function DailyTasksPanel() {
         await supabase
           .from('user_points')
           .update({
-            total_points: (currentPoints.total_points || 0) + loginTask.points_reward,
-            available_points: (currentPoints.available_points || 0) + loginTask.points_reward,
+            total_points: (currentPoints.total_points || 0) + task.points_reward,
+            available_points: (currentPoints.available_points || 0) + task.points_reward,
           })
           .eq('user_id', user.id);
       } else {
@@ -164,30 +161,35 @@ export default function DailyTasksPanel() {
           .from('user_points')
           .insert({
             user_id: user.id,
-            total_points: loginTask.points_reward,
-            available_points: loginTask.points_reward,
+            total_points: task.points_reward,
+            available_points: task.points_reward,
           });
       }
+      
+      return task;
     },
-    onSuccess: () => {
+    onSuccess: (task) => {
       queryClient.invalidateQueries({ queryKey: ['user-completed-tasks-today'] });
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
       queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
-      toast.success('تم إكمال المهمة! تمت إضافة النقاط');
+      toast.success(`تم إكمال المهمة! حصلت على ${task.points_reward} نقطة 🎉`);
     },
     onError: (error: any) => {
       toast.error(error.message || 'حدث خطأ');
     },
   });
 
+  const [activeTaskKey, setActiveTaskKey] = useState<string | null>(null);
+
   const handleTaskClick = (task: any) => {
     if (!user) {
       toast.error('يجب تسجيل الدخول');
       return;
     }
-    if (task.task_key === 'Daily_login') {
-      completeLoginTask.mutate();
-    }
+    setActiveTaskKey(task.task_key);
+    completeTaskMutation.mutate(task, {
+      onSettled: () => setActiveTaskKey(null),
+    });
   };
 
   if (isLoading) {
@@ -218,7 +220,7 @@ export default function DailyTasksPanel() {
       {/* Regular Tasks */}
       {tasks?.map((task) => {
         const isCompleted = completedTasks?.includes(task.task_key);
-        const isLoading = completeLoginTask.isPending && task.task_key === 'Daily_login';
+        const isTaskLoading = activeTaskKey === task.task_key && completeTaskMutation.isPending;
         
         return (
           <Card key={task.id} className={isCompleted ? 'opacity-60' : ''}>
@@ -247,9 +249,9 @@ export default function DailyTasksPanel() {
                     variant="outline" 
                     className="shrink-0"
                     onClick={() => handleTaskClick(task)}
-                    disabled={isLoading}
+                    disabled={isTaskLoading}
                   >
-                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'ابدأ'}
+                    {isTaskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'ابدأ'}
                   </Button>
                 )}
               </div>
