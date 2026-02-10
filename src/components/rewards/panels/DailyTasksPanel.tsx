@@ -107,7 +107,7 @@ export default function DailyTasksPanel() {
     mutationFn: async () => {
       if (!user) throw new Error('يجب تسجيل الدخول');
       
-      const loginTask = tasks?.find(t => t.task_key === 'Daily_login');
+      const loginTask = tasks?.find(t => t.task_key === 'daily_login');
       if (!loginTask) throw new Error('مهمة غير موجودة');
 
       // Check if already completed today
@@ -116,7 +116,7 @@ export default function DailyTasksPanel() {
         .from('user_task_completions')
         .select('id')
         .eq('user_id', user.id)
-        .eq('task_key', 'Daily_login')
+        .eq('task_key', 'daily_login')
         .gte('completed_at', today)
         .maybeSingle();
 
@@ -127,7 +127,7 @@ export default function DailyTasksPanel() {
         .from('user_task_completions')
         .insert({
           user_id: user.id,
-          task_key: 'Daily_login',
+          task_key: 'daily_login',
           points_earned: loginTask.points_reward,
         });
       if (taskError) throw taskError;
@@ -185,7 +185,7 @@ export default function DailyTasksPanel() {
       toast.error('يجب تسجيل الدخول');
       return;
     }
-    if (task.task_key === 'Daily_login') {
+    if (task.task_key === 'daily_login') {
       completeLoginTask.mutate();
     }
   };
@@ -218,7 +218,7 @@ export default function DailyTasksPanel() {
       {/* Regular Tasks */}
       {tasks?.map((task) => {
         const isCompleted = completedTasks?.includes(task.task_key);
-        const isLoading = completeLoginTask.isPending && task.task_key === 'Daily_login';
+        const isLoading = completeLoginTask.isPending && task.task_key === 'daily_login';
         
         return (
           <Card key={task.id} className={isCompleted ? 'opacity-60' : ''}>

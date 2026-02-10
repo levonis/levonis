@@ -55,6 +55,7 @@ const categorySchema = z.object({
   description_ar: z.string().optional(),
   description: z.string().optional(),
   main_section_id: z.string().uuid().optional(),
+  tax_rate: z.number().min(0).max(100).optional(),
 });
 
 const mainSectionSchema = z.object({
@@ -1433,6 +1434,7 @@ const Admin = () => {
     const formData = new FormData(e.currentTarget);
     
     try {
+      const taxRateStr = formData.get('tax_rate') as string;
       const values = categorySchema.parse({
         name_ar: formData.get('name_ar') as string,
         name: formData.get('name') as string,
@@ -1441,6 +1443,7 @@ const Admin = () => {
         description_ar: formData.get('description_ar') as string || undefined,
         description: formData.get('description') as string || undefined,
         main_section_id: formData.get('main_section_id') as string || undefined,
+        tax_rate: taxRateStr ? Number(taxRateStr) : 0,
       });
 
       if (editingCategory) {
@@ -3464,6 +3467,21 @@ const Admin = () => {
                           </option>
                         ))}
                       </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="cat_tax_rate">نسبة الضريبة (%)</Label>
+                      <Input 
+                        id="cat_tax_rate" 
+                        name="tax_rate"
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        defaultValue={editingCategory?.tax_rate || 0}
+                        placeholder="0"
+                      />
+                      <p className="text-xs text-muted-foreground">نسبة الضريبة المطبقة على منتجات هذا القسم (0 = بدون ضريبة)</p>
                     </div>
 
                     <Button
