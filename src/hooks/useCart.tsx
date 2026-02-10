@@ -25,6 +25,11 @@ export interface CartItem {
     slug: string;
     colors?: any[];
     pre_order_shipping_options?: any;
+    category_id?: string | null;
+    categories?: {
+      id: string;
+      tax_rate: number | null;
+    } | null;
   };
   product_options?: {
     id: string;
@@ -194,7 +199,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             images,
             slug,
             colors,
-            pre_order_shipping_options
+            pre_order_shipping_options,
+            category_id,
+            categories (
+              id,
+              tax_rate
+            )
           ),
           product_options (
             id,

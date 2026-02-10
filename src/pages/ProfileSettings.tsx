@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock } from "lucide-react";
+import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ImageCropper from "@/components/marketplace/ImageCropper";
 import WalletPinDialog from "@/components/wallet/WalletPinDialog";
+import { Switch } from "@/components/ui/switch";
 
 function daysUntilAllowed(last: string | null) {
   if (!last) return 0;
@@ -53,6 +54,12 @@ export default function ProfileSettings() {
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const cropObjectUrlRef = useRef<string | null>(null);
   const [showPinDialog, setShowPinDialog] = useState(false);
+  const [telegramNotifs, setTelegramNotifs] = useState({
+    orders: true,
+    wallet: true,
+    support: true,
+    promotions: true,
+  });
 
   const { data: profile, isLoading: loadingProfile } = useQuery({
     queryKey: ["profile-settings-profile", user?.id],
@@ -61,7 +68,7 @@ export default function ProfileSettings() {
       const { data, error } = await supabase
         .from("profiles")
         .select(
-          "id, full_name, username, avatar_url, phone_number, phone_verified, phone_verification_status, last_username_change_at"
+          "id, full_name, username, avatar_url, phone_number, phone_verified, phone_verification_status, last_username_change_at, telegram_chat_id, telegram_notifications"
         )
         .eq("id", user!.id)
         .single();
@@ -89,6 +96,15 @@ export default function ProfileSettings() {
     if (!profile) return;
     setFullName((prev) => (prev ? prev : (profile.full_name as string | null) ?? ""));
     setUsername((prev) => (prev ? prev : (profile.username as string | null) ?? ""));
+  }, [profile]);
+
+  // Load telegram notification preferences
+  useMemo(() => {
+    if (!profile) return;
+    const saved = (profile as any)?.telegram_notifications;
+    if (saved && typeof saved === 'object') {
+      setTelegramNotifs(prev => ({ ...prev, ...saved }));
+    }
   }, [profile]);
 
   useMemo(() => {
@@ -133,6 +149,7 @@ export default function ProfileSettings() {
       const updatePayload: any = {
         full_name: fullName.trim(),
         avatar_url: nextAvatarUrl,
+        telegram_notifications: telegramNotifs,
       };
 
       // Username rule: only attempt to change when allowed
@@ -379,7 +396,43 @@ export default function ProfileSettings() {
           </Card>
         </div>
 
-        {/* Sticky save bar */}
+        {/* إعدادات إشعارات تيليجرام */}
+        {(profile as any)?.telegram_chat_id && (
+          <div className="pb-2">
+            <Card>
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Bell className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">إشعارات تيليجرام</p>
+                    <p className="text-xs text-muted-foreground">تحكّم بالإشعارات التي تصلك عبر تيليجرام</p>
+                  </div>
+                </div>
+                
+                {[
+                  { key: 'orders' as const, label: 'الطلبات', desc: 'تحديثات حالة الطلبات والشحن' },
+                  { key: 'wallet' as const, label: 'المحفظة', desc: 'الإيداعات والسحوبات وتغييرات الرصيد' },
+                  { key: 'support' as const, label: 'الدعم', desc: 'ردود فريق الدعم على رسائلك' },
+                  { key: 'promotions' as const, label: 'العروض', desc: 'عروض وخصومات حصرية' },
+                ].map(item => (
+                  <div key={item.key} className="flex items-center justify-between py-2">
+                    <div>
+                      <p className="text-sm font-medium">{item.label}</p>
+                      <p className="text-xs text-muted-foreground">{item.desc}</p>
+                    </div>
+                    <Switch
+                      checked={telegramNotifs[item.key]}
+                      onCheckedChange={(checked) => setTelegramNotifs(prev => ({ ...prev, [item.key]: checked }))}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70">
           <div className="container mx-auto px-4 py-3 max-w-4xl">
             <Button
