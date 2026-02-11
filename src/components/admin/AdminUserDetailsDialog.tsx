@@ -27,6 +27,7 @@ import {
   Clock,
   XCircle,
   Printer,
+  Trophy,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
@@ -43,7 +44,7 @@ export default function AdminUserDetailsDialog({
   open,
   onOpenChange,
 }: AdminUserDetailsDialogProps) {
-  const [activeTab, setActiveTab] = useState("tickets");
+  const [activeTab, setActiveTab] = useState("competitions");
 
   // Fetch user tickets count
   const { data: ticketsData, isLoading: ticketsLoading } = useQuery({
@@ -128,6 +129,37 @@ export default function AdminUserDetailsDialog({
     },
   });
 
+  // Fetch competition participation
+  const { data: competitionData, isLoading: competitionsLoading } = useQuery({
+    queryKey: ["admin-user-competitions", userId],
+    enabled: !!userId && open,
+    queryFn: async () => {
+      // Get unique competitions the user participated in
+      const { data: tickets, error } = await supabase
+        .from("competition_tickets")
+        .select("competition_id, is_winner, competitions(id, title_ar, status, competition_type, image_url, created_at)")
+        .eq("user_id", userId!)
+        .order("purchased_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Group by competition
+      const compMap = new Map<string, { competition: any; ticketCount: number; wonCount: number }>();
+      tickets?.forEach((t: any) => {
+        const compId = t.competition_id;
+        if (!compId || !t.competitions) return;
+        if (!compMap.has(compId)) {
+          compMap.set(compId, { competition: t.competitions, ticketCount: 0, wonCount: 0 });
+        }
+        const entry = compMap.get(compId)!;
+        entry.ticketCount++;
+        if (t.is_winner) entry.wonCount++;
+      });
+
+      return Array.from(compMap.values());
+    },
+  });
+
   const getTransactionTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       deposit: "إيداع",
@@ -189,24 +221,28 @@ export default function AdminUserDetailsDialog({
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="px-6">
-            <TabsList className="w-full grid grid-cols-5">
-              <TabsTrigger value="tickets" className="gap-2">
+            <TabsList className="w-full grid grid-cols-6">
+              <TabsTrigger value="competitions" className="gap-1">
+                <Trophy className="h-4 w-4" />
+                <span className="hidden sm:inline">المسابقات</span>
+              </TabsTrigger>
+              <TabsTrigger value="tickets" className="gap-1">
                 <Ticket className="h-4 w-4" />
                 <span className="hidden sm:inline">التذاكر</span>
               </TabsTrigger>
-              <TabsTrigger value="wallet" className="gap-2">
+              <TabsTrigger value="wallet" className="gap-1">
                 <Wallet className="h-4 w-4" />
                 <span className="hidden sm:inline">المحفظة</span>
               </TabsTrigger>
-              <TabsTrigger value="orders" className="gap-2">
+              <TabsTrigger value="orders" className="gap-1">
                 <ShoppingBag className="h-4 w-4" />
                 <span className="hidden sm:inline">الطلبات</span>
               </TabsTrigger>
-              <TabsTrigger value="card" className="gap-2">
+              <TabsTrigger value="card" className="gap-1">
                 <CreditCard className="h-4 w-4" />
                 <span className="hidden sm:inline">البطاقة</span>
               </TabsTrigger>
-              <TabsTrigger value="insurance" className="gap-2">
+              <TabsTrigger value="insurance" className="gap-1">
                 <Shield className="h-4 w-4" />
                 <span className="hidden sm:inline">التأمين</span>
               </TabsTrigger>
@@ -214,6 +250,77 @@ export default function AdminUserDetailsDialog({
           </div>
 
           <ScrollArea className="h-[60vh] p-6 pt-4">
+            {/* Competitions Tab */}
+            <TabsContent value="competitions" className="m-0">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center justify-between text-base">
+                    <span className="flex items-center gap-2">
+                      <Trophy className="h-5 w-5 text-primary" />
+                      سجل المشاركة في المسابقات
+                    </span>
+                    <Badge variant="secondary" className="text-lg">
+                      {competitionData?.length || 0} مسابقة
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {competitionsLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <Skeleton key={i} className="h-20 w-full" />
+                      ))}
+                    </div>
+                  ) : competitionData?.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Trophy className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p>لم يشارك في أي مسابقة</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {competitionData?.map((entry: any) => (
+                        <div
+                          key={entry.competition.id}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                        >
+                          <div className="flex items-center gap-3">
+                            {entry.competition.image_url ? (
+                              <img src={entry.competition.image_url} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                            ) : (
+                              <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                                <Trophy className="h-6 w-6 text-primary" />
+                              </div>
+                            )}
+                            <div>
+                              <p className="font-medium text-sm">{entry.competition.title_ar}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {entry.ticketCount} تذكرة • {entry.competition.competition_type}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-left flex flex-col items-end gap-1">
+                            {entry.wonCount > 0 ? (
+                              <Badge className="bg-emerald-600 gap-1">
+                                <Trophy className="h-3 w-3" />
+                                فائز ({entry.wonCount})
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">مشارك</Badge>
+                            )}
+                            <Badge variant="secondary" className="text-xs">
+                              {entry.competition.status === 'active' ? 'نشطة' : 
+                               entry.competition.status === 'completed' ? 'منتهية' : 
+                               entry.competition.status === 'draft' ? 'مسودة' : entry.competition.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             {/* Tickets Tab */}
             <TabsContent value="tickets" className="m-0">
               <Card>
