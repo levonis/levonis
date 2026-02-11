@@ -631,7 +631,12 @@ const AdminOrders = () => {
       order.profiles?.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.phone_number?.includes(searchTerm);
 
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    // Archive filter: when 'active' is selected, exclude delivered and cancelled
+    const matchesStatus = statusFilter === 'all' 
+      ? true 
+      : statusFilter === 'active'
+        ? !['delivered', 'cancelled'].includes(order.status)
+        : order.status === statusFilter;
     
     // Shipping type filter
     const shippingInfo = getShippingInfo(order.order_items || []);
@@ -783,6 +788,13 @@ const AdminOrders = () => {
               
               {/* Status Filters */}
               <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={statusFilter === 'active' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => { setStatusFilter('active'); pagination.resetPage(); }}
+                >
+                  النشطة ({orders?.filter(o => !['delivered', 'cancelled'].includes(o.status)).length || 0})
+                </Button>
                 <Button
                   variant={statusFilter === 'all' ? 'default' : 'outline'}
                   size="sm"

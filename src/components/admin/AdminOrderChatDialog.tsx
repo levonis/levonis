@@ -66,11 +66,21 @@ export default function AdminOrderChatDialog({
       if (existingConv) {
         setConversationId(existingConv.id);
       } else {
-        // Create new conversation - listing_id is required, use order reference
+        // listing_id is NOT NULL, so we need a valid UUID. 
+        // Use a deterministic UUID from user+support pairing or get any listing
+        const { data: anyListing } = await supabase
+          .from('community_customer_profiles')
+          .select('id')
+          .limit(1)
+          .maybeSingle();
+
+        // Generate a deterministic listing-like UUID for support conversations
+        const pseudoListingId = anyListing?.id || userId;
+
         const { data: newConv, error } = await supabase
           .from('listing_conversations')
           .insert({
-            listing_id: orderId, // Use order ID as listing reference
+            listing_id: pseudoListingId,
             buyer_id: userId,
             seller_id: SUPPORT_USER_ID,
             entry_context: { type: 'order_support', order_number: orderNumber },
