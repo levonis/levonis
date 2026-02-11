@@ -12,16 +12,14 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
   const navigate = useNavigate();
   const { reels, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, toggleInteraction, recordView } = useReelsFeed();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Handle scroll snap to detect active reel
   const handleScroll = useCallback(() => {
     const container = containerRef.current;
     if (!container) return;
     const index = Math.round(container.scrollTop / container.clientHeight);
     setActiveIndex(index);
-
-    // Prefetch next page when near end
     if (index >= reels.length - 3 && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
@@ -34,7 +32,6 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
     return () => container.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // Prevent body scroll
   useEffect(() => {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = ''; };
@@ -45,7 +42,6 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
   }, [toggleInteraction]);
 
   const handleProductClick = useCallback((productId: string) => {
-    // Navigate to the merchant product (community store page)
     onClose();
     navigate(`/community?tab=products`);
   }, [navigate, onClose]);
@@ -54,6 +50,10 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
     onClose();
     navigate(`/store/${merchantId}`);
   }, [navigate, onClose]);
+
+  const toggleMute = useCallback(() => {
+    setIsMuted(prev => !prev);
+  }, []);
 
   if (isLoading) {
     return (
@@ -77,7 +77,6 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
 
   return (
     <div className="fixed inset-0 z-[100] bg-black">
-      {/* Close button */}
       <button
         onClick={onClose}
         className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors"
@@ -85,7 +84,6 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
         <X className="w-5 h-5 text-white" />
       </button>
 
-      {/* Scrollable feed */}
       <div
         ref={containerRef}
         className="w-full h-full overflow-y-scroll snap-y snap-mandatory scrollbar-hide"
@@ -96,6 +94,8 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
             <ReelCard
               reel={reel}
               isActive={index === activeIndex}
+              isMuted={isMuted}
+              onToggleMute={toggleMute}
               onToggleInteraction={handleToggleInteraction}
               onRecordView={recordView}
               onProductClick={handleProductClick}
@@ -104,7 +104,6 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
           </div>
         ))}
 
-        {/* Loading more indicator */}
         {isFetchingNextPage && (
           <div className="w-full h-20 flex items-center justify-center">
             <Loader2 className="w-6 h-6 animate-spin text-primary" />
