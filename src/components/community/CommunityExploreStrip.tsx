@@ -1,4 +1,4 @@
-import { Boxes, Store, Users, SlidersHorizontal } from "lucide-react";
+import { Boxes, Store, Users, SlidersHorizontal, Film } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -123,29 +123,40 @@ export default function CommunityExploreStrip({ className, searchQuery: external
         }}
         className="w-full"
       >
-        <TabsList className="levo-strip-frame grid w-full grid-cols-3 bg-transparent border-0 p-0.5 h-auto">
-          <TabsTrigger
-            value="products"
-            className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
+        <div className="flex items-center gap-2">
+          <TabsList className="levo-strip-frame grid flex-1 grid-cols-3 bg-transparent border-0 p-0.5 h-auto">
+            <TabsTrigger
+              value="products"
+              className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
+            >
+              <Store className="h-3.5 w-3.5" />
+              منتجات التجار
+            </TabsTrigger>
+            <TabsTrigger
+              value="requests"
+              className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
+            >
+              <Users className="h-3.5 w-3.5" />
+              طلبات العملاء
+            </TabsTrigger>
+            <TabsTrigger
+              value="merchants"
+              className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
+            >
+              <Boxes className="h-3.5 w-3.5" />
+              صفحات التجار
+            </TabsTrigger>
+          </TabsList>
+          <Button
+            variant="outline"
+            size="icon"
+            className="rounded-full h-8 w-8 shrink-0 border-primary/30 hover:border-primary hover:bg-primary/10"
+            aria-label="ريلز"
+            onClick={() => navigate("/community/reels")}
           >
-            <Store className="h-3.5 w-3.5" />
-            منتجات التجار
-          </TabsTrigger>
-          <TabsTrigger
-            value="requests"
-            className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
-          >
-            <Users className="h-3.5 w-3.5" />
-            طلبات العملاء
-          </TabsTrigger>
-          <TabsTrigger
-            value="merchants"
-            className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
-          >
-            <Boxes className="h-3.5 w-3.5" />
-            صفحات التجار
-          </TabsTrigger>
-        </TabsList>
+            <Film className="h-3.5 w-3.5 text-primary" />
+          </Button>
+        </div>
 
         <TabsContent value="products" className="mt-3">
           <div className="levo-panel-frame p-3">

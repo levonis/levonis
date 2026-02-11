@@ -1,24 +1,30 @@
 import { memo, useRef, useEffect, useState, useCallback } from 'react';
 import { Heart, Bookmark, Share2, ShoppingBag, Eye, Volume2, VolumeX, Play } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import type { Reel } from '@/hooks/useReelsFeed';
 
 interface ReelCardProps {
   reel: Reel;
   isActive: boolean;
+  isMuted: boolean;
+  onToggleMute: () => void;
   onToggleInteraction: (reelId: string, type: 'like' | 'save') => void;
   onRecordView: (reelId: string, duration: number, completed: boolean, skippedEarly: boolean, clickedProduct: boolean) => void;
   onProductClick?: (productId: string) => void;
   onMerchantClick?: (merchantId: string) => void;
 }
 
-const ReelCard = memo(({ reel, isActive, onToggleInteraction, onRecordView, onProductClick, onMerchantClick }: ReelCardProps) => {
+const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteraction, onRecordView, onProductClick, onMerchantClick }: ReelCardProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPlayIcon, setShowPlayIcon] = useState(false);
   const watchStartRef = useRef<number>(0);
   const viewRecordedRef = useRef(false);
+
+  // Sync mute state to video element
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) video.muted = isMuted;
+  }, [isMuted]);
 
   // Auto-play/pause based on active state
   useEffect(() => {
@@ -33,7 +39,6 @@ const ReelCard = memo(({ reel, isActive, onToggleInteraction, onRecordView, onPr
     } else {
       video.pause();
       setIsPlaying(false);
-      // Record view when leaving
       if (watchStartRef.current && !viewRecordedRef.current) {
         const duration = (Date.now() - watchStartRef.current) / 1000;
         const skippedEarly = duration < 3;
@@ -43,14 +48,12 @@ const ReelCard = memo(({ reel, isActive, onToggleInteraction, onRecordView, onPr
     }
   }, [isActive, reel.id, onRecordView]);
 
-  // Handle video end (completed watch)
   const handleVideoEnd = useCallback(() => {
     if (!viewRecordedRef.current) {
       const duration = (Date.now() - watchStartRef.current) / 1000;
       onRecordView(reel.id, duration, true, false, false);
       viewRecordedRef.current = true;
     }
-    // Loop
     const video = videoRef.current;
     if (video) {
       video.currentTime = 0;
@@ -73,7 +76,6 @@ const ReelCard = memo(({ reel, isActive, onToggleInteraction, onRecordView, onPr
 
   const handleProductClick = useCallback(() => {
     if (reel.product?.id) {
-      // Record product click
       if (!viewRecordedRef.current) {
         const duration = (Date.now() - watchStartRef.current) / 1000;
         onRecordView(reel.id, duration, false, false, true);
@@ -94,12 +96,13 @@ const ReelCard = memo(({ reel, isActive, onToggleInteraction, onRecordView, onPr
     : 0;
 
   return (
-    <div className="relative w-full h-full bg-black snap-start snap-always flex-shrink-0">
-      {/* Video */}
+    <div className="relative w-full h-full bg-black flex items-center justify-center overflow-hidden">
+      {/* Video - constrained to 9:16 */}
       <video
         ref={videoRef}
         src={reel.video_url}
-        className="absolute inset-0 w-full h-full object-cover"
+        className="h-full max-w-full object-contain"
+        style={{ aspectRatio: '9/16', maxHeight: '100dvh' }}
         muted={isMuted}
         playsInline
         loop={false}
@@ -132,44 +135,27 @@ const ReelCard = memo(({ reel, isActive, onToggleInteraction, onRecordView, onPr
 
       {/* Right side actions */}
       <div className="absolute right-3 bottom-44 flex flex-col items-center gap-5 z-20">
-        {/* Like */}
-        <button
-          onClick={() => onToggleInteraction(reel.id, 'like')}
-          className="flex flex-col items-center gap-1"
-        >
+        <button onClick={() => onToggleInteraction(reel.id, 'like')} className="flex flex-col items-center gap-1">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${reel.isLiked ? 'bg-red-500/20' : 'bg-white/10'} backdrop-blur-sm`}>
             <Heart className={`w-5 h-5 ${reel.isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
           </div>
           <span className="text-white text-[10px] font-medium">{formatCount(reel.likes_count)}</span>
         </button>
 
-        {/* Save */}
-        <button
-          onClick={() => onToggleInteraction(reel.id, 'save')}
-          className="flex flex-col items-center gap-1"
-        >
+        <button onClick={() => onToggleInteraction(reel.id, 'save')} className="flex flex-col items-center gap-1">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${reel.isSaved ? 'bg-primary/20' : 'bg-white/10'} backdrop-blur-sm`}>
             <Bookmark className={`w-5 h-5 ${reel.isSaved ? 'fill-primary text-primary' : 'text-white'}`} />
           </div>
           <span className="text-white text-[10px] font-medium">{formatCount(reel.saves_count)}</span>
         </button>
 
-        {/* Share */}
-        <button
-          onClick={() => {
-            if (navigator.share) {
-              navigator.share({ title: reel.caption || 'ريل', url: window.location.href });
-            }
-          }}
-          className="flex flex-col items-center gap-1"
-        >
+        <button onClick={() => { if (navigator.share) navigator.share({ title: reel.caption || 'ريل', url: window.location.href }); }} className="flex flex-col items-center gap-1">
           <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
             <Share2 className="w-5 h-5 text-white" />
           </div>
           <span className="text-white text-[10px] font-medium">مشاركة</span>
         </button>
 
-        {/* Views */}
         <div className="flex flex-col items-center gap-1">
           <div className="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
             <Eye className="w-4 h-4 text-white/70" />
@@ -178,8 +164,8 @@ const ReelCard = memo(({ reel, isActive, onToggleInteraction, onRecordView, onPr
         </div>
       </div>
 
-      {/* Bottom content */}
-      <div className="absolute bottom-0 left-0 right-14 p-4 z-20">
+      {/* Bottom content - shifted more to the left */}
+      <div className="absolute bottom-0 left-0 right-16 p-4 z-20">
         {/* Merchant info */}
         <div
           className="flex items-center gap-2 mb-3 cursor-pointer"
@@ -209,24 +195,16 @@ const ReelCard = memo(({ reel, isActive, onToggleInteraction, onRecordView, onPr
             className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition-colors"
           >
             {reel.product.image_urls?.[0] && (
-              <img
-                src={reel.product.image_urls[0]}
-                alt={reel.product.title}
-                className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-              />
+              <img src={reel.product.image_urls[0]} alt={reel.product.title} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
             )}
             <div className="flex-1 min-w-0 text-right">
               <p className="text-white font-bold text-xs truncate">{reel.product.title}</p>
               <div className="flex items-center gap-2 mt-1">
                 {reel.product.price_iqd && (
-                  <span className="text-primary font-black text-sm">
-                    {reel.product.price_iqd.toLocaleString()} د.ع
-                  </span>
+                  <span className="text-primary font-black text-sm">{reel.product.price_iqd.toLocaleString()} د.ع</span>
                 )}
                 {discount > 0 && (
-                  <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                    -{discount}%
-                  </span>
+                  <span className="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">-{discount}%</span>
                 )}
               </div>
             </div>
@@ -239,14 +217,10 @@ const ReelCard = memo(({ reel, isActive, onToggleInteraction, onRecordView, onPr
 
       {/* Mute toggle */}
       <button
-        onClick={() => setIsMuted(!isMuted)}
+        onClick={onToggleMute}
         className="absolute top-4 left-4 z-20 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
       >
-        {isMuted ? (
-          <VolumeX className="w-4 h-4 text-white" />
-        ) : (
-          <Volume2 className="w-4 h-4 text-white" />
-        )}
+        {isMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
       </button>
     </div>
   );
