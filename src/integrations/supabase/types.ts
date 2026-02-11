@@ -6066,6 +6066,16 @@ export type Database = {
       purchase_competition_ticket:
         | { Args: { comp_id: string }; Returns: Json }
         | { Args: { comp_id: string; quantity?: number }; Returns: Json }
+      purchase_printer_subscription: {
+        Args: {
+          p_current_sub_id?: string
+          p_is_upgrade?: boolean
+          p_plan_id: string
+          p_price: number
+          p_printer_id: string
+        }
+        Returns: Json
+      }
       purchase_product_offer: {
         Args: { p_offer_id: string; p_quantity?: number }
         Returns: Json
