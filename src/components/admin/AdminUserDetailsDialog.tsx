@@ -86,7 +86,7 @@ export default function AdminUserDetailsDialog({
     queryFn: async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, order_number, status, total, created_at")
+        .select("id, order_number, status, total_amount, created_at")
         .eq("user_id", userId!)
         .order("created_at", { ascending: false })
         .limit(50);
@@ -393,7 +393,7 @@ export default function AdminUserDetailsDialog({
                           </div>
                           <div className="text-left">
                             <p className="font-bold text-primary">
-                              {order.total?.toLocaleString()} د.ع
+                              {order.total_amount?.toLocaleString()} د.ع
                             </p>
                             <Badge variant="outline">
                               {getOrderStatusLabel(order.status)}

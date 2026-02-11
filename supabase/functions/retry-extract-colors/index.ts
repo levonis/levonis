@@ -176,17 +176,20 @@ serve(async (req) => {
 Previous extraction found ${existingColors?.length || 0} colors. Please extract ALL colors again to ensure none are missed.
 
 Image URLs with ALT texts:
-${altSrcPairs.slice(0, 100).map((p, i) => `${i + 1}. ${p.alt} -> ${p.src}`).join('\n')}
+${altSrcPairs.slice(0, 200).map((p, i) => `${i + 1}. ${p.alt} -> ${p.src}`).join('\n')}
 
 Color candidates from page:
-${combinedHints.slice(0, 200).join(', ')}
+${combinedHints.slice(0, 500).join(', ')}
 
 IMPORTANT: 
-- Extract EVERY single color variant available
+- Extract EVERY SINGLE color variant available on the page - there may be 30, 40, 50+ colors
+- Do NOT limit yourself to any number - extract ALL colors even if there are 100+
 - Include color name in English and Arabic
-- Include the image URL for each color
+- Include the image URL for each color if available
 - Extract hex color code if visible
-- DO NOT STOP at 17 colors - extract ALL colors available
+- Look at ALL image URLs for color-specific images
+- Check all data attributes, swatch elements, variant selectors
+- DO NOT summarize or skip any colors
 
 Return ONLY colors in this JSON format:
 {
@@ -213,14 +216,15 @@ Return ONLY colors in this JSON format:
         messages: [
           {
             role: 'system',
-            content: 'You are a product data extraction expert. Extract ALL color variants completely and accurately. Never stop at a limit - extract every single color available.'
+            content: 'You are a product data extraction expert. Extract ALL color variants completely and accurately. Never stop at a limit - extract every single color available even if there are 50+ colors. Always return complete results.'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.3,
+        temperature: 0.2,
+        max_tokens: 16000,
       }),
     });
 

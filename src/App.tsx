@@ -101,6 +101,7 @@ const AdminUsers = lazy(() => import("./pages/AdminUsers"));
 const CommunityHome = lazy(() => import("./pages/CommunityHome"));
 const OffersStoragePage = lazy(() => import("./pages/OffersStoragePage"));
 const ChatOrderCheckout = lazy(() => import("./pages/ChatOrderCheckout"));
+const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Premium loading component - shown during lazy load
@@ -218,7 +219,7 @@ function AppContent() {
             {/* Redirect old routes to rewards hub */}
             <Route path="/my-points" element={<Navigate to="/rewards" replace />} />
             <Route path="/competitions" element={<Navigate to="/rewards" replace />} />
-            <Route path="/competitions/history" element={<Navigate to="/rewards" replace />} />
+            <Route path="/competitions/history" element={<CompetitionHistory />} />
             <Route path="/printer-protection" element={<Navigate to="/rewards" replace />} />
             <Route path="/my-printers" element={<Navigate to="/rewards" replace />} />
             

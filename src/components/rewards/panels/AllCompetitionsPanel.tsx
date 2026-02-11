@@ -737,6 +737,19 @@ export default function AllCompetitionsPanel() {
 
   return (
     <>
+      {/* History Link */}
+      <div className="flex justify-center mb-3">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 text-xs"
+          onClick={() => window.location.href = '/competitions/history'}
+        >
+          <Trophy className="h-3.5 w-3.5" />
+          سجل المسابقات السابقة والفائزين
+        </Button>
+      </div>
+      
       <div className="grid grid-cols-2 gap-3">
         {competitions.map((comp) => {
           const count = ticketCounts?.[comp.id] || 0;
