@@ -51,19 +51,19 @@ const competitionTypeLabels: Record<CompetitionType, string> = {
 };
 
 const competitionTypeColors: Record<CompetitionType, string> = {
-  ticket_count: 'bg-blue-500',
-  all_tickets_sold: 'bg-green-500',
-  timed: 'bg-purple-500',
-  free: 'bg-gray-500',
-  instant_winner: 'from-yellow-500 to-amber-500',
-  everyone_wins: 'from-pink-500 to-rose-500',
-  escalating_price: 'from-orange-500 to-red-500',
-  mystery_box: 'from-indigo-500 to-purple-500',
-  hidden_winner: 'from-red-500 to-rose-600',
-  team_battle: 'from-cyan-500 to-blue-500',
-  flash_sale: 'from-rose-500 to-pink-500',
-  growing_prize: 'from-emerald-500 to-green-500',
-  collect_letters: 'from-violet-500 to-purple-500'
+  ticket_count: 'bg-primary',
+  all_tickets_sold: 'bg-primary',
+  timed: 'bg-primary/90',
+  free: 'bg-muted-foreground',
+  instant_winner: 'bg-primary',
+  everyone_wins: 'bg-primary',
+  escalating_price: 'bg-primary/90',
+  mystery_box: 'bg-primary',
+  hidden_winner: 'bg-primary/90',
+  team_battle: 'bg-primary',
+  flash_sale: 'bg-destructive',
+  growing_prize: 'bg-primary',
+  collect_letters: 'bg-primary'
 };
 
 interface Winner {
@@ -140,24 +140,15 @@ const getCompetitionTypeBadge = (comp: Competition) => {
   // Special styling for flash sales
   if (type === 'flash_sale' || comp.is_flash) {
     return (
-      <Badge className={`bg-gradient-to-r ${colorClass} text-white border-0 text-xs px-2 py-0.5 gap-1 animate-pulse`}>
+      <Badge className={`${colorClass} text-destructive-foreground border-0 text-xs px-2 py-0.5 gap-1 animate-pulse`}>
         <Zap className="h-3 w-3" />
         {comp.flash_badge_text || label}
       </Badge>
     );
   }
   
-  // Gradient types
-  if (colorClass.includes('from-')) {
-    return (
-      <Badge className={`bg-gradient-to-r ${colorClass} text-white border-0 text-xs px-2 py-0.5`}>
-        {icon} {label}
-      </Badge>
-    );
-  }
-  
   return (
-    <Badge className={`${colorClass} text-white border-0 text-xs px-2 py-0.5`}>
+    <Badge className={`${colorClass} text-primary-foreground border-0 text-xs px-2 py-0.5`}>
       {icon} {label}
     </Badge>
   );
@@ -179,7 +170,8 @@ const CompetitionCard = memo(({
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   const hasTicket = myTicketList.length > 0;
-  const isWinner = myTicketList.some(t => t.is_winner);
+  // For collect_letters, is_winner should only be true when a word is redeemed, not when a letter is awarded
+  const isWinner = isInstantType(comp.competition_type) ? false : myTicketList.some(t => t.is_winner);
   const isSoldOut = comp.max_tickets ? ticketCount >= comp.max_tickets : false;
   const isEnded = comp.status === 'completed' || (comp.end_date && new Date(comp.end_date) < new Date());
   const requiredTickets = comp.required_tickets || 1;
@@ -307,10 +299,10 @@ const CompetitionCard = memo(({
           )}
           
           {isWinner && (
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/90 to-amber-600/90 flex items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/90 to-accent/90 flex items-center justify-center">
               <div className="flex flex-col items-center">
-                <Crown className="h-8 w-8 text-white" />
-                <span className="text-white text-xs font-bold mt-1">فائز!</span>
+                <Crown className="h-8 w-8 text-primary-foreground" />
+                <span className="text-primary-foreground text-xs font-bold mt-1">فائز!</span>
               </div>
             </div>
           )}
@@ -326,14 +318,14 @@ const CompetitionCard = memo(({
         
         {/* Special indicators for new types */}
         {comp.competition_type === 'instant_winner' && comp.win_probability && (
-          <div className="flex items-center gap-1 text-xs text-amber-600 bg-amber-500/10 px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-md">
             <Zap className="h-3 w-3" />
             <span>نسبة الفوز: {comp.win_probability}%</span>
           </div>
         )}
         
         {comp.competition_type === 'collect_letters' && comp.letters_config && (
-          <div className="flex items-center gap-1 text-xs text-violet-600 bg-violet-500/10 px-2 py-1 rounded-md" dir="rtl">
+          <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-md" dir="rtl">
             <Sparkles className="h-3 w-3" />
             <span>أجمع الأحرف: {(() => {
               const words = (comp.letters_config as any)?.prize_words || [];
@@ -347,28 +339,28 @@ const CompetitionCard = memo(({
         )}
         
         {comp.competition_type === 'team_battle' && (
-          <div className="flex items-center gap-1 text-xs text-cyan-600 bg-cyan-500/10 px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-md">
             <Swords className="h-3 w-3" />
             <span>🔵 {comp.team_a_count || 0} - {comp.team_b_count || 0} 🔴</span>
           </div>
         )}
         
         {comp.competition_type === 'escalating_price' && comp.price_tiers && (
-          <div className="flex items-center gap-1 text-xs text-orange-600 bg-orange-500/10 px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-md">
             <TrendingUp className="h-3 w-3" />
             <span>السعر الحالي: {comp.ticket_price.toLocaleString()} دينار</span>
           </div>
         )}
         
         {comp.competition_type === 'mystery_box' && (
-          <div className="flex items-center gap-1 text-xs text-purple-600 bg-purple-500/10 px-2 py-1 rounded-md">
+          <div className="flex items-center gap-1 text-xs text-primary bg-primary/10 px-2 py-1 rounded-md">
             <Package className="h-3 w-3" />
             <span>افتح صندوقك واكتشف جائزتك!</span>
           </div>
         )}
         
         {(comp.competition_type === 'flash_sale' || comp.is_flash) && comp.end_date && (
-          <div className="flex items-center gap-1 text-xs text-rose-600 bg-rose-500/10 px-2 py-1 rounded-md animate-pulse">
+          <div className="flex items-center gap-1 text-xs text-destructive bg-destructive/10 px-2 py-1 rounded-md animate-pulse">
             <Timer className="h-3 w-3" />
             <span>عرض محدود!</span>
           </div>
@@ -443,9 +435,9 @@ const CompetitionCard = memo(({
         
         {/* Winners Display for completed competitions */}
         {comp.status === 'completed' && winners.length > 0 && (
-          <div className="bg-gradient-to-l from-yellow-500/10 to-transparent rounded-md p-2 border-r-2 border-yellow-500/50">
+          <div className="bg-gradient-to-l from-primary/10 to-transparent rounded-md p-2 border-r-2 border-primary/50">
             <div className="flex items-start gap-1.5">
-              <Crown className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-yellow-600" />
+              <Crown className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-primary" />
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-medium text-muted-foreground">
                   {winners.length > 1 ? 'الفائزون:' : 'الفائز:'}
@@ -455,7 +447,7 @@ const CompetitionCard = memo(({
                     <Badge 
                       key={idx} 
                       variant="secondary" 
-                      className="text-xs bg-yellow-500/20 text-yellow-700 border-0"
+                      className="text-xs bg-primary/20 text-primary border-0"
                     >
                       {winner.full_name || winner.username}
                     </Badge>
