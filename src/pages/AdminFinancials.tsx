@@ -148,7 +148,7 @@ const AdminFinancials = () => {
         .from('orders')
         .select(`
           *,
-          profile:profiles!orders_user_id_fkey_profiles(username, full_name),
+          profile:profiles(username, full_name),
           order_items(id, product_name, product_name_ar, quantity, unit_price, total_price)
         `)
         .order('created_at', { ascending: false });
