@@ -101,59 +101,20 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     staleTime: 2 * 60 * 1000,
   });
 
-  // Subscribe mutation - with wallet deduction
+  // Subscribe mutation - using secure RPC
   const subscribeMutation = useMutation({
     mutationFn: async ({ printerId, planId, price, isUpgrade, currentSubId }: any) => {
       if (!user) throw new Error('يجب تسجيل الدخول');
 
-      // Check wallet balance
-      if ((walletBalance || 0) < price) {
-        throw new Error('رصيد المحفظة غير كافٍ. تحتاج ' + price.toLocaleString() + ' د.ع');
-      }
+      const { data, error } = await supabase.rpc('purchase_printer_subscription', {
+        p_printer_id: printerId,
+        p_plan_id: planId,
+        p_price: price,
+        p_is_upgrade: isUpgrade || false,
+        p_current_sub_id: currentSubId || null,
+      });
 
-      // Deduct from wallet
-      const { error: walletError } = await supabase
-        .from('user_wallets')
-        .update({ balance: (walletBalance || 0) - price })
-        .eq('user_id', user.id);
-      if (walletError) throw walletError;
-
-      // Record wallet transaction
-      const { error: transError } = await supabase
-        .from('wallet_transactions')
-        .insert({
-          user_id: user.id,
-          amount: -price,
-          type: 'purchase',
-          status: 'completed',
-          admin_notes: isUpgrade ? 'ترقية اشتراك حماية الطابعة' : 'اشتراك حماية الطابعة',
-        });
-      if (transError) throw transError;
-
-      if (isUpgrade && currentSubId) {
-        await supabase
-          .from('printer_subscriptions')
-          .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
-          .eq('id', currentSubId);
-      }
-
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 1);
-
-      const { error: subError } = await supabase
-        .from('printer_subscriptions')
-        .insert({
-          user_id: user.id,
-          user_printer_id: printerId,
-          plan_id: planId,
-          monthly_price: price,
-          start_date: startDate.toISOString(),
-          end_date: endDate.toISOString(),
-          status: 'active',
-        });
-      if (subError) throw subError;
-
+      if (error) throw new Error(error.message);
       return { isUpgrade };
     },
     onSuccess: (data) => {
