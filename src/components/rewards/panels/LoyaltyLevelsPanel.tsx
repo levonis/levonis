@@ -144,6 +144,13 @@ export default function LoyaltyLevelsPanel() {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (level.duration_days || 30));
 
+      // Deactivate any existing active cards first
+      await supabase
+        .from('user_cards')
+        .update({ is_active: false })
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+
       // Create user card
       const { error: cardError } = await supabase
         .from('user_cards')
@@ -151,7 +158,8 @@ export default function LoyaltyLevelsPanel() {
           user_id: user.id,
           level_id: level.id,
           expires_at: expiresAt.toISOString(),
-          points_paid: 0, // No points used anymore
+          points_spent: 0,
+          is_active: true,
         });
       if (cardError) throw cardError;
     },

@@ -4,10 +4,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, MessageCircle, Crown, Award, Star, Image as ImageIcon, X, Search, Package } from 'lucide-react';
+import { Loader2, Send, MessageCircle, Crown, Award, Star, Image as ImageIcon, X, Search, Package, Plus } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -73,6 +74,8 @@ export default function AdminChats() {
   const [showProductSearch, setShowProductSearch] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState('');
   const [searchFilter, setSearchFilter] = useState('');
+  const [showNewChatDialog, setShowNewChatDialog] = useState(false);
+  const [newChatSearch, setNewChatSearch] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -107,6 +110,58 @@ export default function AdminChats() {
     
     loadProducts();
   }, [showProductSearch, productSearchQuery]);
+
+  // Search for users when opening new chat dialog
+  const { data: searchedUsers = [] } = useQuery({
+    queryKey: ['admin-search-users-chat', newChatSearch],
+    queryFn: async () => {
+      if (!newChatSearch.trim() || newChatSearch.trim().length < 2) return [];
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url')
+        .or(`full_name.ilike.%${newChatSearch}%,username.ilike.%${newChatSearch}%`)
+        .neq('id', SUPPORT_USER_ID)
+        .limit(20);
+      if (error) return [];
+      return data || [];
+    },
+    enabled: showNewChatDialog && newChatSearch.trim().length >= 2,
+  });
+
+  const startNewConversation = async (targetUserId: string) => {
+    try {
+      // Check for existing conversation
+      const { data: existingConv } = await supabase
+        .from('listing_conversations')
+        .select('id')
+        .or(`and(buyer_id.eq.${targetUserId},seller_id.eq.${SUPPORT_USER_ID}),and(buyer_id.eq.${SUPPORT_USER_ID},seller_id.eq.${targetUserId})`)
+        .maybeSingle();
+
+      if (existingConv) {
+        setSelectedConversation(existingConv.id);
+        setSelectedUserId(targetUserId);
+      } else {
+        const { data: newConv, error } = await supabase
+          .from('listing_conversations')
+          .insert({
+            listing_id: targetUserId, // Use user ID as pseudo listing ref
+            buyer_id: targetUserId,
+            seller_id: SUPPORT_USER_ID,
+          })
+          .select('id')
+          .single();
+
+        if (error) throw error;
+        setSelectedConversation(newConv.id);
+        setSelectedUserId(targetUserId);
+      }
+      setShowNewChatDialog(false);
+      setNewChatSearch('');
+      queryClient.invalidateQueries({ queryKey: ['admin-support-conversations'] });
+    } catch (error) {
+      toast.error('فشل في فتح المحادثة');
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && (!user || !isAdmin)) {
@@ -397,11 +452,17 @@ export default function AdminChats() {
           <div className="p-3 border-b border-border/50 space-y-2">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-sm">المستخدمون</h3>
-              {totalUnread > 0 && (
-                <Badge variant="destructive" className="text-xs animate-pulse">
-                  {totalUnread} غير مقروءة
-                </Badge>
-              )}
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowNewChatDialog(true)}>
+                  <Plus className="h-3 w-3 ml-1" />
+                  محادثة جديدة
+                </Button>
+                {totalUnread > 0 && (
+                  <Badge variant="destructive" className="text-xs animate-pulse">
+                    {totalUnread} غير مقروءة
+                  </Badge>
+                )}
+              </div>
             </div>
             <div className="relative">
               <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -680,6 +741,57 @@ export default function AdminChats() {
           )}
         </AdminCard>
       </div>
+
+      {/* New Chat Dialog */}
+      {showNewChatDialog && (
+        <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
+          <DialogContent className="sm:max-w-md" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>بدء محادثة جديدة</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={newChatSearch}
+                  onChange={(e) => setNewChatSearch(e.target.value)}
+                  placeholder="ابحث عن مستخدم بالاسم..."
+                  className="pr-9"
+                  autoFocus
+                />
+              </div>
+              <ScrollArea className="max-h-64">
+                {searchedUsers.length === 0 ? (
+                  <p className="text-center text-sm text-muted-foreground py-8">
+                    {newChatSearch.trim().length < 2 ? 'اكتب حرفين على الأقل للبحث' : 'لا توجد نتائج'}
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    {searchedUsers.map((u: any) => (
+                      <button
+                        key={u.id}
+                        onClick={() => startNewConversation(u.id)}
+                        className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors text-right"
+                      >
+                        <Avatar className="h-9 w-9">
+                          <AvatarImage src={u.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">{(u.full_name || u.username || '?').charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="text-sm font-medium">{u.full_name || u.username}</p>
+                          {u.username && u.full_name && (
+                            <p className="text-xs text-muted-foreground">@{u.username}</p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </ScrollArea>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </AdminLayout>
   );
 }
