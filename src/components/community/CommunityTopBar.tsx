@@ -9,6 +9,7 @@ import {
   Store,
   Package,
   Users,
+  Film,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -114,6 +115,17 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Reels button - always visible */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full border-primary/30 hover:border-primary"
+              aria-label="ريلز"
+              onClick={() => navigate("/community/reels")}
+            >
+              <Film className="h-4 w-4" />
+            </Button>
+
           {/* For merchants: Orders, Store, Messages, Settings */}
             {isMerchant ? (
               <>
