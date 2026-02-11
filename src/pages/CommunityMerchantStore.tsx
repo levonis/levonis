@@ -1,8 +1,9 @@
 import { useState } from "react";
+import MerchantReelUpload from "@/components/reels/MerchantReelUpload";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  Store, Plus, Star, Eye, Package, Play, Sparkles, AlertCircle
+  Store, Plus, Star, Eye, Package, Play, Sparkles, AlertCircle, Film
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -384,10 +385,20 @@ export default function CommunityMerchantStore() {
               </div>
             </div>
             
-            <Button size="lg" onClick={handleOpenAdd} className="gap-2 shadow-lg hover:shadow-xl transition-all">
-              <Plus className="h-5 w-5" />
-              إضافة منتج جديد
-            </Button>
+            <div className="flex items-center gap-2">
+              {merchantApp?.id && (
+                <MerchantReelUpload merchantId={merchantApp.id}>
+                  <Button size="lg" variant="outline" className="gap-2">
+                    <Film className="h-5 w-5" />
+                    رفع ريل
+                  </Button>
+                </MerchantReelUpload>
+              )}
+              <Button size="lg" onClick={handleOpenAdd} className="gap-2 shadow-lg hover:shadow-xl transition-all">
+                <Plus className="h-5 w-5" />
+                إضافة منتج جديد
+              </Button>
+            </div>
           </div>
 
           {/* Filter Tabs */}

@@ -2853,6 +2853,106 @@ export type Database = {
           },
         ]
       }
+      merchant_reels: {
+        Row: {
+          approved_at: string | null
+          business_multiplier: number | null
+          caption: string | null
+          category_id: string | null
+          clicks_count: number
+          created_at: string
+          duration_seconds: number | null
+          first_1000_impressions_at: string | null
+          full_watches_count: number
+          id: string
+          is_sponsored: boolean | null
+          likes_count: number
+          merchant_id: string
+          product_id: string | null
+          quality_score: number | null
+          ranking_score: number | null
+          rejection_reason: string | null
+          saves_count: number
+          status: string
+          thumbnail_url: string | null
+          updated_at: string
+          video_url: string
+          views_count: number
+        }
+        Insert: {
+          approved_at?: string | null
+          business_multiplier?: number | null
+          caption?: string | null
+          category_id?: string | null
+          clicks_count?: number
+          created_at?: string
+          duration_seconds?: number | null
+          first_1000_impressions_at?: string | null
+          full_watches_count?: number
+          id?: string
+          is_sponsored?: boolean | null
+          likes_count?: number
+          merchant_id: string
+          product_id?: string | null
+          quality_score?: number | null
+          ranking_score?: number | null
+          rejection_reason?: string | null
+          saves_count?: number
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_url: string
+          views_count?: number
+        }
+        Update: {
+          approved_at?: string | null
+          business_multiplier?: number | null
+          caption?: string | null
+          category_id?: string | null
+          clicks_count?: number
+          created_at?: string
+          duration_seconds?: number | null
+          first_1000_impressions_at?: string | null
+          full_watches_count?: number
+          id?: string
+          is_sponsored?: boolean | null
+          likes_count?: number
+          merchant_id?: string
+          product_id?: string | null
+          quality_score?: number | null
+          ranking_score?: number | null
+          rejection_reason?: string | null
+          saves_count?: number
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_url?: string
+          views_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_reels_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "community_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_reels_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "merchant_reels_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -4403,6 +4503,79 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      reel_interactions: {
+        Row: {
+          created_at: string
+          id: string
+          interaction_type: string
+          reel_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interaction_type: string
+          reel_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interaction_type?: string
+          reel_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reel_interactions_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_reels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reel_views: {
+        Row: {
+          clicked_product: boolean | null
+          completed: boolean | null
+          created_at: string
+          id: string
+          reel_id: string
+          skipped_early: boolean | null
+          user_id: string | null
+          watch_duration_seconds: number | null
+        }
+        Insert: {
+          clicked_product?: boolean | null
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          reel_id: string
+          skipped_early?: boolean | null
+          user_id?: string | null
+          watch_duration_seconds?: number | null
+        }
+        Update: {
+          clicked_product?: boolean | null
+          completed?: boolean | null
+          created_at?: string
+          id?: string
+          reel_id?: string
+          skipped_early?: boolean | null
+          user_id?: string | null
+          watch_duration_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reel_views_reel_id_fkey"
+            columns: ["reel_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_reels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reviews: {
         Row: {
@@ -6100,6 +6273,17 @@ export type Database = {
         Args: { p_listing_id: string }
         Returns: undefined
       }
+      record_reel_view: {
+        Args: {
+          p_clicked_product?: boolean
+          p_completed?: boolean
+          p_reel_id: string
+          p_skipped_early?: boolean
+          p_user_id?: string
+          p_watch_duration?: number
+        }
+        Returns: undefined
+      }
       redeem_letters_prize: {
         Args: { p_competition_id: string; p_word: string }
         Returns: Json
@@ -6125,6 +6309,10 @@ export type Database = {
         Returns: undefined
       }
       set_wallet_pin: { Args: { pin_code: string }; Returns: undefined }
+      toggle_reel_interaction: {
+        Args: { p_reel_id: string; p_type: string; p_user_id: string }
+        Returns: boolean
+      }
       trigger_badge_calculation: { Args: never; Returns: undefined }
       validate_coupon: { Args: { coupon_code: string }; Returns: Json }
       validate_coupon_with_rate_limit: {

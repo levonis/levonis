@@ -102,6 +102,7 @@ const CommunityHome = lazy(() => import("./pages/CommunityHome"));
 const OffersStoragePage = lazy(() => import("./pages/OffersStoragePage"));
 const ChatOrderCheckout = lazy(() => import("./pages/ChatOrderCheckout"));
 const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
+const ReelsPage = lazy(() => import("./pages/ReelsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Premium loading component - shown during lazy load
@@ -187,6 +188,7 @@ function AppContent() {
             
             {/* Community (requires login + complete profile) */}
             <Route path="/community" element={<RequireCommunityProfile><CommunityHome /></RequireCommunityProfile>} />
+            <Route path="/community/reels" element={<ReelsPage />} />
             <Route path="/community/messages" element={<RequireCommunityProfile><CommunityMessages /></RequireCommunityProfile>} />
             <Route path="/community/customer" element={<RequireCommunityProfile><CommunityCustomer /></RequireCommunityProfile>} />
             <Route path="/community/customer/dashboard" element={<RequireCommunityProfile><CommunityCustomerDashboard /></RequireCommunityProfile>} />
