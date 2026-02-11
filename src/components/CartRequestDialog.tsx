@@ -100,9 +100,61 @@ export default function CartRequestDialog({
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ['cart-request', user?.id] });
       toast.success('تم إنشاء رمز السلة بنجاح');
+      
+      // Auto-contact support after creating cart code
+      if (data && user) {
+        try {
+          // Check if support conversation exists
+          const { data: existing } = await supabase
+            .from("listing_conversations")
+            .select("id")
+            .or(`and(buyer_id.eq.${user.id},seller_id.eq.${SUPPORT_USER_ID}),and(buyer_id.eq.${SUPPORT_USER_ID},seller_id.eq.${user.id})`)
+            .maybeSingle();
+
+          let conversationId: string;
+
+          if (existing) {
+            conversationId = existing.id;
+          } else {
+            const convCode = `SUPPORT-${Date.now().toString(36).toUpperCase()}`;
+            const { data: newConv, error: convError } = await supabase
+              .from("listing_conversations")
+              .insert([{
+                buyer_id: user.id,
+                seller_id: SUPPORT_USER_ID,
+                listing_id: SUPPORT_USER_ID,
+                conversation_code: convCode,
+                status: "open",
+              }])
+              .select("id")
+              .single();
+
+            if (convError) throw convError;
+            conversationId = newConv.id;
+          }
+
+          // Send cart request message automatically
+          const cartMessage = `🛒 طلب تعديل سلة التسوق\n\n📋 رمز السلة: ${data.cart_code}\n💰 المبلغ الأصلي: ${formatPrice(data.original_total)} د.ع\n\nأرجو مراجعة السلة وتعديل السعر`;
+
+          await supabase.from("listing_messages").insert({
+            conversation_id: conversationId,
+            sender_id: user.id,
+            content: cartMessage,
+          });
+
+          await supabase.from("listing_conversations")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", conversationId);
+
+          onOpenChange(false);
+          navigate(`/community/messages?auto_open=${conversationId}`);
+        } catch (e) {
+          console.error('Auto-contact support failed:', e);
+        }
+      }
     },
     onError: (error) => {
       console.error('Error creating cart request:', error);
