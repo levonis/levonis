@@ -1,5 +1,5 @@
-import { useState, useMemo } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Store, Star, Package, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, 
@@ -20,6 +20,7 @@ import ProfessionalCustomerOrderDialog from "@/components/merchant/ProfessionalC
 import StoreFollowButton from "@/components/community/StoreFollowButton";
 import PrinterModelsCard from "@/components/merchant/PrinterModelsCard";
 import CommunityProductDetailModal from "@/components/community/CommunityProductDetailModal";
+import MerchantReelsSection from "@/components/merchant/MerchantReelsSection";
 
 const PRODUCTS_PER_PAGE = 20;
 
@@ -41,6 +42,7 @@ interface MerchantProduct {
 export default function CommunityMerchantStorePage() {
   const navigate = useNavigate();
   const { merchantId } = useParams<{ merchantId: string }>();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -133,7 +135,17 @@ export default function CommunityMerchantStorePage() {
     return products.slice(start, start + PRODUCTS_PER_PAGE);
   }, [products, currentPage]);
 
-  // Fetch store stats
+  // Auto-open product from query param (e.g., from reels)
+  useEffect(() => {
+    const productId = searchParams.get('product');
+    if (productId && products.length > 0) {
+      const product = products.find(p => p.id === productId);
+      if (product) {
+        handleOpenDetail(product);
+      }
+    }
+  }, [searchParams, products]);
+
   const { data: storeStats } = useQuery({
     queryKey: ["store-stats", merchantId],
     enabled: !!merchantId,
@@ -438,6 +450,8 @@ export default function CommunityMerchantStorePage() {
               </>
             )}
           </div>
+          {/* Merchant Reels */}
+          {merchantId && <MerchantReelsSection merchantId={merchantId} />}
         </div>
       </main>
 

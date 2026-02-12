@@ -42,10 +42,16 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
   }, [toggleInteraction]);
 
   const handleProductClick = useCallback((productId: string) => {
+    // Find the merchant ID for this product's reel
+    const reel = reels.find(r => r.product?.id === productId);
+    const merchantId = reel?.merchant?.id;
     onClose();
-    // Navigate to community with product modal trigger
-    navigate(`/community?tab=products&product=${productId}`);
-  }, [navigate, onClose]);
+    if (merchantId) {
+      navigate(`/store/${merchantId}?product=${productId}`);
+    } else {
+      navigate(`/community?tab=products`);
+    }
+  }, [navigate, onClose, reels]);
 
   const handleMerchantClick = useCallback((merchantId: string) => {
     onClose();

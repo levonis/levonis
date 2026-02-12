@@ -1220,6 +1220,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     isMe={isMe}
                                     timestamp={timestamp}
                                     userRole={chatCommerce.userRole}
+                                    onProductClick={(pId) => {
+                                      if (otherUserId) {
+                                        navigate(`/store/${otherUserId}?product=${pId}`);
+                                      }
+                                    }}
                                     onCreateOrder={() => {
                                       setSelectedProductForOrder({
                                         id: msg.id,
