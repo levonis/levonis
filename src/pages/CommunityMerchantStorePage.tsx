@@ -263,11 +263,17 @@ export default function CommunityMerchantStorePage() {
                     <h1 className="text-2xl sm:text-3xl font-black text-white">
                       {merchantApp.display_name}
                     </h1>
+                    {merchantApp.is_verified && (
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-primary/20 border border-primary/40 text-primary text-[10px] font-bold">
+                        <CheckCircle className="h-3 w-3" />
+                        موثوق
+                      </span>
+                    )}
                     {merchantApp.badge_tier && merchantApp.badge_tier !== "none" && (
-                      <Badge variant="secondary" className="text-[10px] h-5 gap-1 bg-white/10 text-white/90 border-white/20">
+                      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-white/10 border border-white/20 text-white/90 text-[10px] font-bold">
                         <Shield className="h-3 w-3" />
-                        {merchantApp.badge_tier}
-                      </Badge>
+                        {merchantApp.badge_tier === "gold" ? "ذهبي" : merchantApp.badge_tier === "silver" ? "فضي" : merchantApp.badge_tier === "emerald" ? "زمردي" : "ماسي"}
+                      </span>
                     )}
                   </div>
                   
@@ -360,40 +366,28 @@ export default function CommunityMerchantStorePage() {
           {/* Products Grid */}
           <div className="lg:col-span-3 order-1 lg:order-2 space-y-4">
             {/* Tab Strip */}
-            <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
-              <button
-                onClick={() => setActiveTab('products')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
-                  activeTab === 'products'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Package className="h-3.5 w-3.5" />
-                المنتجات ({products.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('reels')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
-                  activeTab === 'reels'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Film className="h-3.5 w-3.5" />
-                الريلز
-              </button>
-              <button
-                onClick={() => setActiveTab('reviews')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
-                  activeTab === 'reviews'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Star className="h-3.5 w-3.5" />
-                التقييمات
-              </button>
+            <div className="flex border-b border-border">
+              {[
+                { key: 'products' as const, icon: Package, label: `المنتجات (${products.length})` },
+                { key: 'reels' as const, icon: Film, label: 'الريلز' },
+                { key: 'reviews' as const, icon: Star, label: 'التقييمات' },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 text-xs font-bold transition-all relative ${
+                    activeTab === tab.key
+                      ? 'text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <tab.icon className="h-3.5 w-3.5" />
+                  {tab.label}
+                  {activeTab === tab.key && (
+                    <span className="absolute bottom-0 left-2 right-2 h-0.5 bg-primary rounded-t-full" />
+                  )}
+                </button>
+              ))}
             </div>
 
             {/* Products Tab */}

@@ -17,58 +17,58 @@ const BADGE_TIER_LABELS: Record<BadgeTier, string> = {
 
 const tierConfig: Record<Exclude<BadgeTier, "none">, {
   icon: React.ReactNode;
-  color: string;
-  bgColor: string;
-  borderColor: string;
+  text: string;
+  bg: string;
+  border: string;
   description: string;
 }> = {
   silver: {
     icon: <Medal className="h-3 w-3" />,
-    color: "text-slate-300",
-    bgColor: "bg-slate-700/50",
-    borderColor: "border-slate-500/50",
+    text: "text-muted-foreground",
+    bg: "bg-muted/80",
+    border: "border-border",
     description: "11-50 طلب مكتمل",
   },
   gold: {
     icon: <Crown className="h-3 w-3" />,
-    color: "text-amber-400",
-    bgColor: "bg-amber-900/40",
-    borderColor: "border-amber-500/50",
+    text: "text-amber-500",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/30",
     description: "51-100 طلب مكتمل",
   },
   diamond_1: {
     icon: <Diamond className="h-3 w-3" />,
-    color: "text-sky-400",
-    bgColor: "bg-sky-900/40",
-    borderColor: "border-sky-500/50",
+    text: "text-sky-400",
+    bg: "bg-sky-500/10",
+    border: "border-sky-500/30",
     description: "100+ طلب مكتمل",
   },
   diamond_2: {
     icon: <Diamond className="h-3 w-3" />,
-    color: "text-sky-300",
-    bgColor: "bg-sky-800/50",
-    borderColor: "border-sky-400/50",
+    text: "text-blue-400",
+    bg: "bg-blue-500/10",
+    border: "border-blue-500/30",
     description: "500+ طلب شهرياً",
   },
   diamond_3: {
     icon: <Diamond className="h-3 w-3" />,
-    color: "text-indigo-400",
-    bgColor: "bg-indigo-900/40",
-    borderColor: "border-indigo-500/50",
+    text: "text-indigo-400",
+    bg: "bg-indigo-500/10",
+    border: "border-indigo-500/30",
     description: "1000+ طلب شهرياً",
   },
   diamond_4: {
     icon: <Diamond className="h-3 w-3" />,
-    color: "text-indigo-300",
-    bgColor: "bg-indigo-800/50",
-    borderColor: "border-indigo-400/50",
+    text: "text-violet-400",
+    bg: "bg-violet-500/10",
+    border: "border-violet-500/30",
     description: "2000+ طلب شهرياً",
   },
   emerald: {
     icon: <Gem className="h-3 w-3" />,
-    color: "text-emerald-400",
-    bgColor: "bg-emerald-900/40",
-    borderColor: "border-emerald-500/50",
+    text: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-primary/30",
     description: "3000+ طلب شهرياً",
   },
 };
@@ -87,12 +87,11 @@ function CompactBadgesDisplayBase({ isVerified, badgeTier, className = "" }: Com
 
   return (
     <TooltipProvider>
-      <div className={`flex items-center gap-1.5 flex-wrap ${className}`}>
-        {/* Verification Badge - Golden with border */}
+      <div className={`flex items-center gap-1 flex-wrap ${className}`}>
         {isVerified && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-900/40 border border-amber-500/50 text-amber-400 text-[10px] font-bold shadow-sm">
+              <div className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold">
                 <BadgeCheck className="h-3 w-3" />
                 موثوق
               </div>
@@ -104,11 +103,10 @@ function CompactBadgesDisplayBase({ isVerified, badgeTier, className = "" }: Com
           </Tooltip>
         )}
 
-        {/* Performance Badge - With enhanced styling */}
         {tierInfo && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border ${tierInfo.bgColor} ${tierInfo.borderColor} ${tierInfo.color} text-[10px] font-bold shadow-sm`}>
+              <div className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border ${tierInfo.bg} ${tierInfo.border} ${tierInfo.text} text-[10px] font-bold`}>
                 {badgeTier === "emerald" ? (
                   <span className="relative">
                     <Sparkles className="h-2 w-2 absolute -top-0.5 -right-0.5 animate-pulse" />

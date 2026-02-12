@@ -2805,6 +2805,41 @@ export type Database = {
           },
         ]
       }
+      merchant_rating_replies: {
+        Row: {
+          created_at: string
+          id: string
+          merchant_id: string
+          rating_id: string
+          reply_text: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          merchant_id: string
+          rating_id: string
+          reply_text: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          merchant_id?: string
+          rating_id?: string
+          reply_text?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_rating_replies_rating_id_fkey"
+            columns: ["rating_id"]
+            isOneToOne: true
+            referencedRelation: "merchant_ratings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       merchant_ratings: {
         Row: {
           created_at: string
