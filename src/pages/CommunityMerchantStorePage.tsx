@@ -52,7 +52,7 @@ export default function CommunityMerchantStorePage() {
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<'products' | 'reels'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'reels' | 'reviews'>('products');
 
   // Check if current user owns this store
   const { data: isOwner } = useQuery({
@@ -300,11 +300,6 @@ export default function CommunityMerchantStorePage() {
                   </Badge>
                   
                   <Badge variant="secondary" className="text-xs h-7 gap-1.5 bg-white/10 text-white/90 border-white/20">
-                    <ShoppingBag className="h-3.5 w-3.5 text-emerald-400" />
-                    {storeStats?.totalOrders || 0} طلب مكتمل
-                  </Badge>
-                  
-                  <Badge variant="secondary" className="text-xs h-7 gap-1.5 bg-white/10 text-white/90 border-white/20">
                     <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
                     {storeStats?.avgRating?.toFixed(1) || "0"} ({storeStats?.totalRatings || 0})
                   </Badge>
@@ -360,19 +355,6 @@ export default function CommunityMerchantStorePage() {
           <div className="lg:col-span-1 order-2 lg:order-1 space-y-3">
             {/* Printer Models Card */}
             <PrinterModelsCard merchantId={merchantId!} />
-            
-            {/* Ratings Card */}
-            <Card className="rounded-xl overflow-hidden border-border/50 bg-gradient-to-br from-[hsl(160_52%_16%)] to-[hsl(160_48%_12%)]">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-1.5 rounded-lg bg-amber-500/20">
-                    <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-                  </div>
-                  <span className="text-sm font-bold text-white">التقييمات</span>
-                </div>
-                <RatingsPreview merchantId={merchantId!} />
-              </CardContent>
-            </Card>
           </div>
 
           {/* Products Grid */}
@@ -400,6 +382,17 @@ export default function CommunityMerchantStorePage() {
               >
                 <Film className="h-3.5 w-3.5" />
                 الريلز
+              </button>
+              <button
+                onClick={() => setActiveTab('reviews')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
+                  activeTab === 'reviews'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Star className="h-3.5 w-3.5" />
+                التقييمات
               </button>
             </div>
 
@@ -480,6 +473,15 @@ export default function CommunityMerchantStorePage() {
             {/* Reels Tab */}
             {activeTab === 'reels' && merchantId && (
               <MerchantReelsSection merchantId={merchantId} />
+            )}
+
+            {/* Reviews Tab */}
+            {activeTab === 'reviews' && merchantId && (
+              <Card className="rounded-xl overflow-hidden border-border/50">
+                <CardContent className="p-4">
+                  <RatingsPreview merchantId={merchantId} />
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
