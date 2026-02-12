@@ -164,8 +164,8 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
         </div>
       </div>
 
-      {/* Bottom content - shifted more to the left */}
-      <div className="absolute bottom-0 left-0 right-16 p-4 z-20">
+      {/* Bottom content */}
+      <div className="absolute bottom-0 left-0 right-20 p-4 z-20" dir="rtl">
         {/* Merchant info */}
         <div
           className="flex items-center gap-2 mb-3 cursor-pointer"

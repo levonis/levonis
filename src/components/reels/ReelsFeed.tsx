@@ -43,7 +43,8 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
 
   const handleProductClick = useCallback((productId: string) => {
     onClose();
-    navigate(`/community?tab=products`);
+    // Navigate to community with product modal trigger
+    navigate(`/community?tab=products&product=${productId}`);
   }, [navigate, onClose]);
 
   const handleMerchantClick = useCallback((merchantId: string) => {
