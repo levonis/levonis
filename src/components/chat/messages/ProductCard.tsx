@@ -16,6 +16,7 @@ interface ProductCardProps {
   userRole?: ChatRole;
   onCreateOrder?: () => void;
   onEditOrder?: () => void;
+  onProductClick?: (productId: string) => void;
 }
 
 export default function ProductCard({
@@ -30,15 +31,19 @@ export default function ProductCard({
   userRole = 'customer',
   onCreateOrder,
   onEditOrder,
+  onProductClick,
 }: ProductCardProps) {
   const isSeller = userRole === 'seller';
   const isCustomer = userRole === 'customer';
 
   return (
     <div className={cn("flex my-1.5", isMe ? "justify-start" : "justify-end")}>
-      <div className={cn(
-        "w-[200px] rounded-xl overflow-hidden shadow-md border bg-card"
-      )}>
+      <div
+        className={cn(
+          "w-[200px] rounded-xl overflow-hidden shadow-md border bg-card cursor-pointer"
+        )}
+        onClick={() => onProductClick?.(productId)}
+      >
         {/* Compact Header */}
         <div className="flex items-center gap-1 px-2 py-1 bg-primary/10 border-b">
           <Package className="h-3 w-3 text-primary" />

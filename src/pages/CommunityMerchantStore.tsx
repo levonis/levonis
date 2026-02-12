@@ -1,5 +1,6 @@
 import { useState } from "react";
 import MerchantReelUpload from "@/components/reels/MerchantReelUpload";
+import MerchantReelsSection from "@/components/merchant/MerchantReelsSection";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -446,6 +447,9 @@ export default function CommunityMerchantStore() {
             </div>
           )}
         </div>
+
+        {/* Merchant Reels Section */}
+        {merchantApp?.id && <MerchantReelsSection merchantId={merchantApp.id} />}
       </main>
 
       {/* Product Dialog */}
