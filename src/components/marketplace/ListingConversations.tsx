@@ -33,6 +33,8 @@ import {
   AlertOctagon,
   Hash,
   Headphones,
+  Search,
+  ShoppingCart,
 } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -48,6 +50,7 @@ import {
 // Chat Commerce Components - Taobao Style
 import ChatTopBar from '@/components/chat/ChatTopBar';
 import ChatSupportTopBar from '@/components/chat/ChatSupportTopBar';
+import AdminChatTopBar from '@/components/chat/AdminChatTopBar';
 import ChatInputBar from '@/components/chat/ChatInputBar';
 import SystemMessage from '@/components/chat/messages/SystemMessage';
 import TextMessage from '@/components/chat/messages/TextMessage';
@@ -126,12 +129,19 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     price?: number;
     image?: string;
   } | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  
-  // Entry context state - shows product/request bar above input
-  const [entryContext, setEntryContext] = useState<EntryContextData | null>(propsEntryContext || null);
+   const messagesEndRef = useRef<HTMLDivElement>(null);
+   const fileInputRef = useRef<HTMLInputElement>(null);
+   const inputRef = useRef<HTMLInputElement>(null);
+   
+   // Admin search state
+   const [adminSearchTerm, setAdminSearchTerm] = useState('');
+   
+   // Admin cart edit state
+   const [adminCartEditOpen, setAdminCartEditOpen] = useState(false);
+   const [adminCartRequest, setAdminCartRequest] = useState<any>(null);
+   
+   // Entry context state - shows product/request bar above input
+   const [entryContext, setEntryContext] = useState<EntryContextData | null>(propsEntryContext || null);
   
   // Sync entry context from props
   useEffect(() => {
@@ -744,12 +754,27 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
               : 'flex w-full'
           )}>
             {/* Header */}
-            <div className="p-3 border-b bg-muted/30 flex items-center justify-between flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-primary" />
-                <h2 className="font-bold text-sm">المحادثات</h2>
-              </div>
-            </div>
+             <div className="p-3 border-b bg-muted/30 flex items-center justify-between flex-shrink-0">
+               <div className="flex items-center gap-2">
+                 <MessageSquare className="w-5 h-5 text-primary" />
+                 <h2 className="font-bold text-sm">المحادثات</h2>
+               </div>
+             </div>
+             
+             {/* Admin Search Bar */}
+             {user?.id === SUPPORT_USER_ID && (
+               <div className="p-2 border-b bg-muted/10">
+                 <div className="relative">
+                   <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                   <Input
+                     placeholder="بحث بالاسم أو المعرف..."
+                     value={adminSearchTerm}
+                     onChange={(e) => setAdminSearchTerm(e.target.value)}
+                     className="h-8 pr-8 text-xs"
+                   />
+                 </div>
+               </div>
+             )}
 
             {/* Conversations List */}
             <div className="flex-1 overflow-y-auto">
@@ -798,12 +823,18 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     const sortedConvs = uniqueConversations
                       .filter(c => {
                         if (isCurrentUserSupport) {
-                          // Admin view: show conversations where they (support) are seller or buyer
-                          // But filter out conversations with themselves
                           const otherUserId = c.buyer_id === user?.id ? c.seller_id : c.buyer_id;
-                          return otherUserId !== SUPPORT_USER_ID;
+                          if (otherUserId === SUPPORT_USER_ID) return false;
+                          // Apply admin search filter
+                          if (adminSearchTerm.trim()) {
+                            const otherProfile = profiles?.[otherUserId];
+                            const searchLower = adminSearchTerm.toLowerCase();
+                            const name = (otherProfile?.display_name || otherProfile?.full_name || otherProfile?.username || '').toLowerCase();
+                            const code = ((c as any).conversation_code || '').toLowerCase();
+                            return name.includes(searchLower) || code.includes(searchLower) || otherUserId.includes(searchLower);
+                          }
+                          return true;
                         } else {
-                          // Regular user view: hide support conversations (shown separately above)
                           return c.buyer_id !== SUPPORT_USER_ID && c.seller_id !== SUPPORT_USER_ID;
                         }
                       })
@@ -1009,14 +1040,66 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           >
           {selectedConversation ? (
               <>
-                {/* Chat Top Bar - Use Support bar for support conversation */}
+                {/* Chat Top Bar - Use Admin bar for support account, Support bar for support chat, regular for others */}
                 {(() => {
                   const isSupportChat = otherUserId === SUPPORT_USER_ID;
+                  const isCurrentUserSupport = user?.id === SUPPORT_USER_ID;
                   
                   if (isSupportChat) {
                     return (
                       <ChatSupportTopBar
                         onBack={() => setSelectedConversation(null)}
+                      />
+                    );
+                  }
+                  
+                  // Admin view: show AdminChatTopBar with quick actions
+                  if (isCurrentUserSupport) {
+                    return (
+                      <AdminChatTopBar
+                        userName={otherUser?.display_name || otherUser?.full_name || otherUser?.username || 'مستخدم'}
+                        usersId={otherUserId || ''}
+                        userImage={otherUser?.avatar_url}
+                        userFrameUrl={(otherUser as any)?.selected_frame_url}
+                        status={selectedConv?.status as 'open' | 'disputed' | 'resolved' | undefined}
+                        onBack={() => setSelectedConversation(null)}
+                        onBanUser={(reason) => {
+                          if (otherUserId) {
+                            banUserMutation.mutate({ userId: otherUserId, reason, isBan: true });
+                          }
+                        }}
+                        onUnbanUser={() => {
+                          if (otherUserId) {
+                            banUserMutation.mutate({ userId: otherUserId, reason: 'رفع الحظر', isBan: false });
+                          }
+                        }}
+                        onWarnUser={(reason) => {
+                          if (otherUserId) {
+                            banUserMutation.mutate({ userId: otherUserId, reason, isBan: false });
+                          }
+                        }}
+                        onResolveDispute={(resolution) => {
+                          // Add resolution message and resolve
+                          if (selectedConversation && user) {
+                            supabase.from('listing_conversations')
+                              .update({ status: 'resolved' })
+                              .eq('id', selectedConversation)
+                              .then(() => {
+                                supabase.from('listing_messages').insert({
+                                  conversation_id: selectedConversation,
+                                  sender_id: user.id,
+                                  content: `✅ تم حل النزاع: ${resolution}`,
+                                }).then(() => {
+                                  queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+                                  queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+                                  toast.success('تم حل النزاع');
+                                });
+                              });
+                          }
+                        }}
+                        onCloseDispute={() => {
+                          cancelDisputeMutation.mutate();
+                        }}
                       />
                     );
                   }
@@ -1073,6 +1156,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                                      msg.content?.startsWith('🛡️') ||
                                                      msg.content?.startsWith('🚫') ||
                                                      msg.content?.startsWith('🔔');
+                              
+                              // Check if it's a cart code message for admin
+                              const cartCodeMatch = msg.content?.match(/رمز السلة:\s*(CART-[A-Z0-9]+)/);
+                              const isCartMessage = !!cartCodeMatch && user?.id === SUPPORT_USER_ID;
                               
                               // Check if it's a product message (starts with 📦)
                               const isProductMessage = msg.content?.startsWith('📦');
@@ -1294,6 +1381,38 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                             : <img key={idx} src={item.src} alt={item.alt} className="inline-block w-5 h-5 align-text-bottom mx-0.5" loading="lazy" />
                                         )}
                                       </p>
+                                    )}
+                                    
+                                    {/* Admin Cart Edit Button */}
+                                    {isCartMessage && (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="mt-2 h-7 text-xs gap-1 bg-primary/10 hover:bg-primary/20 border-primary/30"
+                                        onClick={async () => {
+                                          const code = cartCodeMatch[1];
+                                          const { data } = await supabase
+                                            .from('cart_requests')
+                                            .select('*')
+                                            .eq('cart_code', code)
+                                            .maybeSingle();
+                                          if (data) {
+                                            // Fetch user profile
+                                            const { data: profile } = await supabase
+                                              .from('profiles')
+                                              .select('id, full_name, username, avatar_url')
+                                              .eq('id', data.user_id)
+                                              .single();
+                                            setAdminCartRequest({ ...data, user: profile });
+                                            setAdminCartEditOpen(true);
+                                          } else {
+                                            toast.error('لم يتم العثور على السلة');
+                                          }
+                                        }}
+                                      >
+                                        <ShoppingCart className="h-3 w-3" />
+                                        تعديل السلة
+                                      </Button>
                                     )}
                                     
                                     {/* Time & Status */}
@@ -1587,6 +1706,127 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
             )}
           </div>
         </div>
+        
+        {/* Admin Cart Edit Dialog */}
+        {adminCartEditOpen && adminCartRequest && (
+          <Dialog open={adminCartEditOpen} onOpenChange={setAdminCartEditOpen}>
+            <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto z-[60]" dir="rtl">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <ShoppingCart className="h-5 w-5 text-primary" />
+                  <h3 className="font-bold">تعديل سلة: {adminCartRequest.cart_code}</h3>
+                </div>
+                
+                {/* User info */}
+                <div className="p-3 bg-muted/50 rounded-lg flex items-center gap-3">
+                  <img
+                    src={adminCartRequest.user?.avatar_url || '/placeholder.svg'}
+                    alt=""
+                    className="h-8 w-8 rounded-full object-cover"
+                  />
+                  <span className="text-sm font-medium">{adminCartRequest.user?.full_name || 'مستخدم'}</span>
+                  <Badge variant="outline" className="mr-auto text-xs">
+                    {adminCartRequest.status === 'pending' ? 'قيد المراجعة' : adminCartRequest.status === 'adjusted' ? 'تم التعديل' : adminCartRequest.status}
+                  </Badge>
+                </div>
+
+                {/* Original price */}
+                <div className="p-3 bg-muted/50 rounded-lg">
+                  <p className="text-xs text-muted-foreground">السعر الأصلي</p>
+                  <p className="text-lg font-bold">{adminCartRequest.original_total?.toLocaleString()} د.ع</p>
+                </div>
+
+                {/* Cart items */}
+                {adminCartRequest.cart_items?.length > 0 && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs font-medium text-muted-foreground">المنتجات ({adminCartRequest.cart_items.length})</p>
+                    {adminCartRequest.cart_items.map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg text-xs">
+                        {item.image_url && <img src={item.image_url} alt="" className="h-8 w-8 rounded object-cover" />}
+                        <span className="flex-1 truncate">{item.product_name}</span>
+                        <span>×{item.quantity}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Editable price */}
+                <div>
+                  <label className="text-sm font-medium mb-1 block">السعر الجديد (د.ع)</label>
+                  <Input
+                    type="number"
+                    defaultValue={adminCartRequest.adjusted_total || adminCartRequest.original_total}
+                    id="admin-cart-price"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-1 block">ملاحظات الإدارة</label>
+                  <Input
+                    placeholder="ملاحظات..."
+                    defaultValue={(() => {
+                      try { return JSON.parse(adminCartRequest.admin_notes || '{}').notes || adminCartRequest.admin_notes || ''; } catch { return adminCartRequest.admin_notes || ''; }
+                    })()}
+                    id="admin-cart-notes"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1 gap-1"
+                    onClick={async () => {
+                      const priceEl = document.getElementById('admin-cart-price') as HTMLInputElement;
+                      const notesEl = document.getElementById('admin-cart-notes') as HTMLInputElement;
+                      const price = parseFloat(priceEl?.value || '0');
+                      if (isNaN(price) || price <= 0) {
+                        toast.error('أدخل سعراً صحيحاً');
+                        return;
+                      }
+                      const { error } = await supabase
+                        .from('cart_requests')
+                        .update({
+                          adjusted_total: price,
+                          admin_notes: notesEl?.value || null,
+                          status: 'adjusted',
+                          updated_at: new Date().toISOString(),
+                        })
+                        .eq('id', adminCartRequest.id);
+                      if (error) {
+                        toast.error('فشل تحديث السعر');
+                        return;
+                      }
+                      // Notify user
+                      await supabase.from('notifications').insert({
+                        user_id: adminCartRequest.user_id,
+                        title: 'تم تعديل سعر السلة',
+                        message: `تم تعديل سعر السلة (${adminCartRequest.cart_code}) إلى ${price.toLocaleString()} د.ع`,
+                        type: 'info',
+                      });
+                      // Send message in chat
+                      if (selectedConversation && user) {
+                        await supabase.from('listing_messages').insert({
+                          conversation_id: selectedConversation,
+                          sender_id: user.id,
+                          content: `✅ تم تعديل سعر السلة (${adminCartRequest.cart_code})\n💰 السعر الجديد: ${price.toLocaleString()} د.ع${notesEl?.value ? `\n📝 ${notesEl.value}` : ''}`,
+                        });
+                        queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
+                      }
+                      toast.success('تم تحديث السعر بنجاح');
+                      setAdminCartEditOpen(false);
+                      setAdminCartRequest(null);
+                    }}
+                  >
+                    <Check className="h-4 w-4" />
+                    حفظ التعديل
+                  </Button>
+                  <Button variant="outline" onClick={() => setAdminCartEditOpen(false)}>
+                    إلغاء
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </DialogContent>
     </Dialog>
   );
