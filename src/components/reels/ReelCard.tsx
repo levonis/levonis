@@ -126,15 +126,15 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
 
       {/* Top badge - Sponsored */}
       {reel.is_sponsored && (
-        <div className="absolute top-4 right-4 z-20">
+        <div className="absolute top-4 left-4 z-20">
           <span className="px-2 py-1 rounded-full bg-primary/90 text-primary-foreground text-[10px] font-bold">
             إعلان مُموّل
           </span>
         </div>
       )}
 
-      {/* Right side actions */}
-      <div className="absolute right-3 bottom-44 flex flex-col items-center gap-5 z-20">
+      {/* Left side actions (RTL layout) */}
+      <div className="absolute left-3 bottom-44 flex flex-col items-center gap-5 z-20">
         <button onClick={() => onToggleInteraction(reel.id, 'like')} className="flex flex-col items-center gap-1">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center ${reel.isLiked ? 'bg-red-500/20' : 'bg-white/10'} backdrop-blur-sm`}>
             <Heart className={`w-5 h-5 ${reel.isLiked ? 'fill-red-500 text-red-500' : 'text-white'}`} />
@@ -165,7 +165,7 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
       </div>
 
       {/* Bottom content */}
-      <div className="absolute bottom-0 left-0 right-14 p-4 z-20" dir="rtl">
+      <div className="absolute bottom-0 right-0 left-14 p-4 z-20" dir="rtl">
         {/* Merchant info */}
         <div
           className="flex items-center gap-2 mb-3 cursor-pointer"
@@ -218,7 +218,7 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
       {/* Mute toggle */}
       <button
         onClick={onToggleMute}
-        className="absolute top-4 left-4 z-20 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+        className="absolute top-4 right-4 z-20 w-9 h-9 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
       >
         {isMuted ? <VolumeX className="w-4 h-4 text-white" /> : <Volume2 className="w-4 h-4 text-white" />}
       </button>

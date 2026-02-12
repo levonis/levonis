@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Store, Star, Package, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, 
-  Users, Shield, CheckCircle, ArrowRight, MessageCircle, Droplets, Layers, Settings
+  Users, Shield, CheckCircle, ArrowRight, MessageCircle, Droplets, Layers, Settings, Film
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,6 +52,7 @@ export default function CommunityMerchantStorePage() {
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeTab, setActiveTab] = useState<'products' | 'reels'>('products');
 
   // Check if current user owns this store
   const { data: isOwner } = useQuery({
@@ -376,82 +377,111 @@ export default function CommunityMerchantStorePage() {
 
           {/* Products Grid */}
           <div className="lg:col-span-3 order-1 lg:order-2 space-y-4">
-            {products.length === 0 ? (
-              <Card className="p-8 rounded-xl text-center border-border/50">
-                <Sparkles className="h-10 w-10 text-muted-foreground/20 mx-auto mb-3" />
-                <p className="font-medium">لا توجد منتجات</p>
-                <p className="text-xs text-muted-foreground">سيتم عرضها بمجرد إضافتها</p>
-              </Card>
-            ) : (
-              <>
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="text-sm font-bold text-foreground">المنتجات</h2>
-                  <span className="text-xs text-muted-foreground">{products.length} منتج</span>
-                </div>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
-                  {paginatedProducts.map((product) => (
-                    <CompactProductCard
-                      key={product.id}
-                      product={product}
-                      onView={() => handleOpenDetail(product)}
-                    />
-                  ))}
-                </div>
+            {/* Tab Strip */}
+            <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
+              <button
+                onClick={() => setActiveTab('products')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
+                  activeTab === 'products'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Package className="h-3.5 w-3.5" />
+                المنتجات ({products.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('reels')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-xs font-bold transition-colors ${
+                  activeTab === 'reels'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Film className="h-3.5 w-3.5" />
+                الريلز
+              </button>
+            </div>
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-2 pt-4">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 w-8 p-0"
-                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                    <div className="flex items-center gap-1">
-                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                        let page: number;
-                        if (totalPages <= 5) {
-                          page = i + 1;
-                        } else if (currentPage <= 3) {
-                          page = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          page = totalPages - 4 + i;
-                        } else {
-                          page = currentPage - 2 + i;
-                        }
-                        return (
-                          <Button
-                            key={page}
-                            size="sm"
-                            variant={currentPage === page ? "default" : "ghost"}
-                            className="h-8 w-8 p-0 text-xs"
-                            onClick={() => setCurrentPage(page)}
-                          >
-                            {page}
-                          </Button>
-                        );
-                      })}
+            {/* Products Tab */}
+            {activeTab === 'products' && (
+              <>
+                {products.length === 0 ? (
+                  <Card className="p-8 rounded-xl text-center border-border/50">
+                    <Sparkles className="h-10 w-10 text-muted-foreground/20 mx-auto mb-3" />
+                    <p className="font-medium">لا توجد منتجات</p>
+                    <p className="text-xs text-muted-foreground">سيتم عرضها بمجرد إضافتها</p>
+                  </Card>
+                ) : (
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                      {paginatedProducts.map((product) => (
+                        <CompactProductCard
+                          key={product.id}
+                          product={product}
+                          onView={() => handleOpenDetail(product)}
+                        />
+                      ))}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-8 w-8 p-0"
-                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                  </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-center gap-2 pt-4">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                            let page: number;
+                            if (totalPages <= 5) {
+                              page = i + 1;
+                            } else if (currentPage <= 3) {
+                              page = i + 1;
+                            } else if (currentPage >= totalPages - 2) {
+                              page = totalPages - 4 + i;
+                            } else {
+                              page = currentPage - 2 + i;
+                            }
+                            return (
+                              <Button
+                                key={page}
+                                size="sm"
+                                variant={currentPage === page ? "default" : "ghost"}
+                                className="h-8 w-8 p-0 text-xs"
+                                onClick={() => setCurrentPage(page)}
+                              >
+                                {page}
+                              </Button>
+                            );
+                          })}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 w-8 p-0"
+                          onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </>
                 )}
               </>
             )}
+
+            {/* Reels Tab */}
+            {activeTab === 'reels' && merchantId && (
+              <MerchantReelsSection merchantId={merchantId} />
+            )}
           </div>
-          {/* Merchant Reels */}
-          {merchantId && <MerchantReelsSection merchantId={merchantId} />}
         </div>
       </main>
 

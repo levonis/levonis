@@ -1220,9 +1220,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     isMe={isMe}
                                     timestamp={timestamp}
                                     userRole={chatCommerce.userRole}
-                                    onProductClick={(pId) => {
-                                      if (otherUserId) {
-                                        navigate(`/store/${otherUserId}?product=${pId}`);
+                                    onProductClick={() => {
+                                      const merchantAppId = selectedConv?.listing_id;
+                                      if (merchantAppId) {
+                                        navigate(`/store/${merchantAppId}`);
                                       }
                                     }}
                                     onCreateOrder={() => {

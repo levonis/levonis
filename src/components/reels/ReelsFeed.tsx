@@ -42,21 +42,18 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
   }, [toggleInteraction]);
 
   const handleProductClick = useCallback((productId: string) => {
-    // Find the merchant ID for this product's reel
     const reel = reels.find(r => r.product?.id === productId);
     const merchantId = reel?.merchant?.id;
-    onClose();
     if (merchantId) {
       navigate(`/store/${merchantId}?product=${productId}`);
     } else {
       navigate(`/community?tab=products`);
     }
-  }, [navigate, onClose, reels]);
+  }, [navigate, reels]);
 
   const handleMerchantClick = useCallback((merchantId: string) => {
-    onClose();
     navigate(`/store/${merchantId}`);
-  }, [navigate, onClose]);
+  }, [navigate]);
 
   const toggleMute = useCallback(() => {
     setIsMuted(prev => !prev);
@@ -86,7 +83,7 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
     <div className="fixed inset-0 z-[100] bg-black">
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors"
+        className="absolute top-4 left-4 z-50 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors"
       >
         <X className="w-5 h-5 text-white" />
       </button>
