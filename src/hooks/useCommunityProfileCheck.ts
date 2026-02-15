@@ -25,14 +25,25 @@ export function useCommunityProfileCheck() {
     queryFn: async () => {
       if (!user?.id) return { isComplete: false, isEmailVerified: false };
       
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("full_name, phone_number, username, birth_date, gender, avatar_url, email_verified, created_at")
-        .eq("id", user.id)
-        .maybeSingle();
+      // Check both profile fields AND community_customer_profiles existence
+      const [profileRes, communityRes] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("full_name, phone_number, username, birth_date, gender, avatar_url, email_verified, created_at")
+          .eq("id", user.id)
+          .maybeSingle(),
+        supabase
+          .from("community_customer_profiles")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
       
-      if (error) throw error;
+      if (profileRes.error) throw profileRes.error;
+      const profile = profileRes.data;
       if (!profile) return { isComplete: false, isEmailVerified: false };
+      
+      const hasCommunityProfile = !!communityRes.data;
       
       // Check all required fields for community access
       const hasBasicFields = Boolean(
@@ -51,8 +62,8 @@ export function useCommunityProfileCheck() {
       // Email verification is now required
       const isEmailVerified = profile.email_verified === true;
 
-      // Profile is complete when ALL fields are filled AND email is verified
-      const isComplete = hasBasicFields && hasExtendedFields && hasValidAvatar && isEmailVerified;
+      // Profile is complete when ALL fields are filled AND email is verified AND community profile exists
+      const isComplete = hasBasicFields && hasExtendedFields && hasValidAvatar && isEmailVerified && hasCommunityProfile;
       
       console.log("[CommunityProfileCheck]", {
         userId: user.id,
@@ -60,8 +71,8 @@ export function useCommunityProfileCheck() {
         hasExtendedFields,
         hasValidAvatar,
         isEmailVerified,
+        hasCommunityProfile,
         isComplete,
-        avatar_url: profile.avatar_url?.substring(0, 50),
       });
       
       return { 
@@ -71,6 +82,7 @@ export function useCommunityProfileCheck() {
         hasExtendedFields,
         hasValidAvatar,
         isEmailVerified,
+        hasCommunityProfile,
       };
     },
     enabled: !!user?.id && !authLoading,
