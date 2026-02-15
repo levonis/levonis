@@ -1,11 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
 import { useAutoFetchUntil } from "@/components/community/hub/useAutoFetchUntil";
+import { useInfiniteScrollSentinel } from "@/components/community/hub/useInfiniteScrollSentinel";
 import CommunityProductCard from "@/components/community/CommunityProductCard";
 import CommunityProductDetailModal from "@/components/community/CommunityProductDetailModal";
 
@@ -40,6 +42,7 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
   const [targetCount, setTargetCount] = useState(initialTarget);
   const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const query = useInfiniteQuery({
     queryKey: ["community-products", { mode, sortBy }],
@@ -80,7 +83,14 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
     staleTime: mode === "hub" ? 60_000 : 5 * 60_000,
   });
 
-  const loaded = useMemo(() => (query.data?.pages || []).flat(), [query.data]);
+  const loaded = useMemo(() => {
+    const seen = new Set<string>();
+    return (query.data?.pages || []).flat().filter(p => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
+  }, [query.data]);
   const merchantIds = useMemo(() => [...new Set(loaded.map(p => p.merchant_id))], [loaded]);
 
   // Fetch merchant profiles with frames
@@ -170,6 +180,13 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
     delayMs: 120,
   });
 
+  // Infinite scroll sentinel for hub mode
+  useInfiniteScrollSentinel({
+    enabled: mode === "hub" && !!query.hasNextPage && !query.isFetchingNextPage,
+    sentinelRef: sentinelRef as React.RefObject<HTMLElement>,
+    onIntersect: () => setTargetCount((c) => c + 25),
+  });
+
   const handleProductClick = (product: ProductRow) => {
     setSelectedProduct(product);
     setDetailOpen(true);
@@ -217,17 +234,19 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
         })}
       </div>
 
+      {/* Infinite scroll sentinel */}
       {mode === "hub" && (
-        <div className="flex items-center justify-center">
-          <Button
-            variant="outline"
-            className="h-10"
-            disabled={query.isFetchingNextPage || !query.hasNextPage}
-            onClick={() => setTargetCount((c) => c + 25)}
-          >
-            {query.hasNextPage ? "إظهار المزيد (+25)" : "لا يوجد المزيد"}
-          </Button>
-        </div>
+        <>
+          <div ref={sentinelRef} className="h-1" />
+          {query.isFetchingNextPage && (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          )}
+          {!query.hasNextPage && items.length > 0 && (
+            <p className="text-center text-xs text-muted-foreground py-3">لا يوجد المزيد</p>
+          )}
+        </>
       )}
 
       {/* Product Detail Modal */}

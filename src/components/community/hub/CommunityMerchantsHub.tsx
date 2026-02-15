@@ -1,11 +1,14 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Search, Loader2 } from "lucide-react";
 import { useAutoFetchUntil } from "@/components/community/hub/useAutoFetchUntil";
+import { useInfiniteScrollSentinel } from "@/components/community/hub/useInfiniteScrollSentinel";
 import MerchantDirectoryCard from "@/components/community/MerchantDirectoryCard";
 import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
@@ -41,6 +44,8 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
   const chunkSize = mode === "hub" ? 5 : 10;
   const initialTarget = mode === "hub" ? 25 : 10;
   const [targetCount, setTargetCount] = useState(initialTarget);
+  const [localSearch, setLocalSearch] = useState("");
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const query = useInfiniteQuery({
     queryKey: ["community-merchants", { mode, sortBy }],
@@ -74,7 +79,14 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
     staleTime: mode === "hub" ? 60_000 : 5 * 60_000,
   });
 
-  const loaded = useMemo(() => (query.data?.pages || []).flat(), [query.data]);
+  const loaded = useMemo(() => {
+    const seen = new Set<string>();
+    return (query.data?.pages || []).flat().filter(m => {
+      if (seen.has(m.id)) return false;
+      seen.add(m.id);
+      return true;
+    });
+  }, [query.data]);
 
   const merchantIds = useMemo(() => loaded.map((m) => m.id), [loaded]);
   const frameIds = useMemo(() => 
@@ -153,10 +165,10 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
   const items = useMemo(() => {
     let filtered = loaded;
     
-    // Apply search filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      filtered = filtered.filter((m) => m.display_name.toLowerCase().includes(q));
+    // Apply search filter (global + local)
+    const combinedSearch = (searchQuery || localSearch).trim().toLowerCase();
+    if (combinedSearch) {
+      filtered = filtered.filter((m) => m.display_name.toLowerCase().includes(combinedSearch));
     }
 
     if (mode !== "preview") return filtered;
@@ -167,7 +179,7 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled.slice(0, 10);
-  }, [loaded, mode, searchQuery]);
+  }, [loaded, mode, searchQuery, localSearch]);
 
   useAutoFetchUntil({
     count: loaded.length,
@@ -176,6 +188,13 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
     isFetchingNextPage: query.isFetchingNextPage,
     fetchNextPage: () => query.fetchNextPage(),
     delayMs: 140,
+  });
+
+  // Infinite scroll sentinel for hub mode
+  useInfiniteScrollSentinel({
+    enabled: mode === "hub" && !!query.hasNextPage && !query.isFetchingNextPage,
+    sentinelRef: sentinelRef as React.RefObject<HTMLElement>,
+    onIntersect: () => setTargetCount((c) => c + 25),
   });
 
   if (query.isLoading) {
@@ -200,6 +219,19 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
 
   return (
     <div className="space-y-3">
+      {/* Local search for merchants */}
+      {mode === "hub" && (
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            value={localSearch}
+            onChange={(e) => setLocalSearch(e.target.value)}
+            placeholder="ابحث عن تاجر..."
+            className="pr-9 h-9 text-xs rounded-xl"
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {items.map((m) => (
           <MerchantDirectoryCard
@@ -219,17 +251,19 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
         ))}
       </div>
 
+      {/* Infinite scroll sentinel */}
       {mode === "hub" && (
-        <div className="flex items-center justify-center pt-2">
-          <Button
-            variant="outline"
-            className="h-10"
-            disabled={query.isFetchingNextPage || !query.hasNextPage}
-            onClick={() => setTargetCount((c) => c + 25)}
-          >
-            {query.hasNextPage ? "إظهار المزيد (+25)" : "لا يوجد المزيد"}
-          </Button>
-        </div>
+        <>
+          <div ref={sentinelRef} className="h-1" />
+          {query.isFetchingNextPage && (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          )}
+          {!query.hasNextPage && items.length > 0 && (
+            <p className="text-center text-xs text-muted-foreground py-3">لا يوجد المزيد</p>
+          )}
+        </>
       )}
     </div>
   );
