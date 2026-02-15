@@ -330,13 +330,17 @@ export default function AdminStories() {
                     <img src={sectionForm.thumbnail_url} alt="" className="w-full h-full object-cover" />
                   </div>
                 )}
-                <Input value={sectionForm.thumbnail_url} onChange={(e) => setSectionForm((p) => ({ ...p, thumbnail_url: e.target.value }))} placeholder="رابط الصورة" className="flex-1" />
-                <label className="cursor-pointer">
+                <label className="cursor-pointer flex-1">
                   <input type="file" accept="image/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleUploadThumbnail(e.target.files[0]); }} />
-                  <div className="h-10 w-10 rounded-md border border-input flex items-center justify-center hover:bg-accent">
-                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  <div className="h-10 rounded-md border border-dashed border-input flex items-center justify-center gap-2 hover:bg-accent text-sm text-muted-foreground">
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Upload className="h-4 w-4" /> رفع صورة</>}
                   </div>
                 </label>
+                {sectionForm.thumbnail_url && (
+                  <Button variant="ghost" size="icon" className="h-10 w-10" onClick={() => setSectionForm(p => ({ ...p, thumbnail_url: '' }))}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
@@ -369,13 +373,12 @@ export default function AdminStories() {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>رابط الفيديو</Label>
-              <div className="flex gap-2 mt-1">
-                <Input value={videoForm.video_url} onChange={(e) => setVideoForm((p) => ({ ...p, video_url: e.target.value }))} placeholder="رابط الفيديو" className="flex-1" />
+              <Label>رفع الفيديو</Label>
+              <div className="mt-1">
                 <label className="cursor-pointer">
                   <input type="file" accept="video/*" className="hidden" onChange={(e) => { if (e.target.files?.[0]) handleUploadVideo(e.target.files[0]); }} />
-                  <div className="h-10 w-10 rounded-md border border-input flex items-center justify-center hover:bg-accent">
-                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  <div className="h-12 rounded-md border border-dashed border-input flex items-center justify-center gap-2 hover:bg-accent text-sm text-muted-foreground">
+                    {uploading ? <><Loader2 className="h-4 w-4 animate-spin" /> جاري الرفع...</> : <><Upload className="h-4 w-4" /> اختر ملف فيديو</>}
                   </div>
                 </label>
               </div>

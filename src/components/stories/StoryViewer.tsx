@@ -149,7 +149,7 @@ export default function StoryViewer({ sections, initialSectionIndex, onClose }: 
   }
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center">
+    <div className="fixed inset-0 z-[200] bg-black flex items-center justify-center" dir="ltr">
       {/* Video container - 9:16 locked */}
       <div
         className="relative w-full h-full max-w-[calc(100dvh*9/16)] bg-black"
@@ -160,7 +160,7 @@ export default function StoryViewer({ sections, initialSectionIndex, onClose }: 
         onMouseLeave={handlePauseEnd}
       >
         {/* Progress bars */}
-        <div className="absolute top-0 left-0 right-0 z-50 flex gap-1 px-3 pt-3">
+        <div className="absolute top-0 left-0 right-0 z-50 flex gap-1 px-3 pt-3" style={{ direction: 'ltr' }}>
           {currentVideos.map((v, i) => (
             <div key={v.id} className="flex-1 h-[3px] rounded-full bg-white/30 overflow-hidden">
               <div
@@ -174,7 +174,7 @@ export default function StoryViewer({ sections, initialSectionIndex, onClose }: 
         </div>
 
         {/* Header */}
-        <div className="absolute top-6 left-0 right-0 z-50 flex items-center justify-between px-4">
+        <div className="absolute top-6 left-0 right-0 z-50 flex items-center justify-between px-4" style={{ direction: 'rtl' }}>
           <div className="flex items-center gap-2">
             {/* Section thumbnail */}
             <div className="w-8 h-8 rounded-full overflow-hidden border border-white/30 bg-muted flex-shrink-0">
@@ -221,7 +221,7 @@ export default function StoryViewer({ sections, initialSectionIndex, onClose }: 
         />
 
         {/* Tap areas for navigation */}
-        <div className="absolute inset-0 z-40 flex">
+        <div className="absolute inset-0 z-40 flex" style={{ direction: 'ltr' }}>
           <div className="w-1/3 h-full" onClick={goPrev} />
           <div className="w-1/3 h-full" />
           <div className="w-1/3 h-full" onClick={goNext} />
