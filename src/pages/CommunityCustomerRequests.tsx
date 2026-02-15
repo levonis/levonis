@@ -66,23 +66,15 @@ export default function CommunityCustomerRequests() {
     title: z.string(),
     description: z.string().nullable().optional(),
     notes: z.string().nullable().optional(),
-    size_spec: z.string().nullable().optional(),
-    colors_spec: z.string().nullable().optional(),
-    reference_links: z.array(z.string()).default([]),
-    status: z.enum([
-      "pending_review",
-      "approved",
-      "rejected",
-      "in_progress",
-      "completed",
-      "delivered",
-      "cancelled",
-    ]),
-    review_notes: z.string().nullable().optional(),
+    size: z.string().nullable().optional(),
+    colors: z.string().nullable().optional(),
+    reference_links: z.array(z.string()).nullable().default([]),
+    images: z.array(z.string()).nullable().optional(),
+    status: z.string(),
+    admin_notes: z.string().nullable().optional(),
     created_at: z.string(),
     updated_at: z.string(),
-    in_progress_at: z.string().nullable().optional(),
-    completed_at: z.string().nullable().optional(),
+    accepted_at: z.string().nullable().optional(),
     delivered_at: z.string().nullable().optional(),
     customer_confirmed_at: z.string().nullable().optional(),
   });
@@ -93,9 +85,9 @@ export default function CommunityCustomerRequests() {
     enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("print_requests")
+        .from("community_print_requests")
         .select(
-          "id, user_id, title, description, notes, size_spec, colors_spec, reference_links, status, review_notes, created_at, updated_at, in_progress_at, completed_at, delivered_at, customer_confirmed_at"
+          "id, user_id, title, description, notes, size, colors, reference_links, images, status, admin_notes, created_at, updated_at, accepted_at, delivered_at, customer_confirmed_at"
         )
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
@@ -126,32 +118,31 @@ export default function CommunityCustomerRequests() {
     setEditTitle(r.title ?? "");
     setEditDescription(r.description ?? "");
     setEditNotes(r.notes ?? "");
-    setEditSize(r.size_spec ?? "");
-    setEditColors(r.colors_spec ?? "");
+    setEditSize(r.size ?? "");
+    setEditColors(r.colors ?? "");
   };
 
-  const canEditOrDelete = (r: PrintRequest) => r.status === "pending_review" || r.status === "rejected";
+  const canEditOrDelete = (r: PrintRequest) => r.status === "pending_review" || r.status === "pending" || r.status === "rejected";
 
   const editSchema = z.object({
     title: z.string().trim().min(3).max(120),
     description: z.string().trim().max(1500).optional().or(z.literal("")),
     notes: z.string().trim().max(500).optional().or(z.literal("")),
-    size_spec: z.string().trim().max(120).optional().or(z.literal("")),
-    colors_spec: z.string().trim().max(120).optional().or(z.literal("")),
+    size: z.string().trim().max(120).optional().or(z.literal("")),
+    colors: z.string().trim().max(120).optional().or(z.literal("")),
   });
 
   const updateMutation = useMutation({
     mutationFn: async (payload: { id: string; values: z.infer<typeof editSchema> }) => {
       const parsed = editSchema.parse(payload.values);
       const { error } = await supabase
-        .from("print_requests")
+        .from("community_print_requests")
         .update({
           title: parsed.title,
           description: parsed.description?.trim() ? parsed.description.trim() : null,
           notes: parsed.notes?.trim() ? parsed.notes.trim() : null,
-          size_spec: parsed.size_spec?.trim() ? parsed.size_spec.trim() : null,
-          colors_spec: parsed.colors_spec?.trim() ? parsed.colors_spec.trim() : null,
-          // keep status as-is; backend/admin review flow will handle it later
+          size: parsed.size?.trim() ? parsed.size.trim() : null,
+          colors: parsed.colors?.trim() ? parsed.colors.trim() : null,
         })
         .eq("id", payload.id);
       if (error) throw error;
@@ -169,7 +160,7 @@ export default function CommunityCustomerRequests() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("print_requests").delete().eq("id", id);
+      const { error } = await supabase.from("community_print_requests").delete().eq("id", id);
       if (error) throw error;
       return true;
     },
@@ -295,21 +286,15 @@ export default function CommunityCustomerRequests() {
                       <Separator className="my-3" />
 
                       {/* Tracking (inline) */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         <div className="rounded-lg bg-muted/20 p-3">
                           <p className="text-[11px] text-muted-foreground">المراجعة</p>
-                          <p className="mt-1 text-sm font-semibold">{r.status === "pending_review" ? "جارية" : "تم"}</p>
+                          <p className="mt-1 text-sm font-semibold">{r.status === "pending_review" || r.status === "pending" ? "جارية" : "تم"}</p>
                         </div>
                         <div className="rounded-lg bg-muted/20 p-3">
-                          <p className="text-[11px] text-muted-foreground">قيد التنفيذ</p>
+                          <p className="text-[11px] text-muted-foreground">تم القبول</p>
                           <p className="mt-1 text-sm font-semibold">
-                            {r.in_progress_at ? new Date(r.in_progress_at).toLocaleDateString("ar-IQ") : "—"}
-                          </p>
-                        </div>
-                        <div className="rounded-lg bg-muted/20 p-3">
-                          <p className="text-[11px] text-muted-foreground">مكتمل</p>
-                          <p className="mt-1 text-sm font-semibold">
-                            {r.completed_at ? new Date(r.completed_at).toLocaleDateString("ar-IQ") : "—"}
+                            {r.accepted_at ? new Date(r.accepted_at).toLocaleDateString("ar-IQ") : "—"}
                           </p>
                         </div>
                         <div className="rounded-lg bg-muted/20 p-3">
@@ -320,13 +305,13 @@ export default function CommunityCustomerRequests() {
                         </div>
                       </div>
 
-                      {r.status === "rejected" && (r.review_notes?.trim() ?? "") && (
+                      {r.status === "rejected" && (r.admin_notes?.trim() ?? "") && (
                         <div className="mt-3 rounded-lg border border-border bg-background/50 p-3">
                           <div className="flex items-center gap-2">
                             <ShieldAlert className="h-4 w-4 text-primary" />
                             <p className="text-sm font-semibold">سبب الرفض</p>
                           </div>
-                          <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">{r.review_notes}</p>
+                          <p className="mt-1 text-sm text-muted-foreground whitespace-pre-wrap">{r.admin_notes}</p>
                         </div>
                       )}
                     </div>
@@ -390,8 +375,8 @@ export default function CommunityCustomerRequests() {
                       title: editTitle,
                       description: editDescription,
                       notes: editNotes,
-                      size_spec: editSize,
-                      colors_spec: editColors,
+                      size: editSize,
+                      colors: editColors,
                     },
                   })
                 }
