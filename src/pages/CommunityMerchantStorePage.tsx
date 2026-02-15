@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import RatingsPreview from "@/components/merchant/RatingsPreview";
 import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
+
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 import CompactProductCard from "@/components/merchant/CompactProductCard";
 import ProfessionalCustomerOrderDialog from "@/components/merchant/ProfessionalCustomerOrderDialog";
@@ -53,6 +54,7 @@ export default function CommunityMerchantStorePage() {
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState<'products' | 'reels' | 'reviews'>('products');
+  const [productSort, setProductSort] = useState<'newest' | 'price_low' | 'price_high' | 'featured'>('featured');
 
   // Check if current user owns this store
   const { data: isOwner } = useQuery({
@@ -129,12 +131,20 @@ export default function CommunityMerchantStorePage() {
     },
   });
 
-  // Pagination
-  const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
+  const sortedProducts = useMemo(() => {
+    const sorted = [...products];
+    if (productSort === 'newest') sorted.sort((a, b) => 0); // already sorted by created_at desc
+    else if (productSort === 'price_low') sorted.sort((a, b) => (a.price_iqd || 0) - (b.price_iqd || 0));
+    else if (productSort === 'price_high') sorted.sort((a, b) => (b.price_iqd || 0) - (a.price_iqd || 0));
+    else if (productSort === 'featured') sorted.sort((a, b) => (b.is_featured ? 1 : 0) - (a.is_featured ? 1 : 0));
+    return sorted;
+  }, [products, productSort]);
+
+  const totalPages = Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE);
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
-    return products.slice(start, start + PRODUCTS_PER_PAGE);
-  }, [products, currentPage]);
+    return sortedProducts.slice(start, start + PRODUCTS_PER_PAGE);
+  }, [sortedProducts, currentPage]);
 
   // Auto-open product from query param (e.g., from reels)
   useEffect(() => {
@@ -401,6 +411,20 @@ export default function CommunityMerchantStorePage() {
                   </Card>
                 ) : (
                   <>
+                    {/* Sort Bar */}
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs text-muted-foreground">{sortedProducts.length} منتج</span>
+                      <select
+                        value={productSort}
+                        onChange={(e) => { setProductSort(e.target.value as typeof productSort); setCurrentPage(1); }}
+                        className="h-7 text-[10px] rounded-md border border-border bg-background px-2 text-foreground"
+                      >
+                        <option value="featured">المميز أولاً</option>
+                        <option value="newest">الأحدث</option>
+                        <option value="price_low">السعر: الأقل</option>
+                        <option value="price_high">السعر: الأعلى</option>
+                      </select>
+                    </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
                       {paginatedProducts.map((product) => (
                         <CompactProductCard
@@ -471,11 +495,7 @@ export default function CommunityMerchantStorePage() {
 
             {/* Reviews Tab */}
             {activeTab === 'reviews' && merchantId && (
-              <Card className="rounded-xl overflow-hidden border-border/50">
-                <CardContent className="p-4">
-                  <RatingsPreview merchantId={merchantId} />
-                </CardContent>
-              </Card>
+              <RatingsPreview merchantId={merchantId} />
             )}
           </div>
         </div>
