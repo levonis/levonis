@@ -5025,6 +5025,77 @@ export type Database = {
           },
         ]
       }
+      story_sections: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          thumbnail_url: string | null
+          title_ar: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          thumbnail_url?: string | null
+          title_ar: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          thumbnail_url?: string | null
+          title_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      story_videos: {
+        Row: {
+          created_at: string
+          display_order: number
+          duration_seconds: number | null
+          id: string
+          is_active: boolean
+          section_id: string
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          section_id: string
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          duration_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          section_id?: string
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_videos_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "story_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_payments: {
         Row: {
           amount: number
