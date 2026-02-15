@@ -2533,6 +2533,7 @@ export type Database = {
           specialty: string | null
           status: string
           store_image_url: string | null
+          store_layout: string
           updated_at: string
           user_id: string
           welcome_message: string | null
@@ -2560,6 +2561,7 @@ export type Database = {
           specialty?: string | null
           status?: string
           store_image_url?: string | null
+          store_layout?: string
           updated_at?: string
           user_id: string
           welcome_message?: string | null
@@ -2587,6 +2589,7 @@ export type Database = {
           specialty?: string | null
           status?: string
           store_image_url?: string | null
+          store_layout?: string
           updated_at?: string
           user_id?: string
           welcome_message?: string | null
@@ -2765,6 +2768,7 @@ export type Database = {
           social_links: Json | null
           specialty: string | null
           store_image_url: string | null
+          store_layout: string
           updated_at: string
         }
         Insert: {
@@ -2779,6 +2783,7 @@ export type Database = {
           social_links?: Json | null
           specialty?: string | null
           store_image_url?: string | null
+          store_layout?: string
           updated_at?: string
         }
         Update: {
@@ -2793,6 +2798,7 @@ export type Database = {
           social_links?: Json | null
           specialty?: string | null
           store_image_url?: string | null
+          store_layout?: string
           updated_at?: string
         }
         Relationships: [
@@ -2984,6 +2990,50 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "merchant_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_store_categories: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string | null
+          is_active: boolean
+          merchant_id: string
+          name_ar: string
+          parent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          merchant_id: string
+          name_ar: string
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          merchant_id?: string
+          name_ar?: string
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_store_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_store_categories"
             referencedColumns: ["id"]
           },
         ]

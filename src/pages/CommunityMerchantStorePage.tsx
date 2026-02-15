@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Store, Star, Package, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, 
-  Users, Shield, CheckCircle, ArrowRight, MessageCircle, Droplets, Layers, Settings, Film
+  Users, Shield, CheckCircle, ArrowRight, MessageCircle, Droplets, Layers, Settings, Film, FolderOpen
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,6 +22,8 @@ import StoreFollowButton from "@/components/community/StoreFollowButton";
 import PrinterModelsCard from "@/components/merchant/PrinterModelsCard";
 import CommunityProductDetailModal from "@/components/community/CommunityProductDetailModal";
 import MerchantReelsSection from "@/components/merchant/MerchantReelsSection";
+import MerchantCategoriesDisplay from "@/components/merchant/MerchantCategoriesDisplay";
+import ScrollToTopButton from "@/components/ui/ScrollToTopButton";
 
 const PRODUCTS_PER_PAGE = 20;
 
@@ -53,7 +55,7 @@ export default function CommunityMerchantStorePage() {
   const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState<'products' | 'reels' | 'reviews'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'reels' | 'reviews'>('products');
   const [productSort, setProductSort] = useState<'newest' | 'price_low' | 'price_high' | 'featured'>('featured');
 
   // Check if current user owns this store
@@ -78,7 +80,7 @@ export default function CommunityMerchantStorePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("merchant_applications")
-        .select("id, display_name, bio, store_image_url, social_links, selected_frame_id, specialty")
+        .select("id, display_name, bio, store_image_url, social_links, selected_frame_id, specialty, store_layout")
         .eq("id", merchantId!)
         .maybeSingle();
       if (error) throw error;
@@ -92,7 +94,7 @@ export default function CommunityMerchantStorePage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("merchant_public_profiles")
-        .select("id, display_name, bio, store_image_url, social_links, is_verified, badge_tier, selected_frame_id, specialty")
+        .select("id, display_name, bio, store_image_url, social_links, is_verified, badge_tier, selected_frame_id, specialty, store_layout")
         .eq("id", merchantId!)
         .maybeSingle();
       if (error) throw error;
@@ -376,16 +378,17 @@ export default function CommunityMerchantStorePage() {
           {/* Products Grid */}
           <div className="lg:col-span-3 order-1 lg:order-2 space-y-4">
             {/* Tab Strip */}
-            <div className="flex border-b border-border">
+            <div className="flex border-b border-border overflow-x-auto">
               {[
                 { key: 'products' as const, icon: Package, label: `المنتجات (${products.length})` },
+                { key: 'categories' as const, icon: FolderOpen, label: 'الأقسام' },
                 { key: 'reels' as const, icon: Film, label: 'الريلز' },
                 { key: 'reviews' as const, icon: Star, label: 'التقييمات' },
               ].map(tab => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 text-xs font-bold transition-all relative ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 text-xs font-bold transition-all relative whitespace-nowrap ${
                     activeTab === tab.key
                       ? 'text-primary'
                       : 'text-muted-foreground hover:text-foreground'
@@ -488,6 +491,16 @@ export default function CommunityMerchantStorePage() {
               </>
             )}
 
+            {/* Categories Tab */}
+            {activeTab === 'categories' && merchantId && (
+              <MerchantCategoriesDisplay
+                merchantId={merchantId}
+                products={products}
+                layout={((merchantApp as any)?.store_layout || "standard") as any}
+                onProductClick={handleOpenDetail}
+              />
+            )}
+
             {/* Reels Tab */}
             {activeTab === 'reels' && merchantId && (
               <MerchantReelsSection merchantId={merchantId} />
@@ -524,6 +537,8 @@ export default function CommunityMerchantStorePage() {
           }}
         />
       )}
+
+      <ScrollToTopButton />
     </div>
   );
 }
