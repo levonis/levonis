@@ -1638,6 +1638,7 @@ const Admin = () => {
                 { icon: Truck, title: 'إعدادات الشحن', desc: 'أسعار وحساب تكلفة الشحن', path: ADMIN_ROUTES.shippingSettings },
                 { icon: Sparkles, title: 'مجتمع ليفو', desc: 'إدارة التجار والعملاء والمحادثات', path: ADMIN_ROUTES.levoCommunity },
                 { icon: Users, title: 'إدارة المستخدمين', desc: 'عرض جميع المستخدمين والتجار', path: ADMIN_ROUTES.users },
+                { icon: ImageIcon, title: 'إدارة الستوريات', desc: 'أقسام وفيديوهات الصفحة الرئيسية', path: ADMIN_ROUTES.stories },
               ].map((item, idx) => (
                 <button
                   key={idx}

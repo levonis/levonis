@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import BannerCarousel from '@/components/BannerCarousel';
 import { Loader2 } from 'lucide-react';
 import AnimatedDivider from '@/components/ui/animated-divider';
+import StoriesBar from '@/components/stories/StoriesBar';
 
 // Lazy load non-critical components
 const CommunitySection = lazy(() => import('@/components/community/CommunitySection'));
@@ -116,6 +117,11 @@ const Home = () => {
               📞 اتصل بنا
             </a>
           </div>
+        </section>
+
+        {/* Stories Section */}
+        <section className="container mx-auto px-0">
+          <StoriesBar />
         </section>
 
         {/* Categories Section - Optimized DOM */}
