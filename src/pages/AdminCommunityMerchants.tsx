@@ -589,26 +589,43 @@ function MerchantsContent() {
                 <Button
                   variant="outline"
                   onClick={async () => {
-                    // Create or find conversation with this merchant's user
+                    const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
                     const userId = active.user_id;
+                    
+                    // Find existing listing_conversation between support and this user
                     const { data: existing } = await supabase
-                      .from("conversations")
+                      .from("listing_conversations")
                       .select("id")
-                      .eq("user_id", userId)
-                      .order("created_at", { ascending: false })
+                      .or(`and(buyer_id.eq.${userId},seller_id.eq.${SUPPORT_USER_ID}),and(buyer_id.eq.${SUPPORT_USER_ID},seller_id.eq.${userId})`)
+                      .order("updated_at", { ascending: false })
                       .limit(1)
                       .maybeSingle();
                     
                     if (existing) {
-                      navigate(`${ADMIN_ROUTES.communityMessages}?conversation=${existing.id}`);
+                      // Navigate to community messages and auto-open this conversation
+                      navigate(`/community/messages?auto_open=${existing.id}`);
                     } else {
+                      // Create new listing_conversation with support as seller
+                      const convCode = `SUPPORT-${Date.now().toString(36).toUpperCase()}`;
                       const { data: newConvo } = await supabase
-                        .from("conversations")
-                        .insert({ user_id: userId, status: "open" })
+                        .from("listing_conversations")
+                        .insert({
+                          buyer_id: userId,
+                          seller_id: SUPPORT_USER_ID,
+                          listing_id: SUPPORT_USER_ID,
+                          conversation_code: convCode,
+                          status: "open",
+                        })
                         .select("id")
                         .single();
                       if (newConvo) {
-                        navigate(`${ADMIN_ROUTES.communityMessages}?conversation=${newConvo.id}`);
+                        // Send welcome message
+                        await supabase.from("listing_messages").insert({
+                          conversation_id: newConvo.id,
+                          sender_id: SUPPORT_USER_ID,
+                          content: "👋 مرحباً، تم بدء محادثة من قبل الإدارة.",
+                        });
+                        navigate(`/community/messages?auto_open=${newConvo.id}`);
                       }
                     }
                     setOpen(false);
