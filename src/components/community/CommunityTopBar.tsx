@@ -17,6 +17,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
+import { ListingConversations } from "@/components/marketplace/ListingConversations";
 
 /**
  * يظهر فقط داخل /community* ويستبدل شريط الموقع.
@@ -33,6 +34,7 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [isScrolled, setIsScrolled] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
 
   useEffect(() => {
     let ticking = false;
@@ -80,6 +82,7 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
   const isMerchant = useMemo(() => !!merchantApp, [merchantApp]);
 
   return (
+    <>
     <header
       className="fixed left-0 right-0 z-50 border-b bg-background/95 backdrop-blur-xl border-border/40 shadow-md"
       style={{ top: verificationBannerHeight }}
@@ -154,7 +157,7 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
                   size="icon"
                   className="rounded-full"
                   aria-label="المحادثات"
-                  onClick={() => navigate("/community/messages")}
+                  onClick={() => setMessagesOpen(true)}
                 >
                   <MessageCircle className="h-4 w-4" />
                 </Button>
@@ -176,7 +179,7 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
                   size="icon"
                   className="rounded-full"
                   aria-label="المحادثات"
-                  onClick={() => navigate("/community/messages")}
+                  onClick={() => setMessagesOpen(true)}
                 >
                   <MessageCircle className="h-4 w-4" />
                 </Button>
@@ -231,6 +234,16 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
         )}
       </div>
     </header>
+
+    {/* Messages Overlay */}
+    <ListingConversations
+      externalOpen={messagesOpen}
+      onExternalOpenChange={setMessagesOpen}
+      onClose={() => setMessagesOpen(false)}
+    >
+      <span className="sr-only">فتح المحادثات</span>
+    </ListingConversations>
+    </>
   );
 });
 

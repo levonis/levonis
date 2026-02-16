@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
 import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
+import { ListingConversations } from '@/components/marketplace/ListingConversations';
 import WalletDialog from './WalletDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
@@ -31,6 +32,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
   const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
   const isHomePage = location.pathname === '/' || location.pathname === '/home';
 
   // Optimized: Only fetch notifications when user is logged in, with longer stale time
@@ -255,7 +257,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => navigate('/community/messages')}
+                onClick={() => setMessagesOpen(true)}
                 className="relative rounded-full border-primary/30 hover:border-primary"
                 title="محادثات العملاء"
                 aria-label="محادثات العملاء"
@@ -353,6 +355,15 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
       </div>
 
       <WalletDialog open={walletDialogOpen} onOpenChange={setWalletDialogOpen} />
+      
+      {/* Messages Overlay */}
+      <ListingConversations
+        externalOpen={messagesOpen}
+        onExternalOpenChange={setMessagesOpen}
+        onClose={() => setMessagesOpen(false)}
+      >
+        <span className="sr-only">فتح المحادثات</span>
+      </ListingConversations>
     </header>
   );
 });

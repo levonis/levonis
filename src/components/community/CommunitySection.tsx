@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import CommunityCustomerProfileModal from '@/components/community/CommunityCustomerProfileModal';
 import MerchantSignupDialog from '@/components/community/MerchantSignupDialog';
 import NewPrintRequestDialog from '@/components/community/NewPrintRequestDialog';
+import { ListingConversations } from '@/components/marketplace/ListingConversations';
 
 const MerchantDashboardWidgets = lazy(() => import('@/components/merchant/MerchantDashboardWidgets'));
 
@@ -71,20 +72,21 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
     : "levo-section-frame container mx-auto px-0";
 
   // Quick action buttons for merchants and customers - only show if profile is complete
-  // Dialog state for new request
+  // Dialog state for new request and messages
   const [newRequestOpen, setNewRequestOpen] = useState(false);
+  const [messagesOpen, setMessagesOpen] = useState(false);
   
   const quickActions = useMemo(() => {
     if (isMerchant) {
       return [
-        { key: "messages", label: "المحادثات", icon: MessageCircle, to: "/community/messages" },
+        { key: "messages", label: "المحادثات", icon: MessageCircle, action: () => setMessagesOpen(true) },
         { key: "store", label: "إدارة المتجر", icon: Store, to: "/community/merchant/store" },
         { key: "orders", label: "الطلبات", icon: Package, to: "/community/merchant/orders" },
         { key: "requests", label: "طلبات الزبائن", icon: FileText, to: "/community/requests" },
       ];
     }
     return [
-      { key: "messages", label: "المحادثات", icon: MessageCircle, to: "/community/messages" },
+      { key: "messages", label: "المحادثات", icon: MessageCircle, action: () => setMessagesOpen(true) },
       { key: "new-request", label: "طلب جديد", icon: FileText, action: () => setNewRequestOpen(true) },
       { key: "my-requests", label: "طلباتي", icon: Package, to: "/community/customer/requests" },
       { key: "profile", label: "ملفي", icon: Users, to: "/profile" },
@@ -97,27 +99,19 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
       {!isCommunityHub && (
         <Link
           to="/community"
-          className="group flex items-center justify-between mb-5 px-4 py-3 rounded-2xl border border-primary/10 bg-gradient-to-l from-primary/5 via-transparent to-accent/5 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+          className="group flex items-center justify-center mb-5 py-4 rounded-2xl border border-primary/15 bg-card/50 hover:border-primary/30 hover:bg-card/80 transition-all duration-300"
         >
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-accent flex items-center justify-center shadow-lg shadow-primary/25 group-hover:shadow-primary/40 transition-shadow">
-                <Users className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-accent border-2 border-background animate-pulse" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
+          <div className="flex flex-col items-center gap-1.5">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
+              <h2 className="text-base font-bold text-foreground group-hover:text-primary transition-colors tracking-tight">
                 مجتمع ليفو
               </h2>
-              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
-                تصفّح المنتجات والخدمات
-              </p>
+              <div className="h-2 w-2 rounded-full bg-accent animate-pulse" />
             </div>
-          </div>
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">
-            <span>استكشف</span>
-            <Sparkles className="h-3.5 w-3.5" />
+            <p className="text-[10px] text-muted-foreground">
+              اضغط للاستكشاف
+            </p>
           </div>
         </Link>
       )}
@@ -247,6 +241,15 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
       <div className={isCommunityHub && isMerchant ? "mt-4" : "mt-4"}>
         <CommunityExploreStrip searchQuery={searchQuery} />
       </div>
+
+      {/* Messages Overlay Dialog */}
+      <ListingConversations
+        externalOpen={messagesOpen}
+        onExternalOpenChange={setMessagesOpen}
+        onClose={() => setMessagesOpen(false)}
+      >
+        <span className="sr-only">فتح المحادثات</span>
+      </ListingConversations>
     </section>
   );
 }
