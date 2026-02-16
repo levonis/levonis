@@ -93,6 +93,29 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
 
   return (
     <section className={sectionClass}>
+      {/* Community Badge - Homepage only */}
+      {!isCommunityHub && (
+        <div className="flex items-center justify-between mb-4">
+          <Link
+            to="/community"
+            className="flex items-center gap-2 group"
+          >
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md shadow-primary/20">
+              <Users className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <h2 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
+              مجتمع ليفو
+            </h2>
+            <Sparkles className="h-4 w-4 text-primary" />
+          </Link>
+          <Link to="/community">
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary gap-1">
+              عرض الكل
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* Merchant Stories Bar */}
       {isCommunityHub && (
         <div className="mb-3">

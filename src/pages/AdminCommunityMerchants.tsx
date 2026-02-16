@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { z } from "zod";
-import { Store, CheckCircle2, XCircle, Image as ImageIcon, Trash2, ChevronRight, ChevronLeft, Search, Ban, Eye } from "lucide-react";
+import { Store, CheckCircle2, XCircle, Image as ImageIcon, Trash2, ChevronRight, ChevronLeft, Search, Ban, Eye, MessageCircle } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -52,6 +53,7 @@ interface Props {
 function MerchantsContent() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [status, setStatus] = useState<string>("all");
   const [q, setQ] = useState("");
@@ -583,6 +585,40 @@ function MerchantsContent() {
               )}
 
               <DialogFooter className="flex-col sm:flex-row gap-2">
+                {/* Chat with merchant button */}
+                <Button
+                  variant="outline"
+                  onClick={async () => {
+                    // Create or find conversation with this merchant's user
+                    const userId = active.user_id;
+                    const { data: existing } = await supabase
+                      .from("conversations")
+                      .select("id")
+                      .eq("user_id", userId)
+                      .order("created_at", { ascending: false })
+                      .limit(1)
+                      .maybeSingle();
+                    
+                    if (existing) {
+                      navigate(`/admin/levo-community/messages?conversation=${existing.id}`);
+                    } else {
+                      const { data: newConvo } = await supabase
+                        .from("conversations")
+                        .insert({ user_id: userId, status: "open" })
+                        .select("id")
+                        .single();
+                      if (newConvo) {
+                        navigate(`/admin/levo-community/messages?conversation=${newConvo.id}`);
+                      }
+                    }
+                    setOpen(false);
+                  }}
+                  className="gap-2"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  تواصل مع التاجر
+                </Button>
+
                 {/* Delete Button - opens confirmation dialog */}
                 {(active.status === "rejected" || active.status === "draft") && (
                   <Button

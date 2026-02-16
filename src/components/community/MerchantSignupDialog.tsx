@@ -385,7 +385,7 @@ export default function MerchantSignupDialog({
   const busy = appLoading || saveDraftMutation.isPending;
   // Use fee from community_settings (not app.registration_fee which may be outdated)
   const fee = Number((feeSettings?.value as any)?.amount ?? 0);
-  const canEdit = app?.status !== "approved";
+  const canEdit = app?.status !== "approved" && app?.status !== "pending";
 
   const step1Ok = useMemo(() => {
     return step1Schema.safeParse(step1).success && !!storeImageUrl;
@@ -519,13 +519,56 @@ export default function MerchantSignupDialog({
                 <Skeleton className="h-20 rounded-xl" />
                 <Skeleton className="h-32 rounded-xl" />
               </div>
+            ) : app?.status === "pending" ? (
+              /* Pending Review Screen - Block resubmission */
+              <div className="flex flex-col items-center text-center py-8 space-y-4">
+                <div className="h-16 w-16 rounded-2xl bg-amber-500/15 flex items-center justify-center">
+                  <Clock className="h-8 w-8 text-amber-500" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">طلبك قيد المراجعة</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  تم إرسال طلبك بنجاح وهو الآن قيد مراجعة الإدارة. سنعلمك عند الموافقة على طلبك أو في حال وجود أي ملاحظات.
+                </p>
+                <div className="p-3 rounded-xl bg-muted/30 border border-border/50 w-full max-w-sm">
+                  <p className="text-xs text-muted-foreground">
+                    تاريخ التقديم: {app?.created_at ? new Date(app.created_at).toLocaleDateString("ar-IQ") : "-"}
+                  </p>
+                </div>
+                {app?.admin_notes && (
+                  <div className="p-3 rounded-xl border border-amber-500/30 bg-amber-500/10 w-full max-w-sm">
+                    <p className="text-sm text-amber-600 dark:text-amber-400">
+                      ملاحظة الإدارة: {app.admin_notes}
+                    </p>
+                  </div>
+                )}
+                <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
+                  حسناً
+                </Button>
+              </div>
+            ) : app?.status === "approved" ? (
+              /* Already approved screen */
+              <div className="flex flex-col items-center text-center py-8 space-y-4">
+                <div className="h-16 w-16 rounded-2xl bg-emerald-500/15 flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">أنت تاجر معتمد!</h3>
+                <p className="text-sm text-muted-foreground max-w-sm">
+                  تم قبول طلبك ويمكنك الآن إدارة متجرك وتقديم العروض للعملاء.
+                </p>
+                <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
+                  حسناً
+                </Button>
+              </div>
             ) : (
               <>
                 {/* Admin Notes Alert */}
-                {app?.admin_notes && (
-                  <div className="mb-6 p-4 rounded-xl border border-amber-500/30 bg-amber-500/10">
-                    <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
-                      ملاحظة الإدارة: {app.admin_notes}
+                {app?.admin_notes && app?.status === "rejected" && (
+                  <div className="mb-6 p-4 rounded-xl border border-destructive/30 bg-destructive/10">
+                    <p className="text-sm font-medium text-destructive">
+                      سبب الرفض: {app.admin_notes}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      يمكنك تعديل بياناتك وإعادة إرسال الطلب
                     </p>
                   </div>
                 )}
