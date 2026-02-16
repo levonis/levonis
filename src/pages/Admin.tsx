@@ -1534,7 +1534,7 @@ const Admin = () => {
   }
 
   return (
-    <div className="admin-page relative overflow-hidden">
+    <div className="admin-page relative">
       {/* Subtle background decoration */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5" />
