@@ -3038,6 +3038,82 @@ export type Database = {
           },
         ]
       }
+      merchant_stories: {
+        Row: {
+          caption: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          is_active: boolean
+          media_type: string
+          media_url: string
+          merchant_id: string
+          product_id: string | null
+          views_count: number
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          media_type?: string
+          media_url: string
+          merchant_id: string
+          product_id?: string | null
+          views_count?: number
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          is_active?: boolean
+          media_type?: string
+          media_url?: string
+          merchant_id?: string
+          product_id?: string | null
+          views_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_stories_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_story_likes: {
+        Row: {
+          created_at: string
+          id: string
+          story_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          story_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          story_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_story_likes_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
