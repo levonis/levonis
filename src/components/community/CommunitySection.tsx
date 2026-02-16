@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCommunityProfileCheck } from '@/hooks/useCommunityProfileCheck';
 import CommunityExploreStrip from '@/components/community/CommunityExploreStrip';
+import MerchantStoriesBar from '@/components/community/stories/MerchantStoriesBar';
 import AnimatedDivider from '@/components/ui/animated-divider';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -92,24 +93,12 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
 
   return (
     <section className={sectionClass}>
-      {/* Header badge */}
-      <div className="relative mb-4">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-primary/15" />
+      {/* Merchant Stories Bar */}
+      {isCommunityHub && (
+        <div className="mb-3">
+          <MerchantStoriesBar />
         </div>
-        <div className="relative flex justify-center">
-          <Link
-            to="/community"
-            className="levo-badge-frame"
-            aria-label="الانتقال إلى صفحة مجتمع ليفو"
-          >
-            <div className="levo-icon-frame h-8 w-8">
-              <Users className="w-4 h-4 text-primary" />
-            </div>
-            <span className="text-sm font-bold text-primary">مجتمع ليفو</span>
-          </Link>
-        </div>
-      </div>
+      )}
 
       {/* Search Bar - only on /community hub */}
       {isCommunityHub && (
