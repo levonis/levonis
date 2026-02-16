@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { 
   Users, Search, Ban, CheckCircle, Eye, Star, FileText, 
   MessageCircle, Download, Loader2, Trash2, AlertTriangle,
-  User, MapPin, Calendar, Package, ChevronRight, ChevronLeft
+  User, MapPin, Calendar, Package, ChevronRight, ChevronLeft, Send
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -58,6 +59,7 @@ interface Props {
 
 function CustomersContent() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterSuspended, setFilterSuspended] = useState<"all" | "active" | "suspended">("all");
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerProfile | null>(null);
@@ -582,6 +584,18 @@ function CustomersContent() {
                 >
                   <Trash2 className="h-4 w-4" />
                   حذف السجل
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSelectedCustomer(null);
+                    navigate(`/community/messages?merchant_id=support&auto_open_user=${selectedCustomer.user_id}`);
+                  }}
+                  className="gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  تواصل مع العميل
                 </Button>
                 
                 {selectedCustomer.is_suspended ? (
