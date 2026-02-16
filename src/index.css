@@ -597,7 +597,7 @@
 
 /* Admin Card enhancements */
 .admin-card {
-  @apply rounded-xl border border-border/40 bg-card shadow-sm transition-all duration-200;
+  @apply rounded-xl border border-border/40 bg-card shadow-sm transition-all duration-200 overflow-x-auto;
 }
 
 .admin-card:hover {
