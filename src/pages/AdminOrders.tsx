@@ -865,7 +865,7 @@ const AdminOrders = () => {
           ) : (
             <>
               <div className="admin-table-container overflow-x-auto">
-                <Table>
+                <Table className="min-w-[900px]">
                   <TableHeader>
                     <TableRow className="admin-table-header">
                       <TableHead>رقم الطلب</TableHead>

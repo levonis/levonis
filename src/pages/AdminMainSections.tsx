@@ -96,8 +96,8 @@ const AdminMainSections = ({
         </Dialog>
       </div>
 
-      <div className="glass-effect rounded-2xl border border-border/50 overflow-hidden">
-        <Table>
+      <div className="glass-effect rounded-2xl border border-border/50 overflow-x-auto">
+        <Table className="min-w-[600px]">
           <TableHeader>
             <TableRow>
               <TableHead>الاسم بالعربي</TableHead>
