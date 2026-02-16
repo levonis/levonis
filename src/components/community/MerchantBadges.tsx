@@ -52,7 +52,7 @@ type OrderBadgeProps = {
 };
 
 export function OrderBadge({ tier, size = "sm", className, showLabel = false }: OrderBadgeProps) {
-  if (tier === "none") return null;
+  if (tier === "none" || !tier) return null;
 
   const sizeClasses = {
     sm: "h-3 w-3",
@@ -110,7 +110,9 @@ export function OrderBadge({ tier, size = "sm", className, showLabel = false }: 
     },
   };
 
-  const { icon, bg, text, border } = config[tier as Exclude<BadgeTier, "none">];
+  const tierConfig = config[tier as Exclude<BadgeTier, "none">];
+  if (!tierConfig) return null;
+  const { icon, bg, text, border } = tierConfig;
 
   return (
     <span
