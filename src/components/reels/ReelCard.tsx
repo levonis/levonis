@@ -33,7 +33,20 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
 
     if (isActive) {
       video.currentTime = 0;
-      video.play().then(() => setIsPlaying(true)).catch(() => setIsPlaying(false));
+      // Ensure muted for autoplay (browser policy)
+      video.muted = isMuted;
+      const playPromise = video.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => setIsPlaying(true))
+          .catch(() => {
+            // Retry muted if autoplay blocked
+            video.muted = true;
+            video.play()
+              .then(() => setIsPlaying(true))
+              .catch(() => setIsPlaying(false));
+          });
+      }
       watchStartRef.current = Date.now();
       viewRecordedRef.current = false;
     } else {
@@ -46,7 +59,7 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
         viewRecordedRef.current = true;
       }
     }
-  }, [isActive, reel.id, onRecordView]);
+  }, [isActive, reel.id, onRecordView, isMuted]);
 
   const handleVideoEnd = useCallback(() => {
     if (!viewRecordedRef.current) {
@@ -106,10 +119,11 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
         muted={isMuted}
         playsInline
         loop={false}
-        preload={isActive ? 'auto' : 'none'}
+        preload={isActive ? 'auto' : 'metadata'}
         poster={reel.thumbnail_url || undefined}
         onEnded={handleVideoEnd}
         onClick={togglePlay}
+        crossOrigin="anonymous"
       />
 
       {/* Play icon overlay */}
