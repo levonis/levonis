@@ -600,7 +600,7 @@ function MerchantsContent() {
                       .maybeSingle();
                     
                     if (existing) {
-                      navigate(`/admin/levo-community/messages?conversation=${existing.id}`);
+                      navigate(`${ADMIN_ROUTES.communityMessages}?conversation=${existing.id}`);
                     } else {
                       const { data: newConvo } = await supabase
                         .from("conversations")
@@ -608,7 +608,7 @@ function MerchantsContent() {
                         .select("id")
                         .single();
                       if (newConvo) {
-                        navigate(`/admin/levo-community/messages?conversation=${newConvo.id}`);
+                        navigate(`${ADMIN_ROUTES.communityMessages}?conversation=${newConvo.id}`);
                       }
                     }
                     setOpen(false);

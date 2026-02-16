@@ -95,25 +95,31 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
     <section className={sectionClass}>
       {/* Community Badge - Homepage only */}
       {!isCommunityHub && (
-        <div className="flex items-center justify-between mb-4">
-          <Link
-            to="/community"
-            className="flex items-center gap-2 group"
-          >
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md shadow-primary/20">
-              <Users className="h-4 w-4 text-primary-foreground" />
+        <Link
+          to="/community"
+          className="group flex items-center justify-between mb-5 px-4 py-3 rounded-2xl border border-primary/10 bg-gradient-to-l from-primary/5 via-transparent to-accent/5 hover:border-primary/25 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+        >
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary via-primary/80 to-accent flex items-center justify-center shadow-lg shadow-primary/25 group-hover:shadow-primary/40 transition-shadow">
+                <Users className="h-5 w-5 text-primary-foreground" />
+              </div>
+              <div className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-accent border-2 border-background animate-pulse" />
             </div>
-            <h2 className="text-base font-bold text-foreground group-hover:text-primary transition-colors">
-              مجتمع ليفو
-            </h2>
-            <Sparkles className="h-4 w-4 text-primary" />
-          </Link>
-          <Link to="/community">
-            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary gap-1">
-              عرض الكل
-            </Button>
-          </Link>
-        </div>
+            <div>
+              <h2 className="text-sm font-bold text-foreground group-hover:text-primary transition-colors leading-tight">
+                مجتمع ليفو
+              </h2>
+              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                تصفّح المنتجات والخدمات
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground group-hover:text-primary transition-colors">
+            <span>استكشف</span>
+            <Sparkles className="h-3.5 w-3.5" />
+          </div>
+        </Link>
       )}
 
       {/* Merchant Stories Bar */}
