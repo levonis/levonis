@@ -90,6 +90,64 @@ interface ListingConversationsProps {
   embedded?: boolean;
 }
 
+// Admin: Search all registered users to start new conversations
+function AdminUserSearchResults({ 
+  searchTerm, 
+  existingConversations, 
+  onSelectUser 
+}: { 
+  searchTerm: string; 
+  existingConversations: any[] | undefined;
+  onSelectUser: (userId: string) => void;
+}) {
+  const { data: searchResults, isLoading } = useQuery({
+    queryKey: ['admin-user-search', searchTerm],
+    queryFn: async () => {
+      if (!searchTerm || searchTerm.length < 2) return [];
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, full_name, username, avatar_url')
+        .or(`full_name.ilike.%${searchTerm}%,username.ilike.%${searchTerm}%`)
+        .neq('id', SUPPORT_USER_ID)
+        .limit(8);
+      return data || [];
+    },
+    enabled: searchTerm.length >= 2,
+  });
+
+  if (!searchTerm || searchTerm.length < 2 || !searchResults?.length) return null;
+
+  // Filter out users who already have conversations (they'll show in existing list)
+  const existingUserIds = new Set(
+    existingConversations?.flatMap(c => [c.buyer_id, c.seller_id]) || []
+  );
+
+  const newUsers = searchResults.filter(u => !existingUserIds.has(u.id));
+  if (!newUsers.length) return null;
+
+  return (
+    <div className="border border-border/50 rounded-lg overflow-hidden bg-card">
+      <div className="px-2 py-1 bg-muted/30 text-[10px] font-medium text-muted-foreground">
+        بدء محادثة جديدة
+      </div>
+      {newUsers.map(u => (
+        <button
+          key={u.id}
+          onClick={() => onSelectUser(u.id)}
+          className="w-full flex items-center gap-2 p-2 hover:bg-muted/50 transition-colors text-right"
+        >
+          <AvatarWithFrame imageUrl={u.avatar_url} frameUrl={null} size="xs" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-medium truncate">{u.full_name || u.username || 'مستخدم'}</p>
+            {u.username && <p className="text-[10px] text-muted-foreground">@{u.username}</p>}
+          </div>
+          <MessageSquare className="h-3.5 w-3.5 text-primary" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
 const formatMessageDate = (date: Date) => {
   if (isToday(date)) return 'اليوم';
   if (isYesterday(date)) return 'أمس';
@@ -761,20 +819,57 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                </div>
              </div>
              
-             {/* Admin Search Bar */}
+             {/* Admin Search Bar with New Conversation */}
              {user?.id === SUPPORT_USER_ID && (
-               <div className="p-2 border-b bg-muted/10">
-                 <div className="relative">
-                   <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                   <Input
-                     placeholder="بحث بالاسم أو المعرف..."
-                     value={adminSearchTerm}
-                     onChange={(e) => setAdminSearchTerm(e.target.value)}
-                     className="h-8 pr-8 text-xs"
-                   />
-                 </div>
-               </div>
-             )}
+                <div className="p-2 border-b bg-muted/10 space-y-2">
+                  <div className="relative">
+                    <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                    <Input
+                      placeholder="بحث بالاسم أو المعرف..."
+                      value={adminSearchTerm}
+                      onChange={(e) => setAdminSearchTerm(e.target.value)}
+                      className="h-8 pr-8 text-xs"
+                    />
+                  </div>
+                  <AdminUserSearchResults 
+                    searchTerm={adminSearchTerm}
+                    existingConversations={conversations}
+                    onSelectUser={async (userId) => {
+                      // Check if conversation already exists
+                      const existingConv = conversations?.find(c => 
+                        c.buyer_id === userId || c.seller_id === userId
+                      );
+                      if (existingConv) {
+                        setSelectedConversation(existingConv.id);
+                        return;
+                      }
+                      // Create new conversation
+                      const convCode = `SUPPORT-${Date.now().toString(36).toUpperCase()}`;
+                      const { data: newConv, error } = await supabase
+                        .from('listing_conversations')
+                        .insert({
+                          buyer_id: userId,
+                          seller_id: SUPPORT_USER_ID,
+                          listing_id: SUPPORT_USER_ID,
+                          conversation_code: convCode,
+                          status: 'open',
+                        })
+                        .select('id')
+                        .single();
+                      if (!error && newConv) {
+                        await supabase.from('listing_messages').insert({
+                          conversation_id: newConv.id,
+                          sender_id: SUPPORT_USER_ID,
+                          content: '👋 مرحباً، تم بدء محادثة من قبل الإدارة.',
+                        });
+                        queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+                        setSelectedConversation(newConv.id);
+                        setAdminSearchTerm('');
+                      }
+                    }}
+                  />
+                </div>
+              )}
 
             {/* Conversations List */}
             <div className="flex-1 overflow-y-auto">
@@ -939,17 +1034,44 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 isActive && "bg-muted"
                               )}
                             >
-                              {/* Avatar with Frame */}
+                              {/* Avatar - Dual avatar for disputes (admin view) */}
                               <div className="relative flex-shrink-0">
-                                <AvatarWithFrame
-                                  imageUrl={convOtherUser?.avatar_url}
-                                  frameUrl={(convOtherUser as any)?.selected_frame_url}
-                                  size="sm"
-                                />
-                                {conv.status === 'disputed' && (
-                                  <div className="absolute -bottom-1 -right-1 bg-destructive rounded-full p-0.5">
-                                    <AlertTriangle className="w-3 h-3 text-white" />
+                                {conv.status === 'disputed' && user?.id === SUPPORT_USER_ID ? (
+                                  <div className="relative w-12 h-12">
+                                    {/* Buyer avatar (top-right) */}
+                                    <div className="absolute top-0 right-0 z-10">
+                                      <AvatarWithFrame
+                                        imageUrl={profiles?.[conv.buyer_id]?.avatar_url}
+                                        frameUrl={null}
+                                        size="xs"
+                                      />
+                                    </div>
+                                    {/* Seller avatar (bottom-left) */}
+                                    <div className="absolute bottom-0 left-0">
+                                      <AvatarWithFrame
+                                        imageUrl={profiles?.[conv.seller_id]?.avatar_url}
+                                        frameUrl={null}
+                                        size="xs"
+                                      />
+                                    </div>
+                                    {/* Dispute indicator */}
+                                    <div className="absolute -bottom-1 -right-1 z-20 bg-destructive rounded-full p-0.5">
+                                      <AlertTriangle className="w-3 h-3 text-white" />
+                                    </div>
                                   </div>
+                                ) : (
+                                  <>
+                                    <AvatarWithFrame
+                                      imageUrl={convOtherUser?.avatar_url}
+                                      frameUrl={(convOtherUser as any)?.selected_frame_url}
+                                      size="sm"
+                                    />
+                                    {conv.status === 'disputed' && (
+                                      <div className="absolute -bottom-1 -right-1 bg-destructive rounded-full p-0.5">
+                                        <AlertTriangle className="w-3 h-3 text-white" />
+                                      </div>
+                                    )}
+                                  </>
                                 )}
                               </div>
 
@@ -959,7 +1081,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 <div className="flex items-center justify-between gap-2 mb-0.5">
                                   <div className="flex items-center gap-1.5 min-w-0">
                                     <p className="font-semibold text-sm truncate max-w-[120px]">
-                                      {convOtherUser?.display_name || convOtherUser?.full_name || convOtherUser?.username || 'محادثة'}
+                                      {conv.status === 'disputed' && user?.id === SUPPORT_USER_ID
+                                        ? `${profiles?.[conv.buyer_id]?.full_name || 'مشتري'} ↔ ${profiles?.[conv.seller_id]?.display_name || profiles?.[conv.seller_id]?.full_name || 'بائع'}`
+                                        : (convOtherUser?.display_name || convOtherUser?.full_name || convOtherUser?.username || 'محادثة')
+                                      }
                                     </p>
                                     {/* Badges */}
                                     {conv.admin_joined && (
