@@ -135,8 +135,8 @@ const ProductsTable = memo(({
       </div>
 
       {/* Table */}
-      <div className="rounded-md border overflow-hidden">
-        <Table>
+      <div className="rounded-md border overflow-x-auto">
+        <Table className="min-w-[800px]">
           <TableHeader>
             <TableRow>
               <TableHead className="text-right">الصورة</TableHead>
