@@ -3223,7 +3223,7 @@ const Admin = () => {
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
               </div>
             ) : (
-              <div className="glass-effect rounded-2xl border border-border/50 overflow-x-auto">
+              <div className="glass-effect rounded-2xl border border-border/50 overflow-x-auto w-full max-w-full" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <Table className="min-w-[800px]">
                   <TableHeader>
                     <TableRow>

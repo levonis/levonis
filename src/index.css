@@ -102,15 +102,24 @@
     font-feature-settings: 'cv11', 'ss01';
     font-variation-settings: 'opsz' 32;
     position: relative;
-    overflow-x: clip;
     /* Keep vertical scrollbar space stable on desktop to avoid horizontal jitter */
     scrollbar-gutter: stable;
+  }
+
+  #root {
+    max-width: 100vw;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-weight: 900;
     letter-spacing: 0.5px;
   }
+}
+
+/* Enable touch horizontal scrolling on all scrollable containers */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 @layer utilities {
@@ -659,6 +668,8 @@
 /* Admin Table Styles */
 .admin-table-wrapper {
   @apply rounded-xl border border-border/40 bg-card overflow-x-auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
 }
 
 .admin-table {
