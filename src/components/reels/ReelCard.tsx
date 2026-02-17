@@ -23,24 +23,26 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
   // Sync mute state to video element
   useEffect(() => {
     const video = videoRef.current;
-    if (video) video.muted = isMuted;
+    if (!video) return;
+    const currentTime = video.currentTime;
+    video.muted = isMuted;
+    // Preserve playback position when toggling mute
+    video.currentTime = currentTime;
   }, [isMuted]);
 
-  // Auto-play/pause based on active state
+  // Auto-play/pause based on active state only
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     if (isActive) {
       video.currentTime = 0;
-      // Ensure muted for autoplay (browser policy)
       video.muted = isMuted;
       const playPromise = video.play();
       if (playPromise !== undefined) {
         playPromise
           .then(() => setIsPlaying(true))
           .catch(() => {
-            // Retry muted if autoplay blocked
             video.muted = true;
             video.play()
               .then(() => setIsPlaying(true))
@@ -59,7 +61,8 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
         viewRecordedRef.current = true;
       }
     }
-  }, [isActive, reel.id, onRecordView, isMuted]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, reel.id, onRecordView]);
 
   const handleVideoEnd = useCallback(() => {
     if (!viewRecordedRef.current) {
