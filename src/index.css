@@ -1045,10 +1045,14 @@
 }
 
 /* Fix for frozen dialogs - ensure content is scrollable */
-.overflow-y-auto,
-.overflow-auto {
+.overflow-y-auto {
   -webkit-overflow-scrolling: touch !important;
   touch-action: pan-y !important;
+}
+
+.overflow-auto {
+  -webkit-overflow-scrolling: touch !important;
+  touch-action: auto !important;
 }
 
 /* Fix Sheet/Drawer scrolling */
