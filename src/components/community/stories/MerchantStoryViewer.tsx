@@ -228,6 +228,14 @@ export default function MerchantStoryViewer({ groups, initialGroupIndex, onClose
             autoPlay
             muted
             playsInline
+            preload="auto"
+            onCanPlay={(e) => {
+              const vid = e.currentTarget;
+              vid.play().catch(() => {
+                vid.muted = true;
+                vid.play().catch(() => {});
+              });
+            }}
           />
         ) : (
           <img
