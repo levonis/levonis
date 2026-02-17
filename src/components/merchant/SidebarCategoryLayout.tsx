@@ -73,8 +73,8 @@ export default function SidebarCategoryLayout({
 
   return (
     <div className="flex gap-2 min-h-[300px]" dir="rtl">
-      {/* Sidebar */}
-      <div className="w-[28%] shrink-0 space-y-0.5 border-l border-border/30 pl-1.5 max-h-[70vh] overflow-y-auto">
+      {/* Sidebar - sticky */}
+      <div className="w-[28%] shrink-0 self-start sticky top-0 space-y-0.5 border-l border-border/30 pl-1.5 max-h-[70vh] overflow-y-auto">
         {mainCategories.map((cat) => {
           const isActive = activeCatId === cat.id;
           const count = getProductsForCategory(cat.id).length;
@@ -84,12 +84,15 @@ export default function SidebarCategoryLayout({
               onClick={() => handleCatClick(cat.id)}
               className={`w-full text-right px-2.5 py-2.5 rounded-lg text-xs font-medium transition-all ${
                 isActive
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-foreground hover:bg-muted"
+                  ? "bg-accent/80 text-accent-foreground border border-primary/20 shadow-sm"
+                  : "text-foreground hover:bg-muted/60"
               }`}
             >
-              {cat.name_ar}
-              <span className={`block text-[10px] mt-0.5 ${isActive ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
+              <span className="flex items-center gap-1.5">
+                {isActive && <span className="w-1 h-4 rounded-full bg-primary shrink-0" />}
+                <span>{cat.name_ar}</span>
+              </span>
+              <span className={`block text-[10px] mt-0.5 ${isActive ? "text-muted-foreground" : "text-muted-foreground/70"}`}>
                 {count} منتج
               </span>
             </button>
@@ -97,7 +100,7 @@ export default function SidebarCategoryLayout({
         })}
       </div>
 
-      {/* Products area */}
+      {/* Products area - scrollable */}
       <div className="flex-1 min-w-0">
         {visibleProducts.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">
