@@ -77,7 +77,18 @@ export default function StoryViewer({ sections, initialSectionIndex, onClose }: 
 
     v.currentTime = 0;
     v.muted = isMuted;
-    v.play().catch(() => {});
+    const tryPlay = () => {
+      v.play().catch(() => {
+        // Retry muted if autoplay blocked
+        v.muted = true;
+        v.play().catch(() => {});
+      });
+    };
+    if (v.readyState >= 2) {
+      tryPlay();
+    } else {
+      v.addEventListener('canplay', tryPlay, { once: true });
+    }
 
     const handleEnded = () => goNext();
     v.addEventListener('ended', handleEnded);

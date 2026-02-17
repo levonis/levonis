@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { MessageCircle, Send, Loader2, ChevronDown, User, Trash2, Edit3, X, Check } from "lucide-react";
+import { MessageCircle, Send, Loader2, ChevronDown, User, Trash2, Edit3, X, Check, Reply, CornerDownLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -15,10 +15,12 @@ interface Comment {
   content: string;
   user_id: string;
   created_at: string;
+  parent_id: string | null;
   user?: {
     full_name: string | null;
     avatar_url: string | null;
   };
+  replies?: Comment[];
 }
 
 interface CommentsSectionProps {
@@ -39,26 +41,26 @@ export default function CommentsSection({
   const [visibleCount, setVisibleCount] = useState(initialVisibleCount);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
+  const [replyingTo, setReplyingTo] = useState<{ id: string; name: string } | null>(null);
+  const [replyContent, setReplyContent] = useState("");
 
-  // Fetch comments
+  // Fetch comments with replies
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ["comments", targetType, targetId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("community_comments")
-        .select("id, content, user_id, created_at")
+        .select("id, content, user_id, created_at, parent_id")
         .eq("target_type", targetType)
         .eq("target_id", targetId)
         .eq("is_hidden", false)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: true });
 
       if (error) throw error;
 
-      // Fetch user profiles
       const userIds = [...new Set((data || []).map(c => c.user_id))];
       if (userIds.length === 0) return [];
 
-      // Use profiles_public view to protect sensitive user data
       const { data: profiles } = await supabase
         .from("profiles_public")
         .select("id, full_name, avatar_url")
@@ -66,15 +68,34 @@ export default function CommentsSection({
 
       const profileMap = new Map((profiles || []).map(p => [p.id, p]));
 
-      return (data || []).map(comment => ({
+      const allComments = (data || []).map(comment => ({
         ...comment,
         user: profileMap.get(comment.user_id) || null,
+        replies: [] as Comment[],
       })) as Comment[];
+
+      // Nest replies under parents
+      const rootComments: Comment[] = [];
+      const commentMap = new Map<string, Comment>();
+      allComments.forEach(c => commentMap.set(c.id, c));
+
+      allComments.forEach(c => {
+        if (c.parent_id && commentMap.has(c.parent_id)) {
+          commentMap.get(c.parent_id)!.replies!.push(c);
+        } else if (!c.parent_id) {
+          rootComments.push(c);
+        } else {
+          // orphaned reply, show as root
+          rootComments.push(c);
+        }
+      });
+
+      return rootComments.reverse(); // newest first
     },
   });
 
   const addCommentMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, parentId }: { content: string; parentId?: string }) => {
       if (!user?.id) throw new Error("يجب تسجيل الدخول");
       if (!content.trim()) throw new Error("التعليق فارغ");
 
@@ -83,6 +104,7 @@ export default function CommentsSection({
         target_id: targetId,
         user_id: user.id,
         content: content.trim(),
+        parent_id: parentId || null,
       });
 
       if (error) throw error;
@@ -91,6 +113,8 @@ export default function CommentsSection({
       queryClient.invalidateQueries({ queryKey: ["comments", targetType, targetId] });
       queryClient.invalidateQueries({ queryKey: ["comments-count", targetType, targetId] });
       setNewComment("");
+      setReplyingTo(null);
+      setReplyContent("");
       toast({ title: "تم إضافة التعليق" });
     },
     onError: (err: Error) => {
@@ -147,7 +171,14 @@ export default function CommentsSection({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (newComment.trim()) {
-      addCommentMutation.mutate(newComment);
+      addCommentMutation.mutate({ content: newComment });
+    }
+  };
+
+  const handleReplySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (replyContent.trim() && replyingTo) {
+      addCommentMutation.mutate({ content: replyContent, parentId: replyingTo.id });
     }
   };
 
@@ -169,6 +200,143 @@ export default function CommentsSection({
 
   const visibleComments = comments.slice(0, visibleCount);
   const hasMore = comments.length > visibleCount;
+
+  const renderComment = (comment: Comment, isReply = false) => (
+    <div
+      key={comment.id}
+      className={`flex gap-2 p-2 rounded-lg bg-white/5 border border-white/5 ${isReply ? 'mr-6 border-r-2 border-r-primary/20' : ''}`}
+    >
+      <Avatar className="h-7 w-7 shrink-0 border border-white/10">
+        {comment.user?.avatar_url ? (
+          <AvatarImage src={comment.user.avatar_url} />
+        ) : null}
+        <AvatarFallback className="bg-gradient-to-br from-primary/30 to-primary/10 text-primary text-[10px] font-bold">
+          {comment.user?.full_name?.[0] || <User className="h-3 w-3" />}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-[10px] font-semibold text-foreground truncate">
+            {comment.user?.full_name || "مستخدم"}
+          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-[9px] text-muted-foreground shrink-0">
+              {formatDistanceToNow(new Date(comment.created_at), {
+                addSuffix: true,
+                locale: ar,
+              })}
+            </span>
+            {user?.id === comment.user_id && (
+              <div className="flex items-center gap-0.5">
+                {editingId !== comment.id && (
+                  <button
+                    onClick={() => handleStartEdit(comment)}
+                    className="p-0.5 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <Edit3 className="h-3 w-3" />
+                  </button>
+                )}
+                <button
+                  onClick={() => deleteCommentMutation.mutate(comment.id)}
+                  disabled={deleteCommentMutation.isPending}
+                  className="p-0.5 rounded hover:bg-destructive/20 text-destructive/70 hover:text-destructive transition-colors"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {editingId === comment.id ? (
+          <div className="flex gap-1.5 mt-1">
+            <Input
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              className="flex-1 h-7 text-[10px] bg-white/10 border-white/20"
+              autoFocus
+            />
+            <button
+              onClick={handleSaveEdit}
+              disabled={updateCommentMutation.isPending}
+              className="p-1 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
+            >
+              {updateCommentMutation.isPending ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Check className="h-3.5 w-3.5" />
+              )}
+            </button>
+            <button
+              onClick={handleCancelEdit}
+              className="p-1 rounded bg-white/10 text-muted-foreground hover:bg-white/20 transition-colors"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ) : (
+          <p className="text-[11px] text-foreground/80 mt-0.5 break-words">
+            {comment.content}
+          </p>
+        )}
+
+        {/* Reply button */}
+        {!isReply && user && editingId !== comment.id && (
+          <button
+            onClick={() => setReplyingTo({ id: comment.id, name: comment.user?.full_name || "مستخدم" })}
+            className="flex items-center gap-1 mt-1 text-[10px] text-muted-foreground hover:text-primary transition-colors"
+          >
+            <Reply className="h-3 w-3" />
+            رد
+          </button>
+        )}
+
+        {/* Inline reply form */}
+        {replyingTo?.id === comment.id && (
+          <form onSubmit={handleReplySubmit} className="flex gap-1.5 mt-2">
+            <div className="flex-1 relative">
+              <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                <CornerDownLeft className="h-3 w-3 text-primary/50" />
+              </div>
+              <Input
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder={`رد على ${replyingTo.name}...`}
+                className="h-7 text-[10px] bg-white/10 border-white/20 pr-7"
+                autoFocus
+              />
+            </div>
+            <Button
+              type="submit"
+              size="sm"
+              className="h-7 px-2"
+              disabled={addCommentMutation.isPending || !replyContent.trim()}
+            >
+              {addCommentMutation.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Send className="h-3 w-3" />
+              )}
+            </Button>
+            <button
+              type="button"
+              onClick={() => { setReplyingTo(null); setReplyContent(""); }}
+              className="p-1 rounded bg-white/10 text-muted-foreground hover:bg-white/20"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </form>
+        )}
+
+        {/* Render replies */}
+        {comment.replies && comment.replies.length > 0 && (
+          <div className="mt-2 space-y-1.5">
+            {comment.replies.map(reply => renderComment(reply, true))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-3">
@@ -217,87 +385,7 @@ export default function CommentsSection({
         </p>
       ) : (
         <div className="space-y-2">
-          {visibleComments.map((comment) => (
-            <div
-              key={comment.id}
-              className="flex gap-2 p-2 rounded-lg bg-white/5 border border-white/5"
-            >
-              <Avatar className="h-8 w-8 shrink-0 border border-white/10">
-                {comment.user?.avatar_url ? (
-                  <AvatarImage src={comment.user.avatar_url} />
-                ) : null}
-                <AvatarFallback className="bg-gradient-to-br from-primary/30 to-primary/10 text-primary text-[10px] font-bold">
-                  {comment.user?.full_name?.[0] || <User className="h-3.5 w-3.5" />}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-semibold text-foreground truncate">
-                    {comment.user?.full_name || "مستخدم"}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-[9px] text-muted-foreground shrink-0">
-                      {formatDistanceToNow(new Date(comment.created_at), {
-                        addSuffix: true,
-                        locale: ar,
-                      })}
-                    </span>
-                    {user?.id === comment.user_id && (
-                      <div className="flex items-center gap-0.5">
-                        {editingId !== comment.id && (
-                          <button
-                            onClick={() => handleStartEdit(comment)}
-                            className="p-0.5 rounded hover:bg-primary/20 text-muted-foreground hover:text-primary transition-colors"
-                          >
-                            <Edit3 className="h-3 w-3" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => deleteCommentMutation.mutate(comment.id)}
-                          disabled={deleteCommentMutation.isPending}
-                          className="p-0.5 rounded hover:bg-destructive/20 text-destructive/70 hover:text-destructive transition-colors"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                
-                {editingId === comment.id ? (
-                  <div className="flex gap-1.5 mt-1">
-                    <Input
-                      value={editContent}
-                      onChange={(e) => setEditContent(e.target.value)}
-                      className="flex-1 h-7 text-[10px] bg-white/10 border-white/20"
-                      autoFocus
-                    />
-                    <button
-                      onClick={handleSaveEdit}
-                      disabled={updateCommentMutation.isPending}
-                      className="p-1 rounded bg-primary/20 text-primary hover:bg-primary/30 transition-colors"
-                    >
-                      {updateCommentMutation.isPending ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Check className="h-3.5 w-3.5" />
-                      )}
-                    </button>
-                    <button
-                      onClick={handleCancelEdit}
-                      className="p-1 rounded bg-white/10 text-muted-foreground hover:bg-white/20 transition-colors"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  <p className="text-[11px] text-foreground/80 mt-0.5 break-words">
-                    {comment.content}
-                  </p>
-                )}
-              </div>
-            </div>
-          ))}
+          {visibleComments.map((comment) => renderComment(comment))}
 
           {/* Show More Button */}
           {hasMore && (

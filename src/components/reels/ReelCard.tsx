@@ -123,7 +123,6 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
         poster={reel.thumbnail_url || undefined}
         onEnded={handleVideoEnd}
         onClick={togglePlay}
-        crossOrigin="anonymous"
       />
 
       {/* Play icon overlay */}
