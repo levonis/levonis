@@ -17,7 +17,7 @@ import MerchantCategoriesManager from "./MerchantCategoriesManager";
 import StoreLayoutSelector from "./StoreLayoutSelector";
 
 type SpecialtyType = "resin" | "filament" | "both";
-type LayoutType = "standard" | "grid_images" | "strip" | "taobao";
+type LayoutType = "standard" | "grid_images" | "strip" | "sidebar";
 
 interface Frame {
   id: string;
