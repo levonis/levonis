@@ -78,14 +78,24 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
     const video = videoRef.current;
     if (!video) return;
     if (video.paused) {
-      video.play().then(() => setIsPlaying(true));
+      video.muted = isMuted;
+      video.play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {
+          video.muted = true;
+          video.play()
+            .then(() => setIsPlaying(true))
+            .catch(() => setIsPlaying(false));
+        });
+      setShowPlayIcon(true);
+      setTimeout(() => setShowPlayIcon(false), 600);
     } else {
       video.pause();
       setIsPlaying(false);
+      setShowPlayIcon(true);
+      setTimeout(() => setShowPlayIcon(false), 600);
     }
-    setShowPlayIcon(true);
-    setTimeout(() => setShowPlayIcon(false), 600);
-  }, []);
+  }, [isMuted]);
 
   const handleProductClick = useCallback(() => {
     if (reel.product?.id) {
@@ -128,8 +138,15 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
       {/* Play icon overlay */}
       {showPlayIcon && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          <div className="w-16 h-16 rounded-full bg-black/40 flex items-center justify-center animate-ping-once">
-            <Play className="w-8 h-8 text-white fill-white" />
+          <div className="w-16 h-16 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center animate-pulse">
+            {isPlaying ? (
+              <Play className="w-8 h-8 text-white fill-white" />
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <div className="w-2 h-8 bg-white rounded-sm" />
+                <div className="w-2 h-8 bg-white rounded-sm" />
+              </div>
+            )}
           </div>
         </div>
       )}
