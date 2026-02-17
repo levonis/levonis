@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, ArrowRight, Package } from "lucide-react";
 import CompactProductCard from "./CompactProductCard";
+import SidebarCategoryLayout from "./SidebarCategoryLayout";
 
 interface Category {
   id: string;
@@ -30,7 +31,7 @@ interface Product {
   category_ids?: string[] | null;
 }
 
-type LayoutType = "standard" | "grid_images" | "strip" | "taobao";
+type LayoutType = "standard" | "grid_images" | "strip" | "sidebar";
 
 interface Props {
   merchantId: string;
@@ -223,34 +224,13 @@ export default function MerchantCategoriesDisplay({ merchantId, products, layout
         </div>
       );
 
-    case "taobao":
-      return (
-        <div className="flex gap-3 min-h-[300px]">
-          {/* Sidebar */}
-          <div className="w-[28%] shrink-0 space-y-1 border-l border-border/50 pl-2">
-            {mainCategories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategoryClick(cat)}
-                className={`w-full text-right px-2 py-2 rounded-lg text-xs font-medium transition-all hover:bg-primary/10 hover:text-primary ${
-                  activeCategoryId === cat.id ? "bg-primary/15 text-primary" : "text-foreground"
-                }`}
-              >
-                {cat.name_ar}
-                <span className="block text-[10px] text-muted-foreground mt-0.5">
-                  {getProductsForCategory(cat.id).length} منتج
-                </span>
-              </button>
-            ))}
-          </div>
-          {/* Products area */}
-          <div className="flex-1">
-            <p className="text-xs text-muted-foreground text-center py-8">
-              اختر قسماً لعرض المنتجات
-            </p>
-          </div>
-        </div>
-      );
+    case "sidebar":
+      return <SidebarCategoryLayout
+        mainCategories={mainCategories}
+        getProductsForCategory={getProductsForCategory}
+        getSubCategories={getSubCategories}
+        onProductClick={onProductClick}
+      />;
 
     // Standard layout (default)
     default:

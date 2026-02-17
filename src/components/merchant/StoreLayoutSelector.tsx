@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Check, LayoutGrid, Rows3, Columns2, AlignRight } from "lucide-react";
 
-type LayoutType = "standard" | "grid_images" | "strip" | "taobao";
+type LayoutType = "standard" | "grid_images" | "strip" | "sidebar";
 
 interface Props {
   value: LayoutType;
@@ -74,8 +74,8 @@ const LAYOUTS: { value: LayoutType; label: string; desc: string; icon: typeof La
     ),
   },
   {
-    value: "taobao",
-    label: "تاوباو",
+    value: "sidebar",
+    label: "شريط جانبي",
     desc: "أقسام جانبية مع المنتجات",
     icon: Columns2,
     preview: (
