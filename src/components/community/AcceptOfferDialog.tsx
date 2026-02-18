@@ -166,6 +166,8 @@ export default function AcceptOfferDialog({
       qc.invalidateQueries({ queryKey: ["request-offers", requestId] });
       qc.invalidateQueries({ queryKey: ["user-wallet", user?.id] });
       qc.invalidateQueries({ queryKey: ["community-print-requests"] });
+      qc.invalidateQueries({ queryKey: ["my-print-requests"] });
+      qc.invalidateQueries({ queryKey: ["my-requests-offers"] });
       
       toast({
         title: "تم قبول العرض بنجاح ✓",

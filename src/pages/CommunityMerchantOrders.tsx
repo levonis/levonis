@@ -463,7 +463,7 @@ export default function CommunityMerchantOrders() {
                         size="sm"
                         variant="outline"
                         className="h-8 text-xs rounded-lg"
-                        onClick={() => navigate(`/community/messages?request=${offer.request_id}`)}
+                        onClick={() => navigate(`/community/messages?request_id=${offer.request_id}`)}
                       >
                         <MessageSquare className="h-3 w-3 ml-1" />
                         المحادثة
