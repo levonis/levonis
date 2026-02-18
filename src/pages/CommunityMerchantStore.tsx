@@ -3,7 +3,7 @@ import MerchantReelUpload from "@/components/reels/MerchantReelUpload";
 import MerchantReelsSection from "@/components/merchant/MerchantReelsSection";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Store, Plus, Star, Eye, Package, Sparkles, Film, FolderOpen } from "lucide-react";
+import { Store, Plus, Star, Eye, Package, Sparkles, Film, FolderOpen, Settings, MessageSquare, Edit2, Trash2, EyeOff, Clock3, Box, Layers, Droplets, Palette, Scale, Wallet, CreditCard, BadgePercent, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertCircle } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
 import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 interface MerchantProduct {
   id: string;
@@ -51,7 +53,7 @@ interface MerchantProduct {
 
 type ProductFilter = "all" | "active" | "hidden" | "featured";
 type ViewMode = "grid" | "list";
-type StoreTab = "products" | "categories";
+type StoreTab = "products" | "categories" | "reels" | "reviews" | "settings";
 
 const emptyFormData: ProductFormData = {
   title: "", description: "", price_iqd: "", original_price_iqd: "", estimated_days: "",
@@ -129,6 +131,22 @@ export default function CommunityMerchantStore() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as MerchantProduct[];
+    },
+  });
+
+  // Fetch recent reviews
+  const { data: recentReviews = [] } = useQuery({
+    queryKey: ["merchant-reviews", merchantApp?.id],
+    enabled: !!merchantApp?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_ratings")
+        .select("id, rating, comment, created_at, user_id")
+        .eq("merchant_id", merchantApp!.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) throw error;
+      return data || [];
     },
   });
 
@@ -263,6 +281,13 @@ export default function CommunityMerchantStore() {
 
   const socialLinks = merchantApp?.social_links as { facebook?: string; instagram?: string } | undefined;
 
+  const getMaterialLabel = (type?: string | null) => {
+    if (type === "resin") return "رزن";
+    if (type === "filament") return "فلمنت";
+    if (type === "both") return "كلاهما";
+    return null;
+  };
+
   if (appLoading || productsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-muted/20">
@@ -313,28 +338,27 @@ export default function CommunityMerchantStore() {
           <StoreStatsGrid stats={{ activeProducts: productCounts.active, completedOrders: storeStats?.completedOrders || 0, avgRating: storeStats?.avgRating || 0, totalRatings: storeStats?.totalRatings || 0, conversations: storeStats?.conversations || 0 }} variant="merchant" />
         </div>
 
-        {/* Store Pause Control */}
-        <div className="mb-6">
-          <StorePauseControl merchantId={merchantApp.id} storePaused={merchantApp.store_paused || false} storePauseEndDate={merchantApp.store_pause_end_date} storePauseMessage={merchantApp.store_pause_message} />
-        </div>
-
-        {/* Main Tabs: Products & Categories */}
+        {/* Main Tabs */}
         <Tabs value={storeTab} onValueChange={(v) => setStoreTab(v as StoreTab)} className="space-y-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <TabsList className="h-10">
-              <TabsTrigger value="products" className="gap-1.5 text-sm"><Package className="h-4 w-4" />المنتجات</TabsTrigger>
-              <TabsTrigger value="categories" className="gap-1.5 text-sm"><FolderOpen className="h-4 w-4" />الأقسام</TabsTrigger>
+            <TabsList className="h-10 flex-wrap">
+              <TabsTrigger value="products" className="gap-1.5 text-xs"><Package className="h-3.5 w-3.5" />المنتجات</TabsTrigger>
+              <TabsTrigger value="categories" className="gap-1.5 text-xs"><FolderOpen className="h-3.5 w-3.5" />الأقسام</TabsTrigger>
+              <TabsTrigger value="reels" className="gap-1.5 text-xs"><Film className="h-3.5 w-3.5" />الريلز</TabsTrigger>
+              <TabsTrigger value="reviews" className="gap-1.5 text-xs relative">
+                <Star className="h-3.5 w-3.5" />التقييمات
+                {recentReviews.length > 0 && <span className="absolute -top-1 -left-1 h-4 w-4 rounded-full bg-primary text-[9px] text-primary-foreground flex items-center justify-center">{recentReviews.length}</span>}
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="gap-1.5 text-xs"><Settings className="h-3.5 w-3.5" />الإعدادات</TabsTrigger>
             </TabsList>
 
             {storeTab === "products" && (
-              <div className="flex items-center gap-2">
-                {merchantApp?.id && (
-                  <MerchantReelUpload merchantId={merchantApp.id}>
-                    <Button size="sm" variant="outline" className="gap-1.5"><Film className="h-4 w-4" />رفع ريل</Button>
-                  </MerchantReelUpload>
-                )}
-                <Button size="sm" onClick={handleOpenAdd} className="gap-1.5 shadow-lg"><Plus className="h-4 w-4" />إضافة منتج</Button>
-              </div>
+              <Button size="sm" onClick={handleOpenAdd} className="gap-1.5 shadow-lg"><Plus className="h-4 w-4" />إضافة منتج</Button>
+            )}
+            {storeTab === "reels" && merchantApp?.id && (
+              <MerchantReelUpload merchantId={merchantApp.id}>
+                <Button size="sm" variant="outline" className="gap-1.5"><Film className="h-4 w-4" />رفع ريل</Button>
+              </MerchantReelUpload>
             )}
           </div>
 
@@ -367,10 +391,57 @@ export default function CommunityMerchantStore() {
           <TabsContent value="categories">
             {merchantApp?.id && <MerchantCategoriesManager merchantId={merchantApp.id} />}
           </TabsContent>
-        </Tabs>
 
-        {/* Reels */}
-        {merchantApp?.id && <MerchantReelsSection merchantId={merchantApp.id} />}
+          {/* Reels Tab */}
+          <TabsContent value="reels">
+            {merchantApp?.id && <MerchantReelsSection merchantId={merchantApp.id} />}
+          </TabsContent>
+
+          {/* Reviews Tab */}
+          <TabsContent value="reviews">
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 rounded-2xl p-6">
+              <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Star className="h-4 w-4 text-amber-500" />التقييمات الأخيرة ({recentReviews.length})</h3>
+              {recentReviews.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground text-sm">لا توجد تقييمات بعد</div>
+              ) : (
+                <div className="space-y-3">
+                  {recentReviews.map((review: any) => (
+                    <div key={review.id} className="p-3 rounded-xl border border-border/50 bg-muted/10">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 5 }).map((_, i) => (
+                            <Star key={i} className={`h-3 w-3 ${i < review.rating ? "fill-amber-500 text-amber-500" : "text-muted-foreground/30"}`} />
+                          ))}
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{new Date(review.created_at).toLocaleDateString("ar-IQ")}</span>
+                      </div>
+                      {review.comment && <p className="text-xs text-muted-foreground">{review.comment}</p>}
+                      <Button size="sm" variant="ghost" className="h-6 text-[10px] gap-1 mt-2 text-primary" onClick={() => navigate(`/community/messages?user_id=${review.user_id}`)}>
+                        <MessageSquare className="h-3 w-3" />رد
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6">
+            <StorePauseControl merchantId={merchantApp.id} storePaused={merchantApp.store_paused || false} storePauseEndDate={merchantApp.store_pause_end_date} storePauseMessage={merchantApp.store_pause_message} />
+            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 rounded-2xl p-6">
+              <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Settings className="h-4 w-4 text-primary" />إعدادات المتجر</h3>
+              <div className="space-y-3">
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setProfileEditorOpen(true)}>
+                  <Edit2 className="h-4 w-4" />تعديل الملف الشخصي والمتجر
+                </Button>
+                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate(`/store/${merchantApp.id}`)}>
+                  <ExternalLink className="h-4 w-4" />معاينة المتجر كزائر
+                </Button>
+              </div>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Product Form Dialog */}
@@ -387,64 +458,142 @@ export default function CommunityMerchantStore() {
         isSaving={saveMutation.isPending}
       />
 
-      {/* Detail Dialog */}
+      {/* Enhanced Detail Dialog */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden rounded-2xl border-border/50" dir="rtl">
-          <DialogHeader className="pb-3 border-b border-border/50">
-            <DialogTitle className="text-base font-bold flex items-center gap-2">
-              <Package className="h-4 w-4 text-primary" />
-              {selectedProduct?.title}
-            </DialogTitle>
-            <DialogDescription className="text-xs">معاينة المنتج</DialogDescription>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden rounded-2xl border-border/50 p-0" dir="rtl">
           {selectedProduct && (
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto py-3">
-              {selectedProduct.image_urls?.[0] && (
-                <div className="relative rounded-xl overflow-hidden bg-muted">
-                  <AspectRatio ratio={1}>
-                    <img src={selectedProduct.image_urls[selectedProduct.primary_image_index] || selectedProduct.image_urls[0]} alt={selectedProduct.title} className="w-full h-full object-contain" />
-                  </AspectRatio>
-                  {selectedProduct.is_preorder && <Badge className="absolute top-2 right-2 bg-amber-500 text-white">حجز مسبق</Badge>}
-                  {selectedProduct.stock_quantity !== null && <Badge variant="secondary" className="absolute top-2 left-2 text-[10px]">مخزون: {selectedProduct.stock_quantity}</Badge>}
-                </div>
-              )}
-
-              <div className="flex items-baseline gap-2 p-3 rounded-xl bg-primary/5 border border-primary/20">
-                {selectedProduct.price_iqd ? (
-                  <><span className="text-xl font-bold text-primary">{selectedProduct.price_iqd.toLocaleString()}</span><span className="text-xs text-muted-foreground">د.ع</span></>
+            <ScrollArea className="max-h-[90vh]">
+              <div className="relative">
+                {/* Image Gallery */}
+                {selectedProduct.image_urls && selectedProduct.image_urls.length > 0 ? (
+                  <div className="relative">
+                    <AspectRatio ratio={4/3}>
+                      <img src={selectedProduct.image_urls[selectedProduct.primary_image_index] || selectedProduct.image_urls[0]} alt={selectedProduct.title} className="w-full h-full object-cover" />
+                    </AspectRatio>
+                    {/* Badges overlay */}
+                    <div className="absolute top-3 right-3 flex gap-1.5">
+                      {selectedProduct.is_preorder && <Badge className="bg-amber-500 text-white border-0">حجز مسبق</Badge>}
+                      {selectedProduct.is_featured && <Badge className="bg-amber-500/90 text-white border-0"><Sparkles className="h-3 w-3 mr-1" />مميز</Badge>}
+                      {!selectedProduct.is_active && <Badge variant="secondary"><EyeOff className="h-3 w-3 mr-1" />مخفي</Badge>}
+                    </div>
+                    {selectedProduct.image_urls.length > 1 && (
+                      <div className="absolute bottom-3 left-3 right-3 flex gap-1.5 overflow-x-auto">
+                        {selectedProduct.image_urls.map((url, i) => (
+                          <img key={i} src={url} className={`h-10 w-10 rounded-lg object-cover border-2 ${i === selectedProduct.primary_image_index ? "border-primary" : "border-white/30"}`} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <span className="text-muted-foreground text-sm">لم يتم تحديد السعر</span>
+                  <div className="h-40 bg-muted/20 flex items-center justify-center"><Sparkles className="h-12 w-12 text-muted-foreground/20" /></div>
                 )}
               </div>
 
-              {/* Colors preview */}
-              {Array.isArray(selectedProduct.colors) && selectedProduct.colors.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
-                  {(selectedProduct.colors as any[]).map((c: any, i: number) => (
-                    <div key={i} className="flex items-center gap-1 px-2 py-1 rounded-lg border border-border/50 text-[10px]">
-                      <span className="h-3 w-3 rounded-full border" style={{ backgroundColor: c.hex_code }} />
-                      {c.name}
+              <div className="p-5 space-y-4">
+                {/* Title & Description */}
+                <div>
+                  <h2 className="text-lg font-bold text-foreground mb-1">{selectedProduct.title}</h2>
+                  {selectedProduct.description && <p className="text-sm text-muted-foreground leading-relaxed">{selectedProduct.description}</p>}
+                </div>
+
+                {/* Price Section */}
+                <div className="flex items-baseline gap-3 p-3 rounded-xl bg-primary/5 border border-primary/20">
+                  {selectedProduct.price_iqd ? (
+                    <>
+                      <span className="text-2xl font-bold text-primary">{selectedProduct.price_iqd.toLocaleString()}</span>
+                      <span className="text-sm text-muted-foreground">د.ع</span>
+                      {selectedProduct.original_price_iqd && selectedProduct.original_price_iqd > selectedProduct.price_iqd && (
+                        <span className="text-sm text-muted-foreground line-through mr-auto">{selectedProduct.original_price_iqd.toLocaleString()} د.ع</span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground text-sm">لم يتم تحديد السعر</span>
+                  )}
+                </div>
+
+                {/* Specs Grid */}
+                <div className="grid grid-cols-2 gap-2">
+                  {getMaterialLabel(selectedProduct.material_type) && (
+                    <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border/50 bg-muted/10">
+                      <Layers className="h-4 w-4 text-primary" />
+                      <div><p className="text-[10px] text-muted-foreground">المادة</p><p className="text-xs font-bold">{getMaterialLabel(selectedProduct.material_type)}</p></div>
                     </div>
-                  ))}
+                  )}
+                  {selectedProduct.estimated_days && (
+                    <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border/50 bg-muted/10">
+                      <Clock3 className="h-4 w-4 text-primary" />
+                      <div><p className="text-[10px] text-muted-foreground">مدة التنفيذ</p><p className="text-xs font-bold">{selectedProduct.estimated_days} يوم</p></div>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg border border-border/50 bg-muted/10">
+                    <Box className="h-4 w-4 text-primary" />
+                    <div><p className="text-[10px] text-muted-foreground">المخزون</p><p className="text-xs font-bold">{selectedProduct.stock_quantity !== null ? selectedProduct.stock_quantity : "غير محدود"}</p></div>
+                  </div>
+                  {selectedProduct.is_preorder && (
+                    <div className="flex items-center gap-2 p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5">
+                      <Clock3 className="h-4 w-4 text-amber-500" />
+                      <div><p className="text-[10px] text-muted-foreground">الطابور</p><p className="text-xs font-bold text-amber-600">{selectedProduct.preorder_queue_current || 0}/{selectedProduct.preorder_queue_total}</p></div>
+                    </div>
+                  )}
                 </div>
-              )}
 
-              {/* Options preview */}
-              {Array.isArray(selectedProduct.options) && selectedProduct.options.length > 0 && (
+                {/* Payment Options */}
                 <div className="flex flex-wrap gap-1.5">
-                  {(selectedProduct.options as any[]).map((o: any, i: number) => (
-                    <Badge key={i} variant="outline" className="text-[10px]">
-                      {o.name} {o.price_adjustment ? `(${o.price_adjustment > 0 ? "+" : ""}${o.price_adjustment.toLocaleString()})` : ""}
-                    </Badge>
-                  ))}
+                  {selectedProduct.allow_wallet_payment && <Badge variant="outline" className="text-[10px] gap-1"><Wallet className="h-3 w-3" />دفع محفظة</Badge>}
+                  {selectedProduct.allow_partial_payment && <Badge variant="outline" className="text-[10px] gap-1"><CreditCard className="h-3 w-3" />دفع جزئي</Badge>}
+                  <Badge variant="outline" className={`text-[10px] ${selectedProduct.is_active ? "text-green-500 border-green-500/30" : "text-muted-foreground"}`}>
+                    {selectedProduct.is_active ? "نشط" : "مخفي"}
+                  </Badge>
                 </div>
-              )}
 
-              <div className="flex gap-2">
-                <Button size="sm" className="flex-1" onClick={() => { setDetailDialogOpen(false); handleOpenEdit(selectedProduct); }}>تعديل</Button>
-                <Button size="sm" variant="outline" onClick={() => navigate(`/store/${merchantApp.id}`)}>عرض المتجر</Button>
+                {/* Colors */}
+                {Array.isArray(selectedProduct.colors) && selectedProduct.colors.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold mb-2 flex items-center gap-1.5"><Palette className="h-3.5 w-3.5 text-primary" />الألوان ({selectedProduct.colors.length})</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(selectedProduct.colors as any[]).map((c: any, i: number) => (
+                        <div key={i} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-border/50 bg-muted/10">
+                          <span className="h-4 w-4 rounded-full border border-border/50" style={{ backgroundColor: c.hex_code }} />
+                          <span className="text-xs">{c.name || "بدون اسم"}</span>
+                          {c.stock_quantity !== null && <span className="text-[9px] text-muted-foreground">(مخزون: {c.stock_quantity})</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Options */}
+                {Array.isArray(selectedProduct.options) && selectedProduct.options.length > 0 && (
+                  <div>
+                    <p className="text-xs font-bold mb-2 flex items-center gap-1.5"><Scale className="h-3.5 w-3.5 text-primary" />الخيارات ({selectedProduct.options.length})</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(selectedProduct.options as any[]).map((o: any, i: number) => (
+                        <Badge key={i} variant="outline" className="text-[10px] gap-1">
+                          {o.name}
+                          {o.price_adjustment ? ` (${o.price_adjustment > 0 ? "+" : ""}${o.price_adjustment.toLocaleString()})` : ""}
+                          {o.stock_quantity !== null && ` • مخزون: ${o.stock_quantity}`}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <Separator />
+
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <Button size="sm" className="flex-1 gap-1.5" onClick={() => { setDetailDialogOpen(false); handleOpenEdit(selectedProduct); }}>
+                    <Edit2 className="h-3.5 w-3.5" />تعديل المنتج
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate(`/store/${merchantApp.id}`)}>
+                    <ExternalLink className="h-3.5 w-3.5" />عرض المتجر
+                  </Button>
+                  <Button size="sm" variant="destructive" className="gap-1.5" onClick={() => { setDetailDialogOpen(false); handleDeleteClick(selectedProduct.id); }}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
-            </div>
+            </ScrollArea>
           )}
         </DialogContent>
       </Dialog>

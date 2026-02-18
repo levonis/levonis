@@ -23,6 +23,7 @@ export default function CommunityMessages() {
   // Get params for automatic conversation opening or creation
   const autoOpenConversationId = searchParams.get('auto_open');
   const merchantId = searchParams.get('merchant_id');
+  const userId = searchParams.get('user_id'); // Direct user_id for messaging any user
   const productTitle = searchParams.get('product_title');
   const productPrice = searchParams.get('product_price');
   const productImage = searchParams.get('product_image');
@@ -35,7 +36,6 @@ export default function CommunityMessages() {
     imageUrl?: string | null;
     price?: number | null;
   } | null>(() => {
-    // Initialize context from URL params if present
     if (productTitle) {
       return {
         type: 'product',
@@ -47,23 +47,45 @@ export default function CommunityMessages() {
     return null;
   });
 
-  // Create or find existing conversation with merchant
+  // Create or find existing conversation with merchant (by merchant_applications.id)
   const createConversationMutation = useMutation({
     mutationFn: async () => {
-      if (!user || !merchantId) throw new Error('Missing data');
+      if (!user) throw new Error('Missing user');
 
-      // First, get the merchant's user_id and auto-response settings from merchant_applications
-      const { data: merchantApp, error: merchantError } = await supabase
-        .from('merchant_applications')
-        .select('user_id, display_name, inquiry_template, welcome_message, away_message, is_away')
-        .eq('id', merchantId)
-        .maybeSingle();
+      let sellerId: string;
+      let displayName: string = 'مستخدم';
 
-      if (merchantError || !merchantApp) {
-        throw new Error('لا يمكن العثور على التاجر');
+      if (merchantId) {
+        // Merchant flow: resolve merchant_applications.id -> user_id
+        const { data: merchantApp, error: merchantError } = await supabase
+          .from('merchant_applications')
+          .select('user_id, display_name, inquiry_template, welcome_message, away_message, is_away')
+          .eq('id', merchantId)
+          .maybeSingle();
+
+        if (merchantError || !merchantApp) {
+          throw new Error('لا يمكن العثور على التاجر');
+        }
+        sellerId = merchantApp.user_id;
+        displayName = merchantApp.display_name || 'تاجر';
+      } else if (userId) {
+        // Direct user flow: use user_id directly
+        sellerId = userId;
+        // Fetch user name
+        const { data: targetProfile } = await supabase
+          .from('profiles')
+          .select('full_name, username')
+          .eq('id', userId)
+          .maybeSingle();
+        displayName = targetProfile?.full_name || targetProfile?.username || 'مستخدم';
+      } else {
+        throw new Error('Missing merchant_id or user_id');
       }
 
-      const sellerId = merchantApp.user_id;
+      // Prevent self-conversations
+      if (sellerId === user.id) {
+        throw new Error('لا يمكنك مراسلة نفسك');
+      }
 
       // If request_id is provided, fetch request details
       let requestDetails: { title: string; description: string; size: string; colors: string; image_url?: string | null } | null = null;
@@ -75,7 +97,6 @@ export default function CommunityMessages() {
           .maybeSingle();
         requestDetails = reqData;
         
-        // Set entry context for the request bar
         if (reqData) {
           setEntryContext({
             type: 'request',
@@ -85,8 +106,6 @@ export default function CommunityMessages() {
           });
         }
       } else if (productTitle) {
-        // Product context is already set from URL params in initial state
-        // Just update if needed
         setEntryContext({
           type: 'product',
           title: productTitle,
@@ -95,23 +114,18 @@ export default function CommunityMessages() {
         });
       }
 
-      // Check if conversation already exists between buyer and seller
+      // Check if conversation already exists between buyer and seller (bidirectional)
       const { data: existingConvs } = await supabase
         .from('listing_conversations')
         .select('id, buyer_id, seller_id')
-        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
-
-      // Find if there's already a conversation with this merchant (seller)
-      const existingConv = existingConvs?.find(c => 
-        c.seller_id === sellerId || c.buyer_id === sellerId
-      );
+        .or(`and(buyer_id.eq.${user.id},seller_id.eq.${sellerId}),and(buyer_id.eq.${sellerId},seller_id.eq.${user.id})`);
 
       let conversationId: string;
       let isNewConversation = false;
 
-      if (existingConv) {
-        conversationId = existingConv.id;
-        // Update conversation context and bring it to top
+      if (existingConvs && existingConvs.length > 0) {
+        conversationId = existingConvs[0].id;
+        // Update conversation context
         await supabase.from('listing_conversations')
           .update({ 
             updated_at: new Date().toISOString(),
@@ -122,17 +136,16 @@ export default function CommunityMessages() {
               requestId: requestId,
             } : null
           })
-          .eq('id', existingConv.id);
+          .eq('id', conversationId);
       } else {
         isNewConversation = true;
-        // Create new conversation
         const convCode = `CONV-${Date.now().toString(36).toUpperCase()}`;
         const { data: newConv, error: convError } = await supabase
           .from('listing_conversations')
           .insert({
             buyer_id: user.id,
             seller_id: sellerId,
-            listing_id: merchantId,
+            listing_id: merchantId || sellerId,
             conversation_code: convCode,
             status: 'open',
             entry_context: requestDetails || productTitle ? {
@@ -148,26 +161,15 @@ export default function CommunityMessages() {
         if (convError) throw convError;
         conversationId = newConv.id;
 
-        // Send welcome message if merchant has one configured
-        if (merchantApp.welcome_message && isNewConversation) {
-          await supabase.from('listing_messages').insert({
-            conversation_id: conversationId,
-            sender_id: sellerId,
-            content: `🤖 ${merchantApp.welcome_message}`,
-          });
-        }
-      }
-
-      // Send away message if merchant is away
-      if (merchantApp.is_away && merchantApp.away_message) {
+        // Send initial greeting
         await supabase.from('listing_messages').insert({
           conversation_id: conversationId,
-          sender_id: sellerId,
-          content: `⏰ ${merchantApp.away_message}`,
+          sender_id: user.id,
+          content: `👋 مرحباً، تم بدء محادثة جديدة.`,
         });
       }
 
-      // Send Telegram notification to merchant
+      // Send Telegram notification
       const { data: userProfile } = await supabase
         .from('profiles')
         .select('full_name, username')
@@ -180,18 +182,17 @@ export default function CommunityMessages() {
         body: {
           user_id: sellerId,
           event_type: 'new_message',
-          listing_title: merchantApp.display_name,
+          listing_title: displayName,
           sender_name: senderName,
           message_content: 'محادثة جديدة',
           conversation_id: conversationId,
         },
-      });
+      }).catch(() => {});
 
       return conversationId;
     },
     onSuccess: (conversationId) => {
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
-      // Update URL to auto-open the conversation
       navigate(`/community/messages?auto_open=${conversationId}`, { replace: true });
       setCreatingConversation(false);
     },
@@ -201,20 +202,19 @@ export default function CommunityMessages() {
     },
   });
 
-  // Handle creating conversation if merchant_id is provided
+  // Handle creating conversation if merchant_id or user_id is provided
   useEffect(() => {
-    if (merchantId && user && !creatingConversation && !autoOpenConversationId) {
+    if ((merchantId || userId) && user && !creatingConversation && !autoOpenConversationId) {
       setCreatingConversation(true);
       createConversationMutation.mutate();
     }
-  }, [merchantId, user, autoOpenConversationId]);
+  }, [merchantId, userId, user, autoOpenConversationId]);
 
   useEffect(() => {
     const t = window.setTimeout(() => setLoading(false), 250);
     return () => window.clearTimeout(t);
   }, []);
 
-  // Handle dialog close - return to community
   const handleClose = () => {
     setOpen(false);
     navigate('/community');
@@ -223,7 +223,6 @@ export default function CommunityMessages() {
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-6 pt-20 max-w-6xl">
-        {/* Loading State */}
         {(loading || creatingConversation) && (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -233,7 +232,6 @@ export default function CommunityMessages() {
           </div>
         )}
 
-        {/* Conversations Dialog */}
         <ListingConversations
           externalOpen={open}
           onExternalOpenChange={setOpen}
