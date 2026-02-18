@@ -1,4 +1,4 @@
-import { Clock, BadgePercent, Play, Droplets, Layers, Eye, Edit2, EyeOff, Sparkles, Trash2, ShoppingCart, Box, Clock3, Wallet } from "lucide-react";
+import { Clock, BadgePercent, Play, Droplets, Layers, Eye, Edit2, EyeOff, Sparkles, Trash2, ShoppingCart, Box, Clock3, Wallet, MessageCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -31,6 +31,7 @@ interface ProductCardEnhancedProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onQuickOrder?: () => void;
+  onContact?: () => void;
 }
 
 export default function ProductCardEnhanced({
@@ -41,6 +42,7 @@ export default function ProductCardEnhanced({
   onEdit,
   onDelete,
   onQuickOrder,
+  onContact,
 }: ProductCardEnhancedProps) {
   const mainImage = product.image_urls?.[product.primary_image_index] || product.image_urls?.[0];
   const hasDiscount = product.original_price_iqd && product.price_iqd && product.original_price_iqd > product.price_iqd;
@@ -59,6 +61,10 @@ export default function ProductCardEnhanced({
   };
 
   const materialBadge = getMaterialBadge(product.material_type);
+
+  // Order/Reserve button label
+  const orderLabel = product.is_preorder ? "احجز" : "اطلب";
+  const OrderIcon = product.is_preorder ? Clock3 : (product.allow_wallet_payment ? Wallet : ShoppingCart);
 
   if (viewMode === "list") {
     return (
@@ -98,10 +104,19 @@ export default function ProductCardEnhanced({
               )}
             </div>
             <div className="flex gap-1.5" onClick={(e) => e.stopPropagation()}>
-              {variant === "client" && onQuickOrder && !isOutOfStock && (
-                <Button size="sm" className="h-7 text-[10px] gap-1 px-2" onClick={onQuickOrder}>
-                  {product.is_preorder ? <><Clock3 className="h-3 w-3" />احجز</> : <><ShoppingCart className="h-3 w-3" />اطلب</>}
-                </Button>
+              {variant === "client" && !isOutOfStock && (
+                <>
+                  {onContact && (
+                    <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 px-2" onClick={onContact}>
+                      <MessageCircle className="h-3 w-3" />
+                    </Button>
+                  )}
+                  {onQuickOrder && (
+                    <Button size="sm" className="h-7 text-[10px] gap-1 px-2" onClick={onQuickOrder}>
+                      <OrderIcon className="h-3 w-3" />{orderLabel}
+                    </Button>
+                  )}
+                </>
               )}
               {variant === "merchant" && (
                 <>
@@ -151,12 +166,19 @@ export default function ProductCardEnhanced({
           </Badge>
         )}
 
-        {/* Quick Order for clients */}
-        {variant === "client" && onQuickOrder && !isOutOfStock && (
-          <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
-            <Button size="sm" className="h-7 text-[10px] gap-1 px-2 rounded-full shadow-lg" onClick={onQuickOrder}>
-              {product.is_preorder ? <><Clock3 className="h-3 w-3" />احجز</> : product.allow_wallet_payment ? <><Wallet className="h-3 w-3" />اطلب</> : <><ShoppingCart className="h-3 w-3" />اطلب</>}
-            </Button>
+        {/* Client Action Buttons - Always visible at bottom */}
+        {variant === "client" && !isOutOfStock && (
+          <div className="absolute bottom-2 left-2 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+            {onContact && (
+              <Button size="icon" className="h-7 w-7 rounded-full bg-white/90 hover:bg-white text-foreground shadow-lg" onClick={onContact}>
+                <MessageCircle className="h-3 w-3" />
+              </Button>
+            )}
+            {onQuickOrder && (
+              <Button size="sm" className="h-7 text-[10px] gap-1 px-2 rounded-full shadow-lg" onClick={onQuickOrder}>
+                <OrderIcon className="h-3 w-3" />{orderLabel}
+              </Button>
+            )}
           </div>
         )}
 
@@ -221,6 +243,20 @@ export default function ProductCardEnhanced({
             <span className="text-sm text-muted-foreground italic">اتصل للسعر</span>
           )}
         </div>
+
+        {/* Client: Always visible order button */}
+        {variant === "client" && !isOutOfStock && onQuickOrder && (
+          <div className="flex gap-1.5 pt-1" onClick={(e) => e.stopPropagation()}>
+            <Button size="sm" className="flex-1 h-8 text-[11px] gap-1.5 font-bold" onClick={onQuickOrder}>
+              <OrderIcon className="h-3.5 w-3.5" />{orderLabel}
+            </Button>
+            {onContact && (
+              <Button size="sm" variant="outline" className="h-8 w-8 p-0" onClick={onContact}>
+                <MessageCircle className="h-3.5 w-3.5" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
