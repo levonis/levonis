@@ -72,6 +72,7 @@ export default function CommunityMerchantStore() {
     is_active: true,
     is_featured: false,
     material_type: "" as MaterialType | "",
+    category_ids: [] as string[],
   });
 
   const [mediaState, setMediaState] = useState({
@@ -205,6 +206,7 @@ export default function CommunityMerchantStore() {
         is_active: formData.is_active,
         is_featured: formData.is_featured,
         material_type: formData.material_type,
+        category_ids: formData.category_ids.length > 0 ? formData.category_ids : null,
       };
 
       if (selectedProduct) {
@@ -257,6 +259,7 @@ export default function CommunityMerchantStore() {
       is_active: true,
       is_featured: false,
       material_type: "",
+      category_ids: [],
     });
     setMediaState({
       image_urls: [],
@@ -276,6 +279,7 @@ export default function CommunityMerchantStore() {
       is_active: product.is_active,
       is_featured: product.is_featured || false,
       material_type: product.material_type || "both",
+      category_ids: (product as any).category_ids || [],
     });
     setMediaState({
       image_urls: product.image_urls || [],
@@ -594,6 +598,18 @@ export default function CommunityMerchantStore() {
               </div>
             </div>
           </div>
+
+          {/* Commission Notice */}
+          <Alert className="border-amber-500/30 bg-amber-500/10">
+            <AlertDescription className="text-xs text-amber-600 dark:text-amber-400">
+              ⚠️ عمولة المنصة: <strong>1.7%</strong> تُخصم من كل عملية بيع. يتحكم الأدمن بنسبة العمولة.
+            </AlertDescription>
+          </Alert>
+          <Alert className="border-amber-500/30 bg-amber-500/10">
+            <AlertDescription className="text-xs text-amber-600 dark:text-amber-400">
+              ⚠️ عمولة المنصة: <strong>1.7%</strong> تُخصم من كل عملية بيع. يتحكم الأدمن بنسبة العمولة.
+            </AlertDescription>
+          </Alert>
 
           <div className="pt-4 border-t border-border/50">
             <Button

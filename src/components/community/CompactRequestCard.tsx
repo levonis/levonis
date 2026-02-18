@@ -115,7 +115,7 @@ export default function CompactRequestCard({
 
   const handleChat = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/community/messages?request=${request.id}`);
+    navigate(`/community/messages?request_id=${request.id}`);
   };
 
   const handlePrice = (e: React.MouseEvent) => {
@@ -262,35 +262,32 @@ export default function CompactRequestCard({
           </button>
 
           {/* Price Button - ONLY visible for merchants who don't own the request */}
-          {isMerchant && !isOwner && !isAccepted && onAddOffer && (
-            myOffer ? (
-              (myOffer.edit_count ?? 0) < 1 ? (
-                // Can still edit once
-                <button
-                  className="flex-1 h-7 px-2.5 flex items-center justify-center gap-1 rounded-md text-[9px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-400 hover:bg-amber-500/30 transition-colors"
-                  onClick={handlePrice}
-                >
-                  <Edit3 className="h-3 w-3" />
-                  تعديل التسعير
-                </button>
-              ) : (
-                // Already edited - locked
-                <div
-                  className="flex-1 flex items-center justify-center gap-1 h-7 px-2 rounded-md bg-muted/30 border border-border text-muted-foreground"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Lock className="h-2.5 w-2.5" />
-                  <span className="text-[8px]">تم التسعير</span>
-                </div>
-              )
-            ) : (
+          {isMerchant && !isOwner && !isAccepted && onAddOffer && !myOffer && (
+            <button
+              className="flex-1 h-7 px-3 flex items-center justify-center gap-1 rounded-md text-[9px] font-bold bg-gradient-to-r from-primary to-[hsl(160_60%_30%)] hover:from-primary/90 hover:to-[hsl(160_60%_35%)] text-primary-foreground shadow-sm transition-all"
+              onClick={handlePrice}
+            >
+              <DollarSign className="h-3 w-3" />
+              سعّر
+            </button>
+          )}
+          {isMerchant && !isOwner && !isAccepted && myOffer && (
+            (myOffer.edit_count ?? 0) < 1 ? (
               <button
-                className="flex-1 h-7 px-3 flex items-center justify-center gap-1 rounded-md text-[9px] font-bold bg-gradient-to-r from-primary to-[hsl(160_60%_30%)] hover:from-primary/90 hover:to-[hsl(160_60%_35%)] text-primary-foreground shadow-sm transition-all"
+                className="flex-1 h-7 px-2.5 flex items-center justify-center gap-1 rounded-md text-[9px] font-bold bg-amber-500/20 border border-amber-500/40 text-amber-400 hover:bg-amber-500/30 transition-colors"
                 onClick={handlePrice}
               >
-                <DollarSign className="h-3 w-3" />
-                سعّر
+                <Edit3 className="h-3 w-3" />
+                تعديل ({myOffer.price_iqd.toLocaleString()})
               </button>
+            ) : (
+              <div
+                className="flex-1 flex items-center justify-center gap-1 h-7 px-2 rounded-md bg-muted/30 border border-border text-muted-foreground"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Lock className="h-2.5 w-2.5" />
+                <span className="text-[8px]">{myOffer.price_iqd.toLocaleString()} د.ع</span>
+              </div>
             )
           )}
         </div>
