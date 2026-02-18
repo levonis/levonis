@@ -26,6 +26,7 @@ import StoreHeroSection from "@/components/merchant/StoreHeroSection";
 import StoreStatsGrid from "@/components/merchant/StoreStatsGrid";
 import ProductFilterTabs from "@/components/merchant/ProductFilterTabs";
 import ProductCardEnhanced from "@/components/merchant/ProductCardEnhanced";
+import ProductCategorySelector from "@/components/merchant/ProductCategorySelector";
 
 import { Droplets, Layers } from "lucide-react";
 
@@ -505,6 +506,13 @@ export default function CommunityMerchantStore() {
               />
             </div>
 
+            {/* Category Selector */}
+            <ProductCategorySelector
+              merchantId={merchantApp!.id}
+              selectedIds={formData.category_ids}
+              onChange={(ids) => setFormData({ ...formData, category_ids: ids })}
+            />
+
             {/* Material Type */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">نوع المادة *</Label>
@@ -599,12 +607,7 @@ export default function CommunityMerchantStore() {
             </div>
           </div>
 
-          {/* Commission Notice */}
-          <Alert className="border-amber-500/30 bg-amber-500/10">
-            <AlertDescription className="text-xs text-amber-600 dark:text-amber-400">
-              ⚠️ عمولة المنصة: <strong>1.7%</strong> تُخصم من كل عملية بيع. يتحكم الأدمن بنسبة العمولة.
-            </AlertDescription>
-          </Alert>
+          {/* Commission Notice - single instance */}
           <Alert className="border-amber-500/30 bg-amber-500/10">
             <AlertDescription className="text-xs text-amber-600 dark:text-amber-400">
               ⚠️ عمولة المنصة: <strong>1.7%</strong> تُخصم من كل عملية بيع. يتحكم الأدمن بنسبة العمولة.
