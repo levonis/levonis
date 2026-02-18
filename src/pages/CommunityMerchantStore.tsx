@@ -27,6 +27,7 @@ import StoreStatsGrid from "@/components/merchant/StoreStatsGrid";
 import ProductFilterTabs from "@/components/merchant/ProductFilterTabs";
 import ProductCardEnhanced from "@/components/merchant/ProductCardEnhanced";
 import ProductCategorySelector from "@/components/merchant/ProductCategorySelector";
+import MerchantCategoriesManager from "@/components/merchant/MerchantCategoriesManager";
 
 import { Droplets, Layers } from "lucide-react";
 
@@ -453,6 +454,13 @@ export default function CommunityMerchantStore() {
           )}
         </div>
 
+        {/* Categories Management Section */}
+        {merchantApp?.id && (
+          <div className="mt-8 p-5 rounded-2xl border border-border/50 bg-card">
+            <MerchantCategoriesManager merchantId={merchantApp.id} />
+          </div>
+        )}
+
         {/* Merchant Reels Section */}
         {merchantApp?.id && <MerchantReelsSection merchantId={merchantApp.id} />}
       </main>
@@ -546,7 +554,7 @@ export default function CommunityMerchantStore() {
               </div>
             </div>
 
-            {/* Price Fields */}
+            {/* Price Fields with Commission */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">السعر (د.ع)</Label>
@@ -557,6 +565,14 @@ export default function CommunityMerchantStore() {
                   placeholder="25000"
                   className="h-11"
                 />
+                {formData.price_iqd && parseInt(formData.price_iqd) > 0 && (
+                  <div className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/30 border border-border">
+                    <span className="text-muted-foreground">ستحصل على:</span>
+                    <span className="font-bold text-green-500">
+                      {Math.floor(parseInt(formData.price_iqd) * (1 - 0.017)).toLocaleString()} د.ع
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">السعر قبل الخصم</Label>
@@ -606,13 +622,6 @@ export default function CommunityMerchantStore() {
               </div>
             </div>
           </div>
-
-          {/* Commission Notice - single instance */}
-          <Alert className="border-amber-500/30 bg-amber-500/10">
-            <AlertDescription className="text-xs text-amber-600 dark:text-amber-400">
-              ⚠️ عمولة المنصة: <strong>1.7%</strong> تُخصم من كل عملية بيع. يتحكم الأدمن بنسبة العمولة.
-            </AlertDescription>
-          </Alert>
 
           <div className="pt-4 border-t border-border/50">
             <Button

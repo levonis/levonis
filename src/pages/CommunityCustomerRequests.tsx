@@ -3,25 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import {
-  ArrowRight,
-  FileText,
-  Package,
-  Pencil,
-  Trash2,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Truck,
-  ShieldAlert,
-  DollarSign,
-  Eye,
-  MessageSquare,
-  ChevronDown,
-  ChevronUp,
-  Star,
-  Store,
-  Scale,
-  Layers,
+  ArrowRight, FileText, Package, Pencil, Trash2, Clock, CheckCircle2, XCircle,
+  Truck, ShieldAlert, DollarSign, Eye, MessageSquare, ChevronDown, ChevronUp,
+  Star, Store, Scale, Layers, User, Calendar, MapPin, Hash
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -35,22 +19,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import RateRequestButton from "@/components/merchant/RateRequestButton";
@@ -78,6 +51,7 @@ const requestSchema = z.object({
   delivered_at: z.string().nullable().optional(),
   customer_confirmed_at: z.string().nullable().optional(),
   escrow_amount: z.number().nullable().optional(),
+  customer_governorate: z.string().nullable().optional(),
 });
 type PrintRequest = z.infer<typeof requestSchema>;
 
@@ -102,7 +76,7 @@ interface OfferRow {
 
 const STATUS_CONFIG: Record<string, { label: string; icon: any; color: string }> = {
   pending_review: { label: "قيد المراجعة", icon: Clock, color: "bg-amber-500/15 text-amber-500 border-amber-500/30" },
-  approved: { label: "مقبول - بانتظار العروض", icon: CheckCircle2, color: "bg-blue-500/15 text-blue-500 border-blue-500/30" },
+  approved: { label: "بانتظار العروض", icon: CheckCircle2, color: "bg-blue-500/15 text-blue-500 border-blue-500/30" },
   rejected: { label: "مرفوض", icon: XCircle, color: "bg-destructive/15 text-destructive border-destructive/30" },
   in_progress: { label: "قيد التنفيذ", icon: Package, color: "bg-purple-500/15 text-purple-500 border-purple-500/30" },
   completed: { label: "مكتمل", icon: CheckCircle2, color: "bg-emerald-500/15 text-emerald-500 border-emerald-500/30" },
@@ -125,14 +99,13 @@ export default function CommunityCustomerRequests() {
   const [editColors, setEditColors] = useState("");
   const [acceptOffer, setAcceptOffer] = useState<{ offer: OfferRow; requestId: string } | null>(null);
 
-  // Fetch requests
   const { data, isLoading } = useQuery({
     queryKey: ["my-print-requests", user?.id],
     enabled: !!user?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("community_print_requests")
-        .select("id, user_id, title, description, notes, size, colors, material_type, quantity, reference_links, images, image_url, status, admin_notes, created_at, updated_at, accepted_at, accepted_offer_id, delivered_at, customer_confirmed_at, escrow_amount")
+        .select("id, user_id, title, description, notes, size, colors, material_type, quantity, reference_links, images, image_url, status, admin_notes, created_at, updated_at, accepted_at, accepted_offer_id, delivered_at, customer_confirmed_at, escrow_amount, customer_governorate")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -141,7 +114,6 @@ export default function CommunityCustomerRequests() {
     staleTime: 20_000,
   });
 
-  // Fetch all offers for user's requests
   const requestIds = data?.map(r => r.id) ?? [];
   const { data: allOffers = [] } = useQuery({
     queryKey: ["my-requests-offers", requestIds],
@@ -157,13 +129,11 @@ export default function CommunityCustomerRequests() {
     },
   });
 
-  // Fetch merchant profiles for offers
   const traderIds = [...new Set(allOffers.map(o => o.trader_id))];
   const { data: merchantProfiles = [] } = useQuery({
     queryKey: ["offer-merchants", traderIds],
     enabled: traderIds.length > 0,
     queryFn: async () => {
-      // Get merchant apps by user_id
       const { data: apps } = await supabase
         .from("merchant_applications")
         .select("id, user_id, display_name, store_image_url, is_verified")
@@ -195,7 +165,6 @@ export default function CommunityCustomerRequests() {
   };
 
   const requests = data ?? [];
-
   const canEditOrDelete = (r: PrintRequest) => r.status === "pending_review" || r.status === "pending" || r.status === "rejected";
 
   const openEdit = (r: PrintRequest) => {
@@ -222,10 +191,10 @@ export default function CommunityCustomerRequests() {
         .from("community_print_requests")
         .update({
           title: parsed.title,
-          description: parsed.description?.trim() ? parsed.description.trim() : null,
-          notes: parsed.notes?.trim() ? parsed.notes.trim() : null,
-          size: parsed.size?.trim() ? parsed.size.trim() : null,
-          colors: parsed.colors?.trim() ? parsed.colors.trim() : null,
+          description: parsed.description?.trim() || null,
+          notes: parsed.notes?.trim() || null,
+          size: parsed.size?.trim() || null,
+          colors: parsed.colors?.trim() || null,
         })
         .eq("id", payload.id);
       if (error) throw error;
@@ -254,7 +223,6 @@ export default function CommunityCustomerRequests() {
     },
   });
 
-  // Stats
   const stats = useMemo(() => ({
     total: requests.length,
     pending: requests.filter(r => r.status === "pending_review").length,
@@ -264,12 +232,12 @@ export default function CommunityCustomerRequests() {
   }), [requests, allOffers]);
 
   return (
-    <div className="min-h-screen bg-background/95 backdrop-blur-sm">
+    <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-8 pt-20 max-w-3xl">
         {/* Header */}
-        <header className="mb-6 flex items-center justify-between gap-4">
+        <header className="mb-5 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center border border-primary/20">
+            <div className="h-11 w-11 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
               <FileText className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -277,29 +245,28 @@ export default function CommunityCustomerRequests() {
               <p className="text-xs text-muted-foreground">{stats.total} طلب · {stats.totalOffers} عرض سعر</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button size="sm" onClick={() => navigate("/community/customer/new")} className="gap-1.5">
+          <div className="flex gap-1.5">
+            <Button size="sm" onClick={() => navigate("/community/customer/new")} className="gap-1.5 text-xs">
               <Package className="h-3.5 w-3.5" />
               طلب جديد
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/community/customer')} className="gap-1.5">
+            <Button variant="outline" size="sm" onClick={() => navigate('/community/customer')} className="gap-1.5 text-xs">
               <ArrowRight className="h-3.5 w-3.5" />
-              رجوع
             </Button>
           </div>
         </header>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-4 gap-2 mb-6">
+        {/* Stats */}
+        <div className="grid grid-cols-4 gap-2 mb-5">
           {[
             { label: "الكل", value: stats.total, color: "text-foreground" },
-            { label: "قيد المراجعة", value: stats.pending, color: "text-amber-500" },
+            { label: "مراجعة", value: stats.pending, color: "text-amber-500" },
             { label: "نشط", value: stats.inProgress, color: "text-blue-500" },
             { label: "مكتمل", value: stats.completed, color: "text-emerald-500" },
           ].map(s => (
-            <div key={s.label} className="p-3 rounded-xl bg-card border border-border/50 text-center">
+            <div key={s.label} className="p-2.5 rounded-xl bg-card border border-border/50 text-center">
               <div className={`text-lg font-black ${s.color}`}>{s.value}</div>
-              <div className="text-[10px] text-muted-foreground">{s.label}</div>
+              <div className="text-[9px] text-muted-foreground">{s.label}</div>
             </div>
           ))}
         </div>
@@ -307,11 +274,11 @@ export default function CommunityCustomerRequests() {
         {/* Requests List */}
         {isLoading ? (
           <div className="space-y-3">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-2xl" />)}
           </div>
         ) : requests.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-8 text-center">
-            <Package className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
+          <div className="rounded-2xl border border-border bg-card p-10 text-center">
+            <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
             <p className="text-sm text-muted-foreground mb-4">لا توجد طلبات بعد</p>
             <Button onClick={() => navigate("/community/customer/new")}>إضافة طلب جديد</Button>
           </div>
@@ -328,8 +295,7 @@ export default function CommunityCustomerRequests() {
               const mainImage = r.images?.[0] || r.image_url;
 
               return (
-                <div key={r.id} className="rounded-2xl border border-border/50 bg-card overflow-hidden">
-                  {/* Main Row */}
+                <div key={r.id} className="rounded-2xl border border-border/50 bg-card overflow-hidden hover:border-primary/20 transition-all">
                   <div className="p-3">
                     <div className="flex gap-3">
                       {/* Thumbnail */}
@@ -341,61 +307,67 @@ export default function CommunityCustomerRequests() {
 
                       <div className="flex-1 min-w-0">
                         {/* Title & Status */}
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2 mb-1">
                           <h3 className="font-bold text-sm text-foreground truncate">{r.title}</h3>
-                          <Badge variant="outline" className={`shrink-0 text-[9px] gap-1 ${config.color}`}>
-                            <StatusIcon className="h-3 w-3" />
+                          <Badge variant="outline" className={`shrink-0 text-[8px] gap-0.5 ${config.color}`}>
+                            <StatusIcon className="h-2.5 w-2.5" />
                             {config.label}
                           </Badge>
                         </div>
 
-                        {/* Meta row */}
-                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
-                          <span className="text-[10px] text-muted-foreground">
+                        {/* Meta Row */}
+                        <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                          <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                            <Calendar className="h-2.5 w-2.5" />
                             {new Date(r.created_at).toLocaleDateString("ar-IQ")}
                           </span>
                           {r.material_type && (
-                            <Badge variant="outline" className="text-[8px] h-4 px-1.5">
-                              <Layers className="h-2.5 w-2.5 mr-0.5" />
-                              {r.material_type === "filament" ? "فلمنت" : r.material_type === "resin" ? "رزن" : r.material_type}
+                            <Badge variant="outline" className="text-[7px] h-3.5 px-1">
+                              <Layers className="h-2 w-2 mr-0.5" />
+                              {r.material_type === "filament" ? "FDM" : r.material_type === "resin" ? "SLA" : r.material_type}
                             </Badge>
                           )}
-                          {r.quantity && (
-                            <span className="text-[10px] text-muted-foreground">الكمية: {r.quantity}</span>
+                          {r.customer_governorate && (
+                            <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                              <MapPin className="h-2.5 w-2.5" />
+                              {r.customer_governorate}
+                            </span>
+                          )}
+                          {r.quantity && r.quantity > 1 && (
+                            <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
+                              <Hash className="h-2.5 w-2.5" />
+                              {r.quantity}
+                            </span>
+                          )}
+                          {r.size && (
+                            <span className="text-[9px] text-muted-foreground">{r.size}</span>
                           )}
                         </div>
 
                         {/* Pricing Summary */}
-                        <div className="flex items-center gap-3 mt-2">
-                          {/* Offers count */}
+                        <div className="flex items-center gap-2 flex-wrap">
                           <div className="flex items-center gap-1 text-[10px]">
                             <DollarSign className="h-3 w-3 text-primary" />
-                            <span className="font-bold text-foreground">{offers.length}</span>
+                            <span className="font-bold">{offers.length}</span>
                             <span className="text-muted-foreground">عرض</span>
                           </div>
-
-                          {/* Lowest price */}
-                          {lowestPrice && (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20">
-                              <span className="text-[10px] text-muted-foreground">أقل:</span>
-                              <span className="text-xs font-bold text-primary">{lowestPrice.toLocaleString()}</span>
-                              <span className="text-[8px] text-primary/70">د.ع</span>
+                          {lowestPrice && !acceptedOffer && (
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/20">
+                              <span className="text-[9px] text-muted-foreground">أقل:</span>
+                              <span className="text-[10px] font-bold text-primary">{lowestPrice.toLocaleString()}</span>
+                              <span className="text-[7px] text-primary/60">د.ع</span>
                             </div>
                           )}
-
-                          {/* Accepted offer price */}
                           {acceptedOffer && (
-                            <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                              <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                              <span className="text-xs font-bold text-emerald-500">{acceptedOffer.price_iqd.toLocaleString()}</span>
-                              <span className="text-[8px] text-emerald-500/70">د.ع</span>
+                            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                              <CheckCircle2 className="h-2.5 w-2.5 text-emerald-500" />
+                              <span className="text-[10px] font-bold text-emerald-500">{acceptedOffer.price_iqd.toLocaleString()}</span>
+                              <span className="text-[7px] text-emerald-500/60">د.ع</span>
                             </div>
                           )}
-
-                          {/* Escrow */}
                           {r.escrow_amount && (
-                            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                              <ShieldAlert className="h-3 w-3" />
+                            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                              <ShieldAlert className="h-2.5 w-2.5" />
                               محجوز: {r.escrow_amount.toLocaleString()}
                             </div>
                           )}
@@ -403,19 +375,19 @@ export default function CommunityCustomerRequests() {
                       </div>
                     </div>
 
-                    {/* Action bar */}
-                    <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/30">
-                      <div className="flex gap-1.5">
+                    {/* Actions */}
+                    <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-border/30">
+                      <div className="flex gap-1">
                         {editable && (
                           <>
-                            <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1" onClick={() => openEdit(r)}>
-                              <Pencil className="h-3 w-3" />
+                            <Button variant="outline" size="sm" className="h-6 text-[9px] gap-0.5 px-2" onClick={() => openEdit(r)}>
+                              <Pencil className="h-2.5 w-2.5" />
                               تعديل
                             </Button>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1 text-destructive hover:text-destructive" disabled={deleteMutation.isPending}>
-                                  <Trash2 className="h-3 w-3" />
+                                <Button variant="outline" size="sm" className="h-6 text-[9px] gap-0.5 px-2 text-destructive hover:text-destructive" disabled={deleteMutation.isPending}>
+                                  <Trash2 className="h-2.5 w-2.5" />
                                   حذف
                                 </Button>
                               </AlertDialogTrigger>
@@ -435,38 +407,37 @@ export default function CommunityCustomerRequests() {
                         <RateRequestButton requestId={r.id} requestStatus={r.status} />
                       </div>
 
-                      {/* Expand offers */}
                       {offers.length > 0 && (
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-7 text-[10px] gap-1"
+                          className="h-6 text-[9px] gap-0.5"
                           onClick={() => setExpandedId(isExpanded ? null : r.id)}
                         >
-                          <Eye className="h-3 w-3" />
-                          عروض الأسعار ({offers.length})
-                          {isExpanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                          <Eye className="h-2.5 w-2.5" />
+                          العروض ({offers.length})
+                          {isExpanded ? <ChevronUp className="h-2.5 w-2.5" /> : <ChevronDown className="h-2.5 w-2.5" />}
                         </Button>
                       )}
                     </div>
 
                     {/* Rejection reason */}
                     {r.status === "rejected" && r.admin_notes?.trim() && (
-                      <div className="mt-2 p-2.5 rounded-xl bg-destructive/5 border border-destructive/20">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
-                          <span className="text-[11px] font-bold text-destructive">سبب الرفض</span>
+                      <div className="mt-2 p-2 rounded-xl bg-destructive/5 border border-destructive/20">
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <ShieldAlert className="h-3 w-3 text-destructive" />
+                          <span className="text-[10px] font-bold text-destructive">سبب الرفض</span>
                         </div>
-                        <p className="text-[11px] text-muted-foreground">{r.admin_notes}</p>
+                        <p className="text-[10px] text-muted-foreground">{r.admin_notes}</p>
                       </div>
                     )}
                   </div>
 
                   {/* Expanded Offers */}
                   {isExpanded && offers.length > 0 && (
-                    <div className="border-t border-border/30 bg-muted/20 p-3 space-y-2">
-                      <h4 className="text-[11px] font-bold text-foreground flex items-center gap-1.5 mb-2">
-                        <DollarSign className="h-3.5 w-3.5 text-primary" />
+                    <div className="border-t border-border/30 bg-muted/10 p-3 space-y-2">
+                      <h4 className="text-[10px] font-bold text-foreground flex items-center gap-1 mb-1.5">
+                        <DollarSign className="h-3 w-3 text-primary" />
                         عروض الأسعار
                       </h4>
                       {offers.map(offer => {
@@ -477,56 +448,49 @@ export default function CommunityCustomerRequests() {
                             className={`rounded-xl border p-2.5 transition-all ${
                               isThisAccepted
                                 ? "bg-emerald-500/10 border-emerald-500/30"
-                                : "bg-card border-border/50 hover:border-primary/30"
+                                : "bg-card border-border/50 hover:border-primary/20"
                             }`}
                           >
                             <div className="flex items-center gap-2.5">
-                              {/* Merchant avatar */}
-                              <Avatar className="h-9 w-9 border border-border">
+                              <Avatar className="h-8 w-8 border border-border">
                                 <AvatarImage src={offer.merchant?.store_image_url || undefined} />
-                                <AvatarFallback className="bg-muted text-[10px]">
-                                  <Store className="h-4 w-4" />
+                                <AvatarFallback className="bg-muted text-[8px]">
+                                  <Store className="h-3.5 w-3.5" />
                                 </AvatarFallback>
                               </Avatar>
 
-                              {/* Info */}
                               <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-[11px] font-bold truncate">
-                                    {offer.merchant?.display_name || "تاجر"}
-                                  </span>
-                                  {offer.merchant?.is_verified && (
-                                    <CheckCircle2 className="h-3 w-3 text-primary shrink-0" />
-                                  )}
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-bold truncate">{offer.merchant?.display_name || "تاجر"}</span>
+                                  {offer.merchant?.is_verified && <CheckCircle2 className="h-2.5 w-2.5 text-primary shrink-0" />}
                                   {isThisAccepted && (
-                                    <Badge className="text-[7px] px-1.5 h-4 bg-emerald-500 text-white border-0">مقبول</Badge>
+                                    <Badge className="text-[6px] px-1 h-3 bg-emerald-500 text-white border-0">مقبول</Badge>
                                   )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="font-extrabold text-sm text-primary">{offer.price_iqd.toLocaleString()}</span>
-                                  <span className="text-[9px] text-primary/70">د.ع</span>
+                                  <span className="font-extrabold text-xs text-primary">{offer.price_iqd.toLocaleString()}</span>
+                                  <span className="text-[8px] text-primary/60">د.ع</span>
                                   <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                                    <Clock className="h-2.5 w-2.5" />
+                                    <Clock className="h-2 w-2" />
                                     {offer.duration_days} يوم
                                   </span>
                                   {offer.grams && (
                                     <span className="text-[9px] text-muted-foreground flex items-center gap-0.5">
-                                      <Scale className="h-2.5 w-2.5" />
+                                      <Scale className="h-2 w-2" />
                                       {offer.grams}g
                                     </span>
                                   )}
                                 </div>
                                 {offer.notes && (
-                                  <p className="text-[9px] text-muted-foreground mt-1 line-clamp-1">{offer.notes}</p>
+                                  <p className="text-[8px] text-muted-foreground mt-0.5 line-clamp-1">{offer.notes}</p>
                                 )}
                               </div>
 
-                              {/* Actions */}
-                              <div className="flex items-center gap-1.5 shrink-0">
+                              <div className="flex items-center gap-1 shrink-0">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-7 w-7"
+                                  className="h-6 w-6"
                                   onClick={() => {
                                     if (offer.merchant?.id) {
                                       navigate(`/community/messages?merchant_id=${offer.merchant.id}&request_id=${r.id}`);
@@ -534,17 +498,14 @@ export default function CommunityCustomerRequests() {
                                   }}
                                   title="مراسلة"
                                 >
-                                  <MessageSquare className="h-3.5 w-3.5" />
+                                  <MessageSquare className="h-3 w-3" />
                                 </Button>
 
                                 {!r.accepted_offer_id && (
                                   <Button
                                     size="sm"
-                                    className="h-7 px-3 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
-                                    onClick={() => setAcceptOffer({
-                                      offer: offer,
-                                      requestId: r.id,
-                                    })}
+                                    className="h-6 px-2.5 text-[9px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    onClick={() => setAcceptOffer({ offer, requestId: r.id })}
                                   >
                                     قبول
                                   </Button>

@@ -109,9 +109,9 @@ export default function OffersListSection({
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showingNotes, setShowingNotes] = useState<string | null>(null);
 
-  // Separate my offer from others
-  const myOffer = offers.find((o) => o.trader_id === merchantId);
-  const otherOffers = offers.filter((o) => o.trader_id !== merchantId);
+  // Separate my offer from others - use user.id since trader_id is auth uid
+  const myOffer = offers.find((o) => o.trader_id === user?.id);
+  const otherOffers = offers.filter((o) => o.trader_id !== user?.id);
 
   // Sort other offers
   const sortedOffers = useMemo(() => {
@@ -143,7 +143,7 @@ export default function OffersListSection({
   const paginatedOffers = sortedOffers.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
   const isCustomer = user?.id === customerId;
-  const isMerchant = !!merchantId && user?.id === merchantId;
+  const isMerchant = !!merchantId;
   const isAccepted = !!acceptedOfferId;
 
   // Find lowest price for "best" badge
@@ -193,7 +193,7 @@ export default function OffersListSection({
   const OfferStrip = ({ offer, isMyOffer = false }: { offer: MerchantOffer; isMyOffer?: boolean }) => {
     const isBestPrice = offer.price_iqd === lowestPrice && !acceptedOfferId;
     const isThisAccepted = acceptedOfferId === offer.id;
-    const canEdit = offer.trader_id === merchantId && (offer.edit_count ?? 0) < 1 && !isAccepted;
+    const canEdit = offer.trader_id === user?.id && (offer.edit_count ?? 0) < 1 && !isAccepted;
     const hasEdited = (offer.edit_count ?? 0) >= 1;
 
     const merchantName = offer.merchant?.display_name || "تاجر";

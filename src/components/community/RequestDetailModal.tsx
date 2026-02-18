@@ -182,7 +182,8 @@ export default function RequestDetailModal({
     },
   });
 
-  const myOffer = offers.find((o) => o.trader_id === merchantId);
+  // Use user.id (auth uid) since trader_id stores the auth uid, NOT merchant_applications.id
+  const myOffer = offers.find((o) => o.trader_id === user?.id);
 
   if (!request) return null;
 
@@ -200,13 +201,13 @@ export default function RequestDetailModal({
     setShowAcceptDialog(true);
   };
 
-  const handleChatWithMerchant = (traderId: string) => {
-    navigate(`/community/messages?merchant=${traderId}&request=${request.id}`);
+  const handleChatWithMerchant = (merchantAppId: string) => {
+    navigate(`/community/messages?merchant_id=${merchantAppId}&request_id=${request.id}`);
     onOpenChange(false);
   };
 
   const handleChatAboutRequest = () => {
-    navigate(`/community/messages?request=${request.id}`);
+    navigate(`/community/messages?request_id=${request.id}`);
     onOpenChange(false);
   };
 

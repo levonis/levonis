@@ -115,7 +115,7 @@ export default function CompactRequestCard({
 
   const handleChat = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/community/messages?request_id=${request.id}`);
+    navigate(`/community/messages?request_id=${request.id}&user_id=${request.user_id}`);
   };
 
   const handlePrice = (e: React.MouseEvent) => {
