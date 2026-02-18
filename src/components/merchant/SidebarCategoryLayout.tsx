@@ -74,7 +74,7 @@ export default function SidebarCategoryLayout({
   return (
     <div className="flex gap-2 min-h-[300px]" dir="rtl">
       {/* Sidebar - sticky */}
-      <div className="w-[28%] shrink-0 self-start sticky top-0 space-y-0.5 border-l border-border/30 pl-1.5 max-h-[70vh] overflow-y-auto">
+      <div className="w-[28%] shrink-0 self-start sticky top-16 space-y-0.5 border-l border-border/30 pl-1.5 max-h-[calc(100vh-5rem)] overflow-y-auto">
         {mainCategories.map((cat) => {
           const isActive = activeCatId === cat.id;
           const count = getProductsForCategory(cat.id).length;

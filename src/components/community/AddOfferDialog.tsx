@@ -147,6 +147,7 @@ export default function AddOfferDialog({
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["request-offers", requestId] });
       qc.invalidateQueries({ queryKey: ["my-offer-on-request", requestId, merchantId] });
+      qc.invalidateQueries({ queryKey: ["my-offer-check"] });
       qc.invalidateQueries({ queryKey: ["offers-count", requestId] });
       toast({ title: "تم إضافة التسعير بنجاح" });
       // Reset form
