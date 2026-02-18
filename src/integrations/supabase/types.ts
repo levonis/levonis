@@ -2534,6 +2534,9 @@ export type Database = {
           status: string
           store_image_url: string | null
           store_layout: string
+          store_pause_end_date: string | null
+          store_pause_message: string | null
+          store_paused: boolean | null
           updated_at: string
           user_id: string
           welcome_message: string | null
@@ -2562,6 +2565,9 @@ export type Database = {
           status?: string
           store_image_url?: string | null
           store_layout?: string
+          store_pause_end_date?: string | null
+          store_pause_message?: string | null
+          store_paused?: boolean | null
           updated_at?: string
           user_id: string
           welcome_message?: string | null
@@ -2590,6 +2596,9 @@ export type Database = {
           status?: string
           store_image_url?: string | null
           store_layout?: string
+          store_pause_end_date?: string | null
+          store_pause_message?: string | null
+          store_paused?: boolean | null
           updated_at?: string
           user_id?: string
           welcome_message?: string | null
@@ -2692,7 +2701,10 @@ export type Database = {
       }
       merchant_products: {
         Row: {
+          allow_partial_payment: boolean | null
+          allow_wallet_payment: boolean | null
           category_ids: string[] | null
+          colors: Json | null
           created_at: string
           description: string | null
           estimated_days: number | null
@@ -2700,17 +2712,26 @@ export type Database = {
           image_urls: string[] | null
           is_active: boolean
           is_featured: boolean
+          is_preorder: boolean | null
           material_type: string | null
           merchant_id: string
+          options: Json | null
           original_price_iqd: number | null
+          preorder_end_date: string | null
+          preorder_queue_current: number | null
+          preorder_queue_total: number | null
           price_iqd: number | null
           primary_image_index: number | null
+          stock_quantity: number | null
           title: string
           updated_at: string
           video_url: string | null
         }
         Insert: {
+          allow_partial_payment?: boolean | null
+          allow_wallet_payment?: boolean | null
           category_ids?: string[] | null
+          colors?: Json | null
           created_at?: string
           description?: string | null
           estimated_days?: number | null
@@ -2718,17 +2739,26 @@ export type Database = {
           image_urls?: string[] | null
           is_active?: boolean
           is_featured?: boolean
+          is_preorder?: boolean | null
           material_type?: string | null
           merchant_id: string
+          options?: Json | null
           original_price_iqd?: number | null
+          preorder_end_date?: string | null
+          preorder_queue_current?: number | null
+          preorder_queue_total?: number | null
           price_iqd?: number | null
           primary_image_index?: number | null
+          stock_quantity?: number | null
           title: string
           updated_at?: string
           video_url?: string | null
         }
         Update: {
+          allow_partial_payment?: boolean | null
+          allow_wallet_payment?: boolean | null
           category_ids?: string[] | null
+          colors?: Json | null
           created_at?: string
           description?: string | null
           estimated_days?: number | null
@@ -2736,11 +2766,17 @@ export type Database = {
           image_urls?: string[] | null
           is_active?: boolean
           is_featured?: boolean
+          is_preorder?: boolean | null
           material_type?: string | null
           merchant_id?: string
+          options?: Json | null
           original_price_iqd?: number | null
+          preorder_end_date?: string | null
+          preorder_queue_current?: number | null
+          preorder_queue_total?: number | null
           price_iqd?: number | null
           primary_image_index?: number | null
+          stock_quantity?: number | null
           title?: string
           updated_at?: string
           video_url?: string | null
