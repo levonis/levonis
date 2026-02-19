@@ -9,7 +9,7 @@ export default function CommunityMerchantSignup() {
       <MerchantSignupDialog
         defaultOpen
         onOpenChange={(v) => {
-          if (!v) navigate("/community/customer/profile");
+          if (!v) navigate(-1);
         }}
       />
     </div>

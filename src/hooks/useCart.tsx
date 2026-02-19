@@ -230,10 +230,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       setItems(data as CartItem[] || []);
     } catch (error) {
       console.error('Error fetching cart:', error);
-      // Only show error toast if user is actually logged in (not during signup flow)
-      if (user) {
-        toast.error('حدث خطأ في تحميل السلة');
-      }
+      // Suppress cart errors silently - they are non-critical
+      console.warn('Cart fetch failed (non-critical):', error);
     } finally {
       setLoading(false);
     }

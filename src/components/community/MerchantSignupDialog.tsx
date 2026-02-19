@@ -1119,6 +1119,10 @@ export default function MerchantSignupDialog({
                   });
                   return;
                 }
+                const confirmed = window.confirm(
+                  "⚠️ تنبيه مهم:\n\nبمجرد تقديم طلب التاجر والموافقة عليه، سيتم حذف جميع طلبات الطباعة السابقة والحالية الخاصة بك من المجتمع نهائياً.\n\nهل تريد المتابعة؟"
+                );
+                if (!confirmed) return;
                 submitMutation.mutate();
               }}
               className="gap-1.5 bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90 shadow-lg shadow-primary/25"
