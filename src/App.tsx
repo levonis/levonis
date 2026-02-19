@@ -20,6 +20,7 @@ import PageLoader from "@/components/ui/PageLoader";
 
 // Lazy load unified chat button (global floating button)
 const UnifiedChatButton = lazy(() => import("@/components/UnifiedChatButton"));
+const LevoHelpBot = lazy(() => import("@/components/LevoHelpBot"));
 
 // Eager load Home page for best initial load
 import Home from "./pages/Home";
@@ -236,6 +237,10 @@ function AppContent() {
       {/* Global floating chat button - visible on all pages */}
       <Suspense fallback={null}>
         <UnifiedChatButton />
+      </Suspense>
+      {/* Levo Help Bot - floating assistant */}
+      <Suspense fallback={null}>
+        <LevoHelpBot />
       </Suspense>
     </>
   );
