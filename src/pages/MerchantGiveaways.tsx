@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Gift, Users, Trophy, Clock, CheckCircle, Lock, Crown, Calendar, Sparkles } from "lucide-react";
+import { ArrowLeft, Gift, Users, Trophy, CheckCircle, Lock, Calendar, Sparkles, Star, Award } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -45,7 +45,6 @@ export default function MerchantGiveaways() {
   const queryClient = useQueryClient();
   const [selectedGiveaway, setSelectedGiveaway] = useState<Giveaway | null>(null);
 
-  // Check if user is a verified merchant
   const { data: merchantApp } = useQuery({
     queryKey: ["my-merchant-app", user?.id],
     queryFn: async () => {
@@ -63,7 +62,6 @@ export default function MerchantGiveaways() {
 
   const isVerifiedMerchant = merchantApp?.is_verified === true;
 
-  // Fetch all giveaways
   const { data: giveaways, isLoading } = useQuery({
     queryKey: ["merchant-giveaways"],
     queryFn: async () => {
@@ -77,7 +75,6 @@ export default function MerchantGiveaways() {
     },
   });
 
-  // Fetch entries
   const { data: entries } = useQuery({
     queryKey: ["giveaway-entries"],
     queryFn: async () => {
@@ -89,7 +86,6 @@ export default function MerchantGiveaways() {
     },
   });
 
-  // Participate mutation
   const participateMutation = useMutation({
     mutationFn: async (giveawayId: string) => {
       if (!user || !merchantApp) throw new Error("يجب تسجيل الدخول كتاجر موثق");
@@ -133,105 +129,148 @@ export default function MerchantGiveaways() {
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-card border-b shadow-sm">
+      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/40">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg">
-              <Gift className="h-5 w-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center">
+              <Gift className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-base font-bold text-foreground">هدايا التجار</h1>
-              <p className="text-xs text-muted-foreground">اربح هدية مجانية من مجتمع ليفو</p>
+              <p className="text-[11px] text-muted-foreground">مقدمة من مجتمع ليفو</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl hover:bg-card" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <main className="flex-1 px-4 py-4 space-y-6">
-        {/* Hero Banner */}
-        <Card className="overflow-hidden border-0 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-primary/10">
-          <CardContent className="p-5">
-            <div className="flex items-start gap-3">
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg">
-                <Crown className="h-6 w-6 text-white" />
-              </div>
-              <div className="flex-1">
-                <h2 className="text-lg font-bold text-foreground mb-1">اربح هدية مجانية! 🎁</h2>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  مقدمة من مجتمع ليفو دعماً لمشروعك. شارك الآن واحصل على فرصة الفوز بمنتجات مميزة.
-                </p>
-                {!isVerifiedMerchant && user && (
-                  <div className="mt-3 flex items-center gap-2 text-xs text-amber-600 bg-amber-500/10 rounded-lg p-2">
-                    <Lock className="h-3.5 w-3.5" />
-                    <span>المشاركة متاحة للتجار الموثقين فقط</span>
-                  </div>
-                )}
-                {!user && (
-                  <Button size="sm" className="mt-3" onClick={() => navigate("/auth")}>
-                    سجّل دخولك للمشاركة
-                  </Button>
-                )}
-              </div>
+      <main className="flex-1 px-4 py-5 space-y-6">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card">
+          {/* Decorative pattern */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-4 right-4 w-32 h-32 rounded-full border-2 border-primary" />
+            <div className="absolute bottom-4 left-4 w-24 h-24 rounded-full border border-primary" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full border border-primary/50" />
+          </div>
+          
+          <div className="relative p-6 text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center mx-auto">
+              <Award className="h-8 w-8 text-primary" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">اربح هدية مجانية</h2>
+              <p className="text-sm text-muted-foreground mt-2 leading-relaxed max-w-xs mx-auto">
+                مقدمة من مجتمع ليفو دعماً لمشروعك. شارك واحصل على فرصة الفوز بمنتجات مميزة
+              </p>
+            </div>
+            
+            {!isVerifiedMerchant && user && (
+              <div className="inline-flex items-center gap-2 text-xs text-primary bg-primary/10 border border-primary/20 rounded-full px-4 py-2">
+                <Lock className="h-3 w-3" />
+                <span>للتجار الموثقين فقط</span>
+              </div>
+            )}
+            {!user && (
+              <Button size="sm" className="rounded-full px-6" onClick={() => navigate("/auth")}>
+                سجّل دخولك للمشاركة
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Stats Bar */}
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-card rounded-xl border border-border/50 p-3 text-center">
+            <Sparkles className="h-4 w-4 text-primary mx-auto mb-1" />
+            <p className="text-lg font-bold text-foreground">{activeGiveaways.length}</p>
+            <p className="text-[10px] text-muted-foreground">نشطة</p>
+          </div>
+          <div className="bg-card rounded-xl border border-border/50 p-3 text-center">
+            <Users className="h-4 w-4 text-primary mx-auto mb-1" />
+            <p className="text-lg font-bold text-foreground">{entries?.length || 0}</p>
+            <p className="text-[10px] text-muted-foreground">مشاركة</p>
+          </div>
+          <div className="bg-card rounded-xl border border-border/50 p-3 text-center">
+            <Trophy className="h-4 w-4 text-primary mx-auto mb-1" />
+            <p className="text-lg font-bold text-foreground">{completedGiveaways.length}</p>
+            <p className="text-[10px] text-muted-foreground">مكتملة</p>
+          </div>
+        </div>
 
         {/* Active Giveaways */}
         {activeGiveaways.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <Sparkles className="h-4 w-4 text-amber-500" />
-              <h3 className="font-bold text-foreground">المسابقات النشطة</h3>
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-5 rounded-full bg-primary" />
+              <h3 className="font-bold text-foreground text-sm">الهدايا النشطة</h3>
             </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x">
+            <div className="space-y-3">
               {activeGiveaways.map((g) => (
                 <Card
                   key={g.id}
-                  className="min-w-[280px] max-w-[320px] snap-start overflow-hidden border-primary/20 hover:border-primary/40 transition-all cursor-pointer"
+                  className="overflow-hidden border-border/50 hover:border-primary/30 transition-all cursor-pointer group"
                   onClick={() => setSelectedGiveaway(g)}
                 >
-                  {g.prize_image_url && (
-                    <div className="aspect-[16/9] overflow-hidden">
-                      <img src={g.prize_image_url} alt={g.prize_name_ar} className="w-full h-full object-cover" />
+                  <div className="flex">
+                    {/* Image */}
+                    <div className="w-28 shrink-0 bg-card">
+                      {g.prize_image_url ? (
+                        <img src={g.prize_image_url} alt={g.prize_name_ar} className="w-full h-full object-cover min-h-[110px]" />
+                      ) : (
+                        <div className="w-full h-full min-h-[110px] flex items-center justify-center bg-primary/5">
+                          <Gift className="h-8 w-8 text-primary/40" />
+                        </div>
+                      )}
                     </div>
-                  )}
-                  <CardContent className="p-4 space-y-3">
-                    <div>
-                      <h4 className="font-bold text-sm text-foreground line-clamp-1">{g.title_ar}</h4>
-                      <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{g.prize_name_ar}</p>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <Users className="h-3.5 w-3.5" />
-                        <span>{getEntryCount(g.id)} مشارك</span>
+
+                    {/* Content */}
+                    <CardContent className="flex-1 p-3.5 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <h4 className="font-bold text-sm text-foreground line-clamp-1 group-hover:text-primary transition-colors">{g.title_ar}</h4>
+                          <Badge className="bg-primary/10 text-primary border-primary/20 text-[10px] shrink-0">نشطة</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{g.prize_name_ar}</p>
                       </div>
-                      <Badge className="bg-green-500/10 text-green-600 border-green-500/20 text-[10px]">
-                        نشطة
-                      </Badge>
-                    </div>
-                    {isVerifiedMerchant && !isParticipating(g.id) ? (
-                      <Button
-                        size="sm"
-                        className="w-full text-xs bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          participateMutation.mutate(g.id);
-                        }}
-                        disabled={participateMutation.isPending}
-                      >
-                        <Gift className="h-3.5 w-3.5 ml-1" />
-                        شارك الآن
-                      </Button>
-                    ) : isParticipating(g.id) ? (
-                      <div className="flex items-center gap-1.5 text-xs text-green-600 justify-center py-1.5">
-                        <CheckCircle className="h-3.5 w-3.5" />
-                        <span>أنت مشارك</span>
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3 text-primary/70" />
+                            {getEntryCount(g.id)}
+                          </span>
+                          {g.draw_date && (
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3 text-primary/70" />
+                              {format(new Date(g.draw_date), "d MMM", { locale: ar })}
+                            </span>
+                          )}
+                        </div>
+
+                        {isVerifiedMerchant && !isParticipating(g.id) ? (
+                          <Button
+                            size="sm"
+                            className="h-7 text-[11px] rounded-lg px-3"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              participateMutation.mutate(g.id);
+                            }}
+                            disabled={participateMutation.isPending}
+                          >
+                            شارك الآن
+                          </Button>
+                        ) : isParticipating(g.id) ? (
+                          <span className="flex items-center gap-1 text-[11px] text-primary">
+                            <CheckCircle className="h-3.5 w-3.5" />
+                            مشارك
+                          </span>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </CardContent>
+                    </CardContent>
+                  </div>
                 </Card>
               ))}
             </div>
@@ -240,44 +279,39 @@ export default function MerchantGiveaways() {
 
         {/* Completed Giveaways */}
         {completedGiveaways.length > 0 && (
-          <section>
-            <div className="flex items-center gap-2 mb-3">
-              <Trophy className="h-4 w-4 text-muted-foreground" />
-              <h3 className="font-bold text-muted-foreground">المسابقات السابقة</h3>
+          <section className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-5 rounded-full bg-border" />
+              <h3 className="font-bold text-muted-foreground text-sm">الهدايا السابقة</h3>
             </div>
             <div className="space-y-2">
               {completedGiveaways.map((g) => (
-                <Card
+                <div
                   key={g.id}
-                  className="opacity-70 hover:opacity-90 transition-opacity cursor-pointer border-border/50"
+                  className="flex items-center gap-3 p-3 rounded-xl bg-card/50 border border-border/30 opacity-60 hover:opacity-80 transition-all cursor-pointer"
                   onClick={() => setSelectedGiveaway(g)}
                 >
-                  <CardContent className="p-3 flex items-center gap-3">
-                    {g.prize_image_url ? (
-                      <img src={g.prize_image_url} alt="" className="w-12 h-12 rounded-lg object-cover" />
-                    ) : (
-                      <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
-                        <Gift className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold text-sm text-foreground line-clamp-1">{g.title_ar}</h4>
-                      <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {getEntryCount(g.id)} مشارك
-                        </span>
-                        {g.winner_merchant_id && (
-                          <span className="flex items-center gap-1 text-amber-600 font-medium">
-                            <Trophy className="h-3 w-3" />
-                            {getWinnerName(g.id, g.winner_merchant_id)}
-                          </span>
-                        )}
-                      </div>
+                  {g.prize_image_url ? (
+                    <img src={g.prize_image_url} alt="" className="w-10 h-10 rounded-lg object-cover" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-primary/5 flex items-center justify-center">
+                      <Gift className="h-4 w-4 text-muted-foreground" />
                     </div>
-                    <Badge variant="secondary" className="text-[10px] shrink-0">منتهية</Badge>
-                  </CardContent>
-                </Card>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-sm font-medium text-foreground line-clamp-1">{g.title_ar}</h4>
+                    <div className="flex items-center gap-3 mt-0.5 text-[11px] text-muted-foreground">
+                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{getEntryCount(g.id)}</span>
+                      {g.winner_merchant_id && (
+                        <span className="flex items-center gap-1 text-primary font-medium">
+                          <Star className="h-3 w-3" />
+                          {getWinnerName(g.id, g.winner_merchant_id)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="text-[10px] border-border/50 text-muted-foreground shrink-0">منتهية</Badge>
+                </div>
               ))}
             </div>
           </section>
@@ -285,107 +319,127 @@ export default function MerchantGiveaways() {
 
         {/* Empty State */}
         {!isLoading && (!giveaways || giveaways.length === 0) && (
-          <div className="text-center py-16">
-            <Gift className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground font-medium">لا توجد هدايا حالياً</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">ترقب الهدايا القادمة من مجتمع ليفو</p>
+          <div className="text-center py-20">
+            <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-5">
+              <Gift className="h-10 w-10 text-primary/50" />
+            </div>
+            <p className="text-foreground font-bold text-base">لا توجد هدايا حالياً</p>
+            <p className="text-xs text-muted-foreground mt-2 max-w-[200px] mx-auto">ترقب الهدايا القادمة من مجتمع ليفو لدعم مشروعك</p>
           </div>
         )}
       </main>
 
       {/* Giveaway Details Dialog */}
       <Dialog open={!!selectedGiveaway} onOpenChange={(open) => !open && setSelectedGiveaway(null)}>
-        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto" dir="rtl">
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto p-0" dir="rtl">
           {selectedGiveaway && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-right flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-amber-500" />
-                  {selectedGiveaway.title_ar}
-                </DialogTitle>
-              </DialogHeader>
-
-              <div className="space-y-4">
-                {selectedGiveaway.prize_image_url && (
-                  <div className="rounded-xl overflow-hidden aspect-video">
-                    <img
-                      src={selectedGiveaway.prize_image_url}
-                      alt={selectedGiveaway.prize_name_ar}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                )}
-
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
+            <div>
+              {/* Dialog Image Header */}
+              {selectedGiveaway.prize_image_url ? (
+                <div className="relative aspect-[16/10] overflow-hidden">
+                  <img
+                    src={selectedGiveaway.prize_image_url}
+                    alt={selectedGiveaway.prize_name_ar}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
+                  <div className="absolute bottom-3 right-4 left-4">
                     <Badge className={selectedGiveaway.status === "active"
-                      ? "bg-green-500/10 text-green-600 border-green-500/20"
-                      : "bg-muted text-muted-foreground"
+                      ? "bg-primary/20 text-primary border-primary/30 backdrop-blur-sm"
+                      : "bg-card/60 text-muted-foreground backdrop-blur-sm"
                     }>
                       {selectedGiveaway.status === "active" ? "نشطة" : "منتهية"}
                     </Badge>
-                    {selectedGiveaway.prize_value > 0 && (
-                      <Badge variant="outline" className="text-amber-600 border-amber-500/30">
-                        قيمة الجائزة: {selectedGiveaway.prize_value} د.ع
-                      </Badge>
-                    )}
                   </div>
+                </div>
+              ) : (
+                <div className="h-6" />
+              )}
 
-                  <h3 className="font-bold">{selectedGiveaway.prize_name_ar}</h3>
+              {/* Dialog Content */}
+              <div className="p-5 space-y-5">
+                {!selectedGiveaway.prize_image_url && (
+                  <DialogHeader>
+                    <DialogTitle className="text-right">{selectedGiveaway.title_ar}</DialogTitle>
+                  </DialogHeader>
+                )}
+
+                <div>
+                  {selectedGiveaway.prize_image_url && (
+                    <h3 className="text-lg font-bold text-foreground mb-1">{selectedGiveaway.title_ar}</h3>
+                  )}
+                  <p className="text-sm text-primary font-medium">{selectedGiveaway.prize_name_ar}</p>
                   {selectedGiveaway.description_ar && (
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {selectedGiveaway.description_ar}
-                    </p>
+                    <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{selectedGiveaway.description_ar}</p>
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
-                    <Users className="h-3.5 w-3.5 text-primary" />
-                    <span>{getEntryCount(selectedGiveaway.id)} مشارك</span>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/10">
+                    <Users className="h-4 w-4 text-primary" />
+                    <div>
+                      <p className="text-sm font-bold text-foreground">{getEntryCount(selectedGiveaway.id)}</p>
+                      <p className="text-[10px] text-muted-foreground">مشارك</p>
+                    </div>
                   </div>
                   {selectedGiveaway.draw_date && (
-                    <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
-                      <Calendar className="h-3.5 w-3.5 text-primary" />
-                      <span>{format(new Date(selectedGiveaway.draw_date), "d MMM yyyy", { locale: ar })}</span>
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/10">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-sm font-bold text-foreground">
+                          {format(new Date(selectedGiveaway.draw_date), "d MMM", { locale: ar })}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">تاريخ السحب</p>
+                      </div>
+                    </div>
+                  )}
+                  {selectedGiveaway.prize_value > 0 && (
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/10 col-span-2">
+                      <Gift className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-sm font-bold text-foreground">{selectedGiveaway.prize_value} د.ع</p>
+                        <p className="text-[10px] text-muted-foreground">قيمة الجائزة</p>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* Winner announcement */}
+                {/* Winner */}
                 {selectedGiveaway.winner_merchant_id && (
-                  <Card className="border-amber-500/30 bg-amber-500/5">
-                    <CardContent className="p-3 flex items-center gap-3">
-                      <div className="p-2 rounded-full bg-amber-500/20">
-                        <Trophy className="h-5 w-5 text-amber-600" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">الفائز</p>
-                        <p className="font-bold text-amber-600">
-                          {getWinnerName(selectedGiveaway.id, selectedGiveaway.winner_merchant_id)}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">
+                      <Trophy className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-muted-foreground">الفائز</p>
+                      <p className="font-bold text-primary">
+                        {getWinnerName(selectedGiveaway.id, selectedGiveaway.winner_merchant_id)}
+                      </p>
+                    </div>
+                  </div>
                 )}
 
-                {/* Participants list */}
+                {/* Participants */}
                 {getGiveawayEntries(selectedGiveaway.id).length > 0 && (
                   <div>
-                    <h4 className="text-sm font-semibold mb-2">المشاركون</h4>
-                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                    <h4 className="text-xs font-bold text-foreground mb-2 flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-primary" />
+                      المشاركون ({getGiveawayEntries(selectedGiveaway.id).length})
+                    </h4>
+                    <div className="space-y-1 max-h-36 overflow-y-auto rounded-xl border border-border/30 p-2">
                       {getGiveawayEntries(selectedGiveaway.id).map((entry) => (
-                        <div key={entry.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/30">
+                        <div key={entry.id} className="flex items-center gap-2 p-2 rounded-lg hover:bg-card/50 transition-colors">
                           {entry.merchant_store_image ? (
-                            <img src={entry.merchant_store_image} alt="" className="w-7 h-7 rounded-full object-cover" />
+                            <img src={entry.merchant_store_image} alt="" className="w-7 h-7 rounded-full object-cover ring-1 ring-border" />
                           ) : (
                             <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                              <Users className="h-3.5 w-3.5 text-primary" />
+                              <Users className="h-3 w-3 text-primary" />
                             </div>
                           )}
-                          <span className="text-sm font-medium">{entry.merchant_name}</span>
+                          <span className="text-sm font-medium flex-1">{entry.merchant_name}</span>
                           {entry.merchant_id === selectedGiveaway.winner_merchant_id && (
-                            <Trophy className="h-3.5 w-3.5 text-amber-500 mr-auto" />
+                            <Star className="h-3.5 w-3.5 text-primary" />
                           )}
                         </div>
                       ))}
@@ -393,10 +447,10 @@ export default function MerchantGiveaways() {
                   </div>
                 )}
 
-                {/* Action button */}
+                {/* Action */}
                 {selectedGiveaway.status === "active" && isVerifiedMerchant && !isParticipating(selectedGiveaway.id) && (
                   <Button
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white"
+                    className="w-full rounded-xl h-11"
                     onClick={() => participateMutation.mutate(selectedGiveaway.id)}
                     disabled={participateMutation.isPending}
                   >
@@ -405,13 +459,13 @@ export default function MerchantGiveaways() {
                   </Button>
                 )}
                 {isParticipating(selectedGiveaway.id) && (
-                  <div className="flex items-center justify-center gap-2 text-green-600 py-2">
+                  <div className="flex items-center justify-center gap-2 text-primary py-2 bg-primary/5 rounded-xl border border-primary/10">
                     <CheckCircle className="h-4 w-4" />
                     <span className="text-sm font-medium">أنت مشارك في هذه الهدية</span>
                   </div>
                 )}
               </div>
-            </>
+            </div>
           )}
         </DialogContent>
       </Dialog>

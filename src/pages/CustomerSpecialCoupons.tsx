@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Percent, Truck, Gift, Tag, Copy, CheckCircle, Store } from "lucide-react";
+import { ArrowLeft, Percent, Truck, Gift, Tag, Copy, Store, Sparkles, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -24,11 +24,18 @@ interface SpecialCoupon {
   created_at: string;
 }
 
-const couponTypeConfig: Record<string, { icon: typeof Percent; label: string; color: string; bg: string }> = {
-  percentage: { icon: Percent, label: "خصم نسبة", color: "text-blue-600", bg: "bg-blue-500/10" },
-  free_delivery: { icon: Truck, label: "توصيل مجاني", color: "text-green-600", bg: "bg-green-500/10" },
-  free_product: { icon: Gift, label: "منتج هدية", color: "text-purple-600", bg: "bg-purple-500/10" },
-  fixed_amount: { icon: Tag, label: "خصم مبلغ", color: "text-amber-600", bg: "bg-amber-500/10" },
+const couponIcons: Record<string, typeof Percent> = {
+  percentage: Percent,
+  free_delivery: Truck,
+  free_product: Gift,
+  fixed_amount: Tag,
+};
+
+const couponLabels: Record<string, string> = {
+  percentage: "خصم نسبة",
+  free_delivery: "توصيل مجاني",
+  free_product: "منتج هدية",
+  fixed_amount: "خصم مبلغ",
 };
 
 export default function CustomerSpecialCoupons() {
@@ -52,100 +59,137 @@ export default function CustomerSpecialCoupons() {
     toast.success("تم نسخ الكود! 📋");
   };
 
-  const getTypeConfig = (type: string) =>
-    couponTypeConfig[type] || couponTypeConfig.percentage;
-
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-card border-b shadow-sm">
+      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/40">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg">
-              <Tag className="h-5 w-5 text-white" />
+            <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center">
+              <Tag className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-base font-bold text-foreground">كوبونات خاصة</h1>
-              <p className="text-xs text-muted-foreground">عروض حصرية لعملاء ليفو</p>
+              <p className="text-[11px] text-muted-foreground">عروض حصرية لعملاء ليفو</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl hover:bg-card" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <main className="flex-1 px-4 py-4 space-y-4">
-        {/* Coupons Grid */}
-        {coupons?.map((coupon) => {
-          const config = getTypeConfig(coupon.coupon_type);
-          const Icon = config.icon;
-          return (
-            <Card key={coupon.id} className="overflow-hidden border-border/50 hover:border-primary/20 transition-all">
-              <CardContent className="p-0">
-                <div className="flex">
-                  {/* Coupon Type Visual */}
-                  <div className={`w-20 shrink-0 ${config.bg} flex flex-col items-center justify-center p-3 border-l border-dashed border-border`}>
-                    <Icon className={`h-6 w-6 ${config.color}`} />
-                    {coupon.coupon_type === "percentage" && coupon.discount_value > 0 && (
-                      <span className={`text-lg font-bold ${config.color} mt-1`}>{coupon.discount_value}%</span>
-                    )}
-                    {coupon.coupon_type === "fixed_amount" && coupon.discount_value > 0 && (
-                      <span className={`text-xs font-bold ${config.color} mt-1`}>{coupon.discount_value} د.ع</span>
-                    )}
-                  </div>
+      <main className="flex-1 px-4 py-5 space-y-5">
+        {/* Hero */}
+        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card p-6 text-center">
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-2 right-6 w-20 h-20 rounded-full border-2 border-primary" />
+            <div className="absolute bottom-2 left-6 w-16 h-16 rounded-full border border-primary" />
+          </div>
+          <div className="relative space-y-3">
+            <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center mx-auto">
+              <Sparkles className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-foreground">عروض حصرية لك</h2>
+              <p className="text-xs text-muted-foreground mt-1.5 max-w-[240px] mx-auto leading-relaxed">
+                كوبونات وخصومات خاصة من متاجر مجتمع ليفو. استخدمها الآن!
+              </p>
+            </div>
+          </div>
+        </div>
 
-                  {/* Content */}
-                  <div className="flex-1 p-3 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-bold text-sm text-foreground line-clamp-1">{coupon.title_ar}</h3>
-                      <Badge className={`${config.bg} ${config.color} border-0 text-[10px] shrink-0`}>
-                        {config.label}
-                      </Badge>
-                    </div>
+        {/* Coupons */}
+        {coupons && coupons.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-5 rounded-full bg-primary" />
+              <h3 className="font-bold text-foreground text-sm">الكوبونات المتاحة</h3>
+              <Badge variant="outline" className="text-[10px] mr-auto border-border/50">{coupons.length}</Badge>
+            </div>
 
-                    {coupon.description_ar && (
-                      <p className="text-xs text-muted-foreground line-clamp-2">{coupon.description_ar}</p>
-                    )}
+            {coupons.map((coupon) => {
+              const Icon = couponIcons[coupon.coupon_type] || Percent;
+              const label = couponLabels[coupon.coupon_type] || "خصم";
+              return (
+                <Card key={coupon.id} className="overflow-hidden border-border/50 hover:border-primary/20 transition-all">
+                  <CardContent className="p-0">
+                    <div className="flex">
+                      {/* Left accent strip */}
+                      <div className="w-1.5 shrink-0 bg-primary/60 rounded-r-lg" />
 
-                    {coupon.merchant_store_name && (
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Store className="h-3 w-3" />
-                        <span>{coupon.merchant_store_name}</span>
+                      {/* Icon section */}
+                      <div className="w-20 shrink-0 flex flex-col items-center justify-center p-3 border-l border-dashed border-border/40">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-1.5">
+                          <Icon className="h-5 w-5 text-primary" />
+                        </div>
+                        {coupon.coupon_type === "percentage" && coupon.discount_value > 0 && (
+                          <span className="text-base font-bold text-primary">{coupon.discount_value}%</span>
+                        )}
+                        {coupon.coupon_type === "fixed_amount" && coupon.discount_value > 0 && (
+                          <span className="text-xs font-bold text-primary">{coupon.discount_value} د.ع</span>
+                        )}
+                        {coupon.coupon_type === "free_delivery" && (
+                          <span className="text-[10px] font-bold text-primary">مجاني</span>
+                        )}
                       </div>
-                    )}
 
-                    <div className="flex items-center justify-between">
-                      {coupon.coupon_code && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 text-xs gap-1 border-dashed"
-                          onClick={() => copyCode(coupon.coupon_code!)}
-                        >
-                          <Copy className="h-3 w-3" />
-                          {coupon.coupon_code}
-                        </Button>
-                      )}
-                      {coupon.valid_until && (
-                        <span className="text-[10px] text-muted-foreground">
-                          حتى {format(new Date(coupon.valid_until), "d MMM", { locale: ar })}
-                        </span>
-                      )}
+                      {/* Content */}
+                      <div className="flex-1 p-3.5 space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-bold text-sm text-foreground line-clamp-1">{coupon.title_ar}</h3>
+                          <Badge variant="outline" className="text-[10px] shrink-0 border-primary/20 text-primary">
+                            {label}
+                          </Badge>
+                        </div>
+
+                        {coupon.description_ar && (
+                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{coupon.description_ar}</p>
+                        )}
+
+                        {coupon.merchant_store_name && (
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <Store className="h-3 w-3" />
+                            <span>{coupon.merchant_store_name}</span>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between pt-1">
+                          {coupon.coupon_code ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-[11px] gap-1.5 border-dashed border-primary/30 text-primary hover:bg-primary/5 rounded-lg"
+                              onClick={() => copyCode(coupon.coupon_code!)}
+                            >
+                              <Copy className="h-3 w-3" />
+                              {coupon.coupon_code}
+                            </Button>
+                          ) : <div />}
+                          {coupon.valid_until && (
+                            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                              <Clock className="h-3 w-3" />
+                              حتى {format(new Date(coupon.valid_until), "d MMM", { locale: ar })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
         {/* Empty State */}
         {!isLoading && (!coupons || coupons.length === 0) && (
-          <div className="text-center py-16">
-            <Tag className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground font-medium">لا توجد كوبونات حالياً</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">ترقب العروض الحصرية القادمة</p>
+          <div className="text-center py-20">
+            <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-5">
+              <Tag className="h-10 w-10 text-primary/50" />
+            </div>
+            <p className="text-foreground font-bold text-base">لا توجد كوبونات حالياً</p>
+            <p className="text-xs text-muted-foreground mt-2 max-w-[200px] mx-auto">ترقب العروض الحصرية القادمة من متاجر مجتمع ليفو</p>
           </div>
         )}
       </main>
