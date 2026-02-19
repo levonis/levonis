@@ -23,10 +23,10 @@ export function useCommunityProfileCheck() {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["community-profile-status", user?.id],
     queryFn: async () => {
-      if (!user?.id) return { isComplete: false, isEmailVerified: false };
+      if (!user?.id) return { isComplete: false, isEmailVerified: false, isMerchantApproved: false };
       
-      // Check both profile fields AND community_customer_profiles existence
-      const [profileRes, communityRes] = await Promise.all([
+      // Check profile fields, community profile, AND merchant status
+      const [profileRes, communityRes, merchantRes] = await Promise.all([
         supabase
           .from("profiles")
           .select("full_name, phone_number, username, birth_date, gender, avatar_url, email_verified, created_at")
@@ -37,13 +37,20 @@ export function useCommunityProfileCheck() {
           .select("id")
           .eq("user_id", user.id)
           .maybeSingle(),
+        supabase
+          .from("merchant_applications")
+          .select("id, status")
+          .eq("user_id", user.id)
+          .eq("status", "approved")
+          .maybeSingle(),
       ]);
       
       if (profileRes.error) throw profileRes.error;
       const profile = profileRes.data;
-      if (!profile) return { isComplete: false, isEmailVerified: false };
+      if (!profile) return { isComplete: false, isEmailVerified: false, isMerchantApproved: false };
       
       const hasCommunityProfile = !!communityRes.data;
+      const isMerchantApproved = !!merchantRes.data;
       
       // Check all required fields for community access
       const hasBasicFields = Boolean(
@@ -59,11 +66,10 @@ export function useCommunityProfileCheck() {
 
       const hasValidAvatar = isValidAvatar(profile.avatar_url);
       
-      // Email verification is now required
       const isEmailVerified = profile.email_verified === true;
 
-      // Profile is complete when ALL fields are filled AND email is verified AND community profile exists
-      const isComplete = hasBasicFields && hasExtendedFields && hasValidAvatar && isEmailVerified && hasCommunityProfile;
+      // Profile is complete when ALL fields are filled AND email is verified AND (community profile exists OR merchant is approved)
+      const isComplete = hasBasicFields && hasExtendedFields && hasValidAvatar && isEmailVerified && (hasCommunityProfile || isMerchantApproved);
       
       console.log("[CommunityProfileCheck]", {
         userId: user.id,
@@ -72,6 +78,7 @@ export function useCommunityProfileCheck() {
         hasValidAvatar,
         isEmailVerified,
         hasCommunityProfile,
+        isMerchantApproved,
         isComplete,
       });
       
@@ -83,17 +90,19 @@ export function useCommunityProfileCheck() {
         hasValidAvatar,
         isEmailVerified,
         hasCommunityProfile,
+        isMerchantApproved,
       };
     },
     enabled: !!user?.id && !authLoading,
-    staleTime: 5_000, // Cache for 5 seconds to respond faster after profile updates
+    staleTime: 5_000,
     refetchOnMount: true,
-    gcTime: 10_000, // Garbage collect after 10 seconds
+    gcTime: 10_000,
   });
 
   return {
     isProfileComplete: data?.isComplete ?? false,
     isEmailVerified: data?.isEmailVerified ?? false,
+    isMerchantApproved: data?.isMerchantApproved ?? false,
     profile: data?.profile ?? null,
     isLoading: authLoading || isLoading,
     user,

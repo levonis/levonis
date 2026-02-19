@@ -1,6 +1,7 @@
 import { useSearchParams } from "react-router-dom";
 import Footer from "@/components/Footer";
 import CommunitySection from "@/components/community/CommunitySection";
+import CommunityGiftsButton from "@/components/community/CommunityGiftsButton";
 
 export default function CommunityHome() {
   return (
@@ -12,6 +13,7 @@ export default function CommunityHome() {
           <Footer />
         </div>
       </main>
+      <CommunityGiftsButton />
     </div>
   );
 }
