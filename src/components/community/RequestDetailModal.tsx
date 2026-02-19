@@ -399,16 +399,33 @@ export default function RequestDetailModal({
                 </div>
               )}
 
-              {/* Action Buttons - Chat & Price */}
+              {/* Action Buttons - Different for owner vs others */}
               <div className="flex gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 h-10 gap-2 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
-                  onClick={handleChatAboutRequest}
-                >
-                  <MessageSquare className="h-4 w-4" />
-                  تواصل حول الطلب
-                </Button>
+                {isOwner ? (
+                  /* Owner sees Edit button instead of Chat */
+                  !isAccepted && (
+                    <Button
+                      variant="outline"
+                      className="flex-1 h-10 gap-2 border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
+                      onClick={() => {
+                        onOpenChange(false);
+                        // Navigate to edit - handled by parent
+                      }}
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      تعديل الطلب
+                    </Button>
+                  )
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-10 gap-2 border-blue-500/30 text-blue-300 hover:bg-blue-500/20"
+                    onClick={handleChatAboutRequest}
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    تواصل حول الطلب
+                  </Button>
+                )}
                 
                 {/* Pricing Button for Merchants */}
                 {isMerchant && !isOwner && !isAccepted && onAddOffer && (
