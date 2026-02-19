@@ -603,6 +603,62 @@ export type Database = {
           },
         ]
       }
+      community_cart_items: {
+        Row: {
+          created_at: string
+          discount_id: string | null
+          id: string
+          merchant_id: string
+          merchant_name: string | null
+          notes: string | null
+          product_id: string
+          product_image: string | null
+          product_price: number
+          product_title: string
+          quantity: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          discount_id?: string | null
+          id?: string
+          merchant_id: string
+          merchant_name?: string | null
+          notes?: string | null
+          product_id: string
+          product_image?: string | null
+          product_price?: number
+          product_title: string
+          quantity?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          discount_id?: string | null
+          id?: string
+          merchant_id?: string
+          merchant_name?: string | null
+          notes?: string | null
+          product_id?: string
+          product_image?: string | null
+          product_price?: number
+          product_title?: string
+          quantity?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "community_cart_items_discount_id_fkey"
+            columns: ["discount_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_store_discounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       community_categories: {
         Row: {
           created_at: string
@@ -3313,6 +3369,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      merchant_store_discounts: {
+        Row: {
+          created_at: string
+          current_uses: number | null
+          description_ar: string | null
+          discount_type: string
+          discount_value: number | null
+          gift_description: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          max_uses: number | null
+          merchant_id: string
+          merchant_store_name: string | null
+          min_purchase_amount: number | null
+          title_ar: string
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          current_uses?: number | null
+          description_ar?: string | null
+          discount_type?: string
+          discount_value?: number | null
+          gift_description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_uses?: number | null
+          merchant_id: string
+          merchant_store_name?: string | null
+          min_purchase_amount?: number | null
+          title_ar: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          current_uses?: number | null
+          description_ar?: string | null
+          discount_type?: string
+          discount_value?: number | null
+          gift_description?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_uses?: number | null
+          merchant_id?: string
+          merchant_store_name?: string | null
+          min_purchase_amount?: number | null
+          title_ar?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
       }
       merchant_stories: {
         Row: {

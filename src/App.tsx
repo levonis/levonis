@@ -109,6 +109,7 @@ const AdminDeliveredOrders = lazy(() => import("./pages/AdminDeliveredOrders"));
 const AdminGiveawaysCoupons = lazy(() => import("./pages/AdminGiveawaysCoupons"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
 const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons"));
+const CommunityCart = lazy(() => import("./pages/CommunityCart"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Premium loading component - shown during lazy load
@@ -227,6 +228,7 @@ function AppContent() {
             <Route path="/offers" element={<OffersStoragePage />} />
             <Route path="/merchant-giveaways" element={<MerchantGiveaways />} />
             <Route path="/special-coupons" element={<CustomerSpecialCoupons />} />
+            <Route path="/community/cart" element={<RequireAuth><CommunityCart /></RequireAuth>} />
             <Route path="/community/checkout/:orderId" element={<RequireAuth><ChatOrderCheckout /></RequireAuth>} />
             
             {/* Redirect old routes to rewards hub */}

@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { 
   Store, 
   MessageCircle, 
@@ -15,6 +16,7 @@ import {
   X,
   Maximize2,
   Package,
+  ShoppingBag,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,9 +55,60 @@ export default function CommunityProductDetailModal({
 }: CommunityProductDetailModalProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [activeMediaIndex, setActiveMediaIndex] = useState(0);
   const [fullscreenImage, setFullscreenImage] = useState(false);
   const [fullscreenVideo, setFullscreenVideo] = useState(false);
+
+  const addToCartMutation = useMutation({
+    mutationFn: async () => {
+      if (!user || !product) throw new Error("يجب تسجيل الدخول");
+      // Check if already in cart
+      const { data: existing } = await supabase
+        .from("community_cart_items")
+        .select("id, quantity")
+        .eq("user_id", user.id)
+        .eq("product_id", product.id)
+        .maybeSingle();
+      
+      if (existing) {
+        const { error } = await supabase
+          .from("community_cart_items")
+          .update({ quantity: existing.quantity + 1 })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        // Get merchant name
+        const { data: merchant } = await supabase
+          .from("merchant_applications")
+          .select("display_name")
+          .eq("id", product.merchant_id)
+          .maybeSingle();
+        
+        const { error } = await supabase.from("community_cart_items").insert({
+          user_id: user.id,
+          merchant_id: product.merchant_id,
+          merchant_name: merchant?.display_name || "متجر",
+          product_id: product.id,
+          product_title: product.title,
+          product_image: product.image_urls?.[product.primary_image_index] || product.image_urls?.[0] || null,
+          product_price: product.price_iqd || 0,
+        });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success("تمت الإضافة للسلة 🛒");
+      queryClient.invalidateQueries({ queryKey: ["community-cart"] });
+    },
+    onError: (e: Error) => {
+      if (e.message === "يجب تسجيل الدخول") {
+        navigate("/auth");
+      } else {
+        toast.error("حدث خطأ");
+      }
+    },
+  });
 
   // Build media array with video first if exists
   const mediaItems = useMemo(() => {
@@ -513,11 +566,12 @@ export default function CommunityProductDetailModal({
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="gap-1 h-9 text-xs rounded-xl" 
-                    onClick={handleContactMerchant}
+                    className="gap-1 h-9 text-xs rounded-xl"
+                    onClick={() => addToCartMutation.mutate()}
+                    disabled={addToCartMutation.isPending}
                   >
-                    <MessageCircle className="h-3.5 w-3.5" />
-                    تواصل
+                    <ShoppingBag className="h-3.5 w-3.5" />
+                    السلة
                   </Button>
                   <Button 
                     variant="ghost" 
