@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -107,6 +107,11 @@ export default function CommunityCustomerProfileModal({
   // Email verification state
   const [emailVerified, setEmailVerified] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
+
+  // Username availability state
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const usernameTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const t = window.setTimeout(() => setLoadingUi(false), 200);
@@ -231,6 +236,37 @@ export default function CommunityCustomerProfileModal({
     
     e.target.value = "";
   };
+
+  // Username availability check
+  const checkUsernameAvailability = useCallback(async (username: string) => {
+    if (!username || username.length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+    setCheckingUsername(true);
+    try {
+      const { data: existing } = await supabase
+        .from("profiles")
+        .select("id")
+        .ilike("username", username)
+        .neq("id", user?.id ?? "")
+        .maybeSingle();
+      setUsernameAvailable(!existing);
+    } catch {
+      setUsernameAvailable(null);
+    } finally {
+      setCheckingUsername(false);
+    }
+  }, [user?.id]);
+
+  const handleUsernameChange = useCallback((value: string) => {
+    form.setValue("username", value, { shouldValidate: true });
+    setUsernameAvailable(null);
+    if (usernameTimeoutRef.current) clearTimeout(usernameTimeoutRef.current);
+    if (value.length >= 3) {
+      usernameTimeoutRef.current = setTimeout(() => checkUsernameAvailability(value), 500);
+    }
+  }, [checkUsernameAvailability, form]);
 
   const handleCroppedImage = async (blob: Blob) => {
     if (!blob || blob.size === 0) {
@@ -413,6 +449,14 @@ export default function CommunityCustomerProfileModal({
       });
       return;
     }
+    if (usernameAvailable === false) {
+      toast({
+        title: "اسم المستخدم مستخدم بالفعل",
+        description: "يرجى اختيار اسم مستخدم مختلف",
+        variant: "destructive",
+      });
+      return;
+    }
     setStep(2);
   };
 
@@ -556,17 +600,22 @@ export default function CommunityCustomerProfileModal({
             {fields.map((field) => {
               const hasValue = !!form.watch(field.id)?.toString().trim();
               const hasError = !!form.formState.errors[field.id];
+              const isUsername = field.id === "username";
+              const usernameVal = form.watch("username");
+              
+              // For username: show red ring if taken, green if available
+              const ringClass = hasError || (isUsername && usernameAvailable === false)
+                ? 'bg-destructive/10 ring-1 ring-destructive/40'
+                : (isUsername && usernameAvailable === true)
+                  ? 'bg-background ring-1 ring-green-500/60'
+                  : hasValue 
+                    ? 'bg-background ring-1 ring-primary/40' 
+                    : 'bg-background ring-1 ring-border/60 hover:ring-border';
               
               return (
                 <div 
                   key={field.id} 
-                  className={`group relative rounded-xl transition-all duration-300 ${
-                    hasError 
-                      ? 'bg-destructive/10 ring-1 ring-destructive/40' 
-                      : hasValue 
-                        ? 'bg-background ring-1 ring-primary/40' 
-                        : 'bg-background ring-1 ring-border/60 hover:ring-border'
-                  }`}
+                  className={`group relative rounded-xl transition-all duration-300 ${ringClass}`}
                 >
                   <div className="flex items-center gap-2.5 p-2.5">
                     <div className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 transition-all duration-300 ${
@@ -590,17 +639,44 @@ export default function CommunityCustomerProfileModal({
                         id={field.id}
                         type={field.type || "text"}
                         placeholder={field.placeholder}
-                        {...form.register(field.id)}
+                        {...(isUsername ? {
+                          ...form.register(field.id),
+                          onChange: (e: React.ChangeEvent<HTMLInputElement>) => handleUsernameChange(e.target.value),
+                          value: usernameVal || "",
+                        } : form.register(field.id))}
                         maxLength={field.maxLength}
                         inputMode={field.type === "tel" ? "tel" : undefined}
                         className="h-6 border-0 bg-transparent p-0 text-sm font-medium text-foreground placeholder:text-muted-foreground/40 focus-visible:ring-0 focus-visible:ring-offset-0"
                       />
                     </div>
+
+                    {/* Username availability indicator */}
+                    {isUsername && usernameVal && usernameVal.length >= 3 && (
+                      <div className="shrink-0">
+                        {checkingUsername ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        ) : usernameAvailable === true ? (
+                          <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        ) : usernameAvailable === false ? (
+                          <span className="text-[10px] text-destructive font-medium">مستخدم</span>
+                        ) : null}
+                      </div>
+                    )}
                   </div>
                   
                   {hasError && (
                     <p className="text-[10px] text-destructive px-2.5 pb-2 -mt-0.5 pr-14">
                       {form.formState.errors[field.id]?.message}
+                    </p>
+                  )}
+                  {isUsername && !hasError && usernameAvailable === true && (
+                    <p className="text-[10px] text-green-500 px-2.5 pb-2 -mt-0.5 pr-14">
+                      اسم المستخدم متاح ✓
+                    </p>
+                  )}
+                  {isUsername && !hasError && usernameAvailable === false && (
+                    <p className="text-[10px] text-destructive px-2.5 pb-2 -mt-0.5 pr-14">
+                      اسم المستخدم مستخدم بالفعل
                     </p>
                   )}
                 </div>
