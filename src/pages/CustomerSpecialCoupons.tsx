@@ -181,7 +181,7 @@ export default function CustomerSpecialCoupons() {
                   إدارة خصوماتي
                 </Button>
               )}
-              {user && (
+              {user && !isMerchant && (
                 <Button
                   variant="outline"
                   size="sm"
