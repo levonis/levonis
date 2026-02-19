@@ -243,12 +243,29 @@ export default function LevoHelpBot() {
   const [spotlight, setSpotlight] = useState<SpotlightState>({ active: false, stepIndex: 0, steps: [], rect: null });
   const [showHideMenu, setShowHideMenu] = useState(false);
   const [activeTab, setActiveTab] = useState<"faq" | "chat">("faq");
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(() => {
+    try {
+      const saved = localStorage.getItem("levo-ai-chat-messages");
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
   const [chatInput, setChatInput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const retryRef = useRef<NodeJS.Timeout | null>(null);
   const { user } = useAuth();
+
+  // Persist chat messages to localStorage
+  useEffect(() => {
+    if (chatMessages.length > 0) {
+      localStorage.setItem("levo-ai-chat-messages", JSON.stringify(chatMessages.slice(-30)));
+    }
+  }, [chatMessages]);
+
+  const startNewChat = useCallback(() => {
+    setChatMessages([]);
+    localStorage.removeItem("levo-ai-chat-messages");
+  }, []);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -262,6 +279,19 @@ export default function LevoHelpBot() {
     }
     return false;
   });
+
+  // Re-check hide timer periodically so it auto-shows when expired
+  useEffect(() => {
+    if (!isHidden) return;
+    const interval = setInterval(() => {
+      const hiddenUntil = localStorage.getItem("levo-help-hidden-until");
+      if (!hiddenUntil || Date.now() >= parseInt(hiddenUntil, 10)) {
+        localStorage.removeItem("levo-help-hidden-until");
+        setIsHidden(false);
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [isHidden]);
 
   const hideFor = (duration: HideDuration) => {
     const d = HIDE_DURATIONS.find(h => h.key === duration);
@@ -676,9 +706,22 @@ export default function LevoHelpBot() {
             </>
           )}
 
-          {/* ─── AI Chat Tab ─── */}
+           {/* ─── AI Chat Tab ─── */}
           {activeTab === "chat" && (
             <>
+              {/* New chat button */}
+              {chatMessages.length > 0 && (
+                <div className="shrink-0 border-b border-border/40 bg-muted/10 px-2 py-1.5 flex items-center justify-between">
+                  <span className="text-[9px] text-muted-foreground">{chatMessages.filter(m => m.role === "user").length} رسالة</span>
+                  <button
+                    onClick={startNewChat}
+                    className="flex items-center gap-1 text-[9px] font-semibold text-primary hover:text-primary/80 transition-colors"
+                  >
+                    <Sparkles className="h-2.5 w-2.5" />
+                    محادثة جديدة
+                  </button>
+                </div>
+              )}
               <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-[200px]">
                 {chatMessages.length === 0 && (
                   <div className="text-center py-8">
@@ -691,11 +734,11 @@ export default function LevoHelpBot() {
                 )}
                 {chatMessages.map((msg, i) => (
                   <div key={i} className={cn("flex", msg.role === "user" ? "justify-start" : "justify-end")}>
-                    <div className={cn(
+                  <div className={cn(
                       "max-w-[85%] rounded-2xl px-3 py-2 text-[11px] leading-relaxed",
                       msg.role === "user" 
                         ? "bg-primary text-primary-foreground rounded-tr-sm" 
-                        : "bg-muted/50 border border-border/40 text-foreground rounded-tl-sm"
+                        : "bg-card border border-border/50 text-foreground rounded-tl-sm"
                     )}>
                       <p className="whitespace-pre-line">{msg.content}</p>
                     </div>
@@ -703,7 +746,7 @@ export default function LevoHelpBot() {
                 ))}
                 {isStreaming && chatMessages[chatMessages.length - 1]?.role !== "assistant" && (
                   <div className="flex justify-end">
-                    <div className="bg-muted/50 border border-border/40 rounded-2xl rounded-tl-sm px-3 py-2">
+                    <div className="bg-card border border-border/50 rounded-2xl rounded-tl-sm px-3 py-2">
                       <div className="flex gap-1">
                         <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: "0ms" }} />
                         <span className="h-1.5 w-1.5 rounded-full bg-primary animate-bounce" style={{ animationDelay: "150ms" }} />
