@@ -182,6 +182,7 @@ export default function LoyaltyLevelsPanel() {
   };
 
   const getCardPrice = (level: any) => {
+    if (!level) return 0;
     return walletSettings?.[level.id] || (level.purchase_price_points || 0) * 10;
   };
 
