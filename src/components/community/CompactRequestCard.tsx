@@ -56,12 +56,28 @@ export default function CompactRequestCard({
   const { data: customerProfile } = useQuery({
     queryKey: ["customer-profile-compact", request.user_id],
     queryFn: async () => {
-      const { data } = await supabase
+      // Try profiles table first
+      const { data: profile } = await supabase
         .from("profiles")
         .select("full_name, avatar_url, username")
         .eq("id", request.user_id)
         .maybeSingle();
-      return data;
+      if (profile?.full_name || profile?.username) return profile;
+      
+      // Fallback to community_customer_profiles
+      const { data: communityProfile } = await supabase
+        .from("community_customer_profiles")
+        .select("display_name, avatar_url")
+        .eq("user_id", request.user_id)
+        .maybeSingle();
+      if (communityProfile) {
+        return {
+          full_name: communityProfile.display_name,
+          avatar_url: communityProfile.avatar_url,
+          username: null,
+        };
+      }
+      return profile;
     },
   });
 
@@ -115,7 +131,8 @@ export default function CompactRequestCard({
 
   const handleChat = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/community/messages?request_id=${request.id}&user_id=${request.user_id}`);
+    // Use request_id context so the conversation shows request details
+    navigate(`/community/messages?user_id=${request.user_id}&request_id=${request.id}`);
   };
 
   const handlePrice = (e: React.MouseEvent) => {
