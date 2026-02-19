@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
@@ -45,6 +45,7 @@ import {
   Users,
   ScrollText,
   Mail,
+  AtSign,
 } from "lucide-react";
 
 const step1Schema = z.object({
@@ -120,6 +121,38 @@ export default function MerchantSignupDialog({
   // Email verification state
   const [emailVerified, setEmailVerified] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
+
+  // Username state
+  const [username, setUsername] = useState("");
+  const [checkingUsername, setCheckingUsername] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const usernameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const checkUsernameAvailability = useCallback(async (val: string) => {
+    if (!val || val.length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+    setCheckingUsername(true);
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("username", val)
+      .neq("id", user?.id ?? "")
+      .maybeSingle();
+    setUsernameAvailable(!existing);
+    setCheckingUsername(false);
+  }, [user?.id]);
+
+  const handleUsernameChange = (val: string) => {
+    const cleaned = val.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 30);
+    setUsername(cleaned);
+    setUsernameAvailable(null);
+    if (usernameTimerRef.current) clearTimeout(usernameTimerRef.current);
+    if (cleaned.length >= 3) {
+      usernameTimerRef.current = setTimeout(() => checkUsernameAvailability(cleaned), 500);
+    }
+  };
 
   const { data: profileMini } = useQuery({
     queryKey: ["community-profile-mini", user?.id],
@@ -215,6 +248,9 @@ export default function MerchantSignupDialog({
   useEffect(() => setStep1(initialStep1), [initialStep1]);
   useEffect(() => setStep2(initialStep2), [initialStep2]);
   useEffect(() => setStoreImageUrl((app?.store_image_url as string | null) ?? ""), [app?.store_image_url]);
+  useEffect(() => {
+    if (profileMini?.username) setUsername(profileMini.username);
+  }, [profileMini?.username]);
 
   const saveDraftMutation = useMutation({
     mutationFn: async (payload: { step1?: Step1; step2?: Step2; store_image_url?: string | null }) => {
@@ -289,6 +325,15 @@ export default function MerchantSignupDialog({
           })
           .eq("id", appId);
         if (error) throw error;
+
+        // Save username to profiles table if changed
+        if (payload.step1 && username.length >= 3) {
+          const { error: usernameError } = await supabase
+            .from("profiles")
+            .update({ username })
+            .eq("id", user!.id);
+          if (usernameError) throw usernameError;
+        }
       }
 
       if (payload.step2) {
@@ -423,8 +468,8 @@ export default function MerchantSignupDialog({
   const canEdit = app?.status !== "approved" && app?.status !== "pending";
 
   const step1Ok = useMemo(() => {
-    return step1Schema.safeParse(step1).success && !!storeImageUrl;
-  }, [step1, storeImageUrl]);
+    return step1Schema.safeParse(step1).success && !!storeImageUrl && username.length >= 3 && usernameAvailable !== false;
+  }, [step1, storeImageUrl, username, usernameAvailable]);
 
   const step2Ok = useMemo(() => step2Schema.safeParse(step2).success, [step2]);
 
@@ -694,7 +739,44 @@ export default function MerchantSignupDialog({
                       </p>
                     </div>
 
-                    {/* Store Description */}
+                    {/* Username */}
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold flex items-center gap-2">
+                        <AtSign className="h-4 w-4 text-primary" />
+                        اسم المستخدم (Username)
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          value={username}
+                          disabled={!canEdit}
+                          maxLength={30}
+                          placeholder="مثال: my_store"
+                          onChange={(e) => handleUsernameChange(e.target.value)}
+                          className={`h-12 ${
+                            usernameAvailable === true ? 'ring-2 ring-emerald-500/50' : 
+                            usernameAvailable === false ? 'ring-2 ring-destructive/50' : ''
+                          }`}
+                          dir="ltr"
+                        />
+                        {checkingUsername && (
+                          <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                        {!checkingUsername && usernameAvailable === true && (
+                          <CheckCircle2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-emerald-500" />
+                        )}
+                        {!checkingUsername && usernameAvailable === false && (
+                          <XCircle className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-destructive" />
+                        )}
+                      </div>
+                      <p className={`text-xs ${
+                        usernameAvailable === false ? 'text-destructive' : 'text-muted-foreground'
+                      }`}>
+                        {usernameAvailable === false 
+                          ? 'اسم المستخدم مستخدم بالفعل' 
+                          : 'حروف إنجليزية، أرقام، و _ فقط (3 أحرف على الأقل)'}
+                      </p>
+                    </div>
+
                     <div className="space-y-2">
                       <Label className="text-sm font-semibold flex items-center gap-2">
                         <FileText className="h-4 w-4 text-primary" />
