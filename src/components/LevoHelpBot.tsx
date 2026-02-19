@@ -41,33 +41,43 @@ interface SpotlightState {
 const finders = {
   // Header elements
   searchBar: () => document.querySelector('input[placeholder*="ابحث"]') as HTMLElement | null,
-  cartIcon: () => document.querySelector('a[href="/cart"], button[aria-label*="سلة"], [href="/cart"]') as HTMLElement | null,
+  cartIcon: () => document.querySelector('a[href="/cart"], [href="/cart"]') as HTMLElement | null,
   favIcon: () => document.querySelector('a[href="/favorites"], [href="/favorites"]') as HTMLElement | null,
   bellIcon: () => document.querySelector('a[href="/notifications"], [href="/notifications"]') as HTMLElement | null,
-  profileIcon: () => document.querySelector('a[href="/user-info"], [href="/user-info"], a[href="/profile"]') as HTMLElement | null,
+  profileIcon: () => document.querySelector('a[href="/user-info"], [href="/user-info"]') as HTMLElement | null,
+  // Page headings - fallback finders for specific pages
+  pageHeading: () => document.querySelector('main h1, h1') as HTMLElement | null,
+  pageMainContent: () => document.querySelector('main, [class*="container"]') as HTMLElement | null,
   // Community
-  communityBadge: () => document.querySelector('a[href="/community"]') as HTMLElement | null,
+  communityBadge: () => document.querySelector('a[href="/community"], [href="/community"]') as HTMLElement | null,
   newRequestBtn: () => {
-    const btns = document.querySelectorAll('button');
+    const btns = document.querySelectorAll('a, button');
     for (const b of btns) {
-      if (b.textContent?.includes('طلب جديد')) return b as HTMLElement;
+      if (b.textContent?.includes('طلب جديد') || b.textContent?.includes('إضافة طلب')) return b as HTMLElement;
     }
     return null;
   },
-  messagesBtn: () => {
-    const btns = document.querySelectorAll('button');
-    for (const b of btns) {
-      if (b.textContent?.includes('المحادثات')) return b as HTMLElement;
-    }
-    return null;
-  },
-  myRequestsLink: () => document.querySelector('a[href*="customer/requests"], button:has(.lucide-package)') as HTMLElement | null,
   // Rewards
-  rewardsContent: () => document.querySelector('[class*="min-h-"]') as HTMLElement | null,
+  rewardsHeading: () => document.querySelector('h1') as HTMLElement | null,
+  // Cart
+  cartContent: () => document.querySelector('main') as HTMLElement | null,
+  couponInput: () => document.querySelector('input[placeholder*="كود"], input[placeholder*="خصم"], input[placeholder*="كوبون"]') as HTMLElement | null,
+  // Orders
+  ordersContent: () => document.querySelector('main h1, main') as HTMLElement | null,
+  // Addresses
+  addAddressBtn: () => {
+    const btns = document.querySelectorAll('a, button');
+    for (const b of btns) {
+      if (b.textContent?.includes('إضافة عنوان') || b.textContent?.includes('عنوان جديد')) return b as HTMLElement;
+    }
+    return document.querySelector('main') as HTMLElement | null;
+  },
   // Merchant
   storeLink: () => document.querySelector('a[href*="merchant/store"]') as HTMLElement | null,
   ordersLink: () => document.querySelector('a[href*="merchant/orders"]') as HTMLElement | null,
   requestsLink: () => document.querySelector('a[href*="/requests"]') as HTMLElement | null,
+  // Offers
+  offersContent: () => document.querySelector('main') as HTMLElement | null,
 };
 
 // ─── Categories ───────────────────────────────────────────────
@@ -104,25 +114,25 @@ const FAQS: FAQ[] = [
   },
   { category: "general", icon: MapPin, question: "كيف أضيف عنوان توصيل؟", answer: "اذهب إلى ملفك الشخصي ← العناوين ← إضافة عنوان جديد. أدخل تفاصيل العنوان (المحافظة، المنطقة، الشارع، رقم الهاتف).",
     guideSteps: [
-      { path: "/addresses", description: "هذه صفحة العناوين — يمكنك إضافة عنوان جديد من هنا" },
+      { path: "/addresses", description: "هذه صفحة العناوين — يمكنك إضافة عنوان جديد من هنا", elementFinder: finders.addAddressBtn },
     ]
   },
 
   // ── الطلبات ──
   { category: "orders", icon: ShoppingCart, question: "كيف يمكنني وضع طلبي؟", answer: "1. تصفح المنتجات واختر المنتج المناسب\n2. حدد الخيارات (اللون، الحجم، الكمية)\n3. اضغط 'أضف للسلة'\n4. اذهب للسلة وأكمل الشراء",
     guideSteps: [
-      { path: "/", description: "تصفح المنتجات من الصفحة الرئيسية واختر ما يناسبك" },
-      { path: "/cart", description: "هذه سلة المشتريات — راجع طلبك وأكمل الشراء" },
+      { path: "/", description: "تصفح المنتجات من الصفحة الرئيسية واختر ما يناسبك", elementFinder: finders.searchBar },
+      { path: "/cart", description: "هذه سلة المشتريات — راجع طلبك وأكمل الشراء", elementFinder: finders.cartContent },
     ]
   },
   { category: "orders", icon: Eye, question: "كيف يمكنني تتبع طلبي؟", answer: "اذهب إلى 'طلباتي'. ستجد جميع طلباتك مع حالة كل طلب:\n• قيد المراجعة\n• قيد التجهيز\n• تم الشحن\n• تم التوصيل",
     guideSteps: [
-      { path: "/my-orders", description: "هذه صفحة طلباتي — يمكنك تتبع جميع طلباتك هنا" },
+      { path: "/my-orders", description: "هذه صفحة طلباتي — يمكنك تتبع جميع طلباتك هنا", elementFinder: finders.ordersContent },
     ]
   },
   { category: "orders", icon: Tag, question: "كيف أستخدم كود الخصم؟", answer: "عند إتمام الطلب في صفحة السلة، ستجد حقل 'كود الخصم'. أدخل الكود واضغط 'تطبيق'. سيتم خصم المبلغ تلقائياً.",
     guideSteps: [
-      { path: "/cart", description: "في صفحة السلة، ابحث عن حقل كود الخصم وأدخل الكود" },
+      { path: "/cart", description: "في صفحة السلة، ابحث عن حقل كود الخصم وأدخل الكود", elementFinder: finders.couponInput },
     ]
   },
   { category: "orders", icon: Package, question: "هل يمكنني إلغاء طلبي؟", answer: "يمكنك إلغاء الطلب إذا كان في حالة 'قيد المراجعة' فقط. بعد بدء التجهيز لا يمكن الإلغاء. تواصل مع الدعم لأي حالات استثنائية." },
@@ -138,13 +148,13 @@ const FAQS: FAQ[] = [
 
   // ── النقاط ──
   { category: "points", icon: Star, question: "ماذا تعني النقاط وما فائدتها؟", answer: "النقاط هي نظام مكافآت ليفو:\n• استبدالها بمنتجات مجانية\n• الحصول على خصومات\n• شراء تذاكر المسابقات\n• ترقية مستوى العضوية",
-    guideSteps: [{ path: "/rewards", description: "هذا مركز المكافآت — يمكنك إدارة نقاطك من هنا" }]
+    guideSteps: [{ path: "/rewards", description: "هذا مركز المكافآت — يمكنك إدارة نقاطك من هنا", elementFinder: finders.rewardsHeading }]
   },
   { category: "points", icon: Zap, question: "كيف أحصل على النقاط؟", answer: "طرق كسب النقاط:\n• الشراء من المتجر\n• المهام اليومية (تسجيل دخول، مشاركة، تقييم)\n• المشاركة في الفعاليات\n• إحالة أصدقاء\n• إتمام الملف الشخصي",
-    guideSteps: [{ path: "/rewards", description: "مركز المكافآت — تابع نقاطك والمهام اليومية" }]
+    guideSteps: [{ path: "/rewards", description: "مركز المكافآت — تابع نقاطك والمهام اليومية", elementFinder: finders.rewardsHeading }]
   },
   { category: "points", icon: Gift, question: "كيف أستبدل النقاط؟", answer: "اذهب إلى مركز المكافآت ← متجر النقاط. تصفح المكافآت المتاحة واستبدلها بنقاطك.",
-    guideSteps: [{ path: "/rewards", description: "متجر النقاط — اختر المكافأة واستبدلها" }]
+    guideSteps: [{ path: "/rewards", description: "متجر النقاط — اختر المكافأة واستبدلها", elementFinder: finders.rewardsHeading }]
   },
   { category: "points", icon: Star, question: "هل تنتهي صلاحية النقاط؟", answer: "النقاط لا تنتهي صلاحيتها طالما حسابك نشط. بعض عروض متجر النقاط قد تكون محدودة بوقت." },
 
@@ -280,20 +290,31 @@ export default function LevoHelpBot() {
     const tryFind = (attempt = 0) => {
       let el: HTMLElement | null = null;
       
+      // Try the specific element finder first
       if (step.elementFinder) {
         el = step.elementFinder();
       }
       
+      // Fallback: try to find the page heading or main content
+      if (!el) {
+        el = document.querySelector('main h1') as HTMLElement | null;
+      }
+      if (!el) {
+        el = document.querySelector('h1') as HTMLElement | null;
+      }
+      if (!el) {
+        el = document.querySelector('main > div:first-child') as HTMLElement | null;
+      }
+      
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "center" });
-        // Wait for scroll to finish
         setTimeout(() => {
           const rect = el!.getBoundingClientRect();
           setSpotlight(prev => ({ ...prev, rect }));
         }, 400);
-      } else if (attempt < 5) {
+      } else if (attempt < 8) {
         // Retry — page might still be loading
-        retryRef.current = setTimeout(() => tryFind(attempt + 1), 500);
+        retryRef.current = setTimeout(() => tryFind(attempt + 1), 600);
       } else {
         // No element found, show centered message
         setSpotlight(prev => ({ ...prev, rect: null }));
@@ -316,7 +337,8 @@ export default function LevoHelpBot() {
     // Navigate if needed
     if (firstStep.path && firstStep.path !== location.pathname) {
       navigate(firstStep.path);
-      setTimeout(() => findAndSpotlight(firstStep), 1000);
+      // Wait longer for page to fully render
+      setTimeout(() => findAndSpotlight(firstStep), 1500);
     } else {
       findAndSpotlight(firstStep);
     }
@@ -334,7 +356,7 @@ export default function LevoHelpBot() {
     
     if (step.path && step.path !== location.pathname) {
       navigate(step.path);
-      setTimeout(() => findAndSpotlight(step), 1000);
+      setTimeout(() => findAndSpotlight(step), 1500);
     } else {
       findAndSpotlight(step);
     }
