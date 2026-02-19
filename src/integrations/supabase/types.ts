@@ -1604,6 +1604,74 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_special_coupons: {
+        Row: {
+          coupon_code: string | null
+          coupon_type: string
+          created_at: string
+          current_uses: number | null
+          description_ar: string | null
+          discount_value: number | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          max_uses: number | null
+          merchant_store_id: string | null
+          merchant_store_name: string | null
+          product_id: string | null
+          title_ar: string
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          coupon_code?: string | null
+          coupon_type?: string
+          created_at?: string
+          current_uses?: number | null
+          description_ar?: string | null
+          discount_value?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_uses?: number | null
+          merchant_store_id?: string | null
+          merchant_store_name?: string | null
+          product_id?: string | null
+          title_ar: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          coupon_code?: string | null
+          coupon_type?: string
+          created_at?: string
+          current_uses?: number | null
+          description_ar?: string | null
+          discount_value?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          max_uses?: number | null
+          merchant_store_id?: string | null
+          merchant_store_name?: string | null
+          product_id?: string | null
+          title_ar?: string
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_special_coupons_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_redemption_log: {
         Row: {
           created_at: string
@@ -2711,6 +2779,106 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      merchant_giveaway_entries: {
+        Row: {
+          created_at: string
+          giveaway_id: string
+          id: string
+          merchant_id: string
+          merchant_name: string
+          merchant_store_image: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          giveaway_id: string
+          id?: string
+          merchant_id: string
+          merchant_name: string
+          merchant_store_image?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          giveaway_id?: string
+          id?: string
+          merchant_id?: string
+          merchant_name?: string
+          merchant_store_image?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_giveaway_entries_giveaway_id_fkey"
+            columns: ["giveaway_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_giveaways"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      merchant_giveaways: {
+        Row: {
+          created_at: string
+          description_ar: string | null
+          draw_date: string | null
+          end_date: string | null
+          id: string
+          max_participants: number | null
+          prize_image_url: string | null
+          prize_name_ar: string
+          prize_value: number | null
+          product_id: string | null
+          start_date: string
+          status: string
+          title_ar: string
+          updated_at: string
+          winner_merchant_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description_ar?: string | null
+          draw_date?: string | null
+          end_date?: string | null
+          id?: string
+          max_participants?: number | null
+          prize_image_url?: string | null
+          prize_name_ar: string
+          prize_value?: number | null
+          product_id?: string | null
+          start_date?: string
+          status?: string
+          title_ar: string
+          updated_at?: string
+          winner_merchant_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description_ar?: string | null
+          draw_date?: string | null
+          end_date?: string | null
+          id?: string
+          max_participants?: number | null
+          prize_image_url?: string | null
+          prize_name_ar?: string
+          prize_value?: number | null
+          product_id?: string | null
+          start_date?: string
+          status?: string
+          title_ar?: string
+          updated_at?: string
+          winner_merchant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "merchant_giveaways_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       merchant_monthly_orders: {
         Row: {

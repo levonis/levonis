@@ -106,6 +106,9 @@ const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
 const ReelsPage = lazy(() => import("./pages/ReelsPage"));
 const AdminStories = lazy(() => import("./pages/AdminStories"));
 const AdminDeliveredOrders = lazy(() => import("./pages/AdminDeliveredOrders"));
+const AdminGiveawaysCoupons = lazy(() => import("./pages/AdminGiveawaysCoupons"));
+const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
+const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Premium loading component - shown during lazy load
@@ -187,6 +190,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/users`} element={<AdminRoute><AdminUsers /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/stories`} element={<AdminRoute><AdminStories /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/delivered-orders`} element={<AdminRoute><AdminDeliveredOrders /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/giveaways-coupons`} element={<AdminRoute><AdminGiveawaysCoupons /></AdminRoute>} />
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />
@@ -221,6 +225,8 @@ function AppContent() {
             <Route path="/my-offer-purchases" element={<MyOfferPurchases />} />
             <Route path="/product-offers" element={<ProductOffersPage />} />
             <Route path="/offers" element={<OffersStoragePage />} />
+            <Route path="/merchant-giveaways" element={<MerchantGiveaways />} />
+            <Route path="/special-coupons" element={<CustomerSpecialCoupons />} />
             <Route path="/community/checkout/:orderId" element={<RequireAuth><ChatOrderCheckout /></RequireAuth>} />
             
             {/* Redirect old routes to rewards hub */}
