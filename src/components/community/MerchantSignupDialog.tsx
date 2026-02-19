@@ -252,10 +252,15 @@ export default function MerchantSignupDialog({
     if (profileMini?.username) setUsername(profileMini.username);
   }, [profileMini?.username]);
 
+  const savingRef = useRef(false);
+
   const saveDraftMutation = useMutation({
     mutationFn: async (payload: { step1?: Step1; step2?: Step2; store_image_url?: string | null }) => {
       if (!user?.id) throw new Error("Not authenticated");
+      if (savingRef.current) throw new Error("جارٍ الحفظ بالفعل");
+      savingRef.current = true;
 
+      try {
       // Content filtering for step1
       if (payload.step1) {
         const nameCheck = validateDisplayName(payload.step1.display_name);
@@ -326,13 +331,32 @@ export default function MerchantSignupDialog({
           .eq("id", appId);
         if (error) throw error;
 
-        // Save username to profiles table if changed
+        // Save username to profiles table if changed - with fresh uniqueness check
         if (payload.step1 && username.length >= 3) {
+          // Fresh server-side check right before saving
+          const { data: existingUser } = await supabase
+            .from("profiles")
+            .select("id")
+            .ilike("username", username)
+            .neq("id", user!.id)
+            .maybeSingle();
+          
+          if (existingUser) {
+            setUsernameAvailable(false);
+            throw new Error("اسم المستخدم مستخدم بالفعل، اختر اسماً آخر");
+          }
+
           const { error: usernameError } = await supabase
             .from("profiles")
             .update({ username })
             .eq("id", user!.id);
-          if (usernameError) throw usernameError;
+          if (usernameError) {
+            if (usernameError.message?.includes("unique")) {
+              setUsernameAvailable(false);
+              throw new Error("اسم المستخدم مستخدم بالفعل، اختر اسماً آخر");
+            }
+            throw usernameError;
+          }
         }
       }
 
@@ -363,6 +387,9 @@ export default function MerchantSignupDialog({
       }
 
       return true;
+      } finally {
+        savingRef.current = false;
+      }
     },
     onSuccess: async () => {
       await Promise.all([
