@@ -432,53 +432,67 @@ export default function CommunityMerchantStore() {
           </TabsContent>
 
           {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-4">
-            {/* Quick Actions Row */}
-            <div className="grid grid-cols-2 gap-3">
+          <TabsContent value="settings" className="space-y-3">
+            {/* Quick Actions - compact row */}
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setProfileEditorOpen(true)}
-                className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:bg-accent/50 transition-colors text-right"
+                className="flex items-center gap-2 p-2.5 rounded-xl border border-border/50 bg-card hover:bg-accent/10 transition-colors text-right"
               >
-                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Edit2 className="h-4 w-4 text-primary" />
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Edit2 className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold truncate">تعديل الملف</p>
-                  <p className="text-[10px] text-muted-foreground">الصورة والبايو</p>
+                  <p className="text-[11px] font-bold truncate">تعديل الملف</p>
+                  <p className="text-[9px] text-muted-foreground">الصورة والبايو</p>
                 </div>
               </button>
               <button
                 onClick={() => navigate(`/store/${merchantApp.id}`)}
-                className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:bg-accent/50 transition-colors text-right"
+                className="flex items-center gap-2 p-2.5 rounded-xl border border-border/50 bg-card hover:bg-accent/10 transition-colors text-right"
               >
-                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <ExternalLink className="h-4 w-4 text-primary" />
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <ExternalLink className="h-3.5 w-3.5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xs font-bold truncate">معاينة المتجر</p>
-                  <p className="text-[10px] text-muted-foreground">كزائر</p>
+                  <p className="text-[11px] font-bold truncate">معاينة المتجر</p>
+                  <p className="text-[9px] text-muted-foreground">كزائر</p>
                 </div>
               </button>
             </div>
 
-            {/* Ad Booking - compact */}
-            <div className="flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5">
-              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                <Megaphone className="h-4 w-4 text-primary" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold">إعلان مميز</p>
-                <p className="text-[10px] text-muted-foreground">اظهر متجرك في أول التجار</p>
-              </div>
-              <Button size="sm" className="gap-1 h-8 text-xs shrink-0" onClick={() => setAdDialogOpen(true)}>
-                <Megaphone className="h-3 w-3" />حجز
-              </Button>
+            {/* Ad + Settings row */}
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setAdDialogOpen(true)}
+                className="flex items-center gap-2 p-2.5 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-right"
+              >
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Megaphone className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold truncate">ترويج متجري</p>
+                  <p className="text-[9px] text-muted-foreground">إعلان مميز</p>
+                </div>
+              </button>
+              <button
+                onClick={() => setStoreTab("settings")}
+                className="flex items-center gap-2 p-2.5 rounded-xl border border-border/50 bg-card hover:bg-accent/10 transition-colors text-right"
+              >
+                <div className="h-8 w-8 rounded-lg bg-muted/30 flex items-center justify-center shrink-0">
+                  <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold truncate">إعدادات المتجر</p>
+                  <p className="text-[9px] text-muted-foreground">إيقاف مؤقت</p>
+                </div>
+              </button>
             </div>
 
             {/* Merchant Discounts */}
-            <Card className="border-border/50 bg-card rounded-xl p-4">
+            <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
               <MerchantDiscountsManager merchantId={merchantApp.id} merchantName={merchantApp.display_name || "متجر"} />
-            </Card>
+            </div>
 
             {/* Store Pause */}
             <StorePauseControl merchantId={merchantApp.id} storePaused={merchantApp.store_paused || false} storePauseEndDate={merchantApp.store_pause_end_date} storePauseMessage={merchantApp.store_pause_message} />
