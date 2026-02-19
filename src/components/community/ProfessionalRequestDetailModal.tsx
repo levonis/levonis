@@ -70,17 +70,26 @@ export default function ProfessionalRequestDetailModal({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showAddOffer, setShowAddOffer] = useState(false);
 
-  // Fetch customer profile
+  // Fetch customer profile - fallback to profiles table
   const { data: customerProfile } = useQuery({
     queryKey: ["customer-profile", request?.user_id],
     enabled: !!request?.user_id,
     queryFn: async () => {
-      const { data } = await supabase
+      // Try community profile first
+      const { data: communityProfile } = await supabase
         .from("community_customer_profiles")
         .select("display_name, avatar_url")
         .eq("user_id", request!.user_id)
         .maybeSingle();
-      return data;
+      if (communityProfile?.display_name) return communityProfile;
+      // Fallback to profiles table
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", request!.user_id)
+        .maybeSingle();
+      if (profile) return { display_name: profile.full_name, avatar_url: profile.avatar_url };
+      return null;
     },
   });
 

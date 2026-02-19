@@ -106,12 +106,19 @@ export default function PrintRequestDetailModal({
     queryKey: ["customer-profile", request?.user_id],
     enabled: !!request?.user_id,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data: communityProfile } = await supabase
         .from("community_customer_profiles")
         .select("display_name, avatar_url")
         .eq("user_id", request!.user_id)
         .maybeSingle();
-      return data;
+      if (communityProfile?.display_name) return communityProfile;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url")
+        .eq("id", request!.user_id)
+        .maybeSingle();
+      if (profile) return { display_name: profile.full_name, avatar_url: profile.avatar_url };
+      return null;
     },
   });
 

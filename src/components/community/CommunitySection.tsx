@@ -154,8 +154,8 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
       {/* Quick Actions for Homepage - Show for logged in users */}
       {!isCommunityHub && user && (
         <div className="mb-4">
-          {/* Approved merchant OR profile complete: show quick actions */}
-          {(isMerchant || isProfileComplete) ? (
+          {/* Approved merchant OR profile complete OR approved app: show quick actions */}
+          {(isMerchant || isProfileComplete || anyMerchantApp?.status === "approved") ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {quickActions.map((action) => {
                 const Icon = action.icon;
@@ -240,7 +240,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
       )}
 
       {/* Quick Actions for Community Hub - for users with complete profile or approved merchants */}
-      {isCommunityHub && user && (isProfileComplete || isMerchant) && (
+      {isCommunityHub && user && (isProfileComplete || isMerchant || anyMerchantApp?.status === "approved") && (
         <div className="mb-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {quickActions.map((action) => {

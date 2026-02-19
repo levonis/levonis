@@ -13,7 +13,7 @@ import { useAuth } from "@/hooks/useAuth";
 // Lazy load the conversations component for better performance
 const ListingConversations = lazy(() => import("@/components/marketplace/ListingConversations").then(m => ({ default: m.ListingConversations })));
 
-// Support account ID (admin) - hide chat button for this user
+// Support account ID (admin) - used for identification only, chat bubble now visible for all users
 const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
 
 export default function UnifiedChatButton() {
@@ -54,9 +54,8 @@ export default function UnifiedChatButton() {
     }
   };
 
-  // Hide for non-logged users and for admin/support account
+  // Hide for non-logged users only
   if (!user) return null;
-  if (user.id === SUPPORT_USER_ID) return null;
 
   return (
     <>
