@@ -165,7 +165,7 @@ export default function CommunityCustomerRequests() {
   };
 
   const requests = data ?? [];
-  const canEditOrDelete = (r: PrintRequest) => r.status === "pending_review" || r.status === "pending" || r.status === "rejected";
+  const canEditOrDelete = (r: PrintRequest) => ["pending_review", "pending", "rejected", "approved"].includes(r.status);
 
   const openEdit = (r: PrintRequest) => {
     setEditingId(r.id);
@@ -250,7 +250,7 @@ export default function CommunityCustomerRequests() {
               <Package className="h-3.5 w-3.5" />
               طلب جديد
             </Button>
-            <Button variant="outline" size="sm" onClick={() => navigate('/community/customer')} className="gap-1.5 text-xs">
+            <Button variant="outline" size="sm" onClick={() => navigate(-1)} className="gap-1.5 text-xs">
               <ArrowRight className="h-3.5 w-3.5" />
             </Button>
           </div>
