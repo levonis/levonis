@@ -432,33 +432,56 @@ export default function CommunityMerchantStore() {
           </TabsContent>
 
           {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
-            {/* Ad Booking */}
-            <Card className="border-primary/20 bg-gradient-to-br from-card to-primary/5 rounded-2xl p-6">
-              <h3 className="font-bold text-sm mb-2 flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary" />إعلان مميز</h3>
-              <p className="text-xs text-muted-foreground mb-3">اظهر متجرك في أول 10 تجار بحجز مركز إعلاني</p>
-              <Button size="sm" className="gap-1.5" onClick={() => setAdDialogOpen(true)}>
-                <Megaphone className="h-3.5 w-3.5" />حجز إعلان
+          <TabsContent value="settings" className="space-y-4">
+            {/* Quick Actions Row */}
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setProfileEditorOpen(true)}
+                className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:bg-accent/50 transition-colors text-right"
+              >
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Edit2 className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold truncate">تعديل الملف</p>
+                  <p className="text-[10px] text-muted-foreground">الصورة والبايو</p>
+                </div>
+              </button>
+              <button
+                onClick={() => navigate(`/store/${merchantApp.id}`)}
+                className="flex items-center gap-3 p-3 rounded-xl border border-border/50 bg-card hover:bg-accent/50 transition-colors text-right"
+              >
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <ExternalLink className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold truncate">معاينة المتجر</p>
+                  <p className="text-[10px] text-muted-foreground">كزائر</p>
+                </div>
+              </button>
+            </div>
+
+            {/* Ad Booking - compact */}
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-primary/20 bg-primary/5">
+              <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Megaphone className="h-4 w-4 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold">إعلان مميز</p>
+                <p className="text-[10px] text-muted-foreground">اظهر متجرك في أول التجار</p>
+              </div>
+              <Button size="sm" className="gap-1 h-8 text-xs shrink-0" onClick={() => setAdDialogOpen(true)}>
+                <Megaphone className="h-3 w-3" />حجز
               </Button>
-            </Card>
+            </div>
 
             {/* Merchant Discounts */}
-            <Card className="border-border/50 bg-card rounded-2xl p-6">
+            <Card className="border-border/50 bg-card rounded-xl p-4">
               <MerchantDiscountsManager merchantId={merchantApp.id} merchantName={merchantApp.display_name || "متجر"} />
             </Card>
 
+            {/* Store Pause */}
             <StorePauseControl merchantId={merchantApp.id} storePaused={merchantApp.store_paused || false} storePauseEndDate={merchantApp.store_pause_end_date} storePauseMessage={merchantApp.store_pause_message} />
-            <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 rounded-2xl p-6">
-              <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Settings className="h-4 w-4 text-primary" />إعدادات المتجر</h3>
-              <div className="space-y-3">
-                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => setProfileEditorOpen(true)}>
-                  <Edit2 className="h-4 w-4" />تعديل الملف الشخصي والمتجر
-                </Button>
-                <Button variant="outline" className="w-full justify-start gap-2" onClick={() => navigate(`/store/${merchantApp.id}`)}>
-                  <ExternalLink className="h-4 w-4" />معاينة المتجر كزائر
-                </Button>
-              </div>
-            </Card>
           </TabsContent>
         </Tabs>
       </main>

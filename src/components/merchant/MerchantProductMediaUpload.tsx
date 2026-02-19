@@ -151,42 +151,44 @@
        <div>
          <Label>الصور (اختياري)</Label>
          <div className="mt-2 grid grid-cols-3 gap-2">
-           {imageUrls.map((url, idx) => (
-             <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border border-border">
-               <img src={url} alt={`صورة ${idx + 1}`} className="w-full h-full object-cover" />
+            {imageUrls.map((url, idx) => (
+              <div key={idx} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+                <img src={url} alt={`صورة ${idx + 1}`} className="w-full h-full object-cover" />
  
-               {/* Primary badge */}
-               {primaryImageIndex === idx && (
-                 <div className="absolute top-1 right-1 bg-primary text-primary-foreground px-2 py-0.5 rounded-md text-xs flex items-center gap-1">
-                   <Star className="h-3 w-3 fill-current" />
-                   رئيسية
-                 </div>
-               )}
+                {/* Primary badge */}
+                {primaryImageIndex === idx && (
+                  <div className="absolute top-1 right-1 bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-[10px] flex items-center gap-0.5">
+                    <Star className="h-2.5 w-2.5 fill-current" />
+                    رئيسية
+                  </div>
+                )}
  
-               {/* Controls */}
-               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1">
-                 {primaryImageIndex !== idx && (
-                   <Button
-                     size="sm"
-                     variant="secondary"
-                     className="h-7 px-2 text-xs"
-                     onClick={() => onPrimaryImageChange(idx)}
-                   >
-                     <Star className="h-3 w-3 ml-1" />
-                     رئيسية
-                   </Button>
-                 )}
-                 <Button
-                   size="sm"
-                   variant="destructive"
-                   className="h-7 w-7 p-0"
-                   onClick={() => handleRemoveImage(idx)}
-                 >
-                   <X className="h-3.5 w-3.5" />
-                 </Button>
-               </div>
-             </div>
-           ))}
+                {/* Always-visible controls for mobile */}
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-1.5 flex items-center justify-between">
+                  {primaryImageIndex !== idx ? (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="h-6 px-1.5 text-[10px] gap-0.5"
+                      onClick={() => onPrimaryImageChange(idx)}
+                    >
+                      <Star className="h-2.5 w-2.5" />
+                      رئيسية
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    className="h-6 w-6 p-0"
+                    onClick={() => handleRemoveImage(idx)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
  
            {/* Add image button */}
            {imageUrls.length < 10 && (
