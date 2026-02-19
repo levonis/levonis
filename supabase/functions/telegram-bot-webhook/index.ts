@@ -8,12 +8,16 @@ const corsHeaders = {
 
 // Sanitize text input - strip HTML/script tags and limit length
 const sanitizeText = (text: string | undefined): string => {
-  if (!text) return '';
-  // Limit to 4096 characters (Telegram max)
+  if (!text || typeof text !== 'string') return '';
+  // Limit length first to prevent ReDoS on large inputs
   let sanitized = text.substring(0, 4096);
-  // Strip HTML tags
-  sanitized = sanitized.replace(/<[^>]*>/g, '');
-  // Escape HTML entities
+  // Iteratively strip HTML tags (handles nested/malformed tags)
+  let previous = '';
+  while (previous !== sanitized) {
+    previous = sanitized;
+    sanitized = sanitized.replace(/<[^>]*>/g, '');
+  }
+  // Escape HTML entities for safe use in HTML parse_mode
   sanitized = sanitized
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
