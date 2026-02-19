@@ -270,7 +270,7 @@ export default function LevoHelpBot() {
   const location = useLocation();
 
   // Check hide timer from localStorage
-  const [isHidden, setIsHidden] = useState(() => {
+  const checkHideStatus = useCallback(() => {
     const hiddenUntil = localStorage.getItem("levo-help-hidden-until");
     if (hiddenUntil) {
       const until = parseInt(hiddenUntil, 10);
@@ -278,20 +278,32 @@ export default function LevoHelpBot() {
       localStorage.removeItem("levo-help-hidden-until");
     }
     return false;
-  });
+  }, []);
+
+  const [isHidden, setIsHidden] = useState(checkHideStatus);
 
   // Re-check hide timer periodically so it auto-shows when expired
+  // Also re-check on visibility change (when user returns to tab)
   useEffect(() => {
-    if (!isHidden) return;
-    const interval = setInterval(() => {
-      const hiddenUntil = localStorage.getItem("levo-help-hidden-until");
-      if (!hiddenUntil || Date.now() >= parseInt(hiddenUntil, 10)) {
-        localStorage.removeItem("levo-help-hidden-until");
-        setIsHidden(false);
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [isHidden]);
+    const recheck = () => {
+      const hidden = checkHideStatus();
+      setIsHidden(hidden);
+    };
+    
+    // Check every 10 seconds instead of 30
+    const interval = setInterval(recheck, 10000);
+    
+    // Also check when tab becomes visible again
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") recheck();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [checkHideStatus]);
 
   const hideFor = (duration: HideDuration) => {
     const d = HIDE_DURATIONS.find(h => h.key === duration);

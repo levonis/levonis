@@ -65,6 +65,24 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
     staleTime: 60_000,
   });
 
+  // Check if user has any merchant application (pending/draft/rejected)
+  const { data: anyMerchantApp } = useQuery({
+    queryKey: ["merchant-any-app", user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from("merchant_applications")
+        .select("id, status")
+        .eq("user_id", user.id)
+        .in("status", ["pending", "draft"])
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!user?.id,
+    staleTime: 60_000,
+  });
+
   const isMerchant = useMemo(() => !!merchantApp, [merchantApp]);
 
   const sectionClass = noFrame 
@@ -158,6 +176,20 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
                 );
               })}
             </div>
+          ) : anyMerchantApp ? (
+            /* User has a merchant application in progress - show merchant status instead */
+            <Button
+              onClick={() => setMerchantOpen(true)}
+              variant="outline"
+              className="w-full h-12 gap-3 font-bold text-sm rounded-xl border-primary/30"
+            >
+              <div className="flex items-center gap-2">
+                <Store className="h-5 w-5 text-primary" />
+                <span>
+                  {anyMerchantApp.status === "pending" ? "طلب التاجر قيد المراجعة" : "أكمل طلب التاجر"}
+                </span>
+              </div>
+            </Button>
           ) : (
             <Button
               onClick={() => setProfileOpen(true)}
