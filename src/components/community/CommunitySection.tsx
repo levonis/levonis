@@ -65,16 +65,17 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
     staleTime: 60_000,
   });
 
-  // Check if user has any merchant application (pending/draft/rejected)
+  // Check if user has any merchant application (any status)
   const { data: anyMerchantApp } = useQuery({
     queryKey: ["merchant-any-app", user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from("merchant_applications")
-        .select("id, status")
+        .select("id, status, admin_notes, rejected_at")
         .eq("user_id", user.id)
-        .in("status", ["pending", "draft"])
+        .order("created_at", { ascending: false })
+        .limit(1)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -153,7 +154,8 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
       {/* Quick Actions for Homepage - Show for logged in users */}
       {!isCommunityHub && user && (
         <div className="mb-4">
-          {isProfileComplete ? (
+          {/* Approved merchant OR profile complete: show quick actions */}
+          {(isMerchant || isProfileComplete) ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {quickActions.map((action) => {
                 const Icon = action.icon;
@@ -176,8 +178,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
                 );
               })}
             </div>
-          ) : anyMerchantApp ? (
-            /* User has a merchant application in progress - show merchant status instead */
+          ) : anyMerchantApp?.status === "pending" ? (
             <Button
               onClick={() => setMerchantOpen(true)}
               variant="outline"
@@ -185,11 +186,44 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
             >
               <div className="flex items-center gap-2">
                 <Store className="h-5 w-5 text-primary" />
-                <span>
-                  {anyMerchantApp.status === "pending" ? "طلب التاجر قيد المراجعة" : "أكمل طلب التاجر"}
-                </span>
+                <span>طلب التاجر قيد المراجعة</span>
               </div>
             </Button>
+          ) : anyMerchantApp?.status === "draft" ? (
+            <Button
+              onClick={() => setMerchantOpen(true)}
+              variant="outline"
+              className="w-full h-12 gap-3 font-bold text-sm rounded-xl border-primary/30"
+            >
+              <div className="flex items-center gap-2">
+                <Store className="h-5 w-5 text-primary" />
+                <span>أكمل طلب التاجر</span>
+              </div>
+            </Button>
+          ) : anyMerchantApp?.status === "rejected" ? (
+            <div className="space-y-2">
+              <div className="p-3 rounded-xl border border-destructive/30 bg-destructive/5 text-sm">
+                <div className="flex items-center gap-2 font-bold text-destructive mb-1">
+                  <Store className="h-4 w-4" />
+                  <span>تم رفض طلب التاجر</span>
+                </div>
+                {anyMerchantApp.admin_notes && (
+                  <p className="text-muted-foreground text-xs mt-1">
+                    السبب: {anyMerchantApp.admin_notes}
+                  </p>
+                )}
+              </div>
+              <Button
+                onClick={() => setProfileOpen(true)}
+                className="w-full h-12 gap-3 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground font-bold text-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]"
+              >
+                <div className="flex items-center gap-2">
+                  <UserCircle className="h-5 w-5" />
+                  <span>أكمل ملفك الشخصي</span>
+                  <Sparkles className="h-4 w-4" />
+                </div>
+              </Button>
+            </div>
           ) : (
             <Button
               onClick={() => setProfileOpen(true)}
@@ -205,8 +239,8 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         </div>
       )}
 
-      {/* Quick Actions for Community Hub - Customer Only (NOT merchant) */}
-      {isCommunityHub && user && isProfileComplete && !isMerchant && (
+      {/* Quick Actions for Community Hub - for users with complete profile or approved merchants */}
+      {isCommunityHub && user && (isProfileComplete || isMerchant) && (
         <div className="mb-4">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {quickActions.map((action) => {
