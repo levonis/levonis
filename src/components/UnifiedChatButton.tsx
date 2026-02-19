@@ -21,7 +21,7 @@ export default function UnifiedChatButton() {
   const [open, setOpen] = useState(false);
 
   // Get unread count from community system
-  const { data: totalUnread = 0 } = useQuery({
+  const { data: totalUnread = 0, refetch: refetchUnread } = useQuery({
     queryKey: ["unified-chat-unread", user?.id],
     queryFn: async () => {
       if (!user) return 0;
@@ -46,8 +46,12 @@ export default function UnifiedChatButton() {
     refetchInterval: 30000,
   });
 
-  const handleClick = () => {
-    setOpen(true);
+  const handleClose = (val: boolean) => {
+    setOpen(val);
+    if (!val) {
+      // Refetch unread count when closing chat dialog
+      refetchUnread();
+    }
   };
 
   // Hide for non-logged users and for admin/support account
@@ -57,7 +61,7 @@ export default function UnifiedChatButton() {
   return (
     <>
       <Button
-        onClick={handleClick}
+        onClick={() => setOpen(true)}
         className="fixed bottom-6 left-4 sm:left-6 h-14 w-14 rounded-full shadow-xl z-50 bg-primary hover:bg-primary/90 border-2 border-primary-foreground/20"
         size="icon"
       >
@@ -74,7 +78,7 @@ export default function UnifiedChatButton() {
       {/* Direct usage of ListingConversations which has its own Dialog */}
       {open && (
         <Suspense fallback={
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={handleClose}>
             <DialogContent className="max-w-6xl h-[90vh] flex items-center justify-center">
               <DialogTitle className="sr-only">المحادثات</DialogTitle>
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -83,8 +87,8 @@ export default function UnifiedChatButton() {
         }>
           <ListingConversations
             externalOpen={open}
-            onExternalOpenChange={setOpen}
-            onClose={() => setOpen(false)}
+            onExternalOpenChange={handleClose}
+            onClose={() => handleClose(false)}
           />
         </Suspense>
       )}

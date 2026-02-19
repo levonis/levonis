@@ -126,7 +126,7 @@ export default function CompactRequestCard({
   return (
     <div 
       onClick={() => onViewDetails(request)}
-      className="group relative rounded-2xl border border-border/40 bg-gradient-to-br from-[hsl(160_52%_16%)] to-[hsl(160_48%_12%)] overflow-hidden hover:border-primary/50 hover:shadow-[0_8px_30px_hsl(160_50%_10%/0.4)] transition-all duration-300 cursor-pointer"
+      className="group relative rounded-2xl border border-border/40 bg-gradient-to-br from-card to-card/80 overflow-hidden hover:border-primary/50 hover:shadow-lg transition-all duration-300 cursor-pointer"
     >
       {/* Professional Diagonal Banner for Accepted Requests */}
       {isAccepted && (
@@ -253,19 +253,29 @@ export default function CompactRequestCard({
 
         {/* Action Buttons - Compact row */}
         <div className="flex items-center gap-1.5">
-          {/* Chat Button - Small icon */}
-          <button
-            className="h-7 px-2.5 flex items-center gap-1 rounded-md text-[9px] bg-[hsl(160_50%_14%)] hover:bg-[hsl(160_50%_18%)] text-muted-foreground border border-white/5 transition-colors"
-            onClick={handleChat}
-          >
-            <MessageSquare className="h-3 w-3" />
-            تواصل
-          </button>
+          {/* Chat Button - Only show if NOT the owner */}
+          {!isOwner && (
+            <button
+              className="h-7 px-2.5 flex items-center gap-1 rounded-md text-[9px] bg-muted/50 hover:bg-muted text-muted-foreground border border-border/30 transition-colors"
+              onClick={handleChat}
+            >
+              <MessageSquare className="h-3 w-3" />
+              تواصل
+            </button>
+          )}
+
+          {/* Owner badge */}
+          {isOwner && (
+            <span className="h-7 px-2.5 flex items-center gap-1 rounded-md text-[9px] bg-primary/10 text-primary border border-primary/20 font-medium">
+              <User className="h-3 w-3" />
+              طلبك
+            </span>
+          )}
 
           {/* Price Button - ONLY visible for merchants who don't own the request */}
           {isMerchant && !isOwner && !isAccepted && onAddOffer && !myOffer && (
             <button
-              className="flex-1 h-7 px-3 flex items-center justify-center gap-1 rounded-md text-[9px] font-bold bg-gradient-to-r from-primary to-[hsl(160_60%_30%)] hover:from-primary/90 hover:to-[hsl(160_60%_35%)] text-primary-foreground shadow-sm transition-all"
+              className="flex-1 h-7 px-3 flex items-center justify-center gap-1 rounded-md text-[9px] font-bold bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground shadow-sm transition-all"
               onClick={handlePrice}
             >
               <DollarSign className="h-3 w-3" />
