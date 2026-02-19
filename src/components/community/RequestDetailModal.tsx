@@ -285,12 +285,13 @@ export default function RequestDetailModal({
                 <X className="h-4 w-4" />
               </button>
 
-              {/* Status Badge */}
+              {/* Professional Diagonal Banner for Accepted Requests */}
               {isAccepted && (
-                <Badge className="absolute top-3 right-3 bg-green-500 text-white border-0 gap-1">
-                  <Lock className="h-3 w-3" />
-                  تم الطلب - العروض مقفلة
-                </Badge>
+                <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+                  <div className="absolute w-[200%] h-8 bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-600 transform -rotate-[25deg] origin-top-right -top-2 -right-4 flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
+                    <span className="text-[10px] font-black text-white tracking-widest uppercase drop-shadow-sm">✓ تم القبول - العروض مقفلة ✓</span>
+                  </div>
+                </div>
               )}
             </div>
 

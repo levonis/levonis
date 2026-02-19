@@ -111,11 +111,11 @@ export default function CommunityRequestsHub({
 
       // Filter based on sortBy
       if (showCompleted) {
-        // Show only accepted/completed requests - for "منتهي" filter
+        // Show only accepted/completed requests - for "الطلبات المنجزة" filter
         query = query.not("accepted_offer_id", "is", null)
           .order("accepted_at", { ascending: false, nullsFirst: false });
       } else {
-        // Default: Only show open requests (not accepted) - hide from merchants in newest/not_priced
+        // Default: Only show open requests (not accepted yet)
         query = query.is("accepted_offer_id", null)
           .order("created_at", { ascending: false });
       }
