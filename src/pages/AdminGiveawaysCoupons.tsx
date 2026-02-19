@@ -44,7 +44,7 @@ interface SpecialCoupon {
   valid_until: string | null;
 }
 
-export default function AdminGiveawaysCoupons() {
+export default function AdminGiveawaysCoupons({ embedded }: { embedded?: boolean } = {}) {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("giveaways");
   const [giveawayDialogOpen, setGiveawayDialogOpen] = useState(false);
@@ -231,13 +231,16 @@ export default function AdminGiveawaysCoupons() {
 
   const getEntryCount = (id: string) => entries?.filter((e: any) => e.giveaway_id === id).length || 0;
 
-  if (loadingG || loadingC) return <AdminLayout title="الهدايا والكوبونات" icon={<Gift className="h-5 w-5" />}><AdminLoading /></AdminLayout>;
+  if (loadingG || loadingC) {
+    if (embedded) return <AdminLoading />;
+    return <AdminLayout title="الهدايا والكوبونات" icon={<Gift className="h-5 w-5" />}><AdminLoading /></AdminLayout>;
+  }
 
   const statusLabels: Record<string, string> = { draft: "مسودة", active: "نشطة", completed: "مكتملة", cancelled: "ملغاة" };
   const statusColors: Record<string, string> = { draft: "bg-muted text-muted-foreground", active: "bg-green-500/10 text-green-600", completed: "bg-blue-500/10 text-blue-600", cancelled: "bg-red-500/10 text-red-600" };
 
-  return (
-    <AdminLayout title="الهدايا والكوبونات" icon={<Gift className="h-5 w-5" />} description="إدارة هدايا التجار وكوبونات العملاء">
+  const content = (
+    <>
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full mb-6">
           <TabsTrigger value="giveaways" className="flex-1 gap-2"><Gift className="h-4 w-4" />هدايا التجار</TabsTrigger>
@@ -396,6 +399,14 @@ export default function AdminGiveawaysCoupons() {
           </div>
         </DialogContent>
       </Dialog>
+    </>
+  );
+
+  if (embedded) return content;
+
+  return (
+    <AdminLayout title="الهدايا والكوبونات" icon={<Gift className="h-5 w-5" />} description="إدارة هدايا التجار وكوبونات العملاء">
+      {content}
     </AdminLayout>
   );
 }
