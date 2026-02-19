@@ -128,11 +128,12 @@ export default function CompactRequestCard({
       onClick={() => onViewDetails(request)}
       className="group relative rounded-2xl border border-border/40 bg-gradient-to-br from-[hsl(160_52%_16%)] to-[hsl(160_48%_12%)] overflow-hidden hover:border-primary/50 hover:shadow-[0_8px_30px_hsl(160_50%_10%/0.4)] transition-all duration-300 cursor-pointer"
     >
-      {/* Diagonal Ribbon for Accepted Requests */}
+      {/* Professional Diagonal Banner for Accepted Requests */}
       {isAccepted && (
         <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
-          <div className="absolute -right-12 top-5 w-40 h-6 bg-gradient-to-r from-green-600 to-emerald-500 transform rotate-45 flex items-center justify-center shadow-lg">
-            <span className="text-[9px] font-bold text-white tracking-wide">تم الطلب</span>
+          {/* Top-right to bottom-left diagonal stripe */}
+          <div className="absolute w-[200%] h-7 bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-600 transform -rotate-[35deg] origin-top-right -top-2 -right-4 flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
+            <span className="text-[9px] font-black text-white tracking-widest uppercase drop-shadow-sm">✓ تم القبول ✓</span>
           </div>
         </div>
       )}

@@ -34,12 +34,14 @@ const REQUEST_SORTS_MERCHANT = [
   { value: "not_priced", label: "لم يتم تسعيره" },
   { value: "resin", label: "رزن" },
   { value: "filament", label: "فلمنت" },
+  { value: "completed", label: "الطلبات المنجزة" },
 ];
 
 const REQUEST_SORTS_CUSTOMER = [
   { value: "newest", label: "الأحدث" },
   { value: "resin", label: "رزن" },
   { value: "filament", label: "فلمنت" },
+  { value: "completed", label: "الطلبات المنجزة" },
 ];
 
 const MERCHANT_SORTS = [

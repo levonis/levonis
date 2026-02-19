@@ -22,8 +22,8 @@ const PopoverContent = React.forwardRef<
         "bg-gradient-to-b from-[hsl(160_52%_18%)] to-[hsl(160_48%_14%)]",
         // Enhanced shadow
         "shadow-[0_8px_24px_hsl(160_50%_8%/0.4),0_2px_8px_hsl(0_0%_0%/0.2)]",
-        // Animations
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        // Animations - removed slide animations to prevent appearing from top
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className,
       )}
       {...props}
