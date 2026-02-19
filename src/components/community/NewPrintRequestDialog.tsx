@@ -35,6 +35,7 @@ import {
   Video,
   X,
   Layers,
+  Hash,
 } from "lucide-react";
 
 type LinkItem = { id: string; url: string };
@@ -58,12 +59,13 @@ const requestSchema = z.object({
   colors: z.string().trim().min(1, "الألوان مطلوبة").max(120),
   notes: z.string().trim().max(500).optional(),
   materialType: z.enum(["filament", "resin", "both", "any"]),
+  quantity: z.number().int().min(1).max(1000).default(1),
 });
 
 type RequestData = z.infer<typeof requestSchema>;
 
 interface FieldConfig {
-  id: keyof Omit<RequestData, "materialType">;
+  id: keyof Omit<RequestData, "materialType" | "quantity">;
   label: string;
   placeholder: string;
   icon: React.ReactNode;
@@ -93,6 +95,7 @@ export default function NewPrintRequestDialog({
     colors: "",
     notes: "",
     materialType: "" as any, // Force manual selection - no default
+    quantity: 1,
   });
 
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
@@ -106,7 +109,7 @@ export default function NewPrintRequestDialog({
   useEffect(() => {
     if (!open) {
       setStep(1);
-      setFormData({ title: "", description: "", size: "", colors: "", notes: "", materialType: "" as any });
+      setFormData({ title: "", description: "", size: "", colors: "", notes: "", materialType: "" as any, quantity: 1 });
       setMediaFiles([]);
       setMainImageIndex(0);
       setHasReferenceLinks(false);
@@ -325,6 +328,7 @@ export default function NewPrintRequestDialog({
           material_type: validated.materialType,
           reference_links: validLinks.length > 0 ? validLinks : null,
           status: "approved", // Auto-publish without manual review
+          quantity: validated.quantity || 1,
         })
         .select("id")
         .single();
@@ -733,7 +737,36 @@ export default function NewPrintRequestDialog({
                 )}
               </div>
 
-              {/* Step 2 Fields */}
+              {/* Quantity Field */}
+              <div className={`rounded-xl border-2 transition-all duration-200 ${
+                formData.quantity > 1 ? "border-primary/40 bg-primary/10" : "border-border bg-muted/50"
+              }`}>
+                <div className="px-4 py-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${
+                      formData.quantity > 1 ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                    }`}>
+                      <Hash className="h-4 w-4" />
+                    </div>
+                    <Label htmlFor="quantity" className="text-[11px] font-medium text-muted-foreground">
+                      عدد القطع المطلوبة
+                    </Label>
+                  </div>
+                  <Input
+                    id="quantity"
+                    type="number"
+                    min={1}
+                    max={1000}
+                    value={formData.quantity}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value) || 1;
+                      setFormData(prev => ({ ...prev, quantity: Math.max(1, Math.min(1000, val)) }));
+                    }}
+                    className="h-9 border-0 bg-transparent px-0 text-sm focus-visible:ring-0 w-24"
+                  />
+                </div>
+              </div>
+
               {step2Fields.map((field) => {
                 const hasValue = !!formData[field.id]?.toString().trim();
 
