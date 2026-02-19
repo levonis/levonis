@@ -47,7 +47,9 @@ const formatBaghdadTime = (dateString: string) => {
 const statusLabels: Record<string, { label: string; color: string; icon: any }> = {
   pending: { label: 'قيد الانتظار', color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30', icon: Clock },
   processing: { label: 'قيد المعالجة', color: 'bg-blue-500/10 text-blue-600 border-blue-500/30', icon: Package },
+  confirmed: { label: 'تم التأكيد', color: 'bg-cyan-500/10 text-cyan-600 border-cyan-500/30', icon: CheckCircle },
   shipped: { label: 'تم الشحن', color: 'bg-purple-500/10 text-purple-600 border-purple-500/30', icon: Truck },
+  on_the_way: { label: 'في طريقه إليك', color: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/30', icon: Truck },
   delivered: { label: 'تم التسليم', color: 'bg-green-500/10 text-green-600 border-green-500/30', icon: CheckCircle },
 };
 

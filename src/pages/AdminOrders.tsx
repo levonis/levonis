@@ -13,7 +13,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle } from 'lucide-react';
+import { Loader2, Package, Truck, ExternalLink, Calendar, Pencil, Search, Trash2, Plus, Upload, X, Ship, Plane, ShoppingBag, Save, Gift, MessageCircle, CheckCircle } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
@@ -26,6 +26,7 @@ import { usePagination } from '@/hooks/usePagination';
 import OfferPurchasesTab from '@/components/admin/OfferPurchasesTab';
 import AdminOrderChatDialog from '@/components/admin/AdminOrderChatDialog';
 import { sendAllNotifications } from '@/lib/notifications';
+import { ADMIN_ROUTES } from '@/config/adminConfig';
 
 const statusOptions = [
   { value: 'pending', label: 'قيد الانتظار' },
@@ -697,6 +698,10 @@ const AdminOrders = () => {
           <TabsTrigger value="offer-purchases" className="gap-2">
             <Gift className="h-4 w-4" />
             طلبات شحن العروض
+          </TabsTrigger>
+          <TabsTrigger value="delivered-registry" className="gap-2" onClick={() => window.open(`${window.location.origin}${ADMIN_ROUTES.deliveredOrders}`, '_blank')}>
+            <CheckCircle className="h-4 w-4" />
+            الطلبات المسلّمة
           </TabsTrigger>
         </TabsList>
 

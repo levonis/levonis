@@ -104,6 +104,7 @@ const ChatOrderCheckout = lazy(() => import("./pages/ChatOrderCheckout"));
 const CompetitionHistory = lazy(() => import("./pages/CompetitionHistory"));
 const ReelsPage = lazy(() => import("./pages/ReelsPage"));
 const AdminStories = lazy(() => import("./pages/AdminStories"));
+const AdminDeliveredOrders = lazy(() => import("./pages/AdminDeliveredOrders"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Premium loading component - shown during lazy load
@@ -184,6 +185,7 @@ function AppContent() {
             <Route path={`${ADMIN_BASE_PATH}/levo-community/avatar-frames`} element={<AdminRoute><AdminAvatarFrames /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/users`} element={<AdminRoute><AdminUsers /></AdminRoute>} />
             <Route path={`${ADMIN_BASE_PATH}/stories`} element={<AdminRoute><AdminStories /></AdminRoute>} />
+            <Route path={`${ADMIN_BASE_PATH}/delivered-orders`} element={<AdminRoute><AdminDeliveredOrders /></AdminRoute>} />
             {/* Block old /admin paths - redirect to 404 to prevent enumeration */}
             <Route path="/admin/*" element={<NotFound />} />
             <Route path="/admin" element={<NotFound />} />

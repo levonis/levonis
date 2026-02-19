@@ -51,7 +51,9 @@ const statusLabels: Record<string, { label: string; color: string; icon: any }> 
   purchased: { label: "تم الشراء", color: "bg-blue-500", icon: ShoppingBag },
   ordered: { label: "تم الطلب", color: "bg-orange-500", icon: Package },
   shipping_requested: { label: "طلب شحن", color: "bg-yellow-500", icon: Package },
+  confirmed: { label: "تم التأكيد", color: "bg-cyan-500", icon: CheckCircle },
   shipped: { label: "تم الشحن", color: "bg-purple-500", icon: Truck },
+  on_the_way: { label: "في طريقه إليك", color: "bg-indigo-500", icon: Truck },
   delivered: { label: "تم التسليم", color: "bg-green-500", icon: CheckCircle },
 };
 
