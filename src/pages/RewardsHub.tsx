@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,17 +14,35 @@ import CompetitionsSection from "@/components/rewards/CompetitionsSection";
 import CardsSection from "@/components/rewards/CardsSection";
 import InsuranceSection from "@/components/rewards/InsuranceSection";
 
+const validMainTabs: MainTabId[] = ['points', 'competitions', 'cards', 'insurance'];
+
 export default function RewardsHub() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+
+  // Read tab from URL search params (e.g. /rewards?tab=competitions&sub=competitions)
+  const urlTab = searchParams.get('tab') as MainTabId | null;
+  const urlSubTab = searchParams.get('sub') as SubTabId | null;
+  const initialTab = urlTab && validMainTabs.includes(urlTab) ? urlTab : 'points';
   
-  const [activeMainTab, setActiveMainTab] = useState<MainTabId>('points');
+  const [activeMainTab, setActiveMainTab] = useState<MainTabId>(initialTab);
   const [activeSubTabs, setActiveSubTabs] = useState<Record<MainTabId, SubTabId>>({
-    points: 'summary',
-    competitions: 'competitions',
-    cards: 'benefits',
-    insurance: 'status',
+    points: urlTab === 'points' && urlSubTab ? urlSubTab : 'summary',
+    competitions: urlTab === 'competitions' && urlSubTab ? urlSubTab : 'competitions',
+    cards: urlTab === 'cards' && urlSubTab ? urlSubTab : 'benefits',
+    insurance: urlTab === 'insurance' && urlSubTab ? urlSubTab : 'status',
   });
+
+  // Sync with URL params when they change (e.g. from help bot guide)
+  useEffect(() => {
+    if (urlTab && validMainTabs.includes(urlTab)) {
+      setActiveMainTab(urlTab);
+      if (urlSubTab) {
+        setActiveSubTabs(prev => ({ ...prev, [urlTab]: urlSubTab }));
+      }
+    }
+  }, [urlTab, urlSubTab]);
 
   const handleMainTabChange = (tab: MainTabId) => {
     setActiveMainTab(tab);
