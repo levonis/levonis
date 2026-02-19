@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import AcceptOfferDialog from "./AcceptOfferDialog";
 import OffersListSection from "./OffersListSection";
+import CustomerRequestStrip from "./CustomerRequestStrip";
 
 interface PrintRequest {
   id: string;
@@ -82,6 +83,40 @@ export default function CustomerRequestDetailSheet({
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [acceptOfferDialog, setAcceptOfferDialog] = useState<any>(null);
+
+  // Fetch customer profile with fallback
+  const { data: customerProfile } = useQuery({
+    queryKey: ["customer-profile-sheet", request?.user_id],
+    enabled: !!request?.user_id && open,
+    queryFn: async () => {
+      const { data: communityProfile } = await supabase
+        .from("community_customer_profiles")
+        .select("display_name, avatar_url")
+        .eq("user_id", request!.user_id)
+        .maybeSingle();
+      if (communityProfile?.display_name) return { full_name: communityProfile.display_name, avatar_url: communityProfile.avatar_url, username: null };
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url, username")
+        .eq("id", request!.user_id)
+        .maybeSingle();
+      return profile || null;
+    },
+  });
+
+  // Fetch edit history
+  const { data: editHistory = [] } = useQuery({
+    queryKey: ["request-edit-history", request?.id],
+    enabled: !!request?.id && open,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("request_edit_history")
+        .select("id, field_name, old_value, new_value, created_at")
+        .eq("request_id", request!.id)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
 
   // Fetch offers
   const { data: offers = [], refetch: refetchOffers } = useQuery({
@@ -189,6 +224,13 @@ export default function CustomerRequestDetailSheet({
           </SheetHeader>
 
           <div className="flex-1 min-h-0 overflow-y-auto space-y-4 p-4">
+            {/* Customer Profile Strip */}
+            <CustomerRequestStrip
+              customerId={request.user_id}
+              customerProfile={customerProfile}
+              isOwner={isOwner}
+            />
+
             {/* Image Gallery */}
             {images.length > 0 && (
               <div className="relative rounded-xl overflow-hidden bg-muted aspect-video">
@@ -328,6 +370,42 @@ export default function CustomerRequestDetailSheet({
                       رابط {i + 1}
                     </a>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Edit History */}
+            {editHistory.length > 0 && (
+              <div className="space-y-1.5">
+                <h4 className="font-medium text-xs flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  سجل التعديلات ({editHistory.length})
+                </h4>
+                <div className="space-y-1">
+                  {editHistory.map((edit: any) => {
+                    const FIELD_LABELS: Record<string, string> = {
+                      title: "العنوان", description: "الوصف", size: "الحجم",
+                      colors: "الألوان", notes: "الملاحظات", material_type: "المادة",
+                      quantity: "الكمية", images: "الصور", video_url: "الفيديو",
+                    };
+                    return (
+                      <div key={edit.id} className="p-2 rounded-lg bg-muted/30 border border-border/50 text-[10px]">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-medium text-foreground">
+                            {FIELD_LABELS[edit.field_name] || edit.field_name}
+                          </span>
+                          <span className="text-muted-foreground">
+                            {new Date(edit.created_at).toLocaleDateString("ar-IQ")}
+                          </span>
+                        </div>
+                        <div className="text-muted-foreground">
+                          <span className="line-through">{edit.old_value || "—"}</span>
+                          {" → "}
+                          <span className="text-foreground">{edit.new_value || "—"}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
