@@ -1,5 +1,4 @@
-import { Calendar } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Calendar, Award } from "lucide-react";
 import LevelBadge from "@/components/LevelBadge";
 import { formatDate } from "@/lib/utils";
 
@@ -11,25 +10,30 @@ export default function UserInfoAccountDetailsCard({
   createdAt?: string;
 }) {
   return (
-    <Card className="glass-effect border-border/50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5 text-primary" />
+    <div className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+      <div className="px-5 py-4 border-b border-border/30">
+        <h3 className="font-bold text-sm flex items-center gap-2">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Award className="h-4 w-4 text-primary" />
+          </div>
           تفاصيل الحساب
-        </CardTitle>
-      </CardHeader>
+        </h3>
+      </div>
 
-      <CardContent className="space-y-3">
-        <div className="flex items-center justify-between py-2 border-b border-border/30">
-          <span className="text-muted-foreground">مستوى العضوية</span>
-          <div className="flex items-center gap-2">{userId && <LevelBadge userId={userId} size="md" />}</div>
+      <div className="p-5 space-y-3">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/30">
+          <span className="text-xs text-muted-foreground">مستوى العضوية</span>
+          {userId && <LevelBadge userId={userId} size="md" />}
         </div>
 
-        <div className="flex items-center justify-between py-2">
-          <span className="text-muted-foreground">تاريخ الإنشاء</span>
-          <span className="font-medium text-foreground">{createdAt ? formatDate(createdAt) : "-"}</span>
+        <div className="flex items-center justify-between p-3 rounded-xl bg-muted/20 border border-border/30">
+          <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <Calendar className="h-3 w-3" />
+            تاريخ الإنشاء
+          </span>
+          <span className="text-xs font-bold text-foreground">{createdAt ? formatDate(createdAt) : "-"}</span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
