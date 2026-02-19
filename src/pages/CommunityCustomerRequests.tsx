@@ -523,49 +523,156 @@ export default function CommunityCustomerRequests() {
           </div>
         )}
 
-        {/* Edit Dialog */}
+        {/* Edit Dialog - Professional Design */}
         <Dialog open={!!editingId} onOpenChange={(o) => (!o ? setEditingId(null) : null)}>
-          <DialogContent className="sm:max-w-xl">
-            <DialogHeader>
-              <DialogTitle>تعديل الطلب</DialogTitle>
-              <DialogDescription>بعد الحفظ سيتم مراجعة طلبك من قبل الإدارة.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">العنوان</p>
-                <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} maxLength={120} />
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">الوصف</p>
-                <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} maxLength={1500} className="min-h-24" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold">الحجم</p>
-                  <Input value={editSize} onChange={(e) => setEditSize(e.target.value)} maxLength={120} />
+          <DialogContent className="sm:max-w-lg p-0 gap-0 overflow-hidden rounded-2xl border-border/50">
+            {/* Header with gradient */}
+            <div className="bg-gradient-to-l from-primary via-primary/95 to-primary/85 px-5 py-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-white/15 flex items-center justify-center">
+                  <Pencil className="h-5 w-5 text-primary-foreground" />
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold">الألوان</p>
-                  <Input value={editColors} onChange={(e) => setEditColors(e.target.value)} maxLength={120} />
+                <div>
+                  <DialogTitle className="text-base font-black text-primary-foreground">تعديل الطلب</DialogTitle>
+                  <DialogDescription className="text-[11px] text-primary-foreground/60 mt-0.5">
+                    بعد الحفظ سيتم مراجعة طلبك من قبل الإدارة
+                  </DialogDescription>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">ملاحظات</p>
-                <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} maxLength={500} className="min-h-20" />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditingId(null)}>إلغاء</Button>
+
+            {/* Current image preview */}
+            {(() => {
+              const editingRequest = requests.find(r => r.id === editingId);
+              const previewImage = editingRequest?.images?.[0] || editingRequest?.image_url;
+              return previewImage ? (
+                <div className="px-5 pt-4">
+                  <div className="relative rounded-xl overflow-hidden border border-border/40 bg-muted/30">
+                    <img src={previewImage} alt="صورة الطلب" className="w-full h-32 object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <div className="absolute bottom-2 right-2">
+                      <Badge variant="outline" className="text-[8px] bg-black/40 text-white border-white/20 backdrop-blur-sm">
+                        <Eye className="h-2 w-2 mr-0.5" />
+                        الصورة الحالية
+                      </Badge>
+                    </div>
+                    {editingRequest?.images && editingRequest.images.length > 1 && (
+                      <div className="absolute bottom-2 left-2">
+                        <Badge variant="outline" className="text-[8px] bg-black/40 text-white border-white/20 backdrop-blur-sm">
+                          +{editingRequest.images.length - 1} صور
+                        </Badge>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : null;
+            })()}
+
+            {/* Form fields */}
+            <div className="px-5 py-4 space-y-3.5 max-h-[55vh] overflow-y-auto">
+              {/* Title */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                  <FileText className="h-3 w-3 text-primary" />
+                  العنوان
+                </label>
+                <Input 
+                  value={editTitle} 
+                  onChange={(e) => setEditTitle(e.target.value)} 
+                  maxLength={120}
+                  className="h-9 text-sm rounded-xl border-border/50 focus:border-primary/40"
+                  placeholder="عنوان الطلب"
+                />
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                  <FileText className="h-3 w-3 text-primary" />
+                  الوصف
+                </label>
+                <Textarea 
+                  value={editDescription} 
+                  onChange={(e) => setEditDescription(e.target.value)} 
+                  maxLength={1500} 
+                  className="min-h-20 text-sm rounded-xl border-border/50 focus:border-primary/40 resize-none"
+                  placeholder="وصف تفصيلي للطلب..."
+                />
+              </div>
+
+              {/* Size & Colors - side by side */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                    <Layers className="h-3 w-3 text-primary" />
+                    الحجم
+                  </label>
+                  <Input 
+                    value={editSize} 
+                    onChange={(e) => setEditSize(e.target.value)} 
+                    maxLength={120}
+                    className="h-9 text-sm rounded-xl border-border/50 focus:border-primary/40"
+                    placeholder="مثال: 15×10 سم"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                    <Star className="h-3 w-3 text-primary" />
+                    الألوان
+                  </label>
+                  <Input 
+                    value={editColors} 
+                    onChange={(e) => setEditColors(e.target.value)} 
+                    maxLength={120}
+                    className="h-9 text-sm rounded-xl border-border/50 focus:border-primary/40"
+                    placeholder="مثال: أزرق وأبيض"
+                  />
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div className="space-y-1.5">
+                <label className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
+                  <MessageSquare className="h-3 w-3 text-primary" />
+                  ملاحظات إضافية
+                </label>
+                <Textarea 
+                  value={editNotes} 
+                  onChange={(e) => setEditNotes(e.target.value)} 
+                  maxLength={500} 
+                  className="min-h-16 text-sm rounded-xl border-border/50 focus:border-primary/40 resize-none"
+                  placeholder="أي ملاحظات تود إضافتها..."
+                />
+              </div>
+            </div>
+
+            {/* Footer actions */}
+            <div className="px-5 py-3 border-t border-border/30 bg-muted/20 flex items-center justify-between gap-3">
+              <Button variant="ghost" size="sm" onClick={() => setEditingId(null)} className="text-xs text-muted-foreground">
+                إلغاء
+              </Button>
               <Button
+                size="sm"
+                className="gap-1.5 text-xs bg-gradient-to-l from-primary to-primary/90 shadow-lg shadow-primary/20"
                 onClick={() => editingId && updateMutation.mutate({
                   id: editingId,
                   values: { title: editTitle, description: editDescription, notes: editNotes, size: editSize, colors: editColors },
                 })}
                 disabled={updateMutation.isPending}
               >
-                {updateMutation.isPending ? "جارٍ الحفظ..." : "حفظ"}
+                {updateMutation.isPending ? (
+                  <>
+                    <Clock className="h-3 w-3 animate-spin" />
+                    جارٍ الحفظ...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3 w-3" />
+                    حفظ التعديلات
+                  </>
+                )}
               </Button>
-            </DialogFooter>
+            </div>
           </DialogContent>
         </Dialog>
 

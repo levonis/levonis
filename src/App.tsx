@@ -234,13 +234,13 @@ function AppContent() {
           </Routes>
         </Suspense>
       </main>
+      {/* Levo Help Bot - floating assistant (above chat button) */}
+      <Suspense fallback={null}>
+        <LevoHelpBot />
+      </Suspense>
       {/* Global floating chat button - visible on all pages */}
       <Suspense fallback={null}>
         <UnifiedChatButton />
-      </Suspense>
-      {/* Levo Help Bot - floating assistant */}
-      <Suspense fallback={null}>
-        <LevoHelpBot />
       </Suspense>
     </>
   );

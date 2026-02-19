@@ -1,12 +1,23 @@
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 
 /**
  * PageLoader - Premium loading animation
- * Features: Pulsing logo, animated rings, smooth fade
+ * Shows a full-screen opaque loader that stays visible for a minimum duration
+ * to prevent flash-of-loading and ensure smooth transitions.
  */
 const PageLoader = memo(() => {
+  const [visible, setVisible] = useState(true);
+
+  // Ensure minimum display time of 400ms to avoid flicker
+  useEffect(() => {
+    const timer = setTimeout(() => setVisible(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (!visible) return null;
+
   return (
-    <div className="min-h-[60vh] flex items-center justify-center bg-background">
+    <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-background">
       {/* Outer glow */}
       <div className="absolute w-32 h-32 rounded-full bg-primary/20 animate-loader-pulse" />
       
