@@ -20,6 +20,7 @@ import MerchantCategoriesManager from "@/components/merchant/MerchantCategoriesM
 import ProductFormDialog, { type ProductFormData, type MediaState } from "@/components/merchant/ProductFormDialog";
 import StorePauseControl from "@/components/merchant/StorePauseControl";
 import MerchantAdBookingDialog from "@/components/community/MerchantAdBookingDialog";
+import MerchantDiscountsManager from "@/components/merchant/MerchantDiscountsManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertCircle } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -439,6 +440,11 @@ export default function CommunityMerchantStore() {
               <Button size="sm" className="gap-1.5" onClick={() => setAdDialogOpen(true)}>
                 <Megaphone className="h-3.5 w-3.5" />حجز إعلان
               </Button>
+            </Card>
+
+            {/* Merchant Discounts */}
+            <Card className="border-border/50 bg-card rounded-2xl p-6">
+              <MerchantDiscountsManager merchantId={merchantApp.id} merchantName={merchantApp.display_name || "متجر"} />
             </Card>
 
             <StorePauseControl merchantId={merchantApp.id} storePaused={merchantApp.store_paused || false} storePauseEndDate={merchantApp.store_pause_end_date} storePauseMessage={merchantApp.store_pause_message} />

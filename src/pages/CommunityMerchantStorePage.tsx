@@ -3,7 +3,8 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Store, Star, Package, Sparkles, ShoppingBag, ChevronLeft, ChevronRight, 
-  Users, Shield, CheckCircle, ArrowRight, MessageCircle, Droplets, Layers, Settings, Film, FolderOpen
+  Users, Shield, CheckCircle, ArrowRight, MessageCircle, Droplets, Layers, Settings, Film, FolderOpen,
+  Percent, Truck, Gift, Tag
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -184,6 +185,31 @@ export default function CommunityMerchantStorePage() {
       return { totalOrders, avgRating, totalRatings: ratings.length };
     },
   });
+
+  // Fetch store discounts
+  const { data: storeDiscounts = [] } = useQuery({
+    queryKey: ["store-discounts", merchantId],
+    enabled: !!merchantId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_store_discounts")
+        .select("*")
+        .eq("merchant_id", merchantId!)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const discountIconMap: Record<string, typeof Percent> = {
+    percentage: Percent, fixed_amount: Tag, free_delivery: Truck,
+    free_gift: Gift, min_purchase_percentage: Percent, min_purchase_delivery: Truck,
+  };
+  const discountLabelMap: Record<string, string> = {
+    percentage: "خصم", fixed_amount: "خصم", free_delivery: "توصيل مجاني",
+    free_gift: "هدية", min_purchase_percentage: "خصم", min_purchase_delivery: "توصيل مجاني",
+  };
 
   const handleOpenDetail = (product: MerchantProduct) => {
     setSelectedProduct({ ...product, merchant_id: merchantId! });
@@ -366,6 +392,30 @@ export default function CommunityMerchantStorePage() {
             </div>
           </div>
         </div>
+
+        {/* Store Discounts Strip */}
+        {storeDiscounts.length > 0 && (
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className="text-xs font-bold text-foreground">عروض المتجر</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+              {storeDiscounts.map((d: any) => {
+                const DIcon = discountIconMap[d.discount_type] || Percent;
+                return (
+                  <div key={d.id} className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl bg-primary/10 border border-primary/20">
+                    <DIcon className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[11px] font-bold text-foreground whitespace-nowrap">{d.title_ar}</span>
+                    {d.discount_value > 0 && d.discount_type === 'percentage' && (
+                      <Badge className="bg-primary/20 text-primary border-0 text-[9px]">{d.discount_value}%</Badge>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
