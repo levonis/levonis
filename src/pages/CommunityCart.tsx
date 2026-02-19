@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
@@ -48,7 +47,6 @@ export default function CommunityCart() {
     },
   });
 
-  // Group by merchant
   const groupedItems = useMemo(() => {
     const groups: Record<string, { merchantName: string; merchantId: string; items: CartItem[] }> = {};
     cartItems.forEach(item => {
@@ -114,9 +112,11 @@ export default function CommunityCart() {
       <div className="min-h-screen flex flex-col bg-background" dir="rtl">
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4">
-            <ShoppingBag className="h-12 w-12 text-muted-foreground/30 mx-auto" />
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-card border border-primary/20 flex items-center justify-center">
+              <ShoppingBag className="h-7 w-7 text-primary/30" />
+            </div>
             <p className="font-bold">سجّل دخولك لعرض السلة</p>
-            <Button onClick={() => navigate("/auth")}>تسجيل الدخول</Button>
+            <Button onClick={() => navigate("/auth")} className="rounded-full">تسجيل الدخول</Button>
           </div>
         </div>
       </div>
@@ -125,34 +125,39 @@ export default function CommunityCart() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      {/* Header */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-xl border-b border-border/50">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
-              <ShoppingBag className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-sm font-black text-foreground">سلة المجتمع</h1>
-              <p className="text-[10px] text-muted-foreground">
-                {totalItems > 0 ? `${totalItems} منتج • ${totalPrice.toLocaleString()} د.ع` : "فارغة"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-bl from-primary/15 via-transparent to-accent/10" />
+        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl translate-x-1/3 -translate-y-1/2" />
+        
+        <div className="relative z-10 px-4 pt-4 pb-5">
+          <div className="flex items-center justify-between mb-4">
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full bg-card/60 backdrop-blur-sm" onClick={() => navigate(-1)}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
             {cartItems.length > 0 && (
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="h-8 text-[10px] text-destructive hover:text-destructive"
+                className="h-8 text-[10px] text-destructive hover:text-destructive rounded-full px-3"
                 onClick={() => clearCart.mutate()}
               >
+                <Trash2 className="h-3 w-3 ml-1" />
                 تفريغ
               </Button>
             )}
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
+              <ShoppingBag className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-lg font-black text-foreground tracking-tight">سلة المجتمع</h1>
+              <p className="text-xs text-muted-foreground">
+                {totalItems > 0 ? `${totalItems} منتج • ${totalPrice.toLocaleString()} د.ع` : "فارغة"}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -160,18 +165,18 @@ export default function CommunityCart() {
       <main className="flex-1 px-4 py-4 space-y-4">
         {isLoading && (
           <div className="space-y-3">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-xl" />)}
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
           </div>
         )}
 
         {!isLoading && cartItems.length === 0 && (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-card border border-primary/20 flex items-center justify-center mb-4">
-              <ShoppingCart className="h-7 w-7 text-primary/40" />
+          <div className="text-center py-20">
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-card to-muted border border-primary/10 flex items-center justify-center mb-5 shadow-lg">
+              <ShoppingCart className="h-8 w-8 text-primary/30" />
             </div>
-            <p className="font-bold text-sm text-foreground">السلة فارغة</p>
-            <p className="text-[11px] text-muted-foreground mt-1 mb-4">أضف منتجات من متاجر المجتمع</p>
-            <Button variant="outline" size="sm" onClick={() => navigate("/community")}>
+            <p className="font-black text-base text-foreground">السلة فارغة</p>
+            <p className="text-xs text-muted-foreground mt-1.5 mb-5">أضف منتجات من متاجر المجتمع</p>
+            <Button variant="outline" size="sm" className="rounded-full" onClick={() => navigate("/community")}>
               تصفح المتاجر
             </Button>
           </div>
@@ -179,13 +184,19 @@ export default function CommunityCart() {
 
         {/* Grouped by merchant */}
         {groupedItems.map((group) => (
-          <div key={group.merchantId} className="rounded-2xl border border-border/40 bg-card overflow-hidden">
+          <div key={group.merchantId} className="rounded-2xl border border-border/30 bg-card overflow-hidden shadow-sm">
             {/* Merchant header */}
-            <div className="flex items-center justify-between px-3 py-2.5 bg-muted/30 border-b border-border/20">
-              <div className="flex items-center gap-2">
-                <Store className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold text-foreground">{group.merchantName}</span>
-                <Badge variant="outline" className="text-[8px]">{group.items.length} منتج</Badge>
+            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-l from-primary/5 to-transparent border-b border-border/20">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Store className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <span className="text-xs font-black text-foreground">{group.merchantName}</span>
+                  <div className="flex items-center gap-1.5">
+                    <Badge variant="outline" className="text-[8px] h-4 px-1.5">{group.items.length} منتج</Badge>
+                  </div>
+                </div>
               </div>
               <Button
                 size="sm"
@@ -198,11 +209,10 @@ export default function CommunityCart() {
             </div>
 
             {/* Items */}
-            <div className="divide-y divide-border/20">
+            <div className="divide-y divide-border/15">
               {group.items.map((item) => (
-                <div key={item.id} className="flex gap-3 p-3">
-                  {/* Image */}
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted shrink-0">
+                <div key={item.id} className="flex gap-3 p-3.5">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted shrink-0 border border-border/20">
                     {item.product_image ? (
                       <OptimizedImage src={item.product_image} alt={item.product_title} className="w-full h-full object-cover" />
                     ) : (
@@ -212,30 +222,28 @@ export default function CommunityCart() {
                     )}
                   </div>
 
-                  {/* Info */}
-                  <div className="flex-1 min-w-0 space-y-1.5">
+                  <div className="flex-1 min-w-0 space-y-2">
                     <h4 className="text-xs font-bold text-foreground line-clamp-1">{item.product_title}</h4>
                     <p className="text-sm font-black text-primary">{item.product_price.toLocaleString()} <span className="text-[9px] font-normal text-muted-foreground">د.ع</span></p>
                     
-                    {/* Quantity controls */}
                     <div className="flex items-center gap-2">
-                      <div className="flex items-center rounded-lg border border-border/50 overflow-hidden">
+                      <div className="flex items-center rounded-xl border border-border/40 overflow-hidden bg-muted/30">
                         <button
-                          className="h-7 w-7 flex items-center justify-center hover:bg-muted/50 transition-colors"
+                          className="h-7 w-8 flex items-center justify-center hover:bg-muted transition-colors"
                           onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity - 1 })}
                         >
                           <Minus className="h-3 w-3" />
                         </button>
-                        <span className="w-8 text-center text-xs font-bold">{item.quantity}</span>
+                        <span className="w-8 text-center text-xs font-black">{item.quantity}</span>
                         <button
-                          className="h-7 w-7 flex items-center justify-center hover:bg-muted/50 transition-colors"
+                          className="h-7 w-8 flex items-center justify-center hover:bg-muted transition-colors"
                           onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity + 1 })}
                         >
                           <Plus className="h-3 w-3" />
                         </button>
                       </div>
                       <button
-                        className="h-7 w-7 flex items-center justify-center rounded-lg text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all"
+                        className="h-7 w-7 flex items-center justify-center rounded-xl text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all"
                         onClick={() => removeItem.mutate(item.id)}
                       >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -243,8 +251,7 @@ export default function CommunityCart() {
                     </div>
                   </div>
 
-                  {/* Item total */}
-                  <div className="text-xs font-bold text-foreground/70 shrink-0">
+                  <div className="text-xs font-bold text-foreground/60 shrink-0">
                     {(item.product_price * item.quantity).toLocaleString()}
                   </div>
                 </div>
@@ -252,18 +259,18 @@ export default function CommunityCart() {
             </div>
 
             {/* Order from merchant */}
-            <div className="p-3 bg-muted/20 border-t border-border/20">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] text-muted-foreground">المجموع</span>
+            <div className="p-3.5 bg-gradient-to-l from-primary/5 to-transparent border-t border-border/20">
+              <div className="flex items-center justify-between mb-2.5">
+                <span className="text-[10px] text-muted-foreground">مجموع المتجر</span>
                 <span className="text-sm font-black text-primary">
                   {group.items.reduce((s, i) => s + i.product_price * i.quantity, 0).toLocaleString()} د.ع
                 </span>
               </div>
               <Button
-                className="w-full h-9 text-xs gap-1.5 rounded-xl"
+                className="w-full h-10 text-xs gap-2 rounded-xl font-bold shadow-md shadow-primary/15"
                 onClick={() => handleOrderFromMerchant(group.merchantId)}
               >
-                <MessageCircle className="h-3.5 w-3.5" />
+                <MessageCircle className="h-4 w-4" />
                 اطلب من {group.merchantName}
               </Button>
             </div>
@@ -271,12 +278,12 @@ export default function CommunityCart() {
         ))}
       </main>
 
-      {/* Bottom Bar */}
+      {/* Bottom Summary Bar */}
       {cartItems.length > 0 && (
-        <div className="sticky bottom-0 bg-card/95 backdrop-blur-xl border-t border-border/50 p-4">
-          <div className="flex items-center justify-between mb-2">
+        <div className="sticky bottom-0 bg-card/95 backdrop-blur-xl border-t border-border/30 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+          <div className="flex items-center justify-between mb-1.5">
             <span className="text-xs text-muted-foreground">الإجمالي الكلي</span>
-            <span className="text-lg font-black text-primary">{totalPrice.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">د.ع</span></span>
+            <span className="text-xl font-black text-primary">{totalPrice.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">د.ع</span></span>
           </div>
           <p className="text-[10px] text-muted-foreground text-center">
             اختر متجراً أعلاه لإتمام الطلب عبر المحادثة

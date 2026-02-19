@@ -2,7 +2,6 @@ import { memo, useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowRight,
-  Boxes,
   MessageCircle,
   Search,
   Settings,
@@ -10,6 +9,7 @@ import {
   Package,
   Users,
   Film,
+  ShoppingBag,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -184,17 +184,15 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
                   <MessageCircle className="h-4 w-4" />
                 </Button>
 
-                {isCommunityRoot && (
-                  <Button
-                    variant={tab === "merchants" ? "default" : "outline"}
-                    size="icon"
-                    className="rounded-full"
-                    aria-label="صفحات التجار"
-                    onClick={() => navigate("/community?tab=merchants", { replace: false })}
-                  >
-                    <Boxes className="h-4 w-4" />
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full border-primary/30 hover:border-primary"
+                  aria-label="سلة المجتمع"
+                  onClick={() => navigate("/community/cart")}
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                </Button>
 
                 {isAdmin && (
                   <Button
