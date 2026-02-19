@@ -142,7 +142,7 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
     return map;
   }, [merchantProfiles, framesData]);
 
-  // Filter by search and apply mode-specific logic
+  // Filter by search and apply weighted randomization (Instagram-like algorithm)
   const items = useMemo(() => {
     let filtered = loaded;
     
@@ -154,21 +154,45 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
 
     // Apply category filter (resin/filament from sort)
     if (sortBy === "resin" || sortBy === "filament") {
-      // Note: This is a placeholder - actual category filtering would need category_ids
-      // For now, we filter by title containing the keyword
       const keyword = sortBy === "resin" ? "رزن" : "فلمنت";
       filtered = filtered.filter((p) => p.title.toLowerCase().includes(keyword.toLowerCase()));
     }
 
-    if (mode !== "preview") return filtered;
-
-    // Preview mode: pick a pseudo-random sample
-    const shuffled = [...filtered];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    // Use seeded shuffle for consistent randomization that changes periodically
+    const seed = Math.floor(Date.now() / (1000 * 60 * 30)); // Changes every 30 min
+    const seededRandom = (i: number) => {
+      const x = Math.sin(seed + i * 7 + 3) * 10000;
+      return x - Math.floor(x);
+    };
+    
+    // Diversify by merchant - spread products from same merchant
+    const byMerchant = new Map<string, ProductRow[]>();
+    for (const p of filtered) {
+      const list = byMerchant.get(p.merchant_id) || [];
+      list.push(p);
+      byMerchant.set(p.merchant_id, list);
     }
-    return shuffled.slice(0, 6);
+    
+    // Round-robin interleave from different merchants, then shuffle within rounds
+    const interleaved: ProductRow[] = [];
+    const merchantQueues = [...byMerchant.values()];
+    let round = 0;
+    while (interleaved.length < filtered.length) {
+      const roundItems: ProductRow[] = [];
+      for (const queue of merchantQueues) {
+        if (round < queue.length) roundItems.push(queue[round]);
+      }
+      // Shuffle within the round
+      for (let i = roundItems.length - 1; i > 0; i--) {
+        const j = Math.floor(seededRandom(interleaved.length + i) * (i + 1));
+        [roundItems[i], roundItems[j]] = [roundItems[j], roundItems[i]];
+      }
+      interleaved.push(...roundItems);
+      round++;
+    }
+
+    if (mode !== "preview") return interleaved;
+    return interleaved.slice(0, 6);
   }, [loaded, mode, searchQuery, sortBy]);
 
   useAutoFetchUntil({
