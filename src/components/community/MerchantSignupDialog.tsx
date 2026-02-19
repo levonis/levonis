@@ -1056,7 +1056,7 @@ export default function MerchantSignupDialog({
                         </div>
                         <div>
                           <span className="text-muted-foreground text-xs">يوزرنيم:</span>
-                          <p className="font-medium">{profileMini?.username ? `@${profileMini.username}` : "—"}</p>
+                          <p className="font-medium">{username ? `@${username}` : (profileMini?.username ? `@${profileMini.username}` : "—")}</p>
                         </div>
                         <div>
                           <span className="text-muted-foreground text-xs">البريد:</span>
