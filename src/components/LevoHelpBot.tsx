@@ -58,6 +58,22 @@ const finders = {
   },
   // Page-level finders (used after navigation)
   pageHeading: () => document.querySelector('main h1, h1') as HTMLElement | null,
+  // Rewards Hub - find specific tab buttons by text
+  rewardsTabByText: (text: string) => () => {
+    const btns = document.querySelectorAll('button');
+    for (const b of btns) {
+      if (b.textContent?.trim() === text && b.closest('[class*="grid-cols-4"]')) return b as HTMLElement;
+    }
+    return null;
+  },
+  // Rewards sub-tab finder
+  rewardsSubTabByText: (text: string) => () => {
+    const btns = document.querySelectorAll('button');
+    for (const b of btns) {
+      if (b.textContent?.trim() === text && b.closest('[class*="flex"][class*="overflow"]')) return b as HTMLElement;
+    }
+    return null;
+  },
   // Community page
   newRequestBtn: () => {
     const btns = document.querySelectorAll('a, button');
@@ -146,13 +162,22 @@ const FAQS: FAQ[] = [
 
   // ── النقاط ──
   { category: "points", icon: Star, question: "ماذا تعني النقاط وما فائدتها؟", answer: "النقاط هي نظام مكافآت ليفو:\n• استبدالها بمنتجات مجانية\n• الحصول على خصومات\n• شراء تذاكر المسابقات\n• ترقية مستوى العضوية",
-    guideSteps: [{ path: "/", description: "اضغط هنا للذهاب لمركز المكافآت وإدارة نقاطك", elementFinder: finders.rewardsBtn }]
+    guideSteps: [
+      { path: "/", description: "اضغط على أيقونة المكافآت للذهاب لمركز المكافآت", elementFinder: finders.rewardsBtn },
+      { path: "/rewards?tab=points", description: "هذا تبويب 'النقاط' — هنا تجد رصيدك وكل ما يتعلق بنقاطك", elementFinder: finders.rewardsTabByText('النقاط') },
+    ]
   },
   { category: "points", icon: Zap, question: "كيف أحصل على النقاط؟", answer: "طرق كسب النقاط:\n• الشراء من المتجر\n• المهام اليومية (تسجيل دخول، مشاركة، تقييم)\n• المشاركة في الفعاليات\n• إحالة أصدقاء\n• إتمام الملف الشخصي",
-    guideSteps: [{ path: "/rewards", description: "مركز المكافآت — تابع نقاطك والمهام اليومية", elementFinder: finders.pageHeading }]
+    guideSteps: [
+      { path: "/rewards?tab=points&sub=daily-tasks", description: "تبويب 'النقاط' — اضغط على 'المهام' لرؤية المهام اليومية", elementFinder: finders.rewardsTabByText('النقاط') },
+      { path: "/rewards?tab=points&sub=daily-tasks", description: "هذه المهام اليومية — أكملها لكسب النقاط", elementFinder: finders.rewardsSubTabByText('المهام') },
+    ]
   },
   { category: "points", icon: Gift, question: "كيف أستبدل النقاط؟", answer: "اذهب إلى مركز المكافآت ← متجر النقاط. تصفح المكافآت المتاحة واستبدلها بنقاطك.",
-    guideSteps: [{ path: "/rewards", description: "متجر النقاط — اختر المكافأة واستبدلها", elementFinder: finders.pageHeading }]
+    guideSteps: [
+      { path: "/rewards?tab=points&sub=store", description: "اذهب لتبويب 'النقاط'", elementFinder: finders.rewardsTabByText('النقاط') },
+      { path: "/rewards?tab=points&sub=store", description: "اضغط على 'متجر النقاط' لاستبدال نقاطك بمكافآت", elementFinder: finders.rewardsSubTabByText('متجر النقاط') },
+    ]
   },
   { category: "points", icon: Star, question: "هل تنتهي صلاحية النقاط؟", answer: "النقاط لا تنتهي صلاحيتها طالما حسابك نشط. بعض عروض متجر النقاط قد تكون محدودة بوقت." },
 
@@ -160,26 +185,43 @@ const FAQS: FAQ[] = [
   { category: "tickets", icon: Ticket, question: "ماذا تعني التذاكر وما فائدتها؟", answer: "التذاكر عملة خاصة للمشاركة في المسابقات والسحوبات. كل تذكرة = فرصة للفوز. كلما زادت تذاكرك، زادت احتمالات الفوز!" },
   { category: "tickets", icon: Gift, question: "كيف أحصل على التذاكر؟", answer: "• شراؤها من متجر النقاط\n• مكافأة يومية على المهام\n• هدية مع بعض المشتريات\n• حزم تذاكر بأسعار مخفضة\n• جوائز مسابقات سابقة" },
   { category: "tickets", icon: Trophy, question: "كيف أستخدم التذاكر؟", answer: "مركز المكافآت ← المسابقات ← اختر مسابقة ← حدد عدد التذاكر ← اضغط 'شارك'.",
-    guideSteps: [{ path: "/rewards", description: "اذهب للمسابقات واستخدم تذاكرك للمشاركة", elementFinder: finders.pageHeading }]
+    guideSteps: [
+      { path: "/rewards?tab=competitions", description: "اذهب لتبويب 'المسابقات'", elementFinder: finders.rewardsTabByText('المسابقات') },
+      { path: "/rewards?tab=competitions", description: "اختر مسابقة نشطة واستخدم تذاكرك للمشاركة", elementFinder: finders.pageHeading },
+    ]
   },
 
   // ── المسابقات ──
   { category: "competitions", icon: Trophy, question: "ما هي المسابقات؟", answer: "فعاليات تنافسية متنوعة:\n• سحوبات عشوائية\n• أول فائز\n• جمع أحرف\n• مسابقات فريقية\n\nالجوائز: منتجات، خصومات، أرصدة!" },
   { category: "competitions", icon: Zap, question: "كيف أشارك بالمسابقات؟", answer: "1. مركز المكافآت ← المسابقات\n2. اختر المسابقة النشطة\n3. اقرأ التفاصيل والشروط\n4. حدد عدد التذاكر\n5. اضغط 'شارك الآن'",
-    guideSteps: [{ path: "/", description: "اضغط هنا للذهاب لمركز المكافآت والمسابقات", elementFinder: finders.rewardsBtn }]
+    guideSteps: [
+      { path: "/", description: "اضغط على أيقونة المكافآت أولاً", elementFinder: finders.rewardsBtn },
+      { path: "/rewards?tab=competitions", description: "اضغط على تبويب 'المسابقات'", elementFinder: finders.rewardsTabByText('المسابقات') },
+      { path: "/rewards?tab=competitions", description: "اختر مسابقة نشطة من القائمة واضغط 'شارك الآن'", elementFinder: finders.pageHeading },
+    ]
   },
   { category: "competitions", icon: Crown, question: "كيف أعرف إذا فزت؟", answer: "• إشعار فوري عند الفوز 🎉\n• ظهورك في قائمة الفائزين\n• الجائزة تُضاف تلقائياً أو يُطلب تأكيد الشحن\n• مراجعة: مركز المكافآت ← سجل المسابقات" },
 
   // ── العضوية ──
   { category: "membership", icon: Crown, question: "ما هي عضوية ليفو؟", answer: "نظام ولاء بأربع مستويات:\n🥈 فضي - خصم 5% + نقاط 1.5x\n🥇 ذهبي - خصم 10% + نقاط 2x\n💎 ماسي - خصم 15% + نقاط 2.5x\n💚 زمردي - خصم 20% + نقاط 3x + دعم VIP",
-    guideSteps: [{ path: "/rewards", description: "بطاقات العضوية — اختر المستوى المناسب", elementFinder: finders.pageHeading }]
+    guideSteps: [
+      { path: "/rewards?tab=cards", description: "اضغط على تبويب 'العضوية'", elementFinder: finders.rewardsTabByText('العضوية') },
+      { path: "/rewards?tab=cards&sub=benefits", description: "هنا تجد مستويات العضوية ومزاياها", elementFinder: finders.pageHeading },
+    ]
   },
   { category: "membership", icon: CreditCard, question: "كيف أشتري عضوية؟", answer: "مركز المكافآت ← البطاقات ← اختر المستوى ← أتمم الشراء. تُفعّل فوراً!",
-    guideSteps: [{ path: "/", description: "اضغط هنا للذهاب لمركز المكافآت وشراء العضوية", elementFinder: finders.rewardsBtn }]
+    guideSteps: [
+      { path: "/", description: "اضغط على أيقونة المكافآت أولاً", elementFinder: finders.rewardsBtn },
+      { path: "/rewards?tab=cards&sub=purchase", description: "اضغط على تبويب 'العضوية'", elementFinder: finders.rewardsTabByText('العضوية') },
+      { path: "/rewards?tab=cards&sub=purchase", description: "اضغط على 'شراء' لاختيار وشراء بطاقة العضوية", elementFinder: finders.rewardsSubTabByText('شراء') },
+    ]
   },
   { category: "membership", icon: Tag, question: "ماذا يعني خصم الأعضاء؟", answer: "خصم إضافي تلقائي على مشترياتك:\n• فضي: 5%\n• ذهبي: 10%\n• ماسي: 15%\n• زمردي: 20%\n\nيُحسب قبل الكوبونات." },
   { category: "membership", icon: Shield, question: "كيف أؤمّن طابعتي؟", answer: "مركز المكافآت ← التأمين:\n1. اختر خطة الحماية\n2. أدخل بيانات الطابعة\n3. أكمل الدفع\n\nالتغطية: أعطال، مشاكل طباعة، صيانة دورية.",
-    guideSteps: [{ path: "/rewards", description: "صفحة التأمين — اختر خطة حماية لطابعتك", elementFinder: finders.pageHeading }]
+    guideSteps: [
+      { path: "/rewards?tab=insurance", description: "اضغط على تبويب 'الحماية'", elementFinder: finders.rewardsTabByText('الحماية') },
+      { path: "/rewards?tab=insurance", description: "هنا يمكنك اختيار خطة حماية لطابعتك", elementFinder: finders.pageHeading },
+    ]
   },
 
   // ── المجتمع ──
@@ -331,15 +373,16 @@ export default function LevoHelpBot() {
     
     setSpotlight({ active: true, stepIndex: 0, steps, rect: null });
     
-    // Navigate if needed
-    if (firstStep.path && firstStep.path !== location.pathname) {
+    // Navigate if needed - compare full path including query params
+    const currentFull = location.pathname + location.search;
+    const needsNav = firstStep.path && firstStep.path !== currentFull && !currentFull.startsWith(firstStep.path);
+    if (needsNav) {
       navigate(firstStep.path);
-      // Wait longer for page to fully render
       setTimeout(() => findAndSpotlight(firstStep), 1500);
     } else {
       findAndSpotlight(firstStep);
     }
-  }, [navigate, location.pathname, findAndSpotlight]);
+  }, [navigate, location.pathname, location.search, findAndSpotlight]);
 
   const nextStep = useCallback(() => {
     const nextIdx = spotlight.stepIndex + 1;
@@ -351,13 +394,15 @@ export default function LevoHelpBot() {
     const step = spotlight.steps[nextIdx];
     setSpotlight(prev => ({ ...prev, stepIndex: nextIdx, rect: null }));
     
-    if (step.path && step.path !== location.pathname) {
+    const currentFull = location.pathname + location.search;
+    const needsNav = step.path && step.path !== currentFull && !currentFull.startsWith(step.path);
+    if (needsNav) {
       navigate(step.path);
       setTimeout(() => findAndSpotlight(step), 1500);
     } else {
       findAndSpotlight(step);
     }
-  }, [spotlight.stepIndex, spotlight.steps, navigate, location.pathname, findAndSpotlight]);
+  }, [spotlight.stepIndex, spotlight.steps, navigate, location.pathname, location.search, findAndSpotlight]);
 
   const exitSpotlight = useCallback(() => {
     if (retryRef.current) clearTimeout(retryRef.current);
