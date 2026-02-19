@@ -367,8 +367,39 @@ export default function MerchantSignupDialog({
   const uploadMutation = useMutation({
     mutationFn: async (blob: Blob) => {
       if (!user?.id) throw new Error("Not authenticated");
-      // Create a file from the cropped blob
-      const file = new File([blob], "store.jpg", { type: "image/jpeg" });
+      
+      // Compress if blob is too large (> 1MB)
+      let finalBlob = blob;
+      if (blob.size > 1024 * 1024) {
+        try {
+          const img = new Image();
+          const blobUrl = URL.createObjectURL(blob);
+          await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error("فشل تحميل الصورة"));
+            img.src = blobUrl;
+          });
+          const canvas = document.createElement("canvas");
+          const maxDim = 1200;
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          const ctx = canvas.getContext("2d")!;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(blobUrl);
+          finalBlob = await new Promise<Blob>((resolve, reject) => {
+            canvas.toBlob(
+              (b) => (b ? resolve(b) : reject(new Error("فشل ضغط الصورة"))),
+              "image/jpeg",
+              0.8,
+            );
+          });
+        } catch {
+          // Use original blob if compression fails
+        }
+      }
+      
+      const file = new File([finalBlob], "store.jpg", { type: "image/jpeg" });
       const url = await uploadStoreImage({ userId: user.id, file });
       setStoreImageUrl(url);
       // Only save to draft if app already exists, otherwise just store locally
@@ -378,7 +409,11 @@ export default function MerchantSignupDialog({
       return url;
     },
     onError: (err: any) => {
-      toast({ title: "تعذر رفع الصورة", description: err?.message ?? "حدث خطأ", variant: "destructive" });
+      const msg = err?.message ?? "حدث خطأ";
+      const description = msg.includes("Failed to fetch") 
+        ? "تحقق من اتصالك بالإنترنت أو جرب صورة أصغر حجماً" 
+        : msg;
+      toast({ title: "تعذر رفع الصورة", description, variant: "destructive" });
     },
   });
 
