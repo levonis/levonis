@@ -37,19 +37,28 @@ interface SpotlightState {
 }
 
 // ─── Element Finders ──────────────────────────────────────────
-// These functions find real DOM elements reliably
+// These functions find real DOM elements reliably using aria-labels and text content
 const finders = {
-  // Header elements
-  searchBar: () => document.querySelector('input[placeholder*="ابحث"]') as HTMLElement | null,
-  cartIcon: () => document.querySelector('a[href="/cart"], [href="/cart"]') as HTMLElement | null,
-  favIcon: () => document.querySelector('a[href="/favorites"], [href="/favorites"]') as HTMLElement | null,
-  bellIcon: () => document.querySelector('a[href="/notifications"], [href="/notifications"]') as HTMLElement | null,
-  profileIcon: () => document.querySelector('a[href="/user-info"], [href="/user-info"]') as HTMLElement | null,
-  // Page headings - fallback finders for specific pages
+  // Header elements - use aria-label which exists on TopBar buttons
+  searchBar: () => document.querySelector('input[type="search"], input[placeholder*="ابحث"]') as HTMLElement | null,
+  cartBtn: () => document.querySelector('button[aria-label="سلة التسوق"]') as HTMLElement | null,
+  userMenuBtn: () => document.querySelector('button[aria-label="قائمة المستخدم"]') as HTMLElement | null,
+  rewardsBtn: () => document.querySelector('button[aria-label="مركز المكافآت"]') as HTMLElement | null,
+  customRequestBtn: () => document.querySelector('button[aria-label="طلب منتج مخصص"]') as HTMLElement | null,
+  // Nav links
+  categoriesLink: () => {
+    const links = document.querySelectorAll('a');
+    for (const l of links) { if (l.getAttribute('href') === '/categories') return l as HTMLElement; }
+    return null;
+  },
+  communityLink: () => {
+    const links = document.querySelectorAll('a');
+    for (const l of links) { if (l.getAttribute('href') === '/community') return l as HTMLElement; }
+    return null;
+  },
+  // Page-level finders (used after navigation)
   pageHeading: () => document.querySelector('main h1, h1') as HTMLElement | null,
-  pageMainContent: () => document.querySelector('main, [class*="container"]') as HTMLElement | null,
-  // Community
-  communityBadge: () => document.querySelector('a[href="/community"], [href="/community"]') as HTMLElement | null,
+  // Community page
   newRequestBtn: () => {
     const btns = document.querySelectorAll('a, button');
     for (const b of btns) {
@@ -57,27 +66,16 @@ const finders = {
     }
     return null;
   },
-  // Rewards
-  rewardsHeading: () => document.querySelector('h1') as HTMLElement | null,
-  // Cart
-  cartContent: () => document.querySelector('main') as HTMLElement | null,
+  // Cart page
   couponInput: () => document.querySelector('input[placeholder*="كود"], input[placeholder*="خصم"], input[placeholder*="كوبون"]') as HTMLElement | null,
-  // Orders
-  ordersContent: () => document.querySelector('main h1, main') as HTMLElement | null,
-  // Addresses
+  // Addresses page
   addAddressBtn: () => {
     const btns = document.querySelectorAll('a, button');
     for (const b of btns) {
       if (b.textContent?.includes('إضافة عنوان') || b.textContent?.includes('عنوان جديد')) return b as HTMLElement;
     }
-    return document.querySelector('main') as HTMLElement | null;
+    return null;
   },
-  // Merchant
-  storeLink: () => document.querySelector('a[href*="merchant/store"]') as HTMLElement | null,
-  ordersLink: () => document.querySelector('a[href*="merchant/orders"]') as HTMLElement | null,
-  requestsLink: () => document.querySelector('a[href*="/requests"]') as HTMLElement | null,
-  // Offers
-  offersContent: () => document.querySelector('main') as HTMLElement | null,
 };
 
 // ─── Categories ───────────────────────────────────────────────
@@ -102,14 +100,14 @@ const FAQS: FAQ[] = [
       { path: "/", description: "هذا شريط البحث — اكتب اسم المنتج هنا", elementFinder: finders.searchBar },
     ]
   },
-  { category: "general", icon: Heart, question: "كيف أضيف منتج للمفضلة؟", answer: "عند تصفح أي منتج، اضغط على أيقونة القلب ♡ لإضافته للمفضلة. يمكنك الوصول لقائمة المفضلة من الشريط العلوي.",
+  { category: "general", icon: Heart, question: "كيف أضيف منتج للمفضلة؟", answer: "عند تصفح أي منتج، اضغط على أيقونة القلب ♡ لإضافته للمفضلة. يمكنك الوصول لقائمة المفضلة من قائمة المستخدم في الشريط العلوي.",
     guideSteps: [
-      { path: "/", description: "اضغط هنا للوصول لقائمة المفضلة", elementFinder: finders.favIcon },
+      { path: "/", description: "اضغط على أيقونة المستخدم هنا ← ثم اختر 'المفضلة'", elementFinder: finders.userMenuBtn },
     ]
   },
-  { category: "general", icon: Bell, question: "كيف أتابع الإشعارات؟", answer: "اضغط على أيقونة الجرس 🔔 في الشريط العلوي لعرض جميع إشعاراتك.",
+  { category: "general", icon: Bell, question: "كيف أتابع الإشعارات؟", answer: "اضغط على أيقونة المستخدم في الشريط العلوي ثم اختر 'الإشعارات' لعرض جميع إشعاراتك.",
     guideSteps: [
-      { path: "/", description: "أيقونة الإشعارات — اضغط هنا لعرضها", elementFinder: finders.bellIcon },
+      { path: "/", description: "اضغط على أيقونة المستخدم ← ثم اختر 'الإشعارات'", elementFinder: finders.userMenuBtn },
     ]
   },
   { category: "general", icon: MapPin, question: "كيف أضيف عنوان توصيل؟", answer: "اذهب إلى ملفك الشخصي ← العناوين ← إضافة عنوان جديد. أدخل تفاصيل العنوان (المحافظة، المنطقة، الشارع، رقم الهاتف).",
@@ -122,12 +120,12 @@ const FAQS: FAQ[] = [
   { category: "orders", icon: ShoppingCart, question: "كيف يمكنني وضع طلبي؟", answer: "1. تصفح المنتجات واختر المنتج المناسب\n2. حدد الخيارات (اللون، الحجم، الكمية)\n3. اضغط 'أضف للسلة'\n4. اذهب للسلة وأكمل الشراء",
     guideSteps: [
       { path: "/", description: "تصفح المنتجات من الصفحة الرئيسية واختر ما يناسبك", elementFinder: finders.searchBar },
-      { path: "/cart", description: "هذه سلة المشتريات — راجع طلبك وأكمل الشراء", elementFinder: finders.cartContent },
+      { path: "/cart", description: "هذه سلة المشتريات — راجع طلبك وأكمل الشراء", elementFinder: finders.pageHeading },
     ]
   },
   { category: "orders", icon: Eye, question: "كيف يمكنني تتبع طلبي؟", answer: "اذهب إلى 'طلباتي'. ستجد جميع طلباتك مع حالة كل طلب:\n• قيد المراجعة\n• قيد التجهيز\n• تم الشحن\n• تم التوصيل",
     guideSteps: [
-      { path: "/my-orders", description: "هذه صفحة طلباتي — يمكنك تتبع جميع طلباتك هنا", elementFinder: finders.ordersContent },
+      { path: "/my-orders", description: "هذه صفحة طلباتي — يمكنك تتبع جميع طلباتك هنا", elementFinder: finders.pageHeading },
     ]
   },
   { category: "orders", icon: Tag, question: "كيف أستخدم كود الخصم؟", answer: "عند إتمام الطلب في صفحة السلة، ستجد حقل 'كود الخصم'. أدخل الكود واضغط 'تطبيق'. سيتم خصم المبلغ تلقائياً.",
@@ -138,9 +136,9 @@ const FAQS: FAQ[] = [
   { category: "orders", icon: Package, question: "هل يمكنني إلغاء طلبي؟", answer: "يمكنك إلغاء الطلب إذا كان في حالة 'قيد المراجعة' فقط. بعد بدء التجهيز لا يمكن الإلغاء. تواصل مع الدعم لأي حالات استثنائية." },
 
   // ── المحفظة ──
-  { category: "wallet", icon: Wallet, question: "كيف يمكنني شحن محفظتي؟", answer: "اذهب إلى ملفك الشخصي ← المحفظة ← شحن. اختر المبلغ وطريقة الدفع. سيتم إضافة الرصيد فوراً.",
+  { category: "wallet", icon: Wallet, question: "كيف يمكنني شحن محفظتي؟", answer: "اضغط على أيقونة المستخدم في الشريط العلوي ← المحفظة ← شحن. اختر المبلغ وطريقة الدفع.",
     guideSteps: [
-      { path: "/user-info", description: "اذهب لملفك الشخصي — ستجد خيار المحفظة هنا", elementFinder: finders.profileIcon },
+      { path: "/", description: "اضغط على أيقونة المستخدم ← ثم اختر 'المحفظة'", elementFinder: finders.userMenuBtn },
     ]
   },
   { category: "wallet", icon: CreditCard, question: "كيف أدفع من المحفظة؟", answer: "عند إتمام أي طلب، اختر 'الدفع من المحفظة' كطريقة دفع. سيتم خصم المبلغ مباشرة. تأكد من وجود رصيد كافٍ." },
@@ -148,13 +146,13 @@ const FAQS: FAQ[] = [
 
   // ── النقاط ──
   { category: "points", icon: Star, question: "ماذا تعني النقاط وما فائدتها؟", answer: "النقاط هي نظام مكافآت ليفو:\n• استبدالها بمنتجات مجانية\n• الحصول على خصومات\n• شراء تذاكر المسابقات\n• ترقية مستوى العضوية",
-    guideSteps: [{ path: "/rewards", description: "هذا مركز المكافآت — يمكنك إدارة نقاطك من هنا", elementFinder: finders.rewardsHeading }]
+    guideSteps: [{ path: "/", description: "اضغط هنا للذهاب لمركز المكافآت وإدارة نقاطك", elementFinder: finders.rewardsBtn }]
   },
   { category: "points", icon: Zap, question: "كيف أحصل على النقاط؟", answer: "طرق كسب النقاط:\n• الشراء من المتجر\n• المهام اليومية (تسجيل دخول، مشاركة، تقييم)\n• المشاركة في الفعاليات\n• إحالة أصدقاء\n• إتمام الملف الشخصي",
-    guideSteps: [{ path: "/rewards", description: "مركز المكافآت — تابع نقاطك والمهام اليومية", elementFinder: finders.rewardsHeading }]
+    guideSteps: [{ path: "/rewards", description: "مركز المكافآت — تابع نقاطك والمهام اليومية", elementFinder: finders.pageHeading }]
   },
   { category: "points", icon: Gift, question: "كيف أستبدل النقاط؟", answer: "اذهب إلى مركز المكافآت ← متجر النقاط. تصفح المكافآت المتاحة واستبدلها بنقاطك.",
-    guideSteps: [{ path: "/rewards", description: "متجر النقاط — اختر المكافأة واستبدلها", elementFinder: finders.rewardsHeading }]
+    guideSteps: [{ path: "/rewards", description: "متجر النقاط — اختر المكافأة واستبدلها", elementFinder: finders.pageHeading }]
   },
   { category: "points", icon: Star, question: "هل تنتهي صلاحية النقاط؟", answer: "النقاط لا تنتهي صلاحيتها طالما حسابك نشط. بعض عروض متجر النقاط قد تكون محدودة بوقت." },
 
@@ -162,35 +160,34 @@ const FAQS: FAQ[] = [
   { category: "tickets", icon: Ticket, question: "ماذا تعني التذاكر وما فائدتها؟", answer: "التذاكر عملة خاصة للمشاركة في المسابقات والسحوبات. كل تذكرة = فرصة للفوز. كلما زادت تذاكرك، زادت احتمالات الفوز!" },
   { category: "tickets", icon: Gift, question: "كيف أحصل على التذاكر؟", answer: "• شراؤها من متجر النقاط\n• مكافأة يومية على المهام\n• هدية مع بعض المشتريات\n• حزم تذاكر بأسعار مخفضة\n• جوائز مسابقات سابقة" },
   { category: "tickets", icon: Trophy, question: "كيف أستخدم التذاكر؟", answer: "مركز المكافآت ← المسابقات ← اختر مسابقة ← حدد عدد التذاكر ← اضغط 'شارك'.",
-    guideSteps: [{ path: "/rewards", description: "اذهب للمسابقات واستخدم تذاكرك للمشاركة" }]
+    guideSteps: [{ path: "/rewards", description: "اذهب للمسابقات واستخدم تذاكرك للمشاركة", elementFinder: finders.pageHeading }]
   },
 
   // ── المسابقات ──
   { category: "competitions", icon: Trophy, question: "ما هي المسابقات؟", answer: "فعاليات تنافسية متنوعة:\n• سحوبات عشوائية\n• أول فائز\n• جمع أحرف\n• مسابقات فريقية\n\nالجوائز: منتجات، خصومات، أرصدة!" },
   { category: "competitions", icon: Zap, question: "كيف أشارك بالمسابقات؟", answer: "1. مركز المكافآت ← المسابقات\n2. اختر المسابقة النشطة\n3. اقرأ التفاصيل والشروط\n4. حدد عدد التذاكر\n5. اضغط 'شارك الآن'",
-    guideSteps: [{ path: "/rewards", description: "صفحة المسابقات — اختر مسابقة وشارك بتذاكرك" }]
+    guideSteps: [{ path: "/", description: "اضغط هنا للذهاب لمركز المكافآت والمسابقات", elementFinder: finders.rewardsBtn }]
   },
   { category: "competitions", icon: Crown, question: "كيف أعرف إذا فزت؟", answer: "• إشعار فوري عند الفوز 🎉\n• ظهورك في قائمة الفائزين\n• الجائزة تُضاف تلقائياً أو يُطلب تأكيد الشحن\n• مراجعة: مركز المكافآت ← سجل المسابقات" },
 
   // ── العضوية ──
   { category: "membership", icon: Crown, question: "ما هي عضوية ليفو؟", answer: "نظام ولاء بأربع مستويات:\n🥈 فضي - خصم 5% + نقاط 1.5x\n🥇 ذهبي - خصم 10% + نقاط 2x\n💎 ماسي - خصم 15% + نقاط 2.5x\n💚 زمردي - خصم 20% + نقاط 3x + دعم VIP",
-    guideSteps: [{ path: "/rewards", description: "بطاقات العضوية — اختر المستوى المناسب" }]
+    guideSteps: [{ path: "/rewards", description: "بطاقات العضوية — اختر المستوى المناسب", elementFinder: finders.pageHeading }]
   },
   { category: "membership", icon: CreditCard, question: "كيف أشتري عضوية؟", answer: "مركز المكافآت ← البطاقات ← اختر المستوى ← أتمم الشراء. تُفعّل فوراً!",
-    guideSteps: [{ path: "/rewards", description: "صفحة البطاقات — اختر واشترِ عضويتك" }]
+    guideSteps: [{ path: "/", description: "اضغط هنا للذهاب لمركز المكافآت وشراء العضوية", elementFinder: finders.rewardsBtn }]
   },
   { category: "membership", icon: Tag, question: "ماذا يعني خصم الأعضاء؟", answer: "خصم إضافي تلقائي على مشترياتك:\n• فضي: 5%\n• ذهبي: 10%\n• ماسي: 15%\n• زمردي: 20%\n\nيُحسب قبل الكوبونات." },
   { category: "membership", icon: Shield, question: "كيف أؤمّن طابعتي؟", answer: "مركز المكافآت ← التأمين:\n1. اختر خطة الحماية\n2. أدخل بيانات الطابعة\n3. أكمل الدفع\n\nالتغطية: أعطال، مشاكل طباعة، صيانة دورية.",
-    guideSteps: [{ path: "/rewards", description: "صفحة التأمين — اختر خطة حماية لطابعتك" }]
+    guideSteps: [{ path: "/rewards", description: "صفحة التأمين — اختر خطة حماية لطابعتك", elementFinder: finders.pageHeading }]
   },
 
   // ── المجتمع ──
   { category: "community", icon: Users, question: "ما هو مجتمع ليفو؟", answer: "سوق يجمع العملاء مع تجار الطباعة المعتمدين:\n• اطلب تصميمك الخاص\n• احصل على عروض أسعار متعددة\n• قارن واختر الأنسب\n• تواصل مباشر مع التاجر\n• حماية عبر نظام الضمان",
-    guideSteps: [{ path: "/community", description: "هذا مجتمع ليفو — تصفح المنتجات والطلبات" }]
+    guideSteps: [{ path: "/", description: "اضغط هنا للذهاب لمجتمع ليفو", elementFinder: finders.communityLink }]
   },
   { category: "community", icon: FileText, question: "كيف أضع طلب طباعة؟", answer: "1. اذهب لمجتمع ليفو\n2. اضغط 'طلب جديد'\n3. أدخل: العنوان، الوصف، الألوان، الحجم، الكمية\n4. أرفق صور التصميم\n5. انشر الطلب\n\nسيقدم التجار عروضهم خلال ساعات.", customerOnly: true,
     guideSteps: [
-      { path: "/community", description: "اذهب لمجتمع ليفو أولاً", elementFinder: finders.communityBadge },
       { path: "/community", description: "اضغط 'طلب جديد' لإنشاء طلب طباعة", elementFinder: finders.newRequestBtn },
     ]
   },
@@ -202,33 +199,33 @@ const FAQS: FAQ[] = [
   { category: "buttons", icon: MessageCircle, question: "زر 'المحادثات'", answer: "يفتح قائمة محادثاتك مع التجار والدعم:\n• متابعة الردود الجديدة\n• إرسال رسائل وصور\n• مراجعة التاريخ\n\n💡 النقطة الحمراء = رسائل جديدة", customerOnly: true },
   { category: "buttons", icon: FileText, question: "زر 'طلب جديد'", answer: "ينقلك لنموذج إنشاء طلب طباعة جديد. ستحتاج:\n• عنوان الطلب\n• وصف التصميم\n• الألوان والحجم والكمية\n• صور مرجعية (اختياري)", customerOnly: true },
   { category: "buttons", icon: Package, question: "زر 'طلباتي'", answer: "يعرض طلباتك في المجتمع:\n• 🆕 جديد - بانتظار عروض\n• 💰 مُسعّر - وصلتك عروض\n• ✅ مقبول - تم قبول عرض\n• 🏁 مكتمل - تم التسليم", customerOnly: true,
-    guideSteps: [{ path: "/community/customer/requests", description: "هذه صفحة طلباتك في المجتمع" }]
+    guideSteps: [{ path: "/community/customer/requests", description: "هذه صفحة طلباتك في المجتمع", elementFinder: finders.pageHeading }]
   },
   { category: "buttons", icon: Users, question: "زر 'ملفي'", answer: "ملفك الشخصي:\n• تعديل الاسم والصورة\n• كتابة نبذة\n• اختيار إطار\n• مراجعة الإحصائيات", customerOnly: true,
-    guideSteps: [{ path: "/profile", description: "صفحة ملفك الشخصي" }]
+    guideSteps: [{ path: "/profile", description: "صفحة ملفك الشخصي", elementFinder: finders.pageHeading }]
   },
 
   // ── التاجر ──
   { category: "community", icon: Store, question: "كيف أدير متجري؟", answer: "لوحة إدارة المتجر:\n• إضافة/تعديل المنتجات\n• تنظيم الفئات\n• إدارة المخزون والأسعار\n• تخصيص المتجر\n• إيقاف/تشغيل مؤقت\n• مراجعة التحليلات", merchantOnly: true,
-    guideSteps: [{ path: "/community/merchant/store", description: "لوحة إدارة متجرك" }]
+    guideSteps: [{ path: "/community/merchant/store", description: "لوحة إدارة متجرك", elementFinder: finders.pageHeading }]
   },
   { category: "community", icon: FileText, question: "كيف أقدم عرض سعر؟", answer: "1. 'طلبات الزبائن'\n2. تصفح الطلبات الجديدة\n3. اختر الطلب المناسب\n4. اضغط 'تقديم عرض'\n5. حدد: السعر، مدة التسليم\n6. أضف ملاحظاتك\n\n💡 العروض السريعة والتنافسية تحظى بفرصة أعلى.", merchantOnly: true,
-    guideSteps: [{ path: "/community/requests", description: "طلبات الزبائن — تصفح وقدم عروضك" }]
+    guideSteps: [{ path: "/community/requests", description: "طلبات الزبائن — تصفح وقدم عروضك", elementFinder: finders.pageHeading }]
   },
   { category: "buttons", icon: Store, question: "زر 'إدارة المتجر'", answer: "لوحة تحكم متجرك الكاملة:\n• إضافة/تعديل/حذف المنتجات\n• إدارة الفئات\n• تعديل الأسعار والمخزون\n• تخصيص الوصف والصورة\n• إيقاف مؤقت مع رسالة مخصصة", merchantOnly: true,
-    guideSteps: [{ path: "/community/merchant/store", description: "هنا يمكنك إدارة متجرك" }]
+    guideSteps: [{ path: "/community/merchant/store", description: "هنا يمكنك إدارة متجرك", elementFinder: finders.pageHeading }]
   },
   { category: "buttons", icon: Package, question: "زر 'الطلبات' (تاجر)", answer: "طلبات الشراء من عملائك:\n• طلبات جديدة\n• قيد التجهيز\n• تم الشحن\n• مكتملة\n\nيمكنك تحديث حالة كل طلب.", merchantOnly: true,
-    guideSteps: [{ path: "/community/merchant/orders", description: "صفحة طلبات عملائك" }]
+    guideSteps: [{ path: "/community/merchant/orders", description: "صفحة طلبات عملائك", elementFinder: finders.pageHeading }]
   },
   { category: "buttons", icon: FileText, question: "زر 'طلبات الزبائن'", answer: "طلبات الطباعة المخصصة من العملاء:\n• تصفح الطلبات الجديدة\n• قدم عروض أسعار تنافسية\n• تابع عروضك السابقة\n• تواصل مع المهتمين", merchantOnly: true,
-    guideSteps: [{ path: "/community/requests", description: "تصفح طلبات الزبائن وقدم عروضك" }]
+    guideSteps: [{ path: "/community/requests", description: "تصفح طلبات الزبائن وقدم عروضك", elementFinder: finders.pageHeading }]
   },
   { category: "buttons", icon: MessageCircle, question: "زر 'المحادثات' (تاجر)", answer: "جميع محادثاتك مع العملاء:\n• الرد على الاستفسارات\n• مناقشة تفاصيل الطلبات\n• إرسال صور وملفات\n\n💡 الرد السريع يرفع تقييمك!", merchantOnly: true },
 
   // ── عروض ──
   { category: "general", icon: Tag, question: "ما هي العروض الخاصة؟", answer: "صفقات محدودة بكميات وأوقات:\n• أسعار استثنائية\n• كميات محدودة\n• عد تنازلي\n• منتجات مختارة\n\nتابع قسم العروض لعدم تفويتها!",
-    guideSteps: [{ path: "/offers", description: "صفحة العروض الخاصة — تصفح الصفقات المتاحة" }]
+    guideSteps: [{ path: "/offers", description: "صفحة العروض الخاصة — تصفح الصفقات المتاحة", elementFinder: finders.pageHeading }]
   },
 ];
 
@@ -391,22 +388,36 @@ export default function LevoHelpBot() {
     };
   }, []);
 
-  const handleDirectChat = () => {
+  const handleDirectChat = useCallback(() => {
     setIsOpen(false);
-    // Find the chat button by searching for the component
-    const btns = document.querySelectorAll('button');
-    for (const btn of btns) {
-      // Look for the unified chat floating button (usually has MessageCircle icon and is fixed position)
-      const style = window.getComputedStyle(btn);
-      if (style.position === 'fixed' && btn.closest('[class*="bottom-"]') && btn !== document.querySelector('[class*="LevoHelpBot"]')) {
-        // Check if it's not our own bot button
-        if (!btn.closest('.levo-help-bot-trigger')) {
-          btn.click();
+    // Find the UnifiedChatButton (fixed bottom-left button with MessageCircle)
+    setTimeout(() => {
+      const allButtons = document.querySelectorAll('button');
+      for (const btn of allButtons) {
+        // The unified chat button is fixed, at bottom-left, and NOT part of help bot
+        if (
+          btn.classList.contains('fixed') || 
+          btn.className.includes('fixed')
+        ) {
+          const rect = btn.getBoundingClientRect();
+          // UnifiedChatButton is at bottom-left (left < 100px, bottom area)
+          if (rect.left < 100 && rect.top > window.innerHeight - 120 && !btn.closest('.levo-help-bot-trigger')) {
+            btn.click();
+            return;
+          }
+        }
+      }
+      // Fallback: look for any fixed button with message icon at bottom
+      const fixedBtns = document.querySelectorAll('.fixed button, button.fixed');
+      for (const btn of fixedBtns) {
+        const rect = (btn as HTMLElement).getBoundingClientRect();
+        if (rect.left < 100 && rect.top > window.innerHeight - 120) {
+          (btn as HTMLElement).click();
           return;
         }
       }
-    }
-  };
+    }, 300);
+  }, []);
 
   if (isHidden && !isOpen && !spotlight.active) return null;
 
