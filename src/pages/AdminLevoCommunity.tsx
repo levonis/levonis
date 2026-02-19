@@ -4,7 +4,7 @@ import {
   Store, Users, Award, ImageIcon, 
   Loader2, Settings, FileText, 
   Wallet, Trash2, Save, RefreshCw, ShieldCheck, Percent,
-  TrendingUp, Clock
+  TrendingUp, Clock, Megaphone
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
@@ -78,6 +78,104 @@ function SettingCard({
         </div>
       </div>
     </div>
+  );
+}
+
+function AdSlotPricingSettings() {
+  const queryClient = useQueryClient();
+  const { data: slots = [], isLoading } = useQuery({
+    queryKey: ["admin-ad-slots"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_ad_slots")
+        .select("*")
+        .order("position", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const [prices, setPrices] = useState<Record<number, number>>({});
+  const [initialized, setInitialized] = useState(false);
+
+  if (slots.length > 0 && !initialized) {
+    const p: Record<number, number> = {};
+    slots.forEach(s => { p[s.position] = s.price_per_hour; });
+    setPrices(p);
+    setInitialized(true);
+  }
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ position, price }: { position: number; price: number }) => {
+      const { error } = await supabase
+        .from("merchant_ad_slots")
+        .update({ price_per_hour: price, updated_at: new Date().toISOString() })
+        .eq("position", position);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-ad-slots"] });
+      queryClient.invalidateQueries({ queryKey: ["ad-slots"] });
+      toast.success("تم تحديث السعر");
+    },
+    onError: () => toast.error("فشل التحديث"),
+  });
+
+  const updateAllMutation = useMutation({
+    mutationFn: async () => {
+      for (const [pos, price] of Object.entries(prices)) {
+        const { error } = await supabase
+          .from("merchant_ad_slots")
+          .update({ price_per_hour: price, updated_at: new Date().toISOString() })
+          .eq("position", Number(pos));
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-ad-slots"] });
+      queryClient.invalidateQueries({ queryKey: ["ad-slots"] });
+      toast.success("تم تحديث جميع الأسعار");
+    },
+    onError: () => toast.error("فشل التحديث"),
+  });
+
+  if (isLoading) return null;
+
+  return (
+    <SettingCard
+      icon={Megaphone}
+      title="أسعار مراكز الإعلان"
+      description="سعر كل ساعة لكل مركز إعلاني في قائمة التجار المميزين"
+      iconColor="bg-amber-500/15 text-amber-500"
+    >
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          {slots.map(slot => (
+            <div key={slot.position} className="flex flex-col gap-1">
+              <Label className="text-[10px] text-muted-foreground">مركز #{slot.position}</Label>
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  min={0}
+                  value={prices[slot.position] ?? slot.price_per_hour}
+                  onChange={(e) => setPrices(prev => ({ ...prev, [slot.position]: Number(e.target.value) }))}
+                  className="h-7 text-xs"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <Button
+          onClick={() => updateAllMutation.mutate()}
+          disabled={updateAllMutation.isPending}
+          size="sm"
+          className="h-7 text-[10px] gap-1.5 w-full"
+        >
+          <Save className="h-3 w-3" />
+          {updateAllMutation.isPending ? "جارٍ الحفظ..." : "حفظ جميع الأسعار"}
+        </Button>
+      </div>
+    </SettingCard>
   );
 }
 
@@ -387,6 +485,11 @@ function CommunitySettings() {
             {cleanupDraftsMutation.isPending ? "جارٍ التنظيف..." : "تنظيف الآن"}
           </Button>
         </SettingCard>
+      </div>
+
+      {/* Ad Slot Pricing - Full Width */}
+      <div className="sm:col-span-2">
+        <AdSlotPricingSettings />
       </div>
     </div>
   );
