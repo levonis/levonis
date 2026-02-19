@@ -354,7 +354,10 @@ export default function CommunityMerchantStore() {
             </TabsList>
 
             {storeTab === "products" && (
-              <Button size="sm" onClick={handleOpenAdd} className="gap-1.5 shadow-lg"><Plus className="h-4 w-4" />إضافة منتج</Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={() => setAdDialogOpen(true)} className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10"><Megaphone className="h-4 w-4" />ترويج متجري</Button>
+                <Button size="sm" onClick={handleOpenAdd} className="gap-1.5 shadow-lg"><Plus className="h-4 w-4" />إضافة منتج</Button>
+              </div>
             )}
             {storeTab === "reels" && merchantApp?.id && (
               <MerchantReelUpload merchantId={merchantApp.id}>
