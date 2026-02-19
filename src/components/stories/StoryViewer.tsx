@@ -100,7 +100,13 @@ export default function StoryViewer({ sections, initialSectionIndex, onClose }: 
 
   // Sync mute state
   useEffect(() => {
-    if (videoRef.current) videoRef.current.muted = isMuted;
+    const v = videoRef.current;
+    if (!v) return;
+    v.muted = isMuted;
+    // Re-trigger play when unmuting to unlock audio
+    if (!isMuted && !v.paused) {
+      v.play().catch(() => {});
+    }
   }, [isMuted]);
 
   // Progress bar

@@ -381,7 +381,7 @@ function CustomersContent() {
 
       {/* Customer Detail Dialog */}
       <Dialog open={!!selectedCustomer} onOpenChange={() => setSelectedCustomer(null)}>
-        <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-base">
               <Users className="h-4 w-4 text-primary" />
@@ -390,7 +390,7 @@ function CustomersContent() {
           </DialogHeader>
 
           {selectedCustomer && (
-            <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="space-y-3">
               {/* Customer Header */}
               <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg mb-3">
                 <Avatar className="h-12 w-12">
@@ -420,7 +420,7 @@ function CustomersContent() {
               </div>
 
               {/* Tabs */}
-              <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab} className="flex-1 flex flex-col overflow-hidden">
+              <Tabs value={activeDetailTab} onValueChange={setActiveDetailTab}>
                 <TabsList className="grid w-full grid-cols-3 h-9">
                   <TabsTrigger value="info" className="gap-1.5 text-xs">
                     <User className="h-3.5 w-3.5" />
@@ -436,7 +436,7 @@ function CustomersContent() {
                   </TabsTrigger>
                 </TabsList>
 
-                <ScrollArea className="flex-1 mt-3">
+                <div className="mt-3">
                   <TabsContent value="info" className="m-0">
                     <div className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
@@ -573,7 +573,7 @@ function CustomersContent() {
                       </div>
                     )}
                   </TabsContent>
-                </ScrollArea>
+                </div>
               </Tabs>
 
               <DialogFooter className="mt-3 pt-3 border-t flex-col sm:flex-row gap-2">
