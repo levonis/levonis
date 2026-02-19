@@ -3,8 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Percent, Truck, Gift, Tag, Copy, Store, Sparkles, Clock } from "lucide-react";
+import { ArrowLeft, Percent, Truck, Gift, Tag, Copy, Store, Clock, Ticket } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -62,134 +61,136 @@ export default function CustomerSpecialCoupons() {
   return (
     <div className="min-h-screen flex flex-col bg-background" dir="rtl">
       {/* Header */}
-      <div className="sticky top-0 z-50 bg-card/95 backdrop-blur-lg border-b border-border/40">
+      <div className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-primary/10">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center">
-              <Tag className="h-5 w-5 text-primary" />
+            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center">
+              <Ticket className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-foreground">كوبونات خاصة</h1>
-              <p className="text-[11px] text-muted-foreground">عروض حصرية لعملاء ليفو</p>
+              <h1 className="text-sm font-bold text-foreground">كوبونات خاصة</h1>
+              <p className="text-[10px] text-muted-foreground">عروض حصرية لعملاء ليفو</p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-xl hover:bg-card" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-lg" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <main className="flex-1 px-4 py-5 space-y-5">
-        {/* Hero */}
-        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card p-6 text-center">
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute top-2 right-6 w-20 h-20 rounded-full border-2 border-primary" />
-            <div className="absolute bottom-2 left-6 w-16 h-16 rounded-full border border-primary" />
-          </div>
-          <div className="relative space-y-3">
-            <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center mx-auto">
-              <Sparkles className="h-7 w-7 text-primary" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-foreground">عروض حصرية لك</h2>
-              <p className="text-xs text-muted-foreground mt-1.5 max-w-[240px] mx-auto leading-relaxed">
+      <main className="flex-1 px-4 py-4 space-y-5">
+        {/* Hero Banner */}
+        <div className="relative rounded-2xl overflow-hidden bg-gradient-to-bl from-primary/15 via-card to-card border border-primary/15">
+          <div className="absolute top-0 left-0 w-32 h-32 bg-primary/5 rounded-full -translate-x-10 -translate-y-10 blur-2xl" />
+          <div className="absolute bottom-0 right-0 w-24 h-24 bg-primary/8 rounded-full translate-x-8 translate-y-8 blur-xl" />
+          
+          <div className="relative px-5 py-6 flex items-center gap-4">
+            <div className="flex-1 space-y-2">
+              <h2 className="text-base font-bold text-foreground leading-snug">عروض حصرية لك<br/><span className="text-primary text-sm font-semibold">وفّر مع كل طلب</span></h2>
+              <p className="text-[11px] text-muted-foreground leading-relaxed max-w-[200px]">
                 كوبونات وخصومات خاصة من متاجر مجتمع ليفو. استخدمها الآن!
               </p>
+            </div>
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/25 to-primary/5 border border-primary/20 flex items-center justify-center shrink-0">
+              <Ticket className="h-7 w-7 text-primary" />
             </div>
           </div>
         </div>
 
         {/* Coupons */}
         {coupons && coupons.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="w-1 h-5 rounded-full bg-primary" />
-              <h3 className="font-bold text-foreground text-sm">الكوبونات المتاحة</h3>
-              <Badge variant="outline" className="text-[10px] mr-auto border-border/50">{coupons.length}</Badge>
+          <section className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <h3 className="text-xs font-bold text-foreground flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+                الكوبونات المتاحة
+              </h3>
+              <span className="text-[10px] text-muted-foreground border border-border/30 rounded px-1.5 py-0.5">{coupons.length}</span>
             </div>
 
-            {coupons.map((coupon) => {
-              const Icon = couponIcons[coupon.coupon_type] || Percent;
-              const label = couponLabels[coupon.coupon_type] || "خصم";
-              return (
-                <Card key={coupon.id} className="overflow-hidden border-border/50 hover:border-primary/20 transition-all">
-                  <CardContent className="p-0">
+            <div className="space-y-2.5">
+              {coupons.map((coupon) => {
+                const Icon = couponIcons[coupon.coupon_type] || Percent;
+                const label = couponLabels[coupon.coupon_type] || "خصم";
+                return (
+                  <div key={coupon.id} className="rounded-xl border border-border/40 bg-card overflow-hidden hover:border-primary/20 transition-all">
                     <div className="flex">
-                      {/* Left accent strip */}
-                      <div className="w-1.5 shrink-0 bg-primary/60 rounded-r-lg" />
-
-                      {/* Icon section */}
-                      <div className="w-20 shrink-0 flex flex-col items-center justify-center p-3 border-l border-dashed border-border/40">
-                        <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-1.5">
-                          <Icon className="h-5 w-5 text-primary" />
-                        </div>
+                      {/* Coupon Value Side */}
+                      <div className="w-[72px] shrink-0 flex flex-col items-center justify-center py-3 bg-gradient-to-b from-primary/10 to-primary/5 border-l border-dashed border-border/30 relative">
+                        {/* Top circle cutout effect */}
+                        <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-background" />
+                        <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-background" />
+                        
+                        <Icon className="h-4 w-4 text-primary mb-1.5" />
                         {coupon.coupon_type === "percentage" && coupon.discount_value > 0 && (
-                          <span className="text-base font-bold text-primary">{coupon.discount_value}%</span>
+                          <span className="text-lg font-bold text-primary leading-none">{coupon.discount_value}%</span>
                         )}
                         {coupon.coupon_type === "fixed_amount" && coupon.discount_value > 0 && (
-                          <span className="text-xs font-bold text-primary">{coupon.discount_value} د.ع</span>
+                          <span className="text-xs font-bold text-primary">{coupon.discount_value}<span className="text-[9px]"> د.ع</span></span>
                         )}
                         {coupon.coupon_type === "free_delivery" && (
                           <span className="text-[10px] font-bold text-primary">مجاني</span>
                         )}
+                        {coupon.coupon_type === "free_product" && (
+                          <span className="text-[10px] font-bold text-primary">هدية</span>
+                        )}
                       </div>
 
                       {/* Content */}
-                      <div className="flex-1 p-3.5 space-y-2.5">
+                      <div className="flex-1 p-3 space-y-2">
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-bold text-sm text-foreground line-clamp-1">{coupon.title_ar}</h3>
-                          <Badge variant="outline" className="text-[10px] shrink-0 border-primary/20 text-primary">
+                          <h4 className="font-bold text-xs text-foreground line-clamp-1">{coupon.title_ar}</h4>
+                          <Badge variant="outline" className="text-[9px] border-primary/15 text-primary shrink-0 px-1.5 py-0">
                             {label}
                           </Badge>
                         </div>
 
                         {coupon.description_ar && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">{coupon.description_ar}</p>
+                          <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">{coupon.description_ar}</p>
                         )}
 
-                        {coupon.merchant_store_name && (
-                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                            <Store className="h-3 w-3" />
-                            <span>{coupon.merchant_store_name}</span>
+                        <div className="flex items-center justify-between gap-2 pt-0.5">
+                          <div className="flex items-center gap-2">
+                            {coupon.coupon_code && (
+                              <button
+                                className="flex items-center gap-1 text-[10px] font-mono text-primary bg-primary/8 border border-dashed border-primary/20 rounded-md px-2 py-1 hover:bg-primary/12 transition-colors active:scale-95"
+                                onClick={() => copyCode(coupon.coupon_code!)}
+                              >
+                                <Copy className="h-2.5 w-2.5" />
+                                {coupon.coupon_code}
+                              </button>
+                            )}
+                            {coupon.merchant_store_name && (
+                              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                                <Store className="h-2.5 w-2.5" />
+                                {coupon.merchant_store_name}
+                              </span>
+                            )}
                           </div>
-                        )}
-
-                        <div className="flex items-center justify-between pt-1">
-                          {coupon.coupon_code ? (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-[11px] gap-1.5 border-dashed border-primary/30 text-primary hover:bg-primary/5 rounded-lg"
-                              onClick={() => copyCode(coupon.coupon_code!)}
-                            >
-                              <Copy className="h-3 w-3" />
-                              {coupon.coupon_code}
-                            </Button>
-                          ) : <div />}
                           {coupon.valid_until && (
-                            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              حتى {format(new Date(coupon.valid_until), "d MMM", { locale: ar })}
+                            <span className="flex items-center gap-0.5 text-[9px] text-muted-foreground shrink-0">
+                              <Clock className="h-2.5 w-2.5" />
+                              {format(new Date(coupon.valid_until), "d MMM", { locale: ar })}
                             </span>
                           )}
                         </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
 
         {/* Empty State */}
         {!isLoading && (!coupons || coupons.length === 0) && (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-5">
-              <Tag className="h-10 w-10 text-primary/50" />
+          <div className="text-center py-16">
+            <div className="w-16 h-16 rounded-2xl bg-primary/8 border border-primary/15 flex items-center justify-center mx-auto mb-4">
+              <Ticket className="h-8 w-8 text-primary/40" />
             </div>
-            <p className="text-foreground font-bold text-base">لا توجد كوبونات حالياً</p>
-            <p className="text-xs text-muted-foreground mt-2 max-w-[200px] mx-auto">ترقب العروض الحصرية القادمة من متاجر مجتمع ليفو</p>
+            <p className="text-foreground font-bold text-sm">لا توجد كوبونات حالياً</p>
+            <p className="text-[11px] text-muted-foreground mt-1.5 max-w-[180px] mx-auto">ترقب العروض الحصرية القادمة من متاجر مجتمع ليفو</p>
           </div>
         )}
       </main>
