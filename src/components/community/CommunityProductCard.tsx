@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { MessageCircle, Store } from "lucide-react";
+import { MessageCircle, Store, ShoppingCart } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
@@ -117,6 +117,30 @@ function CommunityProductCardBase({
               </span>
             </div>
           ) : null}
+        </div>
+
+        {/* Order Button */}
+        <div className="mt-1.5 flex gap-1" onClick={(e) => e.stopPropagation()}>
+          <Button
+            type="button"
+            size="sm"
+            className="flex-1 h-7 text-[10px] gap-1 font-bold"
+            onClick={onContact}
+          >
+            <ShoppingCart className="h-3 w-3" />
+            اطلب
+          </Button>
+          {onContact && (
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onContact}
+            >
+              <MessageCircle className="h-3 w-3" />
+            </Button>
+          )}
         </div>
       </div>
     </div>

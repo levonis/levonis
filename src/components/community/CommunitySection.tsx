@@ -99,29 +99,13 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
       {!isCommunityHub && (
         <Link
           to="/community"
-          className="group relative flex items-center justify-center mb-5 py-5 rounded-2xl overflow-hidden border border-primary/20 bg-gradient-to-r from-primary/5 via-card to-accent/5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all duration-500"
+          className="group relative flex items-center justify-center mb-5 py-4 rounded-2xl overflow-hidden border border-border/40 bg-card hover:border-primary/30 hover:shadow-md transition-all duration-300"
         >
-          {/* Animated background glow */}
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-transparent to-accent/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-32 h-px bg-gradient-to-r from-transparent via-accent/60 to-transparent" />
-          
-          <div className="relative flex items-center gap-3">
-            {/* Logo mark */}
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-shadow">
-              <span className="text-primary-foreground font-black text-sm tracking-tighter">L</span>
-            </div>
-            <div className="flex flex-col">
-              <h2 className="text-sm font-black text-foreground group-hover:text-primary transition-colors tracking-tight leading-tight">
-                مجتمع ليفونيس
-              </h2>
-              <p className="text-[9px] text-muted-foreground font-medium">
-                تجار • منتجات • طباعة ثلاثية الأبعاد
-              </p>
-            </div>
-            <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors mr-1">
-              <Sparkles className="h-3 w-3 text-primary" />
-            </div>
+          <div className="absolute inset-0 bg-gradient-to-l from-primary/[0.03] to-transparent" />
+          <div className="relative">
+            <h2 className="text-base font-black tracking-tight text-foreground group-hover:text-primary transition-colors">
+              مجتمع ليفو
+            </h2>
           </div>
         </Link>
       )}

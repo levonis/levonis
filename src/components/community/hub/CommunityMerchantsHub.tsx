@@ -161,7 +161,22 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
     return new Map((ratingsStats as any[]).map((r) => [r.merchant_id, r]));
   }, [ratingsStats]);
 
-  // Filter by search and apply mode-specific logic
+  // Fetch active ad bookings for featured positions
+  const { data: activeAds = [] } = useQuery({
+    queryKey: ["active-merchant-ads"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_ad_bookings")
+        .select("merchant_id, slot_position")
+        .eq("status", "active")
+        .order("slot_position", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    staleTime: 30_000,
+  });
+
+  // Filter by search and apply mode-specific logic with weighted randomization
   const items = useMemo(() => {
     let filtered = loaded;
     
@@ -171,15 +186,35 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
       filtered = filtered.filter((m) => m.display_name.toLowerCase().includes(combinedSearch));
     }
 
-    if (mode !== "preview") return filtered;
-    
-    const shuffled = [...filtered];
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    // Separate featured (ad-boosted) merchants from regular ones
+    const adMerchantIds = new Set(activeAds.map(a => a.merchant_id));
+    const featured = filtered.filter(m => adMerchantIds.has(m.id));
+    const regular = filtered.filter(m => !adMerchantIds.has(m.id));
+
+    // Sort featured by their slot position
+    featured.sort((a, b) => {
+      const posA = activeAds.find(ad => ad.merchant_id === a.id)?.slot_position ?? 99;
+      const posB = activeAds.find(ad => ad.merchant_id === b.id)?.slot_position ?? 99;
+      return posA - posB;
+    });
+
+    // Weighted shuffle for regular merchants (engagement-based randomization)
+    const seed = Math.floor(Date.now() / (1000 * 60 * 30)); // Changes every 30 min
+    const seededRandom = (i: number) => {
+      const x = Math.sin(seed + i) * 10000;
+      return x - Math.floor(x);
+    };
+    const shuffledRegular = [...regular];
+    for (let i = shuffledRegular.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom(i) * (i + 1));
+      [shuffledRegular[i], shuffledRegular[j]] = [shuffledRegular[j], shuffledRegular[i]];
     }
-    return shuffled.slice(0, 10);
-  }, [loaded, mode, searchQuery, localSearch]);
+
+    const combined = [...featured, ...shuffledRegular];
+
+    if (mode !== "preview") return combined;
+    return combined.slice(0, 10);
+  }, [loaded, mode, searchQuery, localSearch, activeAds]);
 
   useAutoFetchUntil({
     count: loaded.length,

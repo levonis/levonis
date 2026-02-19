@@ -3,7 +3,7 @@ import MerchantReelUpload from "@/components/reels/MerchantReelUpload";
 import MerchantReelsSection from "@/components/merchant/MerchantReelsSection";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Store, Plus, Star, Eye, Package, Sparkles, Film, FolderOpen, Settings, MessageSquare, Edit2, Trash2, EyeOff, Clock3, Box, Layers, Droplets, Palette, Scale, Wallet, CreditCard, BadgePercent, ExternalLink } from "lucide-react";
+import { Store, Plus, Star, Eye, Package, Sparkles, Film, FolderOpen, Settings, MessageSquare, Edit2, Trash2, EyeOff, Clock3, Box, Layers, Droplets, Palette, Scale, Wallet, CreditCard, BadgePercent, ExternalLink, Megaphone } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import ProductCardEnhanced from "@/components/merchant/ProductCardEnhanced";
 import MerchantCategoriesManager from "@/components/merchant/MerchantCategoriesManager";
 import ProductFormDialog, { type ProductFormData, type MediaState } from "@/components/merchant/ProductFormDialog";
 import StorePauseControl from "@/components/merchant/StorePauseControl";
+import MerchantAdBookingDialog from "@/components/community/MerchantAdBookingDialog";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertCircle } from "lucide-react";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
@@ -80,7 +81,7 @@ export default function CommunityMerchantStore() {
   const [productFilter, setProductFilter] = useState<ProductFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [storeTab, setStoreTab] = useState<StoreTab>("products");
-
+  const [adDialogOpen, setAdDialogOpen] = useState(false);
   const [formData, setFormData] = useState<ProductFormData>(emptyFormData);
   const [mediaState, setMediaState] = useState<MediaState>(emptyMediaState);
 
@@ -428,6 +429,15 @@ export default function CommunityMerchantStore() {
 
           {/* Settings Tab */}
           <TabsContent value="settings" className="space-y-6">
+            {/* Ad Booking */}
+            <Card className="border-primary/20 bg-gradient-to-br from-card to-primary/5 rounded-2xl p-6">
+              <h3 className="font-bold text-sm mb-2 flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary" />إعلان مميز</h3>
+              <p className="text-xs text-muted-foreground mb-3">اظهر متجرك في أول 10 تجار بحجز مركز إعلاني</p>
+              <Button size="sm" className="gap-1.5" onClick={() => setAdDialogOpen(true)}>
+                <Megaphone className="h-3.5 w-3.5" />حجز إعلان
+              </Button>
+            </Card>
+
             <StorePauseControl merchantId={merchantApp.id} storePaused={merchantApp.store_paused || false} storePauseEndDate={merchantApp.store_pause_end_date} storePauseMessage={merchantApp.store_pause_message} />
             <Card className="border-border/50 bg-gradient-to-br from-card to-card/80 rounded-2xl p-6">
               <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><Settings className="h-4 w-4 text-primary" />إعدادات المتجر</h3>
@@ -627,6 +637,12 @@ export default function CommunityMerchantStore() {
           selected_frame_id: merchantApp.selected_frame_id,
           specialty: (merchantApp.specialty as "resin" | "filament" | "both") || undefined,
         }}
+      />
+      {/* Ad Booking Dialog */}
+      <MerchantAdBookingDialog
+        open={adDialogOpen}
+        onOpenChange={setAdDialogOpen}
+        merchantId={merchantApp.id}
       />
     </div>
   );

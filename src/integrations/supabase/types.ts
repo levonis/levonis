@@ -2465,6 +2465,78 @@ export type Database = {
           },
         ]
       }
+      merchant_ad_bookings: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          expires_at: string | null
+          hours_booked: number
+          id: string
+          merchant_id: string
+          refund_amount: number | null
+          slot_position: number
+          started_at: string | null
+          status: string
+          total_cost: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          hours_booked: number
+          id?: string
+          merchant_id: string
+          refund_amount?: number | null
+          slot_position: number
+          started_at?: string | null
+          status?: string
+          total_cost: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          expires_at?: string | null
+          hours_booked?: number
+          id?: string
+          merchant_id?: string
+          refund_amount?: number | null
+          slot_position?: number
+          started_at?: string | null
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      merchant_ad_slots: {
+        Row: {
+          created_at: string
+          id: string
+          position: number
+          price_per_hour: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          position: number
+          price_per_hour?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          position?: number
+          price_per_hour?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       merchant_application_private: {
         Row: {
           address: string | null

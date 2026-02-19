@@ -500,24 +500,32 @@ export default function CommunityProductDetailModal({
                   />
                 </div>
 
-                {/* Actions - Compact */}
+                {/* Actions - Order/Reserve + Contact + Store */}
                 <div className="flex gap-1.5 pt-0.5 sticky bottom-0 bg-background pb-2">
                   <Button 
                     size="sm"
-                    className="flex-1 gap-1 h-8 text-[11px] font-bold rounded-xl" 
+                    className="flex-1 gap-1 h-9 text-xs font-bold rounded-xl" 
                     onClick={handleContactMerchant}
                   >
-                    <MessageCircle className="h-3 w-3" />
-                    تواصل للطلب
+                    <Package className="h-3.5 w-3.5" />
+                    اطلب الآن
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
-                    className="gap-1 h-8 text-[11px] rounded-xl" 
+                    className="gap-1 h-9 text-xs rounded-xl" 
+                    onClick={handleContactMerchant}
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                    تواصل
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="gap-1 h-9 text-xs rounded-xl" 
                     onClick={handleVisitStore}
                   >
-                    <Store className="h-3 w-3" />
-                    المتجر
+                    <Store className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>
