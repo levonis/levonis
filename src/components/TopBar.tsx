@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, lazy, Suspense } from 'react';
+import { memo, useState, useEffect } from 'react';
 import logoNew from '@/assets/new-logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
@@ -13,7 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
 import { useLanguage, LANGUAGE_LABELS, type Language } from '@/lib/i18n';
 
-const InstallPrompt = lazy(() => import('@/components/pwa/InstallPrompt'));
+// InstallPrompt moved to App.tsx as a card
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -215,11 +215,6 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
 
           {/* Cart and User Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Install Button */}
-            <Suspense fallback={null}>
-              <InstallPrompt />
-            </Suspense>
-
             {/* Language Toggle */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
