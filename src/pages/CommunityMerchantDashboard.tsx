@@ -5,6 +5,7 @@ import { Store } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/lib/i18n";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function CommunityMerchantDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const { data: app, isLoading } = useQuery({
     queryKey: ["merchant-application", user?.id],
@@ -49,12 +51,12 @@ export default function CommunityMerchantDashboard() {
         <main className="container mx-auto px-4 py-8 pt-24 max-w-4xl">
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle>لوحة التاجر</CardTitle>
-              <CardDescription>هذه الصفحة متاحة فقط للتجار المقبولين.</CardDescription>
+              <CardTitle>{t('merchant_dashboard')}</CardTitle>
+              <CardDescription>{t('merchant_dashboard_not_allowed')}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-3">
-              <Button variant="outline" onClick={() => navigate("/community")}>العودة للمجتمع</Button>
-              <Button onClick={() => navigate("/community/customer/profile")}>إكمال/مراجعة طلب التاجر</Button>
+              <Button variant="outline" onClick={() => navigate("/community")}>{t('merchant_back_community')}</Button>
+              <Button onClick={() => navigate("/community/customer/profile")}>{t('merchant_review_application')}</Button>
             </CardContent>
           </Card>
         </main>
@@ -71,18 +73,18 @@ export default function CommunityMerchantDashboard() {
               <Store className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-black text-primary">لوحة التاجر</h1>
+              <h1 className="text-2xl sm:text-3xl font-black text-primary">{t('merchant_dashboard')}</h1>
               <p className="text-sm text-muted-foreground">{app?.display_name ?? ""}</p>
             </div>
           </div>
-          <Button variant="outline" onClick={() => navigate("/community")}>العودة للمجتمع</Button>
+          <Button variant="outline" onClick={() => navigate("/community")}>{t('merchant_back_community')}</Button>
         </header>
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-base">عروضي على الطلبات</CardTitle>
-              <CardDescription>قريباً: إضافة/تعديل عروضك على طلبات الزبائن.</CardDescription>
+              <CardTitle className="text-base">{t('merchant_my_offers')}</CardTitle>
+              <CardDescription>{t('merchant_my_offers_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-24 rounded-xl border border-border bg-muted/20" />
@@ -91,8 +93,8 @@ export default function CommunityMerchantDashboard() {
 
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-base">تتبع التنفيذ</CardTitle>
-              <CardDescription>قريباً: حالات التنفيذ والتسليم.</CardDescription>
+              <CardTitle className="text-base">{t('merchant_execution_tracking')}</CardTitle>
+              <CardDescription>{t('merchant_execution_tracking_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-24 rounded-xl border border-border bg-muted/20" />
@@ -101,8 +103,8 @@ export default function CommunityMerchantDashboard() {
 
           <Card className="border-border bg-card">
             <CardHeader>
-              <CardTitle className="text-base">إدارة المنتجات</CardTitle>
-              <CardDescription>قريباً: إضافة منتجات + اختيار 3 منتجات مميزة.</CardDescription>
+              <CardTitle className="text-base">{t('merchant_product_management')}</CardTitle>
+              <CardDescription>{t('merchant_product_management_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-24 rounded-xl border border-border bg-muted/20" />
@@ -111,8 +113,8 @@ export default function CommunityMerchantDashboard() {
 
           <Card className="border-border bg-card md:col-span-2 lg:col-span-3">
             <CardHeader>
-              <CardTitle className="text-base">إعدادات المتجر</CardTitle>
-              <CardDescription>قريباً: تعديل صورة/وصف/روابط المتجر.</CardDescription>
+              <CardTitle className="text-base">{t('merchant_store_settings')}</CardTitle>
+              <CardDescription>{t('merchant_store_settings_desc')}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="h-24 rounded-xl border border-border bg-muted/20" />

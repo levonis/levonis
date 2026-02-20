@@ -16,40 +16,8 @@ import {
 import CommunityProductsHub from "@/components/community/hub/CommunityProductsHub";
 import CommunityMerchantsHub from "@/components/community/hub/CommunityMerchantsHub";
 import CommunityRequestsHub from "@/components/community/hub/CommunityRequestsHub";
-
-// Sort options for each tab
-const PRODUCT_SORTS = [
-  { value: "newest", label: "الأحدث" },
-  { value: "best_selling", label: "الأفضل مبيعاً" },
-  { value: "resin", label: "رزن" },
-  { value: "filament", label: "فلمنت" },
-  { value: "price_low", label: "أقل سعر" },
-  { value: "price_high", label: "أعلى سعر" },
-  { value: "alpha_asc", label: "أ - ي" },
-  { value: "alpha_desc", label: "ي - أ" },
-];
-
-const REQUEST_SORTS_MERCHANT = [
-  { value: "newest", label: "الأحدث" },
-  { value: "not_priced", label: "لم يتم تسعيره" },
-  { value: "resin", label: "رزن" },
-  { value: "filament", label: "فلمنت" },
-  { value: "completed", label: "الطلبات المنجزة" },
-];
-
-const REQUEST_SORTS_CUSTOMER = [
-  { value: "newest", label: "الأحدث" },
-  { value: "resin", label: "رزن" },
-  { value: "filament", label: "فلمنت" },
-  { value: "completed", label: "الطلبات المنجزة" },
-];
-
-const MERCHANT_SORTS = [
-  { value: "newest", label: "الأحدث" },
-  { value: "filament_specialist", label: "متخصص فلمنت" },
-  { value: "resin_specialist", label: "متخصص رزن" },
-  { value: "verified", label: "الموثوق" },
-];
+import { useLanguage } from "@/lib/i18n";
+import { TranslationKeys } from "@/lib/i18n/types";
 
 interface CommunityExploreStripProps {
   className?: string;
@@ -60,11 +28,46 @@ export default function CommunityExploreStrip({ className, searchQuery: external
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isCommunityHub = location.pathname === "/community";
   const tabFromUrl = searchParams.get("tab") || undefined;
   const searchFromUrl = searchParams.get("q") || "";
+
+  // Sort options using translation keys
+  const PRODUCT_SORTS: { value: string; label: string }[] = [
+    { value: "newest", label: t('explore_sort_newest') },
+    { value: "best_selling", label: t('explore_sort_best_selling') },
+    { value: "resin", label: t('explore_sort_resin') },
+    { value: "filament", label: t('explore_sort_filament') },
+    { value: "price_low", label: t('explore_sort_price_low') },
+    { value: "price_high", label: t('explore_sort_price_high') },
+    { value: "alpha_asc", label: t('explore_sort_alpha_asc') },
+    { value: "alpha_desc", label: t('explore_sort_alpha_desc') },
+  ];
+
+  const REQUEST_SORTS_MERCHANT = [
+    { value: "newest", label: t('explore_sort_newest') },
+    { value: "not_priced", label: t('explore_sort_not_priced') },
+    { value: "resin", label: t('explore_sort_resin') },
+    { value: "filament", label: t('explore_sort_filament') },
+    { value: "completed", label: t('explore_sort_completed') },
+  ];
+
+  const REQUEST_SORTS_CUSTOMER = [
+    { value: "newest", label: t('explore_sort_newest') },
+    { value: "resin", label: t('explore_sort_resin') },
+    { value: "filament", label: t('explore_sort_filament') },
+    { value: "completed", label: t('explore_sort_completed') },
+  ];
+
+  const MERCHANT_SORTS = [
+    { value: "newest", label: t('explore_sort_newest') },
+    { value: "filament_specialist", label: t('explore_sort_filament_specialist') },
+    { value: "resin_specialist", label: t('explore_sort_resin_specialist') },
+    { value: "verified", label: t('explore_sort_verified') },
+  ];
 
   // Check if user is a merchant
   const { data: merchantApp } = useQuery({
@@ -98,7 +101,6 @@ export default function CommunityExploreStrip({ className, searchQuery: external
   const [requestSort, setRequestSort] = useState("newest");
   const [merchantSort, setMerchantSort] = useState("newest");
 
-  // Use external search query if provided, otherwise use URL
   const searchQuery = externalSearchQuery ?? searchFromUrl;
 
   useEffect(() => {
@@ -112,9 +114,7 @@ export default function CommunityExploreStrip({ className, searchQuery: external
   const requestSortOptions = isMerchant ? REQUEST_SORTS_MERCHANT : REQUEST_SORTS_CUSTOMER;
 
   return (
-    <section className={className} aria-label="استكشاف المجتمع">
-      {/* Search bar is in CommunitySection header, not here */}
-
+    <section className={className} aria-label={t('explore_community')}>
       <Tabs
         value={activeTab}
         onValueChange={(v) => {
@@ -132,28 +132,28 @@ export default function CommunityExploreStrip({ className, searchQuery: external
               className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
             >
               <Store className="h-3.5 w-3.5" />
-              منتجات التجار
+              {t('explore_merchant_products')}
             </TabsTrigger>
             <TabsTrigger
               value="requests"
               className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
             >
               <Users className="h-3.5 w-3.5" />
-              طلبات العملاء
+              {t('explore_customer_requests')}
             </TabsTrigger>
             <TabsTrigger
               value="merchants"
               className="levo-tab-frame shrink-0 data-[state=active]:text-primary text-[11px] h-8 gap-1"
             >
               <Boxes className="h-3.5 w-3.5" />
-              صفحات التجار
+              {t('explore_merchant_pages')}
             </TabsTrigger>
           </TabsList>
           <Button
             variant="outline"
             size="icon"
             className="rounded-full h-8 w-8 shrink-0 border-primary/30 hover:border-primary hover:bg-primary/10"
-            aria-label="ريلز"
+            aria-label={t('explore_reels')}
             onClick={() => navigate("/community/reels")}
           >
             <Film className="h-3.5 w-3.5 text-primary" />
@@ -162,9 +162,8 @@ export default function CommunityExploreStrip({ className, searchQuery: external
 
         <TabsContent value="products" className="mt-3">
           <div className="levo-panel-frame p-3">
-            {/* Header with Sort */}
             <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className="text-xs font-bold text-foreground">منتجات من التجار</h3>
+              <h3 className="text-xs font-bold text-foreground">{t('explore_from_merchants')}</h3>
               <Select value={productSort} onValueChange={setProductSort}>
                 <SelectTrigger className="w-auto h-6 text-[10px] gap-1 px-2 rounded-lg">
                   <SlidersHorizontal className="h-3 w-3" />
@@ -193,7 +192,7 @@ export default function CommunityExploreStrip({ className, searchQuery: external
                 className="mt-3 w-full h-8 text-xs"
                 onClick={() => openHubTab("products")}
               >
-                عرض جميع المنتجات
+                {t('explore_view_all_products')}
               </Button>
             )}
           </div>
@@ -201,9 +200,8 @@ export default function CommunityExploreStrip({ className, searchQuery: external
 
         <TabsContent value="requests" className="mt-3">
           <div className="levo-panel-frame p-3">
-            {/* Header with Sort */}
             <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className="text-xs font-bold text-foreground">طلبات لزبائن آخرين</h3>
+              <h3 className="text-xs font-bold text-foreground">{t('explore_other_requests')}</h3>
               <Select value={requestSort} onValueChange={setRequestSort}>
                 <SelectTrigger className="w-auto h-6 text-[10px] gap-1 px-2 rounded-lg">
                   <SlidersHorizontal className="h-3 w-3" />
@@ -231,7 +229,7 @@ export default function CommunityExploreStrip({ className, searchQuery: external
                 className="mt-3 w-full h-8 text-xs"
                 onClick={() => openHubTab("requests")}
               >
-                عرض جميع الطلبات
+                {t('explore_view_all_requests')}
               </Button>
             )}
           </div>
@@ -239,9 +237,8 @@ export default function CommunityExploreStrip({ className, searchQuery: external
 
         <TabsContent value="merchants" className="mt-3">
           <div className="levo-panel-frame p-3">
-            {/* Header with Sort */}
             <div className="flex items-center justify-between gap-2 mb-3">
-              <h3 className="text-xs font-bold text-foreground">صفحات التجار</h3>
+              <h3 className="text-xs font-bold text-foreground">{t('explore_merchant_pages')}</h3>
               <Select value={merchantSort} onValueChange={setMerchantSort}>
                 <SelectTrigger className="w-auto h-6 text-[10px] gap-1 px-2 rounded-lg">
                   <SlidersHorizontal className="h-3 w-3" />
@@ -270,7 +267,7 @@ export default function CommunityExploreStrip({ className, searchQuery: external
                 className="mt-3 w-full h-8 text-xs"
                 onClick={() => openHubTab("merchants")}
               >
-                عرض جميع التجار
+                {t('explore_view_all_merchants')}
               </Button>
             )}
           </div>

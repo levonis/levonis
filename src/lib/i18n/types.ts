@@ -455,4 +455,161 @@ export type TranslationKeys = {
   // Common IQD label
   common_iqd_full: string;
   common_dinar: string;
+
+  // Community Explore Strip
+  explore_merchant_products: string;
+  explore_customer_requests: string;
+  explore_merchant_pages: string;
+  explore_reels: string;
+  explore_from_merchants: string;
+  explore_other_requests: string;
+  explore_view_all_products: string;
+  explore_view_all_requests: string;
+  explore_view_all_merchants: string;
+  explore_sort_newest: string;
+  explore_sort_best_selling: string;
+  explore_sort_resin: string;
+  explore_sort_filament: string;
+  explore_sort_price_low: string;
+  explore_sort_price_high: string;
+  explore_sort_alpha_asc: string;
+  explore_sort_alpha_desc: string;
+  explore_sort_not_priced: string;
+  explore_sort_completed: string;
+  explore_sort_filament_specialist: string;
+  explore_sort_resin_specialist: string;
+  explore_sort_verified: string;
+  explore_community: string;
+
+  // Print Request
+  request_accepted: string;
+  request_material_filament: string;
+  request_material_resin: string;
+  request_material_both: string;
+  request_material_any: string;
+  request_offers_count: string;
+  request_details: string;
+  request_price: string;
+  request_conversations: string;
+  request_now: string;
+  request_day: string;
+  request_hour: string;
+
+  // Customer Request Status
+  request_status_pending: string;
+  request_status_approved: string;
+  request_status_rejected: string;
+  request_status_in_progress: string;
+  request_status_completed: string;
+  request_status_delivered: string;
+  request_status_cancelled: string;
+  request_offers: string;
+
+  // New Print Request Dialog
+  new_request_title: string;
+  new_request_subtitle: string;
+  new_request_step1: string;
+  new_request_step2: string;
+  new_request_field_title: string;
+  new_request_field_title_placeholder: string;
+  new_request_field_description: string;
+  new_request_field_description_placeholder: string;
+  new_request_field_size: string;
+  new_request_field_size_placeholder: string;
+  new_request_field_colors: string;
+  new_request_field_colors_placeholder: string;
+  new_request_field_notes: string;
+  new_request_field_notes_placeholder: string;
+  new_request_material_type: string;
+  new_request_quantity: string;
+  new_request_reference_links: string;
+  new_request_add_link: string;
+  new_request_upload_images: string;
+  new_request_upload_video: string;
+  new_request_max_images: string;
+  new_request_max_video: string;
+  new_request_file_too_large: string;
+  new_request_unsupported_type: string;
+  new_request_image_uploaded: string;
+  new_request_video_uploaded: string;
+  new_request_upload_failed: string;
+  new_request_video_exists: string;
+  new_request_submit: string;
+  new_request_next: string;
+  new_request_prev: string;
+  new_request_success: string;
+  new_request_success_desc: string;
+  new_request_error: string;
+  new_request_image_required: string;
+  new_request_material_required: string;
+  new_request_inappropriate_title: string;
+  new_request_inappropriate_desc: string;
+  new_request_set_main: string;
+  new_request_main_image: string;
+
+  // Rewards - Points Section
+  points_available: string;
+  points_wallet_balance: string;
+  points_current_card: string;
+  points_remaining_days: string;
+  points_your_coupons: string;
+  points_recent_transactions: string;
+
+  // Rewards - Cards Section
+  cards_login_required: string;
+  cards_no_card: string;
+  cards_no_card_desc: string;
+  cards_my_coupons: string;
+  cards_loading: string;
+  cards_coupon_available: string;
+  cards_no_coupons: string;
+  cards_no_coupons_available: string;
+  cards_no_coupons_hint: string;
+  cards_code_copied: string;
+  cards_exclusive_offers: string;
+  cards_exclusive_offers_desc: string;
+
+  // Rewards - Insurance Section
+  insurance_login_required: string;
+  insurance_no_printers: string;
+  insurance_no_printers_desc: string;
+  insurance_add_printer: string;
+  insurance_protected: string;
+  insurance_not_protected: string;
+  insurance_unknown_printer: string;
+  insurance_no_serial: string;
+  insurance_started: string;
+  insurance_remaining: string;
+  insurance_upgrade_sub: string;
+  insurance_upgrade_note: string;
+  insurance_settings: string;
+  insurance_maintenance_request: string;
+  insurance_no_protection_desc: string;
+  insurance_subscribe: string;
+  insurance_no_plans: string;
+  insurance_month: string;
+  insurance_discount: string;
+  insurance_upgrade: string;
+  insurance_upgrade_success: string;
+  insurance_subscribe_success: string;
+  insurance_per_month: string;
+  insurance_popular: string;
+  insurance_features: string;
+  insurance_wallet_deduct: string;
+  insurance_current_balance: string;
+  insurance_insufficient: string;
+
+  // Merchant Dashboard
+  merchant_dashboard: string;
+  merchant_dashboard_not_allowed: string;
+  merchant_back_community: string;
+  merchant_review_application: string;
+  merchant_my_offers: string;
+  merchant_my_offers_desc: string;
+  merchant_execution_tracking: string;
+  merchant_execution_tracking_desc: string;
+  merchant_product_management: string;
+  merchant_product_management_desc: string;
+  merchant_store_settings: string;
+  merchant_store_settings_desc: string;
 };
