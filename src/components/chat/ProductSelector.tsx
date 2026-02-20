@@ -21,11 +21,27 @@ interface MerchantProduct {
   is_active: boolean;
 }
 
+interface SiteProduct {
+  id: string;
+  name_ar: string;
+  price: number;
+  image_url: string | null;
+}
+
+export type SelectedProduct = {
+  id: string;
+  title: string;
+  price: number;
+  imageUrl: string | null;
+};
+
 interface ProductSelectorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  merchantId: string;
-  onSelectProduct: (product: MerchantProduct) => void;
+  merchantId?: string;
+  /** If true, fetch site products (products table) instead of merchant_products */
+  useSiteProducts?: boolean;
+  onSelectProduct: (product: SelectedProduct) => void;
   onCreateCustomOrder?: () => void;
 }
 
@@ -33,20 +49,21 @@ export default function ProductSelector({
   open,
   onOpenChange,
   merchantId,
+  useSiteProducts = false,
   onSelectProduct,
   onCreateCustomOrder,
 }: ProductSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Fetch merchant products
-  const { data: products = [], isLoading } = useQuery({
+  const { data: merchantProducts = [], isLoading: loadingMerchant } = useQuery({
     queryKey: ['merchant-products-selector', merchantId],
-    enabled: !!merchantId && open,
+    enabled: !useSiteProducts && !!merchantId && open,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('merchant_products')
         .select('id, title, price_iqd, image_urls, primary_image_index, is_active')
-        .eq('merchant_id', merchantId)
+        .eq('merchant_id', merchantId!)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
@@ -55,12 +72,56 @@ export default function ProductSelector({
     },
   });
 
-  // Filter products by search
-  const filteredProducts = products.filter((p) =>
-    p.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Fetch site products
+  const { data: siteProducts = [], isLoading: loadingSite } = useQuery({
+    queryKey: ['site-products-selector', searchQuery],
+    enabled: useSiteProducts && open,
+    queryFn: async () => {
+      let query = (supabase as any)
+        .from('products')
+        .select('id, name_ar, price, image_url')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(50);
 
-  const handleSelect = (product: MerchantProduct) => {
+      if (searchQuery.trim()) {
+        query = query.ilike('name_ar', `%${searchQuery}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return (data || []) as SiteProduct[];
+    },
+  });
+
+  const isLoading = useSiteProducts ? loadingSite : loadingMerchant;
+
+  // Normalize products to a common shape
+  const normalizedProducts: SelectedProduct[] = useSiteProducts
+    ? siteProducts.map((p) => ({
+        id: p.id,
+        title: p.name_ar,
+        price: p.price,
+        imageUrl: p.image_url,
+      }))
+    : merchantProducts.map((p) => {
+        const primaryIndex = p.primary_image_index || 0;
+        return {
+          id: p.id,
+          title: p.title,
+          price: p.price_iqd,
+          imageUrl: p.image_urls?.[primaryIndex] || p.image_urls?.[0] || null,
+        };
+      });
+
+  // Filter products by search (merchant products filtered client-side)
+  const filteredProducts = useSiteProducts
+    ? normalizedProducts
+    : normalizedProducts.filter((p) =>
+        p.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+
+  const handleSelect = (product: SelectedProduct) => {
     onSelectProduct(product);
     onOpenChange(false);
     setSearchQuery('');
@@ -73,7 +134,7 @@ export default function ProductSelector({
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5 text-primary" />
-              اختر منتج للإرسال
+              {useSiteProducts ? 'اختر منتج من المتجر' : 'اختر منتج للإرسال'}
             </DialogTitle>
             {onCreateCustomOrder && (
               <Button
@@ -120,41 +181,31 @@ export default function ProductSelector({
                 </p>
               </div>
             ) : (
-              filteredProducts.map((product) => {
-                const primaryIndex = product.primary_image_index || 0;
-                const imageUrl = product.image_urls?.[primaryIndex] || product.image_urls?.[0];
-
-                return (
-                  <button
-                    key={product.id}
-                    onClick={() => handleSelect(product)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/30 transition-all"
-                  >
-                    {/* Image */}
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={product.title}
-                        className="h-14 w-14 rounded-lg object-cover bg-muted"
-                      />
-                    ) : (
-                      <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center">
-                        <Package className="h-5 w-5 text-muted-foreground/40" />
-                      </div>
-                    )}
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0 text-right">
-                      <h4 className="font-semibold text-sm truncate">
-                        {product.title}
-                      </h4>
-                      <p className="text-primary font-bold text-sm">
-                        {product.price_iqd.toLocaleString()} د.ع
-                      </p>
+              filteredProducts.map((product) => (
+                <button
+                  key={product.id}
+                  onClick={() => handleSelect(product)}
+                  className="w-full flex items-center gap-3 p-3 rounded-xl border border-border bg-card hover:bg-muted/50 hover:border-primary/30 transition-all"
+                >
+                  {product.imageUrl ? (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.title}
+                      className="h-14 w-14 rounded-lg object-cover bg-muted"
+                    />
+                  ) : (
+                    <div className="h-14 w-14 rounded-lg bg-muted flex items-center justify-center">
+                      <Package className="h-5 w-5 text-muted-foreground/40" />
                     </div>
-                  </button>
-                );
-              })
+                  )}
+                  <div className="flex-1 min-w-0 text-right">
+                    <h4 className="font-semibold text-sm truncate">{product.title}</h4>
+                    <p className="text-primary font-bold text-sm">
+                      {product.price.toLocaleString()} د.ع
+                    </p>
+                  </div>
+                </button>
+              ))
             )}
           </div>
         </ScrollArea>
