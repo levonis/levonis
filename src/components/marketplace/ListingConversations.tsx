@@ -253,15 +253,17 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     enabled: !!user && open,
   });
 
-  // Auto open conversation if autoOpenConversationId is provided
+  // Auto open conversation only once on initial load
+  const [hasAutoOpened, setHasAutoOpened] = useState(false);
   useEffect(() => {
-    if (autoOpenConversationId && conversations?.length) {
+    if (autoOpenConversationId && conversations?.length && !hasAutoOpened) {
       const conv = conversations.find(c => c.id === autoOpenConversationId);
       if (conv) {
         setSelectedConversation(autoOpenConversationId);
+        setHasAutoOpened(true);
       }
     }
-  }, [autoOpenConversationId, conversations]);
+  }, [autoOpenConversationId, conversations, hasAutoOpened]);
 
   // Fetch profiles (use profiles_public view to protect sensitive data)
   const { data: profiles } = useQuery({
