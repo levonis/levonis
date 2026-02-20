@@ -1,6 +1,9 @@
 import logoNew from '@/assets/new-logo.png';
+import { useLanguage } from '@/lib/i18n';
 
 const Footer = () => {
+  const { t } = useLanguage();
+
   return (
     <footer className="w-full py-12 bg-card/50 border-t border-border/30 mt-16">
       <div className="container mx-auto px-4">
@@ -49,7 +52,7 @@ const Footer = () => {
 
           <div className="text-center space-y-2 mt-6">
             <p className="text-muted-foreground text-sm">
-              © {new Date().getFullYear()} جميع الحقوق محفوظة
+              © {new Date().getFullYear()} {t('footer_rights')}
             </p>
           </div>
         </div>

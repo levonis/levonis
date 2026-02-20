@@ -1,0 +1,181 @@
+import { TranslationKeys } from './types';
+
+export const ar: TranslationKeys = {
+  // Navigation
+  nav_home: 'الرئيسية',
+  nav_categories: 'الأقسام',
+  nav_products: 'المنتجات',
+  nav_community: 'المجتمع',
+  nav_login: 'تسجيل الدخول',
+  nav_logout: 'تسجيل الخروج',
+  
+  // User menu
+  menu_my_account: 'حسابي',
+  menu_account_info: 'معلومات الحساب',
+  menu_custom_requests: 'طلباتي المخصصة',
+  menu_addresses: 'العناوين',
+  menu_my_orders: 'طلباتي',
+  menu_favorites: 'المفضلة',
+  menu_wallet: 'المحفظة',
+  menu_notifications: 'الإشعارات',
+  menu_dashboard: 'لوحة التحكم',
+  menu_rewards: 'مركز المكافآت',
+  menu_custom_product: 'طلب منتج مخصص',
+  menu_cart: 'سلة التسوق',
+  menu_messages: 'محادثات العملاء',
+  
+  // Home page
+  home_subtitle: 'نوفّر لك أحدث الإلكترونيات من حول العالم بأسعار تنافسية… بضمان رسمي وخدمة سريعة بلا منافس',
+  home_sections: 'الأقسام',
+  home_sections_desc: 'اختر القسم الفرعي للانتقال',
+  home_call_us: 'اتصل بنا',
+  
+  // Footer
+  footer_rights: 'جميع الحقوق محفوظة',
+  
+  // Common
+  common_back: 'رجوع',
+  common_save: 'حفظ',
+  common_cancel: 'إلغاء',
+  common_delete: 'حذف',
+  common_edit: 'تعديل',
+  common_search: 'بحث',
+  common_loading: 'جارٍ التحميل...',
+  common_error: 'حدث خطأ',
+  common_success: 'تم بنجاح',
+  common_confirm: 'تأكيد',
+  common_later: 'لاحقاً',
+  common_understood: 'فهمت',
+  common_close: 'إغلاق',
+  common_send: 'إرسال',
+  common_add: 'إضافة',
+  common_remove: 'إزالة',
+  common_yes: 'نعم',
+  common_no: 'لا',
+  common_all: 'الكل',
+  common_none: 'لا يوجد',
+  common_price: 'السعر',
+  common_quantity: 'الكمية',
+  common_total: 'المجموع',
+  common_iqd: 'د.ع',
+  
+  // Auth
+  auth_login: 'تسجيل الدخول',
+  auth_signup: 'إنشاء حساب',
+  auth_email: 'البريد الإلكتروني',
+  auth_password: 'كلمة المرور',
+  auth_forgot_password: 'نسيت كلمة المرور؟',
+  auth_no_account: 'ليس لديك حساب؟',
+  auth_has_account: 'لديك حساب بالفعل؟',
+  
+  // Profile settings
+  settings_title: 'الإعدادات',
+  settings_name: 'الاسم',
+  settings_phone: 'رقم الهاتف',
+  settings_phone_verified: 'تم تأكيد الرقم',
+  settings_phone_unverified: 'غير مؤكد',
+  settings_username: 'اليوزرنيم',
+  settings_username_hint: 'يمكنك تغيير اليوزرنيم مرة كل 14 يوم.',
+  settings_username_cooldown: 'يمكن تغيير اسم المستخدم بعد {days} يوم',
+  settings_default_address: 'العنوان الافتراضي',
+  settings_no_addresses: 'لا توجد عناوين بعد. يمكنك إضافتها من صفحة العناوين.',
+  settings_loading_addresses: 'جارٍ تحميل العناوين…',
+  settings_wallet_pin: 'رمز PIN للمحفظة',
+  settings_wallet_pin_desc: 'حماية المحفظة برمز PIN مكون من 4 أرقام',
+  settings_set_change: 'تعيين / تغيير',
+  settings_telegram_notifs: 'إشعارات تيليجرام',
+  settings_telegram_notifs_desc: 'تحكّم بالإشعارات التي تصلك عبر تيليجرام',
+  settings_notif_orders: 'الطلبات',
+  settings_notif_orders_desc: 'تحديثات حالة الطلبات والشحن',
+  settings_notif_wallet: 'المحفظة',
+  settings_notif_wallet_desc: 'الإيداعات والسحوبات وتغييرات الرصيد',
+  settings_notif_support: 'الدعم',
+  settings_notif_support_desc: 'ردود فريق الدعم على رسائلك',
+  settings_notif_promotions: 'العروض',
+  settings_notif_promotions_desc: 'عروض وخصومات حصرية',
+  settings_language: 'اللغة',
+  settings_language_desc: 'اختر لغة واجهة التطبيق',
+  settings_saved: 'تم حفظ الإعدادات',
+  settings_save_error: 'تعذر الحفظ',
+  settings_name_required: 'الاسم مطلوب',
+  settings_username_taken: 'اسم المستخدم مستخدم بالفعل — الرجاء اختيار يوزرنيم مختلف.',
+  settings_change_avatar: 'تغيير الصورة',
+  
+  // Cart
+  cart_title: 'سلة التسوق',
+  cart_empty: 'سلة التسوق فارغة',
+  cart_checkout: 'إتمام الشراء',
+  cart_total: 'المجموع الكلي',
+  cart_item_count: 'عناصر في السلة',
+  
+  // Products
+  product_add_to_cart: 'أضف إلى السلة',
+  product_out_of_stock: 'نفذت الكمية',
+  product_in_stock: 'متوفر',
+  product_details: 'تفاصيل المنتج',
+  product_reviews: 'التقييمات',
+  product_related: 'منتجات مشابهة',
+  product_description: 'الوصف',
+  product_features: 'المميزات',
+  product_share: 'مشاركة',
+  product_add_favorite: 'أضف للمفضلة',
+  product_remove_favorite: 'إزالة من المفضلة',
+  
+  // Orders
+  order_status: 'حالة الطلب',
+  order_pending: 'قيد الانتظار',
+  order_processing: 'قيد المعالجة',
+  order_shipped: 'تم الشحن',
+  order_delivered: 'تم التوصيل',
+  order_cancelled: 'ملغي',
+  order_details: 'تفاصيل الطلب',
+  order_tracking: 'تتبع الطلب',
+  order_date: 'تاريخ الطلب',
+  
+  // Notifications
+  notif_title: 'الإشعارات',
+  notif_empty: 'لا توجد إشعارات',
+  notif_mark_read: 'تحديد الكل كمقروء',
+  
+  // PWA
+  pwa_install_title: 'أضف LEVONIS للشاشة الرئيسية',
+  pwa_install_desc: 'وصول سريع • إشعارات فورية • تجربة تطبيق كاملة',
+  pwa_install_button: 'تثبيت التطبيق',
+  pwa_install_ios_step1: '1. اضغط على (مشاركة)',
+  pwa_install_ios_step2: '2. اختر "إضافة إلى الشاشة الرئيسية"',
+  pwa_install_generic_step1: '1. اضغط على (قائمة المتصفح)',
+  pwa_install_generic_step2: '2. اختر "تثبيت التطبيق" أو "إضافة للشاشة"',
+  pwa_notif_title: 'تفعيل الإشعارات',
+  pwa_notif_desc: 'احصل على تنبيهات فورية للرسائل والطلبات',
+  pwa_notif_allow: 'السماح',
+  pwa_notif_success: 'تم تفعيل الإشعارات بنجاح!',
+  
+  // Community
+  community_title: 'المجتمع',
+  community_browse_requests: 'تصفح الطلبات',
+  community_my_requests: 'طلباتي',
+  community_new_request: 'طلب جديد',
+  community_merchants: 'التجار',
+  
+  // Competitions
+  competitions_title: 'المسابقات',
+  competitions_enter: 'اشترك الآن',
+  competitions_tickets: 'تذاكر',
+  competitions_winners: 'الفائزون',
+  
+  // Wallet
+  wallet_title: 'المحفظة',
+  wallet_balance: 'الرصيد',
+  wallet_deposit: 'إيداع',
+  wallet_withdraw: 'سحب',
+  wallet_history: 'سجل العمليات',
+  
+  // Search
+  search_placeholder: 'ابحث عن منتج...',
+  search_no_results: 'لا توجد نتائج',
+
+  // Rewards
+  rewards_title: 'مركز المكافآت',
+  rewards_points: 'نقاط',
+  rewards_redeem: 'استبدال',
+};

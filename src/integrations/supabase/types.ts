@@ -424,11 +424,14 @@ export type Database = {
           created_at: string | null
           description: string | null
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           icon: string
           id: string
           main_section_id: string | null
           name: string
           name_ar: string
+          name_ku: string | null
           slug: string
           tax_rate: number | null
         }
@@ -436,11 +439,14 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           icon: string
           id?: string
           main_section_id?: string | null
           name: string
           name_ar: string
+          name_ku?: string | null
           slug: string
           tax_rate?: number | null
         }
@@ -448,11 +454,14 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           icon?: string
           id?: string
           main_section_id?: string | null
           name?: string
           name_ar?: string
+          name_ku?: string | null
           slug?: string
           tax_rate?: number | null
         }
@@ -2547,6 +2556,8 @@ export type Database = {
           id: string
           name: string
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           updated_at: string
         }
         Insert: {
@@ -2555,6 +2566,8 @@ export type Database = {
           id?: string
           name: string
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           updated_at?: string
         }
         Update: {
@@ -2563,6 +2576,8 @@ export type Database = {
           id?: string
           name?: string
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -4747,6 +4762,8 @@ export type Database = {
           currency: string | null
           description: string | null
           description_ar: string | null
+          description_en: string | null
+          description_ku: string | null
           featured: boolean | null
           features: Json | null
           has_in_stock: boolean | null
@@ -4757,6 +4774,8 @@ export type Database = {
           in_stock: boolean | null
           name: string
           name_ar: string
+          name_en: string | null
+          name_ku: string | null
           original_price: number | null
           points_reward: number | null
           pre_order_fast_shipping_price: number | null
@@ -4782,6 +4801,8 @@ export type Database = {
           currency?: string | null
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           featured?: boolean | null
           features?: Json | null
           has_in_stock?: boolean | null
@@ -4792,6 +4813,8 @@ export type Database = {
           in_stock?: boolean | null
           name: string
           name_ar: string
+          name_en?: string | null
+          name_ku?: string | null
           original_price?: number | null
           points_reward?: number | null
           pre_order_fast_shipping_price?: number | null
@@ -4817,6 +4840,8 @@ export type Database = {
           currency?: string | null
           description?: string | null
           description_ar?: string | null
+          description_en?: string | null
+          description_ku?: string | null
           featured?: boolean | null
           features?: Json | null
           has_in_stock?: boolean | null
@@ -4827,6 +4852,8 @@ export type Database = {
           in_stock?: boolean | null
           name?: string
           name_ar?: string
+          name_en?: string | null
+          name_ku?: string | null
           original_price?: number | null
           points_reward?: number | null
           pre_order_fast_shipping_price?: number | null

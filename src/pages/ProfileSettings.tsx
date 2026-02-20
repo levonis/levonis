@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell } from "lucide-react";
-
+import { ArrowRight, Camera, Loader2, ShieldCheck, ShieldAlert, Lock, Bell, Globe } from "lucide-react";
+import { useLanguage, LANGUAGE_LABELS } from "@/lib/i18n";
+import type { Language } from "@/lib/i18n";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -44,6 +45,7 @@ export default function ProfileSettings() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const { user } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   const [fullName, setFullName] = useState("");
@@ -396,6 +398,36 @@ export default function ProfileSettings() {
           </Card>
         </div>
 
+        {/* Language Switcher */}
+        <div className="pb-2">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Globe className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{t('settings_language')}</p>
+                  <p className="text-xs text-muted-foreground">{t('settings_language_desc')}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {(['ar', 'en', 'ku'] as Language[]).map(lang => (
+                  <Button
+                    key={lang}
+                    variant={language === lang ? 'default' : 'outline'}
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => setLanguage(lang)}
+                  >
+                    {LANGUAGE_LABELS[lang]}
+                  </Button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* إعدادات إشعارات تيليجرام */}
         {(profile as any)?.telegram_chat_id && (
           <div className="pb-2">
@@ -406,16 +438,16 @@ export default function ProfileSettings() {
                     <Bell className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">إشعارات تيليجرام</p>
-                    <p className="text-xs text-muted-foreground">تحكّم بالإشعارات التي تصلك عبر تيليجرام</p>
+                    <p className="text-sm font-medium">{t('settings_telegram_notifs')}</p>
+                    <p className="text-xs text-muted-foreground">{t('settings_telegram_notifs_desc')}</p>
                   </div>
                 </div>
                 
                 {[
-                  { key: 'orders' as const, label: 'الطلبات', desc: 'تحديثات حالة الطلبات والشحن' },
-                  { key: 'wallet' as const, label: 'المحفظة', desc: 'الإيداعات والسحوبات وتغييرات الرصيد' },
-                  { key: 'support' as const, label: 'الدعم', desc: 'ردود فريق الدعم على رسائلك' },
-                  { key: 'promotions' as const, label: 'العروض', desc: 'عروض وخصومات حصرية' },
+                  { key: 'orders' as const, label: t('settings_notif_orders'), desc: t('settings_notif_orders_desc') },
+                  { key: 'wallet' as const, label: t('settings_notif_wallet'), desc: t('settings_notif_wallet_desc') },
+                  { key: 'support' as const, label: t('settings_notif_support'), desc: t('settings_notif_support_desc') },
+                  { key: 'promotions' as const, label: t('settings_notif_promotions'), desc: t('settings_notif_promotions_desc') },
                 ].map(item => (
                   <div key={item.key} className="flex items-center justify-between py-2">
                     <div>
