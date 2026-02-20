@@ -14,11 +14,13 @@ import { useUserPrintReputation } from '@/hooks/useUserPrintReputation';
 import { useUserCardFrame } from '@/hooks/useUserCardFrame';
 import AvatarWithFrame from '@/components/merchant/AvatarWithFrame';
 import type { FrameAnimationType } from '@/components/merchant/AvatarWithFrame';
+import { useLanguage } from '@/lib/i18n';
 
 const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const isOwnProfile = user?.id === userId;
 
   // Fetch profile data
@@ -85,20 +87,20 @@ const PublicProfile = () => {
     return [
       {
         key: 'customer_receive',
-        label: 'نسبة استلام العميل',
+        label: t('profile_customer_rate'),
         percent: receiveRate == null ? null : Number(receiveRate),
-        hint: 'نسبة الطلبات التي استلمها العميل من مجموع ما قدّمه.',
-        rightText: submitted ? `${received} من ${submitted}` : '—',
+        hint: t('profile_customer_rate_hint'),
+        rightText: submitted ? `${received} ${t('profile_of')} ${submitted}` : '—',
       },
       {
         key: 'merchant_completion',
-        label: 'نسبة إكمال التاجر',
+        label: t('profile_merchant_rate'),
         percent: completion == null ? null : Number(completion),
-        hint: 'نسبة الأعمال المكتملة من الأعمال المقبولة للتاجر.',
-        rightText: accepted ? `${completed} من ${accepted}` : '—',
+        hint: t('profile_merchant_rate_hint'),
+        rightText: accepted ? `${completed} ${t('profile_of')} ${accepted}` : '—',
       },
     ];
-  }, [rep]);
+  }, [rep, t]);
 
   if (loadingProfile) {
     return (
@@ -114,10 +116,10 @@ const PublicProfile = () => {
     return (
       <div className="min-h-screen bg-background/95 backdrop-blur-sm pt-24">
         <div className="container mx-auto px-4 py-8 text-center">
-          <h1 className="text-2xl font-bold text-foreground mb-4">المستخدم غير موجود</h1>
+          <h1 className="text-2xl font-bold text-foreground mb-4">{t('profile_not_found')}</h1>
           <Button onClick={() => navigate(-1)}>
             <ArrowRight className="w-4 h-4 ml-2" />
-            رجوع
+            {t('profile_back')}
           </Button>
         </div>
       </div>
@@ -134,7 +136,7 @@ const PublicProfile = () => {
           className="mb-6 gap-2"
         >
           <ArrowRight className="w-4 h-4" />
-          رجوع
+          {t('profile_back')}
         </Button>
 
         {/* Profile Header */}
@@ -163,7 +165,7 @@ const PublicProfile = () => {
                 <Avatar className="h-24 w-24 ring-4 ring-primary/20">
                   <AvatarImage src={profile.avatar_url || undefined} />
                   <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                    {profile.username?.[0] || profile.full_name?.[0] || 'م'}
+                    {profile.username?.[0] || profile.full_name?.[0] || t('profile_user')[0]}
                   </AvatarFallback>
                 </Avatar>
               )}
@@ -171,13 +173,13 @@ const PublicProfile = () => {
               <div className="flex-1 text-center sm:text-right">
                 <div className="flex items-center justify-center sm:justify-start gap-2 mb-2">
                   <h1 className="text-2xl font-bold text-foreground">
-                    {profile.username || profile.full_name || 'مستخدم'}
+                    {profile.username || profile.full_name || t('profile_user')}
                   </h1>
                 </div>
 
                 <div className="flex items-center justify-center sm:justify-start gap-2 text-xs text-muted-foreground">
                   <Calendar className="w-3.5 h-3.5" />
-                  <span>عضو منذ {profile.created_at ? formatDate(profile.created_at) : '-'}</span>
+                  <span>{t('profile_member_since')} {profile.created_at ? formatDate(profile.created_at) : '-'}</span>
                 </div>
 
                 {userId && (
@@ -193,7 +195,7 @@ const PublicProfile = () => {
                     className="mt-4"
                     onClick={() => navigate('/user-info')}
                   >
-                    تعديل الملف الشخصي
+                    {t('profile_edit')}
                   </Button>
                 )}
               </div>
@@ -206,7 +208,7 @@ const PublicProfile = () => {
             <ReputationBar
               overallStars={rep?.avg_stars ?? null}
               basisCount={rep?.ratings_count ?? null}
-              basisLabel="تقييم"
+              basisLabel={t('profile_rating')}
               metrics={metrics}
             />
           </div>

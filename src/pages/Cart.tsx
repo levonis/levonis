@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useLanguage } from '@/lib/i18n';
 
 import WalletDialog from '@/components/WalletDialog';
 import CartRequestDialog from '@/components/CartRequestDialog';
@@ -25,6 +26,7 @@ const Cart = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
@@ -186,8 +188,8 @@ const Cart = () => {
   const applyCoupon = async () => {
     if (!couponCode.trim()) {
       toast({
-        title: "خطأ",
-        description: "الرجاء إدخال رمز الكوبون",
+        title: t('common_error'),
+        description: t('cart_coupon_error_empty'),
         variant: "destructive",
       });
       return;
@@ -201,8 +203,8 @@ const Cart = () => {
 
       if (error) {
         toast({
-          title: "خطأ",
-          description: "حدث خطأ أثناء التحقق من الكوبون",
+          title: t('common_error'),
+          description: t('cart_coupon_invalid'),
           variant: "destructive",
         });
         return;
@@ -212,8 +214,8 @@ const Cart = () => {
 
       if (!couponResult.valid) {
         toast({
-          title: couponResult.rate_limited ? "تم تجاوز الحد المسموح" : "كوبون غير صالح",
-          description: couponResult.error || "الكوبون غير صحيح",
+          title: couponResult.rate_limited ? t('cart_coupon_rate_limited') : t('cart_coupon_invalid'),
+          description: couponResult.error || t('cart_coupon_invalid'),
           variant: "destructive",
         });
         return;
@@ -222,8 +224,8 @@ const Cart = () => {
       // Check minimum purchase
       if (couponResult.min_purchase_amount && total < couponResult.min_purchase_amount) {
         toast({
-          title: "الحد الأدنى للطلب غير مستوفى",
-          description: `الحد الأدنى للطلب هو ${formatPrice(couponResult.min_purchase_amount)} دينار عراقي`,
+          title: t('cart_coupon_min_purchase'),
+          description: `${formatPrice(couponResult.min_purchase_amount)} ${t('common_iqd_full')}`,
           variant: "destructive",
         });
         return;
@@ -238,14 +240,14 @@ const Cart = () => {
       });
       
       toast({
-        title: "تم تطبيق الكوبون",
-        description: `تم خصم ${couponResult.discount_type === 'percentage' ? `${couponResult.discount_value}%` : `${formatPrice(couponResult.discount_value || 0)} دينار عراقي`}`,
+        title: t('cart_coupon_applied'),
+        description: `${couponResult.discount_type === 'percentage' ? `${couponResult.discount_value}%` : `${formatPrice(couponResult.discount_value || 0)} ${t('common_iqd_full')}`}`,
       });
     } catch (error) {
       console.error('Error applying coupon:', error);
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تطبيق الكوبون",
+        title: t('common_error'),
+        description: t('cart_order_error'),
         variant: "destructive",
       });
     } finally {
@@ -257,8 +259,8 @@ const Cart = () => {
     setAppliedCoupon(null);
     setCouponCode('');
     toast({
-      title: "تم إزالة الكوبون",
-      description: "تم إزالة الكوبون من طلبك",
+      title: t('cart_coupon_removed'),
+      description: t('cart_coupon_removed'),
     });
   };
 
@@ -769,9 +771,9 @@ const Cart = () => {
     <div className="min-h-screen bg-background/95 backdrop-blur-sm">
       <main className="container mx-auto px-4 py-8 pt-24">
         <div className="mb-6">
-          <h1 className="text-3xl font-black text-primary mb-2">سلة التسوق</h1>
+          <h1 className="text-3xl font-black text-primary mb-2">{t('cart_title')}</h1>
           <p className="text-muted-foreground text-sm">
-            {itemCount > 0 ? `لديك ${itemCount} ${itemCount === 1 ? 'منتج' : 'منتجات'} في السلة` : 'السلة فارغة'}
+            {itemCount > 0 ? t('cart_items_in_cart', { count: itemCount, label: itemCount === 1 ? t('cart_product') : t('cart_products') }) : t('cart_empty')}
           </p>
         </div>
 
@@ -780,14 +782,14 @@ const Cart = () => {
             <div className="w-20 h-20 mx-auto mb-6 opacity-20">
               <ShoppingBag className="w-full h-full text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-bold text-foreground mb-2">سلة التسوق فارغة</h2>
+            <h2 className="text-xl font-bold text-foreground mb-2">{t('cart_empty')}</h2>
             <p className="text-muted-foreground mb-6 text-sm">
-              لم تقم بإضافة أي منتجات إلى السلة بعد
+              {t('cart_no_items_yet')}
             </p>
             <Link to="/">
               <Button className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90">
                 <ArrowRight className="ml-2 h-4 w-4" />
-                تصفح المنتجات
+                {t('cart_browse_products')}
               </Button>
             </Link>
           </div>
@@ -1029,7 +1031,7 @@ const Cart = () => {
                   }}
                 >
                   <Hash className="ml-2 h-4 w-4" />
-                  رمز السلة
+                  {t('cart_code')}
                 </Button>
                 <Button
                   variant="outline"
@@ -1037,7 +1039,7 @@ const Cart = () => {
                   onClick={handleClearCart}
                 >
                   <Trash2 className="ml-2 h-4 w-4" />
-                  تفريغ السلة
+                  {t('cart_clear')}
                 </Button>
               </div>
             </div>
@@ -1050,7 +1052,7 @@ const Cart = () => {
                 <div className="mb-6">
                   <Label htmlFor="coupon" className="text-foreground mb-2 block flex items-center gap-2">
                     <Ticket className="h-4 w-4" />
-                    كوبون الخصم
+                    {t('cart_coupon_label')}
                   </Label>
                   {!appliedCoupon ? (
                     <div className="flex gap-2">
@@ -1058,7 +1060,7 @@ const Cart = () => {
                         id="coupon"
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value)}
-                        placeholder="أدخل رمز الكوبون"
+                        placeholder={t('cart_coupon_placeholder')}
                         className="flex-1"
                         onKeyDown={(e) => e.key === 'Enter' && applyCoupon()}
                       />
@@ -1067,7 +1069,7 @@ const Cart = () => {
                         disabled={couponLoading}
                         variant="outline"
                       >
-                        {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'تطبيق'}
+                        {couponLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('cart_coupon_apply')}
                       </Button>
                     </div>
                   ) : (
@@ -1090,13 +1092,13 @@ const Cart = () => {
 
                 <div className="space-y-3 mb-6">
                   <div className="flex justify-between text-foreground">
-                    <span>المجموع الفرعي</span>
+                    <span>{t('cart_subtotal')}</span>
                     <span className="font-bold">{formatPrice(total)} دينار عراقي</span>
                   </div>
                   
                   {appliedCoupon && discount > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>الخصم ({appliedCoupon.code})</span>
+                      <span>{t('cart_discount')} ({appliedCoupon.code})</span>
                       <span className="font-bold">-{formatPrice(discount)} دينار عراقي</span>
                     </div>
                   )}
@@ -1104,7 +1106,7 @@ const Cart = () => {
                   {/* الضريبة مدمجة مع سعر المنتج - لا تظهر بشكل منفصل */}
                   
                   <div className="flex justify-between text-foreground">
-                    <span>التوصيل</span>
+                    <span>{t('cart_delivery')}</span>
                     <span className="font-bold">{formatPrice(deliveryFee)} دينار عراقي</span>
                   </div>
                   
@@ -1113,7 +1115,7 @@ const Cart = () => {
                     <div className="py-4 px-4 rounded-lg bg-accent/10 border border-accent/30">
                       <div className="flex items-center gap-2 mb-3">
                         <CreditCard className="h-5 w-5 text-accent" />
-                        <span className="font-bold text-foreground">خيارات الدفع للطلب المسبق</span>
+                        <span className="font-bold text-foreground">{t('cart_preorder_options')}</span>
                       </div>
                       <RadioGroup 
                         value={preOrderPaymentOption} 
@@ -1127,9 +1129,9 @@ const Cart = () => {
                         }`}>
                           <RadioGroupItem value="full" id="payment-full" />
                           <Label htmlFor="payment-full" className="flex-1 cursor-pointer">
-                            <div className="font-bold text-foreground">الدفع الكامل مقدماً</div>
+                            <div className="font-bold text-foreground">{t('cart_preorder_full')}</div>
                             <div className="text-xs text-muted-foreground">
-                              ادفع المبلغ كاملاً الآن ({formatPrice(subtotalWithTax)} د.ع)
+                              {t('cart_preorder_full_desc', { amount: formatPrice(subtotalWithTax) })}
                             </div>
                           </Label>
                         </div>
@@ -1140,12 +1142,12 @@ const Cart = () => {
                         }`}>
                           <RadioGroupItem value="quarter" id="payment-quarter" />
                           <Label htmlFor="payment-quarter" className="flex-1 cursor-pointer">
-                            <div className="font-bold text-foreground">دفع ربع المبلغ</div>
+                            <div className="font-bold text-foreground">{t('cart_preorder_quarter')}</div>
                             <div className="text-xs text-muted-foreground">
-                              ادفع الآن: {formatPrice(Math.ceil(subtotalWithTax * 0.25))} د.ع
+                              {t('cart_preorder_quarter_pay', { amount: formatPrice(Math.ceil(subtotalWithTax * 0.25)) })}
                             </div>
                             <div className="text-xs text-orange-500 mt-1">
-                              المتبقي عند الاستلام: {formatPrice(remainingAmount)} د.ع (يشمل رسوم إضافية)
+                              {t('cart_preorder_remaining', { amount: formatPrice(remainingAmount) })}
                             </div>
                           </Label>
                         </div>
@@ -1158,23 +1160,23 @@ const Cart = () => {
                     <div className="flex items-center gap-2 mb-2">
                       <Wallet className={`h-5 w-5 ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`} />
                       <span className={`font-bold ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`}>
-                        الدفع من المحفظة (إلزامي)
+                        {t('cart_wallet_payment')}
                       </span>
                     </div>
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">رصيد المحفظة:</span>
+                        <span className="text-muted-foreground">{t('cart_wallet_balance')}:</span>
                         <span className={`font-bold ${hasEnoughBalance ? 'text-primary' : 'text-destructive'}`}>
-                          {formatPrice(walletBalance)} د.ع
+                          {formatPrice(walletBalance)} {t('common_iqd')}
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">المطلوب دفعه:</span>
-                        <span className="font-bold text-foreground">{formatPrice(requiredPaymentNow)} د.ع</span>
+                        <span className="text-muted-foreground">{t('cart_wallet_required')}:</span>
+                        <span className="font-bold text-foreground">{formatPrice(requiredPaymentNow)} {t('common_iqd')}</span>
                       </div>
                       {!hasEnoughBalance && (
                         <div className="mt-2 text-xs text-destructive">
-                          ⚠️ يجب شحن المحفظة بمبلغ {formatPrice(requiredPaymentNow - walletBalance)} د.ع إضافي
+                          {t('cart_wallet_charge_extra', { amount: formatPrice(requiredPaymentNow - walletBalance) })}
                         </div>
                       )}
                     </div>
@@ -1203,13 +1205,13 @@ const Cart = () => {
                     )}
                     <div className="flex justify-between text-xl font-black">
                       <span className="text-foreground">
-                        {hasPreOrderItems && preOrderPaymentOption === 'quarter' ? 'المطلوب الآن' : 'الإجمالي'}
+                        {hasPreOrderItems && preOrderPaymentOption === 'quarter' ? t('cart_preorder_required_now') : t('common_total')}
                       </span>
                       <span className="text-primary">{formatPrice(grandTotal)} دينار عراقي</span>
                     </div>
                     {useWalletBalance && walletDeduction > 0 && grandTotal === 0 && (
                       <p className="text-xs text-green-600 mt-2 text-center">
-                        ✓ تم الدفع بالكامل من المحفظة
+                        {t('cart_wallet_paid_full')}
                       </p>
                     )}
                   </div>
@@ -1224,7 +1226,7 @@ const Cart = () => {
                     className="h-3.5 w-3.5"
                   />
                   <label htmlFor="terms-checkbox" className="text-xs text-muted-foreground cursor-pointer">
-                    أوافق على{' '}
+                    {t('cart_terms_agree')}{' '}
                     <button
                       type="button"
                       onClick={(e) => {
@@ -1233,7 +1235,7 @@ const Cart = () => {
                       }}
                       className="text-primary hover:underline"
                     >
-                      الشروط والأحكام
+                      {t('cart_terms_link')}
                     </button>
                   </label>
                 </div>
@@ -1247,20 +1249,20 @@ const Cart = () => {
                   {isCheckingOut ? (
                     <>
                       <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                      جاري إتمام الطلب...
+                      {t('cart_processing')}
                     </>
                   ) : !hasEnoughBalance ? (
                     <>
                       <Wallet className="ml-2 h-4 w-4" />
-                      رصيد غير كافٍ
+                      {t('cart_wallet_insufficient')}
                     </>
                   ) : !termsAccepted ? (
                     <>
                       <FileText className="ml-2 h-4 w-4" />
-                      وافق على الشروط أولاً
+                      {t('cart_terms_accept_first')}
                     </>
                   ) : (
-                    'إتمام الطلب'
+                    t('cart_confirm_order')
                   )}
                 </Button>
                 
@@ -1271,7 +1273,7 @@ const Cart = () => {
                     onClick={() => setShowWalletDialog(true)}
                   >
                     <Wallet className="ml-2 h-4 w-4" />
-                    شحن المحفظة
+                    {t('cart_wallet_charge')}
                   </Button>
                 )}
 
@@ -1281,7 +1283,7 @@ const Cart = () => {
                     className="w-full"
                   >
                     <ArrowRight className="ml-2 h-4 w-4" />
-                    متابعة التسوق
+                    {t('cart_continue_shopping')}
                   </Button>
                 </Link>
               </div>
@@ -1294,15 +1296,15 @@ const Cart = () => {
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد إتمام الطلب</AlertDialogTitle>
+            <AlertDialogTitle>{t('cart_confirm_title')}</AlertDialogTitle>
             <AlertDialogDescription className="space-y-2">
-              <p>سيتم خصم <span className="font-bold text-primary">{formatPrice(requiredPaymentNow)} دينار عراقي</span> من رصيد محفظتك.</p>
+              <p>{t('cart_confirm_deduct', { amount: formatPrice(requiredPaymentNow) })}</p>
               <p className="text-sm text-muted-foreground">
-                الرصيد الحالي: {formatPrice(walletBalance)} د.ع → الرصيد بعد الخصم: {formatPrice(walletBalance - requiredPaymentNow)} د.ع
+                {t('cart_confirm_balance_after', { current: formatPrice(walletBalance), after: formatPrice(walletBalance - requiredPaymentNow) })}
               </p>
               {hasPreOrderItems && preOrderPaymentOption === 'quarter' && remainingAmount > 0 && (
                 <p className="text-orange-600 text-sm">
-                  ⚠️ المتبقي عند الاستلام: {formatPrice(remainingAmount)} دينار عراقي
+                  {t('cart_confirm_remaining', { amount: formatPrice(remainingAmount) })}
                 </p>
               )}
             </AlertDialogDescription>
@@ -1312,9 +1314,9 @@ const Cart = () => {
               onClick={handleCheckout}
               className="bg-primary hover:bg-primary/90"
             >
-              تأكيد الطلب
+              {t('common_confirm')}
             </AlertDialogAction>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -1325,14 +1327,14 @@ const Cart = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-foreground">
               <Trash2 className="h-5 w-5 text-destructive" />
-              تحذير: سيتم حذف رمز السلة
+              {t('cart_change_warning')}
             </AlertDialogTitle>
             <AlertDialogDescription className="text-foreground/70 space-y-2">
-              <p>لديك رمز سلة موجود: <span className="font-bold text-primary">{pendingCartRequest?.cart_code}</span></p>
+              <p>{t('cart_change_warning_desc', { code: pendingCartRequest?.cart_code || '' })}</p>
               {pendingCartRequest?.adjusted_total && (
-                <p className="text-orange-500">السعر المعدل من الإدارة ({formatPrice(pendingCartRequest.adjusted_total)} د.ع) لن يكون متوفراً بعد الآن.</p>
+                <p className="text-orange-500">{t('cart_change_warning_price', { amount: formatPrice(pendingCartRequest.adjusted_total) })}</p>
               )}
-              <p>هل أنت متأكد من تغيير السلة؟</p>
+              <p>{t('common_confirm')}?</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-row-reverse gap-2">
@@ -1340,13 +1342,13 @@ const Cart = () => {
               onClick={handleConfirmCartChange}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              نعم، تغيير السلة
+              {t('cart_change_confirm')}
             </AlertDialogAction>
             <AlertDialogCancel 
               onClick={() => setPendingAction(null)}
               className="bg-muted text-foreground hover:bg-muted/80"
             >
-              إلغاء
+              {t('common_cancel')}
             </AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
