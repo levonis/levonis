@@ -4895,6 +4895,7 @@ export type Database = {
           governorate: string | null
           id: string
           is_banned: boolean | null
+          last_active_at: string | null
           last_username_change_at: string | null
           phone_number: string | null
           phone_verification_status: string
@@ -4921,6 +4922,7 @@ export type Database = {
           governorate?: string | null
           id: string
           is_banned?: boolean | null
+          last_active_at?: string | null
           last_username_change_at?: string | null
           phone_number?: string | null
           phone_verification_status?: string
@@ -4947,6 +4949,7 @@ export type Database = {
           governorate?: string | null
           id?: string
           is_banned?: boolean | null
+          last_active_at?: string | null
           last_username_change_at?: string | null
           phone_number?: string | null
           phone_verification_status?: string
@@ -6692,6 +6695,7 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string | null
+          last_active_at: string | null
           selected_frame_id: string | null
           username: string | null
         }
@@ -6702,6 +6706,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string | null
+          last_active_at?: string | null
           selected_frame_id?: string | null
           username?: string | null
         }
@@ -6712,6 +6717,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string | null
+          last_active_at?: string | null
           selected_frame_id?: string | null
           username?: string | null
         }
@@ -7070,6 +7076,7 @@ export type Database = {
         Returns: boolean
       }
       trigger_badge_calculation: { Args: never; Returns: undefined }
+      update_user_last_active: { Args: never; Returns: undefined }
       validate_coupon: { Args: { coupon_code: string }; Returns: Json }
       validate_coupon_with_rate_limit: {
         Args: { coupon_code: string }

@@ -273,7 +273,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       // Use profiles_public view to protect sensitive user data (excludes phone, email, etc.)
       const { data: profilesData } = await supabase
         .from('profiles_public')
-        .select('id, full_name, username, avatar_url')
+        .select('id, full_name, username, avatar_url, last_active_at')
         .in('id', userIds);
       
       // Map user_id → merchant_applications.id to then fetch merchant_public_profiles
@@ -330,6 +330,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           selected_frame_url: frameId ? framesMap[frameId] : null,
           // Store merchant app ID for navigation to /store/:merchantId
           merchant_app_id: merchantAppId || null,
+          // Online status: consider online if active in last 5 minutes
+          is_online: p.last_active_at ? (Date.now() - new Date(p.last_active_at).getTime()) < 5 * 60 * 1000 : false,
         };
       });
       
@@ -383,6 +385,30 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     refetchInterval: open ? 3000 : false,
   });
 
+  // Unread count per conversation
+  const { data: unreadCounts } = useQuery({
+    queryKey: ['conv-unread-counts', user?.id, conversations?.map(c => c.id)],
+    queryFn: async () => {
+      if (!conversations?.length || !user) return {};
+      const effectiveId = isAdmin ? SUPPORT_USER_ID : user.id;
+      const counts: Record<string, number> = {};
+      // Batch: get all unread messages across all conversations
+      const { data } = await supabase
+        .from('listing_messages')
+        .select('conversation_id')
+        .in('conversation_id', conversations.map(c => c.id))
+        .neq('sender_id', effectiveId)
+        .eq('is_read', false);
+      
+      for (const msg of data || []) {
+        counts[msg.conversation_id] = (counts[msg.conversation_id] || 0) + 1;
+      }
+      return counts;
+    },
+    enabled: !!conversations?.length && !!user,
+    refetchInterval: open ? 5000 : false,
+  });
+
   useEffect(() => {
     setTimeout(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -404,6 +430,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         if (!error) {
           // Refetch to update UI
           queryClient.invalidateQueries({ queryKey: ['marketplace-unread-users-count'] });
+          queryClient.invalidateQueries({ queryKey: ['unified-chat-unread'] });
+          queryClient.invalidateQueries({ queryKey: ['conv-unread-counts'] });
           queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
           queryClient.invalidateQueries({ queryKey: ['last-messages'] });
         }
@@ -1087,6 +1115,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           const convOtherUser = profiles?.[convOtherUserId];
                           const lastMsg = lastMessages?.[conv.id];
                           const isActive = selectedConversation === conv.id;
+                          const convUnread = unreadCounts?.[conv.id] || 0;
+                          const isOtherOnline = convOtherUser?.is_online;
                           
                           const convEntryContext = (conv as any).entry_context;
                           
@@ -1125,7 +1155,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     </div>
                                   </div>
                                 ) : (
-                                  <>
+                                   <>
                                     <AvatarWithFrame
                                       imageUrl={convOtherUser?.avatar_url}
                                       frameUrl={(convOtherUser as any)?.selected_frame_url}
@@ -1136,6 +1166,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                         <AlertTriangle className="w-3 h-3 text-white" />
                                       </div>
                                     )}
+                                    {/* Green online dot */}
+                                    {isOtherOnline && conv.status !== 'disputed' && (
+                                      <div className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-card z-10" />
+                                    )}
                                   </>
                                 )}
                               </div>
@@ -1145,7 +1179,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 {/* Section 1: Name with badges and conversation code */}
                                 <div className="flex items-center justify-between gap-2 mb-0.5">
                                   <div className="flex items-center gap-1.5 min-w-0">
-                                     <p className="font-semibold text-sm truncate max-w-[120px]">
+                                     <p className={cn("text-sm truncate max-w-[120px]", convUnread > 0 ? "font-bold" : "font-semibold")}>
                                       {conv.status === 'disputed' && isAdmin
                                         ? `${profiles?.[conv.buyer_id]?.full_name || 'مشتري'} ↔ ${profiles?.[conv.seller_id]?.display_name || profiles?.[conv.seller_id]?.full_name || 'بائع'}`
                                         : (convOtherUser?.display_name || convOtherUser?.full_name || convOtherUser?.username || 'محادثة')
@@ -1178,7 +1212,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 
                                 {/* Section 2: Last message */}
                                 {lastMsg && (
-                                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                  <p className={cn("text-xs truncate flex items-center gap-1", convUnread > 0 ? "text-foreground font-semibold" : "text-muted-foreground")}>
                                     {(lastMsg.sender_id === user?.id || (isAdmin && lastMsg.sender_id === SUPPORT_USER_ID)) && (
                                       <CheckCheck
                                         className={cn(
@@ -1192,9 +1226,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 )}
                               </div>
 
-                              {/* Section 3: Entry context (last product/request entered through) */}
-                              {convEntryContext?.title && (
-                                <div className="shrink-0 flex items-center gap-1.5 max-w-[80px]">
+                              {/* Section 3: Entry context or Unread badge */}
+                              <div className="shrink-0 flex flex-col items-center gap-1">
+                                {convEntryContext?.title && (
                                   <div className="h-8 w-8 rounded-lg overflow-hidden border border-border/50 bg-muted/50 flex items-center justify-center">
                                     {convEntryContext.imageUrl ? (
                                       <img 
@@ -1206,8 +1240,14 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       <Package className="h-4 w-4 text-muted-foreground" />
                                     )}
                                   </div>
-                                </div>
-                              )}
+                                )}
+                                {/* Unread count badge */}
+                                {convUnread > 0 && (
+                                  <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                                    {convUnread > 99 ? '99+' : convUnread}
+                                  </span>
+                                )}
+                              </div>
                             </button>
                           );
                         })}
