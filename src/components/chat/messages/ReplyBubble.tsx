@@ -14,18 +14,18 @@ export default function ReplyBubble({ senderName, content, isMe, isParentMe, onC
       type="button"
       onClick={onClick}
       className={cn(
-        "w-full text-right rounded-lg px-2.5 py-1.5 mb-1 border-r-2 border-primary/60",
+        "w-full text-right rounded-lg px-2.5 py-1.5 mb-1 border-r-2 border-primary",
         isParentMe 
-          ? "bg-black/20" 
-          : "bg-muted"
+          ? "bg-black/30" 
+          : "bg-accent"
       )}
     >
-      <p className="text-[10px] font-bold text-primary truncate">
+      <p className="text-[10px] font-bold text-primary-foreground truncate">
         {isMe ? 'أنت' : senderName}
       </p>
       <p className={cn(
         "text-[10px] truncate",
-        isParentMe ? "text-primary-foreground/60" : "text-muted-foreground"
+        isParentMe ? "text-primary-foreground/70" : "text-foreground/60"
       )}>
         {content || '📷 وسائط'}
       </p>
