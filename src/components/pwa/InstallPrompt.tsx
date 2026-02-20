@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Download, Bell, Share, Plus } from 'lucide-react';
+import { X, Download, Bell, Share, Plus, MoreVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
@@ -25,18 +25,15 @@ export default function InstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
-  const [isIOSDevice, setIsIOSDevice] = useState(false);
-  const [isGenericBrowser, setIsGenericBrowser] = useState(false);
   const { permission, requestPermission } = useNotificationPermission();
+
+  const iosDevice = isIOS();
 
   useEffect(() => {
     if (isInStandaloneMode()) {
       setIsInstalled(true);
       return;
     }
-
-    const iosDevice = isIOS();
-    setIsIOSDevice(iosDevice);
 
     // --- Notification banner logic ---
     const notifDismissed = localStorage.getItem('notif-prompt-dismissed');
@@ -60,30 +57,17 @@ export default function InstallPrompt() {
       if (Date.now() - dismissedAt < 3 * 24 * 60 * 60 * 1000) return;
     }
 
-    if (iosDevice) {
-      setTimeout(() => setShowPrompt(true), 3000);
-    } else {
-      // Listen for beforeinstallprompt (Chrome/Edge/Samsung)
-      let promptFired = false;
-      const handler = (e: Event) => {
-        e.preventDefault();
-        promptFired = true;
-        setDeferredPrompt(e as BeforeInstallPromptEvent);
-        setTimeout(() => setShowPrompt(true), 3000);
-      };
-      window.addEventListener('beforeinstallprompt', handler);
+    // Listen for beforeinstallprompt (Chromium browsers)
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
 
-      // For browsers that don't fire beforeinstallprompt (Firefox, etc.)
-      // show generic install instructions after a delay
-      setTimeout(() => {
-        if (!promptFired) {
-          setIsGenericBrowser(true);
-          setShowPrompt(true);
-        }
-      }, 5000);
+    // Show the card for ALL browsers after 3s
+    setTimeout(() => setShowPrompt(true), 3000);
 
-      return () => window.removeEventListener('beforeinstallprompt', handler);
-    }
+    return () => window.removeEventListener('beforeinstallprompt', handler);
   }, []);
 
   const handleInstall = async () => {
@@ -124,7 +108,7 @@ export default function InstallPrompt() {
     localStorage.setItem('notif-prompt-dismissed', Date.now().toString());
   };
 
-  const showInstallCard = !isInstalled && showPrompt && (deferredPrompt || isIOSDevice || isGenericBrowser);
+  const showInstallCard = !isInstalled && showPrompt;
 
   return (
     <>
@@ -181,7 +165,7 @@ export default function InstallPrompt() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-bold text-foreground">أضف LEVONIS للشاشة الرئيسية</h3>
-                  {isIOSDevice ? (
+                  {iosDevice ? (
                     <div className="mt-1 space-y-1">
                       <p className="text-[11px] text-muted-foreground flex items-center gap-1">
                         <span>1. اضغط على</span>
@@ -194,14 +178,25 @@ export default function InstallPrompt() {
                         <span>"إضافة إلى الشاشة الرئيسية"</span>
                       </p>
                     </div>
-                  ) : isGenericBrowser ? (
-                    <p className="text-[11px] text-muted-foreground mt-0.5">استخدم قائمة المتصفح ← "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية"</p>
+                  ) : !deferredPrompt ? (
+                    <div className="mt-1 space-y-1">
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <span>1. اضغط على</span>
+                        <MoreVertical className="h-3 w-3 inline text-primary" />
+                        <span>(قائمة المتصفح)</span>
+                      </p>
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <span>2. اختر</span>
+                        <Download className="h-3 w-3 inline text-primary" />
+                        <span>"تثبيت التطبيق" أو "إضافة للشاشة"</span>
+                      </p>
+                    </div>
                   ) : (
                     <p className="text-[11px] text-muted-foreground mt-0.5">وصول سريع • إشعارات فورية • تجربة تطبيق كاملة</p>
                   )}
                 </div>
               </div>
-              {!isIOSDevice && !isGenericBrowser && deferredPrompt && (
+              {deferredPrompt ? (
                 <div className="flex gap-2 mt-3">
                   <Button onClick={handleInstall} size="sm" className="flex-1 h-8 gap-1.5 text-xs font-bold rounded-xl">
                     <Download className="h-3.5 w-3.5" />
@@ -211,8 +206,7 @@ export default function InstallPrompt() {
                     لاحقاً
                   </Button>
                 </div>
-              )}
-              {(isIOSDevice || isGenericBrowser) && (
+              ) : (
                 <div className="flex justify-end mt-2">
                   <Button onClick={handleDismiss} variant="ghost" size="sm" className="h-7 text-[11px] text-muted-foreground rounded-xl px-3">
                     فهمت
