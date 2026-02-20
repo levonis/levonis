@@ -64,6 +64,11 @@ export default function AcceptOfferDialog({
         .select("balance")
         .eq("user_id", user!.id)
         .maybeSingle();
+      if (!data) {
+        // Auto-create wallet if not exists
+        await supabase.from("user_wallets").insert({ user_id: user!.id, balance: 0 });
+        return { balance: 0 };
+      }
       return data;
     },
   });
@@ -89,14 +94,23 @@ export default function AcceptOfferDialog({
     mutationFn: async () => {
       if (!user?.id) throw new Error("غير مسجل الدخول");
 
-      // Check balance again
+      // Check balance - auto-create wallet if not exists
       const { data: currentWallet } = await supabase
         .from("user_wallets")
         .select("balance")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
 
-      if (!currentWallet || currentWallet.balance < offer.price_iqd) {
+      if (!currentWallet) {
+        // Auto-create wallet with 0 balance
+        const { error: createError } = await supabase
+          .from("user_wallets")
+          .insert({ user_id: user.id, balance: 0 });
+        if (createError) throw new Error("فشل إنشاء المحفظة");
+        throw new Error("رصيد غير كافٍ في المحفظة");
+      }
+
+      if (currentWallet.balance < offer.price_iqd) {
         throw new Error("رصيد غير كافٍ في المحفظة");
       }
 
