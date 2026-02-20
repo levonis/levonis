@@ -1,0 +1,181 @@
+import { TranslationKeys } from './types';
+
+export const en: TranslationKeys = {
+  // Navigation
+  nav_home: 'Home',
+  nav_categories: 'Categories',
+  nav_products: 'Products',
+  nav_community: 'Community',
+  nav_login: 'Sign In',
+  nav_logout: 'Sign Out',
+  
+  // User menu
+  menu_my_account: 'My Account',
+  menu_account_info: 'Account Info',
+  menu_custom_requests: 'My Custom Requests',
+  menu_addresses: 'Addresses',
+  menu_my_orders: 'My Orders',
+  menu_favorites: 'Favorites',
+  menu_wallet: 'Wallet',
+  menu_notifications: 'Notifications',
+  menu_dashboard: 'Dashboard',
+  menu_rewards: 'Rewards Center',
+  menu_custom_product: 'Custom Product Request',
+  menu_cart: 'Shopping Cart',
+  menu_messages: 'Customer Chats',
+  
+  // Home page
+  home_subtitle: 'We bring you the latest electronics from around the world at competitive prices… with official warranty and unmatched fast service',
+  home_sections: 'Categories',
+  home_sections_desc: 'Choose a subcategory to browse',
+  home_call_us: 'Call Us',
+  
+  // Footer
+  footer_rights: 'All rights reserved',
+  
+  // Common
+  common_back: 'Back',
+  common_save: 'Save',
+  common_cancel: 'Cancel',
+  common_delete: 'Delete',
+  common_edit: 'Edit',
+  common_search: 'Search',
+  common_loading: 'Loading...',
+  common_error: 'An error occurred',
+  common_success: 'Success',
+  common_confirm: 'Confirm',
+  common_later: 'Later',
+  common_understood: 'Got it',
+  common_close: 'Close',
+  common_send: 'Send',
+  common_add: 'Add',
+  common_remove: 'Remove',
+  common_yes: 'Yes',
+  common_no: 'No',
+  common_all: 'All',
+  common_none: 'None',
+  common_price: 'Price',
+  common_quantity: 'Quantity',
+  common_total: 'Total',
+  common_iqd: 'IQD',
+  
+  // Auth
+  auth_login: 'Sign In',
+  auth_signup: 'Create Account',
+  auth_email: 'Email',
+  auth_password: 'Password',
+  auth_forgot_password: 'Forgot password?',
+  auth_no_account: "Don't have an account?",
+  auth_has_account: 'Already have an account?',
+  
+  // Profile settings
+  settings_title: 'Settings',
+  settings_name: 'Name',
+  settings_phone: 'Phone Number',
+  settings_phone_verified: 'Verified',
+  settings_phone_unverified: 'Unverified',
+  settings_username: 'Username',
+  settings_username_hint: 'You can change your username once every 14 days.',
+  settings_username_cooldown: 'You can change your username in {days} days',
+  settings_default_address: 'Default Address',
+  settings_no_addresses: 'No addresses yet. You can add them from the addresses page.',
+  settings_loading_addresses: 'Loading addresses…',
+  settings_wallet_pin: 'Wallet PIN',
+  settings_wallet_pin_desc: 'Protect your wallet with a 4-digit PIN',
+  settings_set_change: 'Set / Change',
+  settings_telegram_notifs: 'Telegram Notifications',
+  settings_telegram_notifs_desc: 'Control which notifications you receive on Telegram',
+  settings_notif_orders: 'Orders',
+  settings_notif_orders_desc: 'Order status and shipping updates',
+  settings_notif_wallet: 'Wallet',
+  settings_notif_wallet_desc: 'Deposits, withdrawals, and balance changes',
+  settings_notif_support: 'Support',
+  settings_notif_support_desc: 'Support team replies to your messages',
+  settings_notif_promotions: 'Promotions',
+  settings_notif_promotions_desc: 'Exclusive offers and discounts',
+  settings_language: 'Language',
+  settings_language_desc: 'Choose the app interface language',
+  settings_saved: 'Settings saved',
+  settings_save_error: 'Could not save',
+  settings_name_required: 'Name is required',
+  settings_username_taken: 'Username is already taken — please choose a different one.',
+  settings_change_avatar: 'Change photo',
+  
+  // Cart
+  cart_title: 'Shopping Cart',
+  cart_empty: 'Your cart is empty',
+  cart_checkout: 'Checkout',
+  cart_total: 'Grand Total',
+  cart_item_count: 'items in cart',
+  
+  // Products
+  product_add_to_cart: 'Add to Cart',
+  product_out_of_stock: 'Out of Stock',
+  product_in_stock: 'In Stock',
+  product_details: 'Product Details',
+  product_reviews: 'Reviews',
+  product_related: 'Similar Products',
+  product_description: 'Description',
+  product_features: 'Features',
+  product_share: 'Share',
+  product_add_favorite: 'Add to Favorites',
+  product_remove_favorite: 'Remove from Favorites',
+  
+  // Orders
+  order_status: 'Order Status',
+  order_pending: 'Pending',
+  order_processing: 'Processing',
+  order_shipped: 'Shipped',
+  order_delivered: 'Delivered',
+  order_cancelled: 'Cancelled',
+  order_details: 'Order Details',
+  order_tracking: 'Track Order',
+  order_date: 'Order Date',
+  
+  // Notifications
+  notif_title: 'Notifications',
+  notif_empty: 'No notifications',
+  notif_mark_read: 'Mark all as read',
+  
+  // PWA
+  pwa_install_title: 'Add LEVONIS to Home Screen',
+  pwa_install_desc: 'Quick access • Instant notifications • Full app experience',
+  pwa_install_button: 'Install App',
+  pwa_install_ios_step1: '1. Tap the Share button',
+  pwa_install_ios_step2: '2. Select "Add to Home Screen"',
+  pwa_install_generic_step1: '1. Tap the browser menu',
+  pwa_install_generic_step2: '2. Select "Install App" or "Add to Home Screen"',
+  pwa_notif_title: 'Enable Notifications',
+  pwa_notif_desc: 'Get instant alerts for messages and orders',
+  pwa_notif_allow: 'Allow',
+  pwa_notif_success: 'Notifications enabled successfully!',
+  
+  // Community
+  community_title: 'Community',
+  community_browse_requests: 'Browse Requests',
+  community_my_requests: 'My Requests',
+  community_new_request: 'New Request',
+  community_merchants: 'Merchants',
+  
+  // Competitions
+  competitions_title: 'Competitions',
+  competitions_enter: 'Enter Now',
+  competitions_tickets: 'Tickets',
+  competitions_winners: 'Winners',
+  
+  // Wallet
+  wallet_title: 'Wallet',
+  wallet_balance: 'Balance',
+  wallet_deposit: 'Deposit',
+  wallet_withdraw: 'Withdraw',
+  wallet_history: 'Transaction History',
+  
+  // Search
+  search_placeholder: 'Search for a product...',
+  search_no_results: 'No results found',
+
+  // Rewards
+  rewards_title: 'Rewards Center',
+  rewards_points: 'Points',
+  rewards_redeem: 'Redeem',
+};

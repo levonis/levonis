@@ -1,4 +1,4 @@
-import { memo, useState, useEffect, useCallback } from 'react';
+import { memo, useState, useEffect } from 'react';
 import logoNew from '@/assets/new-logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
@@ -11,6 +11,7 @@ import { useCart } from '@/hooks/useCart';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
+import { useLanguage } from '@/lib/i18n';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
   const { itemCount } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
   const [isScrolled, setIsScrolled] = useState(false);
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
@@ -187,25 +189,25 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
               to="/" 
               className="text-foreground/80 hover:text-foreground transition-colors font-medium hover-scale"
             >
-              الرئيسية
+              {t('nav_home')}
             </Link>
             <Link 
               to="/categories" 
               className="text-foreground/80 hover:text-foreground transition-colors font-medium hover-scale"
             >
-              الأقسام
+              {t('nav_categories')}
             </Link>
             <Link 
               to="/products" 
               className="text-foreground/80 hover:text-foreground transition-colors font-medium hover-scale"
             >
-              المنتجات
+              {t('nav_products')}
             </Link>
             <Link
               to="/community"
               className="text-foreground/80 hover:text-foreground transition-colors font-medium hover-scale"
             >
-              المجتمع
+              {t('nav_community')}
             </Link>
           </div>
 
@@ -217,8 +219,8 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
               size="icon"
               onClick={() => navigate('/rewards')}
               className="rounded-full border-primary/30 hover:border-primary"
-              title="مركز المكافآت"
-              aria-label="مركز المكافآت"
+              title={t('menu_rewards')}
+              aria-label={t('menu_rewards')}
             >
               <Trophy className="h-4 w-4" />
             </Button>
@@ -229,8 +231,8 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
                 variant="outline"
                 size="icon"
                 className="rounded-full border-primary/30 hover:border-primary"
-                title="طلب منتج مخصص"
-                aria-label="طلب منتج مخصص"
+                title={t('menu_custom_product')}
+                aria-label={t('menu_custom_product')}
               >
                 <Package className="h-4 w-4" />
               </Button>
@@ -242,7 +244,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
               size="icon"
               onClick={() => navigate('/cart')}
               className="relative rounded-full border-primary/30 hover:border-primary"
-              aria-label="سلة التسوق"
+              aria-label={t('menu_cart')}
             >
               <ShoppingCart className="h-4 w-4" />
               {itemCount > 0 && (
@@ -259,8 +261,8 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
                 size="icon"
                 onClick={() => setMessagesOpen(true)}
                 className="relative rounded-full border-primary/30 hover:border-primary"
-                title="محادثات العملاء"
-                aria-label="محادثات العملاء"
+                title={t('menu_messages')}
+                aria-label={t('menu_messages')}
               >
                 <MessageCircle className="h-4 w-4" />
                 {adminUnreadMessages > 0 && (
@@ -278,7 +280,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
                     variant="outline" 
                     size="icon"
                     className="relative rounded-full border-primary/30 hover:border-primary"
-                    aria-label="قائمة المستخدم"
+                    aria-label={t('menu_my_account')}
                   >
                     <User className="h-4 w-4" />
                     {unreadNotifications && unreadNotifications > 0 && (
@@ -289,40 +291,40 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 bg-background backdrop-blur-sm border-border z-50">
-                  <DropdownMenuLabel>حسابي</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('menu_my_account')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate('/user-info')}>
                     <User className="ml-2 h-3.5 w-3.5" />
-                    <span>معلومات الحساب</span>
+                    <span>{t('menu_account_info')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/my-requests')}>
                     <FileText className="ml-2 h-3.5 w-3.5" />
-                    <span>طلباتي المخصصة</span>
+                    <span>{t('menu_custom_requests')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/addresses')}>
                     <MapPin className="ml-2 h-3.5 w-3.5" />
-                    <span>العناوين</span>
+                    <span>{t('menu_addresses')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/my-orders')}>
                     <Package className="ml-2 h-3.5 w-3.5" />
-                    <span>طلباتي</span>
+                    <span>{t('menu_my_orders')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/favorites')}>
                     <Heart className="ml-2 h-3.5 w-3.5" />
-                    <span>المفضلة</span>
+                    <span>{t('menu_favorites')}</span>
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setWalletDialogOpen(true)} className="relative">
                     <Wallet className="ml-2 h-3.5 w-3.5" />
-                    <span>المحفظة</span>
+                    <span>{t('menu_wallet')}</span>
                     {wallet && wallet.balance > 0 && (
                       <span className="mr-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
-                        {wallet.balance.toFixed(0)} د.ع
+                        {wallet.balance.toFixed(0)} {t('common_iqd')}
                       </span>
                     )}
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate('/notifications')}>
                     <Bell className="ml-2 h-3.5 w-3.5" />
-                    <span>الإشعارات</span>
+                    <span>{t('menu_notifications')}</span>
                     {unreadNotifications && unreadNotifications > 0 && (
                       <span className="mr-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-bold min-w-[20px] text-center">
                         {unreadNotifications > 9 ? '9+' : unreadNotifications}
@@ -332,13 +334,13 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
                   {isAdmin && (
                     <DropdownMenuItem onClick={() => navigate(ADMIN_ROUTES.dashboard)}>
                       <Settings className="ml-2 h-3.5 w-3.5" />
-                      <span>لوحة التحكم</span>
+                      <span>{t('menu_dashboard')}</span>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut} className="text-destructive">
                     <LogOut className="ml-2 h-3.5 w-3.5" />
-                    <span>تسجيل الخروج</span>
+                    <span>{t('nav_logout')}</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -347,7 +349,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
                 onClick={() => navigate('/auth')}
                 className="bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
               >
-                تسجيل الدخول
+                {t('nav_login')}
               </Button>
             )}
           </div>
@@ -362,7 +364,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
         onExternalOpenChange={setMessagesOpen}
         onClose={() => setMessagesOpen(false)}
       >
-        <span className="sr-only">فتح المحادثات</span>
+        <span className="sr-only">{t('menu_messages')}</span>
       </ListingConversations>
     </header>
   );
