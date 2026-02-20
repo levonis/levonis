@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -65,6 +65,9 @@ import CreateOrderDialog from '@/components/chat/CreateOrderDialog';
 import MerchantOrderDialog from '@/components/chat/MerchantOrderDialog';
 import { useChatCommerce, type ChatOrder } from '@/hooks/useChatCommerce';
 import { parseEmojisInText } from '@/components/chat/emojiData';
+import SwipeableMessage from '@/components/chat/messages/SwipeableMessage';
+import ReplyBubble from '@/components/chat/messages/ReplyBubble';
+import { type ReplyToMessage } from '@/components/chat/messages/ReplyPreviewBar';
 
 // Support account ID
 const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
@@ -198,6 +201,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
    const [adminCartEditOpen, setAdminCartEditOpen] = useState(false);
    const [adminCartRequest, setAdminCartRequest] = useState<any>(null);
    
+   // Reply-to state
+   const [replyTo, setReplyTo] = useState<ReplyToMessage | null>(null);
+   
    // Entry context state - shows product/request bar above input
    const [entryContext, setEntryContext] = useState<EntryContextData | null>(propsEntryContext || null);
   
@@ -207,6 +213,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       setEntryContext(propsEntryContext);
     }
   }, [propsEntryContext]);
+
+  // Clear reply when conversation changes
+  useEffect(() => {
+    setReplyTo(null);
+  }, [selectedConversation]);
 
   // Auto open if listingId is provided
   useEffect(() => {
@@ -403,11 +414,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   }, [selectedConversation, user?.id, queryClient]);
 
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ content, mediaUrl, locationData, addressData }: { 
+    mutationFn: async ({ content, mediaUrl, locationData, addressData, replyToId }: { 
       content: string; 
       mediaUrl?: string; 
       locationData?: { latitude: number; longitude: number; address_name?: string };
       addressData?: any;
+      replyToId?: string;
     }) => {
       if (!user || !selectedConversation || (!content.trim() && !mediaUrl && !locationData && !addressData)) {
         throw new Error('لا يمكن إرسال رسالة فارغة');
@@ -430,6 +442,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         image_url: mediaUrl || null,
         location_data: locationData || null,
         address_data: addressData || null,
+        reply_to_id: replyToId || null,
       });
       if (error) throw error;
       
@@ -481,6 +494,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     },
     onSuccess: () => {
       setMessageInput('');
+      setReplyTo(null);
       queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
       queryClient.invalidateQueries({ queryKey: ['last-messages'] });
@@ -1519,9 +1533,26 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               }
                               
                               // Regular text message
+                              const replyMsg = msg.reply_to_id ? (msgs as any[]).find((m: any) => m.id === msg.reply_to_id) || (messages as any[])?.find((m: any) => m.id === msg.reply_to_id) : null;
+                              const replySender = replyMsg ? profiles?.[replyMsg.sender_id] : null;
+                              const isReplyMe = replyMsg ? (replyMsg.sender_id === user?.id || (isAdmin && replyMsg.sender_id === SUPPORT_USER_ID)) : false;
+                              
                               return (
+                                <SwipeableMessage
+                                  key={msg.id}
+                                  isMe={isMe}
+                                  onSwipeReply={() => {
+                                    setReplyTo({
+                                      id: msg.id,
+                                      content: msg.content || '',
+                                      senderName: msg.sender_id === SUPPORT_USER_ID 
+                                        ? '🎧 خدمة العملاء' 
+                                        : (sender?.display_name || sender?.full_name || sender?.username || 'مستخدم'),
+                                      isMe,
+                                    });
+                                  }}
+                                >
                                 <div 
-                                  key={msg.id} 
                                   className={cn(
                                     "flex",
                                     isMe ? "justify-start" : "justify-end"
@@ -1543,6 +1574,16 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                           ? '🎧 خدمة العملاء' 
                                           : (sender?.display_name || sender?.full_name || sender?.username || 'مستخدم')}
                                       </p>
+                                    )}
+                                    
+                                    {/* Reply bubble */}
+                                    {replyMsg && (
+                                      <ReplyBubble
+                                        senderName={isReplyMe ? 'أنت' : (replySender?.display_name || replySender?.full_name || replySender?.username || 'مستخدم')}
+                                        content={replyMsg.content || '📷 وسائط'}
+                                        isMe={isReplyMe}
+                                        isParentMe={isMe}
+                                      />
                                     )}
                                     
                                     {/* Image */}
@@ -1582,7 +1623,6 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                             .eq('cart_code', code)
                                             .maybeSingle();
                                           if (data) {
-                                            // Fetch user profile
                                             const { data: profile } = await supabase
                                               .from('profiles')
                                               .select('id, full_name, username, avatar_url')
@@ -1622,6 +1662,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     </div>
                                   </div>
                                 </div>
+                                </SwipeableMessage>
                               );
                             })}
                           </div>
@@ -1640,11 +1681,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     const content = messageInput.trim();
                     if (content) {
                       setMessageInput('');
-                      sendMessageMutation.mutate({ content });
-                      // Auto-close context bar after sending
+                      sendMessageMutation.mutate({ content, replyToId: replyTo?.id });
                       setEntryContext(null);
                     }
                   }}
+                  replyTo={replyTo}
+                  onCancelReply={() => setReplyTo(null)}
                   onSendMedia={async (file: File) => {
                     setUploadingMedia(true);
                     try {

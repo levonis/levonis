@@ -2344,6 +2344,7 @@ export type Database = {
           is_read: boolean | null
           location_data: Json | null
           message_type: string | null
+          reply_to_id: string | null
           sender_id: string
         }
         Insert: {
@@ -2356,6 +2357,7 @@ export type Database = {
           is_read?: boolean | null
           location_data?: Json | null
           message_type?: string | null
+          reply_to_id?: string | null
           sender_id: string
         }
         Update: {
@@ -2368,6 +2370,7 @@ export type Database = {
           is_read?: boolean | null
           location_data?: Json | null
           message_type?: string | null
+          reply_to_id?: string | null
           sender_id?: string
         }
         Relationships: [
@@ -2376,6 +2379,13 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "listing_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "listing_messages"
             referencedColumns: ["id"]
           },
         ]
