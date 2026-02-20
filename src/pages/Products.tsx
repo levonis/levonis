@@ -8,6 +8,7 @@ import ProductListItem from '@/components/ProductListItem';
 import { Loader2, Grid3x3, List } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { z } from 'zod';
+import { useLanguage } from '@/lib/i18n';
 
 // Security: Validate and sanitize search input to prevent SQL injection
 const searchSchema = z.string()
@@ -48,6 +49,7 @@ const Products = () => {
   const [stockFilter, setStockFilter] = useState<'all' | 'in-stock' | 'out-of-stock'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const ITEMS_PER_PAGE = 24;
+  const { t } = useLanguage();
 
   // Fetch categories for filter
   const { data: categories } = useQuery({
@@ -165,10 +167,10 @@ const Products = () => {
           {searchQuery ? (
             <div>
               <h2 className="text-base font-bold text-primary">
-                نتائج البحث عن: <span className="text-foreground">{searchQuery}</span>
+                {t('products_search_results')} <span className="text-foreground">{searchQuery}</span>
               </h2>
               <p className="text-muted-foreground text-xs">
-                {productsData?.totalCount || 0} منتج
+                {productsData?.totalCount || 0} {t('products_count')}
               </p>
             </div>
           ) : (
@@ -198,7 +200,7 @@ const Products = () => {
 
             {/* Category Filter */}
             <div className="flex items-center gap-1.5">
-              <label className="text-xs text-muted-foreground whitespace-nowrap">الفئة:</label>
+              <label className="text-xs text-muted-foreground whitespace-nowrap">{t('products_category_filter')}</label>
               <Select value={categoryFilter} onValueChange={(value: string) => {
                 setCategoryFilter(value);
                 setCurrentPage(1);
@@ -207,7 +209,7 @@ const Products = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="text-xs">جميع الفئات</SelectItem>
+                  <SelectItem value="all" className="text-xs">{t('products_all_categories')}</SelectItem>
                   {categories?.map((category) => (
                     <SelectItem key={category.id} value={category.id} className="text-xs">
                       {category.name_ar}
@@ -219,7 +221,7 @@ const Products = () => {
 
             {/* Stock Filter */}
             <div className="flex items-center gap-1.5">
-              <label className="text-xs text-muted-foreground whitespace-nowrap">الحالة:</label>
+              <label className="text-xs text-muted-foreground whitespace-nowrap">{t('products_status_filter')}</label>
               <Select value={stockFilter} onValueChange={(value: 'all' | 'in-stock' | 'out-of-stock') => {
                 setStockFilter(value);
                 setCurrentPage(1);
@@ -228,16 +230,16 @@ const Products = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" className="text-xs">الكل</SelectItem>
-                  <SelectItem value="in-stock" className="text-xs">متوفر</SelectItem>
-                  <SelectItem value="out-of-stock" className="text-xs">غير متوفر</SelectItem>
+                  <SelectItem value="all" className="text-xs">{t('common_all')}</SelectItem>
+                  <SelectItem value="in-stock" className="text-xs">{t('product_in_stock')}</SelectItem>
+                  <SelectItem value="out-of-stock" className="text-xs">{t('product_out_of_stock')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Sort Select */}
             <div className="flex items-center gap-1.5 flex-1 lg:flex-initial">
-              <label className="text-xs text-muted-foreground whitespace-nowrap">ترتيب:</label>
+              <label className="text-xs text-muted-foreground whitespace-nowrap">{t('products_sort')}</label>
               <Select value={sortBy} onValueChange={(value: 'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc') => {
                 setSortBy(value);
                 setCurrentPage(1);
@@ -246,11 +248,11 @@ const Products = () => {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="default" className="text-xs">افتراضي</SelectItem>
-                  <SelectItem value="price-asc" className="text-xs">الأرخص للأغلى</SelectItem>
-                  <SelectItem value="price-desc" className="text-xs">الأغلى للأرخص</SelectItem>
-                  <SelectItem value="name-asc" className="text-xs">الاسم: A → Z</SelectItem>
-                  <SelectItem value="name-desc" className="text-xs">الاسم: Z → A</SelectItem>
+                  <SelectItem value="default" className="text-xs">{t('products_sort_default')}</SelectItem>
+                  <SelectItem value="price-asc" className="text-xs">{t('products_sort_price_asc')}</SelectItem>
+                  <SelectItem value="price-desc" className="text-xs">{t('products_sort_price_desc')}</SelectItem>
+                  <SelectItem value="name-asc" className="text-xs">{t('products_sort_name_asc')}</SelectItem>
+                  <SelectItem value="name-desc" className="text-xs">{t('products_sort_name_desc')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -305,7 +307,7 @@ const Products = () => {
           )
         ) : (
           <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground">لم يتم العثور على منتجات</p>
+            <p className="text-sm text-muted-foreground">{t('products_not_found')}</p>
           </div>
         )}
 
