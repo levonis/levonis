@@ -19,6 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import AvatarWithFrame from '@/components/merchant/AvatarWithFrame';
+import { cn } from '@/lib/utils';
 
 interface ChatTopBarProps {
   storeName: string;
@@ -27,6 +28,8 @@ interface ChatTopBarProps {
   storeFrameUrl?: string | null;
   rating?: number;
   customerId?: string;
+  isOnline?: boolean;
+  lastActiveAt?: string | null;
   onBack: () => void;
   onReportStore?: () => void;
   onContactAdmin?: () => void;
@@ -36,6 +39,18 @@ interface ChatTopBarProps {
   isSeller?: boolean;
 }
 
+function getLastSeenText(lastActiveAt?: string | null): string {
+  if (!lastActiveAt) return 'غير متصل';
+  const diff = Date.now() - new Date(lastActiveAt).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'متصل الآن';
+  if (mins < 60) return `آخر ظهور منذ ${mins} د`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `آخر ظهور منذ ${hours} س`;
+  const days = Math.floor(hours / 24);
+  return `آخر ظهور منذ ${days} ي`;
+}
+
 export default function ChatTopBar({
   storeName,
   storeId,
@@ -43,6 +58,8 @@ export default function ChatTopBar({
   storeFrameUrl,
   rating = 0,
   customerId,
+  isOnline = false,
+  lastActiveAt,
   onBack,
   onReportStore,
   onContactAdmin,
@@ -54,8 +71,6 @@ export default function ChatTopBar({
   const navigate = useNavigate();
 
   const goToStore = () => {
-    // If storeId looks like a merchant_applications.id, go to store page
-    // Otherwise it's a user UUID - go to profile
     if (storeId) {
       navigate(`/store/${storeId}`);
     }
@@ -67,6 +82,8 @@ export default function ChatTopBar({
     }
     onViewCustomerProfile?.();
   };
+
+  const statusText = isOnline ? 'متصل الآن' : getLastSeenText(lastActiveAt);
 
   return (
     <div className="flex items-center gap-2 px-2 py-2.5 border-b bg-card shadow-sm">
@@ -80,13 +97,20 @@ export default function ChatTopBar({
         <ArrowRight className="h-5 w-5" />
       </Button>
 
-      {/* Store Avatar - Clickable */}
-      <button onClick={goToStore} className="shrink-0 hover:opacity-80 transition-opacity">
+      {/* Store Avatar - Clickable with online dot */}
+      <button onClick={goToStore} className="shrink-0 hover:opacity-80 transition-opacity relative">
         <AvatarWithFrame
           imageUrl={storeImage}
           frameUrl={storeFrameUrl}
           size="xs"
         />
+        {/* Online indicator on avatar */}
+        {isOnline && (
+          <span className="absolute -bottom-0.5 -left-0.5 flex h-3 w-3 z-10">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-primary border-2 border-card" />
+          </span>
+        )}
       </button>
 
       {/* Store Name - Center, Clickable */}
@@ -102,12 +126,24 @@ export default function ChatTopBar({
             </Badge>
           )}
         </div>
-        {rating > 0 && (
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Star className="h-3 w-3 fill-primary text-primary" />
-            <span>{rating.toFixed(1)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-1.5">
+          {/* Online status text */}
+          <span className={cn(
+            "text-[11px]",
+            isOnline ? "text-primary font-medium" : "text-muted-foreground"
+          )}>
+            {statusText}
+          </span>
+          {rating > 0 && (
+            <>
+              <span className="text-muted-foreground/30">·</span>
+              <div className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                <Star className="h-3 w-3 fill-primary text-primary" />
+                <span>{rating.toFixed(1)}</span>
+              </div>
+            </>
+          )}
+        </div>
       </button>
 
       {/* Store Button */}
@@ -129,7 +165,6 @@ export default function ChatTopBar({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
           {isSeller ? (
-            // Seller sees customer profile option
             <>
               <DropdownMenuItem onClick={goToCustomerProfile} className="gap-2">
                 <User className="h-4 w-4" />
@@ -138,7 +173,6 @@ export default function ChatTopBar({
               <DropdownMenuSeparator />
             </>
           ) : (
-            // Customer sees store visit option
             <>
               <DropdownMenuItem onClick={goToStore} className="gap-2">
                 <Store className="h-4 w-4" />
