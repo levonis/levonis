@@ -1,4 +1,4 @@
-import { useMemo, lazy, Suspense, memo } from 'react';
+import { useMemo, lazy, Suspense, memo, Component, ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import SearchBar from '@/components/SearchBar';
@@ -10,8 +10,21 @@ import AnimatedDivider from '@/components/ui/animated-divider';
 import StoriesBar from '@/components/stories/StoriesBar';
 import { useLanguage } from '@/lib/i18n';
 
-const CommunitySection = lazy(() => import('@/components/community/CommunitySection'));
+const CommunitySection = lazy(() => import('@/components/community/CommunitySection').catch(() => {
+  // Retry once on dynamic import failure (common with HMR/cache issues)
+  return import('@/components/community/CommunitySection');
+}));
 const OffersStorageSection = lazy(() => import('@/components/OffersStorageSection'));
+
+// Simple error boundary for lazy-loaded components
+class ErrorBoundaryFallback extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) return <div className="text-center py-8 text-muted-foreground text-sm">تعذر تحميل المحتوى. يرجى تحديث الصفحة.</div>;
+    return this.props.children;
+  }
+}
 
 const MemoizedCategoryCard = memo(CategoryCard);
 
@@ -176,7 +189,9 @@ const Home = () => {
         </div>
 
         <Suspense fallback={<div className="h-32 md:h-64 flex items-center justify-center"><Loader2 className="w-6 h-6 md:w-8 md:h-8 animate-spin text-primary" /></div>}>
-          <CommunitySection />
+          <ErrorBoundaryFallback>
+            <CommunitySection />
+          </ErrorBoundaryFallback>
         </Suspense>
 
         <Footer />
