@@ -14,7 +14,6 @@ Deno.serve(async (req) => {
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     
     if (!TELEGRAM_BOT_TOKEN) {
-      console.error("Missing Telegram bot token");
       return new Response(
         JSON.stringify({ success: false, error: "Missing Telegram bot token" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
@@ -26,22 +25,39 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const { 
-      user_id, 
-      event_type, 
-      listing_title, 
-      listing_id, 
-      admin_notes, 
-      buyer_name, 
-      message_content,
-      sender_name,
-      conversation_id 
+      user_id, event_type, listing_title, listing_id, 
+      admin_notes, buyer_name, message_content, sender_name, conversation_id 
     } = await req.json();
 
     if (!user_id || !event_type) {
       return new Response(
-        JSON.stringify({ success: false, error: "user_id and event_type are required" }),
+        JSON.stringify({ success: false, error: "user_id and event_type required" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
+    }
+
+    // Check notification settings
+    const { data: settings } = await supabase
+      .from("default_settings")
+      .select("setting_value")
+      .eq("setting_key", "notification_settings")
+      .maybeSingle();
+
+    if (settings?.setting_value) {
+      const ns = settings.setting_value as any;
+      if (!ns.telegram_enabled) {
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: "Telegram disabled" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
+      const chKey = event_type === "new_message" ? "chat_messages" : "marketplace_updates";
+      if (ns.channels?.[chKey]?.telegram === false) {
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: `Channel ${chKey} disabled` }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
+        );
+      }
     }
 
     // Fetch user's telegram_chat_id
@@ -51,70 +67,40 @@ Deno.serve(async (req) => {
       .eq("id", user_id)
       .maybeSingle();
 
-    if (error) {
-      console.error("Error fetching user profile:", error);
+    if (error || !profile?.telegram_chat_id) {
       return new Response(
-        JSON.stringify({ success: false, error: "Error fetching user profile" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-      );
-    }
-
-    if (!profile?.telegram_chat_id) {
-      console.log("User has no telegram_chat_id set, skipping notification");
-      return new Response(
-        JSON.stringify({ success: true, skipped: true, reason: "No telegram_chat_id for user" }),
+        JSON.stringify({ success: true, skipped: true, reason: "No telegram_chat_id" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
       );
     }
 
-    // Format the notification message based on event type
-    let title = "";
-    let message = "";
-    let emoji = "";
+    // Compact notification messages
+    let telegramMessage = "";
 
     switch (event_type) {
       case "listing_approved":
-        emoji = "✅";
-        title = "تمت الموافقة على منتجك";
-        message = `تمت الموافقة على منتج "${listing_title}" وهو الآن معروض في السوق المستعمل.`;
+        telegramMessage = `✅ <b>تمت الموافقة</b>\n📦 ${listing_title}`;
         break;
       case "listing_rejected":
-        emoji = "❌";
-        title = "تم رفض منتجك";
-        message = `تم رفض منتج "${listing_title}".\n\n📝 السبب: ${admin_notes || 'لم يتم تحديد سبب'}`;
+        telegramMessage = `❌ <b>تم رفض المنتج</b>\n📦 ${listing_title}${admin_notes ? `\n📝 ${admin_notes}` : ''}`;
         break;
       case "listing_sold":
-        emoji = "🎉";
-        title = "تم بيع منتجك";
-        message = `تهانينا! تم بيع منتج "${listing_title}" بنجاح.`;
+        telegramMessage = `🎉 <b>تم البيع!</b>\n📦 ${listing_title}`;
         break;
       case "new_purchase":
-        emoji = "🛒";
-        title = "طلب شراء جديد";
-        message = `لديك طلب شراء جديد لمنتج "${listing_title}" من ${buyer_name || 'مشتري'}.`;
+        telegramMessage = `🛒 <b>طلب شراء</b>\n📦 ${listing_title}\n👤 ${buyer_name || 'مشتري'}`;
         break;
       case "new_message":
-        emoji = "💬";
-        title = `رسالة جديدة من ${sender_name || 'مستخدم'}`;
-        message = `${listing_title ? `📋 ${listing_title}\n\n` : ''}📩 الرسالة:\n${message_content || '(صورة)'}\n\n💡 للرد، اكتب رسالتك مباشرة هنا`;
+        telegramMessage = `💬 <b>${sender_name || 'مستخدم'}</b>${listing_title ? `\n📦 ${listing_title}` : ''}\n${message_content || '(صورة)'}`;
         break;
       default:
-        emoji = "ℹ️";
-        title = "إشعار السوق المستعمل";
-        message = `لديك إشعار جديد بخصوص منتج "${listing_title}".`;
+        telegramMessage = `📢 <b>إشعار</b>\n${listing_title || ''}`;
     }
 
-    const telegramMessage = `${emoji} <b>${title}</b>\n\n${message}\n\n🛍️ LEVONIS`;
-
-    console.log(`Sending marketplace notification to user ${user_id} (chat_id: ${profile.telegram_chat_id})`);
-
     const telegramUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-    
     const response = await fetch(telegramUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         chat_id: profile.telegram_chat_id,
         text: telegramMessage,
@@ -123,34 +109,24 @@ Deno.serve(async (req) => {
     });
 
     const result = await response.json();
-    console.log("Telegram API response:", result);
 
     if (!result.ok) {
-      console.error("Telegram API error:", result);
       return new Response(
         JSON.stringify({ success: false, error: result.description }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
       );
     }
 
-    // Save context for reply functionality (for new_message events)
+    // Save context for reply
     if (event_type === "new_message" && conversation_id) {
-      const { error: contextError } = await supabase
+      await supabase
         .from("marketplace_telegram_context")
         .upsert({
           telegram_chat_id: profile.telegram_chat_id,
-          conversation_id: conversation_id,
-          user_id: user_id,
+          conversation_id,
+          user_id,
           updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'telegram_chat_id',
-        });
-
-      if (contextError) {
-        console.error("Error saving marketplace telegram context:", contextError);
-      } else {
-        console.log("Saved marketplace telegram context for replies");
-      }
+        }, { onConflict: 'telegram_chat_id' });
     }
 
     return new Response(
@@ -159,7 +135,7 @@ Deno.serve(async (req) => {
     );
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    console.error("Error sending marketplace Telegram notification:", error);
+    console.error("Error:", error);
     return new Response(
       JSON.stringify({ success: false, error: errorMessage }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
