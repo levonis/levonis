@@ -15,6 +15,7 @@ import CommunityCustomerProfileModal from '@/components/community/CommunityCusto
 import MerchantSignupDialog from '@/components/community/MerchantSignupDialog';
 import NewPrintRequestDialog from '@/components/community/NewPrintRequestDialog';
 import { ListingConversations } from '@/components/marketplace/ListingConversations';
+import { useLanguage } from '@/lib/i18n';
 
 const MerchantDashboardWidgets = lazy(() => import('@/components/merchant/MerchantDashboardWidgets'));
 
@@ -23,6 +24,7 @@ interface CommunitySectionProps {
 }
 
 export default function CommunitySection({ noFrame = false }: CommunitySectionProps) {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const { isProfileComplete } = useCommunityProfileCheck();
   const navigate = useNavigate();
@@ -98,19 +100,19 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
   const quickActions = useMemo(() => {
     if (isMerchant) {
       return [
-        { key: "messages", label: "المحادثات", icon: MessageCircle, action: () => setMessagesOpen(true) },
-        { key: "store", label: "إدارة المتجر", icon: Store, to: "/community/merchant/store" },
-        { key: "orders", label: "الطلبات", icon: Package, to: "/community/merchant/orders" },
-        { key: "requests", label: "طلبات الزبائن", icon: FileText, to: "/community/requests" },
+        { key: "messages", label: t('community_messages'), icon: MessageCircle, action: () => setMessagesOpen(true) },
+        { key: "store", label: t('community_manage_store'), icon: Store, to: "/community/merchant/store" },
+        { key: "orders", label: t('community_orders'), icon: Package, to: "/community/merchant/orders" },
+        { key: "requests", label: t('community_customer_requests'), icon: FileText, to: "/community/requests" },
       ];
     }
     return [
-      { key: "messages", label: "المحادثات", icon: MessageCircle, action: () => setMessagesOpen(true) },
-      { key: "new-request", label: "طلب جديد", icon: FileText, action: () => setNewRequestOpen(true) },
-      { key: "my-requests", label: "طلباتي", icon: Package, to: "/community/customer/requests" },
-      { key: "profile", label: "ملفي", icon: Users, to: "/profile" },
+      { key: "messages", label: t('community_messages'), icon: MessageCircle, action: () => setMessagesOpen(true) },
+      { key: "new-request", label: t('community_new_request'), icon: FileText, action: () => setNewRequestOpen(true) },
+      { key: "my-requests", label: t('community_my_requests'), icon: Package, to: "/community/customer/requests" },
+      { key: "profile", label: t('community_my_profile'), icon: Users, to: "/profile" },
     ];
-  }, [isMerchant]);
+  }, [isMerchant, t]);
 
   return (
     <section className={sectionClass}>
@@ -123,7 +125,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
           <div className="absolute inset-0 bg-gradient-to-l from-primary/[0.03] to-transparent" />
           <div className="relative">
             <h2 className="text-base font-black tracking-tight text-foreground group-hover:text-primary transition-colors">
-              مجتمع ليفو
+              {t('community_levo')}
             </h2>
           </div>
         </Link>
@@ -144,7 +146,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
             <Input
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              placeholder="ابحث في المنتجات، الطلبات، التجار..."
+              placeholder={t('community_search_placeholder')}
               className="levo-input-frame pr-10 h-10 text-sm"
             />
           </div>
@@ -186,7 +188,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
             >
               <div className="flex items-center gap-2">
                 <Store className="h-5 w-5 text-primary" />
-                <span>طلب التاجر قيد المراجعة</span>
+                <span>{t('community_merchant_pending')}</span>
               </div>
             </Button>
           ) : anyMerchantApp?.status === "draft" ? (
@@ -197,19 +199,19 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
             >
               <div className="flex items-center gap-2">
                 <Store className="h-5 w-5 text-primary" />
-                <span>أكمل طلب التاجر</span>
+                <span>{t('community_merchant_complete')}</span>
               </div>
             </Button>
           ) : anyMerchantApp?.status === "rejected" ? (
             <div className="space-y-2">
               <div className="p-3 rounded-xl border border-destructive/30 bg-destructive/5 text-sm">
                 <div className="flex items-center gap-2 font-bold text-destructive mb-1">
-                  <Store className="h-4 w-4" />
-                  <span>تم رفض طلب التاجر</span>
+                   <Store className="h-4 w-4" />
+                  <span>{t('community_merchant_rejected')}</span>
                 </div>
                 {anyMerchantApp.admin_notes && (
-                  <p className="text-muted-foreground text-xs mt-1">
-                    السبب: {anyMerchantApp.admin_notes}
+                   <p className="text-muted-foreground text-xs mt-1">
+                    {t('community_merchant_reason')}: {anyMerchantApp.admin_notes}
                   </p>
                 )}
               </div>
@@ -218,8 +220,8 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
                 className="w-full h-12 gap-3 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground font-bold text-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]"
               >
                 <div className="flex items-center gap-2">
-                  <UserCircle className="h-5 w-5" />
-                  <span>أكمل ملفك الشخصي</span>
+                   <UserCircle className="h-5 w-5" />
+                  <span>{t('community_complete_profile')}</span>
                   <Sparkles className="h-4 w-4" />
                 </div>
               </Button>
@@ -230,8 +232,8 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
               className="w-full h-12 gap-3 bg-gradient-to-r from-primary via-accent to-primary text-primary-foreground font-bold text-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.01]"
             >
               <div className="flex items-center gap-2">
-                <UserCircle className="h-5 w-5" />
-                <span>أكمل ملفك الشخصي للوصول لمجتمع ليفو</span>
+                 <UserCircle className="h-5 w-5" />
+                <span>{t('community_complete_profile_access')}</span>
                 <Sparkles className="h-4 w-4" />
               </div>
             </Button>
@@ -308,7 +310,7 @@ export default function CommunitySection({ noFrame = false }: CommunitySectionPr
         onExternalOpenChange={setMessagesOpen}
         onClose={() => setMessagesOpen(false)}
       >
-        <span className="sr-only">فتح المحادثات</span>
+        <span className="sr-only">{t('community_open_messages')}</span>
       </ListingConversations>
     </section>
   );

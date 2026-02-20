@@ -18,8 +18,10 @@ import ProductCard from '@/components/ProductCard';
 import ProductReviews from '@/components/ProductReviews';
 import TaobaoLinkButton from '@/components/admin/TaobaoLinkButton';
 import ProductRewardsSection from '@/components/ProductRewardsSection';
+import { useLanguage } from '@/lib/i18n';
 
 const ProductDetail = () => {
+  const { t } = useLanguage();
   const { slug } = useParams();
   const navigate = useNavigate();
   const { user, isAdmin } = useAuth();
@@ -168,14 +170,14 @@ const ProductDetail = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['favorite', product?.id, user?.id] });
-      toast.success(isFavorite ? 'تم حذف المنتج من المفضلة' : 'تم إضافة المنتج للمفضلة');
+      toast.success(isFavorite ? t('favorites_removed') : t('favorites_added'));
     },
     onError: (error: any) => {
       if (error.message === 'User not authenticated') {
-        toast.error('يجب تسجيل الدخول أولاً');
+        toast.error(t('product_login_required'));
         navigate('/auth');
       } else {
-        toast.error('حدث خطأ، حاول مرة أخرى');
+        toast.error(t('product_error_retry'));
       }
     }
   });
@@ -192,8 +194,8 @@ const ProductDetail = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-4">المنتج غير موجود</h2>
-          <Button onClick={() => navigate('/')}>العودة للرئيسية</Button>
+          <h2 className="text-2xl font-bold text-foreground mb-4">{t('product_not_found')}</h2>
+          <Button onClick={() => navigate('/')}>{t('product_back_home')}</Button>
         </div>
       </div>
     );
@@ -254,7 +256,7 @@ const ProductDetail = () => {
   const handleAddToCart = async () => {
     // Check if product has options and none selected
     if (productOptions && productOptions.length > 0 && !selectedOption) {
-      toast.error('الرجاء اختيار أحد الخيارات المتاحة');
+      toast.error(t('product_select_option'));
       return;
     }
 
@@ -262,7 +264,7 @@ const ProductDetail = () => {
     const preOrderShippingOptions = Array.isArray(product.pre_order_shipping_options) ? product.pre_order_shipping_options : [];
     const hasCustomShippingOptions = product.has_pre_order && preOrderShippingOptions.length > 0;
     if (hasCustomShippingOptions && selectedShippingOption === null) {
-      toast.error('الرجاء اختيار نوع الشحن للطلب المسبق');
+      toast.error(t('product_choose_shipping'));
       return;
     }
 
@@ -275,7 +277,7 @@ const ProductDetail = () => {
       : undefined;
 
     await addToCart(product.id, selectedOption || undefined, selectedColor || undefined, quantity, shippingInfo);
-    toast.success(`تم إضافة ${quantity} من المنتج إلى السلة`);
+    toast.success(t('product_added_to_cart').replace('{count}', String(quantity)));
     setQuantity(1);
   };
 
@@ -304,7 +306,7 @@ const ProductDetail = () => {
             className="mb-4"
           >
             <ArrowRight className="h-4 w-4 ml-2" />
-            الرجوع للخلف
+            {t('product_go_back')}
           </Button>
           
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -312,14 +314,14 @@ const ProductDetail = () => {
               onClick={() => navigate('/')}
               className="hover:text-primary transition-colors"
             >
-              الرئيسية
+              {t('nav_home')}
             </button>
             <span>/</span>
             <button 
               onClick={() => navigate('/products')}
               className="hover:text-primary transition-colors"
             >
-              المنتجات
+              {t('nav_products')}
             </button>
             <span>/</span>
             <span className="text-foreground">{product.name_ar}</span>
@@ -404,8 +406,8 @@ const ProductDetail = () => {
                   
                   {!product.in_stock && (
                     <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-xl">
-                      <Badge variant="destructive" className="text-lg px-6 py-2">
-                        غير متوفر
+                     <Badge variant="destructive" className="text-lg px-6 py-2">
+                       {t('product_out_of_stock')}
                       </Badge>
                     </div>
                   )}
@@ -487,7 +489,7 @@ const ProductDetail = () => {
                       onClick={() => setShowFullDescription(!showFullDescription)}
                       className="text-primary hover:underline text-xs mt-1 font-medium"
                     >
-                      {showFullDescription ? 'عرض أقل' : 'عرض المزيد'}
+                      {showFullDescription ? t('product_show_less') : t('product_show_more')}
                     </button>
                   )}
                 </div>
@@ -503,8 +505,8 @@ const ProductDetail = () => {
                           <Package className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                          <span className="font-bold text-sm text-primary block">بيع مباشر</span>
-                          <span className="text-[10px] text-primary/70">متوفر للشراء الآن</span>
+                         <span className="font-bold text-sm text-primary block">{t('product_direct_sale')}</span>
+                          <span className="text-[10px] text-primary/70">{t('product_direct_sale_desc')}</span>
                         </div>
                       </div>
                     </div>
@@ -516,8 +518,8 @@ const ProductDetail = () => {
                           <Clock className="h-5 w-5 text-accent-foreground" />
                         </div>
                         <div>
-                          <span className="font-bold text-sm text-accent-foreground block">طلب مسبق</span>
-                          <span className="text-[10px] text-accent-foreground/70">يتم طلبه خصيصاً لك</span>
+                          <span className="font-bold text-sm text-accent-foreground block">{t('product_pre_order')}</span>
+                          <span className="text-[10px] text-accent-foreground/70">{t('product_pre_order_desc')}</span>
                         </div>
                       </div>
                     </div>
@@ -535,8 +537,8 @@ const ProductDetail = () => {
                         <Truck className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div>
-                        <Label className="text-xs font-bold block">نوع الشحن</Label>
-                        <span className="text-[9px] text-muted-foreground">اختر طريقة الشحن</span>
+                       <Label className="text-xs font-bold block">{t('product_shipping_type')}</Label>
+                        <span className="text-[9px] text-muted-foreground">{t('product_choose_shipping')}</span>
                       </div>
                     </div>
                     <div className="space-y-1.5">
@@ -568,7 +570,7 @@ const ProductDetail = () => {
                               </span>
                             ) : (
                               <Badge variant="outline" className="text-[8px] shrink-0 text-emerald-600 border-emerald-500/30 px-1 py-0 h-4">
-                                مجاني
+                                {t('product_free')}
                               </Badge>
                             )}
                           </div>
@@ -586,8 +588,8 @@ const ProductDetail = () => {
                         <Truck className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div>
-                        <Label className="text-xs font-bold block">نوع الشحن</Label>
-                        <span className="text-[9px] text-muted-foreground">اختر طريقة الشحن</span>
+                       <Label className="text-xs font-bold block">{t('product_shipping_type')}</Label>
+                        <span className="text-[9px] text-muted-foreground">{t('product_choose_shipping')}</span>
                       </div>
                     </div>
                     <div className="space-y-1.5">
@@ -611,7 +613,7 @@ const ProductDetail = () => {
                               <span className="text-[9px] text-muted-foreground">45 يوم تقريباً</span>
                             </div>
                             <Badge variant="outline" className="text-[8px] shrink-0 text-primary border-primary/30 px-1 py-0 h-4">
-                              مجاني
+                              {t('product_free')}
                             </Badge>
                           </div>
                         </button>
@@ -653,8 +655,8 @@ const ProductDetail = () => {
                         <Settings className="h-3.5 w-3.5 text-secondary-foreground" />
                       </div>
                       <div>
-                        <Label className="text-xs font-bold block">الخيارات المتاحة</Label>
-                        <span className="text-[9px] text-muted-foreground">اختر الخيار المناسب</span>
+                       <Label className="text-xs font-bold block">{t('product_options_available')}</Label>
+                        <span className="text-[9px] text-muted-foreground">{t('product_choose_option')}</span>
                       </div>
                     </div>
                     <div className="space-y-1.5 max-h-[280px] overflow-y-auto scrollbar-thin">
@@ -710,8 +712,8 @@ const ProductDetail = () => {
                                   </span>
                                 )}
                                 {isOptionDisabled && (
-                                  <Badge variant="destructive" className="text-[8px] px-1 py-0 h-4">
-                                    غير متوفر
+                                   <Badge variant="destructive" className="text-[8px] px-1 py-0 h-4">
+                                     {t('product_out_of_stock')}
                                   </Badge>
                                 )}
                               </div>
@@ -731,9 +733,9 @@ const ProductDetail = () => {
                         <div className="w-5 h-5 rounded-full bg-gradient-to-br from-primary via-accent to-secondary" />
                       </div>
                       <div>
-                        <Label className="text-sm font-bold block">الألوان المتاحة</Label>
+                       <Label className="text-sm font-bold block">{t('product_colors_available')}</Label>
                         {selectedColor && (
-                          <span className="text-[10px] text-muted-foreground">اللون المحدد: {selectedColor}</span>
+                          <span className="text-[10px] text-muted-foreground">{t('product_selected_color')}: {selectedColor}</span>
                         )}
                       </div>
                     </div>
@@ -835,7 +837,7 @@ const ProductDetail = () => {
               )}
               {product.in_stock && (
                 <div className="border-t border-border/30 pt-6 mb-6">
-                  <label className="text-sm font-medium text-foreground mb-2 block">الكمية</label>
+                  <label className="text-sm font-medium text-foreground mb-2 block">{t('common_quantity')}</label>
                   <div className="flex items-center gap-3">
                     <Button
                       size="icon"
@@ -877,7 +879,7 @@ const ProductDetail = () => {
                   disabled={!product.in_stock}
                 >
                   <ShoppingCart className="ml-2 h-5 w-5" />
-                  {product.in_stock ? 'أضف إلى السلة' : 'غير متوفر'}
+                  {product.in_stock ? t('product_add_to_cart') : t('product_out_of_stock')}
                 </Button>
                 
                 <Button 
@@ -899,7 +901,7 @@ const ProductDetail = () => {
         {/* Additional Info - Features from extraction */}
         {product.features && Array.isArray(product.features) && product.features.length > 0 && (
           <div className="glass-effect rounded-2xl p-6 border border-border/50 mb-8">
-            <h3 className="text-2xl font-bold text-primary mb-4">مواصفات المنتج</h3>
+            <h3 className="text-2xl font-bold text-primary mb-4">{t('product_features')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {product.features.map((feature: any, index: number) => {
                 const iconName = feature.icon || 'Package';
@@ -939,7 +941,7 @@ const ProductDetail = () => {
         {/* Related Products Section */}
         {relatedProducts && relatedProducts.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-3xl font-black text-gradient-gold mb-8">منتجات مشابهة</h2>
+            <h2 className="text-3xl font-black text-gradient-gold mb-8">{t('product_related')}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((relatedProduct: any) => (
                 <ProductCard
