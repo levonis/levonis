@@ -1166,9 +1166,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                         <AlertTriangle className="w-3 h-3 text-white" />
                                       </div>
                                     )}
-                                    {/* Green online dot */}
+                                    {/* Green online dot with pulse */}
                                     {isOtherOnline && conv.status !== 'disputed' && (
-                                      <div className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-card z-10" />
+                                      <span className="absolute -bottom-0.5 -left-0.5 flex h-3.5 w-3.5 z-10">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
+                                        <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-primary border-2 border-card" />
+                                      </span>
                                     )}
                                   </>
                                 )}
@@ -1345,6 +1348,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       storeFrameUrl={(otherUser as any)?.selected_frame_url}
                       rating={Number(otherUserReputation?.avg_stars ?? 0)}
                       customerId={!otherMerchantAppId ? otherUserId || undefined : undefined}
+                      isOnline={otherUser?.is_online || false}
+                      lastActiveAt={otherUser?.last_active_at}
                       isSeller={isSeller}
                       status={selectedConv?.status as 'open' | 'disputed' | 'resolved' | undefined}
                       onBack={() => setSelectedConversation(null)}
