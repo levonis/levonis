@@ -16,6 +16,8 @@ type Props = {
   onProductClick?: () => void;
   /** Contact the merchant */
   onContact?: () => void;
+  /** Hide order buttons (for merchants) */
+  hideOrderButtons?: boolean;
 };
 
 function CommunityProductCardBase({
@@ -28,6 +30,7 @@ function CommunityProductCardBase({
   onOpenStore,
   onProductClick,
   onContact,
+  hideOrderButtons,
 }: Props) {
   return (
     <div
@@ -119,29 +122,31 @@ function CommunityProductCardBase({
           ) : null}
         </div>
 
-        {/* Order Button */}
-        <div className="mt-1.5 flex gap-1" onClick={(e) => e.stopPropagation()}>
-          <Button
-            type="button"
-            size="sm"
-            className="flex-1 h-7 text-[10px] gap-1 font-bold"
-            onClick={onContact}
-          >
-            <ShoppingCart className="h-3 w-3" />
-            اطلب
-          </Button>
-          {onContact && (
+        {/* Order Button - hidden for merchants */}
+        {!hideOrderButtons && (
+          <div className="mt-1.5 flex gap-1" onClick={(e) => e.stopPropagation()}>
             <Button
               type="button"
-              variant="outline"
-              size="icon"
-              className="h-7 w-7"
+              size="sm"
+              className="flex-1 h-7 text-[10px] gap-1 font-bold"
               onClick={onContact}
             >
-              <MessageCircle className="h-3 w-3" />
+              <ShoppingCart className="h-3 w-3" />
+              اطلب
             </Button>
-          )}
-        </div>
+            {onContact && (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                className="h-7 w-7"
+                onClick={onContact}
+              >
+                <MessageCircle className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

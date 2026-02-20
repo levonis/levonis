@@ -160,24 +160,24 @@ export default function MerchantProductMediaUpload({
         <Label>الصور (اختياري)</Label>
         <div className="mt-2 grid grid-cols-3 gap-2">
            {imageUrls.map((url, idx) => (
-             <div key={`img-${idx}-${url.slice(-10)}`} className="relative aspect-square rounded-lg overflow-hidden border border-border">
+             <div key={`img-${idx}-${url.slice(-10)}`} className="relative aspect-square rounded-lg overflow-hidden border border-border group">
                <img src={url} alt={`صورة ${idx + 1}`} className="w-full h-full object-cover" />
 
                {/* Primary badge */}
                {primaryImageIndex === idx && (
-                 <div className="absolute top-1 right-1 bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-[10px] flex items-center gap-0.5 pointer-events-none">
+                 <div className="absolute top-1 right-1 bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-[10px] flex items-center gap-0.5 pointer-events-none z-10">
                    <Star className="h-2.5 w-2.5 fill-current" />
                    رئيسية
                  </div>
                )}
 
-               {/* Always-visible controls */}
-               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-1.5 flex items-center justify-between">
+               {/* Always-visible controls - high z-index */}
+               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/80 to-transparent p-1.5 flex items-center justify-between z-20">
                  {primaryImageIndex !== idx ? (
                    <button
                      type="button"
-                     className="h-6 px-1.5 text-[10px] gap-0.5 flex items-center bg-white/20 backdrop-blur-sm text-white rounded hover:bg-white/30 active:scale-95 transition-all"
-                     onClick={(e) => handleSetPrimary(e, idx)}
+                     className="h-6 px-1.5 text-[10px] gap-0.5 flex items-center bg-white/20 backdrop-blur-sm text-white rounded hover:bg-white/30 active:scale-95 transition-all touch-manipulation"
+                     onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleSetPrimary(e, idx); }}
                    >
                      <Star className="h-2.5 w-2.5" />
                      رئيسية
@@ -187,8 +187,8 @@ export default function MerchantProductMediaUpload({
                  )}
                  <button
                    type="button"
-                   className="h-6 w-6 flex items-center justify-center bg-destructive/80 text-white rounded hover:bg-destructive active:scale-95 transition-all"
-                   onClick={(e) => handleRemoveImage(e, idx)}
+                   className="h-6 w-6 flex items-center justify-center bg-destructive/80 text-white rounded hover:bg-destructive active:scale-95 transition-all touch-manipulation"
+                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleRemoveImage(e, idx); }}
                  >
                    <X className="h-3 w-3" />
                  </button>

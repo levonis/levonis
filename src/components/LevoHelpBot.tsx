@@ -522,7 +522,19 @@ export default function LevoHelpBot() {
     }, 300);
   }, []);
 
+  // Only show on community main page and main site pages, hide on settings/profile/orders/modals
+  const restrictedPaths = [
+    '/community/merchant/store',
+    '/community/merchant/orders', 
+    '/community/customer/track',
+    '/user-info',
+    '/settings',
+    '/profile',
+  ];
+  const isOnRestrictedPage = restrictedPaths.some(p => location.pathname.startsWith(p));
+  
   if (isHidden && !isOpen && !spotlight.active) return null;
+  if (isOnRestrictedPage && !isOpen && !spotlight.active) return null;
 
   const hasMultipleSteps = spotlight.steps.length > 1;
   const isLastStep = spotlight.stepIndex >= spotlight.steps.length - 1;
@@ -584,7 +596,8 @@ export default function LevoHelpBot() {
           </button>
           {/* Hide duration menu */}
           {showHideMenu && (
-            <div className="absolute bottom-full mb-1 bg-card border border-border rounded-xl shadow-xl p-1.5 min-w-[100px] animate-fade-in">
+            <div className="absolute bottom-full mb-1 bg-card border border-border rounded-xl shadow-xl p-2 min-w-[140px] animate-fade-in">
+              <p className="text-[9px] text-muted-foreground font-bold mb-1.5 px-2">إخفاء المساعد لمدة:</p>
               {HIDE_DURATIONS.map(d => (
                 <button
                   key={d.key}
