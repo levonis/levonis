@@ -338,6 +338,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       return result;
     },
     enabled: !!conversations?.length,
+    refetchInterval: 60_000, // Refresh online status every minute
   });
 
   // Fetch messages
