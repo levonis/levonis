@@ -16,7 +16,7 @@ import { ADMIN_BASE_PATH } from "@/config/adminConfig";
 import RequireAuth from "@/components/auth/RequireAuth";
 import RequireCommunityProfile from "@/components/auth/RequireCommunityProfile";
 import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
-import PageLoader from "@/components/ui/PageLoader";
+
 
 // Lazy load unified chat button (global floating button)
 const UnifiedChatButton = lazy(() => import("@/components/UnifiedChatButton"));
@@ -112,8 +112,12 @@ const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
-// Premium loading component - shown during lazy load
-const SuspenseLoader = () => <PageLoader />;
+// Simple loading fallback
+const SuspenseLoader = () => (
+  <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-background">
+    <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+  </div>
+);
 
 function AppContent() {
   useDailyLogin();

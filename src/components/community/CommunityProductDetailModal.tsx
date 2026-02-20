@@ -325,10 +325,10 @@ export default function CommunityProductDetailModal({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent 
-          className="sm:max-w-md p-0 gap-0 overflow-hidden rounded-3xl border border-border/30 bg-background shadow-2xl"
+          className="sm:max-w-md p-0 gap-0 overflow-hidden rounded-3xl border border-border/30 bg-background shadow-2xl max-h-[90vh]"
           hideClose
         >
-          <div className="flex flex-col max-h-[90vh] overflow-y-auto">
+          <div className="flex flex-col max-h-[90vh] overflow-y-auto overscroll-contain">
             {/* Hero Media */}
             <div className="relative aspect-[5/3] bg-muted/20 overflow-hidden shrink-0">
               {activeMedia ? (
