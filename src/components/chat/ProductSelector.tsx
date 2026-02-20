@@ -77,10 +77,10 @@ export default function ProductSelector({
     queryKey: ['site-products-selector', searchQuery],
     enabled: useSiteProducts && open,
     queryFn: async () => {
-      let query = (supabase as any)
+      let query = supabase
         .from('products')
         .select('id, name_ar, price, image_url')
-        .eq('status', 'published')
+        .eq('in_stock', true)
         .order('created_at', { ascending: false })
         .limit(50);
 

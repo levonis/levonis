@@ -256,7 +256,15 @@ export default function CommunityMessages() {
     },
     onSuccess: (conversationId) => {
       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
-      navigate(`/community/messages?auto_open=${conversationId}`, { replace: true });
+      // Build URL with entry context preserved as params
+      const url = new URL(`/community/messages`, window.location.origin);
+      url.searchParams.set('auto_open', conversationId);
+      if (entryContext) {
+        url.searchParams.set('product_title', entryContext.title);
+        if (entryContext.price) url.searchParams.set('product_price', String(entryContext.price));
+        if (entryContext.imageUrl) url.searchParams.set('product_image', entryContext.imageUrl);
+      }
+      navigate(`${url.pathname}${url.search}`, { replace: true });
       setCreatingConversation(false);
     },
     onError: (error: Error) => {

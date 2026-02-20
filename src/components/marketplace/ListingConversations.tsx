@@ -678,10 +678,26 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   // Determine if we should use site products (admin/support chats) or merchant products
   const useSiteProducts = isAdmin || isSupportConversation;
   
-  // For merchant product selector, determine the merchant ID
-  // If current user is merchant, use their ID. If customer talking to merchant, use the other party's merchant ID.
-  const otherPartyMerchantId = selectedConv?.listing_id || '';
-  const productSelectorMerchantId = currentUserMerchant?.id || otherPartyMerchantId;
+  // For merchant product selector, determine the merchant_applications.id
+  // listing_id stores the user_id of the other party, so we need to resolve it to merchant_applications.id
+  const otherPartyUserId = selectedConv ? (selectedConv.buyer_id === effectiveUserId ? selectedConv.seller_id : selectedConv.buyer_id) : null;
+  
+  const { data: otherPartyMerchantApp } = useQuery({
+    queryKey: ['other-party-merchant-app', otherPartyUserId],
+    queryFn: async () => {
+      if (!otherPartyUserId) return null;
+      const { data } = await supabase
+        .from('merchant_applications')
+        .select('id')
+        .eq('user_id', otherPartyUserId)
+        .eq('status', 'approved')
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!otherPartyUserId && !useSiteProducts,
+  });
+  
+  const productSelectorMerchantId = currentUserMerchant?.id || otherPartyMerchantApp?.id || '';
   
   // Only seller and admin can create orders (not customer)
   const canCreateOrderInChat = isSeller || isAdmin;

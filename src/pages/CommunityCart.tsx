@@ -63,46 +63,13 @@ export default function CommunityCart() {
     },
   });
 
-  // Fetch admin delivery price settings (default + governorate exceptions)
-  const { data: adminDeliverySettings } = useQuery({
-    queryKey: ["community-delivery-prices"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("community_settings")
-        .select("value")
-        .eq("key", "delivery_prices")
-        .maybeSingle();
-      return (data?.value as { default: number; exceptions: Record<string, number> }) || { default: 5000, exceptions: {} };
-    },
-  });
-
-  // Fetch user's governorate from profile
-  const { data: userGovernorate } = useQuery({
-    queryKey: ["user-governorate", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("governorate")
-        .eq("id", user!.id)
-        .maybeSingle();
-      return data?.governorate as string | null;
-    },
-  });
-
-  // Calculate delivery price for a merchant: merchant override > admin governorate exception > admin default
+  // Calculate delivery price for a merchant: merchant price or default 5000
   const getDeliveryPrice = (merchantId: string): number => {
     const merchantPrice = merchantDeliveryPrices[merchantId];
-    // If merchant has explicitly set a price (including 0), use it
     if (merchantPrice !== null && merchantPrice !== undefined) {
       return merchantPrice;
     }
-    // Otherwise use admin settings based on user governorate
-    const settings = adminDeliverySettings || { default: 5000, exceptions: {} };
-    if (userGovernorate && settings.exceptions[userGovernorate] !== undefined) {
-      return settings.exceptions[userGovernorate];
-    }
-    return settings.default;
+    return 5000; // Default delivery price
   };
 
   const groupedItems = useMemo(() => {
@@ -119,7 +86,7 @@ export default function CommunityCart() {
       groups[item.merchant_id].items.push(item);
     });
     return Object.values(groups);
-  }, [cartItems, merchantDeliveryPrices, adminDeliverySettings, userGovernorate]);
+  }, [cartItems, merchantDeliveryPrices]);
 
   const productsTotal = cartItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
   const deliveryTotal = groupedItems.reduce((sum, g) => sum + g.deliveryPrice, 0);
