@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Download, Bell } from 'lucide-react';
+import { X, Download, Bell, Share, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
@@ -9,47 +9,70 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const isIOS = () => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+};
+
+const isInStandaloneMode = () => {
+  return window.matchMedia('(display-mode: standalone)').matches || 
+    (window.navigator as any).standalone === true;
+};
+
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
+  const [isIOSDevice, setIsIOSDevice] = useState(false);
   const { permission, requestPermission } = useNotificationPermission();
 
   useEffect(() => {
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (isInStandaloneMode()) {
       setIsInstalled(true);
+      return;
     }
 
-    // Check notification permission
+    const iosDevice = isIOS();
+    setIsIOSDevice(iosDevice);
+
+    // --- Notification banner logic ---
     const notifDismissed = localStorage.getItem('notif-prompt-dismissed');
-    if (notifDismissed) {
-      const dismissedAt = parseInt(notifDismissed, 10);
-      if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) {
-        // Don't show
-      } else if (permission === 'default') {
-        setTimeout(() => setShowNotifBanner(true), 5000);
+    const notifSupported = 'Notification' in window;
+    
+    if (notifSupported) {
+      if (notifDismissed) {
+        const dismissedAt = parseInt(notifDismissed, 10);
+        if (Date.now() - dismissedAt >= 7 * 24 * 60 * 60 * 1000 && Notification.permission === 'default') {
+          setTimeout(() => setShowNotifBanner(true), 5000);
+        }
+      } else if (Notification.permission === 'default') {
+        setTimeout(() => setShowNotifBanner(true), 8000);
       }
-    } else if (permission === 'default') {
-      setTimeout(() => setShowNotifBanner(true), 8000);
     }
 
+    // --- Install prompt logic ---
     const dismissed = localStorage.getItem('pwa-install-dismissed');
     if (dismissed) {
       const dismissedAt = parseInt(dismissed, 10);
       if (Date.now() - dismissedAt < 3 * 24 * 60 * 60 * 1000) return;
     }
 
-    const handler = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+    if (iosDevice) {
+      // iOS Safari: no beforeinstallprompt, show manual instructions
       setTimeout(() => setShowPrompt(true), 3000);
-    };
-
-    window.addEventListener('beforeinstallprompt', handler);
-    return () => window.removeEventListener('beforeinstallprompt', handler);
-  }, [permission]);
+    } else {
+      // Chrome/Edge/etc: listen for beforeinstallprompt
+      const handler = (e: Event) => {
+        e.preventDefault();
+        setDeferredPrompt(e as BeforeInstallPromptEvent);
+        setTimeout(() => setShowPrompt(true), 3000);
+      };
+      window.addEventListener('beforeinstallprompt', handler);
+      return () => window.removeEventListener('beforeinstallprompt', handler);
+    }
+  }, []);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
@@ -89,10 +112,12 @@ export default function InstallPrompt() {
     localStorage.setItem('notif-prompt-dismissed', Date.now().toString());
   };
 
+  const showInstallCard = !isInstalled && showPrompt && (deferredPrompt || isIOSDevice);
+
   return (
     <>
       {/* Notification Permission Banner */}
-      {showNotifBanner && permission === 'default' && (
+      {showNotifBanner && (
         <div className={cn(
           "fixed top-4 left-4 right-4 z-[70] mx-auto max-w-sm transition-all duration-300",
           "animate-in slide-in-from-top-4"
@@ -127,7 +152,7 @@ export default function InstallPrompt() {
       )}
 
       {/* Install Prompt */}
-      {!isInstalled && showPrompt && deferredPrompt && (
+      {showInstallCard && (
         <div className={cn(
           "fixed bottom-20 left-4 right-4 z-[60] mx-auto max-w-sm transition-all duration-300",
           isClosing ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0 animate-in slide-in-from-bottom-4"
@@ -144,18 +169,42 @@ export default function InstallPrompt() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-bold text-foreground">أضف LEVONIS للشاشة الرئيسية</h3>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">وصول سريع • إشعارات فورية • تجربة تطبيق كاملة</p>
+                  {isIOSDevice ? (
+                    <div className="mt-1 space-y-1">
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <span>1. اضغط على</span>
+                        <Share className="h-3 w-3 inline text-primary" />
+                        <span>(مشاركة)</span>
+                      </p>
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1">
+                        <span>2. اختر</span>
+                        <Plus className="h-3 w-3 inline text-primary" />
+                        <span>"إضافة إلى الشاشة الرئيسية"</span>
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground mt-0.5">وصول سريع • إشعارات فورية • تجربة تطبيق كاملة</p>
+                  )}
                 </div>
               </div>
-              <div className="flex gap-2 mt-3">
-                <Button onClick={handleInstall} size="sm" className="flex-1 h-8 gap-1.5 text-xs font-bold rounded-xl">
-                  <Download className="h-3.5 w-3.5" />
-                  تثبيت التطبيق
-                </Button>
-                <Button onClick={handleDismiss} variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground rounded-xl px-3">
-                  لاحقاً
-                </Button>
-              </div>
+              {!isIOSDevice && (
+                <div className="flex gap-2 mt-3">
+                  <Button onClick={handleInstall} size="sm" className="flex-1 h-8 gap-1.5 text-xs font-bold rounded-xl">
+                    <Download className="h-3.5 w-3.5" />
+                    تثبيت التطبيق
+                  </Button>
+                  <Button onClick={handleDismiss} variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground rounded-xl px-3">
+                    لاحقاً
+                  </Button>
+                </div>
+              )}
+              {isIOSDevice && (
+                <div className="flex justify-end mt-2">
+                  <Button onClick={handleDismiss} variant="ghost" size="sm" className="h-7 text-[11px] text-muted-foreground rounded-xl px-3">
+                    فهمت
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </div>
