@@ -580,7 +580,7 @@ export default function LevoHelpBot() {
 
       {/* ─── Floating Icon Button — positioned ABOVE the chat button ─── */}
       {!isOpen && !isHidden && (
-        <div className="fixed bottom-24 left-4 sm:left-6 z-[70] flex flex-col items-center gap-1 levo-help-bot-trigger">
+        <div className="fixed bottom-24 left-4 sm:left-6 z-40 flex flex-col items-center gap-1 levo-help-bot-trigger">
           <button
             onClick={() => setIsOpen(true)}
             className="group relative h-11 w-11 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center"
@@ -594,7 +594,7 @@ export default function LevoHelpBot() {
           >
             إخفاء
           </button>
-          {/* Hide duration menu - z-index above everything */}
+          {/* Hide duration menu - rendered above the button */}
           {showHideMenu && (
             <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-card border border-border rounded-xl shadow-2xl p-2 min-w-[160px] animate-fade-in z-[9999]">
               <p className="text-[9px] text-muted-foreground font-bold mb-1.5 px-2">إخفاء المساعد لمدة:</p>
@@ -615,7 +615,7 @@ export default function LevoHelpBot() {
 
       {/* ─── Chat Panel ─── */}
       {isOpen && (
-        <div className="fixed bottom-20 left-4 sm:left-6 z-[60] w-[330px] max-h-[75vh] flex flex-col rounded-2xl border border-border/80 bg-card shadow-2xl animate-scale-in overflow-hidden" dir="rtl">
+        <div className="fixed bottom-20 left-4 sm:left-6 z-40 w-[330px] max-h-[75vh] flex flex-col rounded-2xl border border-border/80 bg-card shadow-2xl animate-scale-in overflow-hidden" dir="rtl">
           
           {/* Header */}
           <div className="shrink-0 bg-gradient-to-l from-primary via-primary/95 to-primary/85 px-3.5 py-2.5">
@@ -815,7 +815,7 @@ export default function LevoHelpBot() {
 
           {/* Footer - only for FAQ tab */}
           {activeTab === "faq" && (
-            <div className="shrink-0 border-t border-border/40 bg-muted/15 px-2.5 py-2 flex items-center gap-1.5">
+            <div className="shrink-0 border-t border-border/40 bg-muted/15 px-2.5 py-2 flex items-center gap-1.5 relative">
               <button onClick={handleDirectChat} className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl bg-accent hover:bg-accent/80 text-foreground text-[10px] font-semibold transition-colors">
                 <MessageCircle className="h-3 w-3" />
                 محادثة مع الدعم
@@ -823,6 +823,22 @@ export default function LevoHelpBot() {
               <button onClick={() => setShowHideMenu(!showHideMenu)} className="px-2 py-1.5 rounded-xl text-[9px] text-muted-foreground hover:text-foreground hover:bg-accent transition-colors">
                 إخفاء
               </button>
+              {/* Hide duration menu inside the panel */}
+              {showHideMenu && (
+                <div className="absolute bottom-full mb-1 right-2 bg-card border border-border rounded-xl shadow-2xl p-2 min-w-[160px] animate-fade-in z-[9999]">
+                  <p className="text-[9px] text-muted-foreground font-bold mb-1.5 px-2">إخفاء المساعد لمدة:</p>
+                  {HIDE_DURATIONS.map(d => (
+                    <button
+                      key={d.key}
+                      onClick={() => hideFor(d.key)}
+                      className="w-full text-right text-[10px] px-2.5 py-1.5 rounded-lg hover:bg-accent text-foreground transition-colors flex items-center gap-1.5"
+                    >
+                      <Clock className="h-2.5 w-2.5 text-muted-foreground" />
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
