@@ -1,24 +1,29 @@
-const CACHE_NAME = 'levonis-v2';
+const CACHE_NAME = 'levonis-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    caches.keys().then((names) => {
+      return Promise.all(
+        names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n))
+      );
+    }).then(() => clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (event) => {
-  // Network-first strategy for API calls, cache-first for static assets
   if (event.request.url.includes('/rest/') || event.request.url.includes('/functions/')) {
-    return; // Let API calls pass through
+    return;
   }
 });
 
 // Push notification handler
 self.addEventListener('push', (event) => {
-  let data = { title: 'LEVONIS', body: 'لديك إشعار جديد', icon: '/favicon.ico' };
-  
+  let data = { title: 'LEVONIS', body: 'لديك إشعار جديد' };
+
   try {
     if (event.data) {
       data = { ...data, ...event.data.json() };
@@ -29,8 +34,8 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/favicon.ico',
-    badge: '/favicon.ico',
+    icon: '/icons/icon-512.png',
+    badge: '/icons/icon-512.png',
     dir: 'rtl',
     lang: 'ar',
     vibrate: [200, 100, 200],
@@ -53,14 +58,12 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Focus existing window if open
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.navigate(url);
           return client.focus();
         }
       }
-      // Open new window
       return clients.openWindow(url);
     })
   );
