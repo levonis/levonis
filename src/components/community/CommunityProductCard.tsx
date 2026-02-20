@@ -3,6 +3,7 @@ import { MessageCircle, Store, ShoppingCart } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
+import { useLanguage } from "@/lib/i18n";
 
 type Props = {
   title: string;
@@ -32,6 +33,7 @@ function CommunityProductCardBase({
   onContact,
   hideOrderButtons,
 }: Props) {
+  const { t } = useLanguage();
   return (
     <div
       className="levo-card-frame group w-full min-w-0 cursor-pointer overflow-hidden"
@@ -70,8 +72,8 @@ function CommunityProductCardBase({
               e.stopPropagation();
               onOpenStore();
             }}
-            aria-label="زيارة المتجر"
-            title="زيارة المتجر"
+            aria-label={t('community_visit_store')}
+            title={t('community_visit_store')}
           >
             <Store className="h-3 w-3" />
           </Button>
@@ -86,8 +88,8 @@ function CommunityProductCardBase({
                 e.stopPropagation();
                 onContact();
               }}
-              aria-label="تواصل مع التاجر"
-              title="تواصل مع التاجر"
+              aria-label={t('community_contact_merchant')}
+              title={t('community_contact_merchant')}
             >
               <MessageCircle className="h-3 w-3" />
             </Button>
@@ -102,10 +104,10 @@ function CommunityProductCardBase({
         <div className="mt-1.5 flex items-center justify-between gap-1">
           {priceIqd ? (
             <p className="text-xs font-extrabold text-primary tabular-nums">
-              {priceIqd.toLocaleString()} د.ع
+              {priceIqd.toLocaleString()} {t('community_iqd_currency')}
             </p>
           ) : (
-            <p className="text-[10px] text-muted-foreground">تواصل للسعر</p>
+            <p className="text-[10px] text-muted-foreground">{t('community_contact_price')}</p>
           )}
 
           {merchantName ? (
@@ -132,7 +134,7 @@ function CommunityProductCardBase({
               onClick={onContact}
             >
               <ShoppingCart className="h-3 w-3" />
-              اطلب
+              {t('community_order')}
             </Button>
             {onContact && (
               <Button

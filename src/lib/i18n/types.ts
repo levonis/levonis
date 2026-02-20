@@ -733,4 +733,36 @@ export type TranslationKeys = {
   comp_type_growing: string;
   comp_type_letters: string;
   comp_day: string;
+
+  // Community extended - TopBar, Products, Requests, Merchants
+  community_topbar_subtitle_products: string;
+  community_topbar_subtitle_merchants: string;
+  community_topbar_subtitle_requests: string;
+  community_search_product: string;
+  community_search_merchant: string;
+  community_search_request: string;
+  community_visit_store: string;
+  community_contact_merchant: string;
+  community_contact_price: string;
+  community_order: string;
+  community_no_stores: string;
+  community_no_more: string;
+  community_error_loading: string;
+  community_no_requests: string;
+  community_no_completed_requests: string;
+  community_login_add_request: string;
+  community_chat: string;
+  community_your_request: string;
+  community_price_it: string;
+  community_edit_price: string;
+  community_no_offers: string;
+  community_offer_count: string;
+  community_accepted: string;
+  community_new_label: string;
+  community_customer: string;
+  community_material_all: string;
+  community_material_any: string;
+  community_time_day: string;
+  community_time_hour: string;
+  community_iqd_currency: string;
 };

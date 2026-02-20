@@ -13,6 +13,7 @@ import MerchantDirectoryCard from "@/components/community/MerchantDirectoryCard"
 import { useAuth } from "@/hooks/useAuth";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
 import { BadgeTier } from "@/components/community/MerchantBadges";
+import { useLanguage } from "@/lib/i18n";
 
 type Props = {
   mode: "preview" | "hub";
@@ -40,6 +41,7 @@ type FeaturedProductRow = {
 
 export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery = "", sortBy = "newest" }: Props) {
   const { isAdmin } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const chunkSize = mode === "hub" ? 5 : 10;
   const initialTarget = mode === "hub" ? 25 : 10;
@@ -246,7 +248,7 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
     return (
       <Card className="border-border bg-card">
         <CardContent className="p-6 text-center">
-          <p className="text-sm text-muted-foreground">لا توجد متاجر متاحة حالياً.</p>
+          <p className="text-sm text-muted-foreground">{t('community_no_stores')}</p>
         </CardContent>
       </Card>
     );
@@ -261,7 +263,7 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
           <Input
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
-            placeholder="ابحث عن تاجر..."
+            placeholder={t('community_search_merchant')}
             className="pr-9 h-9 text-xs rounded-xl"
           />
         </div>
@@ -296,7 +298,7 @@ export default function CommunityMerchantsHub({ mode, onOpenStore, searchQuery =
             </div>
           )}
           {!query.hasNextPage && items.length > 0 && (
-            <p className="text-center text-xs text-muted-foreground py-3">لا يوجد المزيد</p>
+            <p className="text-center text-xs text-muted-foreground py-3">{t('community_no_more')}</p>
           )}
         </>
       )}

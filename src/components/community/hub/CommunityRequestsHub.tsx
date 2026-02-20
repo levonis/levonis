@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import CompactRequestCard from "@/components/community/CompactRequestCard";
 import RequestDetailModal from "@/components/community/RequestDetailModal";
 import AddOfferDialog from "@/components/community/AddOfferDialog";
+import { useLanguage } from "@/lib/i18n";
 
 interface PrintRequest {
   id: string;
@@ -43,6 +44,7 @@ export default function CommunityRequestsHub({
   sortBy = "newest",
 }: CommunityRequestsHubProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   
   const [selectedRequest, setSelectedRequest] = useState<PrintRequest | null>(null);
@@ -184,7 +186,7 @@ export default function CommunityRequestsHub({
     return (
       <div className="flex items-center justify-center py-8 text-sm text-muted-foreground gap-2">
         <AlertCircle className="h-4 w-4" />
-        حدث خطأ في تحميل الطلبات
+        {t('community_error_loading')}
       </div>
     );
   }
@@ -194,7 +196,7 @@ export default function CommunityRequestsHub({
       <div className="flex flex-col items-center justify-center py-8 text-center">
         <Package className="h-10 w-10 text-muted-foreground/30 mb-2" />
         <p className="text-sm text-muted-foreground">
-          {showCompleted ? "لا توجد طلبات منتهية" : "لا توجد طلبات متاحة"}
+          {showCompleted ? t('community_no_completed_requests') : t('community_no_requests')}
         </p>
         {!user && (
           <Button
@@ -202,7 +204,7 @@ export default function CommunityRequestsHub({
             className="mt-2 text-xs"
             onClick={() => navigate("/auth")}
           >
-            سجل دخولك لإضافة طلب جديد
+            {t('community_login_add_request')}
           </Button>
         )}
       </div>
