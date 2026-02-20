@@ -15,7 +15,7 @@ interface ReplyPreviewBarProps {
 
 export default function ReplyPreviewBar({ replyTo, onClose }: ReplyPreviewBarProps) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
+    <div className="flex items-center gap-2 px-3 py-2 border-b bg-card/50">
       <Reply className="h-4 w-4 text-primary shrink-0" />
       <div className="flex-1 min-w-0 border-r-2 border-primary pr-2">
         <p className="text-[11px] font-bold text-primary truncate">
