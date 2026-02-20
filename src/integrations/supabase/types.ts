@@ -3089,6 +3089,7 @@ export type Database = {
       }
       merchant_public_profiles: {
         Row: {
+          accepted_payment_methods: Json | null
           badge_tier: string
           bio: string | null
           city: string | null
@@ -3104,6 +3105,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accepted_payment_methods?: Json | null
           badge_tier?: string
           bio?: string | null
           city?: string | null
@@ -3119,6 +3121,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accepted_payment_methods?: Json | null
           badge_tier?: string
           bio?: string | null
           city?: string | null

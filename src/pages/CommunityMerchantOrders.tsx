@@ -143,6 +143,16 @@ export default function CommunityMerchantOrders() {
             message: statusMessages[status],
             type: "order_status",
           });
+
+          // Send Telegram notification to customer
+          supabase.functions.invoke('send-user-telegram-notification', {
+            body: {
+              user_id: request.user_id,
+              title: status === "delivered" ? "📦 تم توصيل الطلب" : "⚙️ تحديث حالة الطلب",
+              message: statusMessages[status],
+              notification_type: status === "delivered" ? "success" : "info",
+            },
+          }).catch(err => console.error('Telegram notify customer failed:', err));
         }
       }
     },

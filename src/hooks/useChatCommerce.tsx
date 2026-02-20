@@ -195,6 +195,18 @@ export const useChatCommerce = ({ conversationId, sellerId, buyerId }: UseChatCo
       // Send system message
       await sendSystemMessage('تم إنشاء الطلب بنجاح. يمكن للبائع تأكيد التفاصيل أو تعديل السعر قبل الدفع.');
 
+      // Send Telegram notification to merchant about new order
+      if (sellerId) {
+        supabase.functions.invoke('send-user-telegram-notification', {
+          body: {
+            user_id: sellerId,
+            title: '🛒 طلب جديد',
+            message: `لديك طلب جديد: ${productTitle} (${quantity} قطعة) بقيمة ${(price * quantity).toLocaleString()} د.ع`,
+            notification_type: 'info',
+          },
+        }).catch(err => console.error('Telegram notify merchant failed:', err));
+      }
+
       return orderData;
     },
     onSuccess: () => {
@@ -404,6 +416,13 @@ export const useChatCommerce = ({ conversationId, sellerId, buyerId }: UseChatCo
 
       setIsProcessing(true);
 
+      // Fetch order details for notification
+      const { data: orderDetail } = await supabase
+        .from('chat_orders' as any)
+        .select('product_title, customer_id, seller_id')
+        .eq('id', orderId)
+        .single();
+
       await supabase
         .from('chat_orders' as any)
         .update({ status, updated_at: new Date().toISOString() })
@@ -419,6 +438,31 @@ export const useChatCommerce = ({ conversationId, sellerId, buyerId }: UseChatCo
 
       if (statusMessages[status]) {
         await sendSystemMessage(statusMessages[status]!);
+      }
+
+      // Send Telegram notification to the other party
+      if (orderDetail) {
+        const od = orderDetail as any;
+        const notifyUserId = isSeller ? od.customer_id : od.seller_id;
+        const statusLabels: Partial<Record<ChatOrderStatus, string>> = {
+          'approved': '✅ تم تأكيد طلبك',
+          'shipped': '🚚 تم شحن طلبك',
+          'completed': '🎉 تم إكمال الطلب',
+          'canceled': '❌ تم إلغاء الطلب',
+          'paid': '💰 تم استلام الدفع',
+          'waiting_payment': '💳 بانتظار الدفع',
+        };
+        const notifTitle = statusLabels[status];
+        if (notifTitle && notifyUserId) {
+          supabase.functions.invoke('send-user-telegram-notification', {
+            body: {
+              user_id: notifyUserId,
+              title: notifTitle,
+              message: `طلب: ${od.product_title || 'منتج'}`,
+              notification_type: status === 'canceled' ? 'error' : 'success',
+            },
+          }).catch(err => console.error('Telegram order status notify failed:', err));
+        }
       }
     },
     onSuccess: () => {
