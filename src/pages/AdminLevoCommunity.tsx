@@ -4,7 +4,7 @@ import {
   Store, Users, Award, ImageIcon, 
   Loader2, Settings, FileText, 
   Wallet, Trash2, Save, RefreshCw, ShieldCheck, Percent,
-  TrendingUp, Clock, Megaphone, Gift, Tag
+  TrendingUp, Clock, Megaphone, Gift, Tag, Truck, Plus, X, MapPin
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { IRAQI_GOVERNORATES } from "@/components/auth/signup/types";
 
 // Lazy load the tab content components
 const AdminCommunityMerchants = lazy(() => import("@/pages/AdminCommunityMerchants"));
@@ -175,6 +177,170 @@ function AdSlotPricingSettings() {
         >
           <Save className="h-3 w-3" />
           {updateAllMutation.isPending ? "جارٍ الحفظ..." : "حفظ جميع الأسعار"}
+        </Button>
+      </div>
+    </SettingCard>
+  );
+}
+
+function DeliveryPricingSettings() {
+  const queryClient = useQueryClient();
+  
+  const { data: deliverySettings, isLoading } = useQuery({
+    queryKey: ["community-delivery-prices"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("community_settings")
+        .select("value")
+        .eq("key", "delivery_prices")
+        .maybeSingle();
+      return (data?.value as { default: number; exceptions: Record<string, number> }) || { default: 5000, exceptions: {} };
+    },
+  });
+
+  const [defaultPrice, setDefaultPrice] = useState(5000);
+  const [exceptions, setExceptions] = useState<Record<string, number>>({});
+  const [newGov, setNewGov] = useState("");
+  const [newPrice, setNewPrice] = useState(5000);
+  const [initialized, setInitialized] = useState(false);
+
+  if (deliverySettings && !initialized) {
+    setDefaultPrice(deliverySettings.default);
+    setExceptions(deliverySettings.exceptions || {});
+    setInitialized(true);
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const value = { default: defaultPrice, exceptions };
+      const { data: existing } = await supabase
+        .from("community_settings")
+        .select("id")
+        .eq("key", "delivery_prices")
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("community_settings")
+          .update({ value, updated_at: new Date().toISOString() })
+          .eq("key", "delivery_prices");
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("community_settings")
+          .insert({ key: "delivery_prices", value });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["community-delivery-prices"] });
+      toast.success("تم حفظ أسعار التوصيل");
+    },
+    onError: () => toast.error("فشل الحفظ"),
+  });
+
+  const addException = () => {
+    if (!newGov || newGov in exceptions) return;
+    setExceptions(prev => ({ ...prev, [newGov]: newPrice }));
+    setNewGov("");
+    setNewPrice(5000);
+  };
+
+  const removeException = (gov: string) => {
+    setExceptions(prev => {
+      const next = { ...prev };
+      delete next[gov];
+      return next;
+    });
+  };
+
+  const availableGovs = IRAQI_GOVERNORATES.filter(g => !(g in exceptions));
+
+  if (isLoading) return null;
+
+  return (
+    <SettingCard
+      icon={Truck}
+      title="أسعار التوصيل"
+      description="سعر التوصيل الافتراضي لطلبات المجتمع مع إمكانية تخصيص لكل محافظة. يمكن للتاجر تعديل السعر من إعدادات متجره."
+      iconColor="bg-sky-500/15 text-sky-500"
+    >
+      <div className="space-y-3">
+        {/* Default price */}
+        <div className="flex items-center gap-2">
+          <Label className="text-[10px] text-muted-foreground shrink-0">الافتراضي</Label>
+          <Input
+            type="number"
+            value={defaultPrice}
+            onChange={(e) => setDefaultPrice(Number(e.target.value))}
+            className="h-7 text-xs flex-1"
+            min={0}
+            step={1000}
+          />
+          <span className="text-[10px] text-muted-foreground shrink-0">د.ع</span>
+        </div>
+
+        {/* Exceptions list */}
+        {Object.entries(exceptions).length > 0 && (
+          <div className="space-y-1.5">
+            <Label className="text-[10px] text-muted-foreground">استثناءات المحافظات</Label>
+            {Object.entries(exceptions).map(([gov, price]) => (
+              <div key={gov} className="flex items-center gap-2 bg-muted/30 rounded-lg px-2 py-1.5">
+                <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
+                <span className="text-[10px] font-medium flex-1">{gov}</span>
+                <Input
+                  type="number"
+                  value={price}
+                  onChange={(e) => setExceptions(prev => ({ ...prev, [gov]: Number(e.target.value) }))}
+                  className="h-6 text-[10px] w-20"
+                  min={0}
+                  step={1000}
+                />
+                <span className="text-[9px] text-muted-foreground">د.ع</span>
+                <button onClick={() => removeException(gov)} className="text-destructive/60 hover:text-destructive">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add exception */}
+        {availableGovs.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Select value={newGov} onValueChange={setNewGov}>
+              <SelectTrigger className="h-7 text-[10px] flex-1">
+                <SelectValue placeholder="اختر محافظة" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableGovs.map(g => (
+                  <SelectItem key={g} value={g} className="text-xs">{g}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
+              type="number"
+              value={newPrice}
+              onChange={(e) => setNewPrice(Number(e.target.value))}
+              className="h-7 text-[10px] w-20"
+              min={0}
+              step={1000}
+            />
+            <Button onClick={addException} disabled={!newGov} size="sm" variant="outline" className="h-7 px-2">
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+
+        {/* Save */}
+        <Button
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+          size="sm"
+          className="h-7 text-[10px] gap-1.5 w-full"
+        >
+          <Save className="h-3 w-3" />
+          {saveMutation.isPending ? "جارٍ الحفظ..." : "حفظ أسعار التوصيل"}
         </Button>
       </div>
     </SettingCard>
@@ -492,6 +658,11 @@ function CommunitySettings() {
       {/* Ad Slot Pricing - Full Width */}
       <div className="sm:col-span-2">
         <AdSlotPricingSettings />
+      </div>
+
+      {/* Delivery Pricing - Full Width */}
+      <div className="sm:col-span-2">
+        <DeliveryPricingSettings />
       </div>
     </div>
   );

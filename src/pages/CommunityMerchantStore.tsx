@@ -115,13 +115,13 @@ export default function CommunityMerchantStore() {
       if (error) throw error;
       return {
         paymentMethods: (data?.accepted_payment_methods as string[]) || ['full_prepayment'],
-        deliveryPrice: (data?.delivery_price_iqd as number) || 0,
+        deliveryPrice: (data?.delivery_price_iqd as number) ?? 5000,
       };
     },
   });
 
   const paymentMethods = merchantSettings?.paymentMethods || ['full_prepayment'];
-  const deliveryPrice = merchantSettings?.deliveryPrice || 0;
+  const deliveryPrice = merchantSettings?.deliveryPrice ?? 5000;
 
   const updatePaymentMethods = useMutation({
     mutationFn: async (methods: string[]) => {
