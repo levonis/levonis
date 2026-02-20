@@ -95,7 +95,7 @@ export default function AdminChatTopBar({
   const [warnReason, setWarnReason] = useState('');
 
   const goToProfile = () => {
-    navigate(`/community/customer/${usersId}`);
+    navigate(`/profile/${usersId}`);
     onViewProfile?.();
   };
 
