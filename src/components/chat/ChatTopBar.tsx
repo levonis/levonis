@@ -106,7 +106,7 @@ export default function ChatTopBar({
         />
         {/* Online indicator on avatar */}
         {isOnline && (
-          <span className="absolute -bottom-0.5 -left-0.5 h-3 w-3 rounded-full bg-primary border-2 border-card z-10" />
+          <span className="absolute -bottom-0.5 -left-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 border-[1.5px] border-card z-10" />
         )}
       </button>
 
@@ -127,7 +127,7 @@ export default function ChatTopBar({
           {/* Online status text */}
           <span className={cn(
             "text-[11px]",
-            isOnline ? "text-primary font-medium" : "text-muted-foreground"
+            isOnline ? "text-emerald-500 font-medium" : "text-muted-foreground"
           )}>
             {statusText}
           </span>

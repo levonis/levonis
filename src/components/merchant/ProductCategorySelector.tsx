@@ -42,9 +42,12 @@ export default function ProductCategorySelector({ merchantId, selectedIds, onCha
 
   const selectMain = (id: string) => {
     // If clicking the same main cat that's already selected (and no sub selected), deselect
-    if (id === selectedMainId && !selectedSubId && subCats.length === 0) {
-      onChange([]);
-      return;
+    if (id === selectedMainId && !selectedSubId) {
+      const subs = categories.filter(c => c.parent_id === id);
+      if (subs.length === 0) {
+        onChange([]);
+        return;
+      }
     }
     // Check if this main cat has subcategories
     const subs = categories.filter(c => c.parent_id === id);
@@ -52,9 +55,8 @@ export default function ProductCategorySelector({ merchantId, selectedIds, onCha
       // No subs, select the main category directly
       onChange([id]);
     } else {
-      // Has subs, select main temporarily (user must pick sub)
-      // Clear selection to force sub-selection
-      onChange([]);
+      // Has subs, select the main cat itself so sub-cats show
+      onChange([id]);
     }
   };
 
