@@ -216,9 +216,9 @@ export default function RequestDetailModal({
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent 
           hideClose
-          className="!p-0 !gap-0 sm:max-w-lg max-h-[90vh] overflow-hidden"
+          className="!p-0 !gap-0 sm:max-w-lg max-h-[85vh] flex flex-col"
         >
-          <div className="flex flex-col max-h-[90vh] overflow-y-auto">
+          <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
             {/* Hero Image Section - Scrolls with content */}
             <div className="relative shrink-0">
               {hasImages ? (
