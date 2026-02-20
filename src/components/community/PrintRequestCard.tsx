@@ -100,9 +100,9 @@ export default function PrintRequestCard({
   const timeLabel = daysAgo > 0 ? `${daysAgo} يوم` : hoursAgo > 0 ? `${hoursAgo} ساعة` : "الآن";
 
   return (
-    <div className="group relative rounded-xl border border-border/50 bg-gradient-to-b from-card to-background overflow-hidden hover:border-primary/40 hover:shadow-xl transition-all duration-300">
-      {/* Image Section */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+    <div className="group relative rounded-xl border border-border/50 bg-gradient-to-b from-card to-background overflow-hidden hover:border-primary/40 hover:shadow-lg transition-all duration-300">
+      {/* Image Section - compact */}
+      <div className="relative aspect-[3/2] overflow-hidden">
         {mainImage ? (
           <img
             src={mainImage}
@@ -111,88 +111,80 @@ export default function PrintRequestCard({
           />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center">
-            <Package className="h-10 w-10 text-muted-foreground/20" />
+            <Package className="h-8 w-8 text-muted-foreground/20" />
           </div>
         )}
 
-        {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
         
-        {/* Status Badge */}
         {isAccepted && (
-          <Badge className="absolute top-2 right-2 bg-green-500 text-white border-0">
+          <Badge className="absolute top-1.5 right-1.5 bg-green-500 text-white border-0 text-[8px] h-5">
             تم القبول
           </Badge>
         )}
         
-        {/* Material Badge */}
         {material && (
-          <Badge className={`absolute top-2 left-2 text-[9px] ${material.color} border-0`}>
-            <Layers className="h-2.5 w-2.5 ml-0.5" />
+          <Badge className={`absolute top-1.5 left-1.5 text-[8px] h-5 ${material.color} border-0`}>
             {material.label}
           </Badge>
         )}
 
-        {/* Bottom info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-2">
+        <div className="absolute bottom-0 left-0 right-0 p-1.5">
           <div className="flex items-center justify-between text-white">
             {request.customer_governorate && (
-              <span className="flex items-center gap-0.5 text-[9px] bg-black/40 px-1.5 py-0.5 rounded">
-                <MapPin className="h-2.5 w-2.5" />
+              <span className="flex items-center gap-0.5 text-[8px] bg-black/40 px-1 py-0.5 rounded">
+                <MapPin className="h-2 w-2" />
                 {request.customer_governorate}
               </span>
             )}
-            <span className="flex items-center gap-0.5 text-[9px] bg-black/40 px-1.5 py-0.5 rounded">
-              <Clock className="h-2.5 w-2.5" />
+            <span className="flex items-center gap-0.5 text-[8px] bg-black/40 px-1 py-0.5 rounded">
+              <Clock className="h-2 w-2" />
               {timeLabel}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-3 space-y-2">
-        <h3 className="font-bold text-sm line-clamp-1">{request.title}</h3>
+      {/* Content - compact */}
+      <div className="p-2 space-y-1.5">
+        <h3 className="font-bold text-xs line-clamp-1">{request.title}</h3>
         
-        <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
+        <p className="text-[10px] text-muted-foreground line-clamp-1 leading-relaxed">
           {request.description}
         </p>
 
-        {/* Quick Info Tags */}
-        <div className="flex flex-wrap gap-1.5">
-          <span className="inline-flex items-center gap-0.5 text-[9px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
-            <Ruler className="h-2.5 w-2.5" />
+        <div className="flex flex-wrap gap-1">
+          <span className="inline-flex items-center gap-0.5 text-[8px] text-muted-foreground bg-muted/50 px-1 py-0.5 rounded">
+            <Ruler className="h-2 w-2" />
             {request.size}
           </span>
-          <span className="inline-flex items-center gap-0.5 text-[9px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
-            <Palette className="h-2.5 w-2.5" />
+          <span className="inline-flex items-center gap-0.5 text-[8px] text-muted-foreground bg-muted/50 px-1 py-0.5 rounded">
+            <Palette className="h-2 w-2" />
             {request.colors}
           </span>
           {request.quantity && request.quantity > 1 && (
-            <span className="inline-flex items-center gap-0.5 text-[9px] text-cyan-300 bg-cyan-600/30 px-1.5 py-0.5 rounded">
-              <Hash className="h-2.5 w-2.5" />
+            <span className="inline-flex items-center gap-0.5 text-[8px] text-cyan-300 bg-cyan-600/30 px-1 py-0.5 rounded">
+              <Hash className="h-2 w-2" />
               {request.quantity}×
             </span>
           )}
         </div>
 
-        {/* Offers Count */}
-        <div className="flex items-center justify-between pt-2 border-t border-border/30">
-          <span className="text-[10px] text-primary flex items-center gap-1 font-medium">
-            <DollarSign className="h-3 w-3" />
+        <div className="flex items-center justify-between pt-1 border-t border-border/30">
+          <span className="text-[9px] text-primary flex items-center gap-0.5 font-medium">
+            <DollarSign className="h-2.5 w-2.5" />
             {offersCount} عرض
           </span>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-2 pt-1">
+        <div className="flex gap-1.5">
           <Button
             size="sm"
             variant="outline"
-            className="flex-1 text-[10px] h-7 border-border/50"
+            className="flex-1 text-[9px] h-6 border-border/50"
             onClick={() => onViewDetails(request)}
           >
-            <Eye className="h-3 w-3 ml-1" />
+            <Eye className="h-2.5 w-2.5 ml-0.5" />
             التفاصيل
           </Button>
 
@@ -201,19 +193,19 @@ export default function PrintRequestCard({
               <Button
                 size="sm"
                 variant="secondary"
-                className="flex-1 text-[10px] h-7 bg-primary/20 text-primary"
-                disabled
+                className="flex-1 text-[9px] h-6 bg-primary/20 text-primary"
+                onClick={() => onViewDetails(request)}
               >
-                <DollarSign className="h-3 w-3 ml-0.5" />
+                <DollarSign className="h-2.5 w-2.5 ml-0.5" />
                 {existingOffer.price_iqd.toLocaleString()}
               </Button>
             ) : (
               <Button
                 size="sm"
-                className="flex-1 text-[10px] h-7 bg-gradient-to-b from-primary to-accent"
+                className="flex-1 text-[9px] h-6 bg-gradient-to-b from-primary to-accent"
                 onClick={() => onAddOffer?.(request)}
               >
-                <Plus className="h-3 w-3 ml-0.5" />
+                <Plus className="h-2.5 w-2.5 ml-0.5" />
                 تسعير
               </Button>
             )
@@ -223,10 +215,10 @@ export default function PrintRequestCard({
             <Button
               size="sm"
               variant="secondary"
-              className="flex-1 text-[10px] h-7 bg-muted/50"
+              className="flex-1 text-[9px] h-6 bg-muted/50"
               onClick={() => navigate(`/community/messages?request=${request.id}`)}
             >
-              <MessageSquare className="h-3 w-3 ml-0.5" />
+              <MessageSquare className="h-2.5 w-2.5 ml-0.5" />
               المحادثات
             </Button>
           )}

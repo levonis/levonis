@@ -587,9 +587,9 @@ export default function CommunityMerchantStore() {
 
       {/* Enhanced Detail Dialog */}
       <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-hidden rounded-2xl border-border/50 p-0" dir="rtl">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] rounded-2xl border-border/50 p-0 overflow-hidden flex flex-col" dir="rtl">
           {selectedProduct && (
-            <ScrollArea className="max-h-[90vh]">
+            <ScrollArea className="flex-1 min-h-0">
               <div className="relative">
                 {/* Image Gallery */}
                 {selectedProduct.image_urls && selectedProduct.image_urls.length > 0 ? (
