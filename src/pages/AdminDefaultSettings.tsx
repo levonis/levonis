@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Save, Plus, X, Settings, Percent, ChevronDown, ChevronUp } from 'lucide-react';
+import { Save, Plus, X, Settings, Percent, ChevronDown, ChevronUp, Bell, MessageSquare, Smartphone, Globe } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -68,6 +69,26 @@ export default function AdminDefaultSettings() {
   const [sectionTaxRates, setSectionTaxRates] = useState<Record<string, number>>({});
   const [categoryTaxRates, setCategoryTaxRates] = useState<Record<string, number>>({});
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [notifSettings, setNotifSettings] = useState<any>(null);
+
+  const { data: notificationSettings, isLoading: notifLoading } = useQuery({
+    queryKey: ['notification-settings'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('default_settings')
+        .select('*')
+        .eq('setting_key', 'notification_settings')
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (notificationSettings?.setting_value) {
+      setNotifSettings(notificationSettings.setting_value);
+    }
+  }, [notificationSettings]);
 
   useEffect(() => {
     if (settings?.setting_value) setFormData(settings.setting_value);
@@ -135,10 +156,45 @@ export default function AdminDefaultSettings() {
     onError: (error: any) => { toast.error('فشل: ' + error.message); },
   });
 
+  const updateNotifMutation = useMutation({
+    mutationFn: async () => {
+      if (!notifSettings) return;
+      const { data: existing } = await supabase.from('default_settings').select('id').eq('setting_key', 'notification_settings').maybeSingle();
+      if (existing) {
+        const { error } = await supabase.from('default_settings').update({ setting_value: notifSettings }).eq('setting_key', 'notification_settings');
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('default_settings').insert({ setting_key: 'notification_settings', setting_value: notifSettings });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['notification-settings'] }); },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (formData) updateMutation.mutate(formData);
     updateTaxMutation.mutate();
+    updateNotifMutation.mutate();
+  };
+
+  const toggleChannel = (channelKey: string, field: 'telegram' | 'push' | 'in_app') => {
+    if (!notifSettings) return;
+    setNotifSettings((prev: any) => ({
+      ...prev,
+      channels: {
+        ...prev.channels,
+        [channelKey]: {
+          ...prev.channels[channelKey],
+          [field]: !prev.channels[channelKey][field],
+        },
+      },
+    }));
+  };
+
+  const toggleGlobalChannel = (field: 'telegram_enabled' | 'push_enabled' | 'in_app_enabled') => {
+    if (!notifSettings) return;
+    setNotifSettings((prev: any) => ({ ...prev, [field]: !prev[field] }));
   };
 
   const handleShippingOptionChange = (index: number, field: string, value: any) => {
@@ -171,7 +227,7 @@ export default function AdminDefaultSettings() {
     return globalTaxPercentage;
   };
 
-  if (authLoading || isLoading || taxLoading) {
+  if (authLoading || isLoading || taxLoading || notifLoading) {
     return <AdminLayout title="الإعدادات الافتراضية" icon={<Settings className="h-5 w-5" />}><AdminLoading /></AdminLayout>;
   }
   if (!user || !isAdmin) return null;
@@ -183,9 +239,9 @@ export default function AdminDefaultSettings() {
       icon={<Settings className="h-5 w-5" />}
       description="تخصيص الإعدادات الافتراضية للمنتجات والضرائب"
       actions={
-        <Button onClick={handleSubmit} disabled={updateMutation.isPending || updateTaxMutation.isPending} className="admin-btn-primary gap-2">
+          <Button onClick={handleSubmit} disabled={updateMutation.isPending || updateTaxMutation.isPending || updateNotifMutation.isPending} className="admin-btn-primary gap-2">
           <Save className="h-4 w-4" />
-          {updateMutation.isPending || updateTaxMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
+          {updateMutation.isPending || updateTaxMutation.isPending || updateNotifMutation.isPending ? 'جاري الحفظ...' : 'حفظ الإعدادات'}
         </Button>
       }
     >
@@ -407,6 +463,95 @@ export default function AdminDefaultSettings() {
             </div>
           </AdminCardContent>
         </AdminCard>
+        {/* Notification Settings */}
+        {notifSettings && (
+          <AdminCard>
+            <AdminCardHeader 
+              title="🔔 إعدادات الإشعارات" 
+              icon={<Bell className="h-5 w-5" />}
+              description="التحكم بقنوات الإشعارات وتفعيل/تعطيل كل نوع"
+            />
+            <AdminCardContent>
+              <div className="space-y-6">
+                {/* Global toggles */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                    <div className="flex items-center gap-3">
+                      <MessageSquare className="h-5 w-5 text-blue-500" />
+                      <div>
+                        <p className="font-semibold text-sm">تليجرام</p>
+                        <p className="text-[10px] text-muted-foreground">إرسال عبر البوت</p>
+                      </div>
+                    </div>
+                    <Switch checked={notifSettings.telegram_enabled} onCheckedChange={() => toggleGlobalChannel('telegram_enabled')} />
+                  </div>
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-green-500/10 border border-green-500/20">
+                    <div className="flex items-center gap-3">
+                      <Smartphone className="h-5 w-5 text-green-500" />
+                      <div>
+                        <p className="font-semibold text-sm">إشعارات Push</p>
+                        <p className="text-[10px] text-muted-foreground">إشعارات المتصفح</p>
+                      </div>
+                    </div>
+                    <Switch checked={notifSettings.push_enabled} onCheckedChange={() => toggleGlobalChannel('push_enabled')} />
+                  </div>
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-purple-500/10 border border-purple-500/20">
+                    <div className="flex items-center gap-3">
+                      <Globe className="h-5 w-5 text-purple-500" />
+                      <div>
+                        <p className="font-semibold text-sm">داخل التطبيق</p>
+                        <p className="text-[10px] text-muted-foreground">إشعارات الموقع</p>
+                      </div>
+                    </div>
+                    <Switch checked={notifSettings.in_app_enabled} onCheckedChange={() => toggleGlobalChannel('in_app_enabled')} />
+                  </div>
+                </div>
+
+                {/* Per-channel toggles */}
+                <div className="space-y-2">
+                  <Label className="text-base font-bold">تفاصيل كل نوع إشعار</Label>
+                  <div className="border rounded-xl overflow-hidden">
+                    <div className="grid grid-cols-[1fr,auto,auto,auto] gap-0 p-3 bg-muted/50 text-xs font-semibold text-muted-foreground border-b">
+                      <span>النوع</span>
+                      <span className="w-16 text-center">تليجرام</span>
+                      <span className="w-16 text-center">Push</span>
+                      <span className="w-16 text-center">الموقع</span>
+                    </div>
+                    {Object.entries(notifSettings.channels || {}).map(([key, channel]: [string, any]) => (
+                      <div key={key} className="grid grid-cols-[1fr,auto,auto,auto] gap-0 p-3 border-b last:border-0 items-center hover:bg-muted/20 transition-colors">
+                        <span className="text-sm font-medium">{channel.label}</span>
+                        <div className="w-16 flex justify-center">
+                          <Switch 
+                            checked={channel.telegram && notifSettings.telegram_enabled} 
+                            onCheckedChange={() => toggleChannel(key, 'telegram')}
+                            disabled={!notifSettings.telegram_enabled}
+                            className="scale-75"
+                          />
+                        </div>
+                        <div className="w-16 flex justify-center">
+                          <Switch 
+                            checked={channel.push && notifSettings.push_enabled} 
+                            onCheckedChange={() => toggleChannel(key, 'push')}
+                            disabled={!notifSettings.push_enabled}
+                            className="scale-75"
+                          />
+                        </div>
+                        <div className="w-16 flex justify-center">
+                          <Switch 
+                            checked={channel.in_app && notifSettings.in_app_enabled} 
+                            onCheckedChange={() => toggleChannel(key, 'in_app')}
+                            disabled={!notifSettings.in_app_enabled}
+                            className="scale-75"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </AdminCardContent>
+          </AdminCard>
+        )}
       </form>
     </AdminLayout>
   );
