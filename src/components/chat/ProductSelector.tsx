@@ -128,8 +128,15 @@ export default function ProductSelector({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md p-0 gap-0 max-h-[80vh] flex flex-col">
+    <Dialog open={open} onOpenChange={onOpenChange} modal={false}>
+      {/* Custom overlay for non-modal dialog */}
+      {open && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/80" 
+          onClick={() => onOpenChange(false)} 
+        />
+      )}
+      <DialogContent className="sm:max-w-md p-0 gap-0 max-h-[80vh] flex flex-col z-50">
         <DialogHeader className="p-4 pb-0 shrink-0">
           <div className="flex items-center justify-between gap-2">
             <DialogTitle className="flex items-center gap-2">
