@@ -660,6 +660,10 @@ function CommunitySettings() {
         <AdSlotPricingSettings />
       </div>
 
+      {/* Delivery Pricing - Full Width */}
+      <div className="sm:col-span-2">
+        <DeliveryPricingSettings />
+      </div>
     </div>
   );
 }
