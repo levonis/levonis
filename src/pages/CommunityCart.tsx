@@ -120,10 +120,24 @@ export default function CommunityCart() {
   });
 
   const handleOrderFromMerchant = (merchantId: string) => {
+    const group = groupedItems.find(g => g.merchantId === merchantId);
+    if (!group) return;
+    
     const params = new URLSearchParams();
     params.set("merchant_id", merchantId);
+    
+    // Pass cart items as JSON for auto-sending in chat
+    const cartData = group.items.map(item => ({
+      title: item.product_title,
+      price: item.product_price,
+      image: item.product_image,
+      quantity: item.quantity,
+      productId: item.product_id,
+    }));
+    params.set("cart_items", JSON.stringify(cartData));
+    
     navigate(`/community/messages?${params.toString()}`);
-    toast.success("يمكنك الآن إرسال طلبك للتاجر عبر المحادثة");
+    toast.success("يتم إرسال طلبك للتاجر عبر المحادثة");
   };
 
   if (!user) {

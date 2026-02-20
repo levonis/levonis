@@ -28,6 +28,7 @@ export default function CommunityMessages() {
   const productPrice = searchParams.get('product_price');
   const productImage = searchParams.get('product_image');
   const requestId = searchParams.get('request_id');
+  const cartItemsParam = searchParams.get('cart_items');
 
   // Context for product/request that user entered through
   const [entryContext, setEntryContext] = useState<{
@@ -169,6 +170,68 @@ export default function CommunityMessages() {
         });
       }
 
+      // Auto-send cart items as product messages
+      if (cartItemsParam) {
+        try {
+          const cartItems = JSON.parse(cartItemsParam) as Array<{
+            title: string;
+            price: number;
+            image: string | null;
+            quantity: number;
+            productId: string;
+          }>;
+          
+          for (const item of cartItems) {
+            const content = `🛒 أنا مهتم بالمنتج:\n${item.title}\n💰 ${item.price.toLocaleString('ar-IQ')} د.ع\n📦 الكمية: ${item.quantity}`;
+            await supabase.from('listing_messages').insert({
+              conversation_id: conversationId,
+              sender_id: user.id,
+              content,
+              image_url: item.image || null,
+            });
+          }
+
+          // Send user's address for confirmation
+          const { data: defaultAddr } = await supabase
+            .from('user_addresses')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('is_default', true)
+            .maybeSingle();
+          
+          const address = defaultAddr || (await supabase
+            .from('user_addresses')
+            .select('*')
+            .eq('user_id', user.id)
+            .limit(1)
+            .single()).data;
+          
+          if (address) {
+            await supabase.from('listing_messages').insert({
+              conversation_id: conversationId,
+              sender_id: user.id,
+              content: '',
+              address_data: {
+                governorate: address.governorate,
+                area: address.area,
+                neighborhood: address.neighborhood,
+                nearest_landmark: address.nearest_landmark,
+                phone_number: address.phone_number,
+                additional_notes: address.additional_notes,
+              },
+            });
+            
+            await supabase.from('listing_messages').insert({
+              conversation_id: conversationId,
+              sender_id: user.id,
+              content: '📍 هذا عنواني للتوصيل. يمكنك تعديله من صفحة العناوين إذا لزم الأمر.',
+            });
+          }
+        } catch (e) {
+          console.error('Error sending cart items:', e);
+        }
+      }
+
       // Send Telegram notification
       const { data: userProfile } = await supabase
         .from('profiles')
@@ -184,7 +247,7 @@ export default function CommunityMessages() {
           event_type: 'new_message',
           listing_title: displayName,
           sender_name: senderName,
-          message_content: 'محادثة جديدة',
+          message_content: cartItemsParam ? 'طلب جديد من السلة' : 'محادثة جديدة',
           conversation_id: conversationId,
         },
       }).catch(() => {});
