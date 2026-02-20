@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ArrowLeft, ShoppingBag, Trash2, Plus, Minus, Store, 
-  Package, Sparkles, MessageCircle, ShoppingCart, Truck
+  Package, Sparkles, MessageCircle, ShoppingCart
 } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
@@ -47,83 +47,23 @@ export default function CommunityCart() {
     },
   });
 
-  // Fetch delivery prices for merchants in cart
-  const merchantIds = [...new Set(cartItems.map(i => i.merchant_id))];
-  const { data: merchantDeliveryPrices = {} } = useQuery({
-    queryKey: ["merchant-delivery-prices", merchantIds],
-    enabled: merchantIds.length > 0,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("merchant_public_profiles")
-        .select("id, delivery_price_iqd")
-        .in("id", merchantIds);
-      const map: Record<string, number | null> = {};
-      data?.forEach(m => { map[m.id] = m.delivery_price_iqd; });
-      return map;
-    },
-  });
-
-  // Fetch admin delivery price settings (default + governorate exceptions)
-  const { data: adminDeliverySettings } = useQuery({
-    queryKey: ["community-delivery-prices"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("community_settings")
-        .select("value")
-        .eq("key", "delivery_prices")
-        .maybeSingle();
-      return (data?.value as { default: number; exceptions: Record<string, number> }) || { default: 5000, exceptions: {} };
-    },
-  });
-
-  // Fetch user's governorate from profile
-  const { data: userGovernorate } = useQuery({
-    queryKey: ["user-governorate", user?.id],
-    enabled: !!user?.id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("governorate")
-        .eq("id", user!.id)
-        .maybeSingle();
-      return data?.governorate as string | null;
-    },
-  });
-
-  // Calculate delivery price for a merchant: merchant override > admin governorate exception > admin default
-  const getDeliveryPrice = (merchantId: string): number => {
-    const merchantPrice = merchantDeliveryPrices[merchantId];
-    // If merchant has explicitly set a price (including 0), use it
-    if (merchantPrice !== null && merchantPrice !== undefined) {
-      return merchantPrice;
-    }
-    // Otherwise use admin settings based on user governorate
-    const settings = adminDeliverySettings || { default: 5000, exceptions: {} };
-    if (userGovernorate && settings.exceptions[userGovernorate] !== undefined) {
-      return settings.exceptions[userGovernorate];
-    }
-    return settings.default;
-  };
 
   const groupedItems = useMemo(() => {
-    const groups: Record<string, { merchantName: string; merchantId: string; items: CartItem[]; deliveryPrice: number }> = {};
+    const groups: Record<string, { merchantName: string; merchantId: string; items: CartItem[] }> = {};
     cartItems.forEach(item => {
       if (!groups[item.merchant_id]) {
         groups[item.merchant_id] = {
           merchantName: item.merchant_name || "متجر",
           merchantId: item.merchant_id,
           items: [],
-          deliveryPrice: getDeliveryPrice(item.merchant_id),
         };
       }
       groups[item.merchant_id].items.push(item);
     });
     return Object.values(groups);
-  }, [cartItems, merchantDeliveryPrices, adminDeliverySettings, userGovernorate]);
+  }, [cartItems]);
 
-  const productsTotal = cartItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
-  const deliveryTotal = groupedItems.reduce((sum, g) => sum + g.deliveryPrice, 0);
-  const totalPrice = productsTotal + deliveryTotal;
+  const totalPrice = cartItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const updateQuantity = useMutation({
@@ -337,21 +277,9 @@ export default function CommunityCart() {
             <div className="p-3.5 bg-gradient-to-l from-primary/5 to-transparent border-t border-border/20">
               <div className="space-y-1.5 mb-2.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">مجموع المنتجات</span>
-                  <span className="text-xs font-bold text-foreground">
-                    {group.items.reduce((s, i) => s + i.product_price * i.quantity, 0).toLocaleString()} د.ع
-                  </span>
-                </div>
-                {group.deliveryPrice > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Truck className="h-3 w-3" />التوصيل</span>
-                    <span className="text-xs font-bold text-foreground">{group.deliveryPrice.toLocaleString()} د.ع</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between pt-1 border-t border-border/20">
                   <span className="text-[10px] font-bold text-foreground">الإجمالي</span>
                   <span className="text-sm font-black text-primary">
-                    {(group.items.reduce((s, i) => s + i.product_price * i.quantity, 0) + group.deliveryPrice).toLocaleString()} د.ع
+                    {group.items.reduce((s, i) => s + i.product_price * i.quantity, 0).toLocaleString()} د.ع
                   </span>
                 </div>
               </div>
