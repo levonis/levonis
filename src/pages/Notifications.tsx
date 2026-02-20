@@ -12,8 +12,10 @@ import { Loader2, Bell, Check, Info, AlertCircle, CheckCircle, XCircle, Send } f
 import { toast } from 'sonner';
 import { formatDate } from '@/lib/utils';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
+import { useLanguage } from '@/lib/i18n';
 
 const Notifications = () => {
+  const { t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -41,7 +43,6 @@ const Notifications = () => {
     enabled: !!user?.id,
   });
 
-  // Fetch user's telegram chat ID
   const { data: profile } = useQuery({
     queryKey: ['profile-telegram', user?.id],
     queryFn: async () => {
@@ -76,10 +77,10 @@ const Notifications = () => {
       if (error) throw error;
       
       queryClient.invalidateQueries({ queryKey: ['profile-telegram'] });
-      toast.success(telegramChatId ? 'تم حفظ معرف تيليجرام بنجاح' : 'تم إزالة معرف تيليجرام');
+      toast.success(telegramChatId ? t('notif_telegram_saved') : t('notif_telegram_removed'));
     } catch (error) {
       console.error('Error saving telegram chat ID:', error);
-      toast.error('حدث خطأ في حفظ المعرف');
+      toast.error(t('notif_telegram_save_error'));
     } finally {
       setSavingTelegram(false);
     }
@@ -96,7 +97,7 @@ const Notifications = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      toast.success('تم تعليم الإشعار كمقروء');
+      toast.success(t('notif_marked_read'));
     },
   });
 
@@ -112,7 +113,7 @@ const Notifications = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
-      toast.success('تم تعليم جميع الإشعارات كمقروءة');
+      toast.success(t('notif_all_marked_read'));
     },
   });
 
@@ -148,10 +149,10 @@ const Notifications = () => {
           <div>
             <h1 className="text-4xl font-black text-primary mb-2 flex items-center gap-3">
               <Bell className="h-8 w-8" />
-              الإشعارات
+              {t('notif_title')}
             </h1>
             <p className="text-muted-foreground">
-              {unreadCount > 0 ? `لديك ${unreadCount} إشعار غير مقروء` : 'جميع الإشعارات مقروءة'}
+              {unreadCount > 0 ? t('notif_unread_count', { count: unreadCount }) : t('notif_all_read')}
             </p>
           </div>
           {unreadCount > 0 && (
@@ -161,7 +162,7 @@ const Notifications = () => {
               disabled={markAllAsRead.isPending}
             >
               {markAllAsRead.isPending && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-              تعليم الكل كمقروء
+              {t('notif_mark_all_read')}
             </Button>
           )}
         </div>
@@ -171,16 +172,16 @@ const Notifications = () => {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Send className="h-5 w-5 text-[#0088cc]" />
-              تلقي الإشعارات عبر تيليجرام
+              {t('notif_telegram_title')}
             </CardTitle>
             <CardDescription>
-              أضف رقم ID الخاص بك لتصلك الإشعارات مباشرة على تيليجرام
+              {t('notif_telegram_desc')}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="bg-muted/50 rounded-lg p-4 space-y-3">
               <p className="text-sm text-muted-foreground">
-                للحصول على رقم ID الخاص بك تلقائياً:
+                {t('notif_telegram_get_id')}
               </p>
               <Button
                 variant="outline"
@@ -193,24 +194,24 @@ const Notifications = () => {
                   rel="noopener noreferrer"
                 >
                   <Send className="h-4 w-4 text-[#0088cc]" />
-                  افتح البوت للحصول على رقم ID الخاص بك
+                  {t('notif_telegram_open_bot')}
                 </a>
               </Button>
               <p className="text-xs text-muted-foreground text-center">
-                سيرسل لك البوت رقم ID الخاص بك، انسخه والصقه أدناه
+                {t('notif_telegram_paste')}
               </p>
             </div>
             
             <div className="flex gap-3">
               <div className="flex-1 space-y-2">
                 <Label htmlFor="telegram_chat_id" className="text-sm">
-                  رقم ID الخاص بك
+                  {t('notif_telegram_id_label')}
                 </Label>
                 <Input
                   id="telegram_chat_id"
                   value={telegramChatId}
                   onChange={(e) => setTelegramChatId(e.target.value)}
-                  placeholder="مثال: 123456789"
+                  placeholder="123456789"
                   dir="ltr"
                   className="font-mono"
                 />
@@ -221,13 +222,13 @@ const Notifications = () => {
                 className="self-end"
               >
                 {savingTelegram && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-                {profile?.telegram_chat_id ? 'تحديث' : 'حفظ'}
+                {profile?.telegram_chat_id ? t('common_update') : t('common_save')}
               </Button>
             </div>
             {profile?.telegram_chat_id && (
               <p className="text-xs text-green-500 flex items-center gap-1">
                 <CheckCircle className="h-3 w-3" />
-                تم تفعيل إشعارات تيليجرام
+                {t('notif_telegram_active')}
               </p>
             )}
           </CardContent>
@@ -238,7 +239,7 @@ const Notifications = () => {
             <Card className="glass-effect border-border/50">
               <CardContent className="py-12 text-center">
                 <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground">لا توجد إشعارات بعد</p>
+                <p className="text-muted-foreground">{t('notif_empty')}</p>
               </CardContent>
             </Card>
           ) : (
@@ -265,12 +266,12 @@ const Notifications = () => {
                           </CardTitle>
                           {!notification.read && (
                             <Badge variant="secondary" className="text-xs">
-                              جديد
+                              {t('common_new')}
                             </Badge>
                           )}
                           {notification.is_general && (
                             <Badge variant="outline" className="text-xs">
-                              عام
+                              {t('common_general')}
                             </Badge>
                           )}
                         </div>
@@ -326,7 +327,7 @@ const Notifications = () => {
                         }
                       }}
                     >
-                      عرض التفاصيل
+                      {t('common_view_details')}
                     </Button>
                   )}
                 </CardContent>

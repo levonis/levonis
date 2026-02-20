@@ -64,7 +64,7 @@ export default function InstallPrompt() {
   if (isInstalled || dismissed || (!deferredPrompt && !isIOS())) return null;
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-sm animate-in slide-in-from-bottom-4 duration-500">
+    <div className="fixed bottom-4 left-4 right-4 z-[9999] mx-auto max-w-sm animate-in slide-in-from-bottom-4 duration-500">
       <div className="relative rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-2xl p-4">
         {/* Close button */}
         <button
