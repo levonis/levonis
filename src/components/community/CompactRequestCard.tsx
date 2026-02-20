@@ -104,23 +104,15 @@ export default function CompactRequestCard({
     queryKey: ["my-offer-check", request.id, isMerchant],
     enabled: isMerchant && !isOwner,
     queryFn: async () => {
-      // Get current user's merchant ID via merchant_applications
+      // Get current user's merchant ID from auth
       const { data: { user } } = await supabase.auth.getUser();
       if (!user?.id) return null;
-      
-      const { data: merchantApp } = await supabase
-        .from("merchant_applications")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("status", "approved")
-        .maybeSingle();
-      if (!merchantApp) return null;
       
       const { data } = await supabase
         .from("print_offers")
         .select("id, price_iqd, edit_count")
         .eq("request_id", request.id)
-        .eq("trader_id", merchantApp.id)
+        .eq("trader_id", user.id)
         .maybeSingle();
       return data;
     },
@@ -164,7 +156,7 @@ export default function CompactRequestCard({
       )}
 
       {/* Image Section */}
-      <div className="relative aspect-[4/3] overflow-hidden">
+      <div className="relative aspect-[5/4] overflow-hidden">
         {mainImage ? (
           <img
             src={mainImage}
