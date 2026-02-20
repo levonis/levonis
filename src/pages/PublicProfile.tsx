@@ -68,8 +68,6 @@ const PublicProfile = () => {
     },
   });
 
-  // NOTE: تم حذف سوق المستعمل بالكامل، لذلك صفحة الملف العام تعرض بيانات المستخدم الأساسية فقط.
-
   const { data: rep } = useUserPrintReputation(userId);
   
   // Get user's active card frame

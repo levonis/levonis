@@ -66,8 +66,6 @@ const Favorites = () => {
 
       if (productError) throw productError;
       setFavorites(productFavs || []);
-
-      // NOTE: تم حذف سوق المستعمل بالكامل (واجهة + قاعدة بيانات)
     } catch (error) {
       console.error('Error fetching favorites:', error);
       toast.error('حدث خطأ في تحميل المفضلة');

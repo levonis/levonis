@@ -76,7 +76,6 @@ const AdminCommunityCustomers = lazy(() => import("./pages/AdminCommunityCustome
 const AdminCommunityComplaints = lazy(() => import("./pages/AdminCommunityComplaints"));
 const AdminCommunityMessages = lazy(() => import("./pages/AdminCommunityMessages"));
 const CommunityMessages = lazy(() => import("./pages/CommunityMessages"));
-// CommunityCustomer page removed - was an unwanted placeholder page
 const CommunityCustomerDashboard = lazy(() => import("./pages/CommunityCustomerDashboard"));
 const CommunityMerchantProfessionalDashboard = lazy(() => import("./pages/CommunityMerchantProfessionalDashboard"));
 const CommunityCustomerNewRequest = lazy(() => import("./pages/CommunityCustomerNewRequest"));
@@ -207,7 +206,6 @@ function AppContent() {
             <Route path="/community" element={<RequireCommunityProfile><CommunityHome /></RequireCommunityProfile>} />
             <Route path="/community/reels" element={<ReelsPage />} />
             <Route path="/community/messages" element={<RequireCommunityProfile><CommunityMessages /></RequireCommunityProfile>} />
-            {/* /community/customer route removed - redirects handled by dashboard */}
             <Route path="/community/customer/dashboard" element={<RequireCommunityProfile><CommunityCustomerDashboard /></RequireCommunityProfile>} />
             <Route path="/community/merchant/dashboard" element={<RequireCommunityProfile><CommunityMerchantProfessionalDashboard /></RequireCommunityProfile>} />
             <Route path="/community/customer/requests" element={<RequireCommunityProfile><CommunityCustomerRequests /></RequireCommunityProfile>} />
