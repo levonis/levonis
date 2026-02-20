@@ -589,7 +589,7 @@ function MerchantsContent() {
                 <Button
                   variant="outline"
                   onClick={async () => {
-                    const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
+                    const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
                     const userId = active.user_id;
                     
                     // Find existing listing_conversation between support and this user
