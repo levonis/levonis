@@ -220,7 +220,7 @@ function AppContent() {
             <Route path="/community/merchants/all-products" element={<CommunityAllMerchantsProducts />} />
             <Route path="/community/requests" element={<RequireCommunityProfile><CommunityRequestsBrowse /></RequireCommunityProfile>} />
             <Route path="/community/merchants" element={<RequireCommunityProfile><CommunityMerchantsPages /></RequireCommunityProfile>} />
-            <Route path="/store/:merchantId" element={<CommunityMerchantStorePage />} />
+            <Route path="/community/store/:merchantId" element={<CommunityMerchantStorePage />} />
             <Route path="/profile/:userId" element={<PublicProfile />} />
             <Route path="/seller/:id" element={<SellerProfile />} />
             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
