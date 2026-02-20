@@ -33,15 +33,15 @@ export function useNotificationPermission() {
     // Use service worker notification for better reliability
     if (swRegistration) {
       swRegistration.showNotification(title, {
-        icon: '/icons/icon-512.png',
-        badge: '/icons/icon-512.png',
+        icon: '/icons/icon-192.png',
+        badge: '/icons/icon-192.png',
         dir: 'rtl',
         lang: 'ar',
         ...options,
-      } as any);
+      } as NotificationOptions);
     } else if ('Notification' in window) {
       new Notification(title, {
-        icon: '/icons/icon-512.png',
+        icon: '/icons/icon-192.png',
         dir: 'rtl',
         lang: 'ar',
         ...options,

@@ -1277,3 +1277,19 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Telegram Mini App viewport fix */
+html, body, #root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Safe area padding for notched devices & Telegram */
+body {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}

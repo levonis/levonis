@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levonis-v3';
+const CACHE_NAME = 'levonis-v4';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -15,6 +15,7 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Skip API calls
   if (event.request.url.includes('/rest/') || event.request.url.includes('/functions/')) {
     return;
   }
@@ -34,14 +35,17 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: '/icons/icon-512.png',
-    badge: '/icons/icon-512.png',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
     dir: 'rtl',
     lang: 'ar',
     vibrate: [200, 100, 200],
     data: data,
+    tag: data.tag || 'levonis-notification',
+    renotify: true,
     actions: [
       { action: 'open', title: 'فتح' },
+      { action: 'dismiss', title: 'إغلاق' },
     ],
   };
 
@@ -54,10 +58,13 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
+  if (event.action === 'dismiss') return;
+
   const url = event.notification.data?.url || '/community/messages';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      // Try to focus existing window
       for (const client of clientList) {
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           client.navigate(url);

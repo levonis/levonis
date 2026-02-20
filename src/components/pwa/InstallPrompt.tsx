@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Download, Smartphone, Bell } from 'lucide-react';
+import { X, Download, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
@@ -22,12 +22,12 @@ export default function InstallPrompt() {
       setIsInstalled(true);
     }
 
-    // Check notification permission after install prompt dismissed
+    // Check notification permission
     const notifDismissed = localStorage.getItem('notif-prompt-dismissed');
     if (notifDismissed) {
       const dismissedAt = parseInt(notifDismissed, 10);
       if (Date.now() - dismissedAt < 7 * 24 * 60 * 60 * 1000) {
-        // Don't show notif banner if dismissed within 7 days
+        // Don't show
       } else if (permission === 'default') {
         setTimeout(() => setShowNotifBanner(true), 5000);
       }
@@ -55,9 +55,7 @@ export default function InstallPrompt() {
     if (!deferredPrompt) return;
     await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setIsInstalled(true);
-    }
+    if (outcome === 'accepted') setIsInstalled(true);
     setDeferredPrompt(null);
     handleDismiss();
   };
@@ -75,17 +73,14 @@ export default function InstallPrompt() {
     const result = await requestPermission();
     setShowNotifBanner(false);
     localStorage.setItem('notif-prompt-dismissed', Date.now().toString());
-    if (result === 'granted') {
-      // Show a test notification
-      if ('serviceWorker' in navigator) {
-        const reg = await navigator.serviceWorker.ready;
-        reg.showNotification('🔔 LEVONIS', {
-          body: 'تم تفعيل الإشعارات بنجاح! ستصلك إشعارات الرسائل والطلبات.',
-          icon: '/icons/icon-512.png',
-          dir: 'rtl',
-          lang: 'ar',
-        } as any);
-      }
+    if (result === 'granted' && 'serviceWorker' in navigator) {
+      const reg = await navigator.serviceWorker.ready;
+      reg.showNotification('🔔 LEVONIS', {
+        body: 'تم تفعيل الإشعارات بنجاح!',
+        icon: '/icons/icon-192.png',
+        dir: 'rtl',
+        lang: 'ar',
+      } as NotificationOptions);
     }
   };
 
@@ -104,41 +99,25 @@ export default function InstallPrompt() {
         )}>
           <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-2xl shadow-primary/10">
             <div className="h-1 w-full bg-gradient-to-l from-primary via-primary/70 to-primary/40" />
-            <button
-              onClick={handleDismissNotif}
-              className="absolute left-2 top-3 p-1 rounded-full hover:bg-muted/50 transition-colors text-muted-foreground"
-            >
+            <button onClick={handleDismissNotif} className="absolute left-2 top-3 p-1 rounded-full hover:bg-muted/50 transition-colors text-muted-foreground">
               <X className="h-4 w-4" />
             </button>
             <div className="p-4 pt-3">
               <div className="flex items-start gap-3">
-                <div className="shrink-0 h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-                  <Bell className="h-6 w-6 text-primary" />
+                <div className="shrink-0 h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                  <Bell className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-foreground leading-tight">
-                    تفعيل الإشعارات
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                    احصل على تنبيهات فورية للرسائل والطلبات الجديدة
-                  </p>
+                  <h3 className="text-sm font-bold text-foreground">تفعيل الإشعارات</h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">احصل على تنبيهات فورية للرسائل والطلبات</p>
                 </div>
               </div>
               <div className="flex gap-2 mt-3">
-                <Button
-                  onClick={handleAllowNotifications}
-                  size="sm"
-                  className="flex-1 h-9 gap-1.5 text-xs font-bold rounded-xl"
-                >
+                <Button onClick={handleAllowNotifications} size="sm" className="flex-1 h-8 gap-1.5 text-xs font-bold rounded-xl">
                   <Bell className="h-3.5 w-3.5" />
-                  السماح بالإشعارات
+                  السماح
                 </Button>
-                <Button
-                  onClick={handleDismissNotif}
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 text-xs text-muted-foreground rounded-xl px-3"
-                >
+                <Button onClick={handleDismissNotif} variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground rounded-xl px-3">
                   لاحقاً
                 </Button>
               </div>
@@ -155,41 +134,25 @@ export default function InstallPrompt() {
         )}>
           <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-2xl shadow-primary/10">
             <div className="h-1 w-full bg-gradient-to-l from-primary via-primary/70 to-primary/40" />
-            <button
-              onClick={handleDismiss}
-              className="absolute left-2 top-3 p-1 rounded-full hover:bg-muted/50 transition-colors text-muted-foreground"
-            >
+            <button onClick={handleDismiss} className="absolute left-2 top-3 p-1 rounded-full hover:bg-muted/50 transition-colors text-muted-foreground">
               <X className="h-4 w-4" />
             </button>
             <div className="p-4 pt-3">
               <div className="flex items-start gap-3">
-                <div className="shrink-0 h-14 w-14 rounded-xl overflow-hidden border border-primary/20 shadow-sm bg-background">
-                  <img src="/icons/icon-512.png" alt="LEVONIS" className="h-full w-full object-cover" />
+                <div className="shrink-0 h-12 w-12 rounded-xl overflow-hidden border border-primary/20 shadow-sm bg-background">
+                  <img src="/icons/icon-192.png" alt="LEVONIS" className="h-full w-full object-cover" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-bold text-foreground leading-tight">
-                    أضف LEVONIS للشاشة الرئيسية
-                  </h3>
-                  <p className="text-[11px] text-muted-foreground mt-1 leading-relaxed">
-                    وصول سريع • إشعارات فورية • تجربة تطبيق كاملة
-                  </p>
+                  <h3 className="text-sm font-bold text-foreground">أضف LEVONIS للشاشة الرئيسية</h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">وصول سريع • إشعارات فورية • تجربة تطبيق كاملة</p>
                 </div>
               </div>
               <div className="flex gap-2 mt-3">
-                <Button
-                  onClick={handleInstall}
-                  size="sm"
-                  className="flex-1 h-9 gap-1.5 text-xs font-bold rounded-xl"
-                >
+                <Button onClick={handleInstall} size="sm" className="flex-1 h-8 gap-1.5 text-xs font-bold rounded-xl">
                   <Download className="h-3.5 w-3.5" />
                   تثبيت التطبيق
                 </Button>
-                <Button
-                  onClick={handleDismiss}
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 text-xs text-muted-foreground rounded-xl px-3"
-                >
+                <Button onClick={handleDismiss} variant="ghost" size="sm" className="h-8 text-xs text-muted-foreground rounded-xl px-3">
                   لاحقاً
                 </Button>
               </div>

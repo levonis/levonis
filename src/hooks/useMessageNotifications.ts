@@ -63,13 +63,14 @@ export function useMessageNotifications(activeConversationId?: string | null) {
               const reg = await navigator.serviceWorker.ready;
               reg.showNotification(`💬 ${senderName}`, {
                 body: content,
-                icon: '/icons/icon-512.png',
-                badge: '/icons/icon-512.png',
+                icon: '/icons/icon-192.png',
+                badge: '/icons/icon-192.png',
                 dir: 'rtl',
                 lang: 'ar',
                 tag: `msg-${newMsg.conversation_id}`,
+                renotify: true,
                 data: { url: `/community/messages?auto_open=${newMsg.conversation_id}` },
-              } as any);
+              } as NotificationOptions);
             }
           }
         }
