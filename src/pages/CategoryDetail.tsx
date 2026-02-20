@@ -13,8 +13,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useLanguage } from '@/lib/i18n';
 
 const CategoryDetail = () => {
+  const { t } = useLanguage();
   const { slug } = useParams<{ slug: string }>();
   const [sortBy, setSortBy] = useState<'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc'>('default');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -71,11 +73,11 @@ const CategoryDetail = () => {
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
           <Link to="/" className="hover:text-primary transition-colors">
-            الرئيسية
+            {t('nav_home')}
           </Link>
           <span>/</span>
           <Link to="/categories" className="hover:text-primary transition-colors">
-            الأقسام
+            {t('nav_categories')}
           </Link>
           <span>/</span>
           {categoryLoading ? (
@@ -115,8 +117,8 @@ const CategoryDetail = () => {
                       {category.description_ar}
                     </p>
                     <div className="flex items-center gap-2 text-sm">
-                      <span className="px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
-                        {products?.length || 0} منتج متاح
+                       <span className="px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
+                         {products?.length || 0} {t('products_available')}
                       </span>
                     </div>
                   </div>
@@ -133,9 +135,9 @@ const CategoryDetail = () => {
               <div>
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-6 gap-4">
                   <div className="flex items-center gap-4">
-                    <h2 className="text-2xl font-black text-foreground">المنتجات المتاحة</h2>
+                     <h2 className="text-2xl font-black text-foreground">{t('products_available_title')}</h2>
                     <span className="text-muted-foreground text-sm">
-                      عرض {products.length} {products.length === 1 ? 'منتج' : 'منتجات'}
+                      {t('products_showing').replace('{count}', String(products.length))}
                     </span>
                   </div>
                   
@@ -162,17 +164,17 @@ const CategoryDetail = () => {
 
                     {/* Sort Select */}
                     <div className="flex items-center gap-2 flex-1 lg:flex-initial">
-                      <label className="text-sm text-muted-foreground whitespace-nowrap">ترتيب:</label>
+                       <label className="text-sm text-muted-foreground whitespace-nowrap">{t('products_sort')}</label>
                       <Select value={sortBy} onValueChange={(value: 'default' | 'price-asc' | 'price-desc' | 'name-asc' | 'name-desc') => setSortBy(value)}>
                         <SelectTrigger className="w-full lg:w-[200px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="default">افتراضي</SelectItem>
-                          <SelectItem value="price-asc">السعر: الأرخص للأغلى</SelectItem>
-                          <SelectItem value="price-desc">السعر: الأغلى للأرخص</SelectItem>
-                          <SelectItem value="name-asc">الاسم: A إلى Z</SelectItem>
-                          <SelectItem value="name-desc">الاسم: Z إلى A</SelectItem>
+                          <SelectItem value="default">{t('products_sort_default')}</SelectItem>
+                          <SelectItem value="price-asc">{t('products_sort_price_asc')}</SelectItem>
+                          <SelectItem value="price-desc">{t('products_sort_price_desc')}</SelectItem>
+                          <SelectItem value="name-asc">{t('products_sort_name_asc')}</SelectItem>
+                          <SelectItem value="name-desc">{t('products_sort_name_desc')}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -226,13 +228,13 @@ const CategoryDetail = () => {
                     <circle cx="50" cy="50" r="40" stroke="hsl(var(--muted-foreground))" strokeWidth="1" fill="none" />
                   </svg>
                 </div>
-                <p className="text-muted-foreground text-lg mb-6">
-                  لا توجد منتجات متاحة في هذا القسم حالياً
+                 <p className="text-muted-foreground text-lg mb-6">
+                  {t('category_no_products')}
                 </p>
                 <Link to="/">
                   <Button variant="outline" className="gap-2">
                     <ArrowRight className="h-4 w-4" />
-                    تصفح المنتجات
+                    {t('products_browse')}
                   </Button>
                 </Link>
               </div>
@@ -240,13 +242,13 @@ const CategoryDetail = () => {
           </>
         ) : (
           <div className="text-center py-16">
-            <p className="text-muted-foreground text-lg mb-6">
-              القسم غير موجود
+             <p className="text-muted-foreground text-lg mb-6">
+              {t('category_not_found')}
             </p>
             <Link to="/categories">
               <Button variant="outline" className="gap-2">
                 <ArrowRight className="h-4 w-4" />
-                العودة للأقسام
+                {t('category_back')}
               </Button>
             </Link>
           </div>
