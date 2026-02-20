@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Ticket, Package } from "lucide-react";
 import { SubTabId } from "./RewardsSubTabs";
 import OptimizedImage from "@/components/OptimizedImage";
+import { useLanguage } from "@/lib/i18n";
 import { 
   TicketBalanceSkeleton, 
   CompetitionsGridSkeleton
@@ -20,6 +21,7 @@ interface CompetitionsSectionProps {
 
 export default function CompetitionsSection({ activeSubTab }: CompetitionsSectionProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   // Only fetch when competitions tab is active
   const { data: userTickets, isLoading: loadingTickets } = useQuery({
@@ -53,7 +55,7 @@ export default function CompetitionsSection({ activeSubTab }: CompetitionsSectio
                   <Ticket className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">رصيد التذاكر</p>
+                  <p className="text-xs text-muted-foreground">{t('rewards_ticket_balance')}</p>
                   <p className="text-xl font-bold">{userTickets || 0}</p>
                 </div>
               </div>

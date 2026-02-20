@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 import { MainTabId } from "./RewardsMainTabs";
+import { useLanguage } from "@/lib/i18n";
+import { TranslationKeys } from "@/lib/i18n/types";
 
 export type PointsSubTab = 'summary' | 'daily-tasks' | 'redeem' | 'store';
 export type CompetitionsSubTab = 'competitions';
@@ -10,28 +12,28 @@ export type SubTabId = PointsSubTab | CompetitionsSubTab | CardsSubTab | Insuran
 
 interface SubTabConfig {
   id: SubTabId;
-  label: string;
+  labelKey: keyof TranslationKeys;
 }
 
 const subTabsConfig: Record<MainTabId, SubTabConfig[]> = {
   points: [
-    { id: 'summary', label: 'ملخص' },
-    { id: 'daily-tasks', label: 'المهام' },
-    { id: 'redeem', label: 'استبدال' },
-    { id: 'store', label: 'متجر النقاط' },
+    { id: 'summary', labelKey: 'rewards_sub_summary' },
+    { id: 'daily-tasks', labelKey: 'rewards_sub_tasks' },
+    { id: 'redeem', labelKey: 'rewards_sub_redeem' },
+    { id: 'store', labelKey: 'rewards_sub_store' },
   ],
   competitions: [
-    { id: 'competitions', label: 'المسابقات' },
+    { id: 'competitions', labelKey: 'rewards_sub_competitions' },
   ],
   cards: [
-    { id: 'benefits', label: 'بطاقتي' },
-    { id: 'upgrade', label: 'الترقية' },
-    { id: 'exclusive-offers', label: 'عروض حصرية' },
+    { id: 'benefits', labelKey: 'rewards_sub_my_card' },
+    { id: 'upgrade', labelKey: 'rewards_sub_upgrade' },
+    { id: 'exclusive-offers', labelKey: 'rewards_sub_exclusive_offers' },
   ],
   insurance: [
-    { id: 'status', label: 'طابعاتي' },
-    { id: 'plans', label: 'الباقات' },
-    { id: 'maintenance', label: 'الصيانة' },
+    { id: 'status', labelKey: 'rewards_sub_my_printers' },
+    { id: 'plans', labelKey: 'rewards_sub_plans' },
+    { id: 'maintenance', labelKey: 'rewards_sub_maintenance' },
   ],
 };
 
@@ -42,6 +44,7 @@ interface RewardsSubTabsProps {
 }
 
 export default function RewardsSubTabs({ mainTab, activeSubTab, onSubTabChange }: RewardsSubTabsProps) {
+  const { t } = useLanguage();
   const subTabs = subTabsConfig[mainTab];
   
   return (
@@ -60,7 +63,7 @@ export default function RewardsSubTabs({ mainTab, activeSubTab, onSubTabChange }
                 : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
-            {tab.label}
+            {t(tab.labelKey)}
           </button>
         );
       })}
