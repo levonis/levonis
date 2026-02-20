@@ -67,7 +67,7 @@ import { useChatCommerce, type ChatOrder } from '@/hooks/useChatCommerce';
 import { parseEmojisInText } from '@/components/chat/emojiData';
 
 // Support account ID
-const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
+const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
 
 interface EntryContextData {
   type: 'product' | 'request';
@@ -847,57 +847,57 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                </div>
              </div>
              
-             {/* Admin Search Bar with New Conversation */}
-             {isAdmin && (
-                <div className="p-2 border-b bg-muted/10 space-y-2">
-                  <div className="relative">
-                    <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                    <Input
-                      placeholder="بحث بالاسم أو المعرف..."
-                      value={adminSearchTerm}
-                      onChange={(e) => setAdminSearchTerm(e.target.value)}
-                      className="h-8 pr-8 text-xs"
-                    />
-                  </div>
-                  <AdminUserSearchResults 
-                    searchTerm={adminSearchTerm}
-                    existingConversations={conversations}
-                    onSelectUser={async (userId) => {
-                      // Check if conversation already exists
-                      const existingConv = conversations?.find(c => 
-                        c.buyer_id === userId || c.seller_id === userId
-                      );
-                      if (existingConv) {
-                        setSelectedConversation(existingConv.id);
-                        return;
-                      }
-                      // Create new conversation
-                      const convCode = `SUPPORT-${Date.now().toString(36).toUpperCase()}`;
-                      const { data: newConv, error } = await supabase
-                        .from('listing_conversations')
-                        .insert({
-                          buyer_id: userId,
-                          seller_id: SUPPORT_USER_ID,
-                          listing_id: SUPPORT_USER_ID,
-                          conversation_code: convCode,
-                          status: 'open',
-                        })
-                        .select('id')
-                        .single();
-                      if (!error && newConv) {
-                        await supabase.from('listing_messages').insert({
-                          conversation_id: newConv.id,
-                          sender_id: SUPPORT_USER_ID,
-                          content: '👋 مرحباً، تم بدء محادثة من قبل الإدارة.',
-                        });
-                        queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
-                        setSelectedConversation(newConv.id);
-                        setAdminSearchTerm('');
-                      }
-                    }}
-                  />
-                </div>
-              )}
+             {/* Search Bar - available for all users, admin gets new conversation feature */}
+             <div className="p-2 border-b bg-muted/10 space-y-2">
+               <div className="relative">
+                 <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                 <Input
+                   placeholder="بحث في المحادثات..."
+                   value={adminSearchTerm}
+                   onChange={(e) => setAdminSearchTerm(e.target.value)}
+                   className="h-8 pr-8 text-xs"
+                 />
+               </div>
+               {isAdmin && (
+                 <AdminUserSearchResults 
+                   searchTerm={adminSearchTerm}
+                   existingConversations={conversations}
+                   onSelectUser={async (userId) => {
+                     // Check if conversation already exists
+                     const existingConv = conversations?.find(c => 
+                       c.buyer_id === userId || c.seller_id === userId
+                     );
+                     if (existingConv) {
+                       setSelectedConversation(existingConv.id);
+                       return;
+                     }
+                     // Create new conversation
+                     const convCode = `SUPPORT-${Date.now().toString(36).toUpperCase()}`;
+                     const { data: newConv, error } = await supabase
+                       .from('listing_conversations')
+                       .insert({
+                         buyer_id: userId,
+                         seller_id: SUPPORT_USER_ID,
+                         listing_id: SUPPORT_USER_ID,
+                         conversation_code: convCode,
+                         status: 'open',
+                       })
+                       .select('id')
+                       .single();
+                     if (!error && newConv) {
+                       await supabase.from('listing_messages').insert({
+                         conversation_id: newConv.id,
+                         sender_id: SUPPORT_USER_ID,
+                         content: '👋 مرحباً، تم بدء محادثة من قبل الإدارة.',
+                       });
+                       queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
+                       setSelectedConversation(newConv.id);
+                       setAdminSearchTerm('');
+                     }
+                   }}
+                 />
+               )}
+             </div>
 
             {/* Conversations List */}
             <div className="flex-1 overflow-y-auto">
@@ -960,7 +960,18 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           }
                           return true;
                         } else {
-                          return c.buyer_id !== SUPPORT_USER_ID && c.seller_id !== SUPPORT_USER_ID;
+                          // Regular user: exclude support conversations (shown pinned)
+                          if (c.buyer_id === SUPPORT_USER_ID || c.seller_id === SUPPORT_USER_ID) return false;
+                          // Apply search filter for regular users too
+                          if (adminSearchTerm.trim()) {
+                            const otherUserId = c.buyer_id === user?.id ? c.seller_id : c.buyer_id;
+                            const otherProfile = profiles?.[otherUserId];
+                            const searchLower = adminSearchTerm.toLowerCase();
+                            const name = (otherProfile?.display_name || otherProfile?.full_name || otherProfile?.username || '').toLowerCase();
+                            const code = ((c as any).conversation_code || '').toLowerCase();
+                            return name.includes(searchLower) || code.includes(searchLower);
+                          }
+                          return true;
                         }
                       })
                       .sort((a, b) => {

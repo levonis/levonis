@@ -15,7 +15,7 @@ import { useAuth } from "@/hooks/useAuth";
 const ListingConversations = lazy(() => import("@/components/marketplace/ListingConversations").then(m => ({ default: m.ListingConversations })));
 
 // Support account ID (admin) - used for identification only, chat bubble now visible for all users
-const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
+const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
 
 export default function UnifiedChatButton() {
   const { user } = useAuth();

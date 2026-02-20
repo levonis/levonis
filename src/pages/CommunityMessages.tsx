@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { ListingConversations } from '@/components/marketplace/ListingConversations';
 
 // Support account ID
-const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
+const SUPPORT_USER_ID = "f632ba7b-60e7-4f2f-9cb7-2851f7f2ed2f";
 
 export default function CommunityMessages() {
   const navigate = useNavigate();
