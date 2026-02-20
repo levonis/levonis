@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import ReplyPreviewBar, { type ReplyToMessage } from './messages/ReplyPreviewBar';
 import {
   Mic,
   Smile,
@@ -75,6 +76,8 @@ interface ChatInputBarProps {
   contextBar?: ContextBarData | null;
   onSendContext?: () => void;
   onCloseContext?: () => void;
+  replyTo?: ReplyToMessage | null;
+  onCancelReply?: () => void;
 }
 
 export default function ChatInputBar({
@@ -92,6 +95,8 @@ export default function ChatInputBar({
   contextBar,
   onSendContext,
   onCloseContext,
+  replyTo,
+  onCancelReply,
 }: ChatInputBarProps) {
   const { user } = useAuth();
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
@@ -291,6 +296,11 @@ export default function ChatInputBar({
 
   return (
     <div className="border-t bg-card">
+      {/* Reply Preview Bar */}
+      {replyTo && (
+        <ReplyPreviewBar replyTo={replyTo} onClose={() => onCancelReply?.()} />
+      )}
+
       {/* Context Bar - Shows product/request that user entered through */}
       {contextBar && (
         <div className="flex items-center gap-2 px-3 py-2 border-b bg-gradient-to-l from-primary/10 via-primary/5 to-transparent">
