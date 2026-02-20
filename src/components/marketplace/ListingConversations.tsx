@@ -229,7 +229,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       
       if (listingId) {
         query = query.eq('listing_id', listingId);
-      } else if (!isAdmin) {
+      } else if (isAdmin) {
+        // Admin sees all support conversations (where SUPPORT_USER_ID is participant)
+        query = query.or(`buyer_id.eq.${SUPPORT_USER_ID},seller_id.eq.${SUPPORT_USER_ID}`);
+      } else {
         query = query.or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`);
       }
       
@@ -418,9 +421,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       }
       
       // Send message - this is the only blocking operation
+      // Admin sends as SUPPORT_USER_ID to maintain support identity
+      const effectiveSenderId = isAdmin ? SUPPORT_USER_ID : user.id;
       const { error } = await supabase.from('listing_messages').insert({
         conversation_id: selectedConversation,
-        sender_id: user.id,
+        sender_id: effectiveSenderId,
         content: messageContent,
         image_url: mediaUrl || null,
         location_data: locationData || null,
@@ -436,7 +441,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
 
       // Background notification
       if (selectedConv) {
-        const otherUserId = selectedConv.buyer_id === user.id 
+        const otherUserId = selectedConv.buyer_id === effectiveSenderId 
           ? selectedConv.seller_id 
           : selectedConv.buyer_id;
         
@@ -573,9 +578,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
   });
 
   const selectedConv = conversations?.find(c => c.id === selectedConversation);
-  const isBuyer = selectedConv?.buyer_id === user?.id;
-  const isSeller = selectedConv?.seller_id === user?.id;
-  const otherUserId = selectedConv ? (selectedConv.buyer_id === user?.id ? selectedConv.seller_id : selectedConv.buyer_id) : null;
+  // For admin, treat SUPPORT_USER_ID as "me" when determining buyer/seller roles
+  const effectiveUserId = isAdmin ? SUPPORT_USER_ID : user?.id;
+  const isBuyer = selectedConv?.buyer_id === effectiveUserId;
+  const isSeller = selectedConv?.seller_id === effectiveUserId;
+  const otherUserId = selectedConv ? (selectedConv.buyer_id === effectiveUserId ? selectedConv.seller_id : selectedConv.buyer_id) : null;
   const otherUser = otherUserId ? profiles?.[otherUserId] : null;
 
   const { data: otherUserReputation } = useUserPrintReputation(otherUserId ?? undefined);
@@ -841,7 +848,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
              </div>
              
              {/* Admin Search Bar with New Conversation */}
-             {user?.id === SUPPORT_USER_ID && (
+             {isAdmin && (
                 <div className="p-2 border-b bg-muted/10 space-y-2">
                   <div className="relative">
                     <Search className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -917,8 +924,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 <div>
                   {/* Support conversation pinned at top - HIDDEN for support account itself */}
                   {(() => {
-                    // Check if current user IS the support account (admin view)
-                    const isCurrentUserSupport = user?.id === SUPPORT_USER_ID;
+                    // Check if current user is admin (role-based, not hardcoded)
+                    const isCurrentUserSupport = isAdmin;
                     
                     // Find support conversation
                     const supportConv = conversations?.find(c => 
@@ -926,9 +933,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     );
                     
                     // Deduplicate conversations by other user ID (prevent showing same user multiple times)
+                    const effectiveId = isCurrentUserSupport ? SUPPORT_USER_ID : user?.id;
                     const seenUserIds = new Set<string>();
                     const uniqueConversations = [...(conversations || [])].filter(conv => {
-                      const otherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
+                      const otherUserId = conv.buyer_id === effectiveId ? conv.seller_id : conv.buyer_id;
+                      if (seenUserIds.has(otherUserId)) return false;
                       if (seenUserIds.has(otherUserId)) return false;
                       seenUserIds.add(otherUserId);
                       return true;
@@ -939,7 +948,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     const sortedConvs = uniqueConversations
                       .filter(c => {
                         if (isCurrentUserSupport) {
-                          const otherUserId = c.buyer_id === user?.id ? c.seller_id : c.buyer_id;
+                          const otherUserId = c.buyer_id === effectiveId ? c.seller_id : c.buyer_id;
                           if (otherUserId === SUPPORT_USER_ID) return false;
                           // Apply admin search filter
                           if (adminSearchTerm.trim()) {
@@ -1039,7 +1048,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                         
                         {/* Other conversations */}
                         {sortedConvs.map(conv => {
-                          const convOtherUserId = conv.buyer_id === user?.id ? conv.seller_id : conv.buyer_id;
+                          const convOtherUserId = conv.buyer_id === effectiveId ? conv.seller_id : conv.buyer_id;
                           const convOtherUser = profiles?.[convOtherUserId];
                           const lastMsg = lastMessages?.[conv.id];
                           const isActive = selectedConversation === conv.id;
@@ -1055,9 +1064,9 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 isActive && "bg-muted"
                               )}
                             >
-                              {/* Avatar - Dual avatar for disputes (admin view) */}
-                              <div className="relative flex-shrink-0">
-                                {conv.status === 'disputed' && user?.id === SUPPORT_USER_ID ? (
+                               {/* Avatar - Dual avatar for disputes (admin view) */}
+                               <div className="relative flex-shrink-0">
+                                 {conv.status === 'disputed' && isAdmin ? (
                                   <div className="relative w-12 h-12">
                                     {/* Buyer avatar (top-right) */}
                                     <div className="absolute top-0 right-0 z-10">
@@ -1101,8 +1110,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 {/* Section 1: Name with badges and conversation code */}
                                 <div className="flex items-center justify-between gap-2 mb-0.5">
                                   <div className="flex items-center gap-1.5 min-w-0">
-                                    <p className="font-semibold text-sm truncate max-w-[120px]">
-                                      {conv.status === 'disputed' && user?.id === SUPPORT_USER_ID
+                                     <p className="font-semibold text-sm truncate max-w-[120px]">
+                                      {conv.status === 'disputed' && isAdmin
                                         ? `${profiles?.[conv.buyer_id]?.full_name || 'مشتري'} ↔ ${profiles?.[conv.seller_id]?.display_name || profiles?.[conv.seller_id]?.full_name || 'بائع'}`
                                         : (convOtherUser?.display_name || convOtherUser?.full_name || convOtherUser?.username || 'محادثة')
                                       }
@@ -1135,7 +1144,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 {/* Section 2: Last message */}
                                 {lastMsg && (
                                   <p className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                                    {lastMsg.sender_id === user?.id && (
+                                    {(lastMsg.sender_id === user?.id || (isAdmin && lastMsg.sender_id === SUPPORT_USER_ID)) && (
                                       <CheckCheck
                                         className={cn(
                                           "w-3 h-3 flex-shrink-0",
@@ -1188,8 +1197,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
               <>
                 {/* Chat Top Bar - Use Admin bar for support account, Support bar for support chat, regular for others */}
                 {(() => {
-                  const isSupportChat = otherUserId === SUPPORT_USER_ID;
-                  const isCurrentUserSupport = user?.id === SUPPORT_USER_ID;
+                   const isSupportChat = otherUserId === SUPPORT_USER_ID;
+                  const isCurrentUserSupport = isAdmin;
                   
                   if (isSupportChat) {
                     return (
@@ -1296,7 +1305,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                           {/* Messages */}
                           <div className="space-y-1">
                             {msgs.map((msg: any, idx: number) => {
-                              const isMe = msg.sender_id === user?.id;
+                              const isMe = msg.sender_id === user?.id || (isAdmin && msg.sender_id === SUPPORT_USER_ID);
                               const sender = profiles?.[msg.sender_id];
                               const showTail = idx === 0 || msgs[idx - 1]?.sender_id !== msg.sender_id;
                               const timestamp = format(new Date(msg.created_at), 'HH:mm');
@@ -1310,7 +1319,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               
                               // Check if it's a cart code message for admin
                               const cartCodeMatch = msg.content?.match(/رمز السلة:\s*(CART-[A-Z0-9]+)/);
-                              const isCartMessage = !!cartCodeMatch && user?.id === SUPPORT_USER_ID;
+                              const isCartMessage = !!cartCodeMatch && isAdmin;
                               
                               // Check if it's a product message (starts with 📦)
                               const isProductMessage = msg.content?.startsWith('📦');
@@ -1505,9 +1514,11 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     )}
                                   >
                                     {/* Sender name for group chats / admin */}
-                                    {!isMe && isAdmin && showTail && (
+                                    {!isMe && showTail && (
                                       <p className="text-xs font-medium text-primary mb-1">
-                                        {sender?.full_name || sender?.username}
+                                        {msg.sender_id === SUPPORT_USER_ID 
+                                          ? '🎧 خدمة العملاء' 
+                                          : (sender?.display_name || sender?.full_name || sender?.username || 'مستخدم')}
                                       </p>
                                     )}
                                     
