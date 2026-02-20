@@ -117,6 +117,9 @@ export default function ChatTopBar({
       >
         <div className="flex items-center gap-2">
           <h1 className="font-bold text-sm truncate">{storeName}</h1>
+          {isOnline && (
+            <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
+          )}
           {status === 'disputed' && (
             <Badge variant="destructive" className="text-[10px] px-1.5 py-0">
               نزاع
