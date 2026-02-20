@@ -1,23 +1,15 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
-  Package,
-  Palette,
-  Ruler,
-  Clock,
-  MessageSquare,
-  DollarSign,
-  Layers,
-  Eye,
-  MapPin,
-  Hash,
-  Plus,
+  Package, Palette, Ruler, Clock, MessageSquare,
+  DollarSign, Layers, Eye, MapPin, Hash, Plus,
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/lib/i18n";
 
 interface PrintRequest {
   id: string;
@@ -45,13 +37,6 @@ interface PrintRequestCardProps {
   merchantId?: string;
 }
 
-const MATERIAL_CONFIG: Record<string, { label: string; color: string }> = {
-  filament: { label: "فلمنت", color: "bg-blue-600/40 text-blue-200" },
-  resin: { label: "رزن", color: "bg-purple-600/40 text-purple-200" },
-  both: { label: "كلاهما", color: "bg-emerald-600/40 text-emerald-200" },
-  any: { label: "أي نوع", color: "bg-slate-600/40 text-slate-200" },
-};
-
 export default function PrintRequestCard({
   request,
   onViewDetails,
@@ -61,8 +46,15 @@ export default function PrintRequestCard({
 }: PrintRequestCardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
-  // Check if merchant already has an offer on this request
+  const MATERIAL_CONFIG: Record<string, { label: string; color: string }> = {
+    filament: { label: t('request_material_filament'), color: "bg-blue-600/40 text-blue-200" },
+    resin: { label: t('request_material_resin'), color: "bg-purple-600/40 text-purple-200" },
+    both: { label: t('request_material_both'), color: "bg-emerald-600/40 text-emerald-200" },
+    any: { label: t('request_material_any'), color: "bg-slate-600/40 text-slate-200" },
+  };
+
   const { data: existingOffer } = useQuery({
     queryKey: ["my-offer-on-request", request.id, merchantId],
     enabled: isMerchant && !!merchantId,
@@ -77,7 +69,6 @@ export default function PrintRequestCard({
     },
   });
 
-  // Get offers count
   const { data: offersCount = 0 } = useQuery({
     queryKey: ["offers-count", request.id],
     queryFn: async () => {
@@ -97,43 +88,30 @@ export default function PrintRequestCard({
   const timeDiff = Date.now() - new Date(request.created_at).getTime();
   const hoursAgo = Math.floor(timeDiff / (1000 * 60 * 60));
   const daysAgo = Math.floor(hoursAgo / 24);
-  const timeLabel = daysAgo > 0 ? `${daysAgo} يوم` : hoursAgo > 0 ? `${hoursAgo} ساعة` : "الآن";
+  const timeLabel = daysAgo > 0 ? `${daysAgo} ${t('request_day')}` : hoursAgo > 0 ? `${hoursAgo} ${t('request_hour')}` : t('request_now');
 
   return (
     <div className="group relative rounded-xl border border-border/50 bg-gradient-to-b from-card to-background overflow-hidden hover:border-primary/40 hover:shadow-xl transition-all duration-300">
-      {/* Image Section */}
       <div className="relative aspect-[4/3] overflow-hidden">
         {mainImage ? (
-          <img
-            src={mainImage}
-            alt={request.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+          <img src={mainImage} alt={request.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-muted/50 to-muted flex items-center justify-center">
             <Package className="h-10 w-10 text-muted-foreground/20" />
           </div>
         )}
-
-        {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-        
-        {/* Status Badge */}
         {isAccepted && (
           <Badge className="absolute top-2 right-2 bg-green-500 text-white border-0">
-            تم القبول
+            {t('request_accepted')}
           </Badge>
         )}
-        
-        {/* Material Badge */}
         {material && (
           <Badge className={`absolute top-2 left-2 text-[9px] ${material.color} border-0`}>
             <Layers className="h-2.5 w-2.5 ml-0.5" />
             {material.label}
           </Badge>
         )}
-
-        {/* Bottom info overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-2">
           <div className="flex items-center justify-between text-white">
             {request.customer_governorate && (
@@ -150,15 +128,10 @@ export default function PrintRequestCard({
         </div>
       </div>
 
-      {/* Content */}
       <div className="p-3 space-y-2">
         <h3 className="font-bold text-sm line-clamp-1">{request.title}</h3>
-        
-        <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
-          {request.description}
-        </p>
+        <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">{request.description}</p>
 
-        {/* Quick Info Tags */}
         <div className="flex flex-wrap gap-1.5">
           <span className="inline-flex items-center gap-0.5 text-[9px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">
             <Ruler className="h-2.5 w-2.5" />
@@ -176,58 +149,37 @@ export default function PrintRequestCard({
           )}
         </div>
 
-        {/* Offers Count */}
         <div className="flex items-center justify-between pt-2 border-t border-border/30">
           <span className="text-[10px] text-primary flex items-center gap-1 font-medium">
             <DollarSign className="h-3 w-3" />
-            {offersCount} عرض
+            {t('request_offers_count', { count: offersCount })}
           </span>
         </div>
 
-        {/* Actions */}
         <div className="flex gap-2 pt-1">
-          <Button
-            size="sm"
-            variant="outline"
-            className="flex-1 text-[10px] h-7 border-border/50"
-            onClick={() => onViewDetails(request)}
-          >
+          <Button size="sm" variant="outline" className="flex-1 text-[10px] h-7 border-border/50" onClick={() => onViewDetails(request)}>
             <Eye className="h-3 w-3 ml-1" />
-            التفاصيل
+            {t('request_details')}
           </Button>
 
           {isMerchant && !isOwner && !isAccepted && (
             existingOffer ? (
-              <Button
-                size="sm"
-                variant="secondary"
-                className="flex-1 text-[10px] h-7 bg-primary/20 text-primary"
-                disabled
-              >
+              <Button size="sm" variant="secondary" className="flex-1 text-[10px] h-7 bg-primary/20 text-primary" disabled>
                 <DollarSign className="h-3 w-3 ml-0.5" />
                 {existingOffer.price_iqd.toLocaleString()}
               </Button>
             ) : (
-              <Button
-                size="sm"
-                className="flex-1 text-[10px] h-7 bg-gradient-to-b from-primary to-accent"
-                onClick={() => onAddOffer?.(request)}
-              >
+              <Button size="sm" className="flex-1 text-[10px] h-7 bg-gradient-to-b from-primary to-accent" onClick={() => onAddOffer?.(request)}>
                 <Plus className="h-3 w-3 ml-0.5" />
-                تسعير
+                {t('request_price')}
               </Button>
             )
           )}
 
           {(isOwner || !isMerchant) && (
-            <Button
-              size="sm"
-              variant="secondary"
-              className="flex-1 text-[10px] h-7 bg-muted/50"
-              onClick={() => navigate(`/community/messages?request=${request.id}`)}
-            >
+            <Button size="sm" variant="secondary" className="flex-1 text-[10px] h-7 bg-muted/50" onClick={() => navigate(`/community/messages?request=${request.id}`)}>
               <MessageSquare className="h-3 w-3 ml-0.5" />
-              المحادثات
+              {t('request_conversations')}
             </Button>
           )}
         </div>

@@ -7,6 +7,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/lib/i18n";
 
 interface PrintRequest {
   id: string;
@@ -31,29 +32,30 @@ interface CustomerRequestCardProps {
   onViewOffers?: (request: PrintRequest) => void;
 }
 
-const STATUS_UI: Record<string, { label: string; icon: any; color: string }> = {
-  pending_review: { label: "قيد المراجعة", icon: Clock, color: "bg-amber-600/30 text-amber-300 border-amber-500/30" },
-  approved: { label: "منشور", icon: CheckCircle2, color: "bg-emerald-600/30 text-emerald-300 border-emerald-500/30" },
-  rejected: { label: "مرفوض", icon: XCircle, color: "bg-red-600/30 text-red-300 border-red-500/30" },
-  in_progress: { label: "قيد التنفيذ", icon: Package, color: "bg-blue-600/30 text-blue-300 border-blue-500/30" },
-  completed: { label: "مكتمل", icon: CheckCircle2, color: "bg-emerald-600/30 text-emerald-300 border-emerald-500/30" },
-  delivered: { label: "تم التوصيل", icon: Truck, color: "bg-green-600/30 text-green-300 border-green-500/30" },
-  cancelled: { label: "ملغي", icon: XCircle, color: "bg-slate-600/30 text-slate-300 border-slate-500/30" },
-};
-
-const MATERIAL_CONFIG: Record<string, { label: string; color: string }> = {
-  filament: { label: "فلمنت", color: "bg-blue-600/30 text-blue-300 border-blue-500/30" },
-  resin: { label: "رزن", color: "bg-purple-600/30 text-purple-300 border-purple-500/30" },
-  both: { label: "كلاهما", color: "bg-emerald-600/30 text-emerald-300 border-emerald-500/30" },
-  any: { label: "أي نوع", color: "bg-slate-600/30 text-slate-300 border-slate-500/30" },
-};
-
 export default function CustomerRequestCard({
   request,
   onViewDetails,
   onViewOffers,
 }: CustomerRequestCardProps) {
-  // Get offers count
+  const { t } = useLanguage();
+
+  const STATUS_UI: Record<string, { label: string; icon: any; color: string }> = {
+    pending_review: { label: t('request_status_pending'), icon: Clock, color: "bg-amber-600/30 text-amber-300 border-amber-500/30" },
+    approved: { label: t('request_status_approved'), icon: CheckCircle2, color: "bg-emerald-600/30 text-emerald-300 border-emerald-500/30" },
+    rejected: { label: t('request_status_rejected'), icon: XCircle, color: "bg-red-600/30 text-red-300 border-red-500/30" },
+    in_progress: { label: t('request_status_in_progress'), icon: Package, color: "bg-blue-600/30 text-blue-300 border-blue-500/30" },
+    completed: { label: t('request_status_completed'), icon: CheckCircle2, color: "bg-emerald-600/30 text-emerald-300 border-emerald-500/30" },
+    delivered: { label: t('request_status_delivered'), icon: Truck, color: "bg-green-600/30 text-green-300 border-green-500/30" },
+    cancelled: { label: t('request_status_cancelled'), icon: XCircle, color: "bg-slate-600/30 text-slate-300 border-slate-500/30" },
+  };
+
+  const MATERIAL_CONFIG: Record<string, { label: string; color: string }> = {
+    filament: { label: t('request_material_filament'), color: "bg-blue-600/30 text-blue-300 border-blue-500/30" },
+    resin: { label: t('request_material_resin'), color: "bg-purple-600/30 text-purple-300 border-purple-500/30" },
+    both: { label: t('request_material_both'), color: "bg-emerald-600/30 text-emerald-300 border-emerald-500/30" },
+    any: { label: t('request_material_any'), color: "bg-slate-600/30 text-slate-300 border-slate-500/30" },
+  };
+
   const { data: offersCount = 0 } = useQuery({
     queryKey: ["offers-count", request.id],
     queryFn: async () => {
@@ -73,7 +75,6 @@ export default function CustomerRequestCard({
   return (
     <div className="group rounded-xl border border-border/50 bg-gradient-to-b from-card to-background overflow-hidden hover:border-primary/40 transition-all duration-300">
       <div className="flex gap-3 p-3">
-        {/* Image */}
         <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted/30 shrink-0 relative border border-border/30">
           {mainImage ? (
             <img src={mainImage} alt="" className="w-full h-full object-cover" />
@@ -82,18 +83,14 @@ export default function CustomerRequestCard({
               <Package className="h-6 w-6 text-muted-foreground/30" />
             </div>
           )}
-          
-          {/* Offers Badge */}
           {offersCount > 0 && (
             <Badge className="absolute bottom-1 right-1 bg-primary/90 text-[8px] h-4 px-1 border-0">
-              {offersCount} عرض
+              {t('request_offers_count', { count: offersCount })}
             </Badge>
           )}
         </div>
 
-        {/* Content */}
         <div className="flex-1 min-w-0">
-          {/* Header */}
           <div className="flex items-start justify-between gap-2 mb-1.5">
             <h4 className="font-bold text-xs truncate flex-1">{request.title}</h4>
             <Badge className={`shrink-0 text-[8px] gap-0.5 border ${status.color}`}>
@@ -102,7 +99,6 @@ export default function CustomerRequestCard({
             </Badge>
           </div>
 
-          {/* Quick Info Tags */}
           <div className="flex flex-wrap gap-1 mb-2">
             <span className="inline-flex items-center gap-0.5 text-[8px] text-muted-foreground bg-muted/40 px-1.5 py-0.5 rounded">
               <Ruler className="h-2 w-2" />
@@ -126,7 +122,6 @@ export default function CustomerRequestCard({
             )}
           </div>
 
-          {/* Meta & Actions */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-[9px] text-muted-foreground">
               {request.customer_governorate && (
@@ -142,24 +137,14 @@ export default function CustomerRequestCard({
             </div>
 
             <div className="flex items-center gap-1">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-6 px-2 text-[9px]"
-                onClick={() => onViewDetails(request)}
-              >
+              <Button size="sm" variant="ghost" className="h-6 px-2 text-[9px]" onClick={() => onViewDetails(request)}>
                 <Eye className="h-2.5 w-2.5 ml-0.5" />
-                التفاصيل
+                {t('request_details')}
               </Button>
               {offersCount > 0 && onViewOffers && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-6 px-2 text-[9px] border-primary/30 text-primary"
-                  onClick={() => onViewOffers(request)}
-                >
+                <Button size="sm" variant="outline" className="h-6 px-2 text-[9px] border-primary/30 text-primary" onClick={() => onViewOffers(request)}>
                   <MessageCircle className="h-2.5 w-2.5 ml-0.5" />
-                  العروض
+                  {t('request_offers')}
                 </Button>
               )}
             </div>
