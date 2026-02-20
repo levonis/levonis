@@ -52,28 +52,21 @@ export default function StoreStatsGrid({ stats, variant = "client" }: StoreStats
   const displayStats = variant === "merchant" ? merchantStats : clientStats;
 
   return (
-    <div className={`grid gap-3 ${variant === "merchant" ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-3"}`}>
+    <div className={`grid gap-1.5 ${variant === "merchant" ? "grid-cols-4" : "grid-cols-3"}`}>
       {displayStats.map((stat, index) => (
         <div
           key={index}
-          className="group relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card to-card/50 p-4 transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5"
+          className="rounded-xl border border-border/50 bg-card/80 p-2.5 transition-all hover:border-primary/30"
         >
-          {/* Hover Glow */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          
-          <div className="relative z-10 flex flex-col items-center lg:items-start gap-2">
-            <div className={`h-10 w-10 rounded-xl ${stat.bgColor} flex items-center justify-center transition-transform group-hover:scale-110`}>
+          <div className="flex items-center gap-2">
+            <div className={`h-7 w-7 rounded-lg ${stat.bgColor} flex items-center justify-center shrink-0`}>
               <stat.icon 
-                className={`h-5 w-5 ${stat.color} ${stat.fillIcon ? "fill-current" : ""}`} 
+                className={`h-3.5 w-3.5 ${stat.color} ${stat.fillIcon ? "fill-current" : ""}`} 
               />
             </div>
-            <div className="text-center lg:text-right">
-              <p className="text-2xl font-bold text-foreground tracking-tight">
-                {stat.value}
-              </p>
-              <p className="text-[11px] text-muted-foreground font-medium">
-                {stat.label}
-              </p>
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground tabular-nums">{stat.value}</p>
+              <p className="text-[8px] text-muted-foreground">{stat.label}</p>
             </div>
           </div>
         </div>

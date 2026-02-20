@@ -580,7 +580,7 @@ export default function LevoHelpBot() {
 
       {/* ─── Floating Icon Button — positioned ABOVE the chat button ─── */}
       {!isOpen && !isHidden && (
-        <div className="fixed bottom-24 left-4 sm:left-6 z-[51] flex flex-col items-center gap-1 levo-help-bot-trigger">
+        <div className="fixed bottom-24 left-4 sm:left-6 z-[70] flex flex-col items-center gap-1 levo-help-bot-trigger">
           <button
             onClick={() => setIsOpen(true)}
             className="group relative h-11 w-11 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center"
@@ -589,14 +589,14 @@ export default function LevoHelpBot() {
             <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: "4s" }} />
           </button>
           <button 
-            onClick={() => setShowHideMenu(!showHideMenu)}
+            onClick={(e) => { e.stopPropagation(); setShowHideMenu(!showHideMenu); }}
             className="text-[8px] text-muted-foreground/60 hover:text-foreground transition-colors"
           >
             إخفاء
           </button>
-          {/* Hide duration menu */}
+          {/* Hide duration menu - z-index above everything */}
           {showHideMenu && (
-            <div className="absolute bottom-full mb-1 bg-card border border-border rounded-xl shadow-xl p-2 min-w-[140px] animate-fade-in">
+            <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 bg-card border border-border rounded-xl shadow-2xl p-2 min-w-[160px] animate-fade-in z-[9999]">
               <p className="text-[9px] text-muted-foreground font-bold mb-1.5 px-2">إخفاء المساعد لمدة:</p>
               {HIDE_DURATIONS.map(d => (
                 <button

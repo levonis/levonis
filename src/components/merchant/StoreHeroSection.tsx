@@ -54,164 +54,96 @@ export default function StoreHeroSection({
   const TierIcon = getBadgeTierIcon(merchantApp.badge_tier);
 
   return (
-    <div className="relative mb-8 overflow-hidden">
-      {/* Premium Glass Container */}
-      <div className="relative rounded-[2rem] border border-primary/20 bg-gradient-to-br from-card via-card/95 to-background overflow-hidden shadow-2xl shadow-primary/5">
-        {/* Animated Background Pattern */}
-        <div className="absolute inset-0 opacity-30">
+    <div className="relative mb-4 overflow-hidden">
+      <div className="relative rounded-2xl border border-primary/20 bg-gradient-to-br from-card via-card/95 to-background overflow-hidden shadow-lg">
+        {/* Subtle background */}
+        <div className="absolute inset-0 opacity-20">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.15),transparent_50%)]" />
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--primary)/0.1),transparent_50%)]" />
-          <div className="absolute top-0 left-0 w-full h-full bg-[linear-gradient(135deg,transparent_40%,hsl(var(--primary)/0.03)_50%,transparent_60%)]" />
         </div>
-        
-        {/* Decorative Orbs */}
-        <div className="absolute -top-32 -right-32 w-64 h-64 bg-primary/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-primary/15 rounded-full blur-3xl" />
-        
-        {/* Accent Lines */}
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
 
-        <div className="relative z-10 p-6 sm:p-10 lg:p-12">
-          <div className="flex flex-col lg:flex-row gap-8 items-center lg:items-start">
-            {/* Avatar Section */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative group">
-                {/* Glow Effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/40 to-primary/10 rounded-full blur-2xl scale-110 opacity-0 group-hover:opacity-100 transition-all duration-700" />
-                
-                {/* Avatar Ring */}
-                <div className="relative p-1 rounded-full bg-gradient-to-br from-primary/30 via-primary/10 to-transparent">
-                  <AvatarWithFrame
-                    imageUrl={merchantApp.store_image_url}
-                    frameUrl={selectedFrame?.image_url}
-                    size="xl"
-                    animated
-                  />
-                </div>
-                
-                {/* Settings Button */}
-                {isOwner && onSettingsClick && (
-                  <Button
-                    size="icon"
-                    className="absolute -bottom-1 -right-1 h-11 w-11 rounded-full shadow-xl bg-primary hover:bg-primary/90 border-4 border-background hover:scale-110 transition-all duration-300"
-                    onClick={onSettingsClick}
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                )}
+        <div className="relative z-10 p-4 sm:p-5">
+          <div className="flex gap-4 items-center">
+            {/* Avatar */}
+            <div className="relative shrink-0">
+              <div className="relative p-0.5 rounded-full bg-gradient-to-br from-primary/30 to-transparent">
+                <AvatarWithFrame
+                  imageUrl={merchantApp.store_image_url}
+                  frameUrl={selectedFrame?.image_url}
+                  size="lg"
+                  animated
+                />
               </div>
-
-              {/* Specialty Badge */}
-              {merchantApp.specialty && (
-                <Badge 
-                  variant="outline" 
-                  className="gap-1.5 px-4 py-2 text-xs font-medium bg-gradient-to-r from-background/80 to-background/60 backdrop-blur-md border-primary/30 shadow-lg"
+              {isOwner && onSettingsClick && (
+                <Button
+                  size="icon"
+                  className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full shadow-lg bg-primary hover:bg-primary/90 border-2 border-background"
+                  onClick={onSettingsClick}
                 >
-                  {merchantApp.specialty === "resin" && <Droplets className="h-3.5 w-3.5 text-blue-400" />}
-                  {merchantApp.specialty === "filament" && <Layers className="h-3.5 w-3.5 text-orange-400" />}
-                  {merchantApp.specialty === "both" && (
-                    <>
-                      <Droplets className="h-3.5 w-3.5 text-blue-400" />
-                      <Layers className="h-3.5 w-3.5 text-orange-400" />
-                    </>
-                  )}
-                  <span className="text-foreground/80">{getSpecialtyLabel(merchantApp.specialty)}</span>
-                </Badge>
+                  <Settings className="h-3.5 w-3.5" />
+                </Button>
               )}
             </div>
 
-            {/* Store Info */}
-            <div className="flex-1 text-center lg:text-right space-y-4">
-              {/* Name & Badges */}
-              <div className="space-y-2">
-                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-3">
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight">
-                    <span className="bg-gradient-to-l from-primary via-primary to-primary/60 bg-clip-text text-transparent">
-                      {merchantApp.display_name}
-                    </span>
-                  </h1>
-                  <CompactBadgesDisplay
-                    isVerified={merchantApp.is_verified}
-                    badgeTier={(merchantApp.badge_tier || "none") as BadgeTier}
-                  />
-                </div>
-                
-                {username && (
-                  <p className="text-sm text-muted-foreground font-medium">@{username}</p>
-                )}
-                
-                <p className="text-xs text-muted-foreground/70 flex items-center gap-2 justify-center lg:justify-start">
-                  <Zap className="h-3 w-3 text-primary" />
-                  متجر معتمد في مجتمع ليفو للطباعة ثلاثية الأبعاد
-                </p>
+            {/* Info */}
+            <div className="flex-1 min-w-0 space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="text-lg sm:text-xl font-black">
+                  <span className="bg-gradient-to-l from-primary to-primary/60 bg-clip-text text-transparent">
+                    {merchantApp.display_name}
+                  </span>
+                </h1>
+                <CompactBadgesDisplay
+                  isVerified={merchantApp.is_verified}
+                  badgeTier={(merchantApp.badge_tier || "none") as BadgeTier}
+                />
               </div>
-
-              {/* Bio */}
+              
+              {username && <p className="text-[10px] text-muted-foreground">@{username}</p>}
+              
               {merchantApp.bio && (
-                <div className="relative max-w-2xl mx-auto lg:mx-0">
-                  <div className="absolute -right-4 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/50 via-primary/20 to-transparent rounded-full hidden lg:block" />
-                  <p className="text-sm text-foreground/75 leading-relaxed whitespace-pre-wrap lg:pr-6">
-                    {merchantApp.bio}
-                  </p>
-                </div>
+                <p className="text-[11px] text-foreground/70 line-clamp-2 leading-relaxed">{merchantApp.bio}</p>
               )}
 
-              {/* Action Buttons */}
-              <div className="flex flex-wrap gap-3 justify-center lg:justify-start pt-2">
-                {showContactButton && onContactClick && (
-                  <Button
-                    size="lg"
-                    className="gap-2.5 h-12 px-6 text-sm font-semibold shadow-xl hover:shadow-2xl hover:shadow-primary/20 transition-all duration-300 bg-gradient-to-r from-primary to-primary/90"
-                    onClick={onContactClick}
-                  >
-                    <MessageCircle className="h-4 w-4" />
-                    تواصل مع التاجر
-                  </Button>
+              {/* Specialty + Social inline */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                {merchantApp.specialty && (
+                  <Badge variant="outline" className="gap-1 px-2 py-0.5 text-[9px] font-medium border-primary/30">
+                    {merchantApp.specialty === "resin" && <Droplets className="h-2.5 w-2.5 text-blue-400" />}
+                    {merchantApp.specialty === "filament" && <Layers className="h-2.5 w-2.5 text-orange-400" />}
+                    {merchantApp.specialty === "both" && <><Droplets className="h-2.5 w-2.5 text-blue-400" /><Layers className="h-2.5 w-2.5 text-orange-400" /></>}
+                    {getSpecialtyLabel(merchantApp.specialty)}
+                  </Badge>
                 )}
-                
                 {socialLinks?.facebook && (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="gap-2 h-12 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-primary/5 hover:border-primary/30 transition-all"
-                    asChild
-                  >
-                    <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer">
-                      <Facebook className="h-4 w-4 text-blue-500" />
-                      فيسبوك
-                    </a>
-                  </Button>
+                  <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="h-6 w-6 rounded-full bg-muted/50 flex items-center justify-center hover:bg-primary/10 transition-colors">
+                    <Facebook className="h-3 w-3 text-blue-500" />
+                  </a>
                 )}
-                
                 {socialLinks?.instagram && (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    className="gap-2 h-12 bg-background/50 backdrop-blur-sm border-border/50 hover:bg-primary/5 hover:border-primary/30 transition-all"
-                    asChild
-                  >
-                    <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer">
-                      <Instagram className="h-4 w-4 text-pink-500" />
-                      إنستقرام
-                    </a>
-                  </Button>
-                )}
-                
-                {showBackButton && (
-                  <Button 
-                    variant="ghost" 
-                    size="lg" 
-                    className="gap-2 h-12 text-muted-foreground hover:text-foreground"
-                    onClick={() => navigate(-1)}
-                  >
-                    رجوع
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+                  <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="h-6 w-6 rounded-full bg-muted/50 flex items-center justify-center hover:bg-primary/10 transition-colors">
+                    <Instagram className="h-3 w-3 text-pink-500" />
+                  </a>
                 )}
               </div>
             </div>
           </div>
+
+          {/* Action Buttons */}
+          {(showContactButton || showBackButton) && (
+            <div className="flex gap-2 mt-3 pt-3 border-t border-border/30">
+              {showContactButton && onContactClick && (
+                <Button size="sm" className="gap-1.5 h-8 text-xs flex-1" onClick={onContactClick}>
+                  <MessageCircle className="h-3.5 w-3.5" />تواصل مع التاجر
+                </Button>
+              )}
+              {showBackButton && (
+                <Button variant="ghost" size="sm" className="gap-1 h-8 text-xs text-muted-foreground" onClick={() => navigate(-1)}>
+                  رجوع<ArrowRight className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

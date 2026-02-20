@@ -33,26 +33,36 @@ export default function MerchantProductMediaUpload({
   const [currentImageSrc, setCurrentImageSrc] = useState("");
   const [isUploading, setIsUploading] = useState(false);
 
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
 
-    if (!file.type.startsWith("image/")) {
-      toast({ title: "خطأ", description: "يرجى اختيار صورة.", variant: "destructive" });
-      return;
-    }
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith("image/")) {
+        toast({ title: "خطأ", description: `${file.name} ليس صورة.`, variant: "destructive" });
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        toast({ title: "خطأ", description: `${file.name} أكبر من 5 MB.`, variant: "destructive" });
+        return false;
+      }
+      return true;
+    });
 
-    if (file.size > 5 * 1024 * 1024) {
-      toast({ title: "خطأ", description: "حجم الصورة يجب أن يكون أقل من 5 MB.", variant: "destructive" });
-      return;
-    }
+    if (validFiles.length === 0) return;
 
+    // Store remaining files for batch processing
+    setPendingFiles(validFiles.slice(1));
+
+    // Process first file through cropper
     const reader = new FileReader();
     reader.onload = () => {
       setCurrentImageSrc(reader.result as string);
       setCropperOpen(true);
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(validFiles[0]);
 
     // Reset input so same file can be selected again
     if (imageInputRef.current) imageInputRef.current.value = "";
@@ -86,6 +96,18 @@ export default function MerchantProductMediaUpload({
     } finally {
       setIsUploading(false);
       setCropperOpen(false);
+      
+      // Process next pending file if any
+      if (pendingFiles.length > 0) {
+        const nextFile = pendingFiles[0];
+        setPendingFiles(prev => prev.slice(1));
+        const reader = new FileReader();
+        reader.onload = () => {
+          setCurrentImageSrc(reader.result as string);
+          setCropperOpen(true);
+        };
+        reader.readAsDataURL(nextFile);
+      }
     }
   };
 
@@ -218,10 +240,11 @@ export default function MerchantProductMediaUpload({
         <p className="text-xs text-muted-foreground mt-1">
           حد أقصى 10 صور، حجم كل صورة أقل من 5 MB.
         </p>
-        <input
+         <input
           ref={imageInputRef}
           type="file"
           accept="image/*"
+          multiple
           onChange={handleImageSelect}
           className="hidden"
         />
