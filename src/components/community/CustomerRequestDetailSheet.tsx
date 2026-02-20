@@ -90,13 +90,13 @@ export default function CustomerRequestDetailSheet({
     enabled: !!request?.user_id && open,
     queryFn: async () => {
       const { data: communityProfile } = await supabase
-        .from("community_customer_profiles")
+        .from("community_customer_profiles_public")
         .select("display_name, avatar_url")
         .eq("user_id", request!.user_id)
         .maybeSingle();
       if (communityProfile?.display_name) return { full_name: communityProfile.display_name, avatar_url: communityProfile.avatar_url, username: null };
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("full_name, avatar_url, username")
         .eq("id", request!.user_id)
         .maybeSingle();

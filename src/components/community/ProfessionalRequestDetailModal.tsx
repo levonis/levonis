@@ -77,14 +77,14 @@ export default function ProfessionalRequestDetailModal({
     queryFn: async () => {
       // Try community profile first
       const { data: communityProfile } = await supabase
-        .from("community_customer_profiles")
+        .from("community_customer_profiles_public")
         .select("display_name, avatar_url")
         .eq("user_id", request!.user_id)
         .maybeSingle();
       if (communityProfile?.display_name) return communityProfile;
-      // Fallback to profiles table
+      // Fallback to profiles_public view
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("full_name, avatar_url")
         .eq("id", request!.user_id)
         .maybeSingle();
