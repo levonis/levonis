@@ -1553,7 +1553,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                   ? (lines[1]?.trim() || '')
                                   : (lines[0]?.replace('📦 ', '').trim() || '');
                                 const priceLine = isInterestFormat ? lines[2] : lines[1];
-                                const priceMatch = priceLine?.match(/(\d[\d,]*)/);
+                                // Parse price - handle both Arabic (٠-٩) and Latin (0-9) digits
+                                const arabicToLatin = (s: string) => s?.replace(/[٠-٩]/g, (d) => String('٠١٢٣٤٥٦٧٨٩'.indexOf(d))) || '';
+                                const normalizedPriceLine = arabicToLatin(priceLine || '').replace(/٬/g, ',');
+                                const priceMatch = normalizedPriceLine?.match(/(\d[\d,]*)/);
                                 const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, '')) : 0;
                                 
                                 return (
