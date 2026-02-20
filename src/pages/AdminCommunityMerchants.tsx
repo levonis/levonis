@@ -147,7 +147,7 @@ function MerchantsContent() {
         .eq("key", "merchant_registration_fee")
         .maybeSingle();
       
-      const MERCHANT_FEE = (feeSettings?.value as any)?.amount || 25000;
+      const MERCHANT_FEE = (feeSettings?.value as any)?.amount ?? 25000;
 
       const { data: wallet, error: walletError } = await supabase
         .from("user_wallets")
@@ -159,18 +159,21 @@ function MerchantsContent() {
       
       const currentBalance = wallet?.balance || 0;
       
-      if (currentBalance < MERCHANT_FEE) {
+      if (MERCHANT_FEE > 0 && currentBalance < MERCHANT_FEE) {
         throw new Error(`رصيد المحفظة غير كافي. المطلوب: ${MERCHANT_FEE.toLocaleString()} IQD، المتوفر: ${currentBalance.toLocaleString()} IQD`);
       }
 
-      const { error: deductError } = await supabase.rpc('admin_adjust_wallet', {
-        p_user_id: payload.user_id,
-        p_amount: -MERCHANT_FEE,
-        p_type: 'merchant_fee',
-        p_description: 'رسوم التسجيل كتاجر في مجتمع ليفو'
-      });
+      // Only deduct if fee > 0
+      if (MERCHANT_FEE > 0) {
+        const { error: deductError } = await supabase.rpc('admin_adjust_wallet', {
+          p_user_id: payload.user_id,
+          p_amount: -MERCHANT_FEE,
+          p_type: 'merchant_fee',
+          p_description: 'رسوم التسجيل كتاجر في مجتمع ليفو'
+        });
 
-      if (deductError) throw new Error(deductError.message || 'فشل خصم رسوم التسجيل');
+        if (deductError) throw new Error(deductError.message || 'فشل خصم رسوم التسجيل');
+      }
 
       const { error: updateError } = await supabase
         .from("merchant_applications")
@@ -197,7 +200,9 @@ function MerchantsContent() {
       await sendAllNotifications({
         userId: payload.user_id,
         title: "تم قبول طلبك كتاجر! 🎉",
-        message: `تهانينا! تم قبول طلبك للانضمام كتاجر في مجتمع ليفو. تم خصم ${MERCHANT_FEE.toLocaleString()} IQD من محفظتك كرسوم تسجيل.`,
+        message: MERCHANT_FEE > 0 
+          ? `تهانينا! تم قبول طلبك للانضمام كتاجر في مجتمع ليفو. تم خصم ${MERCHANT_FEE.toLocaleString()} IQD من محفظتك كرسوم تسجيل.`
+          : `تهانينا! تم قبول طلبك للانضمام كتاجر في مجتمع ليفو.`,
         type: 'success',
       });
 
@@ -205,7 +210,7 @@ function MerchantsContent() {
     },
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ["admin-merchant-applications"] });
-      toast({ title: "تم قبول التاجر", description: "تم خصم رسوم التسجيل من محفظته" });
+      toast({ title: "تم قبول التاجر", description: "تم قبول التاجر بنجاح" });
       setOpen(false);
       setActive(null);
     },
@@ -497,6 +502,12 @@ function MerchantsContent() {
 
               {/* Public Info */}
               <div className="space-y-2">
+                {active.display_name && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">اسم المتجر:</span>
+                    <span className="font-medium">{active.display_name}</span>
+                  </div>
+                )}
                 {active.city && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">المدينة:</span>
@@ -509,6 +520,46 @@ function MerchantsContent() {
                     <span dir="ltr">{active.phone_number}</span>
                   </div>
                 )}
+                {(() => {
+                  const social = active.social_links as { facebook?: string; instagram?: string; tiktok?: string; telegram?: string } | null;
+                  if (!social) return null;
+                  return (
+                    <>
+                      {social.instagram && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">انستغرام:</span>
+                          <a href={social.instagram.startsWith('http') ? social.instagram : `https://instagram.com/${social.instagram}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate max-w-[200px]" dir="ltr">
+                            {social.instagram}
+                          </a>
+                        </div>
+                      )}
+                      {social.facebook && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">فيسبوك:</span>
+                          <a href={social.facebook.startsWith('http') ? social.facebook : `https://facebook.com/${social.facebook}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate max-w-[200px]" dir="ltr">
+                            {social.facebook}
+                          </a>
+                        </div>
+                      )}
+                      {social.tiktok && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">تيك توك:</span>
+                          <a href={social.tiktok.startsWith('http') ? social.tiktok : `https://tiktok.com/@${social.tiktok}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate max-w-[200px]" dir="ltr">
+                            {social.tiktok}
+                          </a>
+                        </div>
+                      )}
+                      {social.telegram && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">تلغرام:</span>
+                          <a href={social.telegram.startsWith('http') ? social.telegram : `https://t.me/${social.telegram}`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline truncate max-w-[200px]" dir="ltr">
+                            {social.telegram}
+                          </a>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
                 {active.bio && (
                   <div className="text-sm">
                     <span className="text-muted-foreground block mb-1">النبذة:</span>
