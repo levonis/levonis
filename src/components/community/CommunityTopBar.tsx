@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
 import { ListingConversations } from "@/components/marketplace/ListingConversations";
+import { useLanguage } from "@/lib/i18n";
 
 /**
  * يظهر فقط داخل /community* ويستبدل شريط الموقع.
@@ -30,6 +31,7 @@ interface CommunityTopBarProps {
 
 const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarProps) => {
   const { user, isAdmin } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -109,9 +111,9 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
                 <Users className="h-4.5 w-4.5 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-black text-foreground truncate">مجتمع ليفو</p>
+                <p className="text-sm font-black text-foreground truncate">{t('community_levo')}</p>
                 <p className="text-[11px] text-muted-foreground truncate">
-                  {tab === "products" ? "منتجات التجار" : tab === "merchants" ? "صفحات التجار" : "طلبات العملاء"}
+                  {tab === "products" ? t('community_topbar_subtitle_products') : tab === "merchants" ? t('community_topbar_subtitle_merchants') : t('community_topbar_subtitle_requests')}
                 </p>
               </div>
             </Link>
@@ -224,7 +226,7 @@ const CommunityTopBar = memo(({ verificationBannerHeight = 0 }: CommunityTopBarP
               <Input
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                placeholder={tab === "products" ? "ابحث عن منتج..." : tab === "merchants" ? "ابحث عن تاجر..." : "ابحث عن طلب..."}
+                placeholder={tab === "products" ? t('community_search_product') : tab === "merchants" ? t('community_search_merchant') : t('community_search_request')}
                 className="pr-10"
               />
             </div>

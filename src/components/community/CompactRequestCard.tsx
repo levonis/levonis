@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import SocialActions from "@/components/community/SocialActions";
+import { useLanguage } from "@/lib/i18n";
 
 interface PrintRequest {
   id: string;
@@ -36,11 +37,11 @@ interface CompactRequestCardProps {
   isOwner?: boolean;
 }
 
-const MATERIAL_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  filament: { label: "FDM", color: "text-blue-300", bg: "bg-blue-500/20" },
-  resin: { label: "SLA", color: "text-purple-300", bg: "bg-purple-500/20" },
-  both: { label: "الكل", color: "text-emerald-300", bg: "bg-emerald-500/20" },
-  any: { label: "أي", color: "text-slate-300", bg: "bg-slate-500/20" },
+const MATERIAL_CONFIG_STATIC: Record<string, { labelKey: string; fallback: string; color: string; bg: string }> = {
+  filament: { labelKey: "", fallback: "FDM", color: "text-blue-300", bg: "bg-blue-500/20" },
+  resin: { labelKey: "", fallback: "SLA", color: "text-purple-300", bg: "bg-purple-500/20" },
+  both: { labelKey: "community_material_all", fallback: "الكل", color: "text-emerald-300", bg: "bg-emerald-500/20" },
+  any: { labelKey: "community_material_any", fallback: "أي", color: "text-slate-300", bg: "bg-slate-500/20" },
 };
 
 export default function CompactRequestCard({
@@ -51,6 +52,7 @@ export default function CompactRequestCard({
   isOwner = false,
 }: CompactRequestCardProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   // Fetch customer profile info
   const { data: customerProfile } = useQuery({
@@ -120,14 +122,15 @@ export default function CompactRequestCard({
 
   const mainImage = request.images?.[0] || request.image_url;
   const isAccepted = !!request.accepted_offer_id;
-  const material = request.material_type ? MATERIAL_CONFIG[request.material_type] : null;
+  const material = request.material_type ? MATERIAL_CONFIG_STATIC[request.material_type] : null;
+  const materialLabel = material ? (material.labelKey ? t(material.labelKey as any) : material.fallback) : null;
   const offersCount = offersData?.count ?? 0;
   const lowestPrice = offersData?.lowestPrice;
   
   const timeDiff = Date.now() - new Date(request.created_at).getTime();
   const hoursAgo = Math.floor(timeDiff / (1000 * 60 * 60));
   const daysAgo = Math.floor(hoursAgo / 24);
-  const timeLabel = daysAgo > 0 ? `${daysAgo}ي` : hoursAgo > 0 ? `${hoursAgo}س` : "جديد";
+  const timeLabel = daysAgo > 0 ? `${daysAgo}${t('community_time_day')}` : hoursAgo > 0 ? `${hoursAgo}${t('community_time_hour')}` : t('community_new_label');
 
   const handleChat = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -150,7 +153,7 @@ export default function CompactRequestCard({
         <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
           {/* Top-right to bottom-left diagonal stripe */}
           <div className="absolute w-[200%] h-7 bg-gradient-to-r from-emerald-600 via-green-500 to-emerald-600 transform -rotate-[35deg] origin-top-right -top-2 -right-4 flex items-center justify-center shadow-[0_2px_8px_rgba(0,0,0,0.3)]">
-            <span className="text-[9px] font-black text-white tracking-widest uppercase drop-shadow-sm">✓ تم القبول ✓</span>
+            <span className="text-[9px] font-black text-white tracking-widest uppercase drop-shadow-sm">{t('community_accepted')}</span>
           </div>
         </div>
       )}
@@ -180,9 +183,9 @@ export default function CompactRequestCard({
 
         {/* Top row - Material & Time */}
         <div className="absolute top-2 left-2 right-2 flex justify-between items-start">
-          {material && (
+          {material && materialLabel && (
             <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${material.bg} ${material.color} backdrop-blur-sm`}>
-              {material.label}
+              {materialLabel}
             </span>
           )}
           <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-black/50 text-white/90 backdrop-blur-sm flex items-center gap-0.5">
@@ -218,7 +221,7 @@ export default function CompactRequestCard({
             </AvatarFallback>
           </Avatar>
           <span className="text-[9px] text-muted-foreground truncate max-w-[80px]">
-            {customerProfile?.full_name || customerProfile?.username || "عميل"}
+            {customerProfile?.full_name || customerProfile?.username || t('community_customer')}
           </span>
         </div>
 
@@ -247,16 +250,16 @@ export default function CompactRequestCard({
             <Tag className="h-3 w-3 text-emerald-400" />
             {lowestPrice ? (
               <span className="text-[10px] font-bold text-emerald-400">
-                {lowestPrice.toLocaleString()} د.ع
+                {lowestPrice.toLocaleString()} {t('community_iqd_currency')}
               </span>
             ) : (
-              <span className="text-[9px] text-muted-foreground">لا توجد عروض</span>
+              <span className="text-[9px] text-muted-foreground">{t('community_no_offers')}</span>
             )}
           </div>
           <div className="flex items-center gap-2">
             {offersCount > 0 && (
               <span className="text-[9px] text-muted-foreground">
-                {offersCount} عرض
+                {t('community_offer_count').replace('{count}', String(offersCount))}
               </span>
             )}
             <SocialActions 
@@ -277,7 +280,7 @@ export default function CompactRequestCard({
               onClick={handleChat}
             >
               <MessageSquare className="h-3 w-3" />
-              تواصل
+              {t('community_chat')}
             </button>
           )}
 
@@ -285,7 +288,7 @@ export default function CompactRequestCard({
           {isOwner && (
             <span className="h-7 px-2.5 flex items-center gap-1 rounded-md text-[9px] bg-primary/10 text-primary border border-primary/20 font-medium">
               <User className="h-3 w-3" />
-              طلبك
+              {t('community_your_request')}
             </span>
           )}
 
@@ -296,7 +299,7 @@ export default function CompactRequestCard({
               onClick={handlePrice}
             >
               <DollarSign className="h-3 w-3" />
-              سعّر
+              {t('community_price_it')}
             </button>
           )}
           {isMerchant && !isOwner && !isAccepted && myOffer && (
@@ -306,7 +309,7 @@ export default function CompactRequestCard({
                 onClick={handlePrice}
               >
                 <Edit3 className="h-3 w-3" />
-                تعديل ({myOffer.price_iqd.toLocaleString()})
+                {t('community_edit_price')} ({myOffer.price_iqd.toLocaleString()})
               </button>
             ) : (
               <div
@@ -314,7 +317,7 @@ export default function CompactRequestCard({
                 onClick={(e) => e.stopPropagation()}
               >
                 <Lock className="h-2.5 w-2.5" />
-                <span className="text-[8px]">{myOffer.price_iqd.toLocaleString()} د.ع</span>
+                <span className="text-[8px]">{myOffer.price_iqd.toLocaleString()} {t('community_iqd_currency')}</span>
               </div>
             )
           )}
