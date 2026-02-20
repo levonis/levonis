@@ -6,10 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { format } from "date-fns";
-import { ar } from "date-fns/locale";
+import { ar, enUS } from "date-fns/locale";
+import { useLanguage } from "@/lib/i18n";
 
 export default function PointsHistoryPanel() {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
+  const dateLocale = language === 'ar' || language === 'ku' ? ar : enUS;
 
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['points-transactions-panel', user?.id],
@@ -20,7 +23,7 @@ export default function PointsHistoryPanel() {
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
-        .limit(10); // Limit to 10 transactions
+        .limit(10);
       if (error) throw error;
       return data;
     },
@@ -42,7 +45,7 @@ export default function PointsHistoryPanel() {
     return (
       <Card>
         <CardContent className="p-6 text-center text-muted-foreground">
-          لا توجد معاملات نقاط سابقة
+          {t('points_no_transactions')}
         </CardContent>
       </Card>
     );
@@ -51,7 +54,6 @@ export default function PointsHistoryPanel() {
   return (
     <div className="space-y-3">
       {transactions.map((tx) => {
-        // Fix: Points are always positive in the DB, 'type' determines if earned or spent
         const isEarned = tx.type === 'earned' || tx.type === 'earn';
         const displayPoints = Math.abs(tx.points);
         
@@ -70,7 +72,7 @@ export default function PointsHistoryPanel() {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium line-clamp-1">{tx.description || tx.source}</p>
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(tx.created_at), 'dd MMM yyyy', { locale: ar })}
+                  {format(new Date(tx.created_at), 'dd MMM yyyy', { locale: dateLocale })}
                 </p>
               </div>
               <Badge variant={isEarned ? 'default' : 'destructive'} className={isEarned ? 'bg-green-500' : ''}>

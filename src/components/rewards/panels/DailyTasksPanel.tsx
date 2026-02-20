@@ -12,9 +12,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import OptimizedImage from "@/components/OptimizedImage";
+import { useLanguage } from "@/lib/i18n";
 
 export default function DailyTasksPanel() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [expandedReviews, setExpandedReviews] = useState(false);
 
@@ -49,7 +51,6 @@ export default function DailyTasksPanel() {
     staleTime: 1 * 60 * 1000,
   });
 
-  // Fetch orders that can be reviewed (delivered orders without reviews)
   const { data: reviewableOrders } = useQuery({
     queryKey: ['reviewable-orders', user?.id],
     queryFn: async () => {
@@ -69,7 +70,6 @@ export default function DailyTasksPanel() {
 
       if (error) throw error;
 
-      // Check which products already have reviews
       const productIds = orderItems?.map(item => item.product_id).filter(Boolean) || [];
       if (productIds.length === 0) return [];
 
@@ -80,14 +80,12 @@ export default function DailyTasksPanel() {
         .in('product_id', productIds);
 
       const reviewedProductIds = new Set(existingReviews?.map(r => r.product_id) || []);
-      
       return orderItems?.filter(item => !reviewedProductIds.has(item.product_id)) || [];
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
   });
 
-  // Fetch points settings for review points
   const { data: pointsSettings } = useQuery({
     queryKey: ['points-settings'],
     queryFn: async () => {
@@ -102,12 +100,10 @@ export default function DailyTasksPanel() {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Complete any task
   const completeTaskMutation = useMutation({
     mutationFn: async (task: any) => {
-      if (!user) throw new Error('يجب تسجيل الدخول');
+      if (!user) throw new Error(t('tasks_login_required'));
 
-      // Check if already completed today
       const today = new Date().toISOString().split('T')[0];
       const { data: existing } = await supabase
         .from('user_task_completions')
@@ -117,87 +113,57 @@ export default function DailyTasksPanel() {
         .gte('completed_at', today)
         .maybeSingle();
 
-      if (existing) throw new Error('لقد أكملت هذه المهمة اليوم');
+      if (existing) throw new Error(t('tasks_completed_today'));
 
-      // Complete the task
       const { error: taskError } = await supabase
         .from('user_task_completions')
-        .insert({
-          user_id: user.id,
-          task_key: task.task_key,
-          points_earned: task.points_reward,
-        });
+        .insert({ user_id: user.id, task_key: task.task_key, points_earned: task.points_reward });
       if (taskError) throw taskError;
 
-      // Add points transaction
       const { error: pointsError } = await supabase
         .from('points_transactions')
         .insert({
-          user_id: user.id,
-          points: task.points_reward,
-          type: 'earned',
-          source: 'daily_task',
-          description: `مهمة: ${task.title_ar}`,
+          user_id: user.id, points: task.points_reward, type: 'earned',
+          source: 'daily_task', description: `${t('tasks_start')}: ${task.title_ar}`,
         });
       if (pointsError) throw pointsError;
 
-      // Update user points
       const { data: currentPoints } = await supabase
-        .from('user_points')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .from('user_points').select('*').eq('user_id', user.id).maybeSingle();
 
       if (currentPoints) {
-        await supabase
-          .from('user_points')
-          .update({
-            total_points: (currentPoints.total_points || 0) + task.points_reward,
-            available_points: (currentPoints.available_points || 0) + task.points_reward,
-          })
-          .eq('user_id', user.id);
+        await supabase.from('user_points').update({
+          total_points: (currentPoints.total_points || 0) + task.points_reward,
+          available_points: (currentPoints.available_points || 0) + task.points_reward,
+        }).eq('user_id', user.id);
       } else {
-        await supabase
-          .from('user_points')
-          .insert({
-            user_id: user.id,
-            total_points: task.points_reward,
-            available_points: task.points_reward,
-          });
+        await supabase.from('user_points').insert({
+          user_id: user.id, total_points: task.points_reward, available_points: task.points_reward,
+        });
       }
-      
       return task;
     },
     onSuccess: (task) => {
       queryClient.invalidateQueries({ queryKey: ['user-completed-tasks-today'] });
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
       queryClient.invalidateQueries({ queryKey: ['points-transactions'] });
-      toast.success(`تم إكمال المهمة! حصلت على ${task.points_reward} نقطة 🎉`);
+      toast.success(t('tasks_task_completed', { points: task.points_reward }));
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
-    },
+    onError: (error: any) => { toast.error(error.message || t('common_error')); },
   });
 
   const [activeTaskKey, setActiveTaskKey] = useState<string | null>(null);
 
   const handleTaskClick = (task: any) => {
-    if (!user) {
-      toast.error('يجب تسجيل الدخول');
-      return;
-    }
+    if (!user) { toast.error(t('tasks_login_required')); return; }
     setActiveTaskKey(task.task_key);
-    completeTaskMutation.mutate(task, {
-      onSettled: () => setActiveTaskKey(null),
-    });
+    completeTaskMutation.mutate(task, { onSettled: () => setActiveTaskKey(null) });
   };
 
   if (isLoading) {
     return (
       <div className="space-y-3">
-        {[1, 2, 3].map(i => (
-          <Skeleton key={i} className="h-20 w-full" />
-        ))}
+        {[1, 2, 3].map(i => <Skeleton key={i} className="h-20 w-full" />)}
       </div>
     );
   }
@@ -205,9 +171,7 @@ export default function DailyTasksPanel() {
   if (!user) {
     return (
       <Card>
-        <CardContent className="p-6 text-center text-muted-foreground">
-          سجّل الدخول لعرض المهام اليومية
-        </CardContent>
+        <CardContent className="p-6 text-center text-muted-foreground">{t('tasks_login_required')}</CardContent>
       </Card>
     );
   }
@@ -217,7 +181,6 @@ export default function DailyTasksPanel() {
 
   return (
     <div className="space-y-3">
-      {/* Regular Tasks */}
       {tasks?.map((task) => {
         const isCompleted = completedTasks?.includes(task.task_key);
         const isTaskLoading = activeTaskKey === task.task_key && completeTaskMutation.isPending;
@@ -240,18 +203,12 @@ export default function DailyTasksPanel() {
                   <p className="text-xs text-muted-foreground mt-0.5">{task.description_ar}</p>
                   <div className="flex items-center gap-1 mt-2">
                     <Coins className="h-3.5 w-3.5 text-amber-500" />
-                    <span className="text-xs font-bold text-amber-600">+{task.points_reward} نقطة</span>
+                    <span className="text-xs font-bold text-amber-600">+{task.points_reward} {t('points_unit')}</span>
                   </div>
                 </div>
                 {!isCompleted && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="shrink-0"
-                    onClick={() => handleTaskClick(task)}
-                    disabled={isTaskLoading}
-                  >
-                    {isTaskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'ابدأ'}
+                  <Button size="sm" variant="outline" className="shrink-0" onClick={() => handleTaskClick(task)} disabled={isTaskLoading}>
+                    {isTaskLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : t('tasks_start')}
                   </Button>
                 )}
               </div>
@@ -260,7 +217,6 @@ export default function DailyTasksPanel() {
         );
       })}
 
-      {/* Review Tasks */}
       {reviewableOrders && reviewableOrders.length > 0 && (
         <Card className="border-amber-500/30 bg-amber-500/5">
           <Collapsible open={expandedReviews} onOpenChange={setExpandedReviews}>
@@ -272,14 +228,14 @@ export default function DailyTasksPanel() {
                       <Star className="h-5 w-5 text-amber-500" />
                     </div>
                     <div>
-                      <p className="font-medium text-sm">تقييم المنتجات</p>
+                      <p className="font-medium text-sm">{t('tasks_rate_products')}</p>
                       <p className="text-xs text-muted-foreground">
-                        {reviewableOrders.length} منتج بانتظار تقييمك
+                        {t('tasks_awaiting_review', { count: reviewableOrders.length })}
                       </p>
                       <div className="flex items-center gap-1 mt-1">
                         <Coins className="h-3.5 w-3.5 text-amber-500" />
                         <span className="text-xs font-bold text-amber-600">
-                          +{reviewPoints} نقطة (+ {mediaBonus} إضافية مع صورة/فيديو)
+                          {t('tasks_points_per_review', { points: reviewPoints })} ({t('tasks_bonus_media', { points: mediaBonus })})
                         </span>
                       </div>
                     </div>
@@ -291,12 +247,7 @@ export default function DailyTasksPanel() {
             <CollapsibleContent>
               <div className="px-4 pb-4 space-y-2">
                 {reviewableOrders.map((item: any) => (
-                  <ReviewableProduct 
-                    key={item.id} 
-                    item={item}
-                    reviewPoints={reviewPoints}
-                    mediaBonus={mediaBonus}
-                  />
+                  <ReviewableProduct key={item.id} item={item} reviewPoints={reviewPoints} mediaBonus={mediaBonus} />
                 ))}
               </div>
             </CollapsibleContent>
@@ -306,18 +257,16 @@ export default function DailyTasksPanel() {
 
       {(!tasks || tasks.length === 0) && (!reviewableOrders || reviewableOrders.length === 0) && (
         <Card>
-          <CardContent className="p-6 text-center text-muted-foreground">
-            لا توجد مهام متاحة حالياً
-          </CardContent>
+          <CardContent className="p-6 text-center text-muted-foreground">{t('tasks_no_tasks')}</CardContent>
         </Card>
       )}
     </div>
   );
 }
 
-// ReviewableProduct component for inline review
 function ReviewableProduct({ item, reviewPoints, mediaBonus }: { item: any; reviewPoints: number; mediaBonus: number }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(false);
   const [rating, setRating] = useState(5);
@@ -327,70 +276,45 @@ function ReviewableProduct({ item, reviewPoints, mediaBonus }: { item: any; revi
   const handleSubmitReview = async () => {
     if (!user) return;
     if (comment.length < 15) {
-      toast.error('التعليق يجب أن يكون 15 حرفاً على الأقل');
+      toast.error(t('tasks_comment_label', { min: 15 }));
       return;
     }
 
     setSubmitting(true);
     try {
-      // Add review
-      const { error: reviewError } = await supabase
-        .from('reviews')
-        .insert({
-          user_id: user.id,
-          product_id: item.product_id,
-          order_item_id: item.id,
-          rating,
-          comment,
-          is_verified_purchase: true,
-          points_awarded: reviewPoints,
-        });
+      const { error: reviewError } = await supabase.from('reviews').insert({
+        user_id: user.id, product_id: item.product_id, order_item_id: item.id,
+        rating, comment, is_verified_purchase: true, points_awarded: reviewPoints,
+      });
       if (reviewError) throw reviewError;
 
-      // Add points
-      const { error: pointsError } = await supabase
-        .from('points_transactions')
-        .insert({
-          user_id: user.id,
-          points: reviewPoints,
-          type: 'earned',
-          source: 'review',
-          description: `تقييم المنتج: ${item.product_name_ar || item.product_name}`,
-          related_id: item.product_id,
-        });
+      const { error: pointsError } = await supabase.from('points_transactions').insert({
+        user_id: user.id, points: reviewPoints, type: 'earned', source: 'review',
+        description: `${t('tasks_rate_products')}: ${item.product_name_ar || item.product_name}`,
+        related_id: item.product_id,
+      });
       if (pointsError) throw pointsError;
 
-      // Update user points
       const { data: currentPoints } = await supabase
-        .from('user_points')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .from('user_points').select('*').eq('user_id', user.id).maybeSingle();
 
       if (currentPoints) {
-        await supabase
-          .from('user_points')
-          .update({
-            total_points: (currentPoints.total_points || 0) + reviewPoints,
-            available_points: (currentPoints.available_points || 0) + reviewPoints,
-          })
-          .eq('user_id', user.id);
+        await supabase.from('user_points').update({
+          total_points: (currentPoints.total_points || 0) + reviewPoints,
+          available_points: (currentPoints.available_points || 0) + reviewPoints,
+        }).eq('user_id', user.id);
       } else {
-        await supabase
-          .from('user_points')
-          .insert({
-            user_id: user.id,
-            total_points: reviewPoints,
-            available_points: reviewPoints,
-          });
+        await supabase.from('user_points').insert({
+          user_id: user.id, total_points: reviewPoints, available_points: reviewPoints,
+        });
       }
 
       queryClient.invalidateQueries({ queryKey: ['reviewable-orders'] });
       queryClient.invalidateQueries({ queryKey: ['user-points'] });
-      toast.success(`تم إضافة التقييم! حصلت على ${reviewPoints} نقطة`);
+      toast.success(t('tasks_review_added', { points: reviewPoints }));
       setExpanded(false);
     } catch (error: any) {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('common_error'));
     } finally {
       setSubmitting(false);
     }
@@ -398,74 +322,39 @@ function ReviewableProduct({ item, reviewPoints, mediaBonus }: { item: any; revi
 
   return (
     <div className="bg-card rounded-lg border p-3">
-      <div 
-        className="flex items-center gap-3 cursor-pointer"
-        onClick={() => setExpanded(!expanded)}
-      >
-        <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden">
-          {/* Product image placeholder */}
-        </div>
+      <div className="flex items-center gap-3 cursor-pointer" onClick={() => setExpanded(!expanded)}>
+        <div className="w-12 h-12 rounded-lg bg-muted overflow-hidden" />
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium line-clamp-1">
-            {item.product_name_ar || item.product_name}
-          </p>
-          <p className="text-xs text-muted-foreground">
-            طلب رقم: {item.orders?.order_number}
-          </p>
+          <p className="text-sm font-medium line-clamp-1">{item.product_name_ar || item.product_name}</p>
+          <p className="text-xs text-muted-foreground">{t('tasks_order_number')} {item.orders?.order_number}</p>
         </div>
         <Button size="sm" variant="outline" onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}>
-          قيّم
+          {t('tasks_rate_button')}
         </Button>
       </div>
 
       {expanded && (
         <div className="mt-3 pt-3 border-t space-y-3">
-          {/* Rating */}
           <div>
-            <label className="text-xs font-medium mb-1 block">التقييم</label>
+            <label className="text-xs font-medium mb-1 block">{t('tasks_rating_label')}</label>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  type="button"
-                  onClick={() => setRating(star)}
-                  className="transition-transform hover:scale-110"
-                >
-                  <Star
-                    className={`h-6 w-6 ${
-                      star <= rating ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'
-                    }`}
-                  />
+                <button key={star} type="button" onClick={() => setRating(star)} className="transition-transform hover:scale-110">
+                  <Star className={`h-6 w-6 ${star <= rating ? 'text-amber-500 fill-amber-500' : 'text-muted-foreground'}`} />
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Comment */}
           <div>
-            <label className="text-xs font-medium mb-1 block">
-              التعليق (15 حرفاً على الأقل)
-            </label>
-            <Textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="شارك تجربتك مع هذا المنتج..."
-              rows={3}
-              className="text-sm"
-            />
+            <label className="text-xs font-medium mb-1 block">{t('tasks_comment_label', { min: 15 })}</label>
+            <Textarea value={comment} onChange={(e) => setComment(e.target.value)} placeholder={t('tasks_comment_placeholder')} rows={3} className="text-sm" />
             <p className="text-[10px] text-muted-foreground mt-1">
-              {comment.length}/15 حرف • أضف صورة أو فيديو لتحصل على {mediaBonus} نقطة إضافية
+              {t('tasks_comment_min', { count: comment.length, min: 15 })} • {t('tasks_bonus_media', { points: mediaBonus })}
             </p>
           </div>
-
-          <Button 
-            size="sm" 
-            className="w-full"
-            onClick={handleSubmitReview}
-            disabled={submitting || comment.length < 15}
-          >
+          <Button size="sm" className="w-full" onClick={handleSubmitReview} disabled={submitting || comment.length < 15}>
             {submitting ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-            إرسال التقييم (+{reviewPoints} نقطة)
+            {t('tasks_submit_review', { points: reviewPoints })}
           </Button>
         </div>
       )}

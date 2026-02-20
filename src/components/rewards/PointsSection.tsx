@@ -9,6 +9,7 @@ import PointsHistoryPanel from "./panels/PointsHistoryPanel";
 import DailyTasksPanel from "./panels/DailyTasksPanel";
 import RedeemPointsPanel from "./panels/RedeemPointsPanel";
 import PointsStorePanel from "./panels/PointsStorePanel";
+import { useLanguage } from "@/lib/i18n";
 
 interface PointsSectionProps {
   activeSubTab: SubTabId;
@@ -16,6 +17,7 @@ interface PointsSectionProps {
 
 export default function PointsSection({ activeSubTab }: PointsSectionProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   // Only fetch when summary tab is active
   const { data: userPoints, isLoading: loadingPoints } = useQuery({
@@ -67,7 +69,6 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
     staleTime: 5 * 60 * 1000,
   });
 
-
   const { data: userCard } = useQuery({
     queryKey: ['user-active-card', user?.id],
     queryFn: async () => {
@@ -92,7 +93,6 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
   if (activeSubTab === 'summary') {
     return (
       <div className="space-y-4">
-        {/* Points & Wallet Balance Cards */}
         {loadingPoints ? (
           <PointsBalanceSkeleton />
         ) : (
@@ -101,7 +101,7 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Coins className="h-4 w-4 text-amber-500" />
-                  <span className="text-xs text-muted-foreground">النقاط المتاحة</span>
+                  <span className="text-xs text-muted-foreground">{t('points_available')}</span>
                 </div>
                 <p className="text-2xl font-bold">{(userPoints?.available_points || 0).toLocaleString()}</p>
               </CardContent>
@@ -111,15 +111,14 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Wallet className="h-4 w-4 text-green-500" />
-                  <span className="text-xs text-muted-foreground">رصيد المحفظة</span>
+                  <span className="text-xs text-muted-foreground">{t('points_wallet_balance')}</span>
                 </div>
-                <p className="text-2xl font-bold">{(userWallet?.balance || 0).toLocaleString()} <span className="text-sm font-normal">د.ع</span></p>
+                <p className="text-2xl font-bold">{(userWallet?.balance || 0).toLocaleString()} <span className="text-sm font-normal">{t('common_iqd')}</span></p>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* Current Card - Only show if user has purchased a card */}
         {userCard?.loyalty_levels && (
           <Card className="border-primary/20">
             <CardContent className="p-4">
@@ -132,13 +131,13 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
                     <TrendingUp className="h-5 w-5" style={{ color: (userCard.loyalty_levels as any).color }} />
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">بطاقتك الحالية</p>
+                    <p className="text-xs text-muted-foreground">{t('points_current_card')}</p>
                     <p className="font-bold" style={{ color: (userCard.loyalty_levels as any).color }}>
                       {(userCard.loyalty_levels as any).name_ar}
                     </p>
                     {userCard.expires_at && (
                       <p className="text-[10px] text-muted-foreground">
-                        متبقي {Math.ceil((new Date(userCard.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} يوم
+                        {t('points_remaining_days', { count: Math.ceil((new Date(userCard.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) })}
                       </p>
                     )}
                   </div>
@@ -148,19 +147,18 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
           </Card>
         )}
 
-        {/* User Coupons */}
         {userCoupons && userCoupons.length > 0 && (
           <Card className="border-purple-500/20 bg-purple-500/5">
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Ticket className="h-4 w-4 text-purple-500" />
-                <span className="text-sm font-medium">كوبوناتك ({userCoupons.length})</span>
+                <span className="text-sm font-medium">{t('points_your_coupons')} ({userCoupons.length})</span>
               </div>
               <div className="space-y-2">
                 {userCoupons.slice(0, 3).map((coupon: any) => (
                   <div key={coupon.id} className="flex items-center justify-between text-sm bg-background/50 rounded-lg p-2">
                     <code className="text-xs font-mono">{coupon.coupon_code}</code>
-                    <span className="text-primary font-bold">{coupon.discount_value.toLocaleString()} د.ع</span>
+                    <span className="text-primary font-bold">{coupon.discount_value.toLocaleString()} {t('common_iqd')}</span>
                   </div>
                 ))}
               </div>
@@ -168,26 +166,22 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
           </Card>
         )}
 
-        {/* Points History Inline */}
         <div className="mt-4">
-          <p className="text-sm font-medium mb-3">آخر المعاملات</p>
+          <p className="text-sm font-medium mb-3">{t('points_recent_transactions')}</p>
           <PointsHistoryPanel />
         </div>
       </div>
     );
   }
 
-  // Daily Tasks sub-tab
   if (activeSubTab === 'daily-tasks') {
     return <DailyTasksPanel />;
   }
 
-  // Redeem sub-tab
   if (activeSubTab === 'redeem') {
     return <RedeemPointsPanel />;
   }
 
-  // Store sub-tab
   if (activeSubTab === 'store') {
     return <PointsStorePanel />;
   }
