@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { 
   Store, MessageCircle, Clock, BadgePercent, Play, ExternalLink, ChevronLeft,
   ChevronRight, Shield, Star, X, Maximize2, Package, ShoppingBag, Palette, Settings2,
+  Plus, Minus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -66,6 +67,25 @@ export default function CommunityProductDetailModal({
   const [cartSheetOpen, setCartSheetOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [selectedColor, setSelectedColor] = useState<number | null>(null);
+  const [cartQuantity, setCartQuantity] = useState(1);
+  const [showClearCartDialog, setShowClearCartDialog] = useState(false);
+
+  // Check if current user is a merchant (merchants shouldn't see order/cart buttons for their own or other products)
+  const { data: currentUserMerchant } = useQuery({
+    queryKey: ["current-user-merchant", user?.id],
+    enabled: !!user?.id,
+    staleTime: 300_000,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("merchant_applications")
+        .select("id")
+        .eq("user_id", user!.id)
+        .eq("status", "approved")
+        .maybeSingle();
+      return data;
+    },
+  });
+  const isMerchant = !!currentUserMerchant;
 
   // Fetch full product details (with colors/options)
   const { data: fullProduct } = useQuery({
@@ -90,17 +110,36 @@ export default function CommunityProductDetailModal({
     mutationFn: async () => {
       if (!user || !product) throw new Error("يجب تسجيل الدخول");
       
+      // Check if cart has items from a different merchant
+      const { data: existingCartItems } = await supabase
+        .from("community_cart_items")
+        .select("id, merchant_id, merchant_name")
+        .eq("user_id", user.id)
+        .limit(1);
+      
+      if (existingCartItems && existingCartItems.length > 0 && existingCartItems[0].merchant_id !== product.merchant_id) {
+        // Store the merchant name for the dialog
+        throw new Error(`DIFFERENT_MERCHANT:${existingCartItems[0].merchant_name || 'متجر آخر'}`);
+      }
+      
+      const selectedOpt = selectedOption !== null ? productOptions[selectedOption] : null;
+      const selectedCol = selectedColor !== null ? productColors[selectedColor] : null;
+      const priceAdj = selectedOpt?.price_adjustment || 0;
+      
+      // Check if exact same product+variant exists
+      const variantTitle = product.title + (selectedOpt ? ` - ${selectedOpt.name}` : '') + (selectedCol ? ` (${selectedCol.name})` : '');
       const { data: existing } = await supabase
         .from("community_cart_items")
         .select("id, quantity")
         .eq("user_id", user.id)
         .eq("product_id", product.id)
+        .eq("product_title", variantTitle)
         .maybeSingle();
       
       if (existing) {
         const { error } = await supabase
           .from("community_cart_items")
-          .update({ quantity: existing.quantity + 1 })
+          .update({ quantity: existing.quantity + cartQuantity })
           .eq("id", existing.id);
         if (error) throw error;
       } else {
@@ -110,18 +149,15 @@ export default function CommunityProductDetailModal({
           .eq("id", product.merchant_id)
           .maybeSingle();
         
-        const selectedOpt = selectedOption !== null ? productOptions[selectedOption] : null;
-        const selectedCol = selectedColor !== null ? productColors[selectedColor] : null;
-        const priceAdj = selectedOpt?.price_adjustment || 0;
-        
         const { error } = await supabase.from("community_cart_items").insert({
           user_id: user.id,
           merchant_id: product.merchant_id,
           merchant_name: merchant?.display_name || "متجر",
           product_id: product.id,
-          product_title: product.title + (selectedOpt ? ` - ${selectedOpt.name}` : '') + (selectedCol ? ` (${selectedCol.name})` : ''),
+          product_title: variantTitle,
           product_image: product.image_urls?.[product.primary_image_index] || product.image_urls?.[0] || null,
           product_price: (product.price_iqd || 0) + priceAdj,
+          quantity: cartQuantity,
         });
         if (error) throw error;
       }
@@ -132,10 +168,24 @@ export default function CommunityProductDetailModal({
       setCartSheetOpen(false);
       setSelectedOption(null);
       setSelectedColor(null);
+      setCartQuantity(1);
     },
     onError: (e: Error) => {
       if (e.message === "يجب تسجيل الدخول") {
         navigate("/auth");
+      } else if (e.message.startsWith("DIFFERENT_MERCHANT:")) {
+        const merchantName = e.message.split(":")[1];
+        toast.error(`لديك بالفعل منتجات من متجر "${merchantName}"`, {
+          description: "هل ترغب بتفريغ السلة؟",
+          action: {
+            label: "تفريغ السلة",
+            onClick: async () => {
+              await supabase.from("community_cart_items").delete().eq("user_id", user!.id);
+              queryClient.invalidateQueries({ queryKey: ["community-cart"] });
+              toast.success("تم تفريغ السلة، أضف المنتج مرة أخرى");
+            },
+          },
+        });
       } else {
         toast.error("حدث خطأ");
       }
@@ -490,18 +540,20 @@ export default function CommunityProductDetailModal({
                   <CommentsSection targetType="product" targetId={product.id} initialVisibleCount={3} />
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-1.5 pt-0.5 sticky bottom-0 bg-background pb-2">
-                  <Button size="sm" className="flex-1 gap-1 h-9 text-xs font-bold rounded-xl" onClick={handleContactMerchant}>
-                    <Package className="h-3.5 w-3.5" />اطلب الآن
-                  </Button>
-                  <Button variant="outline" size="sm" className="gap-1 h-9 text-xs rounded-xl" onClick={handleAddToCart} disabled={addToCartMutation.isPending}>
-                    <ShoppingBag className="h-3.5 w-3.5" />السلة
-                  </Button>
-                  <Button variant="ghost" size="sm" className="gap-1 h-9 text-xs rounded-xl" onClick={handleVisitStore}>
-                    <Store className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                {/* Actions - hidden for merchants */}
+                {!isMerchant && (
+                  <div className="flex gap-1.5 pt-0.5 sticky bottom-0 bg-background pb-2">
+                    <Button size="sm" className="flex-1 gap-1 h-9 text-xs font-bold rounded-xl" onClick={handleContactMerchant}>
+                      <Package className="h-3.5 w-3.5" />اطلب الآن
+                    </Button>
+                    <Button variant="outline" size="sm" className="gap-1 h-9 text-xs rounded-xl" onClick={handleAddToCart} disabled={addToCartMutation.isPending}>
+                      <ShoppingBag className="h-3.5 w-3.5" />السلة
+                    </Button>
+                    <Button variant="ghost" size="sm" className="gap-1 h-9 text-xs rounded-xl" onClick={handleVisitStore}>
+                      <Store className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -606,6 +658,26 @@ export default function CommunityProductDetailModal({
               </div>
             )}
 
+            {/* Quantity selector */}
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold">الكمية</p>
+              <div className="flex items-center rounded-xl border border-border/40 overflow-hidden bg-muted/30">
+                <button
+                  className="h-8 w-9 flex items-center justify-center hover:bg-muted transition-colors"
+                  onClick={() => setCartQuantity(q => Math.max(1, q - 1))}
+                >
+                  <Minus className="h-3 w-3" />
+                </button>
+                <span className="w-8 text-center text-xs font-black">{cartQuantity}</span>
+                <button
+                  className="h-8 w-9 flex items-center justify-center hover:bg-muted transition-colors"
+                  onClick={() => setCartQuantity(q => q + 1)}
+                >
+                  <Plus className="h-3 w-3" />
+                </button>
+              </div>
+            </div>
+
             {/* Add to cart button */}
             <Button
               className="w-full h-12 rounded-2xl gap-2 text-sm font-black shadow-lg"
@@ -613,7 +685,7 @@ export default function CommunityProductDetailModal({
               disabled={addToCartMutation.isPending || (productOptions.length > 0 && selectedOption === null)}
             >
               <ShoppingBag className="h-4 w-4" />
-              أضف للسلة · {currentPrice.toLocaleString()} د.ع
+              أضف للسلة · {(currentPrice * cartQuantity).toLocaleString()} د.ع
             </Button>
           </div>
         </SheetContent>

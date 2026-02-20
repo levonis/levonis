@@ -1,4 +1,5 @@
 import { useState, lazy, Suspense } from "react";
+import { useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { MessageCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ const SUPPORT_USER_ID = "2ae7972f-6d1d-40fb-b73f-9fb72941f3f3";
 export default function UnifiedChatButton() {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
+  const location = useLocation();
 
   // Get unread count from community system
   const { data: totalUnread = 0, refetch: refetchUnread } = useQuery({
@@ -54,8 +56,20 @@ export default function UnifiedChatButton() {
     }
   };
 
-  // Hide for non-logged users only
+  // Hide for non-logged users
   if (!user) return null;
+  
+  // Only show on community main and main site pages
+  const restrictedPaths = [
+    '/community/merchant/store',
+    '/community/merchant/orders',
+    '/community/customer/track',
+    '/user-info',
+    '/settings',
+    '/profile',
+  ];
+  const isOnRestrictedPage = restrictedPaths.some(p => location.pathname.startsWith(p));
+  if (isOnRestrictedPage && !open) return null;
 
   return (
     <>
