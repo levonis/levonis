@@ -232,7 +232,6 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     queryFn: async () => {
       if (!user) return [];
       
-      // NOTE: سوق المستعمل تم إزالته. نُبقي المحادثات فقط بدون ربطها بجدول الإعلانات.
       let query = supabase
         .from('listing_conversations')
         .select('id, buyer_id, seller_id, listing_id, status, conversation_code, admin_joined, created_at, updated_at, entry_context')
@@ -793,7 +792,6 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `chat/listing/${user.id}/${Date.now()}.${fileExt}`;
-      // سوق المستعمل تم حذفه، لذلك نستخدم نفس حاوية الملفات العامة للتطبيق
       const { error } = await supabase.storage.from('product-images').upload(fileName, file);
       if (error) throw error;
       
