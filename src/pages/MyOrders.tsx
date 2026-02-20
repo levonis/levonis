@@ -10,12 +10,13 @@ import { Loader2, Package, Truck, ExternalLink, Calendar, MapPin, Phone, CreditC
 import { formatPrice } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useLanguage } from '@/lib/i18n';
 
 const MyOrders = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   
-  // Enable realtime notifications
   useOrderRealtimeNotifications();
 
   const { data: orders, isLoading } = useQuery({
@@ -44,15 +45,15 @@ const MyOrders = () => {
 
   const getStatusBadge = (status: string) => {
     const statusMap: Record<string, { variant: 'default' | 'secondary' | 'destructive' | 'outline', label: string }> = {
-      pending: { variant: 'outline', label: 'قيد الانتظار' },
-      confirmed: { variant: 'secondary', label: 'تم تأكيد الطلب' },
-      processing: { variant: 'default', label: 'تم الشراء' },
-      arrived_warehouse: { variant: 'default', label: 'وصل إلى المخزن' },
-      shipped: { variant: 'default', label: 'تم الشحن' },
-      arrived_iraq: { variant: 'default', label: 'وصل إلى العراق' },
-      on_the_way: { variant: 'default', label: 'في الطريق إليك' },
-      delivered: { variant: 'secondary', label: 'تم التوصيل' },
-      cancelled: { variant: 'destructive', label: 'ملغي' },
+      pending: { variant: 'outline', label: t('order_pending') },
+      confirmed: { variant: 'secondary', label: t('order_confirmed') },
+      processing: { variant: 'default', label: t('order_processing') },
+      arrived_warehouse: { variant: 'default', label: t('order_arrived_warehouse') },
+      shipped: { variant: 'default', label: t('order_shipped') },
+      arrived_iraq: { variant: 'default', label: t('order_arrived_iraq') },
+      on_the_way: { variant: 'default', label: t('order_on_the_way') },
+      delivered: { variant: 'secondary', label: t('order_delivered') },
+      cancelled: { variant: 'destructive', label: t('order_cancelled') },
     };
 
     const statusInfo = statusMap[status] || { variant: 'outline' as const, label: status };
@@ -71,28 +72,25 @@ const MyOrders = () => {
     <div className="min-h-screen bg-background/95 backdrop-blur-sm relative overflow-hidden">
       <main className="container mx-auto px-4 py-8 pt-24 relative z-10">
         <div className="mb-8">
-          <h1 className="text-4xl font-black text-primary mb-2">طلباتي</h1>
-          <p className="text-muted-foreground">تتبع حالة طلباتك ومعلومات الشحن</p>
+          <h1 className="text-4xl font-black text-primary mb-2">{t('order_title')}</h1>
+          <p className="text-muted-foreground">{t('order_desc')}</p>
         </div>
 
         {!orders || orders.length === 0 ? (
           <Card className="border-border/50">
             <CardContent className="py-12 text-center">
               <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-foreground mb-2">لا توجد طلبات</h3>
-              <p className="text-muted-foreground mb-6">لم تقم بإنشاء أي طلبات بعد</p>
+              <h3 className="text-xl font-bold text-foreground mb-2">{t('order_no_orders')}</h3>
+              <p className="text-muted-foreground mb-6">{t('order_no_orders_desc')}</p>
               <Button onClick={() => navigate('/products')}>
-                تصفح المنتجات
+                {t('products_browse')}
               </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-6">
             {orders.map((order: any) => {
-              // Check if order is pre-order based on shipping_option_name_ar in order items
               const isPreOrder = order.order_items?.some((item: any) => item.shipping_option_name_ar && item.shipping_option_name_ar.trim() !== '');
-              
-              // Get shipping type from first item with shipping option
               const shippingItem = order.order_items?.find((item: any) => item.shipping_option_name_ar);
               const shippingOptionName = shippingItem?.shipping_option_name_ar || '';
               const isFastShipping = shippingOptionName.includes('سريع') || shippingOptionName.includes('جوي');
@@ -103,14 +101,12 @@ const MyOrders = () => {
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <CardTitle className="text-xl">طلب رقم: {order.order_number}</CardTitle>
+                        <CardTitle className="text-xl">{t('order_number')}: {order.order_number}</CardTitle>
                         {getStatusBadge(order.status)}
-                        {/* Order Type Badge */}
                         <Badge variant={isPreOrder ? "outline" : "secondary"} className="flex items-center gap-1">
                           <ShoppingBag className="h-3 w-3" />
-                          {isPreOrder ? 'طلب مسبق' : 'طلب مباشر'}
+                          {isPreOrder ? t('order_pre_order') : t('order_direct')}
                         </Badge>
-                        {/* Shipping Type Badge - only for pre-orders */}
                         {isPreOrder && shippingOptionName && (
                           <Badge 
                             variant="outline" 
@@ -127,7 +123,7 @@ const MyOrders = () => {
                       </div>
                     </div>
                     <div className="text-left md:text-right">
-                      <div className="text-sm text-muted-foreground">المجموع</div>
+                      <div className="text-sm text-muted-foreground">{t('common_total')}</div>
                       <div className="text-2xl font-black text-primary">
                         {formatPrice(Number(order.total_amount))} {order.currency}
                       </div>
@@ -136,20 +132,19 @@ const MyOrders = () => {
                 </CardHeader>
 
                 <CardContent className="pt-6">
-                  {/* معلومات الشحن */}
                   <div className="grid md:grid-cols-2 gap-6 mb-6">
                     <div className="space-y-3">
                       <h4 className="font-bold text-foreground flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-primary" />
-                        معلومات الشحن
+                        {t('order_shipping_info')}
                       </h4>
                       <div className="space-y-2 text-sm">
                         <div className="flex gap-2">
-                          <span className="text-muted-foreground">العنوان:</span>
+                          <span className="text-muted-foreground">{t('order_address')}:</span>
                           <span className="font-medium">{order.shipping_address}</span>
                         </div>
                         <div className="flex gap-2">
-                          <span className="text-muted-foreground">المحافظة:</span>
+                          <span className="text-muted-foreground">{t('order_governorate')}:</span>
                           <span className="font-medium">{order.governorate}</span>
                         </div>
                         <div className="flex gap-2">
@@ -159,23 +154,22 @@ const MyOrders = () => {
                       </div>
                     </div>
 
-                    {/* معلومات التتبع */}
                     {(order.tracking_number || order.tracking_url) && (
                       <div className="space-y-3">
                         <h4 className="font-bold text-foreground flex items-center gap-2">
                           <Truck className="h-4 w-4 text-primary" />
-                          معلومات التتبع
+                          {t('order_tracking_info')}
                         </h4>
                         <div className="space-y-2 text-sm">
                           {order.shipping_company && (
                             <div className="flex gap-2">
-                              <span className="text-muted-foreground">شركة الشحن:</span>
+                              <span className="text-muted-foreground">{t('order_shipping_company')}:</span>
                               <span className="font-medium">{order.shipping_company}</span>
                             </div>
                           )}
                           {order.tracking_number && (
                             <div className="flex gap-2">
-                              <span className="text-muted-foreground">رقم التتبع:</span>
+                              <span className="text-muted-foreground">{t('order_tracking_number')}:</span>
                               <code className="font-mono font-bold text-primary bg-primary/10 px-2 py-1 rounded">
                                 {order.tracking_number}
                               </code>
@@ -189,13 +183,13 @@ const MyOrders = () => {
                               onClick={() => window.open(order.tracking_url, '_blank')}
                             >
                               <ExternalLink className="h-4 w-4 ml-2" />
-                              تتبع الشحنة
+                              {t('order_track_shipment')}
                             </Button>
                           )}
                           {order.shipped_at && (
                             <div className="flex gap-2 text-xs text-muted-foreground">
                               <Calendar className="h-3 w-3" />
-                              <span>تاريخ الشحن: {format(new Date(order.shipped_at), 'PPP', { locale: ar })}</span>
+                              <span>{t('order_ship_date')}: {format(new Date(order.shipped_at), 'PPP', { locale: ar })}</span>
                             </div>
                           )}
                         </div>
@@ -203,19 +197,17 @@ const MyOrders = () => {
                     )}
                   </div>
 
-                  {/* ملاحظات الشحن */}
                   {order.shipping_notes && (
                     <div className="mb-6 p-4 bg-muted/50 rounded-lg">
-                      <h4 className="font-bold text-foreground mb-2">ملاحظات الشحن:</h4>
+                      <h4 className="font-bold text-foreground mb-2">{t('order_shipping_notes')}:</h4>
                       <p className="text-sm text-muted-foreground">{order.shipping_notes}</p>
                     </div>
                   )}
 
-                  {/* المنتجات */}
                   <div className="space-y-3">
                     <h4 className="font-bold text-foreground flex items-center gap-2">
                       <CreditCard className="h-4 w-4 text-primary" />
-                      المنتجات ({order.order_items?.length || 0})
+                      {t('order_products')} ({order.order_items?.length || 0})
                     </h4>
                     <div className="space-y-3">
                       {order.order_items?.slice(0, 2).map((item: any) => {
@@ -243,21 +235,21 @@ const MyOrders = () => {
                               <div className="font-bold text-foreground flex items-center gap-2">
                                 {productName}
                                 {isCustomRequest && (
-                                  <Badge variant="secondary" className="text-xs">طلب خاص</Badge>
+                                  <Badge variant="secondary" className="text-xs">{t('order_custom_request')}</Badge>
                                 )}
                               </div>
                               {item.selected_option && (
                                 <div className="text-sm text-muted-foreground">
-                                  الخيار: {item.selected_option}
+                                  {t('order_option')}: {item.selected_option}
                                 </div>
                               )}
                               {item.selected_color && (
                                 <div className="text-sm text-muted-foreground">
-                                  اللون: {item.selected_color}
+                                  {t('order_color')}: {item.selected_color}
                                 </div>
                               )}
                               <div className="text-sm text-muted-foreground">
-                                الكمية: {item.quantity}
+                                {t('common_quantity')}: {item.quantity}
                               </div>
                             </div>
                           <div className="text-left">
@@ -273,19 +265,18 @@ const MyOrders = () => {
                       })}
                       {order.order_items && order.order_items.length > 2 && (
                         <div className="text-sm text-muted-foreground text-center">
-                          و {order.order_items.length - 2} منتجات أخرى
+                          {t('order_more_products', { count: order.order_items.length - 2 })}
                         </div>
                       )}
                     </div>
                   </div>
 
-                  {/* زر عرض التفاصيل */}
                   <div className="mt-6 pt-4 border-t border-border/50">
                     <Button
                       onClick={() => navigate(`/order/${order.id}`)}
                       className="w-full bg-gradient-to-b from-primary to-accent text-primary-foreground hover:opacity-90"
                     >
-                      عرض تفاصيل الطلب كاملة
+                      {t('order_view_full')}
                     </Button>
                   </div>
                 </CardContent>

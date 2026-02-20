@@ -8,6 +8,7 @@ import { Loader2, Heart, ShoppingCart, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
+import { useLanguage } from '@/lib/i18n';
 
 interface FavoriteProduct {
   id: string;
@@ -25,6 +26,7 @@ interface FavoriteProduct {
 }
 
 const Favorites = () => {
+  const { t } = useLanguage();
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -44,7 +46,6 @@ const Favorites = () => {
 
   const fetchFavorites = async () => {
     try {
-      // Fetch product favorites
       const { data: productFavs, error: productError } = await supabase
         .from('favorites')
         .select(`
@@ -68,7 +69,7 @@ const Favorites = () => {
       setFavorites(productFavs || []);
     } catch (error) {
       console.error('Error fetching favorites:', error);
-      toast.error('حدث خطأ في تحميل المفضلة');
+      toast.error(t('favorites_error'));
     } finally {
       setLoading(false);
     }
@@ -84,16 +85,16 @@ const Favorites = () => {
       if (error) throw error;
 
       setFavorites(favorites.filter(fav => fav.id !== favoriteId));
-      toast.success('تم حذف المنتج من المفضلة');
+      toast.success(t('favorites_removed'));
     } catch (error) {
       console.error('Error removing favorite:', error);
-      toast.error('حدث خطأ في حذف المنتج');
+      toast.error(t('favorites_remove_error'));
     }
   };
 
   const handleAddToCart = (productId: string) => {
     addToCart(productId);
-    toast.success('تم إضافة المنتج إلى السلة');
+    toast.success(t('favorites_cart_added'));
   };
 
   if (authLoading || loading) {
@@ -112,18 +113,18 @@ const Favorites = () => {
         <div className="mb-8">
           <h1 className="text-4xl font-black text-primary mb-2 flex items-center gap-3">
             <Heart className="h-8 w-8" />
-            المفضلة
+            {t('favorites_title')}
           </h1>
-          <p className="text-muted-foreground">منتجاتك المفضلة في مكان واحد</p>
+          <p className="text-muted-foreground">{t('favorites_desc')}</p>
         </div>
 
         {favorites.length === 0 ? (
           <Card className="glass-effect border-border/50">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Heart className="h-16 w-16 text-muted-foreground/30 mb-4" />
-              <h3 className="text-xl font-bold text-foreground mb-2">لا توجد منتجات مفضلة</h3>
-              <p className="text-muted-foreground mb-6">ابدأ بإضافة منتجات لمفضلتك</p>
-              <Button onClick={() => navigate('/')}>تصفح المنتجات</Button>
+              <h3 className="text-xl font-bold text-foreground mb-2">{t('favorites_empty')}</h3>
+              <p className="text-muted-foreground mb-6">{t('favorites_empty_desc')}</p>
+              <Button onClick={() => navigate('/')}>{t('common_browse_products')}</Button>
             </CardContent>
           </Card>
         ) : (
@@ -131,7 +132,7 @@ const Favorites = () => {
             {favorites.map((favorite) => {
               const product = favorite.products;
               const productImage = product.images?.[0] || product.image_url;
-              const currency = product.currency || 'دينار عراقي';
+              const currency = product.currency || t('common_iqd');
 
               return (
                 <Card key={favorite.id} className="glass-effect border-border/50 overflow-hidden group">
@@ -174,7 +175,7 @@ const Favorites = () => {
                       disabled={!product.in_stock}
                     >
                       <ShoppingCart className="ml-2 h-4 w-4" />
-                      {product.in_stock ? 'أضف للسلة' : 'غير متوفر'}
+                      {product.in_stock ? t('favorites_add_to_cart') : t('product_out_of_stock')}
                     </Button>
                   </CardContent>
                 </Card>

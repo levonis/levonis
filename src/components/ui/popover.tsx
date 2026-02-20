@@ -10,11 +10,12 @@ const PopoverTrigger = PopoverPrimitive.Trigger;
 const PopoverContent = React.forwardRef<
   React.ElementRef<typeof PopoverPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof PopoverPrimitive.Content>
->(({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+>(({ className, align = "center", sideOffset = 4, side = "bottom", ...props }, ref) => (
   <PopoverPrimitive.Portal>
     <PopoverPrimitive.Content
       ref={ref}
       align={align}
+      side={side}
       sideOffset={sideOffset}
       className={cn(
         "z-[100] w-72 rounded-xl border border-[hsl(var(--border))] p-4 text-popover-foreground shadow-xl outline-none",

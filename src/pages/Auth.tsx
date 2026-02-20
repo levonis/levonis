@@ -10,13 +10,10 @@ import { Loader2, Eye, EyeOff, Mail, Lock, ArrowLeft, Sparkles } from 'lucide-re
 import { z } from 'zod';
 import EmailVerificationDialog from '@/components/auth/EmailVerificationDialog';
 import MultiStepSignup from '@/components/auth/signup/MultiStepSignup';
-
-const signInSchema = z.object({
-  email: z.string().email({ message: 'بريد إلكتروني غير صحيح' }),
-  password: z.string().min(6, { message: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' }),
-});
+import { useLanguage } from '@/lib/i18n';
 
 const Auth = () => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,6 +45,11 @@ const Auth = () => {
     }
   }, [resendTimer]);
 
+  const signInSchema = z.object({
+    email: z.string().email({ message: t('auth_invalid_email') }),
+    password: z.string().min(6, { message: t('auth_password_min') }),
+  });
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -70,17 +72,17 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes('Invalid')) {
-          toast.error('البريد الإلكتروني أو كلمة المرور غير صحيحة');
+          toast.error(t('auth_wrong_credentials'));
         } else {
           toast.error(error.message);
         }
         return;
       }
 
-      toast.success('تم تسجيل الدخول بنجاح');
+      toast.success(t('auth_login_success'));
       navigate('/');
     } catch (error) {
-      toast.error('حدث خطأ غير متوقع');
+      toast.error(t('auth_unexpected_error'));
     } finally {
       setLoading(false);
     }
@@ -88,13 +90,13 @@ const Auth = () => {
 
   const handleSendResetEmail = async () => {
     if (!resetEmail) {
-      toast.error('يرجى إدخال البريد الإلكتروني');
+      toast.error(t('auth_enter_email'));
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(resetEmail)) {
-      toast.error('بريد إلكتروني غير صحيح');
+      toast.error(t('auth_invalid_email'));
       return;
     }
 
@@ -113,12 +115,12 @@ const Auth = () => {
         setVerificationEmail(resetEmail);
         setShowVerificationDialog(true);
         setResendTimer(60);
-        toast.info('تم إرسال رمز التحقق إلى بريدك الإلكتروني');
+        toast.info(t('auth_code_sent'));
       } else {
-        toast.error(data.error || 'فشل في إرسال رمز التحقق');
+        toast.error(data.error || t('auth_code_failed'));
       }
     } catch (error) {
-      toast.error('حدث خطأ غير متوقع');
+      toast.error(t('auth_unexpected_error'));
     } finally {
       setLoading(false);
     }
@@ -133,12 +135,12 @@ const Auth = () => {
     e.preventDefault();
     
     if (newPassword.length < 6) {
-      toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+      toast.error(t('auth_password_min'));
       return;
     }
 
     if (newPassword !== confirmNewPassword) {
-      toast.error('كلمة المرور غير متطابقة');
+      toast.error(t('auth_password_mismatch'));
       return;
     }
 
@@ -154,17 +156,17 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.success) {
-        toast.success('تم تغيير كلمة المرور بنجاح! يمكنك تسجيل الدخول الآن.');
+        toast.success(t('auth_password_changed'));
         setShowNewPasswordForm(false);
         setShowResetPassword(false);
         setResetEmail('');
         setNewPassword('');
         setConfirmNewPassword('');
       } else {
-        toast.error(data.error || 'فشل في تغيير كلمة المرور');
+        toast.error(data.error || t('auth_code_failed'));
       }
     } catch (error) {
-      toast.error('حدث خطأ أثناء تغيير كلمة المرور');
+      toast.error(t('auth_unexpected_error'));
     } finally {
       setLoading(false);
     }
@@ -189,7 +191,7 @@ const Auth = () => {
               <span className="text-foreground">ONIS</span>
             </h1>
           </div>
-          <p className="text-muted-foreground text-sm">منصة التسوق المميزة</p>
+          <p className="text-muted-foreground text-sm">{t('auth_platform_desc')}</p>
         </div>
 
         {/* Main Card */}
@@ -200,15 +202,15 @@ const Auth = () => {
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
                   <Lock className="w-7 h-7 text-primary" />
                 </div>
-                <h2 className="text-2xl font-bold">كلمة مرور جديدة</h2>
+                <h2 className="text-2xl font-bold">{t('auth_new_password')}</h2>
                 <p className="text-sm text-muted-foreground mt-2">
-                  أدخل كلمة المرور الجديدة
+                  {t('auth_new_password_desc')}
                 </p>
               </div>
               
               <form onSubmit={handleUpdatePassword} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="new-password" className="text-sm font-medium">كلمة المرور الجديدة</Label>
+                  <Label htmlFor="new-password" className="text-sm font-medium">{t('auth_new_password')}</Label>
                   <div className="relative">
                     <Input
                       id="new-password"
@@ -232,7 +234,7 @@ const Auth = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirm-new-password" className="text-sm font-medium">تأكيد كلمة المرور</Label>
+                  <Label htmlFor="confirm-new-password" className="text-sm font-medium">{t('auth_confirm_password')}</Label>
                   <div className="relative">
                     <Input
                       id="confirm-new-password"
@@ -261,7 +263,7 @@ const Auth = () => {
                   disabled={loading}
                 >
                   {loading && <Loader2 className="ml-2 h-5 w-5 animate-spin" />}
-                  تأكيد التغيير
+                  {t('auth_confirm_change')}
                 </Button>
                 
                 <Button 
@@ -277,7 +279,7 @@ const Auth = () => {
                   disabled={loading}
                 >
                   <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
-                  إلغاء
+                  {t('common_cancel')}
                 </Button>
               </form>
             </div>
@@ -287,15 +289,15 @@ const Auth = () => {
                 <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-primary/10 mb-4">
                   <Mail className="w-7 h-7 text-primary" />
                 </div>
-                <h2 className="text-2xl font-bold">استعادة الحساب</h2>
+                <h2 className="text-2xl font-bold">{t('auth_account_recovery')}</h2>
                 <p className="text-sm text-muted-foreground mt-2">
-                  سنرسل رمز التحقق إلى بريدك
+                  {t('auth_recovery_desc')}
                 </p>
               </div>
               
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="reset-email" className="text-sm font-medium">البريد الإلكتروني</Label>
+                  <Label htmlFor="reset-email" className="text-sm font-medium">{t('auth_email')}</Label>
                   <Input
                     id="reset-email"
                     type="email"
@@ -315,7 +317,7 @@ const Auth = () => {
                   disabled={loading || resendTimer > 0}
                 >
                   {loading && <Loader2 className="ml-2 h-5 w-5 animate-spin" />}
-                  {resendTimer > 0 ? `إعادة الإرسال بعد ${resendTimer}ث` : 'إرسال الرمز'}
+                  {resendTimer > 0 ? t('auth_resend_after', { seconds: resendTimer }) : t('auth_send_code')}
                 </Button>
                 
                 <Button 
@@ -329,7 +331,7 @@ const Auth = () => {
                   disabled={loading}
                 >
                   <ArrowLeft className="w-4 h-4 ml-2 rotate-180" />
-                  العودة للدخول
+                  {t('auth_back_to_login')}
                 </Button>
               </div>
             </div>
@@ -338,13 +340,13 @@ const Auth = () => {
           ) : (
             <div className="space-y-6">
               <div className="text-center">
-                <h2 className="text-2xl font-bold">مرحباً بعودتك</h2>
-                <p className="text-sm text-muted-foreground mt-2">سجل دخولك للمتابعة</p>
+                <h2 className="text-2xl font-bold">{t('auth_welcome_back')}</h2>
+                <p className="text-sm text-muted-foreground mt-2">{t('auth_signin_desc')}</p>
               </div>
               
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email" className="text-sm font-medium">البريد الإلكتروني</Label>
+                  <Label htmlFor="signin-email" className="text-sm font-medium">{t('auth_email')}</Label>
                   <div className="relative">
                     <Input
                       id="signin-email"
@@ -362,7 +364,7 @@ const Auth = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-sm font-medium">كلمة المرور</Label>
+                  <Label htmlFor="signin-password" className="text-sm font-medium">{t('auth_password')}</Label>
                   <div className="relative">
                     <Input
                       id="signin-password"
@@ -394,7 +396,7 @@ const Auth = () => {
                     onClick={() => setShowResetPassword(true)}
                     disabled={loading}
                   >
-                    نسيت كلمة المرور؟
+                    {t('auth_forgot_password')}
                   </Button>
                 </div>
 
@@ -404,7 +406,7 @@ const Auth = () => {
                   disabled={loading}
                 >
                   {loading && <Loader2 className="ml-2 h-5 w-5 animate-spin" />}
-                  تسجيل الدخول
+                  {t('auth_login')}
                 </Button>
               </form>
 
@@ -413,7 +415,7 @@ const Auth = () => {
                   <div className="w-full border-t border-border/50"></div>
                 </div>
                 <div className="relative flex justify-center text-xs">
-                  <span className="bg-card px-4 text-muted-foreground">أو</span>
+                  <span className="bg-card px-4 text-muted-foreground">{t('common_or')}</span>
                 </div>
               </div>
 
@@ -423,23 +425,20 @@ const Auth = () => {
                 className="w-full h-12 rounded-xl border-border/50 hover:bg-primary/5 hover:border-primary/50 transition-all"
                 onClick={() => setShowSignup(true)}
               >
-                <Sparkles className="w-5 h-5 ml-2 text-primary" />
-                إنشاء حساب جديد
+                {t('auth_create_account')}
               </Button>
+
+              <p className="text-xs text-center text-muted-foreground">
+                {t('auth_terms_agree')}{' '}
+                <span className="text-primary underline cursor-pointer">{t('auth_terms')}</span>
+                {' '}{t('common_or')}{' '}
+                <span className="text-primary underline cursor-pointer">{t('auth_privacy')}</span>
+              </p>
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <p className="text-center text-xs text-muted-foreground mt-6">
-          بالتسجيل أنت توافق على{' '}
-          <a href="/terms" className="text-primary hover:underline">شروط الاستخدام</a>
-          {' '}و{' '}
-          <a href="/privacy" className="text-primary hover:underline">سياسة الخصوصية</a>
-        </p>
       </div>
 
-      {/* Email Verification Dialog for Password Reset */}
       <EmailVerificationDialog
         open={showVerificationDialog}
         onOpenChange={setShowVerificationDialog}
