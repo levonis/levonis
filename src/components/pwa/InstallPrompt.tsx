@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Download, X, Smartphone, Bell, Share, MoreVertical } from 'lucide-react';
+import { Download, X, Smartphone, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useLanguage } from '@/lib/i18n';
@@ -27,7 +27,6 @@ const isMobileBrowser = () => {
 function InstallCard({ onDismiss }: { onDismiss: () => void }) {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [showIOSGuide, setShowIOSGuide] = useState(false);
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -39,7 +38,6 @@ function InstallCard({ onDismiss }: { onDismiss: () => void }) {
   }, []);
 
   const handleInstall = async () => {
-    // Native install prompt available (Chrome/Edge on Android/Desktop)
     if (deferredPrompt) {
       try {
         await deferredPrompt.prompt();
@@ -47,19 +45,14 @@ function InstallCard({ onDismiss }: { onDismiss: () => void }) {
         if (outcome === 'accepted') setIsInstalled(true);
         setDeferredPrompt(null);
       } catch {
-        // If prompt fails, show manual guide
-        setShowIOSGuide(true);
+        onDismiss();
       }
-      return;
     }
-    // No native prompt → show manual instructions
-    setShowIOSGuide(true);
   };
 
-  // Hide if already installed
+  // Hide if already installed or no prompt available
   if (isInstalled) return null;
-  // Hide on desktop browsers that aren't mobile and don't have deferredPrompt
-  if (!isMobileBrowser() && !deferredPrompt) return null;
+  if (!deferredPrompt) return null;
 
   return (
     <div className="relative rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-2xl p-4">
@@ -79,50 +72,14 @@ function InstallCard({ onDismiss }: { onDismiss: () => void }) {
           <p className="text-xs text-muted-foreground mt-0.5">{t('pwa_install_desc')}</p>
         </div>
       </div>
-
-      {showIOSGuide ? (
-        <div className="mt-3 p-3 rounded-xl bg-muted/50 border border-border/50 space-y-2">
-          {isIOS() ? (
-            <>
-              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Share className="h-3.5 w-3.5" /> لتثبيت التطبيق على آيفون:
-              </p>
-              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>اضغط على زر المشاركة <Share className="h-3 w-3 inline" /> في أسفل المتصفح</li>
-                <li>اختر <strong>"إضافة إلى الشاشة الرئيسية"</strong></li>
-                <li>اضغط <strong>"إضافة"</strong></li>
-              </ol>
-            </>
-          ) : (
-            <>
-              <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <MoreVertical className="h-3.5 w-3.5" /> لتثبيت التطبيق:
-              </p>
-              <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                <li>اضغط على القائمة <MoreVertical className="h-3 w-3 inline" /> في أعلى المتصفح</li>
-                <li>اختر <strong>"تثبيت التطبيق"</strong> أو <strong>"إضافة إلى الشاشة الرئيسية"</strong></li>
-              </ol>
-            </>
-          )}
-          <Button
-            onClick={onDismiss}
-            variant="outline"
-            className="w-full mt-2"
-            size="sm"
-          >
-            فهمت، شكراً
-          </Button>
-        </div>
-      ) : (
-        <Button
-          onClick={handleInstall}
-          className="w-full mt-3 bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
-          size="sm"
-        >
-          <Download className="h-4 w-4" />
-          {t('pwa_install_button')}
-        </Button>
-      )}
+      <Button
+        onClick={handleInstall}
+        className="w-full mt-3 bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
+        size="sm"
+      >
+        <Download className="h-4 w-4" />
+        {t('pwa_install_button')}
+      </Button>
     </div>
   );
 }
