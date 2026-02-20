@@ -58,6 +58,7 @@ export type TranslationKeys = {
   common_quantity: string;
   common_total: string;
   common_iqd: string;
+  common_or: string;
   
   // Auth
   auth_login: string;
@@ -67,6 +68,32 @@ export type TranslationKeys = {
   auth_forgot_password: string;
   auth_no_account: string;
   auth_has_account: string;
+  auth_welcome_back: string;
+  auth_signin_desc: string;
+  auth_platform_desc: string;
+  auth_create_account: string;
+  auth_new_password: string;
+  auth_new_password_desc: string;
+  auth_confirm_password: string;
+  auth_confirm_change: string;
+  auth_account_recovery: string;
+  auth_recovery_desc: string;
+  auth_send_code: string;
+  auth_resend_after: string;
+  auth_back_to_login: string;
+  auth_invalid_email: string;
+  auth_password_min: string;
+  auth_wrong_credentials: string;
+  auth_login_success: string;
+  auth_unexpected_error: string;
+  auth_code_sent: string;
+  auth_code_failed: string;
+  auth_password_changed: string;
+  auth_password_mismatch: string;
+  auth_enter_email: string;
+  auth_terms_agree: string;
+  auth_terms: string;
+  auth_privacy: string;
   
   // Profile settings
   settings_title: string;
@@ -107,6 +134,8 @@ export type TranslationKeys = {
   cart_checkout: string;
   cart_total: string;
   cart_item_count: string;
+  cart_no_items_yet: string;
+  cart_browse_products: string;
   
   // Products
   product_add_to_cart: string;
@@ -120,6 +149,53 @@ export type TranslationKeys = {
   product_share: string;
   product_add_favorite: string;
   product_remove_favorite: string;
+  product_not_found: string;
+  product_back_home: string;
+  product_go_back: string;
+  product_show_more: string;
+  product_show_less: string;
+  product_added_to_cart: string;
+  product_select_option: string;
+  product_direct_sale: string;
+  product_direct_sale_desc: string;
+  product_pre_order: string;
+  product_pre_order_desc: string;
+  product_shipping_type: string;
+  product_choose_shipping: string;
+  product_options_available: string;
+  product_choose_option: string;
+  product_colors_available: string;
+  product_selected_color: string;
+  product_free: string;
+  product_login_required: string;
+  product_error_retry: string;
+
+  // Products page
+  products_search_results: string;
+  products_count: string;
+  products_category_filter: string;
+  products_all_categories: string;
+  products_status_filter: string;
+  products_sort: string;
+  products_sort_default: string;
+  products_sort_price_asc: string;
+  products_sort_price_desc: string;
+  products_sort_name_asc: string;
+  products_sort_name_desc: string;
+  products_not_found: string;
+  products_available: string;
+  products_available_title: string;
+  products_showing: string;
+  products_browse: string;
+
+  // Category
+  category_no_products: string;
+  category_not_found: string;
+  category_back: string;
+
+  // User info
+  user_info_title: string;
+  user_info_desc: string;
   
   // Orders
   order_status: string;
