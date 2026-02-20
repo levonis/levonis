@@ -1417,8 +1417,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               const cartCodeMatch = msg.content?.match(/رمز السلة:\s*(CART-[A-Z0-9]+)/);
                               const isCartMessage = !!cartCodeMatch && isAdmin;
                               
-                              // Check if it's a product message (starts with 📦)
-                              const isProductMessage = msg.content?.startsWith('📦');
+                              // Check if it's a product message (starts with 📦 or 🛒)
+                              const isProductMessage = msg.content?.startsWith('📦') || msg.content?.startsWith('🛒');
                               
                               // Check if it's a JSON message (order_card or confirmation_card)
                               let parsedContent: any = null;
@@ -1548,8 +1548,12 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                               // Render product message as a rich ProductCard
                               if (isProductMessage) {
                                 const lines = msg.content?.split('\n') || [];
-                                const productName = lines[0]?.replace('📦 ', '') || '';
-                                const priceMatch = lines[1]?.match(/(\d[\d,]*)/);
+                                const isInterestFormat = msg.content?.startsWith('🛒');
+                                const productName = isInterestFormat
+                                  ? (lines[1]?.trim() || '')
+                                  : (lines[0]?.replace('📦 ', '').trim() || '');
+                                const priceLine = isInterestFormat ? lines[2] : lines[1];
+                                const priceMatch = priceLine?.match(/(\d[\d,]*)/);
                                 const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, '')) : 0;
                                 
                                 return (
