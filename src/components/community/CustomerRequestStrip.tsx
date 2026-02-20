@@ -38,7 +38,7 @@ export default function CustomerRequestStrip({
 
   const handleMessage = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/community/messages?merchant_id=${customerId}`);
+    navigate(`/community/messages?user_id=${customerId}`);
   };
 
   return (

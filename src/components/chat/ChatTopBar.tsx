@@ -54,12 +54,16 @@ export default function ChatTopBar({
   const navigate = useNavigate();
 
   const goToStore = () => {
-    navigate(`/store/${storeId}`);
+    // If storeId looks like a merchant_applications.id, go to store page
+    // Otherwise it's a user UUID - go to profile
+    if (storeId) {
+      navigate(`/store/${storeId}`);
+    }
   };
 
   const goToCustomerProfile = () => {
     if (customerId) {
-      navigate(`/community/customer/${customerId}`);
+      navigate(`/profile/${customerId}`);
     }
     onViewCustomerProfile?.();
   };

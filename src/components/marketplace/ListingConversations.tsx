@@ -263,14 +263,32 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         .select('id, full_name, username, avatar_url')
         .in('id', userIds);
       
-      // Then check if any are merchants and get their frames
-      const { data: merchantProfiles } = await supabase
-        .from('merchant_public_profiles')
-        .select('id, display_name, store_image_url, selected_frame_id')
-        .in('id', userIds);
+      // Map user_id → merchant_applications.id to then fetch merchant_public_profiles
+      const { data: merchantApps } = await supabase
+        .from('merchant_applications')
+        .select('id, user_id, display_name')
+        .in('user_id', userIds)
+        .eq('status', 'approved');
+      
+      // Build user_id → merchant_app_id map
+      const userToMerchantId: Record<string, string> = {};
+      merchantApps?.forEach(app => {
+        userToMerchantId[app.user_id] = app.id;
+      });
+      
+      // Fetch merchant public profiles using merchant app IDs
+      const merchantAppIds = Object.values(userToMerchantId);
+      let merchantProfiles: any[] = [];
+      if (merchantAppIds.length > 0) {
+        const { data } = await supabase
+          .from('merchant_public_profiles')
+          .select('id, display_name, store_image_url, selected_frame_id')
+          .in('id', merchantAppIds);
+        merchantProfiles = data || [];
+      }
       
       // Get all frame IDs from merchants
-      const frameIds = merchantProfiles?.map(m => m.selected_frame_id).filter(Boolean) as string[] || [];
+      const frameIds = merchantProfiles.map(m => m.selected_frame_id).filter(Boolean) as string[];
       
       // Fetch frames
       let framesMap: Record<string, string> = {};
@@ -286,16 +304,19 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
       
       const result: Record<string, any> = {};
       
-      // Add profiles with frame URLs
+      // Add profiles with frame URLs and merchant app ID
       profilesData?.forEach(p => {
-        const merchantData = merchantProfiles?.find(m => m.id === p.id);
+        const merchantAppId = userToMerchantId[p.id];
+        const merchantData = merchantAppId ? merchantProfiles.find(m => m.id === merchantAppId) : null;
         const frameId = merchantData?.selected_frame_id;
         result[p.id] = { 
           ...p,
           // Use merchant store image if available, otherwise profile avatar
           avatar_url: merchantData?.store_image_url || p.avatar_url,
           display_name: merchantData?.display_name,
-          selected_frame_url: frameId ? framesMap[frameId] : null 
+          selected_frame_url: frameId ? framesMap[frameId] : null,
+          // Store merchant app ID for navigation to /store/:merchantId
+          merchant_app_id: merchantAppId || null,
         };
       });
       
@@ -1229,13 +1250,18 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     );
                   }
                   
+                  // Determine if other user is a merchant - use merchant_app_id for store navigation
+                  const otherMerchantAppId = otherUser?.merchant_app_id;
+                  
                   return (
                     <ChatTopBar
-                      storeName={otherUser?.display_name || otherUser?.full_name || otherUser?.username || 'المتجر'}
-                      storeId={otherUserId || ''}
+                      storeName={otherUser?.display_name || otherUser?.full_name || otherUser?.username || 'المحادثة'}
+                      storeId={otherMerchantAppId || otherUserId || ''}
                       storeImage={otherUser?.avatar_url}
                       storeFrameUrl={(otherUser as any)?.selected_frame_url}
                       rating={Number(otherUserReputation?.avg_stars ?? 0)}
+                      customerId={!otherMerchantAppId ? otherUserId || undefined : undefined}
+                      isSeller={isSeller}
                       status={selectedConv?.status as 'open' | 'disputed' | 'resolved' | undefined}
                       onBack={() => setSelectedConversation(null)}
                       onContactAdmin={() => requestAdminMutation.mutate()}
