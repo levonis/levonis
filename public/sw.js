@@ -1,4 +1,4 @@
-const CACHE_NAME = 'levonis-v4';
+const CACHE_NAME = 'levonis-v5';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();

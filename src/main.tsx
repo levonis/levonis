@@ -7,9 +7,25 @@ import "./index.css";
 // Register Service Worker for PWA
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    navigator.serviceWorker.register('/sw.js').then((reg) => {
+      // Check for updates every time user returns to the app
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          reg.update();
+        }
+      });
+    }).catch(() => {});
   });
 }
+
+// Auto-reload when a new service worker takes over
+let refreshing = false;
+navigator.serviceWorker?.addEventListener('controllerchange', () => {
+  if (!refreshing) {
+    refreshing = true;
+    window.location.reload();
+  }
+});
 
 // Telegram Mini App: expand viewport to full height
 declare global {
