@@ -106,10 +106,7 @@ export default function ChatTopBar({
         />
         {/* Online indicator on avatar */}
         {isOnline && (
-          <span className="absolute -bottom-0.5 -left-0.5 flex h-3 w-3 z-10">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-primary border-2 border-card" />
-          </span>
+          <span className="absolute -bottom-0.5 -left-0.5 h-3 w-3 rounded-full bg-primary border-2 border-card z-10" />
         )}
       </button>
 
