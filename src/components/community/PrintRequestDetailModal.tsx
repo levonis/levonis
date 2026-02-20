@@ -204,7 +204,9 @@ export default function PrintRequestDetailModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-2xl p-0 gap-0 max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogContent className="sm:max-w-2xl p-0 gap-0 max-h-[85vh] overflow-hidden flex flex-col"
+          onPointerDownOutside={(e) => e.preventDefault()}
+        >
           {/* Header */}
           <DialogHeader className="p-4 pb-0 shrink-0">
             <DialogTitle className="flex items-center gap-2 text-lg">
@@ -213,7 +215,7 @@ export default function PrintRequestDetailModal({
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0">
+          <ScrollArea className="flex-1 min-h-0 overflow-auto">
             <div className="p-4 space-y-4">
               {/* Media Gallery - Video first */}
               {mediaItems.length > 0 && (
