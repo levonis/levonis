@@ -23,10 +23,10 @@ export function useOnlineHeartbeat() {
     // Immediate ping
     ping();
 
-    // Repeat every 2 minutes
+    // Repeat every 2 minutes — runs even when tab is hidden
     const interval = setInterval(ping, 2 * 60 * 1000);
 
-    // Ping when tab becomes visible
+    // Ping when tab becomes visible (immediate refresh)
     const onVisibility = () => {
       if (document.visibilityState === 'visible') ping();
     };
@@ -42,11 +42,13 @@ export function useOnlineHeartbeat() {
       }
     };
     window.addEventListener('pointerdown', onInteraction, { passive: true });
+    window.addEventListener('keydown', onInteraction, { passive: true });
 
     return () => {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('pointerdown', onInteraction);
+      window.removeEventListener('keydown', onInteraction);
     };
   }, [user?.id, ping]);
 }
