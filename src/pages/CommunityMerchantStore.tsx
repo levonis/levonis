@@ -102,6 +102,35 @@ export default function CommunityMerchantStore() {
     },
   });
 
+  // Fetch merchant payment methods from public profile
+  const { data: paymentMethods = ['full_prepayment'], refetch: refetchPaymentMethods } = useQuery({
+    queryKey: ["merchant-payment-methods", merchantApp?.id],
+    enabled: !!merchantApp?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_public_profiles")
+        .select("accepted_payment_methods")
+        .eq("id", merchantApp!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.accepted_payment_methods as string[]) || ['full_prepayment'];
+    },
+  });
+
+  const updatePaymentMethods = useMutation({
+    mutationFn: async (methods: string[]) => {
+      const { error } = await supabase
+        .from("merchant_public_profiles")
+        .update({ accepted_payment_methods: methods } as any)
+        .eq("id", merchantApp!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetchPaymentMethods();
+      toast({ title: "تم تحديث خيارات الدفع" });
+    },
+  });
+
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     enabled: !!user?.id,
@@ -492,6 +521,48 @@ export default function CommunityMerchantStore() {
             {/* Merchant Discounts */}
             <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
               <MerchantDiscountsManager merchantId={merchantApp.id} merchantName={merchantApp.display_name || "متجر"} />
+            </div>
+
+            {/* Payment Methods */}
+            <div className="rounded-xl border border-border/50 bg-card p-3.5 space-y-3">
+              <div className="flex items-center gap-2">
+                <CreditCard className="h-4 w-4 text-primary" />
+                <h3 className="text-xs font-bold">خيارات الدفع المقبولة</h3>
+              </div>
+              <p className="text-[10px] text-muted-foreground">حدد طرق الدفع التي تقبلها من العملاء</p>
+              <div className="space-y-2">
+                {[
+                  { key: 'full_prepayment', label: 'دفع مقدم كامل', desc: 'افتراضي' },
+                  { key: 'half_payment', label: 'دفع نصف المبلغ', desc: '50% مقدماً' },
+                  { key: 'quarter_payment', label: 'دفع ربع المبلغ', desc: '25% مقدماً' },
+                  { key: 'cash_on_delivery', label: 'دفع عند الاستلام', desc: 'بدون مقدم' },
+                ].map(method => {
+                  const isChecked = paymentMethods.includes(method.key);
+                  return (
+                    <label key={method.key} className="flex items-center gap-3 p-2.5 rounded-lg border border-border/40 bg-muted/10 cursor-pointer hover:bg-accent/10 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {
+                          const newMethods = isChecked
+                            ? paymentMethods.filter(m => m !== method.key)
+                            : [...paymentMethods, method.key];
+                          if (newMethods.length === 0) {
+                            toast({ title: "يجب اختيار طريقة دفع واحدة على الأقل", variant: "destructive" });
+                            return;
+                          }
+                          updatePaymentMethods.mutate(newMethods);
+                        }}
+                        className="h-4 w-4 rounded border-border accent-primary"
+                      />
+                      <div className="flex-1">
+                        <p className="text-[11px] font-bold">{method.label}</p>
+                        <p className="text-[9px] text-muted-foreground">{method.desc}</p>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
 
             {/* Store Pause */}
