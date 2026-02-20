@@ -6514,6 +6514,57 @@ export type Database = {
       }
     }
     Views: {
+      community_customer_profiles_public: {
+        Row: {
+          avatar_url: string | null
+          bio: string | null
+          created_at: string | null
+          display_name: string | null
+          frame_url: string | null
+          id: string | null
+          is_suspended: boolean | null
+          is_verified: boolean | null
+          reputation_score: number | null
+          total_requests_made: number | null
+          total_requests_received: number | null
+          total_spent: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          avatar_url?: never
+          bio?: never
+          created_at?: string | null
+          display_name?: never
+          frame_url?: string | null
+          id?: string | null
+          is_suspended?: boolean | null
+          is_verified?: boolean | null
+          reputation_score?: number | null
+          total_requests_made?: number | null
+          total_requests_received?: number | null
+          total_spent?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          avatar_url?: never
+          bio?: never
+          created_at?: string | null
+          display_name?: never
+          frame_url?: string | null
+          id?: string | null
+          is_suspended?: boolean | null
+          is_verified?: boolean | null
+          reputation_score?: number | null
+          total_requests_made?: number | null
+          total_requests_received?: number | null
+          total_spent?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       merchant_rating_stats: {
         Row: {
           average_rating: number | null
@@ -6609,8 +6660,8 @@ export type Database = {
         }
         Insert: {
           active_card_frame_url?: string | null
-          avatar_url?: string | null
-          bio?: string | null
+          avatar_url?: never
+          bio?: never
           created_at?: string | null
           full_name?: string | null
           id?: string | null
@@ -6619,8 +6670,8 @@ export type Database = {
         }
         Update: {
           active_card_frame_url?: string | null
-          avatar_url?: string | null
-          bio?: string | null
+          avatar_url?: never
+          bio?: never
           created_at?: string | null
           full_name?: string | null
           id?: string | null

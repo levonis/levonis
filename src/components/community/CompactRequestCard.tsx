@@ -58,15 +58,15 @@ export default function CompactRequestCard({
     queryFn: async () => {
       // Try profiles table first
       const { data: profile } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("full_name, avatar_url, username")
         .eq("id", request.user_id)
         .maybeSingle();
       if (profile?.full_name || profile?.username) return profile;
       
-      // Fallback to community_customer_profiles
+      // Fallback to community_customer_profiles_public (protects personal info)
       const { data: communityProfile } = await supabase
-        .from("community_customer_profiles")
+        .from("community_customer_profiles_public")
         .select("display_name, avatar_url")
         .eq("user_id", request.user_id)
         .maybeSingle();

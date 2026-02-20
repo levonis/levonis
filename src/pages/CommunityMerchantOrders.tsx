@@ -115,7 +115,7 @@ export default function CommunityMerchantOrders() {
     enabled: customerIds.length > 0,
     queryFn: async () => {
       const { data } = await supabase
-        .from("profiles")
+        .from("profiles_public")
         .select("id, full_name, avatar_url")
         .in("id", customerIds);
       return data ?? [];
