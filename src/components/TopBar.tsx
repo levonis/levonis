@@ -1,8 +1,8 @@
-import { memo, useState, useEffect } from 'react';
+import { memo, useState, useEffect, lazy, Suspense } from 'react';
 import logoNew from '@/assets/new-logo.png';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from './ui/button';
-import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy } from 'lucide-react';
+import { User, LogOut, Settings, ShoppingCart, Package, FileText, Heart, Bell, Coins, Wallet, MessageCircle, MapPin, Trophy, Globe } from 'lucide-react';
 import CustomProductRequestDialog from './CustomProductRequestDialog';
 import { ListingConversations } from '@/components/marketplace/ListingConversations';
 import WalletDialog from './WalletDialog';
@@ -11,7 +11,9 @@ import { useCart } from '@/hooks/useCart';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ADMIN_ROUTES } from '@/config/adminConfig';
-import { useLanguage } from '@/lib/i18n';
+import { useLanguage, LANGUAGE_LABELS, type Language } from '@/lib/i18n';
+
+const InstallPrompt = lazy(() => import('@/components/pwa/InstallPrompt'));
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,7 +33,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
   const { itemCount } = useCart();
   const navigate = useNavigate();
   const location = useLocation();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const [isScrolled, setIsScrolled] = useState(false);
   const [walletDialogOpen, setWalletDialogOpen] = useState(false);
   const [messagesOpen, setMessagesOpen] = useState(false);
@@ -212,7 +214,38 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
           </div>
 
           {/* Cart and User Actions */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* Install Button */}
+            <Suspense fallback={null}>
+              <InstallPrompt />
+            </Suspense>
+
+            {/* Language Toggle */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="rounded-full border-primary/30 hover:border-primary"
+                  title={t('settings_language')}
+                  aria-label={t('settings_language')}
+                >
+                  <Globe className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[120px] bg-background border-border z-50">
+                {(['ar', 'en', 'ku'] as Language[]).map((lang) => (
+                  <DropdownMenuItem
+                    key={lang}
+                    onClick={() => setLanguage(lang)}
+                    className={language === lang ? 'bg-primary/10 font-bold' : ''}
+                  >
+                    {LANGUAGE_LABELS[lang]}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {/* Rewards Hub Button */}
             <Button
               variant="outline"
