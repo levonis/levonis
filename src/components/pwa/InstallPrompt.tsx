@@ -38,15 +38,21 @@ function InstallCard({ onDismiss }: { onDismiss: () => void }) {
   }, []);
 
   const handleInstall = async () => {
-    if (deferredPrompt) {
-      try {
-        await deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') setIsInstalled(true);
-        setDeferredPrompt(null);
-      } catch {
-        onDismiss();
+    if (!deferredPrompt) {
+      toast.error('التثبيت غير متاح حالياً، جرب إعادة تحميل الصفحة');
+      return;
+    }
+    try {
+      await deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstalled(true);
+        toast.success('تم تثبيت التطبيق بنجاح!');
       }
+      setDeferredPrompt(null);
+    } catch (err) {
+      console.error('Install prompt error:', err);
+      toast.error('حدث خطأ أثناء التثبيت، حاول مرة أخرى');
     }
   };
 
@@ -93,10 +99,20 @@ function NotificationCard({ onDismiss }: { onDismiss: () => void }) {
   if (permission === 'unsupported' || permission === 'granted' || permission === 'denied') return null;
 
   const handleAllow = async () => {
-    const result = await requestPermission();
-    if (result === 'granted') {
-      toast.success(t('pwa_notif_success'));
-      onDismiss();
+    try {
+      const result = await requestPermission();
+      if (result === 'granted') {
+        toast.success(t('pwa_notif_success'));
+        onDismiss();
+      } else if (result === 'denied') {
+        toast.error('تم رفض الإشعارات. يمكنك تفعيلها من إعدادات المتصفح');
+        onDismiss();
+      } else {
+        toast.info('يرجى السماح بالإشعارات عند ظهور نافذة الإذن');
+      }
+    } catch (err) {
+      console.error('Notification permission error:', err);
+      toast.error('حدث خطأ في تفعيل الإشعارات');
     }
   };
 

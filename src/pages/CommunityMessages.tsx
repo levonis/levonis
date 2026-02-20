@@ -275,11 +275,11 @@ export default function CommunityMessages() {
 
   // Handle creating conversation if merchant_id or user_id is provided
   useEffect(() => {
-    if ((merchantId || userId) && user && !creatingConversation && !autoOpenConversationId) {
+    if ((merchantId || userId) && user && !creatingConversation && !autoOpenConversationId && !createConversationMutation.isSuccess) {
       setCreatingConversation(true);
       createConversationMutation.mutate();
     }
-  }, [merchantId, userId, user, autoOpenConversationId]);
+  }, [merchantId, userId, user, autoOpenConversationId, creatingConversation]);
 
   useEffect(() => {
     const t = window.setTimeout(() => setLoading(false), 250);
