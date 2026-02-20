@@ -586,7 +586,7 @@ export default function LevoHelpBot() {
             className="group relative h-11 w-11 rounded-full bg-gradient-to-br from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 flex items-center justify-center"
           >
             <Bot className="h-5 w-5" />
-            <span className="absolute inset-0 rounded-full bg-primary/20 animate-ping" style={{ animationDuration: "4s" }} />
+            
           </button>
           <button 
             onClick={(e) => { e.stopPropagation(); setShowHideMenu(!showHideMenu); }}

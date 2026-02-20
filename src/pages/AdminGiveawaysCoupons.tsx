@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Gift, Tag, Plus, Pencil, Trash2, Trophy, Users, Loader2 } from "lucide-react";
+import { Gift, Tag, Plus, Pencil, Trash2, Trophy, Users, Loader2, Upload, X, ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
@@ -63,8 +63,26 @@ export default function AdminGiveawaysCoupons({ embedded }: { embedded?: boolean
     title_ar: "", description_ar: "", coupon_type: "percentage",
     discount_value: 0, coupon_code: "", merchant_store_name: "", valid_until: "",
   });
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Queries
+  const handlePrizeImageUpload = async (file: File) => {
+    setUploadingImage(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `giveaway-prizes/${Date.now()}-${Math.random().toString(36).substring(7)}.${ext}`;
+      const { error } = await supabase.storage.from("competition-images").upload(path, file);
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from("competition-images").getPublicUrl(path);
+      setGForm(p => ({ ...p, prize_image_url: urlData.publicUrl }));
+      toast.success("تم رفع الصورة");
+    } catch (err: any) {
+      toast.error("فشل رفع الصورة: " + err.message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const { data: giveaways, isLoading: loadingG } = useQuery({
     queryKey: ["admin-giveaways"],
     queryFn: async () => {
@@ -343,7 +361,41 @@ export default function AdminGiveawaysCoupons({ embedded }: { embedded?: boolean
             <div><Label>العنوان</Label><Input value={gForm.title_ar} onChange={e => setGForm(p => ({ ...p, title_ar: e.target.value }))} /></div>
             <div><Label>الوصف</Label><Textarea value={gForm.description_ar} onChange={e => setGForm(p => ({ ...p, description_ar: e.target.value }))} /></div>
             <div><Label>اسم الجائزة</Label><Input value={gForm.prize_name_ar} onChange={e => setGForm(p => ({ ...p, prize_name_ar: e.target.value }))} /></div>
-            <div><Label>رابط صورة الجائزة</Label><Input value={gForm.prize_image_url} onChange={e => setGForm(p => ({ ...p, prize_image_url: e.target.value }))} /></div>
+            <div>
+              <Label>صورة الجائزة</Label>
+              {gForm.prize_image_url ? (
+                <div className="relative mt-1 w-32 h-32 rounded-xl overflow-hidden border border-border group">
+                  <img src={gForm.prize_image_url} alt="" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => setGForm(p => ({ ...p, prize_image_url: "" }))}
+                    className="absolute top-1 right-1 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : (
+                <label className="cursor-pointer mt-1 block">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={e => { if (e.target.files?.[0]) handlePrizeImageUpload(e.target.files[0]); }}
+                  />
+                  <div className="h-24 w-full rounded-xl border-2 border-dashed border-border hover:border-primary/50 flex flex-col items-center justify-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+                    {uploadingImage ? (
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    ) : (
+                      <>
+                        <Upload className="h-5 w-5" />
+                        <span className="text-xs">اختر صورة أو اسحبها هنا</span>
+                      </>
+                    )}
+                  </div>
+                </label>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label>القيمة</Label><Input type="number" value={gForm.prize_value} onChange={e => setGForm(p => ({ ...p, prize_value: +e.target.value }))} /></div>
               <div><Label>الحد الأقصى</Label><Input type="number" value={gForm.max_participants} onChange={e => setGForm(p => ({ ...p, max_participants: +e.target.value }))} /></div>
