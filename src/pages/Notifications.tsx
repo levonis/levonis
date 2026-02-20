@@ -97,6 +97,7 @@ const Notifications = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-notifications'] });
       toast.success(t('notif_marked_read'));
     },
   });
@@ -113,6 +114,7 @@ const Notifications = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['unread-notifications'] });
       toast.success(t('notif_all_marked_read'));
     },
   });

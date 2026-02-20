@@ -53,6 +53,8 @@ export function useMessageNotifications(activeConversationId?: string | null) {
           queryClient.invalidateQueries({ queryKey: ['listing-conversations'] });
           queryClient.invalidateQueries({ queryKey: ['last-messages'] });
           queryClient.invalidateQueries({ queryKey: ['marketplace-unread-users-count'] });
+          queryClient.invalidateQueries({ queryKey: ['unified-chat-unread'] });
+          queryClient.invalidateQueries({ queryKey: ['conv-unread-counts'] });
 
           // Show browser notification
           if (Notification.permission === 'granted') {

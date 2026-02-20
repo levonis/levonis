@@ -10,6 +10,7 @@ import LanguageProvider from "@/components/LanguageProvider";
 import { CartProvider } from "@/hooks/useCart";
 import { useDailyLogin } from "@/hooks/useDailyLogin";
 import { useMessageNotifications } from "@/hooks/useMessageNotifications";
+import { useOnlineHeartbeat } from "@/hooks/useOnlineHeartbeat";
 import Header from "@/components/Header";
 import CommunityTopBar from "@/components/community/CommunityTopBar";
 import AnnouncementBar from "@/components/AnnouncementBar";
@@ -124,6 +125,7 @@ const SuspenseLoader = () => (
 function AppContent() {
   useDailyLogin();
   useMessageNotifications();
+  useOnlineHeartbeat();
   const [announcementHeight, setAnnouncementHeight] = useState(0);
   const [verificationBannerHeight, setVerificationBannerHeight] = useState(0);
   const location = useLocation();
