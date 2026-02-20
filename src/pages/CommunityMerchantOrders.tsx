@@ -157,8 +157,9 @@ export default function CommunityMerchantOrders() {
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["merchant-offers", user?.id] });
+      qc.invalidateQueries({ queryKey: ["merchant-offers"] });
       qc.invalidateQueries({ queryKey: ["merchant-community-requests"] });
+      qc.invalidateQueries({ queryKey: ["my-offer-check"] });
       toast({ title: "تم تحديث الحالة" });
       setUpdateStatusOffer(null);
     },

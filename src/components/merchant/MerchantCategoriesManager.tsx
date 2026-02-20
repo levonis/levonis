@@ -8,7 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, GripVertical, Pencil, FolderPlus, Upload, Loader2, X, Image } from "lucide-react";
+import { Plus, Trash2, GripVertical, Pencil, FolderPlus, Upload, Loader2, X, Image, LayoutList, LayoutGrid, Sidebar } from "lucide-react";
+
+type CategoryLayoutType = "grid" | "sidebar" | "list";
+
+const LAYOUT_OPTIONS: { key: CategoryLayoutType; label: string; icon: any; desc: string; needsImage: boolean; needsSubs: boolean }[] = [
+  { key: "grid", label: "شبكة", icon: LayoutGrid, desc: "أقسام مع صور وأقسام فرعية", needsImage: true, needsSubs: true },
+  { key: "sidebar", label: "شريط جانبي", icon: Sidebar, desc: "أقسام نصية بدون صور أو فرعية", needsImage: false, needsSubs: false },
+  { key: "list", label: "قائمة", icon: LayoutList, desc: "قائمة أقسام بدون صور", needsImage: false, needsSubs: true },
+];
 
 interface Category {
   id: string;
@@ -34,6 +42,7 @@ export default function MerchantCategoriesManager({ merchantId }: Props) {
   const [newName, setNewName] = useState("");
   const [newImageUrl, setNewImageUrl] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [layoutType, setLayoutType] = useState<CategoryLayoutType>("grid");
 
   const { data: categories = [], isLoading } = useQuery({
     queryKey: ["merchant-store-categories", merchantId],
@@ -133,6 +142,28 @@ export default function MerchantCategoriesManager({ merchantId }: Props) {
           قسم رئيسي
         </Button>
       </div>
+     {/* Layout Type Selector */}
+      <div className="flex gap-1.5 p-1 rounded-lg bg-muted/30 border border-border/50">
+        {LAYOUT_OPTIONS.map(opt => {
+          const Icon = opt.icon;
+          const isActive = layoutType === opt.key;
+          return (
+            <button
+              key={opt.key}
+              onClick={() => setLayoutType(opt.key)}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-md text-[10px] font-medium transition-all ${
+                isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              <Icon className="h-3 w-3" />
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+      <p className="text-[9px] text-muted-foreground">
+        {LAYOUT_OPTIONS.find(o => o.key === layoutType)?.desc}
+      </p>
 
       {isLoading ? (
         <div className="text-xs text-muted-foreground text-center py-4">جاري التحميل...</div>
@@ -158,9 +189,11 @@ export default function MerchantCategoriesManager({ merchantId }: Props) {
                       <span className="text-sm font-medium">{cat.name_ar}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openAddDialog(cat.id)}>
-                        <FolderPlus className="h-3 w-3" />
-                      </Button>
+                      {LAYOUT_OPTIONS.find(o => o.key === layoutType)?.needsSubs && (
+                        <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => openAddDialog(cat.id)}>
+                          <FolderPlus className="h-3 w-3" />
+                        </Button>
+                      )}
                       <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => {
                         setEditingCategory(cat);
                         setNewName(cat.name_ar);
@@ -217,27 +250,29 @@ export default function MerchantCategoriesManager({ merchantId }: Props) {
               <Label className="text-xs">اسم القسم</Label>
               <Input value={newName} onChange={e => setNewName(e.target.value)} placeholder="مثال: أكشن فيغرز" className="h-9 mt-1" />
             </div>
-            <div>
-              <Label className="text-xs">صورة القسم (اختياري)</Label>
-              <div className="flex items-center gap-2 mt-1">
-                {newImageUrl && (
-                  <div className="h-10 w-10 rounded border overflow-hidden shrink-0">
-                    <img src={newImageUrl} alt="" className="h-full w-full object-cover" />
-                  </div>
-                )}
-                <label className="cursor-pointer flex-1">
-                  <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleUploadImage(e.target.files[0]); }} />
-                  <div className="h-9 rounded-md border border-dashed flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:bg-accent">
-                    {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5" /> رفع صورة</>}
-                  </div>
-                </label>
-                {newImageUrl && (
-                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setNewImageUrl("")}>
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                )}
+            {LAYOUT_OPTIONS.find(o => o.key === layoutType)?.needsImage && (
+              <div>
+                <Label className="text-xs">صورة القسم (اختياري)</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  {newImageUrl && (
+                    <div className="h-10 w-10 rounded border overflow-hidden shrink-0">
+                      <img src={newImageUrl} alt="" className="h-full w-full object-cover" />
+                    </div>
+                  )}
+                  <label className="cursor-pointer flex-1">
+                    <input type="file" accept="image/*" className="hidden" onChange={e => { if (e.target.files?.[0]) handleUploadImage(e.target.files[0]); }} />
+                    <div className="h-9 rounded-md border border-dashed flex items-center justify-center gap-1.5 text-xs text-muted-foreground hover:bg-accent">
+                      {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <><Upload className="h-3.5 w-3.5" /> رفع صورة</>}
+                    </div>
+                  </label>
+                  {newImageUrl && (
+                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => setNewImageUrl("")}>
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
             <Button className="w-full h-9" disabled={!newName.trim() || addMutation.isPending} onClick={() => addMutation.mutate()}>
               {addMutation.isPending ? "جاري الإضافة..." : "إضافة"}
             </Button>
