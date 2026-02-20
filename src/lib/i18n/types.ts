@@ -612,4 +612,66 @@ export type TranslationKeys = {
   merchant_product_management_desc: string;
   merchant_store_settings: string;
   merchant_store_settings_desc: string;
+
+  // Points & Rewards extended
+  points_login_required: string;
+  points_available_for_redeem: string;
+  points_unit: string;
+  points_no_transactions: string;
+  points_no_products: string;
+  points_no_products_desc: string;
+  points_remaining_stock: string;
+  points_reached_limit: string;
+  points_need_more: string;
+  points_redeem_action: string;
+  points_confirm_redeem: string;
+  points_confirm_redeem_desc: string;
+  points_product_added_storage: string;
+  points_coupon_redeemed: string;
+  points_confirm_action: string;
+  points_physical_note: string;
+
+  // Daily Tasks
+  tasks_login_required: string;
+  tasks_no_tasks: string;
+  tasks_completed_today: string;
+  tasks_start: string;
+  tasks_rate_products: string;
+  tasks_awaiting_review: string;
+  tasks_points_per_review: string;
+  tasks_bonus_media: string;
+  tasks_rating_label: string;
+  tasks_comment_label: string;
+  tasks_comment_placeholder: string;
+  tasks_comment_min: string;
+  tasks_submit_review: string;
+  tasks_review_added: string;
+  tasks_order_number: string;
+  tasks_rate_button: string;
+  tasks_task_completed: string;
+
+  // Cards Section extended
+  cards_coupons_title: string;
+  cards_coupon_count: string;
+  cards_code_copy_success: string;
+  cards_exclusive_coming: string;
+  cards_exclusive_coming_desc: string;
+
+  // Insurance extended
+  insurance_confirm_upgrade: string;
+  insurance_confirm_upgrade_desc: string;
+  insurance_cost_after_discount: string;
+  insurance_confirm_subscribe: string;
+  insurance_confirm_subscribe_desc: string;
+  insurance_monthly_cost: string;
+  insurance_upgrading: string;
+  insurance_subscribing: string;
+  insurance_confirm_upgrade_action: string;
+  insurance_confirm_subscribe_action: string;
+  insurance_choose_plan: string;
+  insurance_maintenance_title: string;
+  insurance_maintenance_desc: string;
+  insurance_new_maintenance: string;
+  insurance_login_maintenance: string;
+  insurance_best_value: string;
 };

@@ -19,6 +19,7 @@ import {
 import { Coins, ShoppingCart, Loader2, Gift, Package, Ticket } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
+import { useLanguage } from "@/lib/i18n";
 
 interface RedeemableProduct {
   id: string;
@@ -36,6 +37,7 @@ interface RedeemableProduct {
 
 export default function PointsStorePanel() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [selectedProduct, setSelectedProduct] = useState<RedeemableProduct | null>(null);
   const [purchaseDialogOpen, setPurchaseDialogOpen] = useState(false);
@@ -92,17 +94,17 @@ export default function PointsStorePanel() {
   // Purchase mutation
   const purchaseMutation = useMutation({
     mutationFn: async (product: RedeemableProduct) => {
-      if (!user) throw new Error('يجب تسجيل الدخول');
+      if (!user) throw new Error(t('points_login_required'));
 
       const availablePoints = userPoints?.available_points || 0;
       if (availablePoints < product.points_cost) {
-        throw new Error('نقاطك غير كافية');
+        throw new Error(t('comp_insufficient_balance'));
       }
 
       // Check if user already hit the limit
       const userPurchaseCount = userRedemptions?.filter(r => r.product_id === product.id).length || 0;
       if (userPurchaseCount >= product.max_per_user) {
-        throw new Error(`لقد وصلت للحد الأقصى (${product.max_per_user})`);
+        throw new Error(t('points_reached_limit'));
       }
 
       // Deduct points
@@ -122,7 +124,7 @@ export default function PointsStorePanel() {
           points: product.points_cost,
           type: 'spent',
           source: 'product_redemption',
-          description: `استبدال: ${product.title_ar}`,
+          description: `${t('points_redeem_action')}: ${product.title_ar}`,
           related_id: product.id,
         });
       if (transError) throw transError;
@@ -182,15 +184,15 @@ export default function PointsStorePanel() {
       queryClient.invalidateQueries({ queryKey: ['user-coupons'] });
       
       if (product.product_type === 'physical') {
-        toast.success('تم إضافة المنتج إلى مخزنك! يمكنك طلب شحنه متى شئت');
+        toast.success(t('points_product_added_storage'));
       } else {
-        toast.success('تم الاستبدال بنجاح! تحقق من كوبوناتك');
+        toast.success(t('points_coupon_redeemed'));
       }
       setPurchaseDialogOpen(false);
       setSelectedProduct(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('common_error'));
     },
   });
 
@@ -207,7 +209,7 @@ export default function PointsStorePanel() {
       <Card>
         <CardContent className="p-6 text-center">
           <Coins className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">سجّل الدخول لتصفح متجر النقاط</p>
+          <p className="text-muted-foreground">{t('points_login_required')}</p>
         </CardContent>
       </Card>
     );
@@ -224,8 +226,8 @@ export default function PointsStorePanel() {
             <Coins className="h-6 w-6 text-amber-500" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">نقاطك المتاحة للاستبدال</p>
-            <p className="text-2xl font-bold">{availablePoints.toLocaleString()} نقطة</p>
+            <p className="text-xs text-muted-foreground">{t('points_available_for_redeem')}</p>
+            <p className="text-2xl font-bold">{availablePoints.toLocaleString()} {t('points_unit')}</p>
           </div>
         </CardContent>
       </Card>
@@ -241,8 +243,8 @@ export default function PointsStorePanel() {
         <Card>
           <CardContent className="p-8 text-center">
             <Gift className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="font-medium">لا توجد منتجات حالياً</p>
-            <p className="text-sm text-muted-foreground mt-2">تابعنا لإضافة منتجات جديدة قريباً</p>
+            <p className="font-medium">{t('points_no_products')}</p>
+            <p className="text-sm text-muted-foreground mt-2">{t('points_no_products_desc')}</p>
           </CardContent>
         </Card>
       ) : (
@@ -287,7 +289,7 @@ export default function PointsStorePanel() {
                       {product.points_cost.toLocaleString()}
                     </Badge>
                     <span className="text-[10px] text-muted-foreground">
-                      متبقي: {product.stock_quantity}
+                      {t('points_remaining_stock')} {product.stock_quantity}
                     </span>
                   </div>
                   
@@ -301,14 +303,14 @@ export default function PointsStorePanel() {
                     }}
                   >
                     {reachedLimit ? (
-                      'وصلت للحد الأقصى'
+                      t('points_reached_limit')
                     ) : canAfford ? (
                       <>
                         <ShoppingCart className="h-3.5 w-3.5 ml-1" />
-                        استبدال
+                        {t('points_redeem_action')}
                       </>
                     ) : (
-                      `تحتاج ${(product.points_cost - availablePoints).toLocaleString()} نقطة`
+                      t('points_need_more', { count: (product.points_cost - availablePoints).toLocaleString() })
                     )}
                   </Button>
                 </CardContent>
@@ -322,25 +324,25 @@ export default function PointsStorePanel() {
       <AlertDialog open={purchaseDialogOpen} onOpenChange={setPurchaseDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الاستبدال</AlertDialogTitle>
+            <AlertDialogTitle>{t('points_confirm_redeem')}</AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
               {selectedProduct && (
                 <>
                   <p>
-                    هل تريد استبدال <strong>{selectedProduct.points_cost.toLocaleString()}</strong> نقطة 
-                    للحصول على <strong>{selectedProduct.title_ar}</strong>؟
+                    {t('points_confirm_redeem_desc', { 
+                      points: selectedProduct.points_cost.toLocaleString(), 
+                      product: selectedProduct.title_ar 
+                    })}
                   </p>
                   {selectedProduct.product_type === 'physical' && (
-                    <p className="text-sm text-primary">
-                      سيتم إضافة المنتج إلى مخزنك لطلب الشحن
-                    </p>
+                    <p className="text-sm text-primary">{t('points_physical_note')}</p>
                   )}
                 </>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => selectedProduct && purchaseMutation.mutate(selectedProduct)}
               disabled={purchaseMutation.isPending}
@@ -348,7 +350,7 @@ export default function PointsStorePanel() {
               {purchaseMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin ml-2" />
               ) : null}
-              تأكيد الاستبدال
+              {t('points_confirm_action')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
