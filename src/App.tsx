@@ -21,6 +21,7 @@ import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 // Lazy load unified chat button (global floating button)
 const UnifiedChatButton = lazy(() => import("@/components/UnifiedChatButton"));
 const LevoHelpBot = lazy(() => import("@/components/LevoHelpBot"));
+const InstallPrompt = lazy(() => import("@/components/pwa/InstallPrompt"));
 
 // Eager load Home page for best initial load
 import Home from "./pages/Home";
@@ -253,6 +254,10 @@ function AppContent() {
       {/* Global floating chat button - visible on all pages */}
       <Suspense fallback={null}>
         <UnifiedChatButton />
+      </Suspense>
+      {/* PWA Install Prompt */}
+      <Suspense fallback={null}>
+        <InstallPrompt />
       </Suspense>
     </>
   );

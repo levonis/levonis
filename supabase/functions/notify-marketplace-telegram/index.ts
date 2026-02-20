@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
       case "new_message":
         emoji = "💬";
         title = `رسالة جديدة من ${sender_name || 'مستخدم'}`;
-        message = `📦 المنتج: ${listing_title}\n\n📩 الرسالة:\n${message_content || '(صورة)'}\n\n💡 للرد، اكتب رسالتك مباشرة هنا`;
+        message = `${listing_title ? `📋 ${listing_title}\n\n` : ''}📩 الرسالة:\n${message_content || '(صورة)'}\n\n💡 للرد، اكتب رسالتك مباشرة هنا`;
         break;
       default:
         emoji = "ℹ️";
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
         message = `لديك إشعار جديد بخصوص منتج "${listing_title}".`;
     }
 
-    const telegramMessage = `${emoji} <b>${title}</b>\n\n${message}\n\n🏪 السوق المستعمل - LEVONIS`;
+    const telegramMessage = `${emoji} <b>${title}</b>\n\n${message}\n\n🛍️ LEVONIS`;
 
     console.log(`Sending marketplace notification to user ${user_id} (chat_id: ${profile.telegram_chat_id})`);
 
