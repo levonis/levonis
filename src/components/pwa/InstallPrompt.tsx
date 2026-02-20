@@ -26,6 +26,7 @@ export default function InstallPrompt() {
   const [isClosing, setIsClosing] = useState(false);
   const [showNotifBanner, setShowNotifBanner] = useState(false);
   const [isIOSDevice, setIsIOSDevice] = useState(false);
+  const [isGenericBrowser, setIsGenericBrowser] = useState(false);
   const { permission, requestPermission } = useNotificationPermission();
 
   useEffect(() => {
@@ -60,16 +61,27 @@ export default function InstallPrompt() {
     }
 
     if (iosDevice) {
-      // iOS Safari: no beforeinstallprompt, show manual instructions
       setTimeout(() => setShowPrompt(true), 3000);
     } else {
-      // Chrome/Edge/etc: listen for beforeinstallprompt
+      // Listen for beforeinstallprompt (Chrome/Edge/Samsung)
+      let promptFired = false;
       const handler = (e: Event) => {
         e.preventDefault();
+        promptFired = true;
         setDeferredPrompt(e as BeforeInstallPromptEvent);
         setTimeout(() => setShowPrompt(true), 3000);
       };
       window.addEventListener('beforeinstallprompt', handler);
+
+      // For browsers that don't fire beforeinstallprompt (Firefox, etc.)
+      // show generic install instructions after a delay
+      setTimeout(() => {
+        if (!promptFired) {
+          setIsGenericBrowser(true);
+          setShowPrompt(true);
+        }
+      }, 5000);
+
       return () => window.removeEventListener('beforeinstallprompt', handler);
     }
   }, []);
@@ -112,7 +124,7 @@ export default function InstallPrompt() {
     localStorage.setItem('notif-prompt-dismissed', Date.now().toString());
   };
 
-  const showInstallCard = !isInstalled && showPrompt && (deferredPrompt || isIOSDevice);
+  const showInstallCard = !isInstalled && showPrompt && (deferredPrompt || isIOSDevice || isGenericBrowser);
 
   return (
     <>
@@ -182,12 +194,14 @@ export default function InstallPrompt() {
                         <span>"إضافة إلى الشاشة الرئيسية"</span>
                       </p>
                     </div>
+                  ) : isGenericBrowser ? (
+                    <p className="text-[11px] text-muted-foreground mt-0.5">استخدم قائمة المتصفح ← "تثبيت التطبيق" أو "إضافة إلى الشاشة الرئيسية"</p>
                   ) : (
                     <p className="text-[11px] text-muted-foreground mt-0.5">وصول سريع • إشعارات فورية • تجربة تطبيق كاملة</p>
                   )}
                 </div>
               </div>
-              {!isIOSDevice && (
+              {!isIOSDevice && !isGenericBrowser && deferredPrompt && (
                 <div className="flex gap-2 mt-3">
                   <Button onClick={handleInstall} size="sm" className="flex-1 h-8 gap-1.5 text-xs font-bold rounded-xl">
                     <Download className="h-3.5 w-3.5" />
@@ -198,7 +212,7 @@ export default function InstallPrompt() {
                   </Button>
                 </div>
               )}
-              {isIOSDevice && (
+              {(isIOSDevice || isGenericBrowser) && (
                 <div className="flex justify-end mt-2">
                   <Button onClick={handleDismiss} variant="ghost" size="sm" className="h-7 text-[11px] text-muted-foreground rounded-xl px-3">
                     فهمت
