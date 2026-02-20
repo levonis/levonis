@@ -161,7 +161,7 @@ export default function RichTextInput({
         ref={editorRef}
         contentEditable={!disabled}
         className={cn(
-          "min-h-[42px] max-h-24 overflow-y-auto rounded-full px-4 py-2.5 bg-muted/50 focus:ring-1 focus:ring-ring focus:outline-none text-sm leading-relaxed",
+          "min-h-[42px] max-h-24 overflow-y-auto rounded-full px-4 py-2.5 bg-background/80 border border-border/50 focus:ring-1 focus:ring-ring focus:outline-none text-sm leading-relaxed text-foreground",
           "empty:before:content-[attr(data-placeholder)] empty:before:text-muted-foreground empty:before:pointer-events-none",
           "[&_.inline-emoji]:inline-block [&_.inline-emoji]:w-5 [&_.inline-emoji]:h-5 [&_.inline-emoji]:align-text-bottom [&_.inline-emoji]:mx-0.5",
           disabled && "opacity-50 cursor-not-allowed",
