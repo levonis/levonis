@@ -43,17 +43,11 @@ function InstallCard({ onDismiss }: { onDismiss: () => void }) {
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') setIsInstalled(true);
       setDeferredPrompt(null);
-    } else if (isIOS()) {
-      toast.info(t('pwa_install_ios_step1') + '\n' + t('pwa_install_ios_step2'));
-    } else {
-      toast.info(t('pwa_install_generic_step1') + '\n' + t('pwa_install_generic_step2'));
     }
   };
 
-  // Hide if installed or not a mobile browser (and no deferred prompt)
-  if (isInstalled) return null;
-  // Show on mobile browsers OR when we have a deferred prompt
-  if (!deferredPrompt && !isIOS() && !isMobileBrowser()) return null;
+  // Hide if installed or no native install prompt available
+  if (isInstalled || !deferredPrompt) return null;
 
   return (
     <div className="relative rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-2xl p-4">
