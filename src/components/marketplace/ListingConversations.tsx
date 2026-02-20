@@ -439,7 +439,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
         .eq('id', selectedConversation)
         .then(() => {});
 
-      // Background notification
+      // Background notification (in-app + Telegram)
       if (selectedConv) {
         const otherUserId = selectedConv.buyer_id === effectiveSenderId 
           ? selectedConv.seller_id 
@@ -452,8 +452,20 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
           .single()
           .then(({ data: senderProfile }) => {
             const senderName = senderProfile?.full_name || senderProfile?.username || 'مستخدم';
-            const listingTitle = selectedConv.conversation_code ? `محادثة #${selectedConv.conversation_code}` : 'محادثة';
+            const convCode = selectedConv.conversation_code ? `#${selectedConv.conversation_code}` : '';
+            const listingTitle = selectedConv.conversation_code ? `محادثة ${convCode}` : 'محادثة';
 
+            // 1. In-app notification
+            supabase.from('notifications').insert({
+              user_id: otherUserId,
+              title: `💬 رسالة جديدة من ${senderName}`,
+              message: messageContent.length > 80 ? messageContent.slice(0, 80) + '...' : messageContent,
+              type: 'info',
+              related_id: selectedConversation,
+              is_general: false,
+            }).then(() => {});
+
+            // 2. Telegram notification
             supabase.functions.invoke('notify-marketplace-telegram', {
               body: {
                 user_id: otherUserId,
