@@ -178,4 +178,26 @@ export type TranslationKeys = {
   rewards_title: string;
   rewards_points: string;
   rewards_redeem: string;
+
+  // Rewards tabs
+  rewards_tab_points: string;
+  rewards_tab_competitions: string;
+  rewards_tab_membership: string;
+  rewards_tab_protection: string;
+  rewards_sub_summary: string;
+  rewards_sub_tasks: string;
+  rewards_sub_redeem: string;
+  rewards_sub_store: string;
+  rewards_sub_competitions: string;
+  rewards_sub_my_card: string;
+  rewards_sub_upgrade: string;
+  rewards_sub_exclusive_offers: string;
+  rewards_sub_my_printers: string;
+  rewards_sub_plans: string;
+  rewards_sub_maintenance: string;
+  rewards_quick_daily_tasks: string;
+  rewards_quick_competitions: string;
+  rewards_quick_points_store: string;
+  rewards_quick_membership_card: string;
+  rewards_ticket_balance: string;
 };
