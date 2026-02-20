@@ -12,6 +12,7 @@ import { LevelCardSkeleton } from "./SkeletonLoaders";
 import LoyaltyLevelsPanel from "./panels/LoyaltyLevelsPanel";
 import UserLoyaltyCard from "@/components/UserLoyaltyCard";
 import { toast } from "sonner";
+import { useLanguage } from "@/lib/i18n";
 
 interface CardsSectionProps {
   activeSubTab: SubTabId;
@@ -19,9 +20,9 @@ interface CardsSectionProps {
 
 export default function CardsSection({ activeSubTab }: CardsSectionProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [expandedCoupons, setExpandedCoupons] = useState(false);
 
-  // Only fetch when benefits or upgrade tab is active
   const shouldFetchUserData = activeSubTab === 'benefits' || activeSubTab === 'upgrade';
 
   const { data: userPoints, isLoading: loadingPoints } = useQuery({
@@ -40,7 +41,6 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch user profile for name
   const { data: userProfile } = useQuery({
     queryKey: ['user-profile-name', user?.id],
     queryFn: async () => {
@@ -57,7 +57,6 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
     staleTime: 10 * 60 * 1000,
   });
 
-  // Fetch active user card with expiration
   const { data: userCard } = useQuery({
     queryKey: ['user-active-card-benefits', user?.id],
     queryFn: async () => {
@@ -93,7 +92,6 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch user's coupons from letter prize redemptions
   const { data: userCoupons, isLoading: loadingCoupons } = useQuery({
     queryKey: ['user-coupons', user?.id],
     queryFn: async () => {
@@ -111,7 +109,6 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
     staleTime: 2 * 60 * 1000,
   });
 
-  // Only fetch when upgrade tab is active
   const { data: allLevels, isLoading: loadingAllLevels } = useQuery({
     queryKey: ['all-loyalty-levels'],
     queryFn: async () => {
@@ -128,22 +125,18 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
 
   const copyCouponCode = (code: string) => {
     navigator.clipboard.writeText(code);
-    toast.success('تم نسخ الكود!');
+    toast.success(t('cards_code_copied'));
   };
 
-  // Benefits sub-tab
   if (activeSubTab === 'benefits') {
     const isLoading = loadingPoints || (userPoints && loadingLevel);
     const totalCouponValue = userCoupons?.reduce((sum, c) => sum + (c.prize_value || 0), 0) || 0;
-    
-    // Only show purchased cards - NOT points-based levels
     const activeCardLevel = userCard?.loyalty_levels;
-    const displayLevel = activeCardLevel; // Only show if user has an actual purchased card
+    const displayLevel = activeCardLevel;
     const userName = userProfile?.full_name || userProfile?.username || '';
 
     return (
       <div className="space-y-4">
-        {/* Membership Card - Professional Design */}
         {isLoading ? (
           <LevelCardSkeleton />
         ) : displayLevel ? (
@@ -175,20 +168,19 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
           <Card>
             <CardContent className="p-6 text-center">
               <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">سجّل الدخول لعرض بطاقتك</p>
+              <p className="text-muted-foreground">{t('cards_login_required')}</p>
             </CardContent>
           </Card>
         ) : (
           <Card>
             <CardContent className="p-6 text-center">
               <CreditCard className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="font-medium">لا توجد بطاقة عضوية بعد</p>
-              <p className="text-sm text-muted-foreground mt-1">اجمع النقاط للحصول على بطاقتك الأولى</p>
+              <p className="font-medium">{t('cards_no_card')}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t('cards_no_card_desc')}</p>
             </CardContent>
           </Card>
         )}
 
-        {/* User Coupons - Collapsible List */}
         {user && (
           <Card>
             <Collapsible open={expandedCoupons} onOpenChange={setExpandedCoupons}>
@@ -200,10 +192,10 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
                         <TicketPercent className="h-5 w-5 text-amber-500" />
                       </div>
                       <div>
-                        <p className="font-medium">كوبوناتي</p>
+                        <p className="font-medium">{t('cards_my_coupons')}</p>
                         <p className="text-xs text-muted-foreground">
-                          {loadingCoupons ? 'جاري التحميل...' : 
-                            userCoupons?.length ? `${userCoupons.length} كوبون متاح` : 'لا يوجد كوبونات'
+                          {loadingCoupons ? t('cards_loading') : 
+                            userCoupons?.length ? t('cards_coupon_available').replace('{count}', String(userCoupons.length)) : t('cards_no_coupons')
                           }
                         </p>
                       </div>
@@ -211,7 +203,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
                     <div className="flex items-center gap-2">
                       {totalCouponValue > 0 && (
                         <Badge className="bg-amber-500">
-                          {totalCouponValue.toLocaleString()} د.ع
+                          {totalCouponValue.toLocaleString()} {t('common_iqd')}
                         </Badge>
                       )}
                       {expandedCoupons ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -223,12 +215,12 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
               <CollapsibleContent>
                 <div className="px-4 pb-4 border-t pt-3 space-y-2 max-h-64 overflow-y-auto">
                   {loadingCoupons ? (
-                    <div className="text-center py-4 text-sm text-muted-foreground">جاري التحميل...</div>
+                    <div className="text-center py-4 text-sm text-muted-foreground">{t('cards_loading')}</div>
                   ) : userCoupons?.length === 0 ? (
                     <div className="text-center py-4">
                       <TicketPercent className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                      <p className="text-sm text-muted-foreground">لا توجد كوبونات متاحة</p>
-                      <p className="text-xs text-muted-foreground mt-1">شارك في مسابقات جمع الأحرف للحصول على كوبونات</p>
+                      <p className="text-sm text-muted-foreground">{t('cards_no_coupons_available')}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{t('cards_no_coupons_hint')}</p>
                     </div>
                   ) : (
                     userCoupons?.map((coupon) => (
@@ -242,7 +234,7 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="shrink-0">
-                            {coupon.prize_value?.toLocaleString()} د.ع
+                            {coupon.prize_value?.toLocaleString()} {t('common_iqd')}
                           </Badge>
                           <Button 
                             size="sm" 
@@ -265,21 +257,19 @@ export default function CardsSection({ activeSubTab }: CardsSectionProps) {
     );
   }
 
-  // Upgrade sub-tab - Show all levels inline
   if (activeSubTab === 'upgrade') {
     return <LoyaltyLevelsPanel />;
   }
 
-  // Exclusive Offers sub-tab
   if (activeSubTab === 'exclusive-offers') {
     return (
       <div className="space-y-4">
         <Card>
           <CardContent className="p-6 text-center">
             <Gift className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <p className="font-medium mb-2">العروض الحصرية</p>
+            <p className="font-medium mb-2">{t('cards_exclusive_offers')}</p>
             <p className="text-sm text-muted-foreground">
-              عروض خاصة لحاملي البطاقات المميزة - قريباً
+              {t('cards_exclusive_offers_desc')}
             </p>
           </CardContent>
         </Card>

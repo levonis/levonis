@@ -30,6 +30,7 @@ import { SubTabId } from "./RewardsSubTabs";
 import { toast } from "sonner";
 import { format, differenceInDays } from "date-fns";
 import { ar } from "date-fns/locale";
+import { useLanguage } from "@/lib/i18n";
 
 interface InsuranceSectionProps {
   activeSubTab: SubTabId;
@@ -37,6 +38,7 @@ interface InsuranceSectionProps {
 
 export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [expandedPrinter, setExpandedPrinter] = useState<string | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
@@ -44,7 +46,6 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
   const [upgradeDialogOpen, setUpgradeDialogOpen] = useState(false);
   const [subscribeDialogOpen, setSubscribeDialogOpen] = useState(false);
 
-  // Fetch user's printers with subscriptions (joined with store_printers for name)
   const { data: printers, isLoading: loadingPrinters } = useQuery({
     queryKey: ['my-printers-with-subs', user?.id],
     queryFn: async () => {
@@ -68,7 +69,6 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     staleTime: 2 * 60 * 1000,
   });
 
-  // Fetch all protection plans
   const { data: plans, isLoading: loadingPlans } = useQuery({
     queryKey: ['all-protection-plans-section'],
     queryFn: async () => {
@@ -84,7 +84,6 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     staleTime: 5 * 60 * 1000,
   });
 
-  // Fetch wallet balance for subscription payment
   const { data: walletBalance } = useQuery({
     queryKey: ['wallet-balance-insurance', user?.id],
     queryFn: async () => {
@@ -101,10 +100,9 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     staleTime: 2 * 60 * 1000,
   });
 
-  // Subscribe mutation - using secure RPC
   const subscribeMutation = useMutation({
     mutationFn: async ({ printerId, planId, price, isUpgrade, currentSubId }: any) => {
-      if (!user) throw new Error('يجب تسجيل الدخول');
+      if (!user) throw new Error(t('points_login_required'));
 
       const { data, error } = await supabase.rpc('purchase_printer_subscription', {
         p_printer_id: printerId,
@@ -122,14 +120,14 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       queryClient.invalidateQueries({ queryKey: ['wallet-balance-insurance'] });
       queryClient.invalidateQueries({ queryKey: ['wallet'] });
       queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
-      toast.success(data.isUpgrade ? 'تم ترقية الاشتراك بنجاح!' : 'تم الاشتراك بنجاح!');
+      toast.success(data.isUpgrade ? t('insurance_upgrade_success') : t('insurance_subscribe_success'));
       setUpgradeDialogOpen(false);
       setSubscribeDialogOpen(false);
       setSelectedPlan(null);
       setSelectedPrinter(null);
     },
     onError: (error: any) => {
-      toast.error(error.message || 'حدث خطأ');
+      toast.error(error.message || t('common_error'));
     },
   });
 
@@ -145,17 +143,16 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
     return Math.min(currentPlanPrice, newPlanPrice);
   };
 
-  // Filter out printers without valid names - use store_printers join
   const validPrinters = printers?.filter((p: any) => p.store_printers?.model_name_ar && p.store_printers.model_name_ar.trim() !== '') || [];
 
-  // Status sub-tab - Show printers with their status
+  // Status sub-tab
   if (activeSubTab === 'status') {
     if (!user) {
       return (
         <Card>
           <CardContent className="p-6 text-center">
             <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">سجّل الدخول لعرض حالة التأمين</p>
+            <p className="text-muted-foreground">{t('insurance_login_required')}</p>
           </CardContent>
         </Card>
       );
@@ -176,12 +173,12 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
         <Card>
           <CardContent className="p-8 text-center">
             <Printer className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-            <p className="font-medium text-lg">لا توجد طابعات مسجلة</p>
+            <p className="font-medium text-lg">{t('insurance_no_printers')}</p>
             <p className="text-sm text-muted-foreground mt-2">
-              أضف طابعتك للاستفادة من خدمات الحماية والصيانة
+              {t('insurance_no_printers_desc')}
             </p>
-            <Button className="mt-4" onClick={() => toast.info('سيتم فتح نموذج إضافة الطابعة')}>
-              إضافة طابعة
+            <Button className="mt-4" onClick={() => toast.info(t('insurance_add_printer'))}>
+              {t('insurance_add_printer')}
             </Button>
           </CardContent>
         </Card>
@@ -211,17 +208,17 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                           )}
                         </div>
                         <div>
-                          <p className="font-medium">{printer.store_printers?.model_name_ar || 'طابعة غير معروفة'}</p>
+                          <p className="font-medium">{printer.store_printers?.model_name_ar || t('insurance_unknown_printer')}</p>
                           <p className="text-xs text-muted-foreground">
-                            {printer.store_printers?.serial_number || 'بدون رقم تسلسلي'}
+                            {printer.store_printers?.serial_number || t('insurance_no_serial')}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {activeSub ? (
-                          <Badge className="bg-green-500">محمية</Badge>
+                          <Badge className="bg-green-500">{t('insurance_protected')}</Badge>
                         ) : (
-                          <Badge variant="outline">غير محمية</Badge>
+                          <Badge variant="outline">{t('insurance_not_protected')}</Badge>
                         )}
                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </div>
@@ -233,32 +230,30 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                   <div className="px-4 pb-4 border-t pt-4 space-y-3">
                     {activeSub ? (
                       <>
-                        {/* Active Subscription Details */}
                         <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
                           <div className="flex items-center justify-between mb-2">
                             <span className="font-medium text-green-700">
                               {activeSub.protection_plans?.name_ar}
                             </span>
                             <Badge variant="outline" className="text-green-600 border-green-300">
-                              {activeSub.monthly_price?.toLocaleString()} د.ع/شهر
+                              {activeSub.monthly_price?.toLocaleString()} {t('insurance_per_month')}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
-                              بدأ: {format(new Date(activeSub.start_date), 'dd MMM yyyy', { locale: ar })}
+                              {t('insurance_started')}: {format(new Date(activeSub.start_date), 'dd MMM yyyy', { locale: ar })}
                             </span>
                             <span className="flex items-center gap-1">
                               <Clock className="h-3 w-3" />
-                              متبقي: {getDaysRemaining(activeSub.end_date)} يوم
+                              {t('insurance_remaining')}: {getDaysRemaining(activeSub.end_date)} {t('comp_day')}
                             </span>
                           </div>
                         </div>
 
-                        {/* Upgrade Options */}
                         {plans && plans.filter((p: any) => p.monthly_price > activeSub.monthly_price).length > 0 && (
                           <div className="space-y-2">
-                            <p className="text-xs font-medium text-muted-foreground">ترقية الاشتراك:</p>
+                            <p className="text-xs font-medium text-muted-foreground">{t('insurance_upgrade_sub')}</p>
                             {plans
                               .filter((p: any) => p.monthly_price > activeSub.monthly_price)
                               .map((plan: any) => {
@@ -281,9 +276,9 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                                               {plan.monthly_price?.toLocaleString()}
                                             </span>
                                             <span className="text-sm font-bold text-primary">
-                                              {upgradeCost.toLocaleString()} د.ع
+                                              {upgradeCost.toLocaleString()} {t('common_iqd')}
                                             </span>
-                                            <Badge className="bg-amber-500 text-[9px]">خصم {discount.toLocaleString()}</Badge>
+                                            <Badge className="bg-amber-500 text-[9px]">{t('insurance_discount')} {discount.toLocaleString()}</Badge>
                                           </div>
                                         </div>
                                         <Button 
@@ -295,7 +290,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                                           }}
                                         >
                                           <ArrowUp className="h-3 w-3 ml-1" />
-                                          ترقية
+                                          {t('insurance_upgrade')}
                                         </Button>
                                       </div>
                                     </CardContent>
@@ -304,27 +299,25 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                               })}
                             <p className="text-[10px] text-amber-600 flex items-center gap-1">
                               <AlertTriangle className="h-3 w-3" />
-                              الترقية لا تضيف أيام إضافية، فقط تغيير الباقة
+                              {t('insurance_upgrade_note')}
                             </p>
                           </div>
                         )}
 
-                        {/* Actions */}
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="flex-1" onClick={() => toast.info('سيتم فتح الإعدادات')}>
-                            الإعدادات
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => toast.info(t('insurance_settings'))}>
+                            {t('insurance_settings')}
                           </Button>
-                          <Button size="sm" variant="outline" className="flex-1" onClick={() => toast.info('سيتم فتح نموذج الصيانة')}>
+                          <Button size="sm" variant="outline" className="flex-1" onClick={() => toast.info(t('insurance_maintenance_request'))}>
                             <Wrench className="h-3.5 w-3.5 ml-1" />
-                            طلب صيانة
+                            {t('insurance_maintenance_request')}
                           </Button>
                         </div>
                       </>
                     ) : (
                       <>
-                        {/* No Subscription - Show available plans */}
                         <p className="text-sm text-muted-foreground">
-                          هذه الطابعة غير مشمولة بالحماية. اختر باقة لحمايتها:
+                          {t('insurance_no_protection_desc')}
                         </p>
                         {plans?.map((plan: any) => (
                           <Card key={plan.id} className="border-primary/20 hover:shadow-md transition-shadow">
@@ -338,7 +331,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                                     )}
                                   </div>
                                   <p className="text-sm font-bold text-primary mt-0.5">
-                                    {plan.monthly_price?.toLocaleString()} د.ع/شهر
+                                    {plan.monthly_price?.toLocaleString()} {t('insurance_per_month')}
                                   </p>
                                 </div>
                                 <Button 
@@ -349,7 +342,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                                     setSubscribeDialogOpen(true);
                                   }}
                                 >
-                                  اشترك
+                                  {t('insurance_subscribe')}
                                 </Button>
                               </div>
                             </CardContent>
@@ -383,7 +376,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       return (
         <Card>
           <CardContent className="p-6 text-center text-muted-foreground">
-            لا توجد باقات متاحة حالياً
+            {t('insurance_no_plans')}
           </CardContent>
         </Card>
       );
@@ -403,7 +396,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
               {isPopular && (
                 <div className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground text-xs font-bold px-3 py-1.5 flex items-center gap-1 justify-center">
                   <Sparkles className="h-3 w-3" />
-                  الأفضل قيمة
+                  {t('insurance_best_value')}
                 </div>
               )}
               <CardContent className="p-4">
@@ -416,7 +409,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                       )}
                     </div>
                     <p className="text-2xl font-bold text-primary mt-1">
-                      {plan.monthly_price?.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">د.ع/شهر</span>
+                      {plan.monthly_price?.toLocaleString()} <span className="text-sm font-normal text-muted-foreground">{t('insurance_per_month')}</span>
                     </p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -436,7 +429,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
                 )}
 
                 <Button className="w-full mt-4" variant={isPopular ? 'default' : 'outline'}>
-                  اختر هذه الباقة
+                  {t('insurance_choose_plan')}
                 </Button>
               </CardContent>
             </Card>
@@ -453,7 +446,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
         <Card>
           <CardContent className="p-6 text-center">
             <Wrench className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">سجّل الدخول لعرض طلبات الصيانة</p>
+            <p className="text-muted-foreground">{t('insurance_login_maintenance')}</p>
           </CardContent>
         </Card>
       );
@@ -463,12 +456,12 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       <Card>
         <CardContent className="p-8 text-center">
           <Wrench className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-          <p className="font-medium text-lg">طلبات الصيانة والاستبدال</p>
+          <p className="font-medium text-lg">{t('insurance_maintenance_title')}</p>
           <p className="text-sm text-muted-foreground mt-2">
-            هنا يمكنك متابعة طلبات الصيانة وطلب استبدال القطع
+            {t('insurance_maintenance_desc')}
           </p>
-          <Button className="mt-4" onClick={() => toast.info('سيتم فتح نموذج طلب الصيانة')}>
-            طلب صيانة جديد
+          <Button className="mt-4" onClick={() => toast.info(t('insurance_new_maintenance'))}>
+            {t('insurance_new_maintenance')}
           </Button>
         </CardContent>
       </Card>
@@ -481,31 +474,33 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       <AlertDialog open={upgradeDialogOpen} onOpenChange={setUpgradeDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الترقية</AlertDialogTitle>
+            <AlertDialogTitle>{t('insurance_confirm_upgrade')}</AlertDialogTitle>
             <AlertDialogDescription>
               {selectedPlan && selectedPrinter && (
                 <div className="space-y-3 mt-3">
                   <p>
-                    هل تريد ترقية اشتراك <strong>{selectedPrinter.store_printers?.model_name_ar || 'الطابعة'}</strong> إلى باقة <strong>{selectedPlan.name_ar}</strong>؟
+                    {t('insurance_confirm_upgrade_desc')
+                      .replace('{printer}', selectedPrinter.store_printers?.model_name_ar || t('insurance_unknown_printer'))
+                      .replace('{plan}', selectedPlan.name_ar)}
                   </p>
                   <div className="p-3 rounded-lg bg-muted">
                     <div className="flex items-center justify-between text-sm">
-                      <span>التكلفة بعد الخصم:</span>
+                      <span>{t('insurance_cost_after_discount')}</span>
                       <span className="font-bold text-primary text-lg">
-                        {selectedPlan.upgradeCost?.toLocaleString()} د.ع
+                        {selectedPlan.upgradeCost?.toLocaleString()} {t('common_iqd')}
                       </span>
                     </div>
                   </div>
                   <p className="text-xs text-amber-600 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" />
-                    الترقية لا تضيف أيام إضافية، فقط تغيير الباقة
+                    {t('insurance_upgrade_note')}
                   </p>
                 </div>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (selectedPlan && selectedPrinter) {
@@ -523,10 +518,10 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
               {subscribeMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  جاري الترقية...
+                  {t('insurance_upgrading')}
                 </>
               ) : (
-                'تأكيد الترقية'
+                t('insurance_confirm_upgrade_action')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -537,18 +532,20 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
       <AlertDialog open={subscribeDialogOpen} onOpenChange={setSubscribeDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>تأكيد الاشتراك</AlertDialogTitle>
+            <AlertDialogTitle>{t('insurance_confirm_subscribe')}</AlertDialogTitle>
             <AlertDialogDescription>
               {selectedPlan && selectedPrinter && (
                 <div className="space-y-3 mt-3">
                   <p>
-                    هل تريد الاشتراك في باقة <strong>{selectedPlan.name_ar}</strong> لطابعة <strong>{selectedPrinter.store_printers?.model_name_ar || 'الطابعة'}</strong>؟
+                    {t('insurance_confirm_subscribe_desc')
+                      .replace('{plan}', selectedPlan.name_ar)
+                      .replace('{printer}', selectedPrinter.store_printers?.model_name_ar || t('insurance_unknown_printer'))}
                   </p>
                   <div className="p-3 rounded-lg bg-muted">
                     <div className="flex items-center justify-between text-sm">
-                      <span>التكلفة الشهرية:</span>
+                      <span>{t('insurance_monthly_cost')}</span>
                       <span className="font-bold text-primary text-lg">
-                        {selectedPlan.monthly_price?.toLocaleString()} د.ع
+                        {selectedPlan.monthly_price?.toLocaleString()} {t('common_iqd')}
                       </span>
                     </div>
                   </div>
@@ -557,7 +554,7 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>إلغاء</AlertDialogCancel>
+            <AlertDialogCancel>{t('common_cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
                 if (selectedPlan && selectedPrinter) {
@@ -575,10 +572,10 @@ export default function InsuranceSection({ activeSubTab }: InsuranceSectionProps
               {subscribeMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin ml-2" />
-                  جاري الاشتراك...
+                  {t('insurance_subscribing')}
                 </>
               ) : (
-                'تأكيد الاشتراك'
+                t('insurance_confirm_subscribe_action')
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
