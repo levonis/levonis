@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image, Printer, MessageSquare, Clock, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,6 +60,24 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
   const [specialty, setSpecialty] = useState<SpecialtyType>(merchantApp.specialty || "both");
   const [storeLayout, setStoreLayout] = useState<LayoutType>(merchantApp.store_layout || "standard");
   const [frameDialogOpen, setFrameDialogOpen] = useState(false);
+
+  // Sync state with props when dialog opens or merchantApp changes
+  useEffect(() => {
+    if (open) {
+      setDisplayName(merchantApp.display_name);
+      setBio(merchantApp.bio || "");
+      setFacebook(merchantApp.social_links?.facebook || "");
+      setInstagram(merchantApp.social_links?.instagram || "");
+      setStoreImageUrl(merchantApp.store_image_url || "");
+      setSelectedFrameId(merchantApp.selected_frame_id);
+      setSpecialty(merchantApp.specialty || "both");
+      setStoreLayout(merchantApp.store_layout || "standard");
+      setWelcomeMessage(merchantApp.welcome_message || "");
+      setAwayMessage(merchantApp.away_message || "");
+      setInquiryTemplate(merchantApp.inquiry_template || "لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟");
+      setIsAway(merchantApp.is_away || false);
+    }
+  }, [open, merchantApp]);
   const [uploading, setUploading] = useState(false);
   
   // Auto-response settings
