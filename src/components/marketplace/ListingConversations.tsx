@@ -666,38 +666,40 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     enabled: !!user,
   });
   
-  // Determine if this is a support/admin chat (with SUPPORT_USER_ID)
-  const isSupportConversation = selectedConv?.buyer_id === SUPPORT_USER_ID || selectedConv?.seller_id === SUPPORT_USER_ID;
-  
-  // Everyone can send products (from different sources based on context)
-  // - Merchant: sends from their own products
-  // - Customer talking to merchant: sends from that merchant's products  
-  // - Customer/Admin talking in support: sends from site products
-  const canSendProducts = true;
-  
-  // Determine if we should use site products (admin/support chats) or merchant products
-  const useSiteProducts = isAdmin || isSupportConversation;
-  
-  // For merchant product selector, determine the merchant_applications.id
-  // listing_id stores the user_id of the other party, so we need to resolve it to merchant_applications.id
-  const otherPartyUserId = selectedConv ? (selectedConv.buyer_id === effectiveUserId ? selectedConv.seller_id : selectedConv.buyer_id) : null;
-  
-  const { data: otherPartyMerchantApp } = useQuery({
-    queryKey: ['other-party-merchant-app', otherPartyUserId],
-    queryFn: async () => {
-      if (!otherPartyUserId) return null;
-      const { data } = await supabase
-        .from('merchant_applications')
-        .select('id')
-        .eq('user_id', otherPartyUserId)
-        .eq('status', 'approved')
-        .maybeSingle();
-      return data;
-    },
-    enabled: !!otherPartyUserId && !useSiteProducts,
-  });
-  
-  const productSelectorMerchantId = currentUserMerchant?.id || otherPartyMerchantApp?.id || '';
+   // Determine if this is a support/admin chat (with SUPPORT_USER_ID)
+   const isSupportConversation = selectedConv?.buyer_id === SUPPORT_USER_ID || selectedConv?.seller_id === SUPPORT_USER_ID;
+   
+   // Everyone can send products (from different sources based on context)
+   const canSendProducts = true;
+   
+   // Product selection logic:
+   // 1. Support conversations → site products (for ALL users: customers, merchants, admins)
+   // 2. Merchant talking to customer → merchant's OWN products
+   // 3. Customer talking to merchant → that MERCHANT's products
+   const useSiteProducts = isSupportConversation || isAdmin;
+   
+   // For merchant product selector, determine the correct merchant_applications.id
+   const otherPartyUserId = selectedConv ? (selectedConv.buyer_id === effectiveUserId ? selectedConv.seller_id : selectedConv.buyer_id) : null;
+   
+   const { data: otherPartyMerchantApp } = useQuery({
+     queryKey: ['other-party-merchant-app', otherPartyUserId],
+     queryFn: async () => {
+       if (!otherPartyUserId) return null;
+       const { data } = await supabase
+         .from('merchant_applications')
+         .select('id')
+         .eq('user_id', otherPartyUserId)
+         .eq('status', 'approved')
+         .maybeSingle();
+       return data;
+     },
+     enabled: !!otherPartyUserId && !useSiteProducts,
+   });
+   
+   // Merchant → own products; Customer → other party's merchant products
+   const productSelectorMerchantId = useSiteProducts 
+     ? '' 
+     : (currentUserMerchant?.id || otherPartyMerchantApp?.id || '');
   
   // Only seller and admin can create orders (not customer)
   const canCreateOrderInChat = isSeller || isAdmin;
