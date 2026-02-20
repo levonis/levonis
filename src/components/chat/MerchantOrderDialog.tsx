@@ -70,7 +70,7 @@ export default function MerchantOrderDialog({
   const [price, setPrice] = useState<number>(initialPrice);
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState('');
-  const [shippingPrice, setShippingPrice] = useState<number>(0);
+  const [shippingPrice, setShippingPrice] = useState<number>(5000);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('full');
   const [partialPaymentPercent, setPartialPaymentPercent] = useState(50);
   const [acceptedWarning, setAcceptedWarning] = useState(false);
@@ -87,7 +87,7 @@ export default function MerchantOrderDialog({
       setDescription('');
       setQuantity(1);
       setNotes('');
-      setShippingPrice(0);
+      setShippingPrice(5000);
       setPaymentMethod('full');
       setPartialPaymentPercent(50);
       setAcceptedWarning(false);

@@ -660,10 +660,7 @@ function CommunitySettings() {
         <AdSlotPricingSettings />
       </div>
 
-      {/* Delivery Pricing - Full Width */}
-      <div className="sm:col-span-2">
-        <DeliveryPricingSettings />
-      </div>
+      {/* Delivery pricing is managed per-merchant from their store settings (default 5000 IQD) */}
     </div>
   );
 }
