@@ -215,7 +215,7 @@ export default function PrintRequestDetailModal({
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="flex-1 min-h-0 overflow-auto">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
             <div className="p-4 space-y-4">
               {/* Media Gallery - Video first */}
               {mediaItems.length > 0 && (
@@ -448,7 +448,7 @@ export default function PrintRequestDetailModal({
                 )}
               </div>
             </div>
-          </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
 

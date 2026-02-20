@@ -3094,6 +3094,7 @@ export type Database = {
           bio: string | null
           city: string | null
           created_at: string
+          delivery_price_iqd: number | null
           display_name: string | null
           id: string
           is_verified: boolean
@@ -3110,6 +3111,7 @@ export type Database = {
           bio?: string | null
           city?: string | null
           created_at?: string
+          delivery_price_iqd?: number | null
           display_name?: string | null
           id: string
           is_verified?: boolean
@@ -3126,6 +3128,7 @@ export type Database = {
           bio?: string | null
           city?: string | null
           created_at?: string
+          delivery_price_iqd?: number | null
           display_name?: string | null
           id?: string
           is_verified?: boolean

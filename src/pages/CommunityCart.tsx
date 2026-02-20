@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ArrowLeft, ShoppingBag, Trash2, Plus, Minus, Store, 
-  Package, Sparkles, MessageCircle, ShoppingCart
+  Package, Sparkles, MessageCircle, ShoppingCart, Truck
 } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
@@ -47,22 +47,41 @@ export default function CommunityCart() {
     },
   });
 
+  // Fetch delivery prices for merchants in cart
+  const merchantIds = [...new Set(cartItems.map(i => i.merchant_id))];
+  const { data: merchantDeliveryPrices = {} } = useQuery({
+    queryKey: ["merchant-delivery-prices", merchantIds],
+    enabled: merchantIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("merchant_public_profiles")
+        .select("id, delivery_price_iqd")
+        .in("id", merchantIds);
+      const map: Record<string, number> = {};
+      data?.forEach(m => { map[m.id] = (m as any).delivery_price_iqd || 0; });
+      return map;
+    },
+  });
+
   const groupedItems = useMemo(() => {
-    const groups: Record<string, { merchantName: string; merchantId: string; items: CartItem[] }> = {};
+    const groups: Record<string, { merchantName: string; merchantId: string; items: CartItem[]; deliveryPrice: number }> = {};
     cartItems.forEach(item => {
       if (!groups[item.merchant_id]) {
         groups[item.merchant_id] = {
           merchantName: item.merchant_name || "متجر",
           merchantId: item.merchant_id,
           items: [],
+          deliveryPrice: merchantDeliveryPrices[item.merchant_id] || 0,
         };
       }
       groups[item.merchant_id].items.push(item);
     });
     return Object.values(groups);
-  }, [cartItems]);
+  }, [cartItems, merchantDeliveryPrices]);
 
-  const totalPrice = cartItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
+  const productsTotal = cartItems.reduce((sum, item) => sum + (item.product_price * item.quantity), 0);
+  const deliveryTotal = groupedItems.reduce((sum, g) => sum + g.deliveryPrice, 0);
+  const totalPrice = productsTotal + deliveryTotal;
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
   const updateQuantity = useMutation({
@@ -260,11 +279,25 @@ export default function CommunityCart() {
 
             {/* Order from merchant */}
             <div className="p-3.5 bg-gradient-to-l from-primary/5 to-transparent border-t border-border/20">
-              <div className="flex items-center justify-between mb-2.5">
-                <span className="text-[10px] text-muted-foreground">مجموع المتجر</span>
-                <span className="text-sm font-black text-primary">
-                  {group.items.reduce((s, i) => s + i.product_price * i.quantity, 0).toLocaleString()} د.ع
-                </span>
+              <div className="space-y-1.5 mb-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">مجموع المنتجات</span>
+                  <span className="text-xs font-bold text-foreground">
+                    {group.items.reduce((s, i) => s + i.product_price * i.quantity, 0).toLocaleString()} د.ع
+                  </span>
+                </div>
+                {group.deliveryPrice > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Truck className="h-3 w-3" />التوصيل</span>
+                    <span className="text-xs font-bold text-foreground">{group.deliveryPrice.toLocaleString()} د.ع</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-1 border-t border-border/20">
+                  <span className="text-[10px] font-bold text-foreground">الإجمالي</span>
+                  <span className="text-sm font-black text-primary">
+                    {(group.items.reduce((s, i) => s + i.product_price * i.quantity, 0) + group.deliveryPrice).toLocaleString()} د.ع
+                  </span>
+                </div>
               </div>
               <Button
                 className="w-full h-10 text-xs gap-2 rounded-xl font-bold shadow-md shadow-primary/15"

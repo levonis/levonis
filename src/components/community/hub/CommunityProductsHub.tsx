@@ -253,6 +253,7 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
               merchantFrameUrl={merchant?.frameUrl}
               onOpenStore={() => onOpenStore(p.merchant_id)}
               onProductClick={() => handleProductClick(p)}
+              onContact={() => navigate(`/community/messages?merchant_id=${p.merchant_id}`)}
             />
           );
         })}
