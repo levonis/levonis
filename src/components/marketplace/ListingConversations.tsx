@@ -666,9 +666,25 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     enabled: !!user,
   });
   
-  // User can send products if they are the seller OR if they are a registered merchant
-  // Always show for seller in this conversation, or any registered merchant
-  const canSendProducts = isSeller || !!currentUserMerchant;
+  // Determine if this is a support/admin chat (with SUPPORT_USER_ID)
+  const isSupportConversation = selectedConv?.buyer_id === SUPPORT_USER_ID || selectedConv?.seller_id === SUPPORT_USER_ID;
+  
+  // Everyone can send products (from different sources based on context)
+  // - Merchant: sends from their own products
+  // - Customer talking to merchant: sends from that merchant's products  
+  // - Customer/Admin talking in support: sends from site products
+  const canSendProducts = true;
+  
+  // Determine if we should use site products (admin/support chats) or merchant products
+  const useSiteProducts = isAdmin || isSupportConversation;
+  
+  // For merchant product selector, determine the merchant ID
+  // If current user is merchant, use their ID. If customer talking to merchant, use the other party's merchant ID.
+  const otherPartyMerchantId = selectedConv?.listing_id || '';
+  const productSelectorMerchantId = currentUserMerchant?.id || otherPartyMerchantId;
+  
+  // Only seller and admin can create orders (not customer)
+  const canCreateOrderInChat = isSeller || isAdmin;
 
   // Chat Commerce Hook
   const chatCommerce = useChatCommerce({
@@ -1547,13 +1563,14 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     isMe={isMe}
                                     timestamp={timestamp}
                                     userRole={chatCommerce.userRole}
+                                    canCreateOrder={canCreateOrderInChat}
                                     onProductClick={() => {
                                       const merchantAppId = selectedConv?.listing_id;
                                       if (merchantAppId) {
                                         navigate(`/store/${merchantAppId}`);
                                       }
                                     }}
-                                    onCreateOrder={() => {
+                                    onCreateOrder={canCreateOrderInChat ? () => {
                                       setSelectedProductForOrder({
                                         id: msg.id,
                                         title: productName,
@@ -1561,16 +1578,15 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                         price: price,
                                       });
                                       setCreateOrderDialogOpen(true);
-                                    }}
-                                    onEditOrder={() => {
-                                      // Merchant edits product to create custom order
+                                    } : undefined}
+                                    onEditOrder={canCreateOrderInChat ? () => {
                                       setMerchantOrderInitialData({
                                         title: productName,
                                         price: price,
                                         image: msg.image_url,
                                       });
                                       setMerchantOrderDialogOpen(true);
-                                    }}
+                                    } : undefined}
                                   />
                                 );
                               }
@@ -1787,17 +1803,16 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                 <ProductSelector
                   open={productSelectorOpen}
                   onOpenChange={setProductSelectorOpen}
-                  merchantId={currentUserMerchant?.id || ''}
+                  merchantId={productSelectorMerchantId}
+                  useSiteProducts={useSiteProducts}
                   onSelectProduct={async (product) => {
-                    // Send product as a message
-                    const primaryIndex = product.primary_image_index || 0;
-                    const imageUrl = product.image_urls?.[primaryIndex] || product.image_urls?.[0];
-                    const productMessage = `📦 ${product.title}\n💰 ${product.price_iqd?.toLocaleString() || 0} د.ع`;
+                    const effectiveSenderId = isAdmin ? SUPPORT_USER_ID : user?.id;
+                    const productMessage = `📦 ${product.title}\n💰 ${product.price?.toLocaleString() || 0} د.ع`;
                     const { error } = await supabase.from('listing_messages').insert({
                       conversation_id: selectedConversation,
-                      sender_id: user?.id,
+                      sender_id: effectiveSenderId,
                       content: productMessage,
-                      image_url: imageUrl,
+                      image_url: product.imageUrl,
                     });
                     if (!error) {
                       queryClient.invalidateQueries({ queryKey: ['listing-messages', selectedConversation] });
@@ -1805,10 +1820,10 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       toast.success('تم إرسال المنتج');
                     }
                   }}
-                  onCreateCustomOrder={() => {
+                  onCreateCustomOrder={canCreateOrderInChat ? () => {
                     setMerchantOrderInitialData(null);
                     setMerchantOrderDialogOpen(true);
-                  }}
+                  } : undefined}
                 />
                 
                 {/* Price Change Dialog - Seller Only */}

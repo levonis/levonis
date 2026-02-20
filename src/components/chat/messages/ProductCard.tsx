@@ -1,4 +1,4 @@
-import { Package, ShoppingCart, Edit, ExternalLink } from 'lucide-react';
+import { Package, ShoppingCart, Edit, ExternalLink, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -14,6 +14,7 @@ interface ProductCardProps {
   isMe: boolean;
   timestamp: string;
   userRole?: ChatRole;
+  canCreateOrder?: boolean;
   onCreateOrder?: () => void;
   onEditOrder?: () => void;
   onProductClick?: (productId: string) => void;
@@ -29,19 +30,17 @@ export default function ProductCard({
   isMe,
   timestamp,
   userRole = 'customer',
+  canCreateOrder = false,
   onCreateOrder,
   onEditOrder,
   onProductClick,
 }: ProductCardProps) {
-  const isSeller = userRole === 'seller';
-  const isCustomer = userRole === 'customer';
-
   return (
     <div className={cn("flex my-2", isMe ? "justify-start" : "justify-end")}>
-      <div className="w-[260px] rounded-2xl overflow-hidden border border-border/60 bg-card shadow-lg">
-        {/* Product Image - hero style */}
+      <div className="w-[250px] rounded-2xl overflow-hidden border border-primary/20 bg-gradient-to-b from-card to-background shadow-md">
+        {/* Product Image */}
         <div
-          className="relative h-36 bg-muted cursor-pointer group"
+          className="relative h-32 bg-background cursor-pointer group overflow-hidden"
           onClick={() => onProductClick?.(productId)}
         >
           {imageUrl ? (
@@ -51,71 +50,74 @@ export default function ProductCard({
               className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
           ) : (
-            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/60">
-              <Package className="h-10 w-10 text-muted-foreground/30" />
+            <div className="h-full w-full flex items-center justify-center">
+              <Package className="h-10 w-10 text-primary/20" />
             </div>
           )}
           {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-          {/* Badge */}
-          <div className="absolute top-2.5 start-2.5 flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/90 backdrop-blur-sm">
-            <Package className="h-3 w-3 text-primary-foreground" />
-            <span className="text-[10px] font-bold text-primary-foreground">منتج</span>
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
+          
+          {/* Badge top-start */}
+          <div className="absolute top-2 start-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-card/80 backdrop-blur-sm border border-primary/20">
+            <Sparkles className="h-2.5 w-2.5 text-primary" />
+            <span className="text-[9px] font-bold text-primary">منتج</span>
           </div>
-          {/* External link icon */}
+
+          {/* View button top-end */}
           <button
             onClick={(e) => { e.stopPropagation(); onProductClick?.(productId); }}
-            className="absolute top-2.5 end-2.5 p-1.5 rounded-full bg-black/30 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/50 transition-colors"
+            className="absolute top-2 end-2 p-1.5 rounded-full bg-card/60 backdrop-blur-sm border border-primary/15 text-foreground/70 hover:text-primary hover:border-primary/40 transition-colors"
           >
-            <ExternalLink className="h-3.5 w-3.5" />
+            <ExternalLink className="h-3 w-3" />
           </button>
-          {/* Price on image */}
-          <div className="absolute bottom-2.5 start-2.5">
-            <p className="text-lg font-black text-white drop-shadow-lg">
+
+          {/* Price overlay bottom */}
+          <div className="absolute bottom-0 inset-x-0 px-3 py-2">
+            <p className="text-base font-black text-foreground drop-shadow-sm">
               {price.toLocaleString()}
-              <span className="text-xs font-medium mr-1 opacity-80">{currency}</span>
+              <span className="text-[10px] font-medium text-primary mr-1">{currency}</span>
             </p>
           </div>
         </div>
 
         {/* Product Info */}
-        <div className="p-3 space-y-2.5">
+        <div className="px-3 pt-1.5 pb-2 space-y-2">
           <h3
-            className="font-bold text-sm leading-snug line-clamp-2 text-foreground cursor-pointer hover:text-primary transition-colors"
+            className="font-bold text-[13px] leading-snug line-clamp-2 text-foreground cursor-pointer hover:text-primary transition-colors"
             onClick={() => onProductClick?.(productId)}
           >
             {title}
           </h3>
 
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            {isSeller && onEditOrder && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="flex-1 h-9 text-xs rounded-xl border-primary/30 text-primary hover:bg-primary/10 gap-1.5"
-                onClick={(e) => { e.stopPropagation(); onEditOrder(); }}
-              >
-                <Edit className="h-3.5 w-3.5" />
-                تعديل وإنشاء طلب
-              </Button>
-            )}
-            {isCustomer && onCreateOrder && (
-              <Button
-                size="sm"
-                className="flex-1 h-9 text-xs rounded-xl gap-1.5"
-                onClick={(e) => { e.stopPropagation(); onCreateOrder(); }}
-              >
-                <ShoppingCart className="h-3.5 w-3.5" />
-                طلب المنتج
-              </Button>
-            )}
-          </div>
-        </div>
+          {/* Action Buttons - Only for seller/admin who can create orders */}
+          {canCreateOrder && (
+            <div className="flex gap-1.5">
+              {userRole === 'seller' && onEditOrder && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-8 text-[11px] rounded-xl border-primary/25 text-primary hover:bg-primary/10 gap-1"
+                  onClick={(e) => { e.stopPropagation(); onEditOrder(); }}
+                >
+                  <Edit className="h-3 w-3" />
+                  إنشاء طلب
+                </Button>
+              )}
+              {userRole === 'customer' && onCreateOrder && (
+                <Button
+                  size="sm"
+                  className="flex-1 h-8 text-[11px] rounded-xl gap-1"
+                  onClick={(e) => { e.stopPropagation(); onCreateOrder(); }}
+                >
+                  <ShoppingCart className="h-3 w-3" />
+                  طلب المنتج
+                </Button>
+              )}
+            </div>
+          )}
 
-        {/* Timestamp */}
-        <div className="px-3 pb-2 text-[10px] text-muted-foreground text-start">
-          {timestamp}
+          {/* Timestamp */}
+          <p className="text-[9px] text-muted-foreground/70 text-start">{timestamp}</p>
         </div>
       </div>
     </div>
