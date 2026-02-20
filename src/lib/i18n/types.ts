@@ -59,6 +59,11 @@ export type TranslationKeys = {
   common_total: string;
   common_iqd: string;
   common_or: string;
+  common_new: string;
+  common_general: string;
+  common_update: string;
+  common_view_details: string;
+  common_browse_products: string;
   
   // Auth
   auth_login: string;
@@ -189,6 +194,8 @@ export type TranslationKeys = {
   products_browse: string;
 
   // Category
+  category_all: string;
+  category_browse_desc: string;
   category_no_products: string;
   category_not_found: string;
   category_back: string;
@@ -198,20 +205,61 @@ export type TranslationKeys = {
   user_info_desc: string;
   
   // Orders
+  order_title: string;
+  order_desc: string;
+  order_number: string;
   order_status: string;
   order_pending: string;
+  order_confirmed: string;
   order_processing: string;
+  order_arrived_warehouse: string;
   order_shipped: string;
+  order_arrived_iraq: string;
+  order_on_the_way: string;
   order_delivered: string;
   order_cancelled: string;
   order_details: string;
   order_tracking: string;
   order_date: string;
+  order_no_orders: string;
+  order_no_orders_desc: string;
+  order_shipping_info: string;
+  order_address: string;
+  order_governorate: string;
+  order_tracking_info: string;
+  order_shipping_company: string;
+  order_tracking_number: string;
+  order_track_shipment: string;
+  order_ship_date: string;
+  order_shipping_notes: string;
+  order_products: string;
+  order_option: string;
+  order_color: string;
+  order_custom_request: string;
+  order_direct: string;
+  order_pre_order: string;
+  order_more_products: string;
+  order_view_full: string;
   
   // Notifications
   notif_title: string;
   notif_empty: string;
   notif_mark_read: string;
+  notif_mark_all_read: string;
+  notif_unread_count: string;
+  notif_all_read: string;
+  notif_marked_read: string;
+  notif_all_marked_read: string;
+  notif_telegram_title: string;
+  notif_telegram_desc: string;
+  notif_telegram_get_id: string;
+  notif_telegram_open_bot: string;
+  notif_telegram_paste: string;
+  notif_telegram_id_label: string;
+  notif_telegram_saved: string;
+  notif_telegram_removed: string;
+  notif_telegram_active: string;
+  notif_telegram_save_error: string;
   
   // PWA
   pwa_install_title: string;
@@ -228,10 +276,36 @@ export type TranslationKeys = {
   
   // Community
   community_title: string;
+  community_levo: string;
   community_browse_requests: string;
   community_my_requests: string;
   community_new_request: string;
   community_merchants: string;
+  community_messages: string;
+  community_manage_store: string;
+  community_orders: string;
+  community_customer_requests: string;
+  community_my_profile: string;
+  community_complete_profile: string;
+  community_complete_profile_access: string;
+  community_merchant_pending: string;
+  community_merchant_complete: string;
+  community_merchant_rejected: string;
+  community_merchant_reason: string;
+  community_search_placeholder: string;
+  community_open_messages: string;
+
+  // Favorites
+  favorites_title: string;
+  favorites_desc: string;
+  favorites_empty: string;
+  favorites_empty_desc: string;
+  favorites_added: string;
+  favorites_removed: string;
+  favorites_add_to_cart: string;
+  favorites_error: string;
+  favorites_remove_error: string;
+  favorites_cart_added: string;
   
   // Competitions
   competitions_title: string;
