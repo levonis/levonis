@@ -46,8 +46,10 @@ function InstallCard({ onDismiss }: { onDismiss: () => void }) {
     }
   };
 
-  // Hide if installed or no native install prompt available
-  if (isInstalled || !deferredPrompt) return null;
+  // Hide if already installed or not on mobile
+  if (isInstalled) return null;
+  // Hide on desktop browsers that aren't mobile
+  if (!isMobileBrowser() && !deferredPrompt) return null;
 
   return (
     <div className="relative rounded-2xl border border-border bg-background/95 backdrop-blur-xl shadow-2xl p-4">
@@ -68,7 +70,7 @@ function InstallCard({ onDismiss }: { onDismiss: () => void }) {
         </div>
       </div>
       <Button
-        onClick={handleInstall}
+        onClick={deferredPrompt ? handleInstall : onDismiss}
         className="w-full mt-3 bg-primary text-primary-foreground hover:bg-primary/90 gap-2"
         size="sm"
       >
