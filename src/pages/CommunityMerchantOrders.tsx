@@ -81,13 +81,13 @@ export default function CommunityMerchantOrders() {
   });
 
   const { data: myOffers = [], isLoading: offersLoading } = useQuery({
-    queryKey: ["merchant-offers", user?.id],
-    enabled: !!user?.id && !!merchantApp,
+    queryKey: ["merchant-offers", merchantApp?.id],
+    enabled: !!merchantApp?.id,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("print_offers")
         .select("id, request_id, trader_id, price_iqd, duration_days, status, created_at, accepted_at, offer_sent_at")
-        .eq("trader_id", user!.id)
+        .eq("trader_id", merchantApp!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as PrintOfferRow[];
@@ -248,48 +248,47 @@ export default function CommunityMerchantOrders() {
       <main className="container mx-auto px-4 py-8 pt-20 max-w-3xl space-y-5">
         {/* Header */}
         <header className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20">
-              <ClipboardList className="h-5 w-5 text-primary" />
+          <div className="flex items-center gap-2">
+            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
+              <ClipboardList className="h-4 w-4 text-primary" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-foreground">إدارة الطلبات</h1>
-              <p className="text-xs text-muted-foreground">{financialAnalytics.totalOrders} طلب · {financialAnalytics.completedOrders} مكتمل</p>
+              <h1 className="text-base font-black text-foreground">إدارة الطلبات</h1>
+              <p className="text-[10px] text-muted-foreground">{financialAnalytics.totalOrders} طلب · {financialAnalytics.completedOrders} مكتمل</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate("/community")}>
-            <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-            رجوع
+          <Button variant="outline" size="sm" className="h-7 text-[10px]" onClick={() => navigate("/community")}>
+            <ArrowRight className="ml-1 h-3 w-3" />رجوع
           </Button>
         </header>
 
         {/* Financial Summary - Compact */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-            <div className="text-[10px] text-muted-foreground mb-0.5">هذا الشهر</div>
-            <div className="text-lg font-black text-emerald-500 tabular-nums">
+        <div className="grid grid-cols-4 gap-1.5">
+          <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+            <div className="text-[8px] text-muted-foreground">هذا الشهر</div>
+            <div className="text-sm font-black text-emerald-500 tabular-nums">
               {financialAnalytics.thisMonthRevenue.toLocaleString()}
-              <span className="text-[9px] font-normal mr-0.5">د.ع</span>
+              <span className="text-[7px] font-normal mr-0.5">د.ع</span>
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
-            <div className="text-[10px] text-muted-foreground mb-0.5">الشهر الماضي</div>
-            <div className="text-lg font-bold text-foreground tabular-nums">
+          <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+            <div className="text-[8px] text-muted-foreground">الماضي</div>
+            <div className="text-sm font-bold text-foreground tabular-nums">
               {financialAnalytics.lastMonthRevenue.toLocaleString()}
-              <span className="text-[9px] font-normal mr-0.5">د.ع</span>
+              <span className="text-[7px] font-normal mr-0.5">د.ع</span>
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
-            <div className="text-[10px] text-muted-foreground mb-0.5">الإجمالي</div>
-            <div className="text-lg font-bold text-foreground tabular-nums">
+          <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+            <div className="text-[8px] text-muted-foreground">الإجمالي</div>
+            <div className="text-sm font-bold text-foreground tabular-nums">
               {financialAnalytics.totalRevenue.toLocaleString()}
-              <span className="text-[9px] font-normal mr-0.5">د.ع</span>
+              <span className="text-[7px] font-normal mr-0.5">د.ع</span>
             </div>
           </div>
-          <div className="p-3 rounded-xl bg-muted/30 border border-border/50">
-            <div className="text-[10px] text-muted-foreground mb-0.5">النمو</div>
-            <div className={`text-lg font-black tabular-nums flex items-center gap-1 ${financialAnalytics.growth >= 0 ? "text-emerald-500" : "text-destructive"}`}>
-              {financialAnalytics.growth >= 0 ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownRight className="h-4 w-4" />}
+          <div className="p-2 rounded-lg bg-muted/30 border border-border/50">
+            <div className="text-[8px] text-muted-foreground">النمو</div>
+            <div className={`text-sm font-black tabular-nums flex items-center gap-0.5 ${financialAnalytics.growth >= 0 ? "text-emerald-500" : "text-destructive"}`}>
+              {financialAnalytics.growth >= 0 ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
               {Math.abs(financialAnalytics.growth).toFixed(0)}%
             </div>
           </div>
@@ -323,17 +322,17 @@ export default function CommunityMerchantOrders() {
 
         {/* Orders List */}
         {filteredOffers.length === 0 ? (
-          <div className="rounded-2xl border border-border bg-card p-10 text-center">
-            <Package className="h-12 w-12 text-muted-foreground/20 mx-auto mb-3" />
-            <p className="text-sm text-muted-foreground mb-4">
+          <div className="rounded-xl border border-border bg-card p-6 text-center">
+            <Package className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground mb-3">
               {activeFilter === "all" ? "لا توجد طلبات بعد" : `لا توجد طلبات بهذه الحالة`}
             </p>
             {activeFilter === "all" && (
-              <Button size="sm" onClick={() => navigate("/community/requests")}>تصفح طلبات العملاء</Button>
+              <Button size="sm" className="text-xs h-7" onClick={() => navigate("/community/requests")}>تصفح طلبات الزبائن</Button>
             )}
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-1.5">
             {filteredOffers.map((offer) => {
               const req = requestsMap.get(offer.request_id);
               const statusInfo = getStatusBadge(offer, req);
@@ -342,88 +341,64 @@ export default function CommunityMerchantOrders() {
               const mainImage = req?.images?.[0] || req?.image_url;
               
               return (
-                <div key={offer.id} className="rounded-2xl border border-border/50 bg-card overflow-hidden hover:border-primary/30 transition-all">
-                  <div className="p-3">
-                    <div className="flex gap-3">
-                      {/* Image */}
-                      {mainImage && (
-                        <div className="w-14 h-14 rounded-xl bg-muted overflow-hidden shrink-0">
-                          <img src={mainImage} alt="" className="w-full h-full object-cover" />
-                        </div>
-                      )}
+                <div key={offer.id} className="rounded-xl border border-border/50 bg-card overflow-hidden hover:border-primary/30 transition-all p-2.5">
+                  <div className="flex gap-2.5">
+                    {/* Image */}
+                    {mainImage && (
+                      <div className="w-10 h-10 rounded-lg bg-muted overflow-hidden shrink-0">
+                        <img src={mainImage} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
 
-                      <div className="flex-1 min-w-0">
-                        {/* Title & Status */}
-                        <div className="flex items-start justify-between gap-2 mb-1">
-                          <h3 className="font-bold text-sm text-foreground truncate">
-                            {req?.title || "طلب #" + offer.request_id.slice(0, 6)}
-                          </h3>
-                          <Badge variant="outline" className={`shrink-0 text-[8px] ${statusInfo.color} border`}>
-                            {statusInfo.label}
-                          </Badge>
-                        </div>
+                    <div className="flex-1 min-w-0">
+                      {/* Title & Status */}
+                      <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                        <h3 className="font-bold text-xs text-foreground truncate">
+                          {req?.title || "طلب #" + offer.request_id.slice(0, 6)}
+                        </h3>
+                        <Badge variant="outline" className={`shrink-0 text-[7px] px-1.5 py-0 h-4 ${statusInfo.color} border`}>
+                          {statusInfo.label}
+                        </Badge>
+                      </div>
 
-                        {/* Customer & Meta */}
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <div className="flex items-center gap-1.5">
-                            <Avatar className="h-4 w-4">
-                              <AvatarImage src={customer?.avatar_url || undefined} />
-                              <AvatarFallback className="text-[6px] bg-muted"><User className="h-2.5 w-2.5" /></AvatarFallback>
-                            </Avatar>
-                            <span className="text-[10px] text-muted-foreground truncate max-w-[80px]">
-                              {customer?.full_name || "عميل"}
-                            </span>
-                          </div>
+                      {/* Customer + Price row */}
+                      <div className="flex items-center justify-between gap-1">
+                        <div className="flex items-center gap-1.5">
+                          <Avatar className="h-3.5 w-3.5">
+                            <AvatarImage src={customer?.avatar_url || undefined} />
+                            <AvatarFallback className="text-[5px] bg-muted"><User className="h-2 w-2" /></AvatarFallback>
+                          </Avatar>
+                          <span className="text-[9px] text-muted-foreground truncate max-w-[60px]">
+                            {customer?.full_name || "عميل"}
+                          </span>
                           {req?.customer_governorate && (
-                            <span className="text-[9px] text-muted-foreground">📍 {req.customer_governorate}</span>
+                            <span className="text-[8px] text-muted-foreground">📍{req.customer_governorate}</span>
                           )}
                         </div>
-
-                        {/* Price & Duration */}
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3 text-primary" />
-                            <span className="font-bold text-sm text-primary tabular-nums">{offer.price_iqd.toLocaleString()}</span>
-                            <span className="text-[8px] text-primary/60">د.ع</span>
-                          </div>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                            <Clock className="h-2.5 w-2.5" />
-                            {offer.duration_days} يوم
-                          </span>
-                          <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
-                            <Calendar className="h-2.5 w-2.5" />
-                            {new Date(offer.created_at).toLocaleDateString("ar-IQ")}
-                          </span>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="font-bold text-xs text-primary tabular-nums">{offer.price_iqd.toLocaleString()}</span>
+                          <span className="text-[7px] text-primary/60">د.ع</span>
+                          <span className="text-[8px] text-muted-foreground">· {offer.duration_days}ي</span>
                         </div>
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    {(actions.length > 0) && (
-                      <div className="flex gap-1.5 mt-2.5 pt-2.5 border-t border-border/30">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-[10px] gap-1"
-                          onClick={() => navigate(`/community/messages?merchant_id=${merchantApp.id}&request_id=${offer.request_id}`)}
-                        >
-                          <MessageSquare className="h-3 w-3" />
-                          مراسلة
-                        </Button>
-                        {actions.map((action) => (
-                          <Button
-                            key={action.status}
-                            size="sm"
-                            className="h-7 text-[10px] gap-1"
-                            onClick={() => { setUpdateStatusOffer(offer); setNewStatus(action.status); }}
-                          >
-                            <action.icon className="h-3 w-3" />
-                            {action.label}
-                          </Button>
-                        ))}
-                      </div>
-                    )}
                   </div>
+
+                  {/* Actions */}
+                  {(actions.length > 0) && (
+                    <div className="flex gap-1 mt-2 pt-2 border-t border-border/30">
+                      <Button size="sm" variant="outline" className="h-6 text-[9px] gap-0.5 px-2"
+                        onClick={() => navigate(`/community/messages?merchant_id=${merchantApp.id}&request_id=${offer.request_id}`)}>
+                        <MessageSquare className="h-2.5 w-2.5" />مراسلة
+                      </Button>
+                      {actions.map((action) => (
+                        <Button key={action.status} size="sm" className="h-6 text-[9px] gap-0.5 px-2"
+                          onClick={() => { setUpdateStatusOffer(offer); setNewStatus(action.status); }}>
+                          <action.icon className="h-2.5 w-2.5" />{action.label}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
