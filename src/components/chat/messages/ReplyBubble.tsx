@@ -16,8 +16,8 @@ export default function ReplyBubble({ senderName, content, isMe, isParentMe, onC
       className={cn(
         "w-full text-right rounded-lg px-2.5 py-1.5 mb-1 border-r-2 border-primary/60",
         isParentMe 
-          ? "bg-primary-foreground/10" 
-          : "bg-muted/50"
+          ? "bg-black/20" 
+          : "bg-muted"
       )}
     >
       <p className="text-[10px] font-bold text-primary truncate">
