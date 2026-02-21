@@ -19,6 +19,13 @@ const SECTION_LABELS: Record<string, string> = {
   ratings: "⭐ التقييمات والسمعة",
   delivery: "🚚 إعدادات التوصيل",
   settings: "⚙️ إعدادات المتجر المتقدمة",
+  giveaways: "🎁 الهدايا والسحوبات",
+  ads: "📢 إعلانات المتجر المدفوعة",
+  cart: "🛒 سلة التسوق المجتمعية",
+  discounts: "🏷️ الخصومات والكوبونات",
+  dashboard: "📊 لوحة التحكم الاحترافية",
+  complaints: "🛡️ الشكاوى والدعم",
+  customers: "💜 بناء قاعدة العملاء",
 };
 
 interface GuideImage {
