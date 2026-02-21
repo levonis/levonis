@@ -440,42 +440,57 @@ export default function MerchantSignupDialog({
     mutationFn: async (blob: Blob) => {
       if (!user?.id) throw new Error("Not authenticated");
       
+      console.log("[MerchantUpload] Starting upload, blob size:", blob.size, "type:", blob.type);
+      
       // Always compress the image for reliable uploads
       let finalBlob = blob;
       try {
         const img = new Image();
         const blobUrl = URL.createObjectURL(blob);
         await new Promise<void>((resolve, reject) => {
-          img.onload = () => resolve();
-          img.onerror = () => reject(new Error("فشل تحميل الصورة"));
+          const timeout = setTimeout(() => {
+            URL.revokeObjectURL(blobUrl);
+            reject(new Error("Image load timeout"));
+          }, 10000);
+          img.onload = () => { clearTimeout(timeout); resolve(); };
+          img.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(blobUrl); reject(new Error("فشل تحميل الصورة")); };
           img.src = blobUrl;
         });
         const canvas = document.createElement("canvas");
-        const maxDim = 800;
+        const maxDim = 600;
         const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        const ctx = canvas.getContext("2d")!;
+        canvas.width = Math.round(img.width * scale) || 200;
+        canvas.height = Math.round(img.height * scale) || 200;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("No canvas context");
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         URL.revokeObjectURL(blobUrl);
         finalBlob = await new Promise<Blob>((resolve, reject) => {
           canvas.toBlob(
             (b) => (b ? resolve(b) : reject(new Error("فشل ضغط الصورة"))),
             "image/jpeg",
-            0.75,
+            0.65,
           );
         });
-      } catch {
-        // Use original blob if compression fails
+        console.log("[MerchantUpload] Compressed:", finalBlob.size, "bytes");
+      } catch (compErr) {
+        console.warn("[MerchantUpload] Compression failed, using original blob:", compErr);
+        // If blob is too large without compression, try to limit it
+        if (finalBlob.size > 2 * 1024 * 1024) {
+          throw new Error("الصورة كبيرة جداً، يرجى اختيار صورة أصغر");
+        }
       }
       
       const file = new File([finalBlob], "store.jpg", { type: "image/jpeg" });
+      console.log("[MerchantUpload] Final file size:", file.size);
 
       // Retry upload up to 2 times on network failures
       let lastError: any;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
+          console.log("[MerchantUpload] Upload attempt", attempt + 1);
           const url = await uploadStoreImage({ userId: user.id, file });
+          console.log("[MerchantUpload] Upload success:", url);
           setStoreImageUrl(url);
           if (app?.id) {
             await saveDraftMutation.mutateAsync({ store_image_url: url });
@@ -483,8 +498,14 @@ export default function MerchantSignupDialog({
           return url;
         } catch (err: any) {
           lastError = err;
-          if (err?.message?.includes("Failed to fetch") && attempt < 2) {
-            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          console.error("[MerchantUpload] Attempt", attempt + 1, "failed:", err?.message, err?.statusCode);
+          const isNetworkError = err?.message?.includes("Failed to fetch") || 
+                                  err?.message?.includes("NetworkError") ||
+                                  err?.message?.includes("network") ||
+                                  err?.message?.includes("timeout") ||
+                                  err?.message?.includes("aborted");
+          if (isNetworkError && attempt < 2) {
+            await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
             continue;
           }
           throw err;
@@ -493,8 +514,10 @@ export default function MerchantSignupDialog({
       throw lastError;
     },
     onError: (err: any) => {
+      console.error("[MerchantUpload] Final error:", err);
       const msg = err?.message ?? "حدث خطأ";
-      const description = msg.includes("Failed to fetch") 
+      const isNetwork = msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("network");
+      const description = isNetwork
         ? "تحقق من اتصالك بالإنترنت أو جرب صورة أصغر حجماً" 
         : msg;
       toast({ title: "تعذر رفع الصورة", description, variant: "destructive" });
