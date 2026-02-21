@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Package, Image as ImageIcon, Video, Upload, X, Loader2, DollarSign,
-  Clock, FileText, Layers, CheckCircle2, Sparkles, Trash2
+  Clock, FileText, Layers, CheckCircle2, Sparkles, Trash2, CalendarClock, Users
 } from "lucide-react";
 import { z } from "zod";
 
@@ -92,6 +92,10 @@ export default function AddProductDialog({
   const [estimatedDaysStr, setEstimatedDaysStr] = useState("");
   const [isFeatured, setIsFeatured] = useState(false);
   const [materialType, setMaterialType] = useState<string | null>(null);
+  const [saleType, setSaleType] = useState<string>("normal");
+  const [maxQueueSlots, setMaxQueueSlots] = useState("");
+  const [preorderDepositPercent, setPreorderDepositPercent] = useState("");
+  const [preorderNote, setPreorderNote] = useState("");
 
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [primaryIndex, setPrimaryIndex] = useState(0);
@@ -122,6 +126,10 @@ export default function AddProductDialog({
         setEstimatedDaysStr("");
         setIsFeatured(false);
         setMaterialType(null);
+        setSaleType("normal");
+        setMaxQueueSlots("");
+        setPreorderDepositPercent("");
+        setPreorderNote("");
         setMediaItems([]);
         setPrimaryIndex(0);
       }
@@ -221,7 +229,7 @@ export default function AddProductDialog({
       const imageUrls = mediaItems.filter((m) => m.type === "image").map((m) => m.url);
       const videoUrl = mediaItems.find((m) => m.type === "video")?.url || null;
 
-      const payload = {
+      const payload: any = {
         merchant_id: merchantId,
         title: title.trim(),
         description: description.trim() || null,
@@ -234,6 +242,10 @@ export default function AddProductDialog({
         video_url: videoUrl,
         primary_image_index: primaryIndex,
         is_active: true,
+        sale_type: saleType,
+        max_queue_slots: maxQueueSlots ? parseInt(maxQueueSlots, 10) : null,
+        preorder_deposit_percent: preorderDepositPercent ? parseInt(preorderDepositPercent, 10) : null,
+        preorder_note: preorderNote.trim() || null,
       };
 
       if (editProduct) {
@@ -468,6 +480,69 @@ export default function AddProductDialog({
                 </div>
                 <Switch checked={isFeatured} onCheckedChange={setIsFeatured} />
               </div>
+
+              {/* Sale Type */}
+              <div className="space-y-2">
+                <Label className="text-xs font-medium flex items-center gap-1">
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  نوع البيع
+                </Label>
+                <Select value={saleType} onValueChange={setSaleType}>
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">عادي - متوفر الآن</SelectItem>
+                    <SelectItem value="preorder">حجز مسبق بدفع</SelectItem>
+                    <SelectItem value="waitlist">قائمة انتظار (مجانية)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Preorder/Waitlist Settings */}
+              {(saleType === "preorder" || saleType === "waitlist") && (
+                <div className="space-y-3 p-3 rounded-xl border border-amber-500/30 bg-amber-500/5">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium flex items-center gap-1">
+                      <Users className="h-3.5 w-3.5" />
+                      عدد الأماكن المتاحة
+                    </Label>
+                    <Input
+                      type="number"
+                      value={maxQueueSlots}
+                      onChange={(e) => setMaxQueueSlots(e.target.value)}
+                      placeholder="مثلا 10 (اتركه فارغاً لعدد غير محدود)"
+                      className="h-9"
+                      min={1}
+                    />
+                  </div>
+
+                  {saleType === "preorder" && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-medium">نسبة العربون (%)</Label>
+                      <Input
+                        type="number"
+                        value={preorderDepositPercent}
+                        onChange={(e) => setPreorderDepositPercent(e.target.value)}
+                        placeholder="مثلا 25"
+                        className="h-9"
+                        min={1}
+                        max={100}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-medium">ملاحظة للعملاء</Label>
+                    <Input
+                      value={preorderNote}
+                      onChange={(e) => setPreorderNote(e.target.value)}
+                      placeholder="مثلا: التوصيل خلال أسبوعين"
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* Preview Summary */}
               <div className="p-3 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
