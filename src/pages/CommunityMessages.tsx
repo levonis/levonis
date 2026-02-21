@@ -27,6 +27,7 @@ export default function CommunityMessages() {
   const productTitle = searchParams.get('product_title');
   const productPrice = searchParams.get('product_price');
   const productImage = searchParams.get('product_image');
+  const productId = searchParams.get('product_id');
   const requestId = searchParams.get('request_id');
   const cartItemsParam = searchParams.get('cart_items');
 
@@ -36,6 +37,7 @@ export default function CommunityMessages() {
     title: string;
     imageUrl?: string | null;
     price?: number | null;
+    productId?: string | null;
   } | null>(() => {
     if (productTitle) {
       return {
@@ -43,6 +45,7 @@ export default function CommunityMessages() {
         title: productTitle,
         imageUrl: productImage || null,
         price: productPrice ? parseInt(productPrice, 10) : null,
+        productId: productId || null,
       };
     }
     return null;
@@ -263,6 +266,7 @@ export default function CommunityMessages() {
         url.searchParams.set('product_title', entryContext.title);
         if (entryContext.price) url.searchParams.set('product_price', String(entryContext.price));
         if (entryContext.imageUrl) url.searchParams.set('product_image', entryContext.imageUrl);
+        if (entryContext.productId) url.searchParams.set('product_id', entryContext.productId);
       }
       navigate(`${url.pathname}${url.search}`, { replace: true });
       setCreatingConversation(false);

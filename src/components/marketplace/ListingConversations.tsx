@@ -79,6 +79,7 @@ interface EntryContextData {
   imageUrl?: string | null;
   price?: number | null;
   requestId?: string | null;
+  productId?: string | null;
 }
 
 interface ListingConversationsProps {
@@ -1580,10 +1581,14 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                 const priceMatch = normalizedPriceLine?.match(/(\d[\d,]*)/);
                                 const price = priceMatch ? parseInt(priceMatch[1].replace(/,/g, '')) : 0;
                                 
+                                // Extract product ID from message (🆔productId)
+                                const idLine = lines.find((l: string) => l.startsWith('🆔'));
+                                const embeddedProductId = idLine ? idLine.replace('🆔', '').trim() : null;
+                                
                                 return (
                                   <ProductCard
                                     key={msg.id}
-                                    productId={msg.id}
+                                    productId={embeddedProductId || msg.id}
                                     storeId={otherUserId || ''}
                                     imageUrl={msg.image_url}
                                     title={productName}
@@ -1602,16 +1607,45 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                       if (canCreateOrderInChat) {
                                         // Seller/Admin flow: CreateOrderDialog
                                         setSelectedProductForOrder({
-                                          id: msg.id,
+                                          id: embeddedProductId || msg.id,
                                           title: productName,
                                           image: msg.image_url,
                                           price: price,
                                         });
                                         setCreateOrderDialogOpen(true);
                                       } else {
-                                        // Customer flow: find actual product and open AddToCartSheet
+                                        // Customer flow: open AddToCartSheet with product options
                                         const merchantId = otherPartyMerchantApp?.id || selectedConv?.listing_id;
-                                        if (merchantId) {
+                                        const productIdToUse = embeddedProductId;
+                                        
+                                        if (productIdToUse) {
+                                          // Use embedded product ID directly
+                                          supabase
+                                            .from('merchant_products')
+                                            .select('id, merchant_id, title, price_iqd, image_urls, primary_image_index, sale_type, max_queue_slots, current_queue_count, preorder_deposit_percent, preorder_available_date, preorder_note')
+                                            .eq('id', productIdToUse)
+                                            .maybeSingle()
+                                            .then(({ data: foundProduct }) => {
+                                              if (foundProduct) {
+                                                setCartSheetProduct({
+                                                  id: foundProduct.id,
+                                                  merchant_id: foundProduct.merchant_id,
+                                                  title: foundProduct.title,
+                                                  price_iqd: foundProduct.price_iqd,
+                                                  image_urls: foundProduct.image_urls as string[] | null,
+                                                  primary_image_index: foundProduct.primary_image_index ?? 0,
+                                                  sale_type: foundProduct.sale_type,
+                                                  max_queue_slots: foundProduct.max_queue_slots,
+                                                  current_queue_count: foundProduct.current_queue_count,
+                                                  preorder_deposit_percent: foundProduct.preorder_deposit_percent,
+                                                });
+                                                setCartSheetOpen(true);
+                                              } else {
+                                                toast.error('لم يتم العثور على المنتج');
+                                              }
+                                            });
+                                        } else if (merchantId) {
+                                          // Fallback: search by title for older messages without embedded ID
                                           supabase
                                             .from('merchant_products')
                                             .select('id, merchant_id, title, price_iqd, image_urls, primary_image_index, sale_type, max_queue_slots, current_queue_count, preorder_deposit_percent, preorder_available_date, preorder_note')
@@ -1635,16 +1669,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                                 });
                                                 setCartSheetOpen(true);
                                               } else {
-                                                // Fallback: use message data
-                                                setCartSheetProduct({
-                                                  id: msg.id,
-                                                  merchant_id: merchantId,
-                                                  title: productName,
-                                                  price_iqd: price,
-                                                  image_urls: msg.image_url ? [msg.image_url] : null,
-                                                  primary_image_index: 0,
-                                                });
-                                                setCartSheetOpen(true);
+                                                toast.error('لم يتم العثور على المنتج');
                                               }
                                             });
                                         }
@@ -1858,7 +1883,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                       content = `📦 أريد التواصل بخصوص طلب الطباعة:\n${entryContext.title}`;
                     } else {
                       // Send product details
-                      content = `🛒 أنا مهتم بالمنتج:\n${entryContext.title}${entryContext.price ? `\n💰 ${entryContext.price.toLocaleString('ar-IQ')} د.ع` : ''}`;
+                      content = `🛒 أنا مهتم بالمنتج:\n${entryContext.title}${entryContext.price ? `\n💰 ${entryContext.price.toLocaleString('ar-IQ')} د.ع` : ''}${entryContext.productId ? `\n🆔${entryContext.productId}` : ''}`;
                     }
                     
                     await sendMessageMutation.mutateAsync({ 
@@ -1878,7 +1903,7 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                   useSiteProducts={useSiteProducts}
                   onSelectProduct={async (product) => {
                     const effectiveSenderId = isAdmin ? SUPPORT_USER_ID : user?.id;
-                    const productMessage = `📦 ${product.title}\n💰 ${product.price?.toLocaleString() || 0} د.ع`;
+                    const productMessage = `📦 ${product.title}\n💰 ${product.price?.toLocaleString() || 0} د.ع\n🆔${product.id}`;
                     const { error } = await supabase.from('listing_messages').insert({
                       conversation_id: selectedConversation,
                       sender_id: effectiveSenderId,
