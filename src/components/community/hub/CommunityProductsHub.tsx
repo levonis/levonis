@@ -280,9 +280,9 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
 
   const handleAddToCart = (p: ProductRow) => {
     if (!user) { navigate("/auth"); return; }
-    // If product has options/colors, open detail modal for selection
-    // For simple products, add directly
-    addToCartMutation.mutate(p);
+    // Always open detail modal so user can select options/quantity before adding
+    setSelectedProduct(p);
+    setDetailOpen(true);
   };
 
   if (query.isLoading) {
