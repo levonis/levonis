@@ -176,13 +176,14 @@ export default function CommunityProductDetailModal({
       } else if (e.message.startsWith("DIFFERENT_MERCHANT:")) {
         const merchantName = e.message.split(":")[1];
         toast.error(`لديك بالفعل منتجات من متجر "${merchantName}"`, {
-          description: "هل ترغب بتفريغ السلة؟",
+          description: "هل ترغب بتفريغ السلة والإضافة؟",
           action: {
-            label: "تفريغ السلة",
+            label: "تفريغ وإضافة",
             onClick: async () => {
               await supabase.from("community_cart_items").delete().eq("user_id", user!.id);
               queryClient.invalidateQueries({ queryKey: ["community-cart"] });
-              toast.success("تم تفريغ السلة، أضف المنتج مرة أخرى");
+              // Re-trigger add to cart after clearing
+              addToCartMutation.mutate();
             },
           },
         });

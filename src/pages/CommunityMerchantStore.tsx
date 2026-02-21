@@ -93,7 +93,7 @@ export default function CommunityMerchantStore() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("merchant_applications")
-        .select("id, status, display_name, bio, store_image_url, social_links, selected_frame_id, specialty, is_verified, badge_tier, store_paused, store_pause_end_date, store_pause_message")
+        .select("id, status, display_name, bio, store_image_url, social_links, selected_frame_id, specialty, is_verified, badge_tier, store_paused, store_pause_end_date, store_pause_message, store_layout")
         .eq("user_id", user!.id)
         .eq("status", "approved")
         .maybeSingle();
@@ -555,7 +555,6 @@ export default function CommunityMerchantStore() {
                   { key: 'full_prepayment', label: 'دفع مقدم كامل', desc: 'افتراضي' },
                   { key: 'half_payment', label: 'دفع نصف المبلغ', desc: '50% مقدماً' },
                   { key: 'quarter_payment', label: 'دفع ربع المبلغ', desc: '25% مقدماً' },
-                  { key: 'cash_on_delivery', label: 'دفع عند الاستلام', desc: 'بدون مقدم' },
                 ].map(method => {
                   const isChecked = paymentMethods.includes(method.key);
                   return (

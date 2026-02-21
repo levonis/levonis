@@ -50,7 +50,7 @@ export default function CommunityMerchantProfessionalDashboard() {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from("merchant_applications")
-        .select("id, status, display_name, bio, store_image_url, social_links, selected_frame_id, created_at")
+        .select("id, status, display_name, bio, store_image_url, social_links, selected_frame_id, created_at, store_layout")
         .eq("user_id", user.id)
         .eq("status", "approved")
         .maybeSingle();
