@@ -62,6 +62,7 @@ import AddressMessage from '@/components/chat/messages/AddressMessage';
 import ProductSelector from '@/components/chat/ProductSelector';
 import PriceChangeDialog from '@/components/chat/PriceChangeDialog';
 import CreateOrderDialog from '@/components/chat/CreateOrderDialog';
+import AddToCartSheet from '@/components/community/AddToCartSheet';
 import MerchantOrderDialog from '@/components/chat/MerchantOrderDialog';
 import { useChatCommerce, type ChatOrder } from '@/hooks/useChatCommerce';
 import { parseEmojisInText } from '@/components/chat/emojiData';
@@ -190,6 +191,8 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
     price?: number;
     image?: string;
   } | null>(null);
+   const [cartSheetProduct, setCartSheetProduct] = useState<any>(null);
+   const [cartSheetOpen, setCartSheetOpen] = useState(false);
    const messagesEndRef = useRef<HTMLDivElement>(null);
    const fileInputRef = useRef<HTMLInputElement>(null);
    const inputRef = useRef<HTMLInputElement>(null);
@@ -1588,22 +1591,65 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                                     isMe={isMe}
                                     timestamp={timestamp}
                                     userRole={chatCommerce.userRole}
-                                    canCreateOrder={canCreateOrderInChat}
+                                    canCreateOrder={true}
                                     onProductClick={() => {
                                       const merchantAppId = selectedConv?.listing_id;
                                       if (merchantAppId) {
                                         navigate(`/store/${merchantAppId}`);
                                       }
                                     }}
-                                    onCreateOrder={canCreateOrderInChat ? () => {
-                                      setSelectedProductForOrder({
-                                        id: msg.id,
-                                        title: productName,
-                                        image: msg.image_url,
-                                        price: price,
-                                      });
-                                      setCreateOrderDialogOpen(true);
-                                    } : undefined}
+                                    onCreateOrder={() => {
+                                      if (canCreateOrderInChat) {
+                                        // Seller/Admin flow: CreateOrderDialog
+                                        setSelectedProductForOrder({
+                                          id: msg.id,
+                                          title: productName,
+                                          image: msg.image_url,
+                                          price: price,
+                                        });
+                                        setCreateOrderDialogOpen(true);
+                                      } else {
+                                        // Customer flow: find actual product and open AddToCartSheet
+                                        const merchantId = otherPartyMerchantApp?.id || selectedConv?.listing_id;
+                                        if (merchantId) {
+                                          supabase
+                                            .from('merchant_products')
+                                            .select('id, merchant_id, title, price_iqd, image_urls, primary_image_index, sale_type, max_queue_slots, current_queue_count, preorder_deposit_percent, preorder_available_date, preorder_note')
+                                            .eq('merchant_id', merchantId)
+                                            .ilike('title', productName)
+                                            .limit(1)
+                                            .maybeSingle()
+                                            .then(({ data: foundProduct }) => {
+                                              if (foundProduct) {
+                                                setCartSheetProduct({
+                                                  id: foundProduct.id,
+                                                  merchant_id: foundProduct.merchant_id,
+                                                  title: foundProduct.title,
+                                                  price_iqd: foundProduct.price_iqd,
+                                                  image_urls: foundProduct.image_urls as string[] | null,
+                                                  primary_image_index: foundProduct.primary_image_index ?? 0,
+                                                  sale_type: foundProduct.sale_type,
+                                                  max_queue_slots: foundProduct.max_queue_slots,
+                                                  current_queue_count: foundProduct.current_queue_count,
+                                                  preorder_deposit_percent: foundProduct.preorder_deposit_percent,
+                                                });
+                                                setCartSheetOpen(true);
+                                              } else {
+                                                // Fallback: use message data
+                                                setCartSheetProduct({
+                                                  id: msg.id,
+                                                  merchant_id: merchantId,
+                                                  title: productName,
+                                                  price_iqd: price,
+                                                  image_urls: msg.image_url ? [msg.image_url] : null,
+                                                  primary_image_index: 0,
+                                                });
+                                                setCartSheetOpen(true);
+                                              }
+                                            });
+                                        }
+                                      }
+                                    }}
                                     onEditOrder={canCreateOrderInChat ? () => {
                                       setMerchantOrderInitialData({
                                         title: productName,
@@ -2002,6 +2048,13 @@ export const ListingConversations = ({ children, listingId, onClose, isAdmin: pr
                     isLoading={chatCommerce.isCreatingOrder}
                   />
                 )}
+                
+                {/* Customer Add to Cart Sheet */}
+                <AddToCartSheet
+                  product={cartSheetProduct}
+                  open={cartSheetOpen}
+                  onOpenChange={setCartSheetOpen}
+                />
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center">
