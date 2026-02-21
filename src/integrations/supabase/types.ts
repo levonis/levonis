@@ -3003,6 +3003,36 @@ export type Database = {
           },
         ]
       }
+      merchant_guide_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          display_order: number
+          id: string
+          image_url: string
+          section_key: string
+          updated_at: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url: string
+          section_key: string
+          updated_at?: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          image_url?: string
+          section_key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       merchant_monthly_orders: {
         Row: {
           completed_orders: number
