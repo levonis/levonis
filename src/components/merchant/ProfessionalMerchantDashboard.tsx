@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Store, ArrowRight, Package, MessageCircle, Star, Settings,
-  ChevronLeft, Eye, PlusCircle, FileText, DollarSign, Plus, BookOpen
+  ChevronLeft, Eye, PlusCircle, FileText, DollarSign, Plus
 } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -17,22 +17,12 @@ import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
 import CompactBadgesDisplay from "@/components/merchant/CompactBadgesDisplay";
 import StoreProfileEditor from "@/components/merchant/StoreProfileEditor";
 import type { BadgeTier } from "@/components/merchant/CompactBadgesDisplay";
-import MerchantGuide from "@/components/merchant/MerchantGuide";
+
 
 export default function ProfessionalMerchantDashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(false);
-  const [guideDismissed, setGuideDismissed] = useState(() => {
-    return localStorage.getItem("merchant_guide_dismissed") === "true";
-  });
-
-  const dismissGuideForever = () => {
-    localStorage.setItem("merchant_guide_dismissed", "true");
-    setGuideDismissed(true);
-    setGuideOpen(false);
-  };
 
   // Fetch merchant application
   const { data: merchantApp, isLoading: appLoading } = useQuery({
@@ -295,22 +285,6 @@ export default function ProfessionalMerchantDashboard() {
           </CardContent>
         </Card>
 
-        {/* Guide Button */}
-        {!guideDismissed && (
-          <button
-            onClick={() => setGuideOpen(true)}
-            className="w-full p-3.5 rounded-xl border border-primary/20 bg-primary/5 flex items-center gap-3 text-right hover:border-primary/40 transition-all"
-          >
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <BookOpen className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold">دليل التاجر</p>
-              <p className="text-[10px] text-muted-foreground">تعرّف على جميع مميزات متجرك وكيفية استخدامها</p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0 rotate-180" />
-          </button>
-        )}
       </main>
 
       {/* Profile Editor */}
@@ -329,12 +303,6 @@ export default function ProfessionalMerchantDashboard() {
         />
       )}
 
-      {/* Merchant Guide */}
-      <MerchantGuide
-        open={guideOpen}
-        onClose={() => setGuideOpen(false)}
-        onDismissForever={dismissGuideForever}
-      />
 
     </div>
   );
