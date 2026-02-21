@@ -440,45 +440,57 @@ export default function MerchantSignupDialog({
     mutationFn: async (blob: Blob) => {
       if (!user?.id) throw new Error("Not authenticated");
       
-      // Compress if blob is too large (> 1MB)
+      // Always compress the image for reliable uploads
       let finalBlob = blob;
-      if (blob.size > 1024 * 1024) {
-        try {
-          const img = new Image();
-          const blobUrl = URL.createObjectURL(blob);
-          await new Promise<void>((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = () => reject(new Error("فشل تحميل الصورة"));
-            img.src = blobUrl;
-          });
-          const canvas = document.createElement("canvas");
-          const maxDim = 1200;
-          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
-          const ctx = canvas.getContext("2d")!;
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          URL.revokeObjectURL(blobUrl);
-          finalBlob = await new Promise<Blob>((resolve, reject) => {
-            canvas.toBlob(
-              (b) => (b ? resolve(b) : reject(new Error("فشل ضغط الصورة"))),
-              "image/jpeg",
-              0.8,
-            );
-          });
-        } catch {
-          // Use original blob if compression fails
-        }
+      try {
+        const img = new Image();
+        const blobUrl = URL.createObjectURL(blob);
+        await new Promise<void>((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error("فشل تحميل الصورة"));
+          img.src = blobUrl;
+        });
+        const canvas = document.createElement("canvas");
+        const maxDim = 800;
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(blobUrl);
+        finalBlob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob(
+            (b) => (b ? resolve(b) : reject(new Error("فشل ضغط الصورة"))),
+            "image/jpeg",
+            0.75,
+          );
+        });
+      } catch {
+        // Use original blob if compression fails
       }
       
       const file = new File([finalBlob], "store.jpg", { type: "image/jpeg" });
-      const url = await uploadStoreImage({ userId: user.id, file });
-      setStoreImageUrl(url);
-      // Only save to draft if app already exists, otherwise just store locally
-      if (app?.id) {
-        await saveDraftMutation.mutateAsync({ store_image_url: url });
+
+      // Retry upload up to 2 times on network failures
+      let lastError: any;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const url = await uploadStoreImage({ userId: user.id, file });
+          setStoreImageUrl(url);
+          if (app?.id) {
+            await saveDraftMutation.mutateAsync({ store_image_url: url });
+          }
+          return url;
+        } catch (err: any) {
+          lastError = err;
+          if (err?.message?.includes("Failed to fetch") && attempt < 2) {
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            continue;
+          }
+          throw err;
+        }
       }
-      return url;
+      throw lastError;
     },
     onError: (err: any) => {
       const msg = err?.message ?? "حدث خطأ";
