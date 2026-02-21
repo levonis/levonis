@@ -186,6 +186,7 @@ export default function CommunityProductDetailModal({
       product_title: product.title,
       product_price: product.price_iqd?.toString() || '',
       product_image: product.image_urls?.[0] || '',
+      product_id: product.id,
     });
     onOpenChange(false);
     navigate(`/community/messages?${params.toString()}`);
