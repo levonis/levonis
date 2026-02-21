@@ -25,10 +25,6 @@ const ReelCard = memo(({ reel, isActive, isMuted, onToggleMute, onToggleInteract
     const video = videoRef.current;
     if (!video) return;
     video.muted = isMuted;
-    // If unmuting, re-trigger play to unlock audio context
-    if (!isMuted && !video.paused) {
-      video.play().catch(() => {});
-    }
   }, [isMuted]);
 
   // Auto-play/pause based on active state only

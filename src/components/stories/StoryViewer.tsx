@@ -27,7 +27,7 @@ interface StoryViewerProps {
 export default function StoryViewer({ sections, initialSectionIndex, onClose }: StoryViewerProps) {
   const [sectionIdx, setSectionIdx] = useState(initialSectionIndex);
   const [videoIdx, setVideoIdx] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);

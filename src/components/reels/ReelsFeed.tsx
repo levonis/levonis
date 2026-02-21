@@ -12,7 +12,7 @@ export default function ReelsFeed({ onClose }: ReelsFeedProps) {
   const navigate = useNavigate();
   const { reels, isLoading, hasNextPage, fetchNextPage, isFetchingNextPage, toggleInteraction, recordView } = useReelsFeed();
   const [activeIndex, setActiveIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState(true);
+  const [isMuted, setIsMuted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleScroll = useCallback(() => {

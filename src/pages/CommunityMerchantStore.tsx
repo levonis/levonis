@@ -800,6 +800,7 @@ export default function CommunityMerchantStore() {
           social_links: socialLinks || null,
           selected_frame_id: merchantApp.selected_frame_id,
           specialty: (merchantApp.specialty as "resin" | "filament" | "both") || undefined,
+          store_layout: (merchantApp as any).store_layout || undefined,
         }}
       />
       {/* Ad Booking Dialog */}
