@@ -3161,6 +3161,8 @@ export type Database = {
           bio: string | null
           city: string | null
           created_at: string
+          debt_suspended: boolean
+          debt_suspended_at: string | null
           delivery_price_iqd: number | null
           delivery_rules: Json | null
           display_name: string | null
@@ -3171,6 +3173,7 @@ export type Database = {
           specialty: string | null
           store_image_url: string | null
           store_layout: string
+          total_debt: number
           updated_at: string
         }
         Insert: {
@@ -3179,6 +3182,8 @@ export type Database = {
           bio?: string | null
           city?: string | null
           created_at?: string
+          debt_suspended?: boolean
+          debt_suspended_at?: string | null
           delivery_price_iqd?: number | null
           delivery_rules?: Json | null
           display_name?: string | null
@@ -3189,6 +3194,7 @@ export type Database = {
           specialty?: string | null
           store_image_url?: string | null
           store_layout?: string
+          total_debt?: number
           updated_at?: string
         }
         Update: {
@@ -3197,6 +3203,8 @@ export type Database = {
           bio?: string | null
           city?: string | null
           created_at?: string
+          debt_suspended?: boolean
+          debt_suspended_at?: string | null
           delivery_price_iqd?: number | null
           delivery_rules?: Json | null
           display_name?: string | null
@@ -3207,6 +3215,7 @@ export type Database = {
           specialty?: string | null
           store_image_url?: string | null
           store_layout?: string
+          total_debt?: number
           updated_at?: string
         }
         Relationships: [
