@@ -27,7 +27,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import AddressDialog from '@/components/AddressDialog';
 
-type PaymentMethod = 'wallet' | 'cod' | 'partial';
+type PaymentMethod = 'wallet' | 'partial';
 
 interface ChatOrder {
   id: string;
@@ -63,7 +63,6 @@ interface UserAddress {
 
 const COMMISSION_RATES = {
   wallet: 0,
-  cod: 10,
   partial: 5,
 };
 
@@ -145,12 +144,10 @@ export default function ChatOrderCheckout() {
   
   const amountToPay = paymentMethod === 'wallet' 
     ? finalTotal
-    : paymentMethod === 'partial'
-    ? Math.round(finalTotal * (partialPercent / 100))
-    : 0;
+    : Math.round(finalTotal * (partialPercent / 100));
   
   const remainingAmount = finalTotal - amountToPay;
-  const insufficientBalance = paymentMethod !== 'cod' && amountToPay > walletBalance;
+  const insufficientBalance = amountToPay > walletBalance;
 
   // Complete checkout mutation
   const checkoutMutation = useMutation({
@@ -179,7 +176,7 @@ export default function ChatOrderCheckout() {
           delivery_notes: deliveryNotes || null,
           paid_amount: amountToPay,
           remaining_amount: remainingAmount,
-          status: paymentMethod === 'cod' ? 'waiting_payment' : 'paid',
+          status: 'paid',
           checkout_completed_at: new Date().toISOString(),
         })
         .eq('id', order.id);
@@ -197,7 +194,7 @@ export default function ChatOrderCheckout() {
           product_image: order.product_image,
           quantity: order.quantity,
           total_price: order.total_price,
-          status: paymentMethod === 'cod' ? 'waiting_payment' : 'paid',
+          status: 'paid',
         }),
       });
 
@@ -205,7 +202,7 @@ export default function ChatOrderCheckout() {
       await supabase.from('listing_messages').insert({
         conversation_id: order.conversation_id,
         sender_id: user.id,
-        content: `🔔 تم إتمام الطلب بنجاح!\nالمبلغ المدفوع: ${amountToPay.toLocaleString()} د.ع${remainingAmount > 0 ? `\nالمتبقي عند الاستلام: ${remainingAmount.toLocaleString()} د.ع` : ''}\nطريقة الدفع: ${paymentMethod === 'wallet' ? 'المحفظة' : paymentMethod === 'cod' ? 'عند الاستلام' : 'دفعة مقدمة'}`,
+        content: `🔔 تم إتمام الطلب بنجاح!\nالمبلغ المدفوع: ${amountToPay.toLocaleString()} د.ع${remainingAmount > 0 ? `\nالمتبقي عند الاستلام: ${remainingAmount.toLocaleString()} د.ع` : ''}\nطريقة الدفع: ${paymentMethod === 'wallet' ? 'المحفظة' : 'دفعة مقدمة'}`,
       });
 
       // Notify merchant via Telegram
@@ -449,27 +446,6 @@ export default function ChatOrderCheckout() {
                     +5% عمولة
                   </Badge>
                 </Label>
-
-                {/* COD */}
-                <Label
-                  htmlFor="cod"
-                  className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
-                    paymentMethod === 'cod' 
-                      ? "border-primary bg-primary/5" 
-                      : "border-border hover:border-primary/50"
-                  )}
-                >
-                  <RadioGroupItem value="cod" id="cod" />
-                  <Truck className="h-5 w-5 text-blue-500" />
-                  <div className="flex-1">
-                    <span className="font-medium text-sm">الدفع عند الاستلام</span>
-                    <p className="text-xs text-muted-foreground">ادفع عند استلام الطلب</p>
-                  </div>
-                  <Badge variant="secondary" className="text-red-600 bg-red-500/10">
-                    +10% عمولة
-                  </Badge>
-                </Label>
               </div>
             </RadioGroup>
           </CardContent>
@@ -511,14 +487,12 @@ export default function ChatOrderCheckout() {
               </>
             )}
 
-            {paymentMethod !== 'cod' && (
-              <div className="flex items-center justify-between text-xs pt-2 border-t">
-                <span className="text-muted-foreground">رصيد المحفظة</span>
-                <span className={insufficientBalance ? 'text-destructive' : 'text-green-600'}>
-                  {walletBalance.toLocaleString()} د.ع
-                </span>
-              </div>
-            )}
+            <div className="flex items-center justify-between text-xs pt-2 border-t">
+              <span className="text-muted-foreground">رصيد المحفظة</span>
+              <span className={insufficientBalance ? 'text-destructive' : 'text-green-600'}>
+                {walletBalance.toLocaleString()} د.ع
+              </span>
+            </div>
           </CardContent>
         </Card>
       </main>

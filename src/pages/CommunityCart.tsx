@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ArrowLeft, ShoppingBag, Trash2, Plus, Minus, Store, 
-  Package, ShoppingCart, Truck, Loader2
+  Package, ShoppingCart, Truck, Loader2, Sparkles
 } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
@@ -47,7 +47,6 @@ export default function CommunityCart() {
     },
   });
 
-  // Fetch delivery prices for merchants in cart
   const merchantIds = [...new Set(cartItems.map(i => i.merchant_id))];
   const { data: merchantDeliveryPrices = {} } = useQuery({
     queryKey: ["merchant-delivery-prices", merchantIds],
@@ -63,13 +62,10 @@ export default function CommunityCart() {
     },
   });
 
-  // Calculate delivery price for a merchant: merchant price or default 5000
   const getDeliveryPrice = (merchantId: string): number => {
     const merchantPrice = merchantDeliveryPrices[merchantId];
-    if (merchantPrice !== null && merchantPrice !== undefined) {
-      return merchantPrice;
-    }
-    return 5000; // Default delivery price
+    if (merchantPrice !== null && merchantPrice !== undefined) return merchantPrice;
+    return 5000;
   };
 
   const groupedItems = useMemo(() => {
@@ -138,7 +134,6 @@ export default function CommunityCart() {
       const group = groupedItems.find(g => g.merchantId === merchantId);
       if (!group) throw new Error('لا توجد منتجات');
 
-      // 1. Get merchant user_id from merchant_applications
       const { data: merchantApp, error: merchantError } = await supabase
         .from('merchant_applications')
         .select('user_id, display_name')
@@ -149,7 +144,6 @@ export default function CommunityCart() {
 
       const sellerUserId = merchantApp.user_id;
 
-      // 2. Find or create conversation
       const { data: existingConvs } = await supabase
         .from('listing_conversations')
         .select('id')
@@ -178,14 +172,12 @@ export default function CommunityCart() {
         conversationId = newConv.id;
       }
 
-      // 3. Build combined order info
       const itemsSummary = group.items.map(i => 
         `${i.product_title} (×${i.quantity}) - ${(i.product_price * i.quantity).toLocaleString()} د.ع`
       ).join('\n');
       const productsTotal = group.items.reduce((s, i) => s + i.product_price * i.quantity, 0);
       const firstItem = group.items[0];
 
-      // 4. Create chat_order
       const { data: order, error: orderError } = await supabase
         .from('chat_orders' as any)
         .insert({
@@ -233,194 +225,202 @@ export default function CommunityCart() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-bl from-primary/15 via-transparent to-accent/10" />
-        <div className="absolute top-0 right-0 w-40 h-40 bg-primary/10 rounded-full blur-3xl translate-x-1/3 -translate-y-1/2" />
-        
-        <div className="relative z-10 px-4 pt-4 pb-5">
-          <div className="flex items-center justify-between mb-4">
-            <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-full bg-card/60 backdrop-blur-sm" onClick={() => navigate(-1)}>
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-muted/20" dir="rtl">
+      {/* Minimal Header */}
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40">
+        <div className="flex items-center justify-between px-4 h-14">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => navigate(-1)}>
               <ArrowLeft className="h-4 w-4" />
             </Button>
-            {cartItems.length > 0 && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-8 text-[10px] text-destructive hover:text-destructive rounded-full px-3"
-                onClick={() => clearCart.mutate()}
-              >
-                <Trash2 className="h-3 w-3 ml-1" />
-                تفريغ
-              </Button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/25">
-              <ShoppingBag className="h-5 w-5 text-primary-foreground" />
-            </div>
             <div>
-              <h1 className="text-lg font-black text-foreground tracking-tight">سلة المجتمع</h1>
-              <p className="text-xs text-muted-foreground">
-                {totalItems > 0 ? `${totalItems} منتج • ${totalPrice.toLocaleString()} د.ع` : "فارغة"}
-              </p>
+              <h1 className="text-sm font-bold text-foreground">سلة التسوق</h1>
+              {totalItems > 0 && (
+                <p className="text-[10px] text-muted-foreground leading-tight">{totalItems} منتج</p>
+              )}
             </div>
           </div>
+          {cartItems.length > 0 && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-8 text-[11px] text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full px-3 gap-1.5"
+              onClick={() => clearCart.mutate()}
+            >
+              <Trash2 className="h-3 w-3" />
+              تفريغ
+            </Button>
+          )}
         </div>
-      </div>
+      </header>
 
-      <main className="flex-1 px-4 py-4 space-y-4">
+      <main className="flex-1 px-4 py-4 space-y-3 pb-40">
+        {/* Loading */}
         {isLoading && (
           <div className="space-y-3">
-            {[1, 2, 3].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+            {[1, 2, 3].map(i => (
+              <Skeleton key={i} className="h-24 rounded-2xl" />
+            ))}
           </div>
         )}
 
+        {/* Empty State */}
         {!isLoading && cartItems.length === 0 && (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-br from-card to-muted border border-primary/10 flex items-center justify-center mb-5 shadow-lg">
-              <ShoppingCart className="h-8 w-8 text-primary/30" />
+          <div className="flex flex-col items-center justify-center py-24">
+            <div className="relative mb-6">
+              <div className="w-24 h-24 rounded-[28px] bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
+                <ShoppingCart className="h-10 w-10 text-primary/25" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
+                <Sparkles className="h-3.5 w-3.5 text-muted-foreground/50" />
+              </div>
             </div>
-            <p className="font-black text-base text-foreground">السلة فارغة</p>
-            <p className="text-xs text-muted-foreground mt-1.5 mb-5">أضف منتجات من متاجر المجتمع</p>
-            <Button variant="outline" size="sm" className="rounded-full" onClick={() => navigate("/community")}>
+            <p className="font-bold text-foreground mb-1">سلتك فارغة</p>
+            <p className="text-xs text-muted-foreground mb-5">اكتشف المنتجات وأضفها لسلتك</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="rounded-full gap-2 border-primary/30 text-primary hover:bg-primary/5" 
+              onClick={() => navigate("/community")}
+            >
+              <Store className="h-3.5 w-3.5" />
               تصفح المتاجر
             </Button>
           </div>
         )}
 
-        {/* Grouped by merchant */}
-        {groupedItems.map((group) => (
-          <div key={group.merchantId} className="rounded-2xl border border-border/30 bg-card overflow-hidden shadow-sm">
-            {/* Merchant header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-l from-primary/5 to-transparent border-b border-border/20">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <Store className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <span className="text-xs font-black text-foreground">{group.merchantName}</span>
-                  <div className="flex items-center gap-1.5">
-                    <Badge variant="outline" className="text-[8px] h-4 px-1.5">{group.items.length} منتج</Badge>
+        {/* Merchant Groups */}
+        {groupedItems.map((group) => {
+          const groupTotal = group.items.reduce((s, i) => s + i.product_price * i.quantity, 0);
+          const groupGrandTotal = groupTotal + group.deliveryPrice;
+
+          return (
+            <div key={group.merchantId} className="rounded-2xl bg-card border border-border/40 overflow-hidden">
+              {/* Merchant Header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
+                <button 
+                  className="flex items-center gap-2.5"
+                  onClick={() => navigate(`/community/store/${group.merchantId}`)}
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Store className="h-3.5 w-3.5 text-primary" />
                   </div>
-                </div>
+                  <div className="text-right">
+                    <p className="text-xs font-bold text-foreground leading-tight">{group.merchantName}</p>
+                    <p className="text-[10px] text-muted-foreground">{group.items.length} منتج</p>
+                  </div>
+                </button>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-7 text-[10px] gap-1 text-primary"
-                onClick={() => navigate(`/community/store/${group.merchantId}`)}
-              >
-                المتجر
-              </Button>
-            </div>
 
-            {/* Items */}
-            <div className="divide-y divide-border/15">
-              {group.items.map((item) => (
-                <div key={item.id} className="flex gap-3 p-3.5">
-                  <div className="w-16 h-16 rounded-xl overflow-hidden bg-muted shrink-0 border border-border/20">
-                    {item.product_image ? (
-                      <OptimizedImage src={item.product_image} alt={item.product_title} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="h-6 w-6 text-muted-foreground/30" />
-                      </div>
-                    )}
-                  </div>
+              {/* Items */}
+              <div className="divide-y divide-border/20">
+                {group.items.map((item) => (
+                  <div key={item.id} className="flex gap-3 p-3">
+                    {/* Image */}
+                    <div className="w-[68px] h-[68px] rounded-xl overflow-hidden bg-muted shrink-0">
+                      {item.product_image ? (
+                        <OptimizedImage src={item.product_image} alt={item.product_title} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="h-5 w-5 text-muted-foreground/25" />
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <h4 className="text-xs font-bold text-foreground line-clamp-1">{item.product_title}</h4>
-                    <p className="text-sm font-black text-primary">{item.product_price.toLocaleString()} <span className="text-[9px] font-normal text-muted-foreground">د.ع</span></p>
-                    
-                    <div className="flex items-center gap-2">
-                      <div className="flex items-center rounded-xl border border-border/40 overflow-hidden bg-muted/30">
-                        <button
-                          className="h-7 w-8 flex items-center justify-center hover:bg-muted transition-colors"
-                          onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity - 1 })}
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <span className="w-8 text-center text-xs font-black">{item.quantity}</span>
-                        <button
-                          className="h-7 w-8 flex items-center justify-center hover:bg-muted transition-colors"
-                          onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity + 1 })}
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                      <div>
+                        <h4 className="text-[11px] font-semibold text-foreground line-clamp-1 leading-tight">{item.product_title}</h4>
+                        <p className="text-[13px] font-bold text-primary mt-0.5">
+                          {item.product_price.toLocaleString()} <span className="text-[9px] font-normal text-muted-foreground">د.ع</span>
+                        </p>
                       </div>
-                      <button
-                        className="h-7 w-7 flex items-center justify-center rounded-xl text-destructive/60 hover:text-destructive hover:bg-destructive/10 transition-all"
-                        onClick={() => removeItem.mutate(item.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+
+                      <div className="flex items-center justify-between mt-1">
+                        {/* Quantity Controls */}
+                        <div className="flex items-center h-7 rounded-lg border border-border/50 overflow-hidden bg-muted/20">
+                          <button
+                            className="h-full w-7 flex items-center justify-center hover:bg-muted active:bg-muted/80 transition-colors"
+                            onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity - 1 })}
+                          >
+                            {item.quantity === 1 ? <Trash2 className="h-3 w-3 text-destructive/70" /> : <Minus className="h-3 w-3" />}
+                          </button>
+                          <span className="w-7 text-center text-[11px] font-bold select-none">{item.quantity}</span>
+                          <button
+                            className="h-full w-7 flex items-center justify-center hover:bg-muted active:bg-muted/80 transition-colors"
+                            onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity + 1 })}
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
+
+                        {/* Subtotal */}
+                        <span className="text-[11px] font-bold text-foreground/70">
+                          {(item.product_price * item.quantity).toLocaleString()} د.ع
+                        </span>
+                      </div>
                     </div>
                   </div>
+                ))}
+              </div>
 
-                  <div className="text-xs font-bold text-foreground/60 shrink-0">
-                    {(item.product_price * item.quantity).toLocaleString()}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Order from merchant */}
-            <div className="p-3.5 bg-gradient-to-l from-primary/5 to-transparent border-t border-border/20">
-              <div className="space-y-1.5 mb-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">مجموع المنتجات</span>
-                  <span className="text-xs font-bold text-foreground">
-                    {group.items.reduce((s, i) => s + i.product_price * i.quantity, 0).toLocaleString()} د.ع
-                  </span>
+              {/* Footer: Summary + Order Button */}
+              <div className="bg-muted/20 border-t border-border/30 p-3 space-y-2.5">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="text-muted-foreground">المنتجات</span>
+                  <span className="font-semibold">{groupTotal.toLocaleString()} د.ع</span>
                 </div>
                 {group.deliveryPrice > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Truck className="h-3 w-3" />التوصيل</span>
-                    <span className="text-xs font-bold text-foreground">{group.deliveryPrice.toLocaleString()} د.ع</span>
+                  <div className="flex items-center justify-between text-[11px]">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Truck className="h-3 w-3" />
+                      التوصيل
+                    </span>
+                    <span className="font-semibold">{group.deliveryPrice.toLocaleString()} د.ع</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between pt-1 border-t border-border/20">
-                  <span className="text-[10px] font-bold text-foreground">الإجمالي</span>
-                  <span className="text-sm font-black text-primary">
-                    {(group.items.reduce((s, i) => s + i.product_price * i.quantity, 0) + group.deliveryPrice).toLocaleString()} د.ع
-                  </span>
+                <div className="flex items-center justify-between text-xs pt-2 border-t border-border/30">
+                  <span className="font-bold">الإجمالي</span>
+                  <span className="text-sm font-black text-primary">{groupGrandTotal.toLocaleString()} د.ع</span>
                 </div>
+
+                <Button
+                  className="w-full h-11 text-xs gap-2 rounded-xl font-bold"
+                  onClick={() => placeOrderMutation.mutate(group.merchantId)}
+                  disabled={placeOrderMutation.isPending}
+                >
+                  {orderingMerchant === group.merchantId && placeOrderMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      جاري إنشاء الطلب...
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="h-4 w-4" />
+                      اطلب من {group.merchantName}
+                    </>
+                  )}
+                </Button>
               </div>
-              <Button
-                className="w-full h-10 text-xs gap-2 rounded-xl font-bold shadow-md shadow-primary/15"
-                onClick={() => placeOrderMutation.mutate(group.merchantId)}
-                disabled={placeOrderMutation.isPending}
-              >
-                {orderingMerchant === group.merchantId && placeOrderMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    جاري إنشاء الطلب...
-                  </>
-                ) : (
-                  <>
-                    <ShoppingBag className="h-4 w-4" />
-                    اطلب من {group.merchantName}
-                  </>
-                )}
-              </Button>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </main>
 
-      {/* Bottom Summary Bar */}
+      {/* Bottom Summary */}
       {cartItems.length > 0 && (
-        <div className="sticky bottom-0 bg-card/95 backdrop-blur-xl border-t border-border/30 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-          <div className="flex items-center justify-between mb-1.5">
-            <span className="text-xs text-muted-foreground">الإجمالي الكلي</span>
-            <span className="text-xl font-black text-primary">{totalPrice.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">د.ع</span></span>
+        <div className="fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur-xl border-t border-border/40 px-4 py-3 safe-area-bottom">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[10px] text-muted-foreground">الإجمالي الكلي</p>
+              <p className="text-lg font-black text-primary leading-tight">
+                {totalPrice.toLocaleString()} <span className="text-[10px] text-muted-foreground font-normal">د.ع</span>
+              </p>
+            </div>
+            <p className="text-[10px] text-muted-foreground max-w-[140px] text-left leading-tight">
+              اختر متجراً أعلاه لإتمام الطلب
+            </p>
           </div>
-          <p className="text-[10px] text-muted-foreground text-center">
-            اختر متجراً أعلاه لإتمام الطلب والدفع
-          </p>
         </div>
       )}
 
