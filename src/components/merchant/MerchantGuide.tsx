@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { 
   X, Store, Package, FileText, MessageCircle, Star, Settings, Gift, 
   DollarSign, ShoppingBag, Truck, Shield,
@@ -15,7 +13,7 @@ import {
   CircleDollarSign, Receipt, PiggyBank,
   ThumbsUp, Medal, Crown,
   Megaphone, Lightbulb, Rocket, Target,
-  Info, HelpCircle, ChevronLeft, ZoomIn,
+  Info, HelpCircle, ChevronLeft,
   ShoppingCart, AlertTriangle, Ticket, Percent,
   Radio, Heart, UserPlus, Gauge, Bell,
   Trophy, Sparkles, Volume2, PartyPopper
@@ -24,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+
 
 interface MerchantGuideProps {
   open: boolean;
@@ -58,13 +56,6 @@ interface GuideSection {
   };
 }
 
-interface GuideImage {
-  id: string;
-  section_key: string;
-  image_url: string;
-  caption: string | null;
-  display_order: number;
-}
 
 const GUIDE_SECTIONS: GuideSection[] = [
   {
@@ -593,80 +584,10 @@ const FAQ_ITEMS = [
   { q: "كيف أزيد مبيعاتي؟", a: "صور واضحة + أسعار تنافسية + استجابة سريعة + كوبونات + سحوبات + إعلانات = نمو مستمر!", icon: TrendingUp },
 ];
 
-// Section screenshots gallery component
-function SectionScreenshots({ sectionKey, images }: { sectionKey: string; images: GuideImage[] }) {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const sectionImages = images.filter(img => img.section_key === sectionKey && img.image_url);
-
-  if (sectionImages.length === 0) return null;
-
-  return (
-    <>
-      <div className="space-y-2">
-        <p className="text-[10px] font-bold flex items-center gap-1.5 text-muted-foreground">
-          <Camera className="h-3 w-3" />
-          صور توضيحية من الموقع
-        </p>
-        <div className={`grid gap-2 ${sectionImages.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
-          {sectionImages.map((img) => (
-            <button
-              key={img.id}
-              onClick={() => setSelectedImage(img.image_url)}
-              className="group relative rounded-lg overflow-hidden border border-border/50 hover:border-primary/30 transition-all"
-            >
-              <img
-                src={img.image_url}
-                alt={img.caption || "صورة توضيحية"}
-                className="w-full h-auto object-cover"
-                loading="lazy"
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
-              </div>
-              {img.caption && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
-                  <p className="text-[9px] text-white leading-tight">{img.caption}</p>
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Full screen image viewer */}
-      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-1 bg-black/95 border-none">
-          {selectedImage && (
-            <img
-              src={selectedImage}
-              alt="صورة مكبرة"
-              className="w-full h-auto max-h-[90vh] object-contain rounded"
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
-  );
-}
 
 export default function MerchantGuide({ open, onClose, onDismissForever }: MerchantGuideProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
 
-  // Fetch guide images from DB
-  const { data: guideImages } = useQuery({
-    queryKey: ["merchant-guide-images"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("merchant_guide_images")
-        .select("*")
-        .neq("image_url", "")
-        .order("display_order");
-      if (error) throw error;
-      return data as GuideImage[];
-    },
-    enabled: open,
-    staleTime: 10 * 60 * 1000,
-  });
 
   if (!open) return null;
 
@@ -769,10 +690,6 @@ export default function MerchantGuide({ open, onClose, onDismissForever }: Merch
                     <CardContent className="px-3.5 pb-4 pt-0 space-y-3">
                       <p className="text-[11px] text-muted-foreground leading-relaxed border-r-2 border-primary/20 pr-2">{section.description}</p>
                       
-                      {/* Screenshots from DB */}
-                      {guideImages && (
-                        <SectionScreenshots sectionKey={section.sectionKey} images={guideImages} />
-                      )}
 
                       {/* Steps */}
                       <div className="space-y-1.5">
