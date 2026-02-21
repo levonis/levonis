@@ -85,12 +85,18 @@ function StatusBadge({ status }: { status?: string | null }) {
 }
 
 async function uploadStoreImage(params: { userId: string; file: File }) {
-  const ext = params.file.name.split(".").pop() || "jpg";
-  const path = `${params.userId}/store.${ext}`;
+  // Always use .jpg since we compress to JPEG
+  const path = `${params.userId}/store_${Date.now()}.jpg`;
+  
+  // Force contentType to image/jpeg since compression outputs JPEG
+  const contentType = params.file.type?.startsWith("image/") ? params.file.type : "image/jpeg";
+
+  // First try to remove old file silently
+  await supabase.storage.from("merchant_stores").remove([`${params.userId}/store.jpg`]).catch(() => {});
 
   const { error: uploadError } = await supabase.storage
     .from("merchant_stores")
-    .upload(path, params.file, { upsert: true, contentType: params.file.type });
+    .upload(path, params.file, { upsert: true, contentType, cacheControl: "3600" });
   if (uploadError) throw uploadError;
 
   const { data } = supabase.storage.from("merchant_stores").getPublicUrl(path);
