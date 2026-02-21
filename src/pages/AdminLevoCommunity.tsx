@@ -494,7 +494,7 @@ function CommissionPaymentSettings() {
             <>
               <div className="flex items-center gap-2">
                 <Input type="number" value={codFee} onChange={(e) => setCodFee(Number(e.target.value))} className="h-7 text-xs flex-1" min={0} max={50} step={0.5} />
-                <span className="text-[10px] text-muted-foreground">% من التاجر</span>
+                <span className="text-[10px] text-muted-foreground">% عمولة على الزبون (تُخصم من التاجر)</span>
               </div>
               <div className="rounded-md bg-destructive/10 border border-destructive/20 p-2">
                 <div className="flex items-center gap-1.5 mb-1">
@@ -516,7 +516,7 @@ function CommissionPaymentSettings() {
               </div>
             </>
           )}
-          <p className="text-[9px] text-muted-foreground">العميل لا يدفع شيء مقدماً، التاجر يدفع {codFee}% عمولة إضافية</p>
+          <p className="text-[9px] text-muted-foreground">العميل يدفع {codFee}% عمولة إضافية عند الاستلام، وتُخصم الرسوم من رصيد التاجر (لأن الدفع خارج المنصة)</p>
         </div>
 
         {/* Fixed Amount */}

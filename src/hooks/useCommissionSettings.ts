@@ -8,7 +8,7 @@ export interface CommissionSettings {
   half_payment_fee: number;
   /** Extra customer fee for quarter payment (percent, e.g. 10) */
   quarter_payment_fee: number;
-  /** Extra merchant fee for COD (percent, e.g. 10) */
+  /** Extra customer fee for COD (percent, e.g. 10) - deducted from merchant since payment is outside platform */
   cod_merchant_fee: number;
   /** Fixed amount option fee (IQD) */
   fixed_amount_fee: number;

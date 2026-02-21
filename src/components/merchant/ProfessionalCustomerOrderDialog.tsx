@@ -295,7 +295,7 @@ export default function ProfessionalCustomerOrderDialog({
                   const config = {
                     quarter_advance: { label: "ربع المبلغ مقدماً", desc: "25% مقدماً والباقي عند الاستلام", commission: "6%" },
                     half_advance: { label: "نصف المبلغ مقدماً", desc: "50% مقدماً والباقي عند الاستلام", commission: "6%" },
-                    cod: { label: "الدفع عند الاستلام", desc: "كامل المبلغ عند التوصيل", commission: "10%" },
+                    cod: { label: "الدفع عند الاستلام", desc: "كامل المبلغ + العمولة عند التوصيل", commission: "10%" },
                   };
                   const c = config[method];
 
