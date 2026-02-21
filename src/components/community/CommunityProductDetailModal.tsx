@@ -106,6 +106,43 @@ export default function CommunityProductDetailModal({
   const productOptions = (fullProduct?.options || product?.options || []) as ProductOption[];
   const hasVariants = productColors.length > 0 || productOptions.length > 0;
 
+  // Fetch active store discounts
+  const { data: storeDiscounts = [] } = useQuery({
+    queryKey: ["store-discounts-for-cart", product?.merchant_id],
+    enabled: !!product?.merchant_id && open,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_store_discounts")
+        .select("*")
+        .eq("merchant_id", product!.merchant_id)
+        .eq("is_active", true);
+      if (error) throw error;
+      // Filter out expired discounts
+      return (data || []).filter((d: any) => !d.valid_until || new Date(d.valid_until) > new Date());
+    },
+  });
+
+  // Find best applicable discount for the current product price
+  const getBestDiscount = (price: number) => {
+    let bestDiscount: any = null;
+    let bestSaving = 0;
+    for (const d of storeDiscounts) {
+      let saving = 0;
+      if (d.discount_type === 'percentage' && d.discount_value > 0) {
+        saving = Math.round(price * (d.discount_value / 100));
+      } else if (d.discount_type === 'fixed_amount' && d.discount_value > 0) {
+        saving = d.discount_value;
+      } else if (d.discount_type === 'min_purchase_percentage' && price >= d.min_purchase_amount && d.discount_value > 0) {
+        saving = Math.round(price * (d.discount_value / 100));
+      }
+      if (saving > bestSaving) {
+        bestSaving = saving;
+        bestDiscount = d;
+      }
+    }
+    return bestDiscount;
+  };
+
   const addToCartMutation = useMutation({
     mutationFn: async () => {
       if (!user || !product) throw new Error("يجب تسجيل الدخول");
@@ -118,13 +155,16 @@ export default function CommunityProductDetailModal({
         .limit(1);
       
       if (existingCartItems && existingCartItems.length > 0 && existingCartItems[0].merchant_id !== product.merchant_id) {
-        // Store the merchant name for the dialog
         throw new Error(`DIFFERENT_MERCHANT:${existingCartItems[0].merchant_name || 'متجر آخر'}`);
       }
       
       const selectedOpt = selectedOption !== null ? productOptions[selectedOption] : null;
       const selectedCol = selectedColor !== null ? productColors[selectedColor] : null;
       const priceAdj = selectedOpt?.price_adjustment || 0;
+      const itemPrice = (product.price_iqd || 0) + priceAdj;
+      
+      // Find applicable discount
+      const discount = getBestDiscount(itemPrice * cartQuantity);
       
       // Check if exact same product+variant exists
       const variantTitle = product.title + (selectedOpt ? ` - ${selectedOpt.name}` : '') + (selectedCol ? ` (${selectedCol.name})` : '');
@@ -139,7 +179,10 @@ export default function CommunityProductDetailModal({
       if (existing) {
         const { error } = await supabase
           .from("community_cart_items")
-          .update({ quantity: existing.quantity + cartQuantity })
+          .update({ 
+            quantity: existing.quantity + cartQuantity,
+            discount_id: discount?.id || null,
+          })
           .eq("id", existing.id);
         if (error) throw error;
       } else {
@@ -156,8 +199,9 @@ export default function CommunityProductDetailModal({
           product_id: product.id,
           product_title: variantTitle,
           product_image: product.image_urls?.[product.primary_image_index] || product.image_urls?.[0] || null,
-          product_price: (product.price_iqd || 0) + priceAdj,
+          product_price: itemPrice,
           quantity: cartQuantity,
+          discount_id: discount?.id || null,
         });
         if (error) throw error;
       }
