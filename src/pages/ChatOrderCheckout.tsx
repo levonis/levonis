@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowRight, Package, MapPin, Wallet, Truck, Percent,
-  CheckCircle, Loader2, AlertCircle, Plus, Shield, CreditCard,
+  CheckCircle, Loader2, AlertCircle, Plus, Shield, CreditCard, Banknote,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -51,18 +51,21 @@ interface UserAddress {
   is_default: boolean;
 }
 
+// Commission rates are now dynamic from useCommissionSettings
+
 export default function ChatOrderCheckout() {
   const { orderId } = useParams<{ orderId: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { data: commissionSettings } = useCommissionSettings();
   
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('wallet');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [showAddressDialog, setShowAddressDialog] = useState(false);
+
+  const { data: commissionConfig } = useCommissionSettings();
 
   const { data: order, isLoading: loadingOrder } = useQuery({
     queryKey: ['chat-order-checkout', orderId],
@@ -103,38 +106,33 @@ export default function ChatOrderCheckout() {
     }
   }, [addresses, selectedAddress]);
 
+  // Dynamic commission calculation
   const baseTotal = order?.total_price || 0;
   
-  // Dynamic commission rates from admin settings
-  const getCustomerFeeRate = () => {
-    if (!commissionSettings) return 0;
+  const getCommissionRate = (): number => {
+    if (!commissionConfig) return 0;
     switch (paymentMethod) {
-      case 'wallet': return 0;
-      case 'half': return commissionSettings.half_payment_customer_fee;
-      case 'quarter': return commissionSettings.quarter_payment_customer_fee;
-      case 'cod': return 0; // COD fee is on merchant, not customer
-      default: return 0;
+      case 'half': return commissionConfig.half_payment_fee;
+      case 'quarter': return commissionConfig.quarter_payment_fee;
+      case 'cod': return 0; // COD fee is from merchant, not customer
+      default: return 0; // wallet = no extra fee
     }
   };
-  
-  const customerFeeRate = getCustomerFeeRate();
-  const customerFeeAmount = Math.round(baseTotal * (customerFeeRate / 100));
-  const fixedFee = (paymentMethod !== 'wallet' && paymentMethod !== 'cod' && commissionSettings) 
-    ? commissionSettings.fixed_amount_fee : 0;
-  const finalTotal = baseTotal + customerFeeAmount + fixedFee;
-  
-  const getPartialPercent = () => {
+
+  const getPartialPercent = (): number => {
     switch (paymentMethod) {
       case 'half': return 50;
       case 'quarter': return 25;
+      case 'cod': return 0;
       default: return 100;
     }
   };
-  
+
+  const commissionRate = getCommissionRate();
+  const commissionAmount = Math.round(baseTotal * (commissionRate / 100));
+  const finalTotal = baseTotal + commissionAmount;
   const partialPercent = getPartialPercent();
-  const amountToPay = paymentMethod === 'wallet' || paymentMethod === 'cod' 
-    ? (paymentMethod === 'cod' ? 0 : finalTotal) 
-    : Math.round(finalTotal * (partialPercent / 100));
+  const amountToPay = paymentMethod === 'wallet' ? finalTotal : Math.round(finalTotal * (partialPercent / 100));
   const remainingAmount = finalTotal - amountToPay;
   const insufficientBalance = paymentMethod !== 'cod' && amountToPay > walletBalance;
 
@@ -143,7 +141,15 @@ export default function ChatOrderCheckout() {
       if (!user || !order || !selectedAddress) throw new Error('بيانات ناقصة');
       if (insufficientBalance) throw new Error('رصيد المحفظة غير كافٍ');
 
-      if (amountToPay > 0) {
+      const paymentLabels: Record<PaymentMethod, string> = {
+        wallet: 'المحفظة',
+        half: 'نصف المبلغ',
+        quarter: 'ربع المبلغ',
+        cod: 'الدفع عند الاستلام',
+      };
+
+      // Deduct wallet for non-COD
+      if (amountToPay > 0 && paymentMethod !== 'cod') {
         const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
           p_user_id: user.id,
           p_amount: amountToPay,
@@ -152,21 +158,74 @@ export default function ChatOrderCheckout() {
         if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
       }
 
-      const platformRate = commissionSettings?.platform_rate ?? 0.017;
-      const platformCommission = Math.round(baseTotal * platformRate);
+      // For COD: charge merchant debt
+      if (paymentMethod === 'cod' && commissionConfig) {
+        const codFeeAmount = Math.round(baseTotal * (commissionConfig.cod_merchant_fee / 100));
+        if (codFeeAmount > 0) {
+          // Get merchant app id
+          const { data: merchantApp } = await supabase
+            .from('merchant_applications')
+            .select('id, user_id')
+            .eq('user_id', order.seller_id)
+            .eq('status', 'approved')
+            .maybeSingle();
+
+          if (merchantApp) {
+            // Try deduct from merchant wallet first
+            const { data: merchantWallet } = await supabase
+              .from('user_wallets')
+              .select('balance')
+              .eq('user_id', order.seller_id)
+              .maybeSingle();
+
+            const merchantBalance = merchantWallet?.balance || 0;
+
+            if (merchantBalance >= codFeeAmount) {
+              await supabase.rpc('deduct_wallet_balance', {
+                p_user_id: order.seller_id,
+                p_amount: codFeeAmount,
+                p_description: `عمولة COD - طلب #${order.id.slice(0, 8)}`
+              });
+            } else {
+              // Record as debt
+              const debtAmount = codFeeAmount - Math.max(0, merchantBalance);
+              if (merchantBalance > 0) {
+                await supabase.rpc('deduct_wallet_balance', {
+                  p_user_id: order.seller_id,
+                  p_amount: merchantBalance,
+                  p_description: `عمولة COD جزئية - طلب #${order.id.slice(0, 8)}`
+                });
+              }
+              await supabase.from('merchant_debts').insert({
+                merchant_user_id: order.seller_id,
+                merchant_application_id: merchantApp.id,
+                amount: debtAmount,
+                reason: `عمولة الدفع عند الاستلام - طلب #${order.id.slice(0, 8)}`,
+                order_id: order.id,
+                status: 'pending',
+              });
+              // Update total debt
+              await supabase
+                .from('merchant_public_profiles')
+                .update({ total_debt: (await supabase.from('merchant_debts').select('amount').eq('merchant_application_id', merchantApp.id).eq('status', 'pending').then(r => (r.data || []).reduce((s, d) => s + Number(d.amount), 0))) })
+                .eq('id', merchantApp.id);
+            }
+          }
+        }
+      }
 
       const { error: orderError } = await supabase
         .from('chat_orders')
         .update({
           payment_method: paymentMethod,
-          commission_rate: platformRate,
-          commission_amount: platformCommission,
-          partial_payment_percent: partialPercent,
+          commission_rate: commissionRate,
+          commission_amount: commissionAmount,
           delivery_address_id: selectedAddress,
           delivery_notes: deliveryNotes || null,
           paid_amount: amountToPay,
           remaining_amount: remainingAmount,
-          status: paymentMethod === 'cod' ? 'confirmed_cod' : 'paid',
+          partial_payment_percent: partialPercent,
+          status: paymentMethod === 'cod' ? 'confirmed' : 'paid',
           checkout_completed_at: new Date().toISOString(),
         })
         .eq('id', order.id);
@@ -182,21 +241,14 @@ export default function ChatOrderCheckout() {
           product_image: order.product_image,
           quantity: order.quantity,
           total_price: order.total_price,
-          status: 'paid',
+          status: paymentMethod === 'cod' ? 'confirmed' : 'paid',
         }),
       });
-
-      const paymentLabels: Record<PaymentMethod, string> = {
-        wallet: 'المحفظة (كامل)',
-        half: 'نصف المبلغ',
-        quarter: 'ربع المبلغ',
-        cod: 'الدفع عند الاستلام',
-      };
 
       await supabase.from('listing_messages').insert({
         conversation_id: order.conversation_id,
         sender_id: user.id,
-        content: `🔔 تم إتمام الطلب بنجاح!\nالمبلغ المدفوع: ${amountToPay.toLocaleString()} د.ع${remainingAmount > 0 ? `\nالمتبقي عند الاستلام: ${remainingAmount.toLocaleString()} د.ع` : ''}\nطريقة الدفع: ${paymentLabels[paymentMethod]}`,
+        content: `🔔 تم إتمام الطلب بنجاح!\n${amountToPay > 0 ? `المبلغ المدفوع: ${amountToPay.toLocaleString()} د.ع\n` : ''}${remainingAmount > 0 ? `المتبقي عند الاستلام: ${remainingAmount.toLocaleString()} د.ع\n` : ''}طريقة الدفع: ${paymentLabels[paymentMethod]}`,
       });
 
       if (order.seller_id) {
@@ -399,7 +451,7 @@ export default function ChatOrderCheckout() {
           <div className="p-4">
             <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
               <div className="space-y-2">
-                {/* Wallet - Full */}
+                {/* Wallet - always available */}
                 <Label
                   htmlFor="pay-wallet"
                   className={cn(
@@ -414,82 +466,88 @@ export default function ChatOrderCheckout() {
                     <Wallet className="h-4 w-4 text-primary" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-semibold text-sm text-foreground">دفع كامل (المحفظة)</p>
-                    <p className="text-[10px] text-muted-foreground">بدون رسوم إضافية</p>
+                    <p className="font-semibold text-sm text-foreground">المحفظة</p>
+                    <p className="text-[10px] text-muted-foreground">دفع كامل المبلغ من رصيدك</p>
                   </div>
-                  <span className="text-[10px] bg-emerald-500/15 text-emerald-500 px-2 py-0.5 rounded-full font-bold">
-                    0%
+                  <span className="text-[10px] bg-green-500/15 text-green-400 px-2 py-0.5 rounded-full font-bold">
+                    بدون عمولة
                   </span>
                 </Label>
 
                 {/* Half Payment */}
-                <Label
-                  htmlFor="pay-half"
-                  className={cn(
-                    "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
-                    paymentMethod === 'half' 
-                      ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
-                      : "border-primary/10 hover:border-primary/30"
-                  )}
-                >
-                  <RadioGroupItem value="half" id="pay-half" />
-                  <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center">
-                    <Percent className="h-4 w-4 text-amber-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm text-foreground">نصف المبلغ (50%)</p>
-                    <p className="text-[10px] text-muted-foreground">ادفع النصف والباقي عند الاستلام</p>
-                  </div>
-                  <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-bold">
-                    +{commissionSettings?.half_payment_customer_fee ?? 5}%
-                  </span>
-                </Label>
+                {commissionConfig?.half_payment_enabled && (
+                  <Label
+                    htmlFor="pay-half"
+                    className={cn(
+                      "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
+                      paymentMethod === 'half' 
+                        ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
+                        : "border-primary/10 hover:border-primary/30"
+                    )}
+                  >
+                    <RadioGroupItem value="half" id="pay-half" />
+                    <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                      <Banknote className="h-4 w-4 text-amber-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm text-foreground">نصف المبلغ</p>
+                      <p className="text-[10px] text-muted-foreground">ادفع 50% والباقي عند الاستلام</p>
+                    </div>
+                    <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-bold">
+                      +{commissionConfig.half_payment_fee}%
+                    </span>
+                  </Label>
+                )}
 
                 {/* Quarter Payment */}
-                <Label
-                  htmlFor="pay-quarter"
-                  className={cn(
-                    "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
-                    paymentMethod === 'quarter' 
-                      ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
-                      : "border-primary/10 hover:border-primary/30"
-                  )}
-                >
-                  <RadioGroupItem value="quarter" id="pay-quarter" />
-                  <div className="w-9 h-9 rounded-lg bg-orange-500/15 flex items-center justify-center">
-                    <Percent className="h-4 w-4 text-orange-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm text-foreground">ربع المبلغ (25%)</p>
-                    <p className="text-[10px] text-muted-foreground">ادفع الربع والباقي عند الاستلام</p>
-                  </div>
-                  <span className="text-[10px] bg-orange-500/15 text-orange-400 px-2 py-0.5 rounded-full font-bold">
-                    +{commissionSettings?.quarter_payment_customer_fee ?? 10}%
-                  </span>
-                </Label>
+                {commissionConfig?.quarter_payment_enabled && (
+                  <Label
+                    htmlFor="pay-quarter"
+                    className={cn(
+                      "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
+                      paymentMethod === 'quarter' 
+                        ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
+                        : "border-primary/10 hover:border-primary/30"
+                    )}
+                  >
+                    <RadioGroupItem value="quarter" id="pay-quarter" />
+                    <div className="w-9 h-9 rounded-lg bg-purple-500/15 flex items-center justify-center">
+                      <Percent className="h-4 w-4 text-purple-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm text-foreground">ربع المبلغ</p>
+                      <p className="text-[10px] text-muted-foreground">ادفع 25% والباقي عند الاستلام</p>
+                    </div>
+                    <span className="text-[10px] bg-purple-500/15 text-purple-400 px-2 py-0.5 rounded-full font-bold">
+                      +{commissionConfig.quarter_payment_fee}%
+                    </span>
+                  </Label>
+                )}
 
                 {/* COD */}
-                <Label
-                  htmlFor="pay-cod"
-                  className={cn(
-                    "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
-                    paymentMethod === 'cod' 
-                      ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
-                      : "border-primary/10 hover:border-primary/30"
-                  )}
-                >
-                  <RadioGroupItem value="cod" id="pay-cod" />
-                  <div className="w-9 h-9 rounded-lg bg-blue-500/15 flex items-center justify-center">
-                    <Truck className="h-4 w-4 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-sm text-foreground">الدفع عند الاستلام</p>
-                    <p className="text-[10px] text-muted-foreground">ادفع المبلغ كاملاً عند التوصيل</p>
-                  </div>
-                  <span className="text-[10px] bg-emerald-500/15 text-emerald-500 px-2 py-0.5 rounded-full font-bold">
-                    0%
-                  </span>
-                </Label>
+                {commissionConfig?.cod_enabled && (
+                  <Label
+                    htmlFor="pay-cod"
+                    className={cn(
+                      "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
+                      paymentMethod === 'cod' 
+                        ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
+                        : "border-primary/10 hover:border-primary/30"
+                    )}
+                  >
+                    <RadioGroupItem value="cod" id="pay-cod" />
+                    <div className="w-9 h-9 rounded-lg bg-orange-500/15 flex items-center justify-center">
+                      <Truck className="h-4 w-4 text-orange-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold text-sm text-foreground">الدفع عند الاستلام</p>
+                      <p className="text-[10px] text-muted-foreground">ادفع كامل المبلغ عند التسليم</p>
+                    </div>
+                    <span className="text-[10px] bg-green-500/15 text-green-400 px-2 py-0.5 rounded-full font-bold">
+                      بدون عمولة
+                    </span>
+                  </Label>
+                )}
               </div>
             </RadioGroup>
           </div>
@@ -503,17 +561,10 @@ export default function ChatOrderCheckout() {
               <span className="font-medium text-foreground">{baseTotal.toLocaleString()} د.ع</span>
             </div>
             
-            {customerFeeAmount > 0 && (
+            {commissionAmount > 0 && (
               <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">رسوم الدفع الجزئي ({customerFeeRate}%)</span>
-                <span className="text-amber-400 font-medium">+{customerFeeAmount.toLocaleString()} د.ع</span>
-              </div>
-            )}
-            
-            {fixedFee > 0 && (
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">رسوم ثابتة</span>
-                <span className="text-amber-400 font-medium">+{fixedFee.toLocaleString()} د.ع</span>
+                <span className="text-muted-foreground">عمولة الدفع ({commissionRate}%)</span>
+                <span className="text-amber-400 font-medium">+{commissionAmount.toLocaleString()} د.ع</span>
               </div>
             )}
             
@@ -524,12 +575,12 @@ export default function ChatOrderCheckout() {
               <span className="text-xl font-black text-primary">{finalTotal.toLocaleString()} د.ع</span>
             </div>
 
-            {paymentMethod !== 'wallet' && remainingAmount > 0 && (
+            {paymentMethod !== 'wallet' && (
               <>
                 <div className="h-px bg-primary/10" />
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">{paymentMethod === 'cod' ? 'الدفع عند الاستلام' : 'المطلوب الآن'}</span>
-                  <span className="font-bold text-emerald-400">{amountToPay.toLocaleString()} د.ع</span>
+                  <span className="text-muted-foreground">المطلوب الآن</span>
+                  <span className="font-bold text-green-400">{amountToPay.toLocaleString()} د.ع</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">عند الاستلام</span>

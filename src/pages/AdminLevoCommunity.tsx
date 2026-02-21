@@ -4,7 +4,8 @@ import {
   Store, Users, Award, ImageIcon, 
   Loader2, Settings, FileText, 
   Wallet, Trash2, Save, RefreshCw, ShieldCheck, Percent,
-  TrendingUp, Clock, Megaphone, Gift, Tag, Truck, Plus, X, MapPin
+  TrendingUp, Clock, Megaphone, Gift, Tag, Truck, Plus, X, MapPin,
+  CreditCard, Banknote, AlertTriangle
 } from "lucide-react";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { ADMIN_ROUTES } from "@/config/adminConfig";
@@ -17,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { IRAQI_GOVERNORATES } from "@/components/auth/signup/types";
+import { Switch } from "@/components/ui/switch";
 
 // Lazy load the tab content components
 const AdminCommunityMerchants = lazy(() => import("@/pages/AdminCommunityMerchants"));
@@ -347,6 +349,208 @@ function DeliveryPricingSettings() {
   );
 }
 
+function CommissionPaymentSettings() {
+  const queryClient = useQueryClient();
+
+  const { data: config, isLoading } = useQuery({
+    queryKey: ["commission-config"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("community_settings")
+        .select("value")
+        .eq("key", "commission_config")
+        .maybeSingle();
+      return (data?.value as any) || {};
+    },
+  });
+
+  const [halfFee, setHalfFee] = useState(5);
+  const [quarterFee, setQuarterFee] = useState(10);
+  const [codFee, setCodFee] = useState(10);
+  const [fixedFee, setFixedFee] = useState(0);
+  const [maxDebt, setMaxDebt] = useState(10000);
+  const [maxDebtDays, setMaxDebtDays] = useState(3);
+  const [codEnabled, setCodEnabled] = useState(false);
+  const [halfEnabled, setHalfEnabled] = useState(true);
+  const [quarterEnabled, setQuarterEnabled] = useState(false);
+  const [fixedEnabled, setFixedEnabled] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  if (config && !initialized) {
+    setHalfFee(config.half_payment_fee ?? 5);
+    setQuarterFee(config.quarter_payment_fee ?? 10);
+    setCodFee(config.cod_merchant_fee ?? 10);
+    setFixedFee(config.fixed_amount_fee ?? 0);
+    setMaxDebt(config.max_debt_amount ?? 10000);
+    setMaxDebtDays(config.max_debt_days ?? 3);
+    setCodEnabled(config.cod_enabled ?? false);
+    setHalfEnabled(config.half_payment_enabled ?? true);
+    setQuarterEnabled(config.quarter_payment_enabled ?? false);
+    setFixedEnabled(config.fixed_amount_enabled ?? false);
+    setInitialized(true);
+  }
+
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const value = {
+        half_payment_fee: halfFee,
+        quarter_payment_fee: quarterFee,
+        cod_merchant_fee: codFee,
+        fixed_amount_fee: fixedFee,
+        max_debt_amount: maxDebt,
+        max_debt_days: maxDebtDays,
+        cod_enabled: codEnabled,
+        half_payment_enabled: halfEnabled,
+        quarter_payment_enabled: quarterEnabled,
+        fixed_amount_enabled: fixedEnabled,
+      };
+
+      const { data: existing } = await supabase
+        .from("community_settings")
+        .select("id")
+        .eq("key", "commission_config")
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("community_settings")
+          .update({ value, updated_at: new Date().toISOString() })
+          .eq("key", "commission_config");
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("community_settings")
+          .insert({ key: "commission_config", value });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["commission-config"] });
+      queryClient.invalidateQueries({ queryKey: ["commission-settings-full"] });
+      toast.success("تم حفظ إعدادات العمولة");
+    },
+    onError: () => toast.error("فشل حفظ الإعدادات"),
+  });
+
+  if (isLoading) return <TabLoader />;
+
+  return (
+    <SettingCard
+      icon={CreditCard}
+      title="إعدادات طرق الدفع والعمولات"
+      description="التحكم بخيارات الدفع والعمولات الإضافية"
+      iconColor="bg-violet-500/15 text-violet-500"
+    >
+      <div className="space-y-4 mt-2">
+        {/* Half Payment */}
+        <div className="rounded-lg border border-border/60 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Banknote className="h-3.5 w-3.5 text-blue-500" />
+              <span className="text-xs font-bold">نصف المبلغ</span>
+              <Badge variant="secondary" className="text-[8px] h-4">عمولة من العميل</Badge>
+            </div>
+            <Switch checked={halfEnabled} onCheckedChange={setHalfEnabled} />
+          </div>
+          {halfEnabled && (
+            <div className="flex items-center gap-2">
+              <Input type="number" value={halfFee} onChange={(e) => setHalfFee(Number(e.target.value))} className="h-7 text-xs flex-1" min={0} max={50} step={0.5} />
+              <span className="text-[10px] text-muted-foreground">% إضافية</span>
+            </div>
+          )}
+          <p className="text-[9px] text-muted-foreground">العميل يدفع 50% مقدماً + {halfFee}% عمولة، والباقي عند الاستلام</p>
+        </div>
+
+        {/* Quarter Payment */}
+        <div className="rounded-lg border border-border/60 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Banknote className="h-3.5 w-3.5 text-purple-500" />
+              <span className="text-xs font-bold">ربع المبلغ</span>
+              <Badge variant="secondary" className="text-[8px] h-4">عمولة من العميل</Badge>
+            </div>
+            <Switch checked={quarterEnabled} onCheckedChange={setQuarterEnabled} />
+          </div>
+          {quarterEnabled && (
+            <div className="flex items-center gap-2">
+              <Input type="number" value={quarterFee} onChange={(e) => setQuarterFee(Number(e.target.value))} className="h-7 text-xs flex-1" min={0} max={50} step={0.5} />
+              <span className="text-[10px] text-muted-foreground">% إضافية</span>
+            </div>
+          )}
+          <p className="text-[9px] text-muted-foreground">العميل يدفع 25% مقدماً + {quarterFee}% عمولة، والباقي عند الاستلام</p>
+        </div>
+
+        {/* COD */}
+        <div className="rounded-lg border border-border/60 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Truck className="h-3.5 w-3.5 text-orange-500" />
+              <span className="text-xs font-bold">الدفع عند الاستلام</span>
+              <Badge variant="outline" className="text-[8px] h-4 border-orange-500/30 text-orange-500">عمولة من التاجر</Badge>
+            </div>
+            <Switch checked={codEnabled} onCheckedChange={setCodEnabled} />
+          </div>
+          {codEnabled && (
+            <>
+              <div className="flex items-center gap-2">
+                <Input type="number" value={codFee} onChange={(e) => setCodFee(Number(e.target.value))} className="h-7 text-xs flex-1" min={0} max={50} step={0.5} />
+                <span className="text-[10px] text-muted-foreground">% من التاجر</span>
+              </div>
+              <div className="rounded-md bg-destructive/10 border border-destructive/20 p-2">
+                <div className="flex items-center gap-1.5 mb-1">
+                  <AlertTriangle className="h-3 w-3 text-destructive" />
+                  <span className="text-[10px] font-bold text-destructive">نظام الدين</span>
+                </div>
+                <p className="text-[9px] text-muted-foreground">إذا لم يكن لدى التاجر رصيد كافٍ، تُسجل العمولة كدين وتُسدد تلقائياً عند تعبئة المحفظة.</p>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <div className="space-y-1">
+                    <Label className="text-[9px]">حد الدين (د.ع)</Label>
+                    <Input type="number" value={maxDebt} onChange={(e) => setMaxDebt(Number(e.target.value))} className="h-6 text-[10px]" min={0} step={1000} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-[9px]">مدة قبل الإيقاف (أيام)</Label>
+                    <Input type="number" value={maxDebtDays} onChange={(e) => setMaxDebtDays(Number(e.target.value))} className="h-6 text-[10px]" min={1} max={30} />
+                  </div>
+                </div>
+                <p className="text-[8px] text-destructive/70 mt-1">عند تجاوز {maxDebt.toLocaleString()} د.ع لمدة {maxDebtDays} أيام يتوقف حساب التاجر مؤقتاً</p>
+              </div>
+            </>
+          )}
+          <p className="text-[9px] text-muted-foreground">العميل لا يدفع شيء مقدماً، التاجر يدفع {codFee}% عمولة إضافية</p>
+        </div>
+
+        {/* Fixed Amount */}
+        <div className="rounded-lg border border-border/60 p-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-xs font-bold">مبلغ محدد</span>
+              <Badge variant="secondary" className="text-[8px] h-4">عمولة ثابتة</Badge>
+            </div>
+            <Switch checked={fixedEnabled} onCheckedChange={setFixedEnabled} />
+          </div>
+          {fixedEnabled && (
+            <div className="flex items-center gap-2">
+              <Input type="number" value={fixedFee} onChange={(e) => setFixedFee(Number(e.target.value))} className="h-7 text-xs flex-1" min={0} step={500} />
+              <span className="text-[10px] text-muted-foreground">د.ع ثابت</span>
+            </div>
+          )}
+          <p className="text-[9px] text-muted-foreground">عمولة ثابتة بالمبلغ على كل عملية بغض النظر عن قيمة الطلب</p>
+        </div>
+
+        <Button
+          onClick={() => saveMutation.mutate()}
+          disabled={saveMutation.isPending}
+          className="w-full h-8 text-xs gap-1.5"
+        >
+          <Save className="h-3 w-3" />
+          {saveMutation.isPending ? "جارٍ الحفظ..." : "حفظ إعدادات العمولة"}
+        </Button>
+      </div>
+    </SettingCard>
+  );
+}
+
 function CommunitySettings() {
   const queryClient = useQueryClient();
   
@@ -541,27 +745,44 @@ function CommunitySettings() {
         </div>
       </SettingCard>
 
-      {/* Commission Rate - Link to dedicated page */}
-      <SettingCard
-        icon={Percent}
-        title="إعدادات العمولة"
-        description="التحكم بنسب العمولة لجميع خيارات الدفع"
-        iconColor="bg-emerald-500/15 text-emerald-500"
-      >
-        <div className="flex items-center gap-2">
-          <p className="text-[9px] text-muted-foreground flex-1">
+      {/* Commission Rate - Platform */}
+      <div className="sm:col-span-2">
+        <SettingCard
+          icon={Percent}
+          title="نسبة العمولة الأساسية (من التاجر)"
+          description="تُخصم من كل عملية بيع (منتجات، طلبات، محادثات)"
+          iconColor="bg-emerald-500/15 text-emerald-500"
+        >
+          <div className="flex items-center gap-2">
+            <Input
+              type="number"
+              value={commissionRate}
+              onChange={(e) => setCommissionRate(Number(e.target.value))}
+              className="h-7 text-xs flex-1"
+              min={0}
+              max={100}
+              step={0.1}
+            />
+            <span className="text-[10px] text-muted-foreground shrink-0">%</span>
+            <Button
+              onClick={() => updateCommissionMutation.mutate(commissionRate)}
+              disabled={updateCommissionMutation.isPending}
+              size="sm"
+              className="h-7 px-2"
+            >
+              <Save className="h-3 w-3" />
+            </Button>
+          </div>
+          <p className="text-[9px] text-muted-foreground mt-1">
             الحالي: {((platformCommission?.rate || 0.007) * 100).toFixed(1)}%
           </p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 px-3 text-[10px]"
-            onClick={() => window.location.href = ADMIN_ROUTES.commissionSettings}
-          >
-            إدارة العمولة
-          </Button>
-        </div>
-      </SettingCard>
+        </SettingCard>
+      </div>
+
+      {/* Payment Methods Commission Settings */}
+      <div className="sm:col-span-2">
+        <CommissionPaymentSettings />
+      </div>
 
       {/* Auto Delete Days */}
       <SettingCard

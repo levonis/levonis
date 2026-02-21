@@ -16,7 +16,6 @@ import ProductCategorySelector from "./ProductCategorySelector";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { useCommissionSettings } from "@/hooks/useCommissionSettings";
 
 interface ProductColor {
   name: string;
@@ -82,8 +81,7 @@ export default function ProductFormDialog({
   const [uploadingColorImage, setUploadingColorImage] = useState<number | null>(null);
   const [uploadingOptionImage, setUploadingOptionImage] = useState<number | null>(null);
 
-  const { data: commissionSettings } = useCommissionSettings();
-  const COMMISSION_RATE = commissionSettings?.platform_rate ?? 0.017;
+  const COMMISSION_RATE = 0.017;
 
   const uploadImage = async (file: File): Promise<string | null> => {
     if (!user?.id) return null;
