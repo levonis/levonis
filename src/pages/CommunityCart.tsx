@@ -4,11 +4,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ArrowLeft, ShoppingBag, Trash2, Plus, Minus, Store, 
-  Package, ShoppingCart, Truck, Loader2, Sparkles
+  Package, ShoppingCart, Truck, Loader2, ChevronLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
@@ -212,12 +211,17 @@ export default function CommunityCart() {
     return (
       <div className="min-h-screen flex flex-col bg-background" dir="rtl">
         <div className="flex-1 flex items-center justify-center">
-          <div className="text-center space-y-4">
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-card border border-primary/20 flex items-center justify-center">
-              <ShoppingBag className="h-7 w-7 text-primary/30" />
+          <div className="text-center space-y-5 px-6">
+            <div className="w-20 h-20 mx-auto rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
+              <ShoppingBag className="h-8 w-8 text-primary/40" />
             </div>
-            <p className="font-bold">سجّل دخولك لعرض السلة</p>
-            <Button onClick={() => navigate("/auth")} className="rounded-full">تسجيل الدخول</Button>
+            <div>
+              <p className="font-bold text-foreground text-lg">سجّل دخولك</p>
+              <p className="text-sm text-muted-foreground mt-1">لعرض سلة التسوق الخاصة بك</p>
+            </div>
+            <Button onClick={() => navigate("/auth")} className="rounded-full px-8 h-11 font-bold">
+              تسجيل الدخول
+            </Button>
           </div>
         </div>
       </div>
@@ -225,65 +229,68 @@ export default function CommunityCart() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-background via-background to-muted/20" dir="rtl">
-      {/* Minimal Header */}
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/40">
-        <div className="flex items-center justify-between px-4 h-14">
+    <div className="min-h-screen flex flex-col bg-background" dir="rtl">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b border-primary/10">
+        <div className="flex items-center justify-between px-4 h-[56px]">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => navigate(-1)}>
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <div>
-              <h1 className="text-sm font-bold text-foreground">سلة التسوق</h1>
+            <button
+              onClick={() => navigate(-1)}
+              className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4 text-primary" />
+            </button>
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5 text-primary" />
+              <h1 className="text-base font-bold text-foreground">سلة التسوق</h1>
               {totalItems > 0 && (
-                <p className="text-[10px] text-muted-foreground leading-tight">{totalItems} منتج</p>
+                <span className="bg-primary text-primary-foreground text-[10px] font-bold rounded-full h-5 min-w-[20px] px-1.5 flex items-center justify-center">
+                  {totalItems}
+                </span>
               )}
             </div>
           </div>
           {cartItems.length > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 text-[11px] text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full px-3 gap-1.5"
+            <button
               onClick={() => clearCart.mutate()}
+              className="text-[11px] text-destructive/80 hover:text-destructive transition-colors flex items-center gap-1"
             >
-              <Trash2 className="h-3 w-3" />
-              تفريغ
-            </Button>
+              <Trash2 className="h-3.5 w-3.5" />
+              مسح الكل
+            </button>
           )}
         </div>
       </header>
 
-      <main className="flex-1 px-4 py-4 space-y-3 pb-40">
+      <main className="flex-1 pb-36">
         {/* Loading */}
         {isLoading && (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <Skeleton key={i} className="h-24 rounded-2xl" />
+          <div className="px-4 pt-4 space-y-4">
+            {[1, 2].map(i => (
+              <div key={i} className="space-y-2">
+                <Skeleton className="h-10 w-40 rounded-xl" />
+                <Skeleton className="h-28 rounded-2xl" />
+                <Skeleton className="h-28 rounded-2xl" />
+              </div>
             ))}
           </div>
         )}
 
         {/* Empty State */}
         {!isLoading && cartItems.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24">
-            <div className="relative mb-6">
-              <div className="w-24 h-24 rounded-[28px] bg-gradient-to-br from-primary/10 to-accent/10 flex items-center justify-center">
-                <ShoppingCart className="h-10 w-10 text-primary/25" />
-              </div>
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-muted border-2 border-background flex items-center justify-center">
-                <Sparkles className="h-3.5 w-3.5 text-muted-foreground/50" />
-              </div>
+          <div className="flex flex-col items-center justify-center py-28 px-6">
+            <div className="w-28 h-28 rounded-full bg-gradient-to-br from-primary/5 to-primary/15 flex items-center justify-center mb-6 border border-primary/10">
+              <ShoppingCart className="h-12 w-12 text-primary/20" />
             </div>
-            <p className="font-bold text-foreground mb-1">سلتك فارغة</p>
-            <p className="text-xs text-muted-foreground mb-5">اكتشف المنتجات وأضفها لسلتك</p>
+            <h2 className="font-bold text-foreground text-lg mb-1">سلتك فارغة</h2>
+            <p className="text-sm text-muted-foreground mb-8 text-center max-w-[260px]">
+              اكتشف المتاجر وأضف منتجاتك المفضلة
+            </p>
             <Button 
-              variant="outline" 
-              size="sm" 
-              className="rounded-full gap-2 border-primary/30 text-primary hover:bg-primary/5" 
               onClick={() => navigate("/community")}
+              className="rounded-full gap-2 h-11 px-7 font-bold"
             >
-              <Store className="h-3.5 w-3.5" />
+              <Store className="h-4 w-4" />
               تصفح المتاجر
             </Button>
           </div>
@@ -295,97 +302,97 @@ export default function CommunityCart() {
           const groupGrandTotal = groupTotal + group.deliveryPrice;
 
           return (
-            <div key={group.merchantId} className="rounded-2xl bg-card border border-border/40 overflow-hidden">
-              {/* Merchant Header */}
-              <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
-                <button 
-                  className="flex items-center gap-2.5"
-                  onClick={() => navigate(`/community/store/${group.merchantId}`)}
-                >
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Store className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs font-bold text-foreground leading-tight">{group.merchantName}</p>
-                    <p className="text-[10px] text-muted-foreground">{group.items.length} منتج</p>
-                  </div>
-                </button>
-              </div>
+            <div key={group.merchantId} className="mt-4">
+              {/* Merchant Label */}
+              <button
+                onClick={() => navigate(`/community/store/${group.merchantId}`)}
+                className="flex items-center gap-2 px-4 mb-2 group"
+              >
+                <div className="w-7 h-7 rounded-lg bg-primary/15 flex items-center justify-center">
+                  <Store className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <span className="text-sm font-bold text-foreground">{group.merchantName}</span>
+                <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+              </button>
 
               {/* Items */}
-              <div className="divide-y divide-border/20">
+              <div className="px-4 space-y-2">
                 {group.items.map((item) => (
-                  <div key={item.id} className="flex gap-3 p-3">
+                  <div
+                    key={item.id}
+                    className="flex gap-3 p-3 rounded-2xl bg-card border border-primary/10 hover:border-primary/20 transition-colors"
+                  >
                     {/* Image */}
-                    <div className="w-[68px] h-[68px] rounded-xl overflow-hidden bg-muted shrink-0">
+                    <div className="w-[72px] h-[72px] rounded-xl overflow-hidden bg-background-2 shrink-0 border border-primary/5">
                       {item.product_image ? (
                         <OptimizedImage src={item.product_image} alt={item.product_title} className="w-full h-full object-cover" />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
-                          <Package className="h-5 w-5 text-muted-foreground/25" />
+                          <Package className="h-6 w-6 text-primary/15" />
                         </div>
                       )}
                     </div>
 
                     {/* Info */}
-                    <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
                       <div>
-                        <h4 className="text-[11px] font-semibold text-foreground line-clamp-1 leading-tight">{item.product_title}</h4>
-                        <p className="text-[13px] font-bold text-primary mt-0.5">
-                          {item.product_price.toLocaleString()} <span className="text-[9px] font-normal text-muted-foreground">د.ع</span>
-                        </p>
+                        <h4 className="text-[13px] font-semibold text-foreground line-clamp-2 leading-snug">
+                          {item.product_title}
+                        </h4>
                       </div>
 
-                      <div className="flex items-center justify-between mt-1">
-                        {/* Quantity Controls */}
-                        <div className="flex items-center h-7 rounded-lg border border-border/50 overflow-hidden bg-muted/20">
+                      <div className="flex items-end justify-between mt-2">
+                        {/* Quantity */}
+                        <div className="flex items-center h-8 rounded-xl border border-primary/15 overflow-hidden bg-background/50">
                           <button
-                            className="h-full w-7 flex items-center justify-center hover:bg-muted active:bg-muted/80 transition-colors"
+                            className="h-full w-8 flex items-center justify-center hover:bg-primary/10 active:bg-primary/15 transition-colors"
                             onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity - 1 })}
                           >
-                            {item.quantity === 1 ? <Trash2 className="h-3 w-3 text-destructive/70" /> : <Minus className="h-3 w-3" />}
+                            {item.quantity === 1 ? (
+                              <Trash2 className="h-3 w-3 text-destructive/70" />
+                            ) : (
+                              <Minus className="h-3 w-3 text-muted-foreground" />
+                            )}
                           </button>
-                          <span className="w-7 text-center text-[11px] font-bold select-none">{item.quantity}</span>
+                          <span className="w-8 text-center text-xs font-bold select-none text-foreground">
+                            {item.quantity}
+                          </span>
                           <button
-                            className="h-full w-7 flex items-center justify-center hover:bg-muted active:bg-muted/80 transition-colors"
+                            className="h-full w-8 flex items-center justify-center hover:bg-primary/10 active:bg-primary/15 transition-colors"
                             onClick={() => updateQuantity.mutate({ id: item.id, quantity: item.quantity + 1 })}
                           >
-                            <Plus className="h-3 w-3" />
+                            <Plus className="h-3 w-3 text-primary" />
                           </button>
                         </div>
 
-                        {/* Subtotal */}
-                        <span className="text-[11px] font-bold text-foreground/70">
-                          {(item.product_price * item.quantity).toLocaleString()} د.ع
-                        </span>
+                        {/* Price */}
+                        <div className="text-left">
+                          <p className="text-[15px] font-black text-primary leading-none">
+                            {(item.product_price * item.quantity).toLocaleString()}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">د.ع</p>
+                        </div>
                       </div>
                     </div>
                   </div>
                 ))}
-              </div>
 
-              {/* Footer: Summary + Order Button */}
-              <div className="bg-muted/20 border-t border-border/30 p-3 space-y-2.5">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="text-muted-foreground">المنتجات</span>
-                  <span className="font-semibold">{groupTotal.toLocaleString()} د.ع</span>
-                </div>
+                {/* Delivery info */}
                 {group.deliveryPrice > 0 && (
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-muted-foreground flex items-center gap-1">
-                      <Truck className="h-3 w-3" />
-                      التوصيل
+                  <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-primary/5 border border-primary/10">
+                    <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <Truck className="h-3.5 w-3.5 text-primary/60" />
+                      رسوم التوصيل
                     </span>
-                    <span className="font-semibold">{group.deliveryPrice.toLocaleString()} د.ع</span>
+                    <span className="text-[11px] font-bold text-foreground">{group.deliveryPrice.toLocaleString()} د.ع</span>
                   </div>
                 )}
-                <div className="flex items-center justify-between text-xs pt-2 border-t border-border/30">
-                  <span className="font-bold">الإجمالي</span>
-                  <span className="text-sm font-black text-primary">{groupGrandTotal.toLocaleString()} د.ع</span>
-                </div>
+              </div>
 
+              {/* Order Button */}
+              <div className="px-4 mt-3">
                 <Button
-                  className="w-full h-11 text-xs gap-2 rounded-xl font-bold"
+                  className="w-full h-12 rounded-xl font-bold text-sm gap-2 relative overflow-hidden"
                   onClick={() => placeOrderMutation.mutate(group.merchantId)}
                   disabled={placeOrderMutation.isPending}
                 >
@@ -397,29 +404,39 @@ export default function CommunityCart() {
                   ) : (
                     <>
                       <ShoppingBag className="h-4 w-4" />
-                      اطلب من {group.merchantName}
+                      <span>اطلب من {group.merchantName}</span>
+                      <span className="mr-auto text-primary-foreground/70">
+                        {groupGrandTotal.toLocaleString()} د.ع
+                      </span>
                     </>
                   )}
                 </Button>
               </div>
+
+              {/* Divider */}
+              <div className="h-px bg-primary/5 mx-4 mt-5" />
             </div>
           );
         })}
       </main>
 
-      {/* Bottom Summary */}
+      {/* Bottom Summary Bar */}
       {cartItems.length > 0 && (
-        <div className="fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur-xl border-t border-border/40 px-4 py-3 safe-area-bottom">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-muted-foreground">الإجمالي الكلي</p>
-              <p className="text-lg font-black text-primary leading-tight">
-                {totalPrice.toLocaleString()} <span className="text-[10px] text-muted-foreground font-normal">د.ع</span>
-              </p>
+        <div className="fixed bottom-0 inset-x-0 z-30 safe-area-bottom">
+          <div className="bg-card/95 backdrop-blur-xl border-t border-primary/15 px-5 py-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">الإجمالي</p>
+                <p className="text-xl font-black text-primary leading-tight">
+                  {totalPrice.toLocaleString()}
+                  <span className="text-xs text-muted-foreground font-normal mr-1">د.ع</span>
+                </p>
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] text-muted-foreground">{totalItems} منتج · {groupedItems.length} متجر</p>
+                <p className="text-[10px] text-muted-foreground">شامل التوصيل</p>
+              </div>
             </div>
-            <p className="text-[10px] text-muted-foreground max-w-[140px] text-left leading-tight">
-              اختر متجراً أعلاه لإتمام الطلب
-            </p>
           </div>
         </div>
       )}
