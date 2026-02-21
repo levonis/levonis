@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  ShoppingBag, Settings2, Palette, Plus, Minus, CalendarClock, Users,
+  ShoppingBag, Settings2, Palette, Plus, Minus, CalendarClock, Users, AlertTriangle, Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -53,6 +53,8 @@ export default function AddToCartSheet({ product, open, onOpenChange }: AddToCar
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [selectedColor, setSelectedColor] = useState<number | null>(null);
   const [cartQuantity, setCartQuantity] = useState(1);
+  const [showMerchantConflict, setShowMerchantConflict] = useState(false);
+  const [conflictMerchantName, setConflictMerchantName] = useState("");
 
   // Fetch full product details (with colors/options/sale_type)
   const { data: fullProduct } = useQuery({
@@ -94,8 +96,53 @@ export default function AddToCartSheet({ product, open, onOpenChange }: AddToCar
       setSelectedOption(null);
       setSelectedColor(null);
       setCartQuantity(1);
+      setShowMerchantConflict(false);
+      setConflictMerchantName("");
     }
     onOpenChange(v);
+  };
+
+  const performAddToCart = async () => {
+    if (!user || !product) throw new Error("يجب تسجيل الدخول");
+
+    const selectedOpt = selectedOption !== null ? productOptions[selectedOption] : null;
+    const selectedCol = selectedColor !== null ? productColors[selectedColor] : null;
+    const priceAdj = selectedOpt?.price_adjustment || 0;
+
+    const variantTitle = product.title + (selectedOpt ? ` - ${selectedOpt.name}` : '') + (selectedCol ? ` (${selectedCol.name})` : '');
+    const { data: existing } = await supabase
+      .from("community_cart_items")
+      .select("id, quantity")
+      .eq("user_id", user.id)
+      .eq("product_id", product.id)
+      .eq("product_title", variantTitle)
+      .maybeSingle();
+
+    if (existing) {
+      const { error } = await supabase
+        .from("community_cart_items")
+        .update({ quantity: existing.quantity + cartQuantity })
+        .eq("id", existing.id);
+      if (error) throw error;
+    } else {
+      const { data: merchant } = await supabase
+        .from("merchant_applications")
+        .select("display_name")
+        .eq("id", product.merchant_id)
+        .maybeSingle();
+
+      const { error } = await supabase.from("community_cart_items").insert({
+        user_id: user.id,
+        merchant_id: product.merchant_id,
+        merchant_name: merchant?.display_name || "متجر",
+        product_id: product.id,
+        product_title: variantTitle,
+        product_image: product.image_urls?.[product.primary_image_index] || product.image_urls?.[0] || null,
+        product_price: (product.price_iqd || 0) + priceAdj,
+        quantity: cartQuantity,
+      });
+      if (error) throw error;
+    }
   };
 
   const addToCartMutation = useMutation({
@@ -113,44 +160,7 @@ export default function AddToCartSheet({ product, open, onOpenChange }: AddToCar
         throw new Error(`DIFFERENT_MERCHANT:${existingCartItems[0].merchant_name || 'متجر آخر'}`);
       }
 
-      const selectedOpt = selectedOption !== null ? productOptions[selectedOption] : null;
-      const selectedCol = selectedColor !== null ? productColors[selectedColor] : null;
-      const priceAdj = selectedOpt?.price_adjustment || 0;
-
-      const variantTitle = product.title + (selectedOpt ? ` - ${selectedOpt.name}` : '') + (selectedCol ? ` (${selectedCol.name})` : '');
-      const { data: existing } = await supabase
-        .from("community_cart_items")
-        .select("id, quantity")
-        .eq("user_id", user.id)
-        .eq("product_id", product.id)
-        .eq("product_title", variantTitle)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from("community_cart_items")
-          .update({ quantity: existing.quantity + cartQuantity })
-          .eq("id", existing.id);
-        if (error) throw error;
-      } else {
-        const { data: merchant } = await supabase
-          .from("merchant_applications")
-          .select("display_name")
-          .eq("id", product.merchant_id)
-          .maybeSingle();
-
-        const { error } = await supabase.from("community_cart_items").insert({
-          user_id: user.id,
-          merchant_id: product.merchant_id,
-          merchant_name: merchant?.display_name || "متجر",
-          product_id: product.id,
-          product_title: variantTitle,
-          product_image: product.image_urls?.[product.primary_image_index] || product.image_urls?.[0] || null,
-          product_price: (product.price_iqd || 0) + priceAdj,
-          quantity: cartQuantity,
-        });
-        if (error) throw error;
-      }
+      await performAddToCart();
     },
     onSuccess: () => {
       toast.success("تمت الإضافة للسلة 🛒");
@@ -162,20 +172,28 @@ export default function AddToCartSheet({ product, open, onOpenChange }: AddToCar
         navigate("/auth");
       } else if (e.message.startsWith("DIFFERENT_MERCHANT:")) {
         const merchantName = e.message.split(":")[1];
-        toast.error(`لديك بالفعل منتجات من متجر "${merchantName}"`, {
-          description: "هل ترغب بتفريغ السلة والإضافة؟",
-          action: {
-            label: "تفريغ وإضافة",
-            onClick: async () => {
-              await supabase.from("community_cart_items").delete().eq("user_id", user!.id);
-              queryClient.invalidateQueries({ queryKey: ["community-cart"] });
-              addToCartMutation.mutate();
-            },
-          },
-        });
+        setConflictMerchantName(merchantName);
+        setShowMerchantConflict(true);
       } else {
         toast.error("حدث خطأ");
       }
+    },
+  });
+
+  const clearAndAddMutation = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error("يجب تسجيل الدخول");
+      await supabase.from("community_cart_items").delete().eq("user_id", user.id);
+      await performAddToCart();
+    },
+    onSuccess: () => {
+      toast.success("تم تفريغ السلة وإضافة المنتج 🛒");
+      queryClient.invalidateQueries({ queryKey: ["community-cart"] });
+      setShowMerchantConflict(false);
+      handleOpenChange(false);
+    },
+    onError: () => {
+      toast.error("حدث خطأ");
     },
   });
 
@@ -236,169 +254,213 @@ export default function AddToCartSheet({ product, open, onOpenChange }: AddToCar
         <div className="p-5 space-y-4">
           <div className="w-10 h-1 rounded-full bg-border mx-auto -mt-1 mb-2" />
 
-          <SheetHeader className="text-right">
-            <SheetTitle className="text-sm font-black flex items-center gap-2">
-              {isPreorder && <CalendarClock className="h-4 w-4 text-amber-500" />}
-              {isWaitlist && <Users className="h-4 w-4 text-blue-500" />}
-              {!isPreorder && !isWaitlist && <ShoppingBag className="h-4 w-4 text-primary" />}
-              {isPreorder ? "حجز مسبق" : isWaitlist ? "الانضمام للطابور" : "اختر الخيارات"}
-            </SheetTitle>
-          </SheetHeader>
-
-          {/* Product summary */}
-          <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/30">
-            {mainImage && (
-              <img src={mainImage} alt="" className="h-12 w-12 rounded-lg object-cover" />
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold line-clamp-1">{product.title}</p>
-              <p className="text-sm font-black text-primary tabular-nums">{currentPrice.toLocaleString()} د.ع</p>
-            </div>
-            {(isPreorder || isWaitlist) && (
-              <Badge variant="secondary" className="text-[9px] shrink-0">
-                {isPreorder ? "حجز مسبق" : "طابور"}
-              </Badge>
-            )}
-          </div>
-
-          {/* Preorder/Waitlist Info */}
-          {(isPreorder || isWaitlist) && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5">
-              {isPreorder && fullProduct?.preorder_available_date && (
-                <p className="text-xs flex items-center gap-1.5">
-                  <CalendarClock className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-muted-foreground">تاريخ التوفر:</span>
-                  <span className="font-bold">{new Date(fullProduct.preorder_available_date).toLocaleDateString('ar-IQ')}</span>
+          {/* Merchant Conflict Screen */}
+          {showMerchantConflict ? (
+            <div className="space-y-4 py-2">
+              <div className="flex flex-col items-center gap-3 text-center">
+                <div className="h-14 w-14 rounded-full bg-destructive/10 flex items-center justify-center">
+                  <AlertTriangle className="h-7 w-7 text-destructive" />
+                </div>
+                <h3 className="text-base font-black text-foreground">سلتك تحتوي منتجات من متجر آخر</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  لديك منتجات من متجر "<span className="font-bold text-foreground">{conflictMerchantName}</span>"
+                  <br />
+                  هل تريد تفريغ السلة وإضافة هذا المنتج؟
                 </p>
-              )}
-              {isPreorder && depositAmount > 0 && (
-                <p className="text-xs flex items-center gap-1.5">
-                  <ShoppingBag className="h-3.5 w-3.5 text-amber-500" />
-                  <span className="text-muted-foreground">مبلغ العربون:</span>
-                  <span className="font-bold text-primary">{depositAmount.toLocaleString()} د.ع ({fullProduct?.preorder_deposit_percent}%)</span>
-                </p>
-              )}
-              {fullProduct?.max_queue_slots && (
-                <p className="text-xs flex items-center gap-1.5">
-                  <Users className="h-3.5 w-3.5 text-blue-500" />
-                  <span className="text-muted-foreground">الأماكن:</span>
-                  <span className="font-bold">{fullProduct.current_queue_count ?? 0} / {fullProduct.max_queue_slots}</span>
-                </p>
-              )}
-              {fullProduct?.preorder_note && (
-                <p className="text-[11px] text-muted-foreground mt-1">{fullProduct.preorder_note}</p>
-              )}
-              {queueFull && (
-                <Badge variant="destructive" className="text-[10px]">الأماكن ممتلئة</Badge>
-              )}
-            </div>
-          )}
-
-          {/* Options Selection */}
-          {productOptions.length > 0 && (
-            <div className="space-y-2">
-              <p className="text-xs font-bold flex items-center gap-1.5">
-                <Settings2 className="h-3.5 w-3.5 text-primary" />
-                اختر الخيار <span className="text-destructive">*</span>
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {productOptions.map((opt, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setSelectedOption(i)}
-                    className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
-                      selectedOption === i
-                        ? "bg-primary text-primary-foreground border-primary shadow-md"
-                        : "bg-card border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <span>{opt.name}</span>
-                    {opt.price_adjustment !== 0 && (
-                      <span className="text-[10px] opacity-80 mr-1">
-                        ({opt.price_adjustment > 0 ? '+' : ''}{opt.price_adjustment.toLocaleString()})
-                      </span>
-                    )}
-                  </button>
-                ))}
               </div>
-            </div>
-          )}
 
-          {/* Colors Selection */}
-          {productColors.length > 0 && (
-            <div className={`space-y-2 transition-opacity ${productOptions.length > 0 && selectedOption === null ? 'opacity-40 pointer-events-none' : ''}`}>
-              <p className="text-xs font-bold flex items-center gap-1.5">
-                <Palette className="h-3.5 w-3.5 text-primary" />
-                اختر اللون
-                {productOptions.length > 0 && selectedOption === null && (
-                  <span className="text-[9px] text-muted-foreground font-normal">(اختر الخيار أولاً)</span>
-                )}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {productColors.map((color, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setSelectedColor(i)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
-                      selectedColor === i
-                        ? "bg-primary/10 border-primary shadow-md ring-1 ring-primary/30"
-                        : "bg-card border-border hover:border-primary/50"
-                    }`}
-                  >
-                    <span className="h-5 w-5 rounded-full border-2 border-border/50 shrink-0" style={{ backgroundColor: color.hex_code }} />
-                    <span>{color.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Quantity selector - only for normal products */}
-          {!isPreorder && !isWaitlist && (
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold">الكمية</p>
-              <div className="flex items-center rounded-xl border border-border/40 overflow-hidden bg-muted/30">
-                <button
-                  className="h-8 w-9 flex items-center justify-center hover:bg-muted transition-colors"
-                  onClick={() => setCartQuantity(q => Math.max(1, q - 1))}
+              <div className="space-y-2.5 pt-2">
+                <Button
+                  variant="destructive"
+                  className="w-full h-12 rounded-2xl gap-2 text-sm font-black"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearAndAddMutation.mutate();
+                  }}
+                  disabled={clearAndAddMutation.isPending}
                 >
-                  <Minus className="h-3 w-3" />
-                </button>
-                <span className="w-8 text-center text-xs font-black">{cartQuantity}</span>
-                <button
-                  className="h-8 w-9 flex items-center justify-center hover:bg-muted transition-colors"
-                  onClick={() => setCartQuantity(q => q + 1)}
+                  <Trash2 className="h-4 w-4" />
+                  {clearAndAddMutation.isPending ? "جاري التفريغ..." : "تفريغ السلة وإضافة المنتج"}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full h-11 rounded-2xl text-sm font-bold"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMerchantConflict(false);
+                  }}
                 >
-                  <Plus className="h-3 w-3" />
-                </button>
+                  إلغاء
+                </Button>
               </div>
             </div>
-          )}
-
-          {/* Action button */}
-          {isPreorder || isWaitlist ? (
-            <Button
-              className="w-full h-12 rounded-2xl gap-2 text-sm font-black shadow-lg"
-              onClick={() => bookingMutation.mutate()}
-              disabled={bookingMutation.isPending || queueFull || (productOptions.length > 0 && selectedOption === null)}
-            >
-              {isPreorder ? (
-                <><CalendarClock className="h-4 w-4" />احجز الآن{depositAmount > 0 ? ` · ${depositAmount.toLocaleString()} د.ع` : ''}</>
-              ) : (
-                <><Users className="h-4 w-4" />انضم للطابور</>
-              )}
-            </Button>
           ) : (
-            <Button
-              className="w-full h-12 rounded-2xl gap-2 text-sm font-black shadow-lg"
-              onClick={() => addToCartMutation.mutate()}
-              disabled={addToCartMutation.isPending || (productOptions.length > 0 && selectedOption === null)}
-            >
-              <ShoppingBag className="h-4 w-4" />
-              أضف للسلة · {(currentPrice * cartQuantity).toLocaleString()} د.ع
-            </Button>
+            <>
+              <SheetHeader className="text-right">
+                <SheetTitle className="text-sm font-black flex items-center gap-2">
+                  {isPreorder && <CalendarClock className="h-4 w-4 text-amber-500" />}
+                  {isWaitlist && <Users className="h-4 w-4 text-blue-500" />}
+                  {!isPreorder && !isWaitlist && <ShoppingBag className="h-4 w-4 text-primary" />}
+                  {isPreorder ? "حجز مسبق" : isWaitlist ? "الانضمام للطابور" : "اختر الخيارات"}
+                </SheetTitle>
+              </SheetHeader>
+
+              {/* Product summary */}
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/20 border border-border/30">
+                {mainImage && (
+                  <img src={mainImage} alt="" className="h-12 w-12 rounded-lg object-cover" />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold line-clamp-1">{product.title}</p>
+                  <p className="text-sm font-black text-primary tabular-nums">{currentPrice.toLocaleString()} د.ع</p>
+                </div>
+                {(isPreorder || isWaitlist) && (
+                  <Badge variant="secondary" className="text-[9px] shrink-0">
+                    {isPreorder ? "حجز مسبق" : "طابور"}
+                  </Badge>
+                )}
+              </div>
+
+              {/* Preorder/Waitlist Info */}
+              {(isPreorder || isWaitlist) && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 space-y-1.5">
+                  {isPreorder && fullProduct?.preorder_available_date && (
+                    <p className="text-xs flex items-center gap-1.5">
+                      <CalendarClock className="h-3.5 w-3.5 text-amber-500" />
+                      <span className="text-muted-foreground">تاريخ التوفر:</span>
+                      <span className="font-bold">{new Date(fullProduct.preorder_available_date).toLocaleDateString('ar-IQ')}</span>
+                    </p>
+                  )}
+                  {isPreorder && depositAmount > 0 && (
+                    <p className="text-xs flex items-center gap-1.5">
+                      <ShoppingBag className="h-3.5 w-3.5 text-amber-500" />
+                      <span className="text-muted-foreground">مبلغ العربون:</span>
+                      <span className="font-bold text-primary">{depositAmount.toLocaleString()} د.ع ({fullProduct?.preorder_deposit_percent}%)</span>
+                    </p>
+                  )}
+                  {fullProduct?.max_queue_slots && (
+                    <p className="text-xs flex items-center gap-1.5">
+                      <Users className="h-3.5 w-3.5 text-blue-500" />
+                      <span className="text-muted-foreground">الأماكن:</span>
+                      <span className="font-bold">{fullProduct.current_queue_count ?? 0} / {fullProduct.max_queue_slots}</span>
+                    </p>
+                  )}
+                  {fullProduct?.preorder_note && (
+                    <p className="text-[11px] text-muted-foreground mt-1">{fullProduct.preorder_note}</p>
+                  )}
+                  {queueFull && (
+                    <Badge variant="destructive" className="text-[10px]">الأماكن ممتلئة</Badge>
+                  )}
+                </div>
+              )}
+
+              {/* Options Selection */}
+              {productOptions.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-bold flex items-center gap-1.5">
+                    <Settings2 className="h-3.5 w-3.5 text-primary" />
+                    اختر الخيار <span className="text-destructive">*</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {productOptions.map((opt, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setSelectedOption(i)}
+                        className={`px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+                          selectedOption === i
+                            ? "bg-primary text-primary-foreground border-primary shadow-md"
+                            : "bg-card border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <span>{opt.name}</span>
+                        {opt.price_adjustment !== 0 && (
+                          <span className="text-[10px] opacity-80 mr-1">
+                            ({opt.price_adjustment > 0 ? '+' : ''}{opt.price_adjustment.toLocaleString()})
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Colors Selection */}
+              {productColors.length > 0 && (
+                <div className={`space-y-2 transition-opacity ${productOptions.length > 0 && selectedOption === null ? 'opacity-40 pointer-events-none' : ''}`}>
+                  <p className="text-xs font-bold flex items-center gap-1.5">
+                    <Palette className="h-3.5 w-3.5 text-primary" />
+                    اختر اللون
+                    {productOptions.length > 0 && selectedOption === null && (
+                      <span className="text-[9px] text-muted-foreground font-normal">(اختر الخيار أولاً)</span>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {productColors.map((color, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setSelectedColor(i)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all ${
+                          selectedColor === i
+                            ? "bg-primary/10 border-primary shadow-md ring-1 ring-primary/30"
+                            : "bg-card border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <span className="h-5 w-5 rounded-full border-2 border-border/50 shrink-0" style={{ backgroundColor: color.hex_code }} />
+                        <span>{color.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Quantity selector - only for normal products */}
+              {!isPreorder && !isWaitlist && (
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold">الكمية</p>
+                  <div className="flex items-center rounded-xl border border-border/40 overflow-hidden bg-muted/30">
+                    <button
+                      className="h-8 w-9 flex items-center justify-center hover:bg-muted transition-colors"
+                      onClick={() => setCartQuantity(q => Math.max(1, q - 1))}
+                    >
+                      <Minus className="h-3 w-3" />
+                    </button>
+                    <span className="w-8 text-center text-xs font-black">{cartQuantity}</span>
+                    <button
+                      className="h-8 w-9 flex items-center justify-center hover:bg-muted transition-colors"
+                      onClick={() => setCartQuantity(q => q + 1)}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Action button */}
+              {isPreorder || isWaitlist ? (
+                <Button
+                  className="w-full h-12 rounded-2xl gap-2 text-sm font-black shadow-lg"
+                  onClick={() => bookingMutation.mutate()}
+                  disabled={bookingMutation.isPending || queueFull || (productOptions.length > 0 && selectedOption === null)}
+                >
+                  {isPreorder ? (
+                    <><CalendarClock className="h-4 w-4" />احجز الآن{depositAmount > 0 ? ` · ${depositAmount.toLocaleString()} د.ع` : ''}</>
+                  ) : (
+                    <><Users className="h-4 w-4" />انضم للطابور</>
+                  )}
+                </Button>
+              ) : (
+                <Button
+                  className="w-full h-12 rounded-2xl gap-2 text-sm font-black shadow-lg"
+                  onClick={() => addToCartMutation.mutate()}
+                  disabled={addToCartMutation.isPending || (productOptions.length > 0 && selectedOption === null)}
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  أضف للسلة · {(currentPrice * cartQuantity).toLocaleString()} د.ع
+                </Button>
+              )}
+            </>
           )}
         </div>
       </SheetContent>
