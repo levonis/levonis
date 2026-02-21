@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   X, Store, Package, FileText, MessageCircle, Star, Settings, Gift, 
   DollarSign, ShoppingBag, Truck, Shield,
@@ -13,12 +15,13 @@ import {
   CircleDollarSign, Receipt, PiggyBank,
   ThumbsUp, Medal, Crown,
   Megaphone, Lightbulb, Rocket, Target,
-  Info, HelpCircle, ChevronLeft
+  Info, HelpCircle, ChevronLeft, ZoomIn
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface MerchantGuideProps {
   open: boolean;
@@ -36,6 +39,7 @@ interface GuideSection {
   icon: React.ElementType;
   title: string;
   emoji: string;
+  sectionKey: string;
   color: string;
   bgColor: string;
   borderColor: string;
@@ -51,11 +55,20 @@ interface GuideSection {
   };
 }
 
+interface GuideImage {
+  id: string;
+  section_key: string;
+  image_url: string;
+  caption: string | null;
+  display_order: number;
+}
+
 const GUIDE_SECTIONS: GuideSection[] = [
   {
     icon: Store,
     title: "متجرك الخاص",
     emoji: "🏪",
+    sectionKey: "store",
     color: "text-primary",
     bgColor: "bg-primary/10",
     borderColor: "border-primary/20",
@@ -86,6 +99,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     icon: ShoppingBag,
     title: "إدارة المنتجات",
     emoji: "🛍️",
+    sectionKey: "products",
     color: "text-amber-500",
     bgColor: "bg-amber-500/10",
     borderColor: "border-amber-500/20",
@@ -118,6 +132,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     icon: FileText,
     title: "طلبات العملاء المخصصة",
     emoji: "📋",
+    sectionKey: "custom_requests",
     color: "text-blue-500",
     bgColor: "bg-blue-500/10",
     borderColor: "border-blue-500/20",
@@ -149,6 +164,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     icon: Package,
     title: "إدارة الطلبات",
     emoji: "📦",
+    sectionKey: "orders",
     color: "text-emerald-500",
     bgColor: "bg-emerald-500/10",
     borderColor: "border-emerald-500/20",
@@ -178,6 +194,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     icon: MessageCircle,
     title: "المحادثات والتواصل",
     emoji: "💬",
+    sectionKey: "messages",
     color: "text-violet-500",
     bgColor: "bg-violet-500/10",
     borderColor: "border-violet-500/20",
@@ -208,6 +225,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     icon: DollarSign,
     title: "الإيرادات والمحفظة",
     emoji: "💰",
+    sectionKey: "revenue",
     color: "text-green-500",
     bgColor: "bg-green-500/10",
     borderColor: "border-green-500/20",
@@ -238,6 +256,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     icon: Star,
     title: "التقييمات والسمعة",
     emoji: "⭐",
+    sectionKey: "ratings",
     color: "text-yellow-500",
     bgColor: "bg-yellow-500/10",
     borderColor: "border-yellow-500/20",
@@ -269,6 +288,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     icon: Truck,
     title: "إعدادات التوصيل",
     emoji: "🚚",
+    sectionKey: "delivery",
     color: "text-orange-500",
     bgColor: "bg-orange-500/10",
     borderColor: "border-orange-500/20",
@@ -297,6 +317,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     icon: Settings,
     title: "إعدادات المتجر المتقدمة",
     emoji: "⚙️",
+    sectionKey: "settings",
     color: "text-muted-foreground",
     bgColor: "bg-muted/30",
     borderColor: "border-border",
@@ -335,40 +356,88 @@ const GETTING_STARTED = [
 ];
 
 const FAQ_ITEMS = [
-  {
-    q: "كم عمولة المنصة؟",
-    a: "1.7% فقط من كل طلب مكتمل. مثال: طلب 100,000 د.ع → عمولة 1,700 د.ع فقط. هذه من أقل النسب في المنصات المشابهة!",
-    icon: BadgePercent,
-  },
-  {
-    q: "متى أحصل على أموالي؟",
-    a: "فوراً بعد تأكيد العميل لاستلام الطلب، يُحوّل المبلغ (بعد خصم العمولة) مباشرة لمحفظتك الإلكترونية.",
-    icon: Wallet,
-  },
-  {
-    q: "ما الفرق بين خيارات الدفع؟",
-    a: "دفع كامل (بدون رسوم إضافية)، نصف المبلغ (+5% رسوم على العميل)، ربع المبلغ (+10% رسوم)، عند الاستلام (عمولة إضافية على التاجر).",
-    icon: CreditCard,
-  },
-  {
-    q: "هل يمكنني إيقاف متجري مؤقتاً؟",
-    a: "نعم! فعّل وضع الغياب من الإعدادات وسيظهر للعملاء أنك غير متاح حالياً. يمكنك العودة في أي وقت.",
-    icon: ToggleLeft,
-  },
-  {
-    q: "ما هو نظام الديون؟",
-    a: "عند اختيار العميل \"الدفع عند الاستلام\" تُحسب عمولة إضافية على التاجر. إن لم يكن رصيدك كافياً تُسجل كدين يُسدد تلقائياً عند تعبئة المحفظة.",
-    icon: HandCoins,
-  },
-  {
-    q: "كيف أرفع تقييمي؟",
-    a: "سرعة الاستجابة + الالتزام بالمواعيد + جودة المنتج + تغليف جيد + تواصل مستمر مع العميل = تقييم 5 نجوم!",
-    icon: Star,
-  },
+  { q: "كم عمولة المنصة؟", a: "1.7% فقط من كل طلب مكتمل. مثال: طلب 100,000 د.ع → عمولة 1,700 د.ع فقط.", icon: BadgePercent },
+  { q: "متى أحصل على أموالي؟", a: "فوراً بعد تأكيد العميل لاستلام الطلب، يُحوّل المبلغ مباشرة لمحفظتك.", icon: Wallet },
+  { q: "ما الفرق بين خيارات الدفع؟", a: "دفع كامل (بدون رسوم)، نصف المبلغ (+5%)، ربع المبلغ (+10%)، عند الاستلام (عمولة إضافية).", icon: CreditCard },
+  { q: "هل يمكنني إيقاف متجري مؤقتاً؟", a: "نعم! فعّل وضع الغياب من الإعدادات.", icon: ToggleLeft },
+  { q: "ما هو نظام الديون؟", a: "عند \"الدفع عند الاستلام\" تُحسب عمولة إضافية. إن لم يكن رصيدك كافياً تُسجل كدين يُسدد تلقائياً.", icon: HandCoins },
+  { q: "كيف أرفع تقييمي؟", a: "سرعة الاستجابة + الالتزام بالمواعيد + جودة المنتج + تغليف جيد = 5 نجوم!", icon: Star },
 ];
+
+// Section screenshots gallery component
+function SectionScreenshots({ sectionKey, images }: { sectionKey: string; images: GuideImage[] }) {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const sectionImages = images.filter(img => img.section_key === sectionKey && img.image_url);
+
+  if (sectionImages.length === 0) return null;
+
+  return (
+    <>
+      <div className="space-y-2">
+        <p className="text-[10px] font-bold flex items-center gap-1.5 text-muted-foreground">
+          <Camera className="h-3 w-3" />
+          صور توضيحية من الموقع
+        </p>
+        <div className={`grid gap-2 ${sectionImages.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+          {sectionImages.map((img) => (
+            <button
+              key={img.id}
+              onClick={() => setSelectedImage(img.image_url)}
+              className="group relative rounded-lg overflow-hidden border border-border/50 hover:border-primary/30 transition-all"
+            >
+              <img
+                src={img.image_url}
+                alt={img.caption || "صورة توضيحية"}
+                className="w-full h-auto object-cover"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                <ZoomIn className="h-5 w-5 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+              </div>
+              {img.caption && (
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
+                  <p className="text-[9px] text-white leading-tight">{img.caption}</p>
+                </div>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Full screen image viewer */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-1 bg-black/95 border-none">
+          {selectedImage && (
+            <img
+              src={selectedImage}
+              alt="صورة مكبرة"
+              className="w-full h-auto max-h-[90vh] object-contain rounded"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 export default function MerchantGuide({ open, onClose, onDismissForever }: MerchantGuideProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(0);
+
+  // Fetch guide images from DB
+  const { data: guideImages } = useQuery({
+    queryKey: ["merchant-guide-images"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("merchant_guide_images")
+        .select("*")
+        .neq("image_url", "")
+        .order("display_order");
+      if (error) throw error;
+      return data as GuideImage[];
+    },
+    enabled: open,
+    staleTime: 10 * 60 * 1000,
+  });
 
   if (!open) return null;
 
@@ -404,7 +473,7 @@ export default function MerchantGuide({ open, onClose, onDismissForever }: Merch
             <div>
               <h1 className="text-xl font-black">مرحباً بك كتاجر في ليفو!</h1>
               <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed max-w-sm mx-auto">
-                دليل شامل يشرح جميع المميزات مع أمثلة عملية ونصائح لمساعدتك على النجاح وزيادة مبيعاتك.
+                دليل شامل يشرح جميع المميزات مع أمثلة عملية وصور توضيحية لمساعدتك على النجاح.
               </p>
             </div>
           </div>
@@ -471,6 +540,11 @@ export default function MerchantGuide({ open, onClose, onDismissForever }: Merch
                     <CardContent className="px-3.5 pb-4 pt-0 space-y-3">
                       <p className="text-[11px] text-muted-foreground leading-relaxed border-r-2 border-primary/20 pr-2">{section.description}</p>
                       
+                      {/* Screenshots from DB */}
+                      {guideImages && (
+                        <SectionScreenshots sectionKey={section.sectionKey} images={guideImages} />
+                      )}
+
                       {/* Steps */}
                       <div className="space-y-1.5">
                         {section.steps.map((step, sIdx) => {

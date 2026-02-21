@@ -2,7 +2,7 @@ import { useState, Suspense, lazy, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Store, Users, Award, ImageIcon, 
-  Loader2, Settings, FileText, 
+  Loader2, Settings, FileText, BookOpen,
   Wallet, Trash2, Save, RefreshCw, ShieldCheck, Percent,
   TrendingUp, Clock, Megaphone, Gift, Tag, Truck, Plus, X, MapPin,
   CreditCard, Banknote, AlertTriangle
@@ -27,6 +27,7 @@ const AdminBadgeSettings = lazy(() => import("@/pages/AdminBadgeSettings"));
 const AdminAvatarFrames = lazy(() => import("@/pages/AdminAvatarFrames"));
 const AdminCommunityRequests = lazy(() => import("@/components/admin/AdminCommunityRequests"));
 const AdminGiveawaysCoupons = lazy(() => import("@/pages/AdminGiveawaysCoupons"));
+const AdminMerchantGuideImages = lazy(() => import("@/components/admin/AdminMerchantGuideImages"));
 
 interface TabConfig {
   value: string;
@@ -41,6 +42,7 @@ const tabs: TabConfig[] = [
   { value: "giveaways", icon: Gift, label: "الهدايا والكوبونات" },
   { value: "badges", icon: Award, label: "الشارات" },
   { value: "frames", icon: ImageIcon, label: "الإطارات" },
+  { value: "guide_images", icon: BookOpen, label: "صور الدليل" },
   { value: "settings", icon: Settings, label: "الإعدادات" },
 ];
 
@@ -1046,6 +1048,7 @@ export default function AdminLevoCommunity() {
                 {activeTab === "giveaways" && "هدايا التجار وكوبونات العملاء"}
                 {activeTab === "badges" && "إعدادات شارات الأداء"}
                 {activeTab === "frames" && "إدارة إطارات الصور"}
+                {activeTab === "guide_images" && "إدارة صور دليل التاجر"}
                 {activeTab === "settings" && "إعدادات المنصة"}
               </p>
             </div>
@@ -1061,6 +1064,7 @@ export default function AdminLevoCommunity() {
             {activeTab === "giveaways" && <AdminGiveawaysCoupons embedded />}
             {activeTab === "badges" && <AdminBadgeSettings embedded />}
             {activeTab === "frames" && <AdminAvatarFrames embedded />}
+            {activeTab === "guide_images" && <AdminMerchantGuideImages />}
             {activeTab === "settings" && <CommunitySettings />}
           </Suspense>
         </div>
