@@ -3120,6 +3120,7 @@ export type Database = {
           city: string | null
           created_at: string
           delivery_price_iqd: number | null
+          delivery_rules: Json | null
           display_name: string | null
           id: string
           is_verified: boolean
@@ -3137,6 +3138,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           delivery_price_iqd?: number | null
+          delivery_rules?: Json | null
           display_name?: string | null
           id: string
           is_verified?: boolean
@@ -3154,6 +3156,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           delivery_price_iqd?: number | null
+          delivery_rules?: Json | null
           display_name?: string | null
           id?: string
           is_verified?: boolean
