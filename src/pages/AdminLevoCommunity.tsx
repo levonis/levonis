@@ -541,36 +541,26 @@ function CommunitySettings() {
         </div>
       </SettingCard>
 
-      {/* Commission Rate */}
+      {/* Commission Rate - Link to dedicated page */}
       <SettingCard
         icon={Percent}
-        title="نسبة العمولة"
-        description="النسبة من كل عملية بيع"
+        title="إعدادات العمولة"
+        description="التحكم بنسب العمولة لجميع خيارات الدفع"
         iconColor="bg-emerald-500/15 text-emerald-500"
       >
         <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            value={commissionRate}
-            onChange={(e) => setCommissionRate(Number(e.target.value))}
-            className="h-7 text-xs flex-1"
-            min={0}
-            max={100}
-            step={0.1}
-          />
-          <span className="text-[10px] text-muted-foreground shrink-0">%</span>
+          <p className="text-[9px] text-muted-foreground flex-1">
+            الحالي: {((platformCommission?.rate || 0.007) * 100).toFixed(1)}%
+          </p>
           <Button
-            onClick={() => updateCommissionMutation.mutate(commissionRate)}
-            disabled={updateCommissionMutation.isPending}
+            variant="outline"
             size="sm"
-            className="h-7 px-2"
+            className="h-7 px-3 text-[10px]"
+            onClick={() => window.location.href = ADMIN_ROUTES.commissionSettings}
           >
-            <Save className="h-3 w-3" />
+            إدارة العمولة
           </Button>
         </div>
-        <p className="text-[9px] text-muted-foreground mt-1">
-          الحالي: {((platformCommission?.rate || 0.007) * 100).toFixed(1)}%
-        </p>
       </SettingCard>
 
       {/* Auto Delete Days */}

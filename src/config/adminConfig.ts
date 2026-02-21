@@ -51,6 +51,7 @@ export const ADMIN_ROUTES = {
   stories: `${ADMIN_BASE_PATH}/stories`,
   deliveredOrders: `${ADMIN_BASE_PATH}/delivered-orders`,
   giveawaysCoupons: `${ADMIN_BASE_PATH}/giveaways-coupons`,
+  commissionSettings: `${ADMIN_BASE_PATH}/commission-settings`,
 } as const;
 
 // Helper to check if a path is an admin path
