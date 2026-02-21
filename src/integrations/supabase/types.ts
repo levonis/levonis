@@ -2861,6 +2861,48 @@ export type Database = {
         }
         Relationships: []
       }
+      merchant_debts: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          merchant_application_id: string
+          merchant_user_id: string
+          order_id: string | null
+          paid_amount: number
+          paid_at: string | null
+          reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          id?: string
+          merchant_application_id: string
+          merchant_user_id: string
+          order_id?: string | null
+          paid_amount?: number
+          paid_at?: string | null
+          reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          merchant_application_id?: string
+          merchant_user_id?: string
+          order_id?: string | null
+          paid_amount?: number
+          paid_at?: string | null
+          reason?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       merchant_giveaway_entries: {
         Row: {
           created_at: string
@@ -3119,6 +3161,8 @@ export type Database = {
           bio: string | null
           city: string | null
           created_at: string
+          debt_suspended: boolean
+          debt_suspended_at: string | null
           delivery_price_iqd: number | null
           delivery_rules: Json | null
           display_name: string | null
@@ -3129,6 +3173,7 @@ export type Database = {
           specialty: string | null
           store_image_url: string | null
           store_layout: string
+          total_debt: number
           updated_at: string
         }
         Insert: {
@@ -3137,6 +3182,8 @@ export type Database = {
           bio?: string | null
           city?: string | null
           created_at?: string
+          debt_suspended?: boolean
+          debt_suspended_at?: string | null
           delivery_price_iqd?: number | null
           delivery_rules?: Json | null
           display_name?: string | null
@@ -3147,6 +3194,7 @@ export type Database = {
           specialty?: string | null
           store_image_url?: string | null
           store_layout?: string
+          total_debt?: number
           updated_at?: string
         }
         Update: {
@@ -3155,6 +3203,8 @@ export type Database = {
           bio?: string | null
           city?: string | null
           created_at?: string
+          debt_suspended?: boolean
+          debt_suspended_at?: string | null
           delivery_price_iqd?: number | null
           delivery_rules?: Json | null
           display_name?: string | null
@@ -3165,6 +3215,7 @@ export type Database = {
           specialty?: string | null
           store_image_url?: string | null
           store_layout?: string
+          total_debt?: number
           updated_at?: string
         }
         Relationships: [
@@ -6811,6 +6862,10 @@ export type Database = {
           }
       calculate_user_level: { Args: { points: number }; Returns: string }
       can_read_print_file: { Args: { object_name: string }; Returns: boolean }
+      check_merchant_debt_suspension: {
+        Args: { p_merchant_user_id: string }
+        Returns: boolean
+      }
       check_rate_limit: {
         Args: {
           p_action_type: string
@@ -6930,6 +6985,10 @@ export type Database = {
         | { Args: { user_username: string }; Returns: string }
       generate_request_code: { Args: never; Returns: string }
       generate_ticket_number: { Args: { comp_id: string }; Returns: string }
+      get_merchant_debt: {
+        Args: { p_merchant_user_id: string }
+        Returns: number
+      }
       get_user_card_frame: {
         Args: { p_user_id: string }
         Returns: {
