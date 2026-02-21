@@ -64,14 +64,19 @@ export default function MerchantStoriesBar() {
       if (error) throw error;
       if (!stories || stories.length === 0) return [];
 
-      // Get merchant profiles
-      const merchantIds = [...new Set(stories.map(s => s.merchant_id))];
-      const { data: profiles } = await supabase
-        .from('merchant_public_profiles')
-        .select('id, display_name, store_image_url')
-        .in('id', merchantIds) as any;
+      // Get merchant profiles - merchant_id in stories is user_id, 
+      // but merchant_public_profiles.id is merchant_applications.id
+      const merchantUserIds = [...new Set(stories.map(s => s.merchant_id))];
+      
+      // Look up merchant_applications by user_id to get display_name and store_image_url
+      const { data: apps } = await supabase
+        .from('merchant_applications')
+        .select('id, user_id, display_name, store_image_url')
+        .in('user_id', merchantUserIds)
+        .eq('status', 'approved');
 
-      const profileMap = new Map((profiles || []).map((p: any) => [p.id, p]));
+      // Map by user_id (which matches merchant_id in stories)
+      const profileMap = new Map((apps || []).map((a: any) => [a.user_id, a]));
 
       // Group stories by merchant
       const groups: Map<string, GroupedStories> = new Map();

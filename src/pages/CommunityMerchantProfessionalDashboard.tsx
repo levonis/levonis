@@ -593,6 +593,7 @@ export default function CommunityMerchantProfessionalDashboard() {
             store_image_url: merchantApp.store_image_url,
             social_links: merchantApp.social_links as { facebook?: string; instagram?: string } | null,
             selected_frame_id: merchantApp.selected_frame_id,
+            store_layout: (merchantApp as any).store_layout || undefined,
           }}
         />
       </main>

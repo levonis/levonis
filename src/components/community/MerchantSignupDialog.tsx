@@ -89,7 +89,7 @@ async function uploadStoreImage(params: { userId: string; file: File }) {
   const path = `${params.userId}/store_${Date.now()}.jpg`;
   
   // Force contentType to image/jpeg since compression outputs JPEG
-  const contentType = params.file.type?.startsWith("image/") ? params.file.type : "image/jpeg";
+  const contentType = "image/jpeg";
 
   // First try to remove old file silently
   await supabase.storage.from("merchant_stores").remove([`${params.userId}/store.jpg`]).catch(() => {});

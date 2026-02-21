@@ -584,6 +584,7 @@ export default function CommunityMerchantStorePage() {
             social_links: (editableMerchantApp.social_links as { facebook?: string; instagram?: string }) || null,
             selected_frame_id: editableMerchantApp.selected_frame_id,
             specialty: (editableMerchantApp.specialty as "resin" | "filament" | "both") || undefined,
+            store_layout: (editableMerchantApp as any).store_layout || undefined,
           }}
         />
       )}
