@@ -1323,7 +1323,10 @@ const Cart = () => {
 
       {/* Cart Change Warning Dialog */}
       <AlertDialog open={showCartChangeWarning} onOpenChange={setShowCartChangeWarning}>
-        <AlertDialogContent dir="rtl" className="bg-card border-destructive/30">
+        <AlertDialogContent 
+          dir="rtl" 
+          className="bg-card border-destructive/30 max-w-[90vw] sm:max-w-lg z-[200]"
+        >
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-foreground">
               <Trash2 className="h-5 w-5 text-destructive" />
@@ -1337,16 +1340,22 @@ const Cart = () => {
               <p>{t('common_confirm')}?</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-row-reverse gap-2">
+          <AlertDialogFooter className="flex-col-reverse sm:flex-row-reverse gap-3 mt-4">
             <AlertDialogAction 
-              onClick={handleConfirmCartChange}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleConfirmCartChange();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 min-h-[48px] w-full sm:w-auto text-base"
             >
               {t('cart_change_confirm')}
             </AlertDialogAction>
             <AlertDialogCancel 
-              onClick={() => setPendingAction(null)}
-              className="bg-muted text-foreground hover:bg-muted/80"
+              onClick={(e) => {
+                e.stopPropagation();
+                setPendingAction(null);
+              }}
+              className="bg-muted text-foreground hover:bg-muted/80 min-h-[48px] w-full sm:w-auto text-base"
             >
               {t('common_cancel')}
             </AlertDialogCancel>
