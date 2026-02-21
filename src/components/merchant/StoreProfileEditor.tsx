@@ -294,8 +294,9 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
           </DialogHeader>
 
           <div className="space-y-6 max-h-[55vh] overflow-y-auto py-4 px-1">
-            {/* Store Image with Frame - Premium Design */}
+            {/* Store Image with Frame */}
             <div className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-gradient-to-br from-primary/10 via-primary/5 to-background border border-primary/20">
+              <p className="text-[10px] text-muted-foreground text-center leading-relaxed max-w-xs">صورة متجرك هي أول ما يراه العملاء. استخدم شعار واضح أو صورة تمثل علامتك التجارية. يمكنك إضافة إطار مميز لجذب الانتباه.</p>
               <div className="relative group">
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full blur-xl opacity-50 group-hover:opacity-75 transition-opacity" />
                 <AvatarWithFrame
@@ -342,10 +343,11 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
             {/* Store Name */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">اسم المتجر *</Label>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">الاسم الذي سيظهر للعملاء في صفحة متجرك وفي نتائج البحث. اجعله قصيراً ومميزاً.</p>
               <Input
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="اسم المتجر"
+                placeholder="مثال: مطبعة النور"
                 maxLength={15}
                 className="h-11"
               />
@@ -355,10 +357,11 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
             {/* Bio */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">نبذة عن المتجر</Label>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">وصف يظهر في ملفك الشخصي. اذكر تخصصك ونوع المنتجات التي تقدمها لجذب العملاء المناسبين.</p>
               <Textarea
                 value={bio}
                 onChange={(e) => setBio(e.target.value)}
-                placeholder="وصف قصير عن متجرك وخدماتك..."
+                placeholder="مثال: متخصصون في طباعة المجسمات ثلاثية الأبعاد بدقة عالية، نقدم تصاميم فنية ومنتجات مخصصة حسب الطلب."
                 rows={3}
                 maxLength={200}
               />
@@ -366,32 +369,37 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
             </div>
 
             {/* Social Links */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">فيسبوك</Label>
-                <Input
-                  value={facebook}
-                  onChange={(e) => setFacebook(e.target.value)}
-                  placeholder="https://facebook.com/..."
-                  dir="ltr"
-                  className="h-11"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">إنستقرام</Label>
-                <Input
-                  value={instagram}
-                  onChange={(e) => setInstagram(e.target.value)}
-                  placeholder="https://instagram.com/..."
-                  dir="ltr"
-                  className="h-11"
-                />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">روابط التواصل الاجتماعي</Label>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">أضف روابط حساباتك ليتمكن العملاء من متابعتك. تظهر كأيقونات في صفحة متجرك.</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">فيسبوك</Label>
+                  <Input
+                    value={facebook}
+                    onChange={(e) => setFacebook(e.target.value)}
+                    placeholder="https://facebook.com/yourpage"
+                    dir="ltr"
+                    className="h-11 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[10px] text-muted-foreground">إنستقرام</Label>
+                  <Input
+                    value={instagram}
+                    onChange={(e) => setInstagram(e.target.value)}
+                    placeholder="https://instagram.com/yourpage"
+                    dir="ltr"
+                    className="h-11 text-xs"
+                  />
+                </div>
               </div>
             </div>
 
             {/* Specialty Selector */}
             <div className="space-y-3">
               <Label className="text-sm font-medium">تخصص الطباعة</Label>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">حدد نوع الطابعة التي تستخدمها. يساعد العملاء على معرفة نوع المنتجات التي يمكنك تقديمها (رزن = تفاصيل دقيقة، فلمنت = قطع كبيرة ومتينة).</p>
               <div className="flex flex-wrap gap-2">
                 {[
                   { value: "resin", label: "رزن فقط", icon: Droplets },
@@ -431,19 +439,21 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold">أقسام المنتجات</h3>
-                  <p className="text-[10px] text-muted-foreground">نظم منتجاتك في أقسام</p>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">أنشئ أقساماً لتنظيم منتجاتك (مثال: مجسمات أنمي، إكسسوارات، قطع غيار). يسهّل على العملاء تصفح متجرك بسرعة.</p>
                 </div>
               </div>
               <MerchantCategoriesManager merchantId={merchantApp.id} />
             </div>
 
             {/* Store Layout Selector */}
-            <div className="pt-4 border-t border-border/50">
+            <div className="pt-4 border-t border-border/50 space-y-1">
+              <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">اختر طريقة عرض المنتجات في صفحة متجرك. جرّب الأنماط المختلفة واختر الأنسب لنوع منتجاتك.</p>
               <StoreLayoutSelector value={storeLayout} onChange={setStoreLayout} />
             </div>
 
             {/* Printer Models Editor */}
-            <div className="pt-2 border-t border-border/50">
+            <div className="pt-2 border-t border-border/50 space-y-1">
+              <p className="text-[10px] text-muted-foreground leading-relaxed mb-2">أضف طابعاتك مع المواصفات ليعرف العملاء قدراتك (مثال: Elegoo Mars 3 Pro - دقة 4K). يزيد من مصداقيتك.</p>
               <PrinterModelsEditor merchantId={merchantApp.id} />
             </div>
 
@@ -455,7 +465,7 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold">الرسائل التلقائية</h3>
-                  <p className="text-[10px] text-muted-foreground">ردود آلية للعملاء</p>
+                  <p className="text-[10px] text-muted-foreground leading-relaxed">إعداد ردود تلقائية تُرسل للعملاء عند التواصل معك. توفر وقتك وتعطي انطباعاً احترافياً.</p>
                 </div>
               </div>
 
@@ -463,10 +473,10 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
               <div className="flex items-center justify-between p-3 rounded-xl border border-border bg-muted/30">
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">وضع الغياب</p>
-                    <p className="text-[10px] text-muted-foreground">سيتم إرسال رسالة الغياب تلقائياً</p>
-                  </div>
+                   <div>
+                     <p className="text-sm font-medium">وضع الغياب</p>
+                     <p className="text-[10px] text-muted-foreground leading-relaxed">عند التفعيل، تُرسل رسالة الغياب تلقائياً لأي عميل يتواصل معك. مثال: عند السفر أو خارج أوقات العمل.</p>
+                   </div>
                 </div>
                 <Switch
                   checked={isAway}
@@ -476,11 +486,12 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
 
               {/* Inquiry Template */}
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">رسالة الاستفسار (عند الدخول من طلب)</Label>
+                <Label className="text-xs font-medium text-muted-foreground">رسالة الاستفسار</Label>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">تُرسل تلقائياً عندما يدخل عميل من صفحة طلب معين. استخدمها لطلب تفاصيل إضافية قبل تقديم عرضك.</p>
                 <Textarea
                   value={inquiryTemplate}
                   onChange={(e) => setInquiryTemplate(e.target.value)}
-                  placeholder="لدي عرضا لك، لكن هل يمكنك الإجابة على أسئلتي ؟"
+                  placeholder="مثال: مرحباً! لدي عرض مناسب لك. هل يمكنك إرسال تفاصيل إضافية عن الطلب؟"
                   rows={2}
                   maxLength={200}
                   className="text-sm"
@@ -489,11 +500,12 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
 
               {/* Welcome Message */}
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">رسالة الترحيب (عند أول تواصل)</Label>
+                <Label className="text-xs font-medium text-muted-foreground">رسالة الترحيب</Label>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">تُرسل مرة واحدة عند أول تواصل من عميل جديد. اجعلها ودية ومختصرة.</p>
                 <Textarea
                   value={welcomeMessage}
                   onChange={(e) => setWelcomeMessage(e.target.value)}
-                  placeholder="أهلاً وسهلاً! كيف يمكنني مساعدتك؟"
+                  placeholder="مثال: أهلاً وسهلاً! شكراً لزيارتك متجري. كيف يمكنني مساعدتك اليوم؟"
                   rows={2}
                   maxLength={200}
                   className="text-sm"
@@ -503,10 +515,11 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
               {/* Away Message */}
               <div className="space-y-2">
                 <Label className="text-xs font-medium text-muted-foreground">رسالة الغياب</Label>
+                <p className="text-[10px] text-muted-foreground leading-relaxed">تُرسل تلقائياً عند تفعيل وضع الغياب. أخبر العميل متى ستعود تقريباً.</p>
                 <Textarea
                   value={awayMessage}
                   onChange={(e) => setAwayMessage(e.target.value)}
-                  placeholder="شكراً لتواصلك! أنا غير متاح حالياً، سأرد عليك في أقرب وقت."
+                  placeholder="مثال: شكراً لتواصلك! أنا خارج أوقات العمل حالياً (10 صباحاً - 8 مساءً). سأرد عليك فور عودتي."
                   rows={2}
                   maxLength={200}
                   className="text-sm"
