@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { 
   ArrowLeft, ShoppingBag, Trash2, Plus, Minus, Store, 
-  Package, Sparkles, MessageCircle, ShoppingCart, Truck
+  Package, ShoppingCart, Truck, Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import OptimizedImage from "@/components/OptimizedImage";
@@ -128,26 +128,93 @@ export default function CommunityCart() {
     },
   });
 
-  const handleOrderFromMerchant = (merchantId: string) => {
-    const group = groupedItems.find(g => g.merchantId === merchantId);
-    if (!group) return;
-    
-    const params = new URLSearchParams();
-    params.set("merchant_id", merchantId);
-    
-    // Pass cart items as JSON for auto-sending in chat
-    const cartData = group.items.map(item => ({
-      title: item.product_title,
-      price: item.product_price,
-      image: item.product_image,
-      quantity: item.quantity,
-      productId: item.product_id,
-    }));
-    params.set("cart_items", JSON.stringify(cartData));
-    
-    navigate(`/community/messages?${params.toString()}`);
-    toast.success("يتم إرسال طلبك للتاجر عبر المحادثة");
-  };
+  const [orderingMerchant, setOrderingMerchant] = useState<string | null>(null);
+
+  const placeOrderMutation = useMutation({
+    mutationFn: async (merchantId: string) => {
+      if (!user) throw new Error('غير مسجل الدخول');
+      setOrderingMerchant(merchantId);
+      
+      const group = groupedItems.find(g => g.merchantId === merchantId);
+      if (!group) throw new Error('لا توجد منتجات');
+
+      // 1. Get merchant user_id from merchant_applications
+      const { data: merchantApp, error: merchantError } = await supabase
+        .from('merchant_applications')
+        .select('user_id, display_name')
+        .eq('id', merchantId)
+        .eq('status', 'approved')
+        .single();
+      if (merchantError || !merchantApp) throw new Error('التاجر غير موجود');
+
+      const sellerUserId = merchantApp.user_id;
+
+      // 2. Find or create conversation
+      const { data: existingConvs } = await supabase
+        .from('listing_conversations')
+        .select('id')
+        .or(`and(buyer_id.eq.${user.id},seller_id.eq.${sellerUserId}),and(buyer_id.eq.${sellerUserId},seller_id.eq.${user.id})`);
+
+      let conversationId: string;
+      if (existingConvs && existingConvs.length > 0) {
+        conversationId = existingConvs[0].id;
+        await supabase.from('listing_conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', conversationId);
+      } else {
+        const convCode = `CONV-${Date.now().toString(36).toUpperCase()}`;
+        const { data: newConv, error: convError } = await supabase
+          .from('listing_conversations')
+          .insert({
+            buyer_id: user.id,
+            seller_id: sellerUserId,
+            listing_id: merchantId,
+            conversation_code: convCode,
+            status: 'open',
+          })
+          .select('id')
+          .single();
+        if (convError) throw convError;
+        conversationId = newConv.id;
+      }
+
+      // 3. Build combined order info
+      const itemsSummary = group.items.map(i => 
+        `${i.product_title} (×${i.quantity}) - ${(i.product_price * i.quantity).toLocaleString()} د.ع`
+      ).join('\n');
+      const productsTotal = group.items.reduce((s, i) => s + i.product_price * i.quantity, 0);
+      const firstItem = group.items[0];
+
+      // 4. Create chat_order
+      const { data: order, error: orderError } = await supabase
+        .from('chat_orders' as any)
+        .insert({
+          conversation_id: conversationId,
+          product_id: firstItem.product_id,
+          product_title: group.items.length === 1 ? firstItem.product_title : `طلب من ${group.merchantName} (${group.items.length} منتجات)`,
+          product_image: firstItem.product_image,
+          quantity: group.items.length === 1 ? firstItem.quantity : group.items.reduce((s, i) => s + i.quantity, 0),
+          unit_price: group.items.length === 1 ? firstItem.product_price : productsTotal,
+          total_price: productsTotal,
+          description: group.items.length > 1 ? itemsSummary : null,
+          seller_id: sellerUserId,
+          customer_id: user.id,
+          status: 'waiting_payment',
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+      return { orderId: (order as any).id, conversationId, merchantName: group.merchantName };
+    },
+    onSuccess: ({ orderId }) => {
+      navigate(`/community/checkout/${orderId}`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'فشل إنشاء الطلب');
+      setOrderingMerchant(null);
+    },
+  });
 
   if (!user) {
     return (
@@ -324,10 +391,20 @@ export default function CommunityCart() {
               </div>
               <Button
                 className="w-full h-10 text-xs gap-2 rounded-xl font-bold shadow-md shadow-primary/15"
-                onClick={() => handleOrderFromMerchant(group.merchantId)}
+                onClick={() => placeOrderMutation.mutate(group.merchantId)}
+                disabled={placeOrderMutation.isPending}
               >
-                <MessageCircle className="h-4 w-4" />
-                اطلب من {group.merchantName}
+                {orderingMerchant === group.merchantId && placeOrderMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    جاري إنشاء الطلب...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingBag className="h-4 w-4" />
+                    اطلب من {group.merchantName}
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -342,7 +419,7 @@ export default function CommunityCart() {
             <span className="text-xl font-black text-primary">{totalPrice.toLocaleString()} <span className="text-xs text-muted-foreground font-normal">د.ع</span></span>
           </div>
           <p className="text-[10px] text-muted-foreground text-center">
-            اختر متجراً أعلاه لإتمام الطلب عبر المحادثة
+            اختر متجراً أعلاه لإتمام الطلب والدفع
           </p>
         </div>
       )}

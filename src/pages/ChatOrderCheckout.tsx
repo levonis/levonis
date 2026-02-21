@@ -186,12 +186,56 @@ export default function ChatOrderCheckout() {
       
       if (orderError) throw orderError;
 
+      // Send order card message in chat
+      await supabase.from('listing_messages').insert({
+        conversation_id: order.conversation_id,
+        sender_id: user.id,
+        content: JSON.stringify({
+          type: 'order_card',
+          order_id: order.id,
+          product_title: order.product_title,
+          product_image: order.product_image,
+          quantity: order.quantity,
+          total_price: order.total_price,
+          status: paymentMethod === 'cod' ? 'waiting_payment' : 'paid',
+        }),
+      });
+
       // Send system message
       await supabase.from('listing_messages').insert({
         conversation_id: order.conversation_id,
         sender_id: user.id,
-        content: `🔔 تم إتمام الدفع بنجاح! المبلغ المدفوع: ${amountToPay.toLocaleString()} د.ع${remainingAmount > 0 ? ` | المتبقي عند الاستلام: ${remainingAmount.toLocaleString()} د.ع` : ''}`,
+        content: `🔔 تم إتمام الطلب بنجاح!\nالمبلغ المدفوع: ${amountToPay.toLocaleString()} د.ع${remainingAmount > 0 ? `\nالمتبقي عند الاستلام: ${remainingAmount.toLocaleString()} د.ع` : ''}\nطريقة الدفع: ${paymentMethod === 'wallet' ? 'المحفظة' : paymentMethod === 'cod' ? 'عند الاستلام' : 'دفعة مقدمة'}`,
       });
+
+      // Notify merchant via Telegram
+      if (order.seller_id) {
+        supabase.functions.invoke('send-user-telegram-notification', {
+          body: {
+            user_id: order.seller_id,
+            title: '🛒 طلب جديد مدفوع',
+            message: `لديك طلب جديد: ${order.product_title} بقيمة ${order.total_price.toLocaleString()} د.ع`,
+            notification_type: 'info',
+          },
+        }).catch(err => console.error('Telegram notify merchant failed:', err));
+      }
+
+      // Clear cart items for this merchant's products
+      // Get seller's merchant_application id
+      const { data: merchantApp } = await supabase
+        .from('merchant_applications')
+        .select('id')
+        .eq('user_id', order.seller_id)
+        .eq('status', 'approved')
+        .maybeSingle();
+      
+      if (merchantApp) {
+        await supabase
+          .from('community_cart_items')
+          .delete()
+          .eq('user_id', user.id)
+          .eq('merchant_id', merchantApp.id);
+      }
 
       return order;
     },
@@ -199,6 +243,7 @@ export default function ChatOrderCheckout() {
       toast.success('تم إتمام الطلب بنجاح!');
       queryClient.invalidateQueries({ queryKey: ['chat-orders'] });
       queryClient.invalidateQueries({ queryKey: ['wallet-balance'] });
+      queryClient.invalidateQueries({ queryKey: ['community-cart'] });
       navigate(`/community/messages?auto_open=${order.conversation_id}`);
     },
     onError: (error: Error) => {
