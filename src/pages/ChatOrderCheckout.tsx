@@ -2,28 +2,17 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
-  ArrowRight, 
-  Package, 
-  MapPin, 
-  CreditCard, 
-  Wallet, 
-  Truck, 
-  Percent,
-  CheckCircle,
-  Loader2,
-  AlertCircle,
-  Plus,
+  ArrowRight, Package, MapPin, Wallet, Truck, Percent,
+  CheckCircle, Loader2, AlertCircle, Plus, Shield, CreditCard,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import AddressDialog from '@/components/AddressDialog';
 
@@ -61,10 +50,7 @@ interface UserAddress {
   is_default: boolean;
 }
 
-const COMMISSION_RATES = {
-  wallet: 0,
-  partial: 5,
-};
+const COMMISSION_RATES = { wallet: 0, partial: 5 };
 
 export default function ChatOrderCheckout() {
   const { orderId } = useParams<{ orderId: string }>();
@@ -78,54 +64,38 @@ export default function ChatOrderCheckout() {
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [showAddressDialog, setShowAddressDialog] = useState(false);
 
-  // Fetch order details
   const { data: order, isLoading: loadingOrder } = useQuery({
     queryKey: ['chat-order-checkout', orderId],
     queryFn: async () => {
       if (!orderId) return null;
-      const { data, error } = await supabase
-        .from('chat_orders')
-        .select('*')
-        .eq('id', orderId)
-        .single();
+      const { data, error } = await supabase.from('chat_orders').select('*').eq('id', orderId).single();
       if (error) throw error;
       return data as ChatOrder;
     },
     enabled: !!orderId,
   });
 
-  // Fetch user addresses
   const { data: addresses = [], isLoading: loadingAddresses } = useQuery({
     queryKey: ['user-addresses-checkout', user?.id],
     queryFn: async () => {
       if (!user) return [];
-      const { data, error } = await supabase
-        .from('user_addresses')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('is_default', { ascending: false });
+      const { data, error } = await supabase.from('user_addresses').select('*').eq('user_id', user.id).order('is_default', { ascending: false });
       if (error) throw error;
       return data as UserAddress[];
     },
     enabled: !!user,
   });
 
-  // Fetch wallet balance
   const { data: walletBalance = 0 } = useQuery({
     queryKey: ['wallet-balance-checkout', user?.id],
     queryFn: async () => {
       if (!user) return 0;
-      const { data } = await supabase
-        .from('user_wallets')
-        .select('balance')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const { data } = await supabase.from('user_wallets').select('balance').eq('user_id', user.id).maybeSingle();
       return data?.balance || 0;
     },
     enabled: !!user,
   });
 
-  // Set default address
   useEffect(() => {
     if (addresses.length && !selectedAddress) {
       const defaultAddr = addresses.find(a => a.is_default) || addresses[0];
@@ -133,29 +103,20 @@ export default function ChatOrderCheckout() {
     }
   }, [addresses, selectedAddress]);
 
-  // Use partial payment percent from order if set by merchant
   const partialPercent = order?.partial_payment_percent ?? 50;
-  
-  // Calculate amounts
   const baseTotal = order?.total_price || 0;
   const commissionRate = COMMISSION_RATES[paymentMethod];
   const commissionAmount = Math.round(baseTotal * (commissionRate / 100));
   const finalTotal = baseTotal + commissionAmount;
-  
-  const amountToPay = paymentMethod === 'wallet' 
-    ? finalTotal
-    : Math.round(finalTotal * (partialPercent / 100));
-  
+  const amountToPay = paymentMethod === 'wallet' ? finalTotal : Math.round(finalTotal * (partialPercent / 100));
   const remainingAmount = finalTotal - amountToPay;
   const insufficientBalance = amountToPay > walletBalance;
 
-  // Complete checkout mutation
   const checkoutMutation = useMutation({
     mutationFn: async () => {
       if (!user || !order || !selectedAddress) throw new Error('بيانات ناقصة');
       if (insufficientBalance) throw new Error('رصيد المحفظة غير كافٍ');
 
-      // Deduct from wallet using secure RPC function
       if (amountToPay > 0) {
         const { error: walletError } = await supabase.rpc('deduct_wallet_balance', {
           p_user_id: user.id,
@@ -165,7 +126,6 @@ export default function ChatOrderCheckout() {
         if (walletError) throw new Error(walletError.message || 'فشل خصم المحفظة');
       }
 
-      // Update order
       const { error: orderError } = await supabase
         .from('chat_orders')
         .update({
@@ -180,10 +140,8 @@ export default function ChatOrderCheckout() {
           checkout_completed_at: new Date().toISOString(),
         })
         .eq('id', order.id);
-      
       if (orderError) throw orderError;
 
-      // Send order card message in chat
       await supabase.from('listing_messages').insert({
         conversation_id: order.conversation_id,
         sender_id: user.id,
@@ -198,14 +156,12 @@ export default function ChatOrderCheckout() {
         }),
       });
 
-      // Send system message
       await supabase.from('listing_messages').insert({
         conversation_id: order.conversation_id,
         sender_id: user.id,
         content: `🔔 تم إتمام الطلب بنجاح!\nالمبلغ المدفوع: ${amountToPay.toLocaleString()} د.ع${remainingAmount > 0 ? `\nالمتبقي عند الاستلام: ${remainingAmount.toLocaleString()} د.ع` : ''}\nطريقة الدفع: ${paymentMethod === 'wallet' ? 'المحفظة' : 'دفعة مقدمة'}`,
       });
 
-      // Notify merchant via Telegram
       if (order.seller_id) {
         supabase.functions.invoke('send-user-telegram-notification', {
           body: {
@@ -217,21 +173,14 @@ export default function ChatOrderCheckout() {
         }).catch(err => console.error('Telegram notify merchant failed:', err));
       }
 
-      // Clear cart items for this merchant's products
-      // Get seller's merchant_application id
       const { data: merchantApp } = await supabase
         .from('merchant_applications')
         .select('id')
         .eq('user_id', order.seller_id)
         .eq('status', 'approved')
         .maybeSingle();
-      
       if (merchantApp) {
-        await supabase
-          .from('community_cart_items')
-          .delete()
-          .eq('user_id', user.id)
-          .eq('merchant_id', merchantApp.id);
+        await supabase.from('community_cart_items').delete().eq('user_id', user.id).eq('merchant_id', merchantApp.id);
       }
 
       return order;
@@ -258,95 +207,106 @@ export default function ChatOrderCheckout() {
 
   if (!order) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <AlertCircle className="h-12 w-12 text-destructive" />
-        <p className="text-lg font-medium">الطلب غير موجود</p>
-        <Button onClick={() => navigate(-1)}>العودة</Button>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-6">
+        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center">
+          <AlertCircle className="h-7 w-7 text-destructive" />
+        </div>
+        <p className="font-bold text-foreground">الطلب غير موجود</p>
+        <Button variant="outline" onClick={() => navigate(-1)} className="rounded-full">العودة</Button>
       </div>
     );
   }
 
+  const selectedAddr = addresses.find(a => a.id === selectedAddress);
+
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="min-h-screen bg-background pb-32" dir="rtl">
       {/* Header */}
-      <header className="sticky top-0 z-40 bg-card border-b">
-        <div className="container mx-auto px-4 py-3 flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
+      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b border-primary/10">
+        <div className="flex items-center gap-3 px-4 h-[56px]">
+          <button
             onClick={() => navigate(-1)}
-            className="rounded-full"
+            className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary/20 transition-colors"
           >
-            <ArrowRight className="h-5 w-5" />
-          </Button>
+            <ArrowRight className="h-4 w-4 text-primary" />
+          </button>
           <div>
-            <h1 className="font-bold">إتمام الطلب</h1>
-            <p className="text-xs text-muted-foreground">طلب #{order.id.slice(0, 8)}</p>
+            <h1 className="text-base font-bold text-foreground">إتمام الطلب</h1>
+            <p className="text-[10px] text-muted-foreground">#{order.id.slice(0, 8)}</p>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-4 max-w-lg space-y-4">
+      {/* Steps indicator */}
+      <div className="px-4 pt-4 pb-2">
+        <div className="flex items-center gap-1">
+          {['الطلب', 'العنوان', 'الدفع'].map((step, i) => (
+            <div key={step} className="flex-1 flex flex-col items-center gap-1">
+              <div className={cn(
+                "h-1 w-full rounded-full transition-colors",
+                "bg-primary"
+              )} />
+              <span className="text-[10px] text-primary font-medium">{step}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <main className="px-4 space-y-4 pb-4">
         {/* Order Summary */}
-        <Card className="overflow-hidden">
-          <CardHeader className="pb-2 bg-muted/30">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Package className="h-4 w-4 text-primary" />
-              ملخص الطلب
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
+        <section className="rounded-2xl bg-card border border-primary/10 overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-primary/5">
+            <Package className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">ملخص الطلب</h2>
+          </div>
+          <div className="p-4">
             <div className="flex gap-3">
               {order.product_image ? (
                 <img
                   src={order.product_image}
                   alt={order.product_title}
-                  className="h-20 w-20 rounded-lg object-cover"
+                  className="h-20 w-20 rounded-xl object-cover border border-primary/10"
                 />
               ) : (
-                <div className="h-20 w-20 rounded-lg bg-muted flex items-center justify-center">
-                  <Package className="h-8 w-8 text-muted-foreground/30" />
+                <div className="h-20 w-20 rounded-xl bg-background flex items-center justify-center border border-primary/10">
+                  <Package className="h-7 w-7 text-primary/15" />
                 </div>
               )}
-              <div className="flex-1">
-                <h3 className="font-semibold line-clamp-2">{order.product_title}</h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm text-foreground line-clamp-2 leading-snug">{order.product_title}</h3>
                 {order.description && (
-                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{order.description}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1 line-clamp-2">{order.description}</p>
                 )}
-                <div className="flex items-center gap-2 mt-2 text-sm">
-                  <span className="text-muted-foreground">الكمية: {order.quantity}</span>
-                  <span className="text-muted-foreground">×</span>
-                  <span>{order.unit_price.toLocaleString()} د.ع</span>
+                <div className="flex items-center gap-3 mt-2">
+                  <span className="text-xs text-muted-foreground">×{order.quantity}</span>
+                  <span className="text-sm font-bold text-primary">{order.unit_price.toLocaleString()} د.ع</span>
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
         {/* Delivery Address */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center justify-between">
-              <span className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-primary" />
-                عنوان التوصيل
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowAddressDialog(true)}
-                className="text-xs h-7"
-              >
-                <Plus className="h-3 w-3 ml-1" />
-                إضافة
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
+        <section className="rounded-2xl bg-card border border-primary/10 overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-primary/5">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-bold text-foreground">عنوان التوصيل</h2>
+            </div>
+            <button
+              onClick={() => setShowAddressDialog(true)}
+              className="flex items-center gap-1 text-[11px] text-primary font-medium hover:underline"
+            >
+              <Plus className="h-3 w-3" />
+              إضافة
+            </button>
+          </div>
+          <div className="p-4">
             {addresses.length === 0 ? (
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground mb-2">لا توجد عناوين محفوظة</p>
-                <Button size="sm" onClick={() => setShowAddressDialog(true)}>
+              <div className="text-center py-6">
+                <MapPin className="h-8 w-8 text-primary/15 mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground mb-3">لا توجد عناوين</p>
+                <Button size="sm" onClick={() => setShowAddressDialog(true)} className="rounded-full">
                   إضافة عنوان
                 </Button>
               </div>
@@ -356,27 +316,26 @@ export default function ChatOrderCheckout() {
                   {addresses.map((addr) => (
                     <Label
                       key={addr.id}
-                      htmlFor={addr.id}
+                      htmlFor={`addr-${addr.id}`}
                       className={cn(
-                        "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                        "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
                         selectedAddress === addr.id 
-                          ? "border-primary bg-primary/5" 
-                          : "border-border hover:border-primary/50"
+                          ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
+                          : "border-primary/10 hover:border-primary/30"
                       )}
                     >
-                      <RadioGroupItem value={addr.id} id={addr.id} className="mt-1" />
+                      <RadioGroupItem value={addr.id} id={`addr-${addr.id}`} className="mt-0.5" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{addr.full_name}</span>
+                          <span className="font-semibold text-sm text-foreground">{addr.full_name}</span>
                           {addr.is_default && (
-                            <Badge variant="secondary" className="text-[10px] h-4">افتراضي</Badge>
+                            <span className="text-[9px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full font-bold">
+                              افتراضي
+                            </span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{addr.phone_number}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {addr.governorate} - {addr.area}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">{addr.nearest_landmark}</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{addr.phone_number}</p>
+                        <p className="text-[11px] text-muted-foreground">{addr.governorate} - {addr.area}</p>
                       </div>
                     </Label>
                   ))}
@@ -385,129 +344,140 @@ export default function ChatOrderCheckout() {
             )}
             
             <Textarea
-              placeholder="ملاحظات التوصيل (اختياري)"
+              placeholder="ملاحظات التوصيل (اختياري)..."
               value={deliveryNotes}
               onChange={(e) => setDeliveryNotes(e.target.value)}
-              className="mt-3 text-sm"
+              className="mt-3 text-sm rounded-xl bg-background/50 border-primary/10 focus:border-primary/30 resize-none"
               rows={2}
             />
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
         {/* Payment Method */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-primary" />
-              طريقة الدفع
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
+        <section className="rounded-2xl bg-card border border-primary/10 overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3 border-b border-primary/5">
+            <CreditCard className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">طريقة الدفع</h2>
+          </div>
+          <div className="p-4">
             <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as PaymentMethod)}>
               <div className="space-y-2">
                 {/* Wallet */}
                 <Label
-                  htmlFor="wallet"
+                  htmlFor="pay-wallet"
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                    "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
                     paymentMethod === 'wallet' 
-                      ? "border-primary bg-primary/5" 
-                      : "border-border hover:border-primary/50"
+                      ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
+                      : "border-primary/10 hover:border-primary/30"
                   )}
                 >
-                  <RadioGroupItem value="wallet" id="wallet" />
-                  <Wallet className="h-5 w-5 text-primary" />
-                  <div className="flex-1">
-                    <span className="font-medium text-sm">المحفظة</span>
-                    <p className="text-xs text-muted-foreground">دفع كامل المبلغ من رصيدك</p>
+                  <RadioGroupItem value="wallet" id="pay-wallet" />
+                  <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+                    <Wallet className="h-4 w-4 text-primary" />
                   </div>
-                  <Badge variant="secondary" className="text-green-600 bg-green-500/10">
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm text-foreground">المحفظة</p>
+                    <p className="text-[10px] text-muted-foreground">دفع كامل المبلغ</p>
+                  </div>
+                  <span className="text-[10px] bg-green-500/15 text-green-400 px-2 py-0.5 rounded-full font-bold">
                     بدون عمولة
-                  </Badge>
+                  </span>
                 </Label>
 
-                {/* Partial Payment */}
+                {/* Partial */}
                 <Label
-                  htmlFor="partial"
+                  htmlFor="pay-partial"
                   className={cn(
-                    "flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                    "flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all",
                     paymentMethod === 'partial' 
-                      ? "border-primary bg-primary/5" 
-                      : "border-border hover:border-primary/50"
+                      ? "border-primary bg-primary/5 shadow-sm shadow-primary/10" 
+                      : "border-primary/10 hover:border-primary/30"
                   )}
                 >
-                  <RadioGroupItem value="partial" id="partial" />
-                  <Percent className="h-5 w-5 text-amber-500" />
-                  <div className="flex-1">
-                    <span className="font-medium text-sm">دفعة مقدمة ({partialPercent}%)</span>
-                    <p className="text-xs text-muted-foreground">ادفع جزء الآن والباقي عند الاستلام</p>
+                  <RadioGroupItem value="partial" id="pay-partial" />
+                  <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                    <Percent className="h-4 w-4 text-amber-400" />
                   </div>
-                  <Badge variant="secondary" className="text-amber-600 bg-amber-500/10">
-                    +5% عمولة
-                  </Badge>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm text-foreground">دفعة مقدمة ({partialPercent}%)</p>
+                    <p className="text-[10px] text-muted-foreground">ادفع جزء والباقي عند الاستلام</p>
+                  </div>
+                  <span className="text-[10px] bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full font-bold">
+                    +5%
+                  </span>
                 </Label>
               </div>
             </RadioGroup>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
         {/* Price Breakdown */}
-        <Card className="bg-gradient-to-b from-primary/5 to-background">
-          <CardContent className="p-4 space-y-3">
+        <section className="rounded-2xl bg-card border border-primary/10 overflow-hidden">
+          <div className="p-4 space-y-3">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">سعر المنتج</span>
-              <span>{baseTotal.toLocaleString()} د.ع</span>
+              <span className="text-muted-foreground">المنتجات</span>
+              <span className="font-medium text-foreground">{baseTotal.toLocaleString()} د.ع</span>
             </div>
             
             {commissionAmount > 0 && (
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">عمولة الدفع ({commissionRate}%)</span>
-                <span className="text-amber-600">+{commissionAmount.toLocaleString()} د.ع</span>
+                <span className="text-amber-400 font-medium">+{commissionAmount.toLocaleString()} د.ع</span>
               </div>
             )}
             
-            <Separator />
+            <div className="h-px bg-primary/10" />
             
-            <div className="flex items-center justify-between font-bold">
-              <span>الإجمالي</span>
-              <span className="text-lg text-primary">{finalTotal.toLocaleString()} د.ع</span>
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-foreground">الإجمالي</span>
+              <span className="text-xl font-black text-primary">{finalTotal.toLocaleString()} د.ع</span>
             </div>
 
             {paymentMethod !== 'wallet' && (
               <>
-                <Separator />
+                <div className="h-px bg-primary/10" />
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">المطلوب دفعه الآن</span>
-                  <span className="font-semibold text-green-600">{amountToPay.toLocaleString()} د.ع</span>
+                  <span className="text-muted-foreground">المطلوب الآن</span>
+                  <span className="font-bold text-green-400">{amountToPay.toLocaleString()} د.ع</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">عند الاستلام</span>
-                  <span className="font-semibold text-amber-600">{remainingAmount.toLocaleString()} د.ع</span>
+                  <span className="font-bold text-amber-400">{remainingAmount.toLocaleString()} د.ع</span>
                 </div>
               </>
             )}
 
-            <div className="flex items-center justify-between text-xs pt-2 border-t">
+            <div className="h-px bg-primary/10" />
+            <div className="flex items-center justify-between text-xs">
               <span className="text-muted-foreground">رصيد المحفظة</span>
-              <span className={insufficientBalance ? 'text-destructive' : 'text-green-600'}>
+              <span className={cn("font-bold", insufficientBalance ? 'text-destructive' : 'text-green-400')}>
                 {walletBalance.toLocaleString()} د.ع
               </span>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </section>
+
+        {/* Security note */}
+        <div className="flex items-center gap-2 px-2 pb-2">
+          <Shield className="h-3.5 w-3.5 text-primary/40 shrink-0" />
+          <p className="text-[10px] text-muted-foreground leading-relaxed">
+            جميع المعاملات محمية ومشفرة. لن يتم تحويل أموالك للتاجر إلا بعد تأكيدك للاستلام.
+          </p>
+        </div>
       </main>
 
-      {/* Fixed Bottom Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card border-t p-4 shadow-lg">
-        <div className="container mx-auto max-w-lg">
+      {/* Fixed Bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-30 safe-area-bottom" dir="rtl">
+        <div className="bg-card/95 backdrop-blur-xl border-t border-primary/15 px-4 py-3">
           {insufficientBalance ? (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4" />
-                <span>رصيد المحفظة غير كافٍ - تحتاج {(amountToPay - walletBalance).toLocaleString()} د.ع إضافية</span>
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>تحتاج {(amountToPay - walletBalance).toLocaleString()} د.ع إضافية</span>
               </div>
               <Button
-                className="w-full"
+                className="w-full h-12 rounded-xl font-bold"
                 onClick={() => navigate('/profile?tab=wallet')}
               >
                 <Wallet className="h-4 w-4 ml-2" />
@@ -516,19 +486,19 @@ export default function ChatOrderCheckout() {
             </div>
           ) : (
             <Button
-              className="w-full h-12 text-base"
+              className="w-full h-12 rounded-xl font-bold text-sm gap-2"
               onClick={() => checkoutMutation.mutate()}
               disabled={!selectedAddress || checkoutMutation.isPending}
             >
               {checkoutMutation.isPending ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin ml-2" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   جاري إتمام الطلب...
                 </>
               ) : (
                 <>
-                  <CheckCircle className="h-5 w-5 ml-2" />
-                  تأكيد الطلب {amountToPay > 0 ? `ودفع ${amountToPay.toLocaleString()} د.ع` : ''}
+                  <CheckCircle className="h-5 w-5" />
+                  تأكيد الطلب — {amountToPay.toLocaleString()} د.ع
                 </>
               )}
             </Button>
@@ -536,14 +506,11 @@ export default function ChatOrderCheckout() {
         </div>
       </div>
 
-      {/* Address Dialog */}
       <AddressDialog
         open={showAddressDialog}
         onOpenChange={(open) => {
           setShowAddressDialog(open);
-          if (!open) {
-            queryClient.invalidateQueries({ queryKey: ['user-addresses-checkout'] });
-          }
+          if (!open) queryClient.invalidateQueries({ queryKey: ['user-addresses-checkout'] });
         }}
       />
     </div>
