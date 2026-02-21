@@ -3,7 +3,7 @@ import MerchantReelUpload from "@/components/reels/MerchantReelUpload";
 import MerchantReelsSection from "@/components/merchant/MerchantReelsSection";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Store, Plus, Star, Eye, Package, Sparkles, Film, FolderOpen, Settings, MessageSquare, Edit2, Trash2, EyeOff, Clock3, Box, Layers, Droplets, Palette, Scale, Wallet, CreditCard, BadgePercent, ExternalLink, Megaphone, Truck } from "lucide-react";
+import { Store, Plus, Star, Eye, Package, Sparkles, Film, FolderOpen, Settings, MessageSquare, Edit2, Trash2, EyeOff, Clock3, Box, Layers, Droplets, Palette, Scale, Wallet, CreditCard, BadgePercent, ExternalLink, Megaphone, Truck, MapPin, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,7 @@ import MerchantCategoriesManager from "@/components/merchant/MerchantCategoriesM
 import ProductFormDialog, { type ProductFormData, type MediaState } from "@/components/merchant/ProductFormDialog";
 import StorePauseControl from "@/components/merchant/StorePauseControl";
 import MerchantAdBookingDialog from "@/components/community/MerchantAdBookingDialog";
+import DeliverySettingsSection from "@/components/merchant/DeliverySettingsSection";
 import MerchantDiscountsManager from "@/components/merchant/MerchantDiscountsManager";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertCircle } from "lucide-react";
@@ -109,19 +110,25 @@ export default function CommunityMerchantStore() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("merchant_public_profiles")
-        .select("accepted_payment_methods, delivery_price_iqd")
+        .select("accepted_payment_methods, delivery_price_iqd, delivery_rules")
         .eq("id", merchantApp!.id)
         .maybeSingle();
       if (error) throw error;
+      const rules = (data as any)?.delivery_rules as { exceptions?: { governorate: string; price: number }[]; tiers?: { min_order_amount: number; delivery_price: number }[] } | null;
       return {
         paymentMethods: (data?.accepted_payment_methods as string[]) || ['full_prepayment'],
         deliveryPrice: (data?.delivery_price_iqd as number) ?? 5000,
+        deliveryRules: rules || { exceptions: [], tiers: [] },
       };
     },
   });
 
   const paymentMethods = merchantSettings?.paymentMethods || ['full_prepayment'];
   const deliveryPrice = merchantSettings?.deliveryPrice ?? 5000;
+  const deliveryRules = {
+    exceptions: merchantSettings?.deliveryRules?.exceptions || [],
+    tiers: merchantSettings?.deliveryRules?.tiers || [],
+  };
 
   const updatePaymentMethods = useMutation({
     mutationFn: async (methods: string[]) => {
@@ -148,6 +155,20 @@ export default function CommunityMerchantStore() {
     onSuccess: () => {
       refetchMerchantSettings();
       toast({ title: "تم تحديث سعر التوصيل" });
+    },
+  });
+
+  const updateDeliveryRules = useMutation({
+    mutationFn: async (rules: { exceptions: { governorate: string; price: number }[]; tiers: { min_order_amount: number; delivery_price: number }[] }) => {
+      const { error } = await supabase
+        .from("merchant_public_profiles")
+        .update({ delivery_rules: rules } as any)
+        .eq("id", merchantApp!.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      refetchMerchantSettings();
+      toast({ title: "تم تحديث إعدادات التوصيل" });
     },
   });
 
@@ -584,32 +605,13 @@ export default function CommunityMerchantStore() {
               </div>
             </div>
 
-            {/* Delivery Price */}
-            <div className="rounded-xl border border-border/50 bg-card p-3.5 space-y-3">
-              <div className="flex items-center gap-2">
-                <Truck className="h-4 w-4 text-primary" />
-                <h3 className="text-xs font-bold">سعر التوصيل</h3>
-              </div>
-              <p className="text-[10px] text-muted-foreground">حدد سعر التوصيل الذي سيُضاف لطلبات العملاء (لا يُحسب ضمن أرباحك)</p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="0"
-                  step="1000"
-                  value={deliveryPrice || ''}
-                  placeholder="0"
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 0;
-                    updateDeliveryPrice.mutate(val);
-                  }}
-                  className="flex-1 bg-background border border-border/50 rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/40"
-                />
-                <span className="text-xs text-muted-foreground shrink-0">د.ع</span>
-              </div>
-              {deliveryPrice > 0 && (
-                <p className="text-[10px] text-emerald-500 font-medium">✓ سيُضاف {deliveryPrice.toLocaleString()} د.ع كرسوم توصيل لطلبات العملاء</p>
-              )}
-            </div>
+            {/* Delivery Settings */}
+            <DeliverySettingsSection
+              deliveryPrice={deliveryPrice}
+              deliveryRules={deliveryRules}
+              onUpdatePrice={(price) => updateDeliveryPrice.mutate(price)}
+              onUpdateRules={(rules) => updateDeliveryRules.mutate(rules)}
+            />
 
             {/* Store Pause */}
             <StorePauseControl merchantId={merchantApp.id} storePaused={merchantApp.store_paused || false} storePauseEndDate={merchantApp.store_pause_end_date} storePauseMessage={merchantApp.store_pause_message} />
@@ -799,7 +801,7 @@ export default function CommunityMerchantStore() {
           social_links: socialLinks || null,
           selected_frame_id: merchantApp.selected_frame_id,
           specialty: (merchantApp.specialty as "resin" | "filament" | "both") || undefined,
-          store_layout: (merchantApp as any).store_layout || undefined,
+          store_layout: (merchantApp.store_layout as "standard" | "grid_images" | "strip" | "sidebar") || undefined,
         }}
       />
       {/* Ad Booking Dialog */}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Camera, Check, Coins, Droplets, Layers, Sparkles, Image, Printer, MessageSquare, Clock, FolderOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,6 +15,33 @@ import AvatarWithFrame from "./AvatarWithFrame";
 import PrinterModelsEditor from "./PrinterModelsEditor";
 import MerchantCategoriesManager from "./MerchantCategoriesManager";
 import StoreLayoutSelector from "./StoreLayoutSelector";
+
+// Compress image to JPEG with max dimensions
+function compressImage(file: File, maxSize = 800, quality = 0.85): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxSize || h > maxSize) {
+        const ratio = Math.min(maxSize / w, maxSize / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob(
+        (blob) => blob ? resolve(blob) : reject(new Error('Compression failed')),
+        'image/jpeg',
+        quality
+      );
+    };
+    img.onerror = () => reject(new Error('Failed to load image'));
+    img.src = URL.createObjectURL(file);
+  });
+}
 
 type SpecialtyType = "resin" | "filament" | "both";
 type LayoutType = "standard" | "grid_images" | "strip" | "sidebar";
@@ -223,13 +250,17 @@ export default function StoreProfileEditor({ open, onOpenChange, merchantApp }: 
 
     setUploading(true);
     try {
-      const ext = file.name.split(".").pop();
-      // Use merchant_stores bucket with user_id as first folder for RLS policy
+      // Compress image client-side before upload
+      const processedFile = await compressImage(file);
+      const ext = 'jpg';
       const path = `${user.id}/store-${Date.now()}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from("merchant_stores")
-        .upload(path, file, { upsert: true });
+        .upload(path, processedFile, { 
+          upsert: true, 
+          contentType: processedFile.type,
+        });
 
       if (uploadError) throw uploadError;
 
