@@ -544,11 +544,11 @@ export default function CommunityProductDetailModal({
                 {/* Actions - hidden for merchants */}
                 {!isMerchant && (
                   <div className="flex gap-1.5 pt-0.5 sticky bottom-0 bg-background pb-2">
-                    <Button size="sm" className="flex-1 gap-1 h-9 text-xs font-bold rounded-xl" onClick={handleContactMerchant}>
-                      <Package className="h-3.5 w-3.5" />اطلب الآن
+                    <Button size="sm" className="flex-1 gap-1 h-9 text-xs font-bold rounded-xl" onClick={handleAddToCart} disabled={addToCartMutation.isPending}>
+                      <ShoppingBag className="h-3.5 w-3.5" />أضف للسلة
                     </Button>
-                    <Button variant="outline" size="sm" className="gap-1 h-9 text-xs rounded-xl" onClick={handleAddToCart} disabled={addToCartMutation.isPending}>
-                      <ShoppingBag className="h-3.5 w-3.5" />السلة
+                    <Button variant="outline" size="sm" className="gap-1 h-9 text-xs rounded-xl" onClick={handleContactMerchant}>
+                      <MessageCircle className="h-3.5 w-3.5" />مراسلة
                     </Button>
                     <Button variant="ghost" size="sm" className="gap-1 h-9 text-xs rounded-xl" onClick={handleVisitStore}>
                       <Store className="h-3.5 w-3.5" />

@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { MessageCircle, Store, ShoppingCart } from "lucide-react";
+import { MessageCircle, Store, ShoppingBag } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import AvatarWithFrame from "@/components/merchant/AvatarWithFrame";
@@ -17,6 +17,8 @@ type Props = {
   onProductClick?: () => void;
   /** Contact the merchant */
   onContact?: () => void;
+  /** Add to cart */
+  onAddToCart?: () => void;
   /** Hide order buttons (for merchants) */
   hideOrderButtons?: boolean;
 };
@@ -31,6 +33,7 @@ function CommunityProductCardBase({
   onOpenStore,
   onProductClick,
   onContact,
+  onAddToCart,
   hideOrderButtons,
 }: Props) {
   const { t } = useLanguage();
@@ -124,16 +127,16 @@ function CommunityProductCardBase({
           ) : null}
         </div>
 
-        {/* Order Button - hidden for merchants */}
+        {/* Cart & Contact Buttons - hidden for merchants */}
         {!hideOrderButtons && (
           <div className="mt-1.5 flex gap-1" onClick={(e) => e.stopPropagation()}>
             <Button
               type="button"
               size="sm"
               className="flex-1 h-7 text-[10px] gap-1 font-bold"
-              onClick={onContact}
+              onClick={onAddToCart}
             >
-              <ShoppingCart className="h-3 w-3" />
+              <ShoppingBag className="h-3 w-3" />
               {t('community_order')}
             </Button>
             {onContact && (
