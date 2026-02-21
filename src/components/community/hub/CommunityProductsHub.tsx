@@ -1,17 +1,16 @@
 import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Loader2 } from "lucide-react";
 import { useAutoFetchUntil } from "@/components/community/hub/useAutoFetchUntil";
 import { useInfiniteScrollSentinel } from "@/components/community/hub/useInfiniteScrollSentinel";
 import CommunityProductCard from "@/components/community/CommunityProductCard";
 import CommunityProductDetailModal from "@/components/community/CommunityProductDetailModal";
+import AddToCartSheet from "@/components/community/AddToCartSheet";
 
 type Props = {
   mode: "preview" | "hub";
@@ -40,12 +39,13 @@ function pickMainImage(p: ProductRow) {
 export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = "", sortBy = "newest" }: Props) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const queryClient = useQueryClient();
   const chunkSize = mode === "hub" ? 4 : 12;
   const initialTarget = mode === "hub" ? 50 : 6;
   const [targetCount, setTargetCount] = useState(initialTarget);
   const [selectedProduct, setSelectedProduct] = useState<ProductRow | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [cartSheetProduct, setCartSheetProduct] = useState<ProductRow | null>(null);
+  const [cartSheetOpen, setCartSheetOpen] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const query = useInfiniteQuery({
@@ -220,69 +220,10 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
     setDetailOpen(true);
   };
 
-  const addToCartMutation = useMutation({
-    mutationFn: async (p: ProductRow) => {
-      if (!user) throw new Error("AUTH");
-      const { data: existingCartItems } = await supabase
-        .from("community_cart_items")
-        .select("id, merchant_id, merchant_name")
-        .eq("user_id", user.id)
-        .limit(1);
-
-      if (existingCartItems && existingCartItems.length > 0 && existingCartItems[0].merchant_id !== p.merchant_id) {
-        throw new Error(`DIFFERENT_MERCHANT:${existingCartItems[0].merchant_name || 'متجر آخر'}`);
-      }
-
-      const mainImg = pickMainImage(p);
-      const { data: existing } = await supabase
-        .from("community_cart_items")
-        .select("id, quantity")
-        .eq("user_id", user.id)
-        .eq("product_id", p.id)
-        .eq("product_title", p.title)
-        .maybeSingle();
-
-      if (existing) {
-        const { error } = await supabase
-          .from("community_cart_items")
-          .update({ quantity: existing.quantity + 1 })
-          .eq("id", existing.id);
-        if (error) throw error;
-      } else {
-        const merchant = merchantsMap.get(p.merchant_id);
-        const { error } = await supabase.from("community_cart_items").insert({
-          user_id: user.id,
-          merchant_id: p.merchant_id,
-          merchant_name: merchant?.name || "متجر",
-          product_id: p.id,
-          product_title: p.title,
-          product_image: mainImg,
-          product_price: p.price_iqd || 0,
-          quantity: 1,
-        });
-        if (error) throw error;
-      }
-    },
-    onSuccess: () => {
-      toast.success("تمت الإضافة للسلة 🛒");
-      queryClient.invalidateQueries({ queryKey: ["community-cart"] });
-    },
-    onError: (e: Error) => {
-      if (e.message === "AUTH") {
-        navigate("/auth");
-      } else if (e.message.startsWith("DIFFERENT_MERCHANT:")) {
-        toast.error("لديك منتجات من متجر آخر في السلة");
-      } else {
-        toast.error("حدث خطأ");
-      }
-    },
-  });
-
   const handleAddToCart = (p: ProductRow) => {
     if (!user) { navigate("/auth"); return; }
-    // Always open detail modal so user can select options/quantity before adding
-    setSelectedProduct(p);
-    setDetailOpen(true);
+    setCartSheetProduct(p);
+    setCartSheetOpen(true);
   };
 
   if (query.isLoading) {
@@ -357,6 +298,13 @@ export default function CommunityProductsHub({ mode, onOpenStore, searchQuery = 
         product={selectedProduct}
         open={detailOpen}
         onOpenChange={setDetailOpen}
+      />
+
+      {/* Add to Cart Sheet */}
+      <AddToCartSheet
+        product={cartSheetProduct}
+        open={cartSheetOpen}
+        onOpenChange={setCartSheetOpen}
       />
     </div>
   );

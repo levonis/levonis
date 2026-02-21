@@ -3069,6 +3069,7 @@ export type Database = {
           category_ids: string[] | null
           colors: Json | null
           created_at: string
+          current_queue_count: number
           description: string | null
           estimated_days: number | null
           id: string
@@ -3077,14 +3078,19 @@ export type Database = {
           is_featured: boolean
           is_preorder: boolean | null
           material_type: string | null
+          max_queue_slots: number | null
           merchant_id: string
           options: Json | null
           original_price_iqd: number | null
+          preorder_available_date: string | null
+          preorder_deposit_percent: number | null
           preorder_end_date: string | null
+          preorder_note: string | null
           preorder_queue_current: number | null
           preorder_queue_total: number | null
           price_iqd: number | null
           primary_image_index: number | null
+          sale_type: string
           stock_quantity: number | null
           title: string
           updated_at: string
@@ -3096,6 +3102,7 @@ export type Database = {
           category_ids?: string[] | null
           colors?: Json | null
           created_at?: string
+          current_queue_count?: number
           description?: string | null
           estimated_days?: number | null
           id?: string
@@ -3104,14 +3111,19 @@ export type Database = {
           is_featured?: boolean
           is_preorder?: boolean | null
           material_type?: string | null
+          max_queue_slots?: number | null
           merchant_id: string
           options?: Json | null
           original_price_iqd?: number | null
+          preorder_available_date?: string | null
+          preorder_deposit_percent?: number | null
           preorder_end_date?: string | null
+          preorder_note?: string | null
           preorder_queue_current?: number | null
           preorder_queue_total?: number | null
           price_iqd?: number | null
           primary_image_index?: number | null
+          sale_type?: string
           stock_quantity?: number | null
           title: string
           updated_at?: string
@@ -3123,6 +3135,7 @@ export type Database = {
           category_ids?: string[] | null
           colors?: Json | null
           created_at?: string
+          current_queue_count?: number
           description?: string | null
           estimated_days?: number | null
           id?: string
@@ -3131,14 +3144,19 @@ export type Database = {
           is_featured?: boolean
           is_preorder?: boolean | null
           material_type?: string | null
+          max_queue_slots?: number | null
           merchant_id?: string
           options?: Json | null
           original_price_iqd?: number | null
+          preorder_available_date?: string | null
+          preorder_deposit_percent?: number | null
           preorder_end_date?: string | null
+          preorder_note?: string | null
           preorder_queue_current?: number | null
           preorder_queue_total?: number | null
           price_iqd?: number | null
           primary_image_index?: number | null
+          sale_type?: string
           stock_quantity?: number | null
           title?: string
           updated_at?: string
@@ -4581,6 +4599,59 @@ export type Database = {
             columns: ["user_printer_id"]
             isOneToOne: false
             referencedRelation: "user_printers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_bookings: {
+        Row: {
+          booking_type: string
+          created_at: string
+          deposit_amount: number | null
+          deposit_paid: boolean | null
+          id: string
+          merchant_id: string
+          notes: string | null
+          product_id: string
+          queue_position: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_type?: string
+          created_at?: string
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          id?: string
+          merchant_id: string
+          notes?: string | null
+          product_id: string
+          queue_position?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_type?: string
+          created_at?: string
+          deposit_amount?: number | null
+          deposit_paid?: boolean | null
+          id?: string
+          merchant_id?: string
+          notes?: string | null
+          product_id?: string
+          queue_position?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_bookings_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "merchant_products"
             referencedColumns: ["id"]
           },
         ]
