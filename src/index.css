@@ -1007,15 +1007,10 @@
   max-width: calc(100vw - 1rem) !important;
 }
 
-.fixed-dialog [data-radix-select-content] {
+.fixed-dialog [data-radix-select-content],
+.fixed-dialog [data-radix-popper-content-wrapper] {
   position: fixed !important;
-  z-index: 100 !important;
-}
-
-/* Ensure select content doesn't move with scroll */
-[data-radix-popper-content-wrapper] {
-  position: fixed !important;
-  z-index: 100 !important;
+  z-index: 300 !important;
 }
 
 /* Prevent page-level horizontal overflow without blocking inner scrollable elements */
