@@ -21,7 +21,6 @@ const PopoverContent = React.forwardRef<
         "z-[300] w-72 rounded-xl border border-[hsl(var(--border))] p-4 text-popover-foreground shadow-xl outline-none",
         "bg-popover",
         "shadow-[0_10px_30px_hsl(var(--foreground)/0.2)]",
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
         className,
       )}
       {...props}
