@@ -1976,6 +1976,36 @@ export type Database = {
           },
         ]
       }
+      game_music_stations: {
+        Row: {
+          created_at: string
+          display_order: number
+          file_url: string
+          id: string
+          is_active: boolean
+          name_ar: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          file_url: string
+          id?: string
+          is_active?: boolean
+          name_ar: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          file_url?: string
+          id?: string
+          is_active?: boolean
+          name_ar?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gig_applications: {
         Row: {
           cover_letter: string | null
