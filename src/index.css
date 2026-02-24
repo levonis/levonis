@@ -1013,25 +1013,6 @@
   z-index: 300 !important;
 }
 
-/* Prevent first-frame popper jump (flash from top before coordinates settle) */
-[data-radix-popper-content-wrapper] {
-  animation: popper-position-stabilize 60ms steps(1, end) forwards;
-}
-
-[data-radix-popper-content-wrapper] > * {
-  animation: none !important;
-  transition: none !important;
-}
-
-@keyframes popper-position-stabilize {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 /* Prevent page-level horizontal overflow without blocking inner scrollable elements */
 
 /* Ensure all containers respect viewport width */

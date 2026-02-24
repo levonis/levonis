@@ -56,21 +56,31 @@ DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayNam
 const DropdownMenuContent = React.forwardRef<
   React.ElementRef<typeof DropdownMenuPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content>
->(({ className, sideOffset = 4, side = "bottom", ...props }, ref) => (
-  <DropdownMenuPrimitive.Portal>
-    <DropdownMenuPrimitive.Content
-      ref={ref}
-      side={side}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-[300] min-w-[8rem] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-popover p-1.5 text-popover-foreground",
-        "shadow-[0_10px_30px_hsl(var(--foreground)/0.2)]",
-        className,
-      )}
-      {...props}
-    />
-  </DropdownMenuPrimitive.Portal>
-));
+>(({ className, sideOffset = 4, side = "bottom", ...props }, ref) => {
+  const [isPositioned, setIsPositioned] = React.useState(false);
+
+  React.useEffect(() => {
+    const frame = window.requestAnimationFrame(() => setIsPositioned(true));
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  return (
+    <DropdownMenuPrimitive.Portal>
+      <DropdownMenuPrimitive.Content
+        ref={ref}
+        side={side}
+        sideOffset={sideOffset}
+        className={cn(
+          "z-[300] min-w-[8rem] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-popover p-1.5 text-popover-foreground",
+          "shadow-md",
+          isPositioned ? "opacity-100" : "opacity-0",
+          className,
+        )}
+        {...props}
+      />
+    </DropdownMenuPrimitive.Portal>
+  );
+});
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
 
 const DropdownMenuItem = React.forwardRef<
