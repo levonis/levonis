@@ -111,6 +111,7 @@ const AdminStories = lazy(() => import("./pages/AdminStories"));
 const AdminDeliveredOrders = lazy(() => import("./pages/AdminDeliveredOrders"));
 const AdminGiveawaysCoupons = lazy(() => import("./pages/AdminGiveawaysCoupons"));
 const MerchantGiveaways = lazy(() => import("./pages/MerchantGiveaways"));
+const MiniGames = lazy(() => import("./pages/MiniGames"));
 const CustomerSpecialCoupons = lazy(() => import("./pages/CustomerSpecialCoupons"));
 const CommunityCart = lazy(() => import("./pages/CommunityCart"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -229,6 +230,7 @@ function AppContent() {
             <Route path="/profile" element={<RequireAuth><Profile /></RequireAuth>} />
             <Route path="/profile/settings" element={<RequireAuth><ProfileSettings /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
+            <Route path="/games" element={<MiniGames />} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
             <Route path="/my-products" element={<MyPurchasedProducts />} />

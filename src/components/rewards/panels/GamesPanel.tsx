@@ -1,17 +1,12 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Gamepad2, Lock, Sparkles } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
-import RockPaperScissorsGame from "./RockPaperScissorsGame";
 
 export default function GamesPanel() {
   const { t } = useLanguage();
-  const [activeGame, setActiveGame] = useState<string | null>(null);
-
-  if (activeGame === 'rps') {
-    return <RockPaperScissorsGame onBack={() => setActiveGame(null)} />;
-  }
+  const navigate = useNavigate();
 
   return (
     <div className="space-y-4">
@@ -22,7 +17,7 @@ export default function GamesPanel() {
 
       {/* Available Game - Rock Paper Scissors */}
       <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 overflow-hidden relative group hover:border-primary/50 transition-all cursor-pointer"
-            onClick={() => setActiveGame('rps')}>
+            onClick={() => navigate('/games')}>
         <CardContent className="p-5">
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center text-3xl shrink-0 group-hover:scale-110 transition-transform duration-300">
