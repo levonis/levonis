@@ -60,8 +60,17 @@ const DropdownMenuContent = React.forwardRef<
   const [isPositioned, setIsPositioned] = React.useState(false);
 
   React.useEffect(() => {
-    const frame = window.requestAnimationFrame(() => setIsPositioned(true));
-    return () => window.cancelAnimationFrame(frame);
+    let frame1 = 0;
+    let frame2 = 0;
+
+    frame1 = window.requestAnimationFrame(() => {
+      frame2 = window.requestAnimationFrame(() => setIsPositioned(true));
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame1);
+      window.cancelAnimationFrame(frame2);
+    };
   }, []);
 
   return (
@@ -73,7 +82,9 @@ const DropdownMenuContent = React.forwardRef<
         className={cn(
           "z-[300] min-w-[8rem] overflow-hidden rounded-xl border border-[hsl(var(--border))] bg-popover p-1.5 text-popover-foreground",
           "shadow-md",
-          isPositioned ? "opacity-100" : "opacity-0",
+          isPositioned
+            ? "opacity-100 data-[side=bottom]:animate-[dropdown-in-bottom_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=top]:animate-[dropdown-in-top_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=left]:animate-[dropdown-in-left_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=right]:animate-[dropdown-in-right_160ms_cubic-bezier(0.16,1,0.3,1)]"
+            : "opacity-0",
           className,
         )}
         {...props}
