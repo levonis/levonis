@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield, Users } from 'lucide-react';
+import { Loader2, Plus, Pencil, Trash2, FolderOpen, Upload, X, Copy, FileText, Bell, Megaphone, Ticket, Package, Truck, Zap, Sparkles, Coins, Award, Wallet, MessageCircle, Receipt, TrendingUp, Percent, ImageIcon, GripVertical, Trophy, Gift, Check, AlertCircle, RefreshCw, ExternalLink, Shield, Users, Music } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { z } from 'zod';
@@ -1639,6 +1639,7 @@ const Admin = () => {
                 { icon: Sparkles, title: 'مجتمع ليفو', desc: 'التجار والعملاء والهدايا والكوبونات', path: ADMIN_ROUTES.levoCommunity },
                 { icon: Users, title: 'إدارة المستخدمين', desc: 'عرض جميع المستخدمين والتجار', path: ADMIN_ROUTES.users },
                 { icon: ImageIcon, title: 'إدارة الستوريات', desc: 'أقسام وفيديوهات الصفحة الرئيسية', path: ADMIN_ROUTES.stories },
+                { icon: Music, title: 'موسيقى الألعاب', desc: 'رفع وإدارة محطات الموسيقى', path: ADMIN_ROUTES.gameMusic },
               ].map((item, idx) => (
                 <button
                   key={idx}

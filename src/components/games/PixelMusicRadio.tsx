@@ -1,26 +1,60 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Volume2, VolumeX, Radio, Music } from "lucide-react";
-import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-type Station = { name: string; notes: number[]; tempo: number; wave: OscillatorType };
+type Station = { id: string; name_ar: string; file_url: string };
 
-const STATIONS: Station[] = [
-  { name: "هادئ 🌙", notes: [262, 294, 330, 349, 330, 294, 262, 247], tempo: 320, wave: "triangle" },
-  { name: "مغامرة ⚔️", notes: [330, 392, 440, 523, 440, 392, 330, 262], tempo: 200, wave: "square" },
-  { name: "تشيبتون 🎵", notes: [523, 494, 440, 392, 349, 330, 294, 262], tempo: 160, wave: "square" },
+// Fallback procedural stations when no uploaded music exists
+const FALLBACK_STATIONS = [
+  { id: "f1", name_ar: "هادئ 🌙", notes: [262, 294, 330, 349, 330, 294, 262, 247], tempo: 320, wave: "triangle" as OscillatorType },
+  { id: "f2", name_ar: "مغامرة ⚔️", notes: [330, 392, 440, 523, 440, 392, 330, 262], tempo: 200, wave: "square" as OscillatorType },
+  { id: "f3", name_ar: "تشيبتون 🎵", notes: [523, 494, 440, 392, 349, 330, 294, 262], tempo: 160, wave: "square" as OscillatorType },
 ];
 
 export default function PixelMusicRadio() {
   const [isOn, setIsOn] = useState(false);
-  const [station, setStation] = useState(0);
+  const [stationIdx, setStationIdx] = useState(0);
   const [volume, setVolume] = useState(30);
   const [expanded, setExpanded] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Fallback procedural audio refs
   const audioCtxRef = useRef<AudioContext | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const noteIndexRef = useRef(0);
   const gainRef = useRef<GainNode | null>(null);
 
+  // Fetch uploaded stations
+  const { data: uploadedStations } = useQuery({
+    queryKey: ["game-music-radio"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("game_music_stations")
+        .select("id, name_ar, file_url")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data as Station[];
+    },
+  });
+
+  const hasUploaded = uploadedStations && uploadedStations.length > 0;
+  const stations = hasUploaded ? uploadedStations : FALLBACK_STATIONS;
+  const currentStation = stations[stationIdx % stations.length];
+
+  // --- Uploaded music playback ---
+  const playUploaded = useCallback((station: Station) => {
+    stopAll();
+    const audio = new Audio(station.file_url);
+    audio.volume = volume / 100;
+    audio.loop = true;
+    audio.play().catch(() => {});
+    audioRef.current = audio;
+  }, [volume]);
+
+  // --- Fallback procedural playback ---
   const getCtx = useCallback(() => {
     if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
       audioCtxRef.current = new AudioContext();
@@ -31,31 +65,37 @@ export default function PixelMusicRadio() {
     return audioCtxRef.current;
   }, []);
 
-  const stopMusic = useCallback(() => {
+  const stopProcedural = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
   }, []);
 
-  const startMusic = useCallback((stIdx: number) => {
-    stopMusic();
-    const ctx = getCtx();
-    const st = STATIONS[stIdx];
-    noteIndexRef.current = 0;
-
-    if (gainRef.current) {
-      gainRef.current.gain.setValueAtTime(volume / 400, ctx.currentTime);
+  const stopAll = useCallback(() => {
+    // Stop uploaded audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
     }
+    // Stop procedural
+    stopProcedural();
+  }, [stopProcedural]);
+
+  const playProcedural = useCallback((fallbackIdx: number) => {
+    stopAll();
+    const ctx = getCtx();
+    const fb = FALLBACK_STATIONS[fallbackIdx % FALLBACK_STATIONS.length];
+    noteIndexRef.current = 0;
 
     intervalRef.current = setInterval(() => {
       try {
         const osc = ctx.createOscillator();
         const noteGain = ctx.createGain();
-        osc.type = st.wave;
-        const freq = st.notes[noteIndexRef.current % st.notes.length];
+        osc.type = fb.wave;
+        const freq = fb.notes[noteIndexRef.current % fb.notes.length];
         osc.frequency.setValueAtTime(freq, ctx.currentTime);
-        const dur = st.tempo / 1000;
+        const dur = fb.tempo / 1000;
         noteGain.gain.setValueAtTime(volume / 400, ctx.currentTime);
         noteGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur * 0.9);
         osc.connect(noteGain).connect(ctx.destination);
@@ -63,36 +103,46 @@ export default function PixelMusicRadio() {
         osc.stop(ctx.currentTime + dur);
         noteIndexRef.current++;
       } catch {}
-    }, STATIONS[stIdx].tempo);
-  }, [volume, getCtx, stopMusic]);
+    }, fb.tempo);
+  }, [volume, getCtx, stopAll]);
 
+  // Play/stop based on isOn and station
   useEffect(() => {
-    if (isOn) startMusic(station);
-    else stopMusic();
-    return stopMusic;
-  }, [isOn, station, startMusic, stopMusic]);
+    if (!isOn) {
+      stopAll();
+      return;
+    }
+    if (hasUploaded) {
+      playUploaded(uploadedStations[stationIdx % uploadedStations.length]);
+    } else {
+      playProcedural(stationIdx);
+    }
+    return stopAll;
+  }, [isOn, stationIdx, hasUploaded, uploadedStations, playUploaded, playProcedural, stopAll]);
 
+  // Volume sync
   useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = volume / 100;
+    }
     if (gainRef.current && audioCtxRef.current) {
       gainRef.current.gain.setValueAtTime(volume / 400, audioCtxRef.current.currentTime);
     }
   }, [volume]);
 
+  // Cleanup
   useEffect(() => () => {
-    stopMusic();
+    stopAll();
     audioCtxRef.current?.close();
-  }, [stopMusic]);
+  }, [stopAll]);
 
-  /* Pixel volume bar segments */
   const volSegments = 8;
   const volFilled = Math.round((volume / 100) * volSegments);
 
   return (
     <div className="fixed bottom-6 right-4 sm:right-6 z-50 flex flex-col items-end gap-2">
-      {/* Expanded panel */}
       {expanded && (
         <div className="pixel-frame p-3 font-mono text-xs animate-scale-in w-56">
-          {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <span className="text-primary font-bold text-[10px] tracking-wider">📻 RADIO</span>
             <button
@@ -103,23 +153,21 @@ export default function PixelMusicRadio() {
             </button>
           </div>
 
-          {/* Stations */}
-          <div className="flex gap-1 mb-3">
-            {STATIONS.map((st, i) => (
+          <div className="flex gap-1 mb-3 flex-wrap">
+            {stations.map((st, i) => (
               <button
-                key={i}
-                onClick={() => { setStation(i); if (isOn) startMusic(i); }}
+                key={st.id}
+                onClick={() => { setStationIdx(i); }}
                 className={cn(
-                  "flex-1 py-1.5 text-[8px] font-bold transition-colors text-center leading-tight",
-                  station === i ? "pixel-btn-active" : "pixel-btn"
+                  "flex-1 min-w-0 py-1.5 text-[8px] font-bold transition-colors text-center leading-tight truncate px-1",
+                  stationIdx === i ? "pixel-btn-active" : "pixel-btn"
                 )}
               >
-                {st.name}
+                {st.name_ar}
               </button>
             ))}
           </div>
 
-          {/* Volume - pixel scroll bar style */}
           <div className="flex items-center gap-2">
             <VolumeX className="h-3 w-3 text-muted-foreground shrink-0" />
             <div className="pixel-frame-inset flex-1 p-[2px]">
@@ -144,7 +192,6 @@ export default function PixelMusicRadio() {
         </div>
       )}
 
-      {/* Toggle button - pixel style */}
       <button
         onClick={() => setExpanded(!expanded)}
         className={cn(
