@@ -246,44 +246,52 @@
   @keyframes dropdown-in-bottom {
     from {
       opacity: 0;
-      transform: translateY(-8px) scale(0.98);
+      transform: translateY(-6px) scaleY(0.95) scaleX(0.98);
+      transform-origin: top center;
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0) scaleY(1) scaleX(1);
+      transform-origin: top center;
     }
   }
 
   @keyframes dropdown-in-top {
     from {
       opacity: 0;
-      transform: translateY(8px) scale(0.98);
+      transform: translateY(6px) scaleY(0.95) scaleX(0.98);
+      transform-origin: bottom center;
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translateY(0) scaleY(1) scaleX(1);
+      transform-origin: bottom center;
     }
   }
 
   @keyframes dropdown-in-left {
     from {
       opacity: 0;
-      transform: translateX(8px) scale(0.98);
+      transform: translateX(6px) scaleX(0.95);
+      transform-origin: right center;
     }
     to {
       opacity: 1;
-      transform: translateX(0) scale(1);
+      transform: translateX(0) scaleX(1);
+      transform-origin: right center;
     }
   }
 
   @keyframes dropdown-in-right {
     from {
       opacity: 0;
-      transform: translateX(-8px) scale(0.98);
+      transform: translateX(-6px) scaleX(0.95);
+      transform-origin: left center;
     }
     to {
       opacity: 1;
-      transform: translateX(0) scale(1);
+      transform: translateX(0) scaleX(1);
+      transform-origin: left center;
     }
   }
   
