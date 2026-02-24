@@ -1,8 +1,10 @@
-/** Individual Game Card – pixel frame style */
-import { Lock, Trophy, Users } from "lucide-react";
+/** Individual Game Card – pixel frame style with sprite sheet assets */
+import { Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { GameResource, GameStatus } from "./GamesData";
 import DifficultyBadge from "./DifficultyBadge";
+import PixelSprite from "./PixelSprite";
+import { SPRITE_ICONS } from "./SpriteMap";
 
 interface GameCardProps {
   game: GameResource;
@@ -27,12 +29,18 @@ export default function GameCard({ game, onPlay, onClickSound }: GameCardProps) 
       {/* Status badges */}
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         {isLive ? (
-          <span className="pixel-badge-live text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider">● LIVE</span>
+          <span className="pixel-badge-live text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider flex items-center gap-1">
+            <PixelSprite sprite={SPRITE_ICONS.DIAMOND_GREEN} scale={0.8} />
+            LIVE
+          </span>
         ) : (
           <span className="pixel-badge-locked text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider">قريباً</span>
         )}
         {game.is_new && isLive && (
-          <span className="pixel-badge-new text-[9px] font-mono font-bold px-2 py-0.5">★ جديد</span>
+          <span className="pixel-badge-new text-[9px] font-mono font-bold px-2 py-0.5 flex items-center gap-1">
+            <PixelSprite sprite={SPRITE_ICONS.STAR_FULL} scale={0.8} />
+            جديد
+          </span>
         )}
         <DifficultyBadge level={game.difficulty} />
       </div>
@@ -48,13 +56,13 @@ export default function GameCard({ game, onPlay, onClickSound }: GameCardProps) 
       <h3 className={cn("font-bold text-sm mb-1 line-clamp-1 font-mono", isLive ? "text-foreground" : "text-muted-foreground")}>{game.title}</h3>
       <p className={cn("text-[11px] leading-relaxed mb-3 line-clamp-2", isLive ? "text-muted-foreground" : "text-muted-foreground/50")}>{game.description}</p>
 
-      {/* Reward info */}
+      {/* Reward info with sprite icons */}
       <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="flex items-center gap-1 text-[10px] text-primary font-bold font-mono">
-          <Trophy className="h-3 w-3" /> {game.reward}
+          <PixelSprite sprite={SPRITE_ICONS.TROPHY} scale={1} /> {game.reward}
         </span>
         <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
-          <Users className="h-3 w-3" /> {game.players}
+          <PixelSprite sprite={SPRITE_ICONS.COIN} scale={1} /> {game.players}
         </span>
       </div>
 
