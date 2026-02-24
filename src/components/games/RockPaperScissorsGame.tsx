@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+// Rock Paper Scissors - Pixel Art Edition v1
+import { useState, useCallback, useEffect, useRef } from "react";
 import { ArrowRight, RotateCcw, Coins } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +20,6 @@ interface RoundResult {
 }
 
 const MOVES: Move[] = ['rock', 'paper', 'scissors'];
-const MOVE_LABELS: Record<Move, string> = { rock: 'حجر', paper: 'ورقة', scissors: 'مقص' };
 
 function getComputerMove(): Move {
   return MOVES[Math.floor(Math.random() * 3)];
@@ -35,28 +35,142 @@ function getResult(player: Move, computer: Move): Result {
   return 'lose';
 }
 
-// Pixel art hand SVGs
-function PixelHand({ move, flip, size = 80 }: { move: Move | null; flip?: boolean; size?: number }) {
-  const style: React.CSSProperties = {
-    width: size,
-    height: size,
-    transform: flip ? 'scaleX(-1)' : undefined,
-    imageRendering: 'pixelated' as const,
-  };
+/* ── Pixel Art Hand (Canvas-drawn) ── */
+function PixelCanvas({ move, size = 80, shake = false, flip = false }: { move: Move | null; size?: number; shake?: boolean; flip?: boolean }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const frameRef = useRef(0);
 
-  if (!move) {
-    return (
-      <div style={style} className="flex items-center justify-center text-5xl">
-        ❓
-      </div>
-    );
-  }
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-  const emoji = move === 'rock' ? '✊' : move === 'paper' ? '✋' : '✌️';
+    const s = size;
+    canvas.width = s;
+    canvas.height = s;
+    const px = Math.floor(s / 16); // pixel unit
+
+    ctx.imageSmoothingEnabled = false;
+
+    const drawPixel = (x: number, y: number, color: string) => {
+      ctx.fillStyle = color;
+      ctx.fillRect(x * px, y * px, px, px);
+    };
+
+    const drawRock = () => {
+      const skin = '#c7b46c'; // gold
+      const outline = '#8e6c3d'; // copper
+      const shadow = '#2b2711';
+      // Fist shape
+      [5,6,7,8,9,10].forEach(x => drawPixel(x, 4, outline));
+      [4,5,6,7,8,9,10,11].forEach(x => drawPixel(x, 5, outline));
+      [4,11].forEach(x => drawPixel(x, 6, outline));
+      [5,6,7,8,9,10].forEach(x => drawPixel(x, 6, skin));
+      [4,11].forEach(x => drawPixel(x, 7, outline));
+      [5,6,7,8,9,10].forEach(x => drawPixel(x, 7, skin));
+      [4,11].forEach(x => drawPixel(x, 8, outline));
+      [5,6,7,8,9,10].forEach(x => drawPixel(x, 8, skin));
+      [4,5,6,7,8,9,10,11].forEach(x => drawPixel(x, 9, outline));
+      [5,6,7,8,9,10].forEach(x => drawPixel(x, 10, shadow));
+    };
+
+    const drawPaper = () => {
+      const paper = '#efe6c9'; // cream
+      const outline = '#c7b46c';
+      const line = '#8e6c3d';
+      [5,6,7,8,9,10].forEach(x => drawPixel(x, 3, outline));
+      for (let y = 4; y <= 11; y++) {
+        drawPixel(4, y, outline);
+        drawPixel(11, y, outline);
+        [5,6,7,8,9,10].forEach(x => drawPixel(x, y, paper));
+      }
+      [5,6,7,8,9,10].forEach(x => drawPixel(x, 12, outline));
+      // Lines on paper
+      [6,7,8,9].forEach(x => { drawPixel(x, 6, line); drawPixel(x, 8, line); drawPixel(x, 10, line); });
+    };
+
+    const drawScissors = () => {
+      const metal = '#c7b46c';
+      const outline = '#8e6c3d';
+      const handle = '#2b2711';
+      // Blades
+      drawPixel(4, 3, outline); drawPixel(5, 4, metal); drawPixel(6, 5, metal); drawPixel(7, 6, metal);
+      drawPixel(11, 3, outline); drawPixel(10, 4, metal); drawPixel(9, 5, metal); drawPixel(8, 6, metal);
+      // Center pivot
+      drawPixel(7, 7, outline); drawPixel(8, 7, outline);
+      // Handles
+      drawPixel(6, 8, handle); drawPixel(5, 9, handle); drawPixel(5, 10, handle); drawPixel(6, 11, handle);
+      drawPixel(9, 8, handle); drawPixel(10, 9, handle); drawPixel(10, 10, handle); drawPixel(9, 11, handle);
+    };
+
+    const drawQuestion = () => {
+      const c = '#c7b46c';
+      [6,7,8,9].forEach(x => drawPixel(x, 4, c));
+      drawPixel(9, 5, c); drawPixel(9, 6, c);
+      drawPixel(8, 7, c); drawPixel(7, 8, c);
+      drawPixel(7, 10, c);
+    };
+
+    let animId: number;
+    const render = () => {
+      ctx.clearRect(0, 0, s, s);
+      
+      if (flip) {
+        ctx.save();
+        ctx.translate(s, 0);
+        ctx.scale(-1, 1);
+      }
+
+      if (!move) drawQuestion();
+      else if (move === 'rock') drawRock();
+      else if (move === 'paper') drawPaper();
+      else drawScissors();
+
+      if (flip) ctx.restore();
+
+      if (shake) {
+        frameRef.current++;
+        animId = requestAnimationFrame(render);
+      }
+    };
+
+    render();
+    return () => { if (animId) cancelAnimationFrame(animId); };
+  }, [move, size, shake, flip]);
+
   return (
-    <div style={style} className="flex items-center justify-center text-5xl select-none"
-      role="img" aria-label={MOVE_LABELS[move]}>
-      {emoji}
+    <canvas
+      ref={canvasRef}
+      width={size}
+      height={size}
+      className={cn(
+        "transition-transform duration-200",
+        shake && "animate-[rps-shake_0.4s_ease-in-out_infinite]"
+      )}
+      style={{ imageRendering: 'pixelated', width: size, height: size }}
+    />
+  );
+}
+
+/* ── Floating Pixels Background ── */
+function FloatingPixels() {
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div
+          key={i}
+          className="absolute rounded-sm opacity-20"
+          style={{
+            width: `${4 + (i % 3) * 2}px`,
+            height: `${4 + (i % 3) * 2}px`,
+            backgroundColor: i % 2 === 0 ? 'hsl(44 39% 60%)' : 'hsl(36 42% 40%)',
+            left: `${(i * 37) % 100}%`,
+            top: `${(i * 23 + 10) % 100}%`,
+            animation: `rps-float ${3 + (i % 4)}s ease-in-out ${i * 0.3}s infinite alternate`,
+          }}
+        />
+      ))}
     </div>
   );
 }
@@ -95,11 +209,9 @@ export default function RockPaperScissorsGame({ onBack }: Props) {
     }
   }, [user, queryClient]);
 
-  // Shake animation counter
   useEffect(() => {
     if (phase !== 'shaking') return;
     if (shakeCount >= 3) {
-      // Reveal
       const cm = getComputerMove();
       const result = getResult(playerMove!, cm);
       const pts = result === 'win' ? 10 : result === 'lose' ? -5 : 0;
@@ -107,7 +219,6 @@ export default function RockPaperScissorsGame({ onBack }: Props) {
       setComputerMove(cm);
       setRoundResult(result);
       setPhase('reveal');
-
       updatePoints(pts);
 
       const newRound: RoundResult = { playerMove: playerMove!, computerMove: cm, result, points: pts };
@@ -132,7 +243,6 @@ export default function RockPaperScissorsGame({ onBack }: Props) {
       }, 2200);
       return;
     }
-
     const timer = setTimeout(() => setShakeCount(c => c + 1), 450);
     return () => clearTimeout(timer);
   }, [phase, shakeCount, playerMove, rounds, attemptsLeft, updatePoints, t]);
@@ -156,180 +266,193 @@ export default function RockPaperScissorsGame({ onBack }: Props) {
     setShakeCount(0);
   };
 
+  const moveLabel = (m: Move) => m === 'rock' ? t('games_rock') : m === 'paper' ? t('games_paper') : t('games_scissors');
+
   return (
-    <div className="min-h-screen bg-[#1a1a2e] text-white" dir="rtl">
-      {/* Scanline effect */}
-      <div className="fixed inset-0 pointer-events-none opacity-[0.03]"
+    <div className="min-h-screen bg-background text-foreground" dir="rtl">
+      {/* Pixel grid overlay */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.04]"
         style={{
-          backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px)',
+          backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 3px, hsl(var(--primary)/0.1) 3px, hsl(var(--primary)/0.1) 4px),
+                            repeating-linear-gradient(90deg, transparent, transparent 3px, hsl(var(--primary)/0.1) 3px, hsl(var(--primary)/0.1) 4px)`,
         }}
       />
 
       <div className="relative z-10 px-4 pt-6 pb-8 max-w-md mx-auto">
         {/* Top bar */}
-        <div className="flex items-center justify-between mb-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="text-white/60 hover:text-white hover:bg-white/10 gap-1"
-          >
+        <div className="flex items-center justify-between mb-4">
+          <Button variant="ghost" size="sm" onClick={onBack} className="gap-1 text-muted-foreground hover:text-foreground">
             <ArrowRight className="h-4 w-4" />
             {t('games_back')}
           </Button>
-          <div className="flex items-center gap-3">
-            {/* Score */}
-            <div className={cn(
-              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 border font-mono text-sm font-bold",
-              totalPoints > 0 ? "bg-green-500/10 border-green-500/30 text-green-400" :
-              totalPoints < 0 ? "bg-red-500/10 border-red-500/30 text-red-400" :
-              "bg-white/5 border-white/10 text-white/50"
-            )}>
-              <Coins className="h-3.5 w-3.5" />
-              {totalPoints > 0 ? `+${totalPoints}` : totalPoints}
-            </div>
+          <div className={cn(
+            "flex items-center gap-1.5 rounded-lg px-3 py-1.5 border font-mono text-sm font-bold",
+            totalPoints > 0 ? "border-primary/40 bg-primary/10 text-primary" :
+            totalPoints < 0 ? "border-destructive/40 bg-destructive/10 text-destructive" :
+            "border-border bg-card text-muted-foreground"
+          )}>
+            <Coins className="h-3.5 w-3.5" />
+            {totalPoints > 0 ? `+${totalPoints}` : totalPoints}
           </div>
         </div>
 
-        {/* Title */}
-        <div className="text-center mb-6">
-          <h1 className="text-xl font-black tracking-wider" style={{ fontFamily: "'Courier New', monospace", textShadow: '2px 2px 0 #0f3460' }}>
-            {t('games_rps_title')}
+        {/* Title - Pixel style */}
+        <div className="text-center mb-5">
+          <h1 className="text-xl font-black tracking-wider text-primary"
+            style={{
+              fontFamily: "'Courier New', monospace",
+              textShadow: '2px 2px 0 hsl(var(--accent))',
+              letterSpacing: '0.1em',
+            }}>
+            ⚔️ {t('games_rps_title')} ⚔️
           </h1>
         </div>
 
-        {/* Attempts dots */}
-        <div className="flex justify-center gap-3 mb-8">
+        {/* Hearts (attempts) */}
+        <div className="flex justify-center gap-2 mb-6">
           {[0, 1, 2].map(i => {
             const round = rounds[i];
             return (
-              <div
-                key={i}
-                className={cn(
-                  "w-8 h-8 rounded-lg border-2 flex items-center justify-center text-xs font-mono font-bold transition-all duration-500",
-                  !round && i < attemptsLeft && "border-cyan-500/40 bg-cyan-500/10 text-cyan-400",
-                  !round && i >= attemptsLeft && "border-white/10 bg-white/5 text-white/20",
-                  round?.result === 'win' && "border-green-500/50 bg-green-500/20 text-green-400 scale-110",
-                  round?.result === 'lose' && "border-red-500/50 bg-red-500/20 text-red-400",
-                  round?.result === 'draw' && "border-amber-500/50 bg-amber-500/20 text-amber-400",
+              <div key={i} className="relative">
+                <div className={cn(
+                  "w-10 h-10 rounded-lg border-2 flex items-center justify-center font-mono text-lg transition-all duration-500",
+                  !round && i < attemptsLeft && "border-primary/40 bg-primary/10",
+                  !round && i >= attemptsLeft && "border-border bg-card/50 opacity-30",
+                  round?.result === 'win' && "border-primary bg-primary/20 animate-[rps-pop_0.4s_ease-out]",
+                  round?.result === 'lose' && "border-destructive/50 bg-destructive/10",
+                  round?.result === 'draw' && "border-accent/50 bg-accent/10",
+                )}>
+                  {round
+                    ? round.result === 'win' ? '⭐' : round.result === 'lose' ? '💀' : '🤝'
+                    : i < attemptsLeft ? '❤️' : '🖤'}
+                </div>
+                {round && (
+                  <span className={cn(
+                    "absolute -bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-mono font-bold",
+                    round.result === 'win' && "text-primary",
+                    round.result === 'lose' && "text-destructive",
+                    round.result === 'draw' && "text-accent",
+                  )}>
+                    {round.points > 0 ? `+${round.points}` : round.points}
+                  </span>
                 )}
-              >
-                {round ? (round.result === 'win' ? 'W' : round.result === 'lose' ? 'L' : 'D') : (i + 1)}
               </div>
             );
           })}
         </div>
 
-        {/* Battle Arena */}
-        <div className="relative bg-gradient-to-b from-[#16213e] to-[#0f3460] border-2 border-cyan-500/20 rounded-2xl p-6 mb-6 overflow-hidden">
-          {/* Corner pixels */}
-          <div className="absolute top-1 left-1 w-1.5 h-1.5 bg-cyan-400/30" />
-          <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-cyan-400/30" />
-          <div className="absolute bottom-1 left-1 w-1.5 h-1.5 bg-cyan-400/30" />
-          <div className="absolute bottom-1 right-1 w-1.5 h-1.5 bg-cyan-400/30" />
+        {/* ── Battle Arena ── */}
+        <div className="relative bg-card border-2 border-primary/20 rounded-2xl p-6 mb-6 overflow-hidden">
+          <FloatingPixels />
+          
+          {/* Corner decorations */}
+          {['top-1 left-1', 'top-1 right-1', 'bottom-1 left-1', 'bottom-1 right-1'].map((pos, i) => (
+            <div key={i} className={`absolute ${pos} w-2 h-2 bg-primary/20 rounded-sm`} />
+          ))}
 
-          <div className="flex items-center justify-between gap-4">
+          <div className="relative flex items-center justify-between gap-2">
             {/* Player */}
             <div className="flex flex-col items-center gap-2 flex-1">
-              <span className="text-[10px] text-cyan-400/60 font-mono uppercase tracking-widest">YOU</span>
+              <span className="text-[10px] text-primary font-mono uppercase tracking-[0.2em] font-bold">
+                أنت
+              </span>
               <div className={cn(
-                "w-24 h-24 rounded-2xl border-2 flex items-center justify-center transition-all duration-300",
-                phase === 'shaking' ? "border-cyan-400/50 bg-cyan-500/10 animate-[rps-shake_0.4s_ease-in-out_infinite]" :
-                roundResult === 'win' ? "border-green-400/50 bg-green-500/10" :
-                roundResult === 'lose' ? "border-red-400/50 bg-red-500/10" :
-                roundResult === 'draw' ? "border-amber-400/50 bg-amber-500/10" :
-                "border-white/10 bg-white/5"
+                "w-24 h-24 rounded-xl border-2 flex items-center justify-center transition-all duration-300 bg-background/50",
+                phase === 'shaking' && "border-primary/60",
+                roundResult === 'win' && "border-primary bg-primary/10 shadow-[0_0_20px_hsl(var(--primary)/0.3)]",
+                roundResult === 'lose' && "border-destructive/50 bg-destructive/5",
+                roundResult === 'draw' && "border-accent/50 bg-accent/5",
+                !roundResult && phase !== 'shaking' && "border-border",
               )}>
-                <PixelHand move={phase === 'shaking' ? 'rock' : playerMove} size={64} />
+                <PixelCanvas move={phase === 'shaking' ? 'rock' : playerMove} shake={phase === 'shaking'} size={80} />
               </div>
               {playerMove && phase !== 'shaking' && (
-                <span className="text-xs text-white/50 font-mono">{MOVE_LABELS[playerMove]}</span>
+                <span className="text-xs text-muted-foreground font-mono">{moveLabel(playerMove)}</span>
               )}
             </div>
 
-            {/* VS */}
-            <div className="flex flex-col items-center gap-1">
-              <span className={cn(
-                "text-2xl font-black font-mono transition-all duration-500",
-                roundResult === 'win' ? "text-green-400 scale-125" :
-                roundResult === 'lose' ? "text-red-400 scale-125" :
-                roundResult === 'draw' ? "text-amber-400 scale-125" :
-                "text-white/20"
-              )} style={{ textShadow: '0 0 20px currentColor' }}>
+            {/* VS Emblem */}
+            <div className="flex flex-col items-center gap-1 shrink-0">
+              <div className={cn(
+                "w-12 h-12 rounded-xl border-2 flex items-center justify-center font-black font-mono text-sm transition-all duration-500",
+                roundResult === 'win' && "border-primary bg-primary/20 text-primary scale-110",
+                roundResult === 'lose' && "border-destructive/50 bg-destructive/10 text-destructive scale-110",
+                roundResult === 'draw' && "border-accent/50 bg-accent/10 text-accent scale-110",
+                !roundResult && "border-border bg-card text-muted-foreground",
+              )} style={roundResult ? { boxShadow: '0 0 15px currentColor' } : undefined}>
                 VS
-              </span>
+              </div>
               {phase === 'shaking' && (
-                <div className="flex gap-0.5">
+                <div className="flex gap-1">
                   {[0, 1, 2].map(i => (
                     <div key={i} className={cn(
                       "w-1.5 h-1.5 rounded-full transition-all duration-200",
-                      i <= shakeCount ? "bg-cyan-400" : "bg-white/10"
+                      i <= shakeCount ? "bg-primary" : "bg-border"
                     )} />
                   ))}
                 </div>
               )}
             </div>
 
-            {/* Computer */}
+            {/* CPU */}
             <div className="flex flex-col items-center gap-2 flex-1">
-              <span className="text-[10px] text-purple-400/60 font-mono uppercase tracking-widest">CPU</span>
+              <span className="text-[10px] text-accent font-mono uppercase tracking-[0.2em] font-bold">
+                CPU
+              </span>
               <div className={cn(
-                "w-24 h-24 rounded-2xl border-2 flex items-center justify-center transition-all duration-300",
-                phase === 'shaking' ? "border-purple-400/50 bg-purple-500/10 animate-[rps-shake_0.4s_ease-in-out_infinite_reverse]" :
-                roundResult === 'lose' ? "border-green-400/50 bg-green-500/10" :
-                roundResult === 'win' ? "border-red-400/50 bg-red-500/10" :
-                roundResult === 'draw' ? "border-amber-400/50 bg-amber-500/10" :
-                "border-white/10 bg-white/5"
+                "w-24 h-24 rounded-xl border-2 flex items-center justify-center transition-all duration-300 bg-background/50",
+                phase === 'shaking' && "border-accent/60",
+                roundResult === 'lose' && "border-primary bg-primary/10 shadow-[0_0_20px_hsl(var(--primary)/0.3)]",
+                roundResult === 'win' && "border-destructive/50 bg-destructive/5",
+                roundResult === 'draw' && "border-accent/50 bg-accent/5",
+                !roundResult && phase !== 'shaking' && "border-border",
               )}>
-                <PixelHand move={phase === 'shaking' ? 'rock' : computerMove} flip size={64} />
+                <PixelCanvas move={phase === 'shaking' ? 'rock' : computerMove} shake={phase === 'shaking'} flip size={80} />
               </div>
               {computerMove && phase !== 'shaking' && (
-                <span className="text-xs text-white/50 font-mono">{MOVE_LABELS[computerMove]}</span>
+                <span className="text-xs text-muted-foreground font-mono">{moveLabel(computerMove)}</span>
               )}
             </div>
           </div>
 
-          {/* Result banner */}
+          {/* Result Banner */}
           {phase === 'reveal' && roundResult && (
             <div className={cn(
-              "mt-5 py-3 rounded-xl text-center font-bold text-lg font-mono animate-[rps-result-in_0.5s_cubic-bezier(0.34,1.56,0.64,1)_both]",
-              roundResult === 'win' && "bg-green-500/10 text-green-400 border border-green-500/30",
-              roundResult === 'lose' && "bg-red-500/10 text-red-400 border border-red-500/30",
-              roundResult === 'draw' && "bg-amber-500/10 text-amber-400 border border-amber-500/30",
-            )} style={{ textShadow: '0 0 20px currentColor' }}>
-              {roundResult === 'win' && t('games_you_win')}
-              {roundResult === 'lose' && t('games_you_lose')}
-              {roundResult === 'draw' && t('games_draw')}
+              "mt-5 py-3 px-4 rounded-xl text-center font-bold text-lg font-mono border-2 animate-[rps-result-in_0.5s_cubic-bezier(0.34,1.56,0.64,1)_both]",
+              roundResult === 'win' && "bg-primary/10 text-primary border-primary/30",
+              roundResult === 'lose' && "bg-destructive/10 text-destructive border-destructive/30",
+              roundResult === 'draw' && "bg-accent/10 text-accent border-accent/30",
+            )} style={{ textShadow: '0 0 15px currentColor' }}>
+              {roundResult === 'win' && `⭐ ${t('games_you_win')}`}
+              {roundResult === 'lose' && `💀 ${t('games_you_lose')}`}
+              {roundResult === 'draw' && `🤝 ${t('games_draw')}`}
               <div className="text-sm mt-1 opacity-70">
                 {rounds[rounds.length - 1]?.points > 0
                   ? `+${rounds[rounds.length - 1].points}`
-                  : rounds[rounds.length - 1]?.points === 0
-                  ? '0'
-                  : rounds[rounds.length - 1]?.points
-                } نقطة
+                  : rounds[rounds.length - 1]?.points} {t('games_rock') === 'Rock' ? 'pts' : 'نقطة'}
               </div>
             </div>
           )}
         </div>
 
-        {/* Move selection */}
+        {/* ── Move Selection ── */}
         {phase === 'choose' && (
-          <div className="space-y-4">
-            <p className="text-center text-white/30 text-xs font-mono tracking-wider uppercase">
-              {t('games_choose_move')}
+          <div className="space-y-3">
+            <p className="text-center text-muted-foreground text-xs font-mono tracking-wider uppercase">
+              ▼ {t('games_choose_move')} ▼
             </p>
             <div className="grid grid-cols-3 gap-3">
               {MOVES.map(move => (
                 <button
                   key={move}
                   onClick={() => playRound(move)}
-                  className="group flex flex-col items-center gap-2 p-4 rounded-2xl border-2 border-white/10 bg-white/[0.03] hover:border-cyan-400/50 hover:bg-cyan-500/10 transition-all duration-200 active:scale-90 hover:scale-105"
+                  className="group flex flex-col items-center gap-3 p-4 rounded-2xl border-2 border-border bg-card hover:border-primary/50 hover:bg-primary/5 transition-all duration-200 active:scale-90 hover:scale-105 hover:shadow-[0_0_15px_hsl(var(--primary)/0.2)]"
                 >
-                  <span className="text-4xl group-hover:animate-[rps-bounce_0.3s_ease-out]">
-                    {move === 'rock' ? '✊' : move === 'paper' ? '✋' : '✌️'}
-                  </span>
-                  <span className="text-[11px] font-mono text-white/40 group-hover:text-cyan-300 transition-colors">
-                    {MOVE_LABELS[move]}
+                  <div className="group-hover:animate-[rps-bounce_0.3s_ease-out]">
+                    <PixelCanvas move={move} size={56} />
+                  </div>
+                  <span className="text-[11px] font-mono text-muted-foreground group-hover:text-primary transition-colors font-bold">
+                    {moveLabel(move)}
                   </span>
                 </button>
               ))}
@@ -337,30 +460,29 @@ export default function RockPaperScissorsGame({ onBack }: Props) {
           </div>
         )}
 
-        {/* Game Over */}
+        {/* ── Game Over ── */}
         {phase === 'gameover' && (
           <div className="text-center space-y-5 animate-[rps-result-in_0.6s_cubic-bezier(0.34,1.56,0.64,1)_both]">
-            <h2 className="text-2xl font-black font-mono" style={{ textShadow: '2px 2px 0 #0f3460' }}>
-              {t('games_game_over')}
+            <h2 className="text-2xl font-black font-mono text-primary"
+              style={{ textShadow: '2px 2px 0 hsl(var(--accent))' }}>
+              🏁 {t('games_game_over')}
             </h2>
 
-            {/* Round icons */}
+            {/* Round recap */}
             <div className="flex justify-center gap-3">
               {rounds.map((r, i) => (
                 <div key={i} className={cn(
-                  "w-14 h-14 rounded-xl border-2 flex flex-col items-center justify-center gap-0.5",
-                  r.result === 'win' && "border-green-500/40 bg-green-500/10",
-                  r.result === 'lose' && "border-red-500/40 bg-red-500/10",
-                  r.result === 'draw' && "border-amber-500/40 bg-amber-500/10",
+                  "w-16 h-16 rounded-xl border-2 flex flex-col items-center justify-center gap-1",
+                  r.result === 'win' && "border-primary/40 bg-primary/10",
+                  r.result === 'lose' && "border-destructive/40 bg-destructive/10",
+                  r.result === 'draw' && "border-accent/40 bg-accent/10",
                 )}>
-                  <span className="text-lg">
-                    {r.playerMove === 'rock' ? '✊' : r.playerMove === 'paper' ? '✋' : '✌️'}
-                  </span>
+                  <PixelCanvas move={r.playerMove} size={32} />
                   <span className={cn(
                     "text-[10px] font-mono font-bold",
-                    r.result === 'win' && "text-green-400",
-                    r.result === 'lose' && "text-red-400",
-                    r.result === 'draw' && "text-amber-400",
+                    r.result === 'win' && "text-primary",
+                    r.result === 'lose' && "text-destructive",
+                    r.result === 'draw' && "text-accent",
                   )}>
                     {r.points > 0 ? `+${r.points}` : r.points}
                   </span>
@@ -368,18 +490,19 @@ export default function RockPaperScissorsGame({ onBack }: Props) {
               ))}
             </div>
 
-            {/* Total */}
+            {/* Total score */}
             <div className={cn(
               "text-3xl font-black font-mono",
-              totalPoints > 0 ? "text-green-400" : totalPoints < 0 ? "text-red-400" : "text-white/50"
-            )} style={{ textShadow: '0 0 30px currentColor' }}>
+              totalPoints > 0 ? "text-primary" : totalPoints < 0 ? "text-destructive" : "text-muted-foreground"
+            )} style={{ textShadow: '0 0 20px currentColor' }}>
               {t('games_total_result')}: {totalPoints > 0 ? `+${totalPoints}` : totalPoints}
             </div>
 
             <Button
               onClick={resetGame}
-              className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 font-mono gap-2"
+              variant="outline"
               size="lg"
+              className="border-primary/30 hover:bg-primary/10 text-primary font-mono gap-2"
             >
               <RotateCcw className="h-4 w-4" />
               {t('games_play_again')}
@@ -387,22 +510,22 @@ export default function RockPaperScissorsGame({ onBack }: Props) {
           </div>
         )}
 
-        {/* History */}
+        {/* ── Round History ── */}
         {rounds.length > 0 && phase !== 'gameover' && (
           <div className="mt-6 space-y-2">
             {rounds.map((r, i) => (
-              <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg bg-white/[0.03] border border-white/5 text-sm font-mono">
-                <span className="text-white/30">{t('games_round')} {i + 1}</span>
-                <div className="flex items-center gap-2">
-                  <span>{r.playerMove === 'rock' ? '✊' : r.playerMove === 'paper' ? '✋' : '✌️'}</span>
-                  <span className="text-white/20 text-xs">vs</span>
-                  <span>{r.computerMove === 'rock' ? '✊' : r.computerMove === 'paper' ? '✋' : '✌️'}</span>
+              <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg bg-card border border-border text-sm font-mono">
+                <span className="text-muted-foreground">{t('games_round')} {i + 1}</span>
+                <div className="flex items-center gap-3">
+                  <PixelCanvas move={r.playerMove} size={24} />
+                  <span className="text-muted-foreground text-xs">vs</span>
+                  <PixelCanvas move={r.computerMove} size={24} flip />
                 </div>
                 <span className={cn(
                   "font-bold text-xs",
-                  r.result === 'win' && "text-green-400",
-                  r.result === 'lose' && "text-red-400",
-                  r.result === 'draw' && "text-amber-400",
+                  r.result === 'win' && "text-primary",
+                  r.result === 'lose' && "text-destructive",
+                  r.result === 'draw' && "text-accent",
                 )}>
                   {r.points > 0 ? `+${r.points}` : r.points}
                 </span>
