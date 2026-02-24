@@ -131,21 +131,24 @@ function AppContent() {
   const [verificationBannerHeight, setVerificationBannerHeight] = useState(0);
   const location = useLocation();
   const isCommunityShell = location.pathname === "/community" || location.pathname.startsWith("/community/");
+  const isGamesPage = location.pathname === "/games";
   
   // Total top offset = verification banner (highest z-index) + announcement bar + header
-  const totalTopPadding = isCommunityShell 
-    ? 56 + verificationBannerHeight 
-    : 68 + announcementHeight + verificationBannerHeight;
+  const totalTopPadding = isGamesPage
+    ? 0
+    : isCommunityShell 
+      ? 56 + verificationBannerHeight 
+      : 68 + announcementHeight + verificationBannerHeight;
   
   return (
     <>
-      <EmailVerificationBanner onHeightChange={setVerificationBannerHeight} />
-      <AnnouncementBar onHeightChange={setAnnouncementHeight} verificationBannerHeight={verificationBannerHeight} />
-      {isCommunityShell ? (
+      {!isGamesPage && <EmailVerificationBanner onHeightChange={setVerificationBannerHeight} />}
+      {!isGamesPage && <AnnouncementBar onHeightChange={setAnnouncementHeight} verificationBannerHeight={verificationBannerHeight} />}
+      {!isGamesPage && (isCommunityShell ? (
         <CommunityTopBar verificationBannerHeight={verificationBannerHeight} />
       ) : (
         <Header announcementHeight={announcementHeight} verificationBannerHeight={verificationBannerHeight} />
-      )}
+      ))}
       <main style={{ paddingTop: `${totalTopPadding}px` }}>
         <Suspense fallback={<SuspenseLoader />}>
           <Routes>
@@ -253,18 +256,22 @@ function AppContent() {
           </Routes>
         </Suspense>
       </main>
-      {/* Levo Help Bot - floating assistant (above chat button) */}
-      <Suspense fallback={null}>
-        <LevoHelpBot />
-      </Suspense>
-      {/* Global floating chat button - visible on all pages */}
-      <Suspense fallback={null}>
-        <UnifiedChatButton />
-      </Suspense>
-      {/* PWA Install Prompt */}
-      <Suspense fallback={null}>
-        <InstallPrompt />
-      </Suspense>
+      {!isGamesPage && (
+        <>
+          {/* Levo Help Bot - floating assistant (above chat button) */}
+          <Suspense fallback={null}>
+            <LevoHelpBot />
+          </Suspense>
+          {/* Global floating chat button - visible on all pages */}
+          <Suspense fallback={null}>
+            <UnifiedChatButton />
+          </Suspense>
+          {/* PWA Install Prompt */}
+          <Suspense fallback={null}>
+            <InstallPrompt />
+          </Suspense>
+        </>
+      )}
     </>
   );
 }
