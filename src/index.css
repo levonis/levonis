@@ -1007,9 +1007,9 @@
   max-width: calc(100vw - 1rem) !important;
 }
 
-.fixed-dialog [data-radix-select-content],
-.fixed-dialog [data-radix-popper-content-wrapper] {
-  position: fixed !important;
+/* Keep poppers above dialog without overriding Radix positioning logic */
+.fixed-dialog [data-radix-popper-content-wrapper],
+.fixed-dialog [data-radix-select-content] {
   z-index: 300 !important;
 }
 
