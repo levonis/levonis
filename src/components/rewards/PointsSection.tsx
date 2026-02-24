@@ -9,6 +9,7 @@ import PointsHistoryPanel from "./panels/PointsHistoryPanel";
 import DailyTasksPanel from "./panels/DailyTasksPanel";
 import RedeemPointsPanel from "./panels/RedeemPointsPanel";
 import PointsStorePanel from "./panels/PointsStorePanel";
+import GamesPanel from "./panels/GamesPanel";
 import { useLanguage } from "@/lib/i18n";
 
 interface PointsSectionProps {
@@ -184,6 +185,10 @@ export default function PointsSection({ activeSubTab }: PointsSectionProps) {
 
   if (activeSubTab === 'store') {
     return <PointsStorePanel />;
+  }
+
+  if (activeSubTab === 'games') {
+    return <GamesPanel />;
   }
 
   return null;

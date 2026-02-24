@@ -3,7 +3,7 @@ import { MainTabId } from "./RewardsMainTabs";
 import { useLanguage } from "@/lib/i18n";
 import { TranslationKeys } from "@/lib/i18n/types";
 
-export type PointsSubTab = 'summary' | 'daily-tasks' | 'redeem' | 'store';
+export type PointsSubTab = 'summary' | 'daily-tasks' | 'redeem' | 'store' | 'games';
 export type CompetitionsSubTab = 'competitions';
 export type CardsSubTab = 'benefits' | 'upgrade' | 'exclusive-offers';
 export type InsuranceSubTab = 'status' | 'plans' | 'maintenance';
@@ -21,6 +21,7 @@ const subTabsConfig: Record<MainTabId, SubTabConfig[]> = {
     { id: 'daily-tasks', labelKey: 'rewards_sub_tasks' },
     { id: 'redeem', labelKey: 'rewards_sub_redeem' },
     { id: 'store', labelKey: 'rewards_sub_store' },
+    { id: 'games', labelKey: 'rewards_sub_games' },
   ],
   competitions: [
     { id: 'competitions', labelKey: 'rewards_sub_competitions' },
