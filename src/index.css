@@ -1076,13 +1076,13 @@
   overscroll-behavior: contain;
 }
 
-/* Global popper wrapper stabilization - hides wrapper until Radix calculates position */
+/* Global popper wrapper stabilization - fade in over ~100ms so Radix positions before element is visible */
 [data-radix-popper-content-wrapper] {
-  animation: popper-wrapper-reveal 1ms 16ms both !important;
+  animation: popper-wrapper-reveal 120ms ease-out both !important;
 }
 
 @keyframes popper-wrapper-reveal {
-  0% {
+  0%, 20% {
     opacity: 0;
   }
   100% {
