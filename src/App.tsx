@@ -25,6 +25,7 @@ import EmailVerificationBanner from "@/components/auth/EmailVerificationBanner";
 const UnifiedChatButton = lazy(() => import("@/components/UnifiedChatButton"));
 const LevoHelpBot = lazy(() => import("@/components/LevoHelpBot"));
 const InstallPrompt = lazy(() => import("@/components/pwa/InstallPrompt"));
+const SpriteDebugPage = lazy(() => import("@/components/games/SpriteDebug"));
 
 // Eager load Home page for best initial load
 import Home from "./pages/Home";
@@ -234,6 +235,7 @@ function AppContent() {
             <Route path="/profile/settings" element={<RequireAuth><ProfileSettings /></RequireAuth>} />
             <Route path="/rewards" element={<RewardsHub />} />
             <Route path="/games" element={<MiniGames />} />
+            <Route path="/sprite-debug" element={<Suspense fallback={<div>Loading...</div>}><SpriteDebugPage /></Suspense>} />
             <Route path="/shop" element={<ProductShop />} />
             <Route path="/products-gifts" element={<ProductsWithGifts />} />
             <Route path="/my-products" element={<MyPurchasedProducts />} />
