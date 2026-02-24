@@ -1,99 +1,115 @@
 
 
-# Plan: Pixel Art Games Hub Enhancement
+# خطة: دمج صور BDragon1727 Sprite Sheets في صفحة /games
 
-## Summary
-
-Four major changes to the `/games` page: hide the chat bubble, add a pixel-art background music radio system, redesign the page with pixel art aesthetics and a loading screen, and restructure game files for modularity.
-
----
-
-## Technical Details
-
-### 1. Hide Chat Bubble on `/games`
-
-**File: `src/components/UnifiedChatButton.tsx`**
-- Add `/games` to the `restrictedPaths` array (line 63-70). This immediately hides the chat bubble on the games page.
-
-### 2. Pixel Art Background Music Radio
-
-**New file: `src/components/games/PixelMusicRadio.tsx`**
-
-A compact floating radio widget with pixel-art styling:
-- **Web Audio API** generates 8-bit chiptune-style background music programmatically (no external audio files needed). Uses `OscillatorNode` with square/triangle waves and a simple melody sequencer to create retro pixel music.
-- **3 "stations"** (channels): Calm Pixel, Retro Adventure, Chiptune Chill — each with a different tempo/melody pattern.
-- **UI**: A small pixel-art styled radio panel in the corner with:
-  - ON/OFF toggle (radio-style circle buttons using RadioGroup from radix)
-  - Station selector buttons (3 stations)
-  - Volume slider
-  - Pixelated border and monospace font
-- **Button click sounds**: Short beep via `OscillatorNode` (50ms square wave burst) on every button/filter click across the games page.
-- State managed with `useState` + `useRef` for AudioContext.
-
-### 3. Pixel Art Background & Loading Screen
-
-**File: `src/pages/MiniGames.tsx`** — Major redesign:
-
-**Loading Screen (new):**
-- A `useState` controls a 2-3 second loading phase on mount.
-- Shows a pixel-art loading animation: a progress bar made of pixel blocks that fills up, with "LOADING..." text in monospace, and animated pixel sprites.
-- After loading completes, fades into the main games grid.
-
-**Background redesign:**
-- Animated pixel grid overlay using CSS (repeating gradients for grid lines).
-- Floating pixel particles (small colored squares) animated with CSS keyframes moving slowly across the screen.
-- Scanline effect overlay (semi-transparent horizontal lines).
-- Stars/sparkle pixels that twinkle randomly.
-
-**Page header:**
-- Pixel-art styled title with text-shadow for a retro look.
-- Monospace fonts throughout.
-
-### 4. Separate Game Files
-
-**Current structure:**
-```text
-src/components/games/
-  RockPaperScissorsGame.tsx   (existing, 539 lines)
-```
-
-**New structure:**
-```text
-src/components/games/
-  RockPaperScissorsGame.tsx   (stays as-is, already separate)
-  PixelMusicRadio.tsx         (new - music radio widget)
-  PixelLoadingScreen.tsx      (new - loading animation)
-  PixelBackground.tsx         (new - animated background)
-  GameSoundEffects.tsx        (new - hook for button click sounds)
-```
-
-Each component is self-contained for easy future modification. The `MiniGames.tsx` page composes them together.
-
-### 5. Game Asset Design (itch.io reference)
-
-Since itch.io game assets cannot be directly downloaded/hotlinked programmatically, all pixel art will be **CSS/Canvas-drawn** matching the aesthetic of popular itch.io pixel art packs:
-- Game cards get pixelated borders (box-shadow steps instead of smooth shadows).
-- Icons drawn with CSS pixel art technique (box-shadow pixel grids) or emoji with pixel filters.
-- Color palette: dark greens, golds, and warm tones matching the site theme.
-
-### 6. CSS Additions
-
-**File: `src/index.css`** — New keyframes:
-- `pixel-load`: Progress bar block animation
-- `pixel-scanline`: Moving scanline effect
-- `pixel-twinkle`: Star blinking
-- `pixel-float-bg`: Background particle drift
+## ملخص
+سيتم نسخ صور الـ sprite sheets المرفوعة إلى المشروع واستخدامها كأصول حقيقية في واجهة صفحة الألعاب بدلاً من CSS فقط. سنستخدم تقنية **CSS Sprite Sheet** لقص الأيقونات والأشرطة والأنيميشن من الصور.
 
 ---
 
-## Files to Create
-1. `src/components/games/PixelMusicRadio.tsx` — Radio widget with Web Audio API
-2. `src/components/games/PixelLoadingScreen.tsx` — Loading animation component
-3. `src/components/games/PixelBackground.tsx` — Animated pixel background
-4. `src/components/games/useGameSounds.ts` — Hook for button click sounds
+## التفاصيل التقنية
 
-## Files to Edit
-1. `src/components/UnifiedChatButton.tsx` — Add `/games` to restricted paths
-2. `src/pages/MiniGames.tsx` — Integrate loading screen, background, music radio, sound effects
-3. `src/index.css` — Add new pixel art keyframes
+### 1. نسخ الصور إلى المشروع
+نسخ جميع الصور المرفوعة إلى `src/assets/pixel-ui/`:
+- `00.png` — أزرار، أشرطة صحة، نجوم، قلوب، أيقونات متنوعة
+- `01.png` — شارات (badges) ملونة، أجنحة
+- `02.png` — إطارات (frames) بألوان مختلفة
+- `03.png` — Loading spinners (أنيميشن دائرية)
+- `04.png` — أشرطة تمرير (scroll bars) بأحجام وألوان متعددة
+- `05.png` — أشرطة صحة مقسمة (segmented health bars)
+- `06.png` — أشرطة تحميل/صحة متنوعة الألوان والأشكال
+- `07.png` — مؤشرات، خطوط، نقاط
+- `All.png` — الصورة المجمعة الكاملة
+
+### 2. إنشاء مكون PixelSprite
+ملف جديد: `src/components/games/PixelSprite.tsx`
+
+مكون يقبل:
+- `sheet`: اسم الصورة (00, 01, 02, إلخ)
+- `x, y, w, h`: إحداثيات القص من الـ sprite sheet
+- `scale`: حجم العرض (افتراضي 2x أو 3x)
+- `animate`: إذا كان sprite متحرك (عدد الإطارات + السرعة)
+
+```text
+┌────────────────────────────┐
+│  PixelSprite Component     │
+│                            │
+│  <div style={{             │
+│    width: w * scale,       │
+│    height: h * scale,      │
+│    backgroundImage: url(), │
+│    backgroundPosition:     │
+│      `-${x}px -${y}px`,   │
+│    backgroundSize: ...,    │
+│    imageRendering:         │
+│      pixelated             │
+│  }} />                     │
+└────────────────────────────┘
+```
+
+للأنيميشن (مثل spinners في 03.png):
+- استخدام CSS `@keyframes` مع `steps()` timing function
+- تحريك `background-position` عبر الإطارات
+
+### 3. تحديث المكونات لاستخدام الـ Sprites
+
+#### PixelHealthBar.tsx
+- استبدال الأشرطة المرسومة بـ CSS بأشرطة حقيقية من `05.png` و `06.png`
+- قص إطار الشريط الخارجي + الأجزاء الداخلية الملونة
+
+#### PixelLoadingScreen.tsx
+- استخدام spinner متحرك من `03.png` (أنيميشن frame-by-frame)
+- استخدام شريط تحميل حقيقي من `06.png`
+
+#### GameCard.tsx
+- استخدام إطارات بكسل من `02.png` بدلاً من CSS borders
+- استخدام نجوم من `00.png` (الصف السفلي) لعرض التقييم/الجوائز
+- استخدام أزرار بكسل من `00.png` (الصف العلوي) لزر PLAY
+
+#### DifficultyBadge.tsx
+- استخدام الماسات/الأحجار الملونة من `00.png` (الزاوية اليمنى العليا) بدلاً من المربعات المرسومة
+
+#### PixelMusicRadio.tsx
+- استخدام شريط التمرير الحقيقي من `04.png` لعنصر التحكم بالصوت
+
+#### MiniGames.tsx (الصفحة الرئيسية)
+- شارات (badges) من `01.png` للعنوان أو فلاتر الفئات
+- إطارات ملونة من `02.png` حول البطاقات
+
+### 4. تحديد إحداثيات الـ Sprites
+إنشاء ملف `src/components/games/SpriteMap.ts` يحتوي على ثوابت:
+
+```typescript
+export const SPRITES = {
+  // من 00.png
+  STAR_GRAY: { sheet: '00', x: 0, y: 128, w: 16, h: 16 },
+  STAR_GOLD: { sheet: '00', x: 48, y: 128, w: 16, h: 16 },
+  HEART_RED: { sheet: '00', x: 80, y: 128, w: 16, h: 16 },
+  BTN_BLUE: { sheet: '00', x: 0, y: 0, w: 32, h: 16 },
+  DIAMOND_GREEN: { sheet: '00', x: 160, y: 48, w: 12, h: 12 },
+  
+  // من 03.png - Loading spinner frames
+  SPINNER_FRAMES: { sheet: '03', x: 0, y: 0, w: 32, h: 32, frames: 8 },
+  
+  // من 05.png - Health bars
+  HEALTH_BAR: { sheet: '05', x: 0, y: 0, w: 48, h: 8 },
+  
+  // إلخ...
+} as const;
+```
+
+### 5. الملفات المتأثرة
+
+| ملف | نوع التغيير |
+|-----|------------|
+| `src/assets/pixel-ui/*.png` | **جديد** — نسخ 9 صور |
+| `src/components/games/PixelSprite.tsx` | **جديد** — مكون Sprite |
+| `src/components/games/SpriteMap.ts` | **جديد** — إحداثيات القص |
+| `src/components/games/PixelHealthBar.tsx` | **تعديل** — sprites حقيقية |
+| `src/components/games/PixelLoadingScreen.tsx` | **تعديل** — spinner + bars |
+| `src/components/games/GameCard.tsx` | **تعديل** — إطارات وأيقونات |
+| `src/components/games/DifficultyBadge.tsx` | **تعديل** — ماسات ملونة |
+| `src/components/games/PixelMusicRadio.tsx` | **تعديل** — scroll bar |
+| `src/pages/MiniGames.tsx` | **تعديل** — شارات وإطارات |
+| `src/index.css` | **تعديل** — keyframes للأنيميشن |
 
