@@ -246,40 +246,47 @@
   @keyframes dropdown-in-bottom {
     from {
       opacity: 0;
-      transform: translateY(-4px);
+      transform: translateY(-6px) scaleY(0.95) scaleX(0.98);
+      transform-origin: top center;
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0) scaleY(1) scaleX(1);
+      transform-origin: top center;
     }
   }
 
   @keyframes dropdown-in-top {
     from {
       opacity: 0;
-      transform: translateY(4px);
+      transform: translateY(6px) scaleY(0.95) scaleX(0.98);
+      transform-origin: bottom center;
     }
     to {
       opacity: 1;
-      transform: translateY(0);
+      transform: translateY(0) scaleY(1) scaleX(1);
+      transform-origin: bottom center;
     }
   }
 
   @keyframes dropdown-in-left {
     from {
       opacity: 0;
-      transform: translateX(4px);
+      transform: translateX(6px) scaleX(0.95);
+      transform-origin: right center;
     }
     to {
       opacity: 1;
-      transform: translateX(0);
+      transform: translateX(0) scaleX(1);
+      transform-origin: right center;
     }
   }
 
   @keyframes dropdown-in-right {
     from {
       opacity: 0;
-      transform: translateX(-4px);
+      transform: translateX(-6px) scaleX(0.95);
+      transform-origin: left center;
     }
     to {
       opacity: 1;
@@ -1077,9 +1084,24 @@
   overscroll-behavior: contain;
 }
 
-/* Global popper wrapper stabilization - prevent top-of-screen flash */
+/* Global popper wrapper stabilization - hide then reveal after Radix positions */
 [data-radix-popper-content-wrapper] {
-  will-change: transform;
+  animation: popper-wrapper-show 150ms ease-out both !important;
+}
+
+@keyframes popper-wrapper-show {
+  0% {
+    visibility: hidden;
+    opacity: 0;
+  }
+  25% {
+    visibility: visible;
+    opacity: 0;
+  }
+  100% {
+    visibility: visible;
+    opacity: 1;
+  }
 }
 
 

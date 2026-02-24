@@ -318,7 +318,7 @@ const TopBar = memo(({ announcementHeight = 0, verificationBannerHeight = 0 }: T
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 bg-background border-border z-50">
+                <DropdownMenuContent align="end" className="w-56 bg-background backdrop-blur-sm border-border z-50">
                   <DropdownMenuLabel>{t('menu_my_account')}</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate('/user-info')}>
