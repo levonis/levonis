@@ -80,21 +80,42 @@ MenubarSubContent.displayName = MenubarPrimitive.SubContent.displayName;
 const MenubarContent = React.forwardRef<
   React.ElementRef<typeof MenubarPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof MenubarPrimitive.Content>
->(({ className, align = "start", alignOffset = -4, sideOffset = 8, ...props }, ref) => (
-  <MenubarPrimitive.Portal>
-    <MenubarPrimitive.Content
-      ref={ref}
-      align={align}
-      alignOffset={alignOffset}
-      sideOffset={sideOffset}
-      className={cn(
-        "z-[300] min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
-        className,
-      )}
-      {...props}
-    />
-  </MenubarPrimitive.Portal>
-));
+>(({ className, align = "start", alignOffset = -4, sideOffset = 8, ...props }, ref) => {
+  const [isPositioned, setIsPositioned] = React.useState(false);
+
+  React.useEffect(() => {
+    let frame1 = 0;
+    let frame2 = 0;
+
+    frame1 = window.requestAnimationFrame(() => {
+      frame2 = window.requestAnimationFrame(() => setIsPositioned(true));
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame1);
+      window.cancelAnimationFrame(frame2);
+    };
+  }, []);
+
+  return (
+    <MenubarPrimitive.Portal>
+      <MenubarPrimitive.Content
+        ref={ref}
+        align={align}
+        alignOffset={alignOffset}
+        sideOffset={sideOffset}
+        className={cn(
+          "z-[300] min-w-[12rem] overflow-hidden rounded-md border bg-popover p-1 text-popover-foreground shadow-md",
+          isPositioned
+            ? "opacity-100 data-[side=bottom]:animate-[dropdown-in-bottom_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=top]:animate-[dropdown-in-top_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=left]:animate-[dropdown-in-left_160ms_cubic-bezier(0.16,1,0.3,1)] data-[side=right]:animate-[dropdown-in-right_160ms_cubic-bezier(0.16,1,0.3,1)]"
+            : "opacity-0",
+          className,
+        )}
+        {...props}
+      />
+    </MenubarPrimitive.Portal>
+  );
+});
 MenubarContent.displayName = MenubarPrimitive.Content.displayName;
 
 const MenubarItem = React.forwardRef<
