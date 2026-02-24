@@ -1368,6 +1368,43 @@
   display: none;
 }
 
+/* ========== Pixel Art Game Animations ========== */
+@keyframes pixel-scanline-move {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes pixel-float {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  25% { transform: translateY(-15px) translateX(5px); }
+  50% { transform: translateY(-5px) translateX(-8px); }
+  75% { transform: translateY(-20px) translateX(3px); }
+}
+
+@keyframes pixel-twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; }
+}
+
+.pixel-scanline {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 2px,
+    hsl(var(--foreground) / 0.03) 2px,
+    hsl(var(--foreground) / 0.03) 4px
+  );
+  animation: pixel-scanline-move 8s linear infinite;
+}
+
+.pixel-float-particle {
+  animation: pixel-float 8s ease-in-out infinite;
+}
+
+.pixel-twinkle {
+  animation: pixel-twinkle 2s ease-in-out infinite;
+}
+
 /* Telegram Mini App viewport fix */
 html, body, #root {
   min-height: 100vh;

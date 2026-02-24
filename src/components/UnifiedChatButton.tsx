@@ -67,6 +67,7 @@ export default function UnifiedChatButton() {
     '/user-info',
     '/settings',
     '/profile',
+    '/games',
   ];
   const isOnRestrictedPage = restrictedPaths.some(p => location.pathname.startsWith(p));
   if (isOnRestrictedPage && !open) return null;
