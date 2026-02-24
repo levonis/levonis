@@ -1,115 +1,129 @@
 
 
-# خطة: دمج صور BDragon1727 Sprite Sheets في صفحة /games
+# خطة: مكون Level Badge ديناميكي مع أنيميشن متقدم
 
 ## ملخص
-سيتم نسخ صور الـ sprite sheets المرفوعة إلى المشروع واستخدامها كأصول حقيقية في واجهة صفحة الألعاب بدلاً من CSS فقط. سنستخدم تقنية **CSS Sprite Sheet** لقص الأيقونات والأشرطة والأنيميشن من الصور.
+إنشاء مكون `GameLevelBadge` جديد بأسلوب بكسل متوافق مع نظام الألعاب الحالي. المكون يعرض شارة مستوى مع أنيميشن تقدم متعدد الخطوات، رقم المستوى المحفور، وتوهج حسب الرتبة.
+
+---
+
+## هيكل الملفات
+
+| ملف | نوع |
+|-----|------|
+| `src/components/games/GameLevelBadge.tsx` | **جديد** — المكون الرئيسي |
+| `src/components/games/levelBadgeStyles.css` | **جديد** — أنيميشن CSS مخصص |
+| `src/pages/MiniGames.tsx` | **تعديل** — عرض الشارة في الهيدر |
 
 ---
 
 ## التفاصيل التقنية
 
-### 1. نسخ الصور إلى المشروع
-نسخ جميع الصور المرفوعة إلى `src/assets/pixel-ui/`:
-- `00.png` — أزرار، أشرطة صحة، نجوم، قلوب، أيقونات متنوعة
-- `01.png` — شارات (badges) ملونة، أجنحة
-- `02.png` — إطارات (frames) بألوان مختلفة
-- `03.png` — Loading spinners (أنيميشن دائرية)
-- `04.png` — أشرطة تمرير (scroll bars) بأحجام وألوان متعددة
-- `05.png` — أشرطة صحة مقسمة (segmented health bars)
-- `06.png` — أشرطة تحميل/صحة متنوعة الألوان والأشكال
-- `07.png` — مؤشرات، خطوط، نقاط
-- `All.png` — الصورة المجمعة الكاملة
-
-### 2. إنشاء مكون PixelSprite
-ملف جديد: `src/components/games/PixelSprite.tsx`
-
-مكون يقبل:
-- `sheet`: اسم الصورة (00, 01, 02, إلخ)
-- `x, y, w, h`: إحداثيات القص من الـ sprite sheet
-- `scale`: حجم العرض (افتراضي 2x أو 3x)
-- `animate`: إذا كان sprite متحرك (عدد الإطارات + السرعة)
+### 1. تعريف الرتب (Tiers)
 
 ```text
-┌────────────────────────────┐
-│  PixelSprite Component     │
-│                            │
-│  <div style={{             │
-│    width: w * scale,       │
-│    height: h * scale,      │
-│    backgroundImage: url(), │
-│    backgroundPosition:     │
-│      `-${x}px -${y}px`,   │
-│    backgroundSize: ...,    │
-│    imageRendering:         │
-│      pixelated             │
-│  }} />                     │
-└────────────────────────────┘
+Bronze   → Level 0–10   → لون نحاسي (#CD7F32) + توهج برتقالي
+Platinum → Level 11–25  → لون فضي/بلاتيني (#E5E4E2) + توهج أبيض
+Diamond  → Level 26–30  → لون أزرق سماوي (#B9F2FF) + توهج سيان
+Emerald  → Level 31+    → لون زمردي (#50C878) + توهج أخضر
 ```
 
-للأنيميشن (مثل spinners في 03.png):
-- استخدام CSS `@keyframes` مع `steps()` timing function
-- تحريك `background-position` عبر الإطارات
+### 2. هيكل المكون البصري
 
-### 3. تحديث المكونات لاستخدام الـ Sprites
+```text
+┌──────────────────────────┐
+│  ┌──┐                    │
+│  │V │ ═══ Bar 1 ═══════  │  ← شريط أفقي أول
+│  │E │ ═══ Bar 2 ═══════  │  ← شريط أفقي ثاني
+│  │R │ ══ [  15  ] ═════  │  ← شريط ثالث + رقم محفور
+│  │T │                    │
+│  └──┘                    │
+│     ▲ Shield center      │
+└──────────────────────────┘
+```
 
-#### PixelHealthBar.tsx
-- استبدال الأشرطة المرسومة بـ CSS بأشرطة حقيقية من `05.png` و `06.png`
-- قص إطار الشريط الخارجي + الأجزاء الداخلية الملونة
+العناصر:
+- **Shield**: أيقونة درع مركزية (من sprite sheet 01.png `SPRITE_BADGES`)
+- **Horizontal Bars**: 3 أشرطة أفقية متراصة تظهر تتابعياً
+- **Vertical Bar**: شريط عمودي على اليسار يظهر عند 50% تقدم
+- **Level Number**: رقم المستوى محفور بتأثير inner shadow
 
-#### PixelLoadingScreen.tsx
-- استخدام spinner متحرك من `03.png` (أنيميشن frame-by-frame)
-- استخدام شريط تحميل حقيقي من `06.png`
+### 3. تسلسل الأنيميشن (Animation Sequence)
 
-#### GameCard.tsx
-- استخدام إطارات بكسل من `02.png` بدلاً من CSS borders
-- استخدام نجوم من `00.png` (الصف السفلي) لعرض التقييم/الجوائز
-- استخدام أزرار بكسل من `00.png` (الصف العلوي) لزر PLAY
+```text
+t=0ms     → Bar 1: scaleX(0→1) slide-in        [300ms]
+t=300ms   → Bar 2: scaleX(0→1) slide-in        [300ms]
+t=600ms   → Level Number: opacity(0→1) + scale  [400ms]
+t=∞       → عند progress ≥ 50%:
+              Vertical bar slides down behind bars
+              then merges as Bar 3 (scaleX expansion)
+              Level number gets engraved effect on Bar 3
+```
 
-#### DifficultyBadge.tsx
-- استخدام الماسات/الأحجار الملونة من `00.png` (الزاوية اليمنى العليا) بدلاً من المربعات المرسومة
+### 4. تفاصيل CSS الأنيميشن
 
-#### PixelMusicRadio.tsx
-- استخدام شريط التمرير الحقيقي من `04.png` لعنصر التحكم بالصوت
+ملف `levelBadgeStyles.css`:
 
-#### MiniGames.tsx (الصفحة الرئيسية)
-- شارات (badges) من `01.png` للعنوان أو فلاتر الفئات
-- إطارات ملونة من `02.png` حول البطاقات
+- `@keyframes bar-slide-in`: `transform: scaleX(0) → scaleX(1)` مع `transform-origin: right`
+- `@keyframes level-engrave`: `opacity: 0, scale(0.5) → opacity: 1, scale(1)` مع `text-shadow` محفور
+- `@keyframes vertical-merge`: الشريط العمودي ينزلق من أعلى لأسفل ثم يتحول أفقياً
+- `@keyframes tier-glow-pulse`: نبض توهج خفيف حسب لون الرتبة
+- `@keyframes level-up-burst`: تأثير scale(1→1.2→1) عند تغيير المستوى
 
-### 4. تحديد إحداثيات الـ Sprites
-إنشاء ملف `src/components/games/SpriteMap.ts` يحتوي على ثوابت:
+تأثير الحفر (Engraved):
+```css
+text-shadow:
+  0 1px 0 rgba(255,255,255,0.15),   /* highlight above */
+  0 -1px 1px rgba(0,0,0,0.6);       /* shadow below */
+color: transparent + background-clip: text
+```
+
+### 5. واجهة المكون (API)
 
 ```typescript
-export const SPRITES = {
-  // من 00.png
-  STAR_GRAY: { sheet: '00', x: 0, y: 128, w: 16, h: 16 },
-  STAR_GOLD: { sheet: '00', x: 48, y: 128, w: 16, h: 16 },
-  HEART_RED: { sheet: '00', x: 80, y: 128, w: 16, h: 16 },
-  BTN_BLUE: { sheet: '00', x: 0, y: 0, w: 32, h: 16 },
-  DIAMOND_GREEN: { sheet: '00', x: 160, y: 48, w: 12, h: 12 },
-  
-  // من 03.png - Loading spinner frames
-  SPINNER_FRAMES: { sheet: '03', x: 0, y: 0, w: 32, h: 32, frames: 8 },
-  
-  // من 05.png - Health bars
-  HEALTH_BAR: { sheet: '05', x: 0, y: 0, w: 48, h: 8 },
-  
-  // إلخ...
-} as const;
+interface GameLevelBadgeProps {
+  level: number;           // 0-99
+  progressPercent: number; // 0-100 (تقدم نحو المستوى التالي)
+  size?: "sm" | "md" | "lg";
+  animate?: boolean;       // تشغيل أنيميشن الدخول
+  className?: string;
+}
 ```
 
-### 5. الملفات المتأثرة
+دالة `getTier(level)` تحدد الرتبة والألوان تلقائياً.
 
-| ملف | نوع التغيير |
-|-----|------------|
-| `src/assets/pixel-ui/*.png` | **جديد** — نسخ 9 صور |
-| `src/components/games/PixelSprite.tsx` | **جديد** — مكون Sprite |
-| `src/components/games/SpriteMap.ts` | **جديد** — إحداثيات القص |
-| `src/components/games/PixelHealthBar.tsx` | **تعديل** — sprites حقيقية |
-| `src/components/games/PixelLoadingScreen.tsx` | **تعديل** — spinner + bars |
-| `src/components/games/GameCard.tsx` | **تعديل** — إطارات وأيقونات |
-| `src/components/games/DifficultyBadge.tsx` | **تعديل** — ماسات ملونة |
-| `src/components/games/PixelMusicRadio.tsx` | **تعديل** — scroll bar |
-| `src/pages/MiniGames.tsx` | **تعديل** — شارات وإطارات |
-| `src/index.css` | **تعديل** — keyframes للأنيميشن |
+### 6. استخدام Sprite Assets
+
+- **Shield icon**: `SPRITE_BADGES.SHIELD_GOLD / SHIELD_SILVER / SHIELD_BLUE / SHIELD_GREEN` حسب الرتبة
+- **Progress bars**: ألوان CSS متدرجة بأسلوب بكسل (لا sprites — أشرطة مخصصة أدق)
+- **Glow effect**: `box-shadow` ديناميكي بلون الرتبة
+
+### 7. تكامل مع الصفحة
+
+في `MiniGames.tsx` — عرض `GameLevelBadge` بجانب عداد النقاط في الهيدر:
+
+```text
+┌─────────────────────────────────┐
+│  [BACK]     [LevelBadge] [🪙 500] │
+└─────────────────────────────────┘
+```
+
+المستوى والتقدم يُحسبان من `userPoints` الموجودة أصلاً.
+
+### 8. حساب المستوى من النقاط
+
+```typescript
+// كل 100 نقطة = مستوى واحد (قابل للتعديل)
+const POINTS_PER_LEVEL = 100;
+const level = Math.floor(points / POINTS_PER_LEVEL);
+const progressPercent = (points % POINTS_PER_LEVEL);
+```
+
+### 9. الاستجابة (Responsive)
+
+| الحجم | الأبعاد | الاستخدام |
+|-------|---------|----------|
+| sm    | 32×32px | داخل البطاقات |
+| md    | 48×48px | الهيدر |
+| lg    | 72×72px | الملف الشخصي |
 
