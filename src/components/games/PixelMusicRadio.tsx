@@ -83,43 +83,35 @@ export default function PixelMusicRadio() {
     audioCtxRef.current?.close();
   }, [stopMusic]);
 
+  /* Pixel volume bar segments */
+  const volSegments = 8;
+  const volFilled = Math.round((volume / 100) * volSegments);
+
   return (
     <div className="fixed bottom-6 right-4 sm:right-6 z-50 flex flex-col items-end gap-2">
       {/* Expanded panel */}
       {expanded && (
-        <div
-          className="border-2 border-primary/30 bg-card/95 backdrop-blur-sm p-3 font-mono text-xs animate-scale-in"
-          style={{
-            imageRendering: "pixelated",
-            boxShadow: "4px 4px 0 hsl(var(--accent) / 0.3)",
-          }}
-        >
-          <div className="flex items-center justify-between mb-2 gap-3">
+        <div className="pixel-frame p-3 font-mono text-xs animate-scale-in w-56">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-3">
             <span className="text-primary font-bold text-[10px] tracking-wider">📻 RADIO</span>
             <button
               onClick={() => setIsOn(!isOn)}
-              className={cn(
-                "px-2 py-0.5 border font-bold text-[10px] transition-colors",
-                isOn
-                  ? "bg-green-500/20 border-green-500/40 text-green-400"
-                  : "bg-red-500/20 border-red-500/40 text-red-400"
-              )}
+              className={cn("pixel-btn px-2 py-0.5 text-[10px] font-bold", isOn && "pixel-btn-active")}
             >
-              {isOn ? "ON" : "OFF"}
+              {isOn ? "ON ●" : "OFF ○"}
             </button>
           </div>
 
           {/* Stations */}
-          <div className="flex gap-1 mb-2">
+          <div className="flex gap-1 mb-3">
             {STATIONS.map((st, i) => (
               <button
                 key={i}
                 onClick={() => { setStation(i); if (isOn) startMusic(i); }}
                 className={cn(
-                  "flex-1 px-1 py-1 border text-[9px] font-bold transition-colors text-center leading-tight",
-                  station === i
-                    ? "bg-primary/20 border-primary/40 text-primary"
-                    : "bg-card border-border/40 text-muted-foreground hover:border-primary/20"
+                  "flex-1 py-1.5 text-[8px] font-bold transition-colors text-center leading-tight",
+                  station === i ? "pixel-btn-active" : "pixel-btn"
                 )}
               >
                 {st.name}
@@ -127,31 +119,38 @@ export default function PixelMusicRadio() {
             ))}
           </div>
 
-          {/* Volume */}
+          {/* Volume - pixel scroll bar style */}
           <div className="flex items-center gap-2">
-            <VolumeX className="h-3 w-3 text-muted-foreground" />
-            <Slider
-              value={[volume]}
-              onValueChange={([v]) => setVolume(v)}
-              max={100}
-              step={5}
-              className="flex-1"
-            />
-            <Volume2 className="h-3 w-3 text-muted-foreground" />
+            <VolumeX className="h-3 w-3 text-muted-foreground shrink-0" />
+            <div className="pixel-frame-inset flex-1 p-[2px]">
+              <div className="flex gap-[1px] h-2.5">
+                {Array.from({ length: volSegments }).map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setVolume(Math.round(((i + 1) / volSegments) * 100))}
+                    className="flex-1 transition-all duration-100 hover:brightness-125"
+                    style={{
+                      background: i < volFilled ? "hsl(var(--primary))" : "hsl(var(--card))",
+                      boxShadow: i < volFilled
+                        ? "inset 0 -1px 0 hsl(var(--accent)), inset 0 1px 0 rgba(255,255,255,0.15)"
+                        : "inset 0 1px 0 rgba(255,255,255,0.03)",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            <Volume2 className="h-3 w-3 text-muted-foreground shrink-0" />
           </div>
         </div>
       )}
 
-      {/* Toggle button */}
+      {/* Toggle button - pixel style */}
       <button
         onClick={() => setExpanded(!expanded)}
         className={cn(
-          "h-12 w-12 flex items-center justify-center border-2 transition-all",
-          "bg-card/90 backdrop-blur-sm hover:border-primary/50",
-          expanded ? "border-primary/40" : "border-border/40",
-          isOn && "animate-pulse-glow"
+          "h-12 w-12 flex items-center justify-center transition-all pixel-frame",
+          isOn && "pixel-frame-active"
         )}
-        style={{ boxShadow: "3px 3px 0 hsl(var(--accent) / 0.2)", imageRendering: "pixelated" }}
       >
         {isOn ? (
           <Music className="h-5 w-5 text-primary" />

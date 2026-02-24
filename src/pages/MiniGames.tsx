@@ -47,14 +47,65 @@ const FILTERS: { id: FilterType; label: string; icon: React.ReactNode }[] = [
   { id: 'luck', label: 'حظ', icon: <Zap className="h-3.5 w-3.5" /> },
 ];
 
+/* ── Pixel UI helper: stepped box-shadow border (like the asset pack) ── */
+const pixelBorder = (color: string) =>
+  `2px 0 0 ${color}, -2px 0 0 ${color}, 0 2px 0 ${color}, 0 -2px 0 ${color}`;
+
+const pixelBorderOuter = (color: string, shadow: string) =>
+  `${pixelBorder(color)}, 4px 4px 0 ${shadow}`;
+
+/* ── Pixel Health Bar (inspired by BDragon1727 asset) ── */
+function PixelHealthBar({ value, max, color = "primary" }: { value: number; max: number; color?: string }) {
+  const segments = 10;
+  const filled = Math.round((value / max) * segments);
+  const colors: Record<string, { fill: string; bg: string; glow: string }> = {
+    primary: { fill: "hsl(var(--primary))", bg: "hsl(var(--card))", glow: "hsl(var(--primary) / 0.4)" },
+    green: { fill: "hsl(142 70% 45%)", bg: "hsl(var(--card))", glow: "hsl(142 70% 45% / 0.3)" },
+    red: { fill: "hsl(0 70% 50%)", bg: "hsl(var(--card))", glow: "hsl(0 70% 50% / 0.3)" },
+  };
+  const c = colors[color] || colors.primary;
+  return (
+    <div className="pixel-frame-inset p-[3px]">
+      <div className="flex gap-[1px] h-3">
+        {Array.from({ length: segments }).map((_, i) => (
+          <div
+            key={i}
+            className="flex-1 transition-all duration-150"
+            style={{
+              background: i < filled ? c.fill : c.bg,
+              boxShadow: i < filled ? `inset 0 -2px 0 ${c.glow}, inset 0 1px 0 rgba(255,255,255,0.15)` : "inset 0 1px 0 rgba(255,255,255,0.03)",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function DifficultyBadge({ level }: { level: 'easy' | 'medium' | 'hard' }) {
   const config = {
-    easy: { label: 'سهل', cls: 'bg-green-500/15 text-green-400 border-green-500/20' },
-    medium: { label: 'متوسط', cls: 'bg-amber-500/15 text-amber-400 border-amber-500/20' },
-    hard: { label: 'صعب', cls: 'bg-red-500/15 text-red-400 border-red-500/20' },
+    easy: { label: 'سهل', segments: 3, filled: 1, color: "hsl(142 70% 45%)" },
+    medium: { label: 'متوسط', segments: 3, filled: 2, color: "hsl(45 90% 50%)" },
+    hard: { label: 'صعب', segments: 3, filled: 3, color: "hsl(0 70% 50%)" },
   };
   const c = config[level];
-  return <span className={cn("px-2 py-0.5 rounded-md text-[10px] font-bold border", c.cls)}>{c.label}</span>;
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[9px] font-mono font-bold text-muted-foreground">{c.label}</span>
+      <div className="flex gap-[2px]">
+        {Array.from({ length: c.segments }).map((_, i) => (
+          <div
+            key={i}
+            className="w-2 h-2"
+            style={{
+              background: i < c.filled ? c.color : "hsl(var(--card))",
+              boxShadow: i < c.filled ? `inset 0 -1px 0 rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.2)` : pixelBorder("hsl(var(--border) / 0.3)"),
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function GameCard({ game, onPlay, onClickSound }: { game: GameInfo; onPlay: () => void; onClickSound: () => void }) {
@@ -64,34 +115,50 @@ function GameCard({ game, onPlay, onClickSound }: { game: GameInfo; onPlay: () =
       onClick={() => { onClickSound(); onPlay(); }}
       disabled={!isLive}
       className={cn(
-        "group text-right border-2 p-4 transition-all duration-300 relative overflow-hidden w-full",
+        "group text-right p-4 transition-all duration-200 relative overflow-hidden w-full",
         isLive
-          ? "bg-card border-primary/20 hover:border-primary/50 hover:shadow-[0_8px_30px_hsl(var(--primary)/0.15)] hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-          : "bg-card/50 border-border/30 opacity-50 cursor-not-allowed"
+          ? "pixel-frame hover:pixel-frame-active cursor-pointer active:scale-[0.98]"
+          : "pixel-frame-disabled cursor-not-allowed opacity-60"
       )}
-      style={{ imageRendering: "auto" }}
     >
+      {/* Status badges */}
       <div className="flex items-center gap-1.5 mb-3 flex-wrap">
-        {isLive && <span className="px-2 py-0.5 bg-green-500/15 text-green-400 text-[10px] font-bold border border-green-500/20 uppercase tracking-wider">Live</span>}
-        {!isLive && <span className="px-2 py-0.5 bg-muted/30 text-muted-foreground text-[10px] font-bold border border-border uppercase tracking-wider">قريباً</span>}
-        {game.isNew && isLive && <span className="px-2 py-0.5 bg-primary/15 text-primary text-[10px] font-bold border border-primary/20">جديد</span>}
+        {isLive ? (
+          <span className="pixel-badge-live text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider">● LIVE</span>
+        ) : (
+          <span className="pixel-badge-locked text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider">قريباً</span>
+        )}
+        {game.isNew && isLive && (
+          <span className="pixel-badge-new text-[9px] font-mono font-bold px-2 py-0.5">★ جديد</span>
+        )}
         <DifficultyBadge level={game.difficulty} />
       </div>
+
+      {/* Icon - pixel frame */}
       <div className={cn(
-        "w-14 h-14 flex items-center justify-center text-3xl mb-3 border transition-transform duration-300",
-        isLive ? "bg-primary/10 border-primary/20 group-hover:scale-110 group-hover:rotate-3" : "bg-muted/20 border-border/50"
+        "w-14 h-14 flex items-center justify-center text-3xl mb-3 transition-transform duration-300",
+        isLive ? "pixel-frame-inset group-hover:scale-110 group-hover:rotate-2" : "pixel-frame-inset opacity-40"
       )}>
         {isLive ? game.icon : <Lock className="h-6 w-6 text-muted-foreground/50" />}
       </div>
-      <h3 className={cn("font-bold text-sm mb-1 line-clamp-1", isLive ? "text-foreground" : "text-muted-foreground")}>{game.title}</h3>
+
+      <h3 className={cn("font-bold text-sm mb-1 line-clamp-1 font-mono", isLive ? "text-foreground" : "text-muted-foreground")}>{game.title}</h3>
       <p className={cn("text-[11px] leading-relaxed mb-3 line-clamp-2", isLive ? "text-muted-foreground" : "text-muted-foreground/50")}>{game.description}</p>
-      <div className="flex items-center gap-2 flex-wrap">
-        <span className="flex items-center gap-1 text-[10px] text-primary font-bold"><Trophy className="h-3 w-3" /> {game.reward}</span>
-        <span className="flex items-center gap-1 text-[10px] text-muted-foreground"><Users className="h-3 w-3" /> {game.players}</span>
+
+      {/* Reward bar - pixel health bar style */}
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
+        <span className="flex items-center gap-1 text-[10px] text-primary font-bold font-mono">
+          <Trophy className="h-3 w-3" /> {game.reward}
+        </span>
+        <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-mono">
+          <Users className="h-3 w-3" /> {game.players}
+        </span>
       </div>
+
+      {/* Play button - pixel style */}
       {isLive && (
-        <div className="mt-3 bg-primary/10 border border-primary/20 py-2 text-center group-hover:bg-primary/20 transition-colors">
-          <span className="text-primary font-bold text-xs font-mono">▶ PLAY</span>
+        <div className="mt-2 pixel-btn-play py-1.5 text-center group-hover:brightness-110 transition-all">
+          <span className="text-xs font-bold font-mono tracking-wider">▶ PLAY</span>
         </div>
       )}
     </button>
@@ -126,7 +193,6 @@ export default function MiniGames() {
 
   const handleLoadComplete = useCallback(() => setLoading(false), []);
 
-  // Fullscreen game view
   if (activeGame === 'rps') {
     return (
       <div className="fixed inset-0 z-50 bg-background">
@@ -139,29 +205,30 @@ export default function MiniGames() {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative" dir="rtl">
-      {/* Loading overlay */}
       {loading && <PixelLoadingScreen onComplete={handleLoadComplete} />}
-
       <PixelBackground />
       <PixelMusicRadio />
 
-      {/* Header */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border/50">
+      {/* Header - pixel bar style */}
+      <div className="sticky top-0 z-20 pixel-header-bar">
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => { playClick(); navigate('/rewards?tab=points&sub=games'); }}
-            className="gap-1 text-muted-foreground hover:text-foreground font-mono"
+            className="gap-1 text-muted-foreground hover:text-foreground font-mono text-xs pixel-btn-ghost"
           >
             <ArrowRight className="h-4 w-4" />
             BACK
           </Button>
+
+          {/* Points display - pixel health bar style */}
           {user && (
-            <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 px-3 py-1.5"
-              style={{ boxShadow: "2px 2px 0 hsl(var(--accent) / 0.2)" }}>
-              <Coins className="h-4 w-4 text-primary" />
-              <span className="text-primary font-bold text-sm font-mono">{(userPoints?.available_points || 0).toLocaleString()}</span>
+            <div className="flex items-center gap-2">
+              <div className="pixel-frame-inset px-3 py-1.5 flex items-center gap-2">
+                <Coins className="h-4 w-4 text-primary" />
+                <span className="text-primary font-bold text-sm font-mono">{(userPoints?.available_points || 0).toLocaleString()}</span>
+              </div>
             </div>
           )}
         </div>
@@ -170,8 +237,7 @@ export default function MiniGames() {
       <div className="max-w-2xl mx-auto px-4 pb-8 relative z-10">
         {/* Hero */}
         <div className="text-center py-8">
-          <div className="inline-flex items-center gap-2 bg-primary/10 border-2 border-primary/20 px-5 py-2 mb-4"
-            style={{ boxShadow: "3px 3px 0 hsl(var(--accent) / 0.3)", imageRendering: "pixelated" }}>
+          <div className="inline-flex items-center gap-2 pixel-frame px-5 py-2 mb-4">
             <Gamepad2 className="h-5 w-5 text-primary" />
             <span className="text-primary font-bold text-sm font-mono tracking-wider">PIXEL GAMES</span>
           </div>
@@ -184,19 +250,16 @@ export default function MiniGames() {
           </p>
         </div>
 
-        {/* Filters */}
+        {/* Filters - pixel button bar */}
         <div className="flex gap-2 overflow-x-auto pb-3 mb-6 scrollbar-hide">
           {FILTERS.map(f => (
             <button
               key={f.id}
               onClick={() => { playClick(); setFilter(f.id); }}
               className={cn(
-                "flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold whitespace-nowrap border transition-all shrink-0 font-mono",
-                filter === f.id
-                  ? "bg-primary/15 border-primary/30 text-primary"
-                  : "bg-card border-border text-muted-foreground hover:border-primary/20 hover:text-foreground"
+                "flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold whitespace-nowrap transition-all shrink-0 font-mono",
+                filter === f.id ? "pixel-btn-active" : "pixel-btn"
               )}
-              style={{ imageRendering: "auto" }}
             >
               {f.icon}
               {f.label}

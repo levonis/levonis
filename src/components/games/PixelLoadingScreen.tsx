@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
 const TOTAL_BLOCKS = 20;
-const LOAD_DURATION = 2000; // ms
+const LOAD_DURATION = 2000;
 
 export default function PixelLoadingScreen({ onComplete }: { onComplete: () => void }) {
   const [progress, setProgress] = useState(0);
@@ -15,9 +15,7 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
     const timer = setInterval(() => {
       count++;
       setProgress(count);
-      if (count >= TOTAL_BLOCKS) {
-        clearInterval(timer);
-      }
+      if (count >= TOTAL_BLOCKS) clearInterval(timer);
     }, interval);
 
     const dotTimer = setInterval(() => {
@@ -27,7 +25,6 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
       });
     }, 400);
 
-    // Safety fallback — always complete after LOAD_DURATION + buffer
     const safety = setTimeout(() => {
       if (!completedRef.current) {
         completedRef.current = true;
@@ -54,6 +51,7 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
 
   return (
     <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-center gap-6">
+      {/* Pixel game icon */}
       <div className="text-6xl animate-[rps-float_1s_ease-in-out_infinite_alternate]">🎮</div>
 
       <h1 className="text-primary font-mono text-xl font-bold tracking-[0.3em]"
@@ -61,19 +59,26 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
         PIXEL GAMES
       </h1>
 
+      {/* Health bar style loading bar */}
       <div className="w-64 sm:w-80">
-        <div className="border-2 border-primary/40 p-[3px] bg-card/50">
-          <div className="flex gap-[2px] h-5">
-            {Array.from({ length: TOTAL_BLOCKS }).map((_, i) => (
-              <div
-                key={i}
-                className="flex-1 transition-all duration-100"
-                style={{
-                  background: i < progress ? "hsl(var(--primary))" : "hsl(var(--card))",
-                  boxShadow: i < progress ? "inset 0 -2px 0 hsl(var(--accent))" : "none",
-                }}
-              />
-            ))}
+        {/* Outer pixel frame */}
+        <div className="pixel-frame p-[4px]">
+          {/* Inner inset */}
+          <div className="pixel-frame-inset p-[3px]">
+            <div className="flex gap-[1px] h-5">
+              {Array.from({ length: TOTAL_BLOCKS }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-1 transition-all duration-100"
+                  style={{
+                    background: i < progress ? "hsl(var(--primary))" : "hsl(var(--card))",
+                    boxShadow: i < progress
+                      ? "inset 0 -2px 0 hsl(var(--accent)), inset 0 2px 0 rgba(255,255,255,0.15)"
+                      : "inset 0 1px 0 rgba(255,255,255,0.03)",
+                  }}
+                />
+              ))}
+            </div>
           </div>
         </div>
         <div className="flex justify-between mt-2">
@@ -82,6 +87,7 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
         </div>
       </div>
 
+      {/* Decorative pixel sprites */}
       <div className="flex gap-4 mt-4 opacity-50">
         {["⭐", "💎", "🏆"].map((e, i) => (
           <span key={i} className="text-2xl pixel-twinkle" style={{ animationDelay: `${i * 0.5}s` }}>
