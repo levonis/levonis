@@ -1076,6 +1076,33 @@
   overscroll-behavior: contain;
 }
 
+/* Global Radix popper stabilization + side-aware entrance */
+[data-radix-popper-content-wrapper] > *[data-state="open"]:not([data-side]) {
+  opacity: 0;
+}
+
+[data-radix-popper-content-wrapper] > *[data-state="open"][data-side="bottom"] {
+  animation: dropdown-in-bottom 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-radix-popper-content-wrapper] > *[data-state="open"][data-side="top"] {
+  animation: dropdown-in-top 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-radix-popper-content-wrapper] > *[data-state="open"][data-side="left"] {
+  animation: dropdown-in-left 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+[data-radix-popper-content-wrapper] > *[data-state="open"][data-side="right"] {
+  animation: dropdown-in-right 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-radix-popper-content-wrapper] > *[data-state="open"][data-side] {
+    animation: none !important;
+  }
+}
+
 /* Allow scrolling inside ScrollArea within dialogs */
 [data-radix-scroll-area-viewport] {
   touch-action: pan-y !important;
