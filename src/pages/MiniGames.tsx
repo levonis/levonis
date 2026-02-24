@@ -13,6 +13,7 @@ import { useGameSounds } from "@/components/games/useGameSounds";
 import GameCard from "@/components/games/GameCard";
 import PixelSprite from "@/components/games/PixelSprite";
 import { SPRITE_ICONS } from "@/components/games/SpriteMap";
+import GameLevelBadge from "@/components/games/GameLevelBadge";
 import {
   GAME_NODES,
   FILTER_NODES,
@@ -53,6 +54,12 @@ export default function MiniGames() {
   const filteredGames = useMemo(() => filterGameNodes(GAME_NODES, filter), [filter]);
   const handleLoadComplete = useCallback(() => setLoading(false), []);
 
+  // Calculate level from points (100 points per level)
+  const POINTS_PER_LEVEL = 100;
+  const totalPoints = userPoints?.available_points || 0;
+  const playerLevel = Math.floor(totalPoints / POINTS_PER_LEVEL);
+  const levelProgress = totalPoints % POINTS_PER_LEVEL;
+
   if (activeGame === 'rps') {
     return (
       <div className="fixed inset-0 z-50 bg-background">
@@ -84,9 +91,10 @@ export default function MiniGames() {
 
           {user && (
             <div className="flex items-center gap-2">
+              <GameLevelBadge level={playerLevel} progressPercent={levelProgress} size="sm" />
               <div className="pixel-frame-inset px-3 py-1.5 flex items-center gap-2">
                 <PixelSprite sprite={SPRITE_ICONS.COIN} scale={1.5} />
-                <span className="text-primary font-bold text-sm font-mono">{(userPoints?.available_points || 0).toLocaleString()}</span>
+                <span className="text-primary font-bold text-sm font-mono">{totalPoints.toLocaleString()}</span>
               </div>
             </div>
           )}
