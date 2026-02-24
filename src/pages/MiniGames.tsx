@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { ArrowRight, Coins, Filter, Flame, Clock, Star, Zap, Gamepad2 } from "lucide-react";
+import { ArrowRight, Filter, Flame, Clock, Star, Zap, Gamepad2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,8 @@ import PixelLoadingScreen from "@/components/games/PixelLoadingScreen";
 import PixelMusicRadio from "@/components/games/PixelMusicRadio";
 import { useGameSounds } from "@/components/games/useGameSounds";
 import GameCard from "@/components/games/GameCard";
+import PixelSprite from "@/components/games/PixelSprite";
+import { SPRITE_ICONS } from "@/components/games/SpriteMap";
 import {
   GAME_NODES,
   FILTER_NODES,
@@ -83,7 +85,7 @@ export default function MiniGames() {
           {user && (
             <div className="flex items-center gap-2">
               <div className="pixel-frame-inset px-3 py-1.5 flex items-center gap-2">
-                <Coins className="h-4 w-4 text-primary" />
+                <PixelSprite sprite={SPRITE_ICONS.COIN} scale={1.5} />
                 <span className="text-primary font-bold text-sm font-mono">{(userPoints?.available_points || 0).toLocaleString()}</span>
               </div>
             </div>
@@ -105,6 +107,12 @@ export default function MiniGames() {
           <p className="text-muted-foreground text-sm max-w-sm mx-auto">
             اختر لعبتك المفضلة وابدأ بجمع النقاط
           </p>
+          {/* Decorative sprites */}
+          <div className="flex justify-center gap-3 mt-3 opacity-50">
+            <PixelSprite sprite={SPRITE_ICONS.STAR_FULL} scale={1.5} className="pixel-twinkle" />
+            <PixelSprite sprite={SPRITE_ICONS.GEM_BLUE} scale={1.5} className="pixel-twinkle" style={{ animationDelay: "0.3s" }} />
+            <PixelSprite sprite={SPRITE_ICONS.GEM_GREEN} scale={1.5} className="pixel-twinkle" style={{ animationDelay: "0.6s" }} />
+          </div>
         </div>
 
         {/* Filters */}

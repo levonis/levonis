@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import PixelSprite from "./PixelSprite";
+import { SPRITE_SPINNERS, SPRITE_ICONS } from "./SpriteMap";
 
 const TOTAL_BLOCKS = 20;
 const LOAD_DURATION = 2000;
@@ -51,8 +53,8 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
 
   return (
     <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-center gap-6">
-      {/* Pixel game icon */}
-      <div className="text-6xl animate-[rps-float_1s_ease-in-out_infinite_alternate]">🎮</div>
+      {/* Animated pixel spinner from sprite sheet */}
+      <PixelSprite sprite={SPRITE_SPINNERS.SPINNER_GOLD} scale={4} />
 
       <h1 className="text-primary font-mono text-xl font-bold tracking-[0.3em]"
         style={{ textShadow: "2px 2px 0 hsl(var(--accent))" }}>
@@ -61,9 +63,7 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
 
       {/* Health bar style loading bar */}
       <div className="w-64 sm:w-80">
-        {/* Outer pixel frame */}
         <div className="pixel-frame p-[4px]">
-          {/* Inner inset */}
           <div className="pixel-frame-inset p-[3px]">
             <div className="flex gap-[1px] h-5">
               {Array.from({ length: TOTAL_BLOCKS }).map((_, i) => (
@@ -87,13 +87,11 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
         </div>
       </div>
 
-      {/* Decorative pixel sprites */}
-      <div className="flex gap-4 mt-4 opacity-50">
-        {["⭐", "💎", "🏆"].map((e, i) => (
-          <span key={i} className="text-2xl pixel-twinkle" style={{ animationDelay: `${i * 0.5}s` }}>
-            {e}
-          </span>
-        ))}
+      {/* Decorative sprite icons */}
+      <div className="flex gap-4 mt-4 opacity-60">
+        <PixelSprite sprite={SPRITE_ICONS.STAR_FULL} scale={2} className="pixel-twinkle" style={{ animationDelay: "0s" }} />
+        <PixelSprite sprite={SPRITE_ICONS.GEM_BLUE} scale={2} className="pixel-twinkle" style={{ animationDelay: "0.5s" }} />
+        <PixelSprite sprite={SPRITE_ICONS.TROPHY} scale={2} className="pixel-twinkle" style={{ animationDelay: "1s" }} />
       </div>
     </div>
   );
