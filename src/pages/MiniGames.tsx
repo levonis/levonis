@@ -126,8 +126,7 @@ export default function MiniGames() {
 
   const handleLoadComplete = useCallback(() => setLoading(false), []);
 
-  if (loading) return <PixelLoadingScreen onComplete={handleLoadComplete} />;
-
+  // Fullscreen game view
   if (activeGame === 'rps') {
     return (
       <div className="fixed inset-0 z-50 bg-background">
@@ -140,6 +139,9 @@ export default function MiniGames() {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative" dir="rtl">
+      {/* Loading overlay */}
+      {loading && <PixelLoadingScreen onComplete={handleLoadComplete} />}
+
       <PixelBackground />
       <PixelMusicRadio />
 
