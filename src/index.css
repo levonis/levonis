@@ -1078,15 +1078,18 @@
 
 /* Global popper wrapper stabilization - hides wrapper until Radix calculates position */
 [data-radix-popper-content-wrapper] {
-  opacity: 0 !important;
-  animation: popper-wrapper-reveal 1ms 20ms forwards !important;
+  animation: popper-wrapper-reveal 1ms 16ms both !important;
 }
 
 @keyframes popper-wrapper-reveal {
-  to {
-    opacity: 1 !important;
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
   }
 }
+
 
 
 /* Allow scrolling inside ScrollArea within dialogs */
