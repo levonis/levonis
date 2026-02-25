@@ -54,7 +54,7 @@ export default function PixelLoadingScreen({ onComplete }: { onComplete: () => v
   return (
     <div className="fixed inset-0 z-[60] bg-background flex flex-col items-center justify-center gap-6">
       {/* Animated pixel spinner from sprite sheet */}
-      <PixelSprite sprite={SPRITE_SPINNERS.SPINNER_GOLD} scale={4} />
+      <PixelSprite sprite={SPRITE_SPINNERS.HEAL_CHARACTER} scale={4} />
 
       <h1 className="text-primary font-mono text-xl font-bold tracking-[0.3em]"
         style={{ textShadow: "2px 2px 0 hsl(var(--accent))" }}>
